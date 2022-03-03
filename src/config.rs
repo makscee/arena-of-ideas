@@ -55,6 +55,8 @@ pub struct UnitTemplate {
     pub spawn_effects: Vec<Effect>,
     #[serde(default)]
     pub death_effects: Vec<Effect>,
+    #[serde(default)]
+    pub kill_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,

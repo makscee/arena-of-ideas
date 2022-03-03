@@ -73,6 +73,7 @@ pub struct Unit {
     pub attack_damage: Health,
     pub attack_cooldown: Time,
     pub attack_effects: Vec<Effect>,
+    pub kill_effects: Vec<Effect>,
     pub death_effects: Vec<Effect>,
     pub attack_animation_delay: Time,
     pub move_ai: MoveAi,
@@ -99,6 +100,7 @@ pub struct Projectile {
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub effects: Vec<Effect>,
+    pub kill_effects: Vec<Effect>,
     pub damage: Health,
 }
 
@@ -166,6 +168,7 @@ impl RoundState {
             attack_cooldown: template.attack_cooldown,
             attack_animation_delay: template.attack_animation_delay,
             attack_effects: template.attack_effects.clone(),
+            kill_effects: template.kill_effects.clone(),
             death_effects: template.death_effects.clone(),
             move_ai: template.move_ai,
             target_ai: template.target_ai,
@@ -292,13 +295,21 @@ impl RoundState {
                             speed: projectile_speed,
                             target_position: target.position,
                             effects: unit.attack_effects.clone(),
+                            kill_effects: unit.kill_effects.clone(),
                             damage: unit.attack_damage,
                         });
                         self.next_id += 1;
                     } else {
                         let effects = unit.attack_effects.clone();
+                        let kill_effects = unit.kill_effects.clone();
                         let attack_damage = unit.attack_damage;
-                        self.deal_damage(Some(unit), &mut target, &effects, attack_damage);
+                        self.deal_damage(
+                            Some(unit),
+                            &mut target,
+                            &effects,
+                            &kill_effects,
+                            attack_damage,
+                        );
                     }
                     self.units.insert(target);
                 }
@@ -340,6 +351,7 @@ impl RoundState {
                         attacker.as_mut(),
                         &mut target,
                         &projectile.effects,
+                        &projectile.kill_effects,
                         projectile.damage,
                     );
                     delete_projectiles.push(projectile.id);
@@ -396,8 +408,10 @@ impl RoundState {
         mut attacker: Option<&mut Unit>,
         target: &mut Unit,
         effects: &[Effect],
+        kill_effects: &[Effect],
         mut damage: Health,
     ) {
+        damage = min(damage, target.hp);
         if damage != 0 {
             if let Some((index, _)) = target
                 .statuses
@@ -414,9 +428,15 @@ impl RoundState {
                 .statuses
                 .retain(|status| !matches!(status, Status::Freeze));
         }
+        let old_hp = target.hp;
         target.hp -= damage;
         for effect in effects {
             self.apply_effect(effect, attacker.as_deref_mut(), target);
+        }
+        if old_hp > 0 && target.hp <= 0 {
+            for effect in kill_effects {
+                self.apply_effect(effect, attacker.as_deref_mut(), target);
+            }
         }
     }
     fn apply_effect(&mut self, effect: &Effect, mut caster: Option<&mut Unit>, target: &mut Unit) {
