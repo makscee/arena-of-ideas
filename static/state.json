@@ -1,14 +1,6 @@
 {
     "player": [
-        "blob",
-        "blob",
-        "blob",
-        "blob",
-        "small_blob",
-        "small_blob",
-        "small_blob",
-        "small_blob",
-        "small_blob"
+        "ranger"
     ],
     "spawn_points": {
         "Left": [

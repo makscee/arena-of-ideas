@@ -44,12 +44,15 @@ pub enum AttackState {
 #[derive(Serialize, Deserialize)]
 pub enum Status {
     Freeze,
+    Slow { percent: f32, time: Time },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
 pub enum Effect {
     Suicide,
     FreezeTarget,
+    Slow { percent: f32, time: Time },
 }
 
 #[derive(Serialize, Deserialize, HasId)]
@@ -168,6 +171,21 @@ impl RoundState {
         }
     }
 
+    fn process_statuses(&mut self, unit: &mut Unit, delta_time: Time) {
+        for status in &mut unit.statuses {
+            match status {
+                Status::Slow { time, .. } => {
+                    *time -= delta_time;
+                }
+                _ => {}
+            }
+        }
+        unit.statuses.retain(|status| match status {
+            Status::Slow { time, .. } => *time > Time::ZERO,
+            _ => true,
+        });
+    }
+
     fn process_movement(&mut self, unit: &mut Unit, delta_time: Time) {
         if unit
             .statuses
@@ -195,7 +213,16 @@ impl RoundState {
             }
             _ => todo!(),
         }
-        unit.position += (target_position - unit.position).clamp_len(..=unit.speed * delta_time);
+        let mut speed = unit.speed;
+        for status in &unit.statuses {
+            match status {
+                Status::Slow { percent, .. } => {
+                    speed *= Coord::new(*percent / 100.0);
+                }
+                _ => {}
+            }
+        }
+        unit.position += (target_position - unit.position).clamp_len(..=speed * delta_time);
     }
 
     fn process_collisions(&mut self, unit: &mut Unit) {
@@ -361,6 +388,12 @@ impl RoundState {
                         attacker.hp = -100500;
                     }
                 }
+                Effect::Slow { percent, time } => {
+                    target.statuses.push(Status::Slow {
+                        percent: *percent,
+                        time: *time,
+                    });
+                }
             }
         }
     }
@@ -405,6 +438,13 @@ impl geng::State for RoundState {
                             .any(|status| matches!(status, Status::Freeze))
                         {
                             color = Color::CYAN;
+                        }
+                        if unit
+                            .statuses
+                            .iter()
+                            .any(|status| matches!(status, Status::Slow { .. }))
+                        {
+                            color = Color::GRAY;
                         }
                         color
                     },
