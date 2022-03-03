@@ -83,6 +83,7 @@ pub struct Projectile {
 pub struct RoundState {
     next_id: Id,
     assets: Assets,
+    config: config::Config,
     geng: Geng,
     camera: geng::Camera2d,
     units: Collection<Unit>,
@@ -91,20 +92,49 @@ pub struct RoundState {
 
 impl RoundState {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
-        let mut state = Self {
-            next_id: 0,
+        let config: config::Config =
+            serde_json::from_reader(std::fs::File::open(static_path().join("state.json")).unwrap())
+                .unwrap();
+        let mut next_id = 0;
+        let mut units = Collection::new();
+        for unit_type in &config.player {
+            let template = &assets.units.map[unit_type];
+            let unit = Unit {
+                id: next_id,
+                faction: Faction::Player,
+                attack_state: AttackState::None,
+                hp: template.hp,
+                position: vec2(
+                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                ) * Coord::new(0.01),
+                speed: template.speed,
+                projectile_speed: template.projectile_speed,
+                attack_radius: template.attack_radius,
+                size: template.size,
+                attack_damage: template.attack_damage,
+                attack_cooldown: template.attack_cooldown,
+                attack_animation_delay: template.attack_animation_delay,
+                move_ai: template.move_ai,
+                target_ai: template.target_ai,
+                color: template.color,
+            };
+            next_id += 1;
+            units.insert(unit);
+        }
+        Self {
+            next_id,
             assets,
+            config,
             geng: geng.clone(),
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
                 fov: 10.0,
             },
-            units: Collection::new(),
+            units,
             projectiles: Collection::new(),
-        };
-        state.load_state();
-        state
+        }
     }
 }
 
@@ -229,6 +259,48 @@ impl geng::State for RoundState {
         }
 
         self.units.retain(|unit| unit.hp > 0);
+
+        // Spawn next wave
+        if self
+            .units
+            .iter()
+            .filter(|unit| unit.faction != Faction::Player)
+            .count()
+            == 0
+        {
+            if !self.config.waves.is_empty() {
+                let wave = self.config.waves.remove(0);
+                for (spawn_point, units) in wave {
+                    let spawn_point = self.config.spawn_points[&spawn_point];
+                    for unit_type in units {
+                        let template = &self.assets.units.map[&unit_type];
+                        let unit = Unit {
+                            id: self.next_id,
+                            faction: Faction::Enemy,
+                            attack_state: AttackState::None,
+                            hp: template.hp,
+                            position: spawn_point
+                                + vec2(
+                                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                                ) * Coord::new(0.01),
+                            speed: template.speed,
+                            projectile_speed: template.projectile_speed,
+                            attack_radius: template.attack_radius,
+                            size: template.size,
+                            attack_damage: template.attack_damage,
+                            attack_cooldown: template.attack_cooldown,
+                            attack_animation_delay: template.attack_animation_delay,
+                            move_ai: template.move_ai,
+                            target_ai: template.target_ai,
+                            color: template.color,
+                        };
+                        self.next_id += 1;
+                        self.units.insert(unit);
+                    }
+                }
+            }
+        }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);

@@ -1,5 +1,5 @@
 {
-    "Player": [
+    "player": [
         "blob",
         "blob",
         "blob",
@@ -10,7 +10,38 @@
         "small_blob",
         "small_blob"
     ],
-    "Enemy": [
-        "big_blob"
+    "spawn_points": {
+        "Left": [
+            -6,
+            0.0
+        ],
+        "Right": [
+            6,
+            0.0
+        ],
+        "Top": [
+            0,
+            5
+        ]
+    },
+    "waves": [
+        {
+            "Left": [
+                "small_blob"
+            ],
+            "Top": [
+                "small_blob"
+            ],
+            "Right": [
+                "small_blob"
+            ]
+        },
+        {
+            "Left": [],
+            "Top": [
+                "big_blob"
+            ],
+            "Right": []
+        }
     ]
 }
