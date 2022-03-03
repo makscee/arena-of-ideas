@@ -45,6 +45,7 @@ pub enum AttackState {
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
+    Shield,
     Slow { percent: f32, time: Time },
 }
 
@@ -376,14 +377,25 @@ impl RoundState {
         mut attacker: Option<&mut Unit>,
         target: &mut Unit,
         effects: &[Effect],
-        damage: Health,
+        mut damage: Health,
     ) {
-        target.hp -= damage;
+        if damage != 0 {
+            if let Some((index, _)) = target
+                .statuses
+                .iter()
+                .enumerate()
+                .find(|(_, status)| matches!(status, Status::Shield))
+            {
+                damage = 0;
+                target.statuses.remove(index);
+            }
+        }
         if damage != 0 {
             target
                 .statuses
                 .retain(|status| !matches!(status, Status::Freeze));
         }
+        target.hp -= damage;
         for effect in effects {
             Self::apply_effect(effect, attacker.as_deref_mut(), target);
         }
@@ -454,6 +466,21 @@ impl geng::State for RoundState {
                     },
                 ),
             );
+            if unit
+                .statuses
+                .iter()
+                .any(|status| matches!(status, Status::Shield))
+            {
+                self.geng.draw_2d(
+                    framebuffer,
+                    &self.camera,
+                    &draw_2d::Ellipse::circle(
+                        unit.position.map(|x| x.as_f32()),
+                        unit.radius().as_f32() * 1.1,
+                        Color::rgba(1.0, 1.0, 0.0, 0.5),
+                    ),
+                );
+            }
         }
         for projectile in &self.projectiles {
             self.geng.draw_2d(

@@ -11,9 +11,7 @@
         {
             "type": "AddStatus",
             "status": {
-                "type": "Slow",
-                "time": 2,
-                "percent": 100
+                "type": "Shield"
             }
         }
     ],
