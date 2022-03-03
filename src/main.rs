@@ -344,9 +344,11 @@ impl RoundState {
         damage: Health,
     ) {
         target.hp -= damage;
-        target
-            .statuses
-            .retain(|status| !matches!(status, Status::Freeze));
+        if damage != 0 {
+            target
+                .statuses
+                .retain(|status| !matches!(status, Status::Freeze));
+        }
         for effect in effects {
             match effect {
                 Effect::FreezeTarget => {
