@@ -1,0 +1,13 @@
+{
+    "hp": 1,
+    "speed": 1.5,
+    "projectile_speed": 10.0,
+    "size": 0.3,
+    "attack_damage": 1,
+    "attack_radius": 0.5,
+    "attack_animation_delay": 0.5,
+    "attack_cooldown": 1.0,
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "color": "green"
+}

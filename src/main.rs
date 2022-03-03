@@ -1,0 +1,275 @@
+use geng::prelude::*;
+
+mod config;
+
+type Health = i32;
+type Time = R32;
+type Coord = R32;
+type Id = i64;
+
+#[derive(geng::Assets)]
+pub struct Assets {
+    units: config::UnitTemplates,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
+pub enum Faction {
+    Player,
+    Enemy,
+}
+
+#[derive(Serialize, Deserialize, Copy, Clone)]
+pub enum MoveAi {
+    Advance,
+    KeepClose,
+    Avoid,
+}
+
+#[derive(Serialize, Deserialize, Copy, Clone)]
+pub enum TargetAi {
+    Strongest,
+    Biggest,
+    SwitchOnHit,
+    Closest,
+    Furthest,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum AttackState {
+    None,
+    Start { time: Time, target: Id },
+    Cooldown { time: Time },
+}
+
+#[derive(Serialize, Deserialize, HasId)]
+pub struct Unit {
+    pub id: Id,
+    pub faction: Faction,
+    pub attack_state: AttackState,
+    pub hp: Health,
+    pub position: Vec2<Coord>,
+    pub speed: Coord,
+    pub projectile_speed: Option<Coord>,
+    pub attack_radius: Coord,
+    pub size: Coord,
+    pub attack_damage: Health,
+    pub attack_cooldown: Time,
+    pub attack_animation_delay: Time,
+    pub move_ai: MoveAi,
+    pub target_ai: TargetAi,
+    pub color: Color<f32>,
+}
+
+impl Unit {
+    pub fn radius(&self) -> Coord {
+        self.size / Coord::new(2.0)
+    }
+}
+
+fn distance_between_units(a: &Unit, b: &Unit) -> Coord {
+    (a.position - b.position).len() - a.radius() - b.radius()
+}
+
+#[derive(HasId)]
+pub struct Projectile {
+    pub id: Id,
+    pub target: Id,
+    pub target_position: Vec2<Coord>,
+    pub position: Vec2<Coord>,
+    pub speed: Coord,
+    pub damage: Health,
+}
+
+pub struct RoundState {
+    next_id: Id,
+    assets: Assets,
+    geng: Geng,
+    camera: geng::Camera2d,
+    units: Collection<Unit>,
+    projectiles: Collection<Projectile>,
+}
+
+impl RoundState {
+    pub fn new(geng: &Geng, assets: Assets) -> Self {
+        let mut state = Self {
+            next_id: 0,
+            assets,
+            geng: geng.clone(),
+            camera: geng::Camera2d {
+                center: vec2(0.0, 0.0),
+                rotation: 0.0,
+                fov: 10.0,
+            },
+            units: Collection::new(),
+            projectiles: Collection::new(),
+        };
+        state.load_state();
+        state
+    }
+}
+
+impl geng::State for RoundState {
+    fn update(&mut self, delta_time: f64) {
+        let delta_time: Time = Time::new(delta_time as _);
+        let ids: Vec<Id> = self.units.ids().copied().collect();
+        for unit_id in ids {
+            let mut unit = self.units.remove(&unit_id).unwrap();
+
+            // Move
+            if !matches!(unit.attack_state, AttackState::Start { .. }) {
+                let mut target_position = unit.position;
+                match unit.move_ai {
+                    MoveAi::Advance => {
+                        let closest_enemy = self
+                            .units
+                            .iter()
+                            .filter(|other| other.faction != unit.faction)
+                            .min_by_key(|other| (other.position - unit.position).len());
+                        if let Some(closest_enemy) = closest_enemy {
+                            if distance_between_units(closest_enemy, &unit) > unit.attack_radius {
+                                target_position = closest_enemy.position;
+                            }
+                        }
+                    }
+                    _ => todo!(),
+                }
+                unit.position +=
+                    (target_position - unit.position).clamp_len(..=unit.speed * delta_time);
+            }
+
+            // Collisions
+            for other in &mut self.units {
+                let delta_pos = other.position - unit.position;
+                let penetration = unit.radius() + other.radius() - delta_pos.len();
+                if penetration > Coord::ZERO {
+                    let dir = delta_pos.normalize_or_zero();
+                    unit.position -= dir * penetration / Coord::new(2.0);
+                    other.position += dir * penetration / Coord::new(2.0);
+                }
+            }
+
+            // Select target
+            if let AttackState::None = unit.attack_state {
+                let target = match unit.target_ai {
+                    TargetAi::Closest => self
+                        .units
+                        .iter_mut()
+                        .filter(|other| other.faction != unit.faction)
+                        .min_by_key(|other| (other.position - unit.position).len()),
+                    _ => todo!(),
+                };
+                if let Some(target) = target {
+                    if distance_between_units(target, &unit) < unit.attack_radius {
+                        unit.attack_state = AttackState::Start {
+                            time: Time::new(0.0),
+                            target: target.id,
+                        }
+                    }
+                }
+            }
+
+            // Attack
+            if let AttackState::Start { time, target } = &mut unit.attack_state {
+                *time += delta_time;
+                if *time > unit.attack_animation_delay {
+                    let target = self.units.get_mut(target);
+                    unit.attack_state = AttackState::Cooldown {
+                        time: Time::new(0.0),
+                    };
+                    if let Some(target) = target {
+                        if let Some(projectile_speed) = unit.projectile_speed {
+                            self.projectiles.insert(Projectile {
+                                id: self.next_id,
+                                target: target.id,
+                                position: unit.position
+                                    + (target.position - unit.position).normalize() * unit.radius(),
+                                speed: projectile_speed,
+                                target_position: target.position,
+                                damage: unit.attack_damage,
+                            });
+                            self.next_id += 1;
+                        } else {
+                            target.hp -= unit.attack_damage;
+                        }
+                    }
+                }
+            }
+
+            // Cooldown
+            if let AttackState::Cooldown { time } = &mut unit.attack_state {
+                *time += delta_time;
+                if *time > unit.attack_cooldown {
+                    unit.attack_state = AttackState::None;
+                }
+            }
+
+            self.units.insert(unit);
+        }
+
+        // Projectiles
+        let mut delete_projectiles = Vec::new();
+        for projectile in &mut self.projectiles {
+            if let Some(target) = self.units.get_mut(&projectile.target) {
+                projectile.target_position = target.position;
+                if (projectile.position - target.position).len() < target.radius() {
+                    target.hp -= projectile.damage;
+                    delete_projectiles.push(projectile.id);
+                }
+            }
+            let max_distance = projectile.speed * delta_time;
+            let distance = (projectile.target_position - projectile.position).len();
+            if distance < max_distance {
+                delete_projectiles.push(projectile.id);
+            }
+            projectile.position += (projectile.target_position - projectile.position)
+                .clamp_len(..=projectile.speed * delta_time);
+        }
+        for id in delete_projectiles {
+            self.projectiles.remove(&id);
+        }
+
+        self.units.retain(|unit| unit.hp > 0);
+    }
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        ugli::clear(framebuffer, Some(Color::WHITE), None);
+        for unit in &self.units {
+            self.geng.draw_2d(
+                framebuffer,
+                &self.camera,
+                &draw_2d::Ellipse::circle(
+                    unit.position.map(|x| x.as_f32()),
+                    unit.radius().as_f32(),
+                    unit.color,
+                ),
+            );
+        }
+        for projectile in &self.projectiles {
+            self.geng.draw_2d(
+                framebuffer,
+                &self.camera,
+                &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.1, Color::RED),
+            );
+        }
+    }
+}
+
+fn main() {
+    logger::init().unwrap();
+    geng::setup_panic_handler();
+    let geng = Geng::new("Arena of Ideas");
+    geng::run(
+        &geng,
+        geng::LoadingScreen::new(
+            &geng,
+            geng::EmptyLoadingScreen,
+            <Assets as geng::LoadAsset>::load(&geng, static_path().to_str().unwrap()),
+            {
+                let geng = geng.clone();
+                move |assets| {
+                    let assets = assets.expect("Failed to load assets");
+                    RoundState::new(&geng, assets)
+                }
+            },
+        ),
+    );
+}

@@ -1,0 +1,16 @@
+{
+    "Player": [
+        "blob",
+        "blob",
+        "blob",
+        "blob",
+        "small_blob",
+        "small_blob",
+        "small_blob",
+        "small_blob",
+        "small_blob"
+    ],
+    "Enemy": [
+        "big_blob"
+    ]
+}
