@@ -63,6 +63,7 @@ pub struct Unit {
     pub faction: Faction,
     pub attack_state: AttackState,
     pub hp: Health,
+    pub max_hp: Health,
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub projectile_speed: Option<Coord>,
@@ -90,6 +91,7 @@ impl Unit {
             faction,
             attack_state: AttackState::None,
             hp: template.hp,
+            max_hp: template.hp,
             position,
             speed: template.speed,
             projectile_speed: template.projectile_speed,
@@ -481,6 +483,16 @@ impl geng::State for RoundState {
                     ),
                 );
             }
+            self.geng.draw_2d(
+                framebuffer,
+                &self.camera,
+                &draw_2d::Quad::unit(Color::GREEN).transform(
+                    Mat3::translate(unit.position.map(|x| x.as_f32()))
+                        * Mat3::scale_uniform(unit.radius().as_f32())
+                        * Mat3::translate(vec2(0.0, 1.2))
+                        * Mat3::scale(0.1 * vec2(10.0 * unit.hp as f32 / unit.max_hp as f32, 1.0)),
+                ),
+            );
         }
         for projectile in &self.projectiles {
             self.geng.draw_2d(
