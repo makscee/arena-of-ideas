@@ -48,6 +48,7 @@ pub enum Status {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum Effect {
+    Suicide,
     FreezeTarget,
 }
 
@@ -338,7 +339,7 @@ impl RoundState {
         }
     }
     fn deal_damage(
-        attacker: Option<&mut Unit>,
+        mut attacker: Option<&mut Unit>,
         target: &mut Unit,
         effects: &[Effect],
         damage: Health,
@@ -354,6 +355,11 @@ impl RoundState {
                 Effect::FreezeTarget => {
                     target.attack_state = AttackState::None;
                     target.statuses.push(Status::Freeze);
+                }
+                Effect::Suicide => {
+                    if let Some(attacker) = &mut attacker {
+                        attacker.hp = -100500;
+                    }
                 }
             }
         }
