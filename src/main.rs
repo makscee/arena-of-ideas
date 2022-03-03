@@ -41,9 +41,20 @@ pub enum AttackState {
     Cooldown { time: Time },
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum Status {
+    Freeze,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum Effect {
+    FreezeTarget,
+}
+
 #[derive(Serialize, Deserialize, HasId)]
 pub struct Unit {
     pub id: Id,
+    pub statuses: Vec<Status>,
     pub faction: Faction,
     pub attack_state: AttackState,
     pub hp: Health,
@@ -54,6 +65,7 @@ pub struct Unit {
     pub size: Coord,
     pub attack_damage: Health,
     pub attack_cooldown: Time,
+    pub attack_effects: Vec<Effect>,
     pub attack_animation_delay: Time,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
@@ -61,6 +73,33 @@ pub struct Unit {
 }
 
 impl Unit {
+    pub fn new(
+        id: Id,
+        template: &config::UnitTemplate,
+        faction: Faction,
+        position: Vec2<Coord>,
+    ) -> Self {
+        Self {
+            id,
+            statuses: Vec::new(),
+            faction,
+            attack_state: AttackState::None,
+            hp: template.hp,
+            position,
+            speed: template.speed,
+            projectile_speed: template.projectile_speed,
+            attack_radius: template.attack_radius,
+            size: template.size,
+            attack_damage: template.attack_damage,
+            attack_cooldown: template.attack_cooldown,
+            attack_animation_delay: template.attack_animation_delay,
+            attack_effects: template.attack_effects.clone(),
+            move_ai: template.move_ai,
+            target_ai: template.target_ai,
+            color: template.color,
+        }
+    }
+
     pub fn radius(&self) -> Coord {
         self.size / Coord::new(2.0)
     }
@@ -73,10 +112,12 @@ fn distance_between_units(a: &Unit, b: &Unit) -> Coord {
 #[derive(HasId)]
 pub struct Projectile {
     pub id: Id,
+    pub attacker: Id,
     pub target: Id,
     pub target_position: Vec2<Coord>,
     pub position: Vec2<Coord>,
     pub speed: Coord,
+    pub effects: Vec<Effect>,
     pub damage: Health,
 }
 
@@ -99,26 +140,15 @@ impl RoundState {
         let mut units = Collection::new();
         for unit_type in &config.player {
             let template = &assets.units.map[unit_type];
-            let unit = Unit {
-                id: next_id,
-                faction: Faction::Player,
-                attack_state: AttackState::None,
-                hp: template.hp,
-                position: vec2(
+            let unit = Unit::new(
+                next_id,
+                template,
+                Faction::Player,
+                vec2(
                     global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
                     global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
                 ) * Coord::new(0.01),
-                speed: template.speed,
-                projectile_speed: template.projectile_speed,
-                attack_radius: template.attack_radius,
-                size: template.size,
-                attack_damage: template.attack_damage,
-                attack_cooldown: template.attack_cooldown,
-                attack_animation_delay: template.attack_animation_delay,
-                move_ai: template.move_ai,
-                target_ai: template.target_ai,
-                color: template.color,
-            };
+            );
             next_id += 1;
             units.insert(unit);
         }
@@ -136,115 +166,133 @@ impl RoundState {
             projectiles: Collection::new(),
         }
     }
-}
 
-impl geng::State for RoundState {
-    fn update(&mut self, delta_time: f64) {
-        let delta_time: Time = Time::new(delta_time as _);
-        let ids: Vec<Id> = self.units.ids().copied().collect();
-        for unit_id in ids {
-            let mut unit = self.units.remove(&unit_id).unwrap();
-
-            // Move
-            if !matches!(unit.attack_state, AttackState::Start { .. }) {
-                let mut target_position = unit.position;
-                match unit.move_ai {
-                    MoveAi::Advance => {
-                        let closest_enemy = self
-                            .units
-                            .iter()
-                            .filter(|other| other.faction != unit.faction)
-                            .min_by_key(|other| (other.position - unit.position).len());
-                        if let Some(closest_enemy) = closest_enemy {
-                            if distance_between_units(closest_enemy, &unit) > unit.attack_radius {
-                                target_position = closest_enemy.position;
-                            }
-                        }
+    fn process_movement(&mut self, unit: &mut Unit, delta_time: Time) {
+        if unit
+            .statuses
+            .iter()
+            .any(|status| matches!(status, Status::Freeze))
+        {
+            return;
+        }
+        if matches!(unit.attack_state, AttackState::Start { .. }) {
+            return;
+        }
+        let mut target_position = unit.position;
+        match unit.move_ai {
+            MoveAi::Advance => {
+                let closest_enemy = self
+                    .units
+                    .iter()
+                    .filter(|other| other.faction != unit.faction)
+                    .min_by_key(|other| (other.position - unit.position).len());
+                if let Some(closest_enemy) = closest_enemy {
+                    if distance_between_units(closest_enemy, &unit) > unit.attack_radius {
+                        target_position = closest_enemy.position;
                     }
-                    _ => todo!(),
-                }
-                unit.position +=
-                    (target_position - unit.position).clamp_len(..=unit.speed * delta_time);
-            }
-
-            // Collisions
-            for other in &mut self.units {
-                let delta_pos = other.position - unit.position;
-                let penetration = unit.radius() + other.radius() - delta_pos.len();
-                if penetration > Coord::ZERO {
-                    let dir = delta_pos.normalize_or_zero();
-                    unit.position -= dir * penetration / Coord::new(2.0);
-                    other.position += dir * penetration / Coord::new(2.0);
                 }
             }
+            _ => todo!(),
+        }
+        unit.position += (target_position - unit.position).clamp_len(..=unit.speed * delta_time);
+    }
 
-            // Select target
-            if let AttackState::None = unit.attack_state {
-                let target = match unit.target_ai {
-                    TargetAi::Closest => self
-                        .units
-                        .iter_mut()
-                        .filter(|other| other.faction != unit.faction)
-                        .min_by_key(|other| (other.position - unit.position).len()),
-                    _ => todo!(),
+    fn process_collisions(&mut self, unit: &mut Unit) {
+        for other in &mut self.units {
+            let delta_pos = other.position - unit.position;
+            let penetration = unit.radius() + other.radius() - delta_pos.len();
+            if penetration > Coord::ZERO {
+                let dir = delta_pos.normalize_or_zero();
+                unit.position -= dir * penetration / Coord::new(2.0);
+                other.position += dir * penetration / Coord::new(2.0);
+            }
+        }
+    }
+    fn process_targeting(&mut self, unit: &mut Unit) {
+        if unit
+            .statuses
+            .iter()
+            .any(|status| matches!(status, Status::Freeze))
+        {
+            return;
+        }
+        if let AttackState::None = unit.attack_state {
+            let target = match unit.target_ai {
+                TargetAi::Closest => self
+                    .units
+                    .iter_mut()
+                    .filter(|other| other.faction != unit.faction)
+                    .min_by_key(|other| (other.position - unit.position).len()),
+                _ => todo!(),
+            };
+            if let Some(target) = target {
+                if distance_between_units(target, &unit) < unit.attack_radius {
+                    unit.attack_state = AttackState::Start {
+                        time: Time::new(0.0),
+                        target: target.id,
+                    }
+                }
+            }
+        }
+    }
+    fn process_attacks(&mut self, unit: &mut Unit, delta_time: Time) {
+        if let AttackState::Start { time, target } = &mut unit.attack_state {
+            *time += delta_time;
+            if *time > unit.attack_animation_delay {
+                let target = self.units.get_mut(target);
+                unit.attack_state = AttackState::Cooldown {
+                    time: Time::new(0.0),
                 };
                 if let Some(target) = target {
-                    if distance_between_units(target, &unit) < unit.attack_radius {
-                        unit.attack_state = AttackState::Start {
-                            time: Time::new(0.0),
+                    if let Some(projectile_speed) = unit.projectile_speed {
+                        self.projectiles.insert(Projectile {
+                            id: self.next_id,
+                            attacker: unit.id,
                             target: target.id,
-                        }
+                            position: unit.position
+                                + (target.position - unit.position).normalize() * unit.radius(),
+                            speed: projectile_speed,
+                            target_position: target.position,
+                            effects: unit.attack_effects.clone(),
+                            damage: unit.attack_damage,
+                        });
+                        self.next_id += 1;
+                    } else {
+                        let effects = unit.attack_effects.clone();
+                        let attack_damage = unit.attack_damage;
+                        Self::deal_damage(Some(unit), target, &effects, attack_damage);
                     }
                 }
             }
-
-            // Attack
-            if let AttackState::Start { time, target } = &mut unit.attack_state {
-                *time += delta_time;
-                if *time > unit.attack_animation_delay {
-                    let target = self.units.get_mut(target);
-                    unit.attack_state = AttackState::Cooldown {
-                        time: Time::new(0.0),
-                    };
-                    if let Some(target) = target {
-                        if let Some(projectile_speed) = unit.projectile_speed {
-                            self.projectiles.insert(Projectile {
-                                id: self.next_id,
-                                target: target.id,
-                                position: unit.position
-                                    + (target.position - unit.position).normalize() * unit.radius(),
-                                speed: projectile_speed,
-                                target_position: target.position,
-                                damage: unit.attack_damage,
-                            });
-                            self.next_id += 1;
-                        } else {
-                            target.hp -= unit.attack_damage;
-                        }
-                    }
-                }
-            }
-
-            // Cooldown
-            if let AttackState::Cooldown { time } = &mut unit.attack_state {
-                *time += delta_time;
-                if *time > unit.attack_cooldown {
-                    unit.attack_state = AttackState::None;
-                }
-            }
-
-            self.units.insert(unit);
         }
-
+    }
+    fn process_cooldowns(&mut self, unit: &mut Unit, delta_time: Time) {
+        if let AttackState::Cooldown { time } = &mut unit.attack_state {
+            *time += delta_time;
+            if *time > unit.attack_cooldown {
+                unit.attack_state = AttackState::None;
+            }
+        }
+    }
+    fn process_projectiles(&mut self, delta_time: Time) {
         // Projectiles
         let mut delete_projectiles = Vec::new();
         for projectile in &mut self.projectiles {
+            let mut attacker = self.units.remove(&projectile.attacker);
             if let Some(target) = self.units.get_mut(&projectile.target) {
                 projectile.target_position = target.position;
                 if (projectile.position - target.position).len() < target.radius() {
-                    target.hp -= projectile.damage;
+                    Self::deal_damage(
+                        attacker.as_mut(),
+                        target,
+                        &projectile.effects,
+                        projectile.damage,
+                    );
                     delete_projectiles.push(projectile.id);
                 }
+            }
+            if let Some(attacker) = attacker {
+                self.units.insert(attacker);
             }
             let max_distance = projectile.speed * delta_time;
             let distance = (projectile.target_position - projectile.position).len();
@@ -257,10 +305,8 @@ impl geng::State for RoundState {
         for id in delete_projectiles {
             self.projectiles.remove(&id);
         }
-
-        self.units.retain(|unit| unit.hp > 0);
-
-        // Spawn next wave
+    }
+    fn check_next_wave(&mut self) {
         if self
             .units
             .iter()
@@ -274,33 +320,65 @@ impl geng::State for RoundState {
                     let spawn_point = self.config.spawn_points[&spawn_point];
                     for unit_type in units {
                         let template = &self.assets.units.map[&unit_type];
-                        let unit = Unit {
-                            id: self.next_id,
-                            faction: Faction::Enemy,
-                            attack_state: AttackState::None,
-                            hp: template.hp,
-                            position: spawn_point
+                        let unit = Unit::new(
+                            self.next_id,
+                            template,
+                            Faction::Enemy,
+                            spawn_point
                                 + vec2(
                                     global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
                                     global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
                                 ) * Coord::new(0.01),
-                            speed: template.speed,
-                            projectile_speed: template.projectile_speed,
-                            attack_radius: template.attack_radius,
-                            size: template.size,
-                            attack_damage: template.attack_damage,
-                            attack_cooldown: template.attack_cooldown,
-                            attack_animation_delay: template.attack_animation_delay,
-                            move_ai: template.move_ai,
-                            target_ai: template.target_ai,
-                            color: template.color,
-                        };
+                        );
                         self.next_id += 1;
                         self.units.insert(unit);
                     }
                 }
             }
         }
+    }
+    fn deal_damage(
+        attacker: Option<&mut Unit>,
+        target: &mut Unit,
+        effects: &[Effect],
+        damage: Health,
+    ) {
+        target.hp -= damage;
+        target
+            .statuses
+            .retain(|status| !matches!(status, Status::Freeze));
+        for effect in effects {
+            match effect {
+                Effect::FreezeTarget => {
+                    target.attack_state = AttackState::None;
+                    target.statuses.push(Status::Freeze);
+                }
+            }
+        }
+    }
+}
+
+impl geng::State for RoundState {
+    fn update(&mut self, delta_time: f64) {
+        let delta_time: Time = Time::new(delta_time as _);
+        let ids: Vec<Id> = self.units.ids().copied().collect();
+        for unit_id in ids {
+            let mut unit = self.units.remove(&unit_id).unwrap();
+
+            self.process_movement(&mut unit, delta_time);
+            self.process_collisions(&mut unit);
+            self.process_targeting(&mut unit);
+            self.process_attacks(&mut unit, delta_time);
+            self.process_cooldowns(&mut unit, delta_time);
+
+            self.units.insert(unit);
+        }
+
+        self.process_projectiles(delta_time);
+
+        self.units.retain(|unit| unit.hp > 0);
+
+        self.check_next_wave();
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
@@ -311,7 +389,17 @@ impl geng::State for RoundState {
                 &draw_2d::Ellipse::circle(
                     unit.position.map(|x| x.as_f32()),
                     unit.radius().as_f32(),
-                    unit.color,
+                    {
+                        let mut color = unit.color;
+                        if unit
+                            .statuses
+                            .iter()
+                            .any(|status| matches!(status, Status::Freeze))
+                        {
+                            color = Color::CYAN;
+                        }
+                        color
+                    },
                 ),
             );
         }

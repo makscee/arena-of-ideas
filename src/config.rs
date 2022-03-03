@@ -49,6 +49,8 @@ pub struct UnitTemplate {
     pub attack_damage: Health,
     pub attack_cooldown: Time,
     pub attack_animation_delay: Time,
+    #[serde(default)]
+    pub attack_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,
