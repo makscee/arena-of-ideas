@@ -7,6 +7,24 @@
     "attack_radius": 0.5,
     "attack_animation_delay": 0.5,
     "attack_cooldown": 0.5,
+    "death_effects": [
+        {
+            "type": "Spawn",
+            "unit_type": "small_blob"
+        },
+        {
+            "type": "Spawn",
+            "unit_type": "small_blob"
+        },
+        {
+            "type": "Spawn",
+            "unit_type": "small_blob"
+        },
+        {
+            "type": "Spawn",
+            "unit_type": "small_blob"
+        }
+    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "color": "yellow"

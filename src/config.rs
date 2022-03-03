@@ -30,7 +30,7 @@ impl geng::LoadAsset for UnitTemplates {
 
 pub type Wave = HashMap<String, Vec<UnitType>>;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Config {
     pub player: Vec<UnitType>,
     pub spawn_points: HashMap<String, Vec2<Coord>>,
@@ -39,7 +39,7 @@ pub struct Config {
 
 pub type UnitType = String;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct UnitTemplate {
     pub hp: Health,
     pub speed: Coord,
@@ -53,6 +53,8 @@ pub struct UnitTemplate {
     pub attack_effects: Vec<Effect>,
     #[serde(default)]
     pub spawn_effects: Vec<Effect>,
+    #[serde(default)]
+    pub death_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,

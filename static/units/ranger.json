@@ -1,9 +1,9 @@
 {
-    "hp": 1,
+    "hp": 100,
     "speed": 1,
     "projectile_speed": 10.0,
     "size": 1,
-    "attack_damage": 1,
+    "attack_damage": 3,
     "attack_radius": 10,
     "attack_animation_delay": 0.3,
     "attack_cooldown": 1,

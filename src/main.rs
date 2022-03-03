@@ -53,6 +53,7 @@ pub enum Status {
 #[serde(tag = "type")]
 pub enum Effect {
     AddStatus { status: Status },
+    Spawn { unit_type: config::UnitType },
     Suicide,
 }
 
@@ -72,6 +73,7 @@ pub struct Unit {
     pub attack_damage: Health,
     pub attack_cooldown: Time,
     pub attack_effects: Vec<Effect>,
+    pub death_effects: Vec<Effect>,
     pub attack_animation_delay: Time,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
@@ -79,38 +81,6 @@ pub struct Unit {
 }
 
 impl Unit {
-    pub fn new(
-        id: Id,
-        template: &config::UnitTemplate,
-        faction: Faction,
-        position: Vec2<Coord>,
-    ) -> Self {
-        let mut unit = Self {
-            id,
-            statuses: Vec::new(),
-            faction,
-            attack_state: AttackState::None,
-            hp: template.hp,
-            max_hp: template.hp,
-            position,
-            speed: template.speed,
-            projectile_speed: template.projectile_speed,
-            attack_radius: template.attack_radius,
-            size: template.size,
-            attack_damage: template.attack_damage,
-            attack_cooldown: template.attack_cooldown,
-            attack_animation_delay: template.attack_animation_delay,
-            attack_effects: template.attack_effects.clone(),
-            move_ai: template.move_ai,
-            target_ai: template.target_ai,
-            color: template.color,
-        };
-        for effect in &template.spawn_effects {
-            RoundState::apply_effect(effect, None, &mut unit);
-        }
-        unit
-    }
-
     pub fn radius(&self) -> Coord {
         self.size / Coord::new(2.0)
     }
@@ -147,35 +117,65 @@ impl RoundState {
         let config: config::Config =
             serde_json::from_reader(std::fs::File::open(static_path().join("state.json")).unwrap())
                 .unwrap();
-        let mut next_id = 0;
-        let mut units = Collection::new();
-        for unit_type in &config.player {
-            let template = &assets.units.map[unit_type];
-            let unit = Unit::new(
-                next_id,
-                template,
-                Faction::Player,
-                vec2(
-                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                ) * Coord::new(0.01),
-            );
-            next_id += 1;
-            units.insert(unit);
-        }
-        Self {
-            next_id,
+        let mut state = Self {
+            next_id: 0,
             assets,
-            config,
+            config: config.clone(),
             geng: geng.clone(),
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
                 fov: 10.0,
             },
-            units,
+            units: Collection::new(),
             projectiles: Collection::new(),
+        };
+        for unit_type in &config.player {
+            let template = state.assets.units.map[unit_type].clone();
+            state.spawn_unit(
+                &template,
+                Faction::Player,
+                vec2(
+                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                ) * Coord::new(0.01),
+            );
         }
+        state
+    }
+
+    pub fn spawn_unit(
+        &mut self,
+        template: &config::UnitTemplate,
+        faction: Faction,
+        position: Vec2<Coord>,
+    ) {
+        let mut unit = Unit {
+            id: self.next_id,
+            statuses: Vec::new(),
+            faction,
+            attack_state: AttackState::None,
+            hp: template.hp,
+            max_hp: template.hp,
+            position,
+            speed: template.speed,
+            projectile_speed: template.projectile_speed,
+            attack_radius: template.attack_radius,
+            size: template.size,
+            attack_damage: template.attack_damage,
+            attack_cooldown: template.attack_cooldown,
+            attack_animation_delay: template.attack_animation_delay,
+            attack_effects: template.attack_effects.clone(),
+            death_effects: template.death_effects.clone(),
+            move_ai: template.move_ai,
+            target_ai: template.target_ai,
+            color: template.color,
+        };
+        self.next_id += 1;
+        for effect in &template.spawn_effects {
+            self.apply_effect(effect, None, &mut unit);
+        }
+        self.units.insert(unit);
     }
 
     fn process_statuses(&mut self, unit: &mut Unit, delta_time: Time) {
@@ -277,11 +277,11 @@ impl RoundState {
         if let AttackState::Start { time, target } = &mut unit.attack_state {
             *time += delta_time;
             if *time > unit.attack_animation_delay {
-                let target = self.units.get_mut(target);
+                let target = self.units.remove(target);
                 unit.attack_state = AttackState::Cooldown {
                     time: Time::new(0.0),
                 };
-                if let Some(target) = target {
+                if let Some(mut target) = target {
                     if let Some(projectile_speed) = unit.projectile_speed {
                         self.projectiles.insert(Projectile {
                             id: self.next_id,
@@ -298,8 +298,9 @@ impl RoundState {
                     } else {
                         let effects = unit.attack_effects.clone();
                         let attack_damage = unit.attack_damage;
-                        Self::deal_damage(Some(unit), target, &effects, attack_damage);
+                        self.deal_damage(Some(unit), &mut target, &effects, attack_damage);
                     }
+                    self.units.insert(target);
                 }
             }
         }
@@ -312,22 +313,38 @@ impl RoundState {
             }
         }
     }
+    fn process_deaths(&mut self) {
+        for id in self.units.ids().copied().collect::<Vec<Id>>() {
+            let mut unit = self.units.remove(&id).unwrap();
+            if unit.hp <= 0 {
+                let effects = unit.death_effects.clone();
+                for effect in effects {
+                    self.apply_effect(&effect, None, &mut unit);
+                }
+            }
+            self.units.insert(unit);
+        }
+        self.units.retain(|unit| unit.hp > 0);
+    }
     fn process_projectiles(&mut self, delta_time: Time) {
         // Projectiles
         let mut delete_projectiles = Vec::new();
-        for projectile in &mut self.projectiles {
+        for id in self.projectiles.ids().copied().collect::<Vec<Id>>() {
+            let mut projectile = self.projectiles.remove(&id).unwrap();
+
             let mut attacker = self.units.remove(&projectile.attacker);
-            if let Some(target) = self.units.get_mut(&projectile.target) {
+            if let Some(mut target) = self.units.remove(&projectile.target) {
                 projectile.target_position = target.position;
                 if (projectile.position - target.position).len() < target.radius() {
-                    Self::deal_damage(
+                    self.deal_damage(
                         attacker.as_mut(),
-                        target,
+                        &mut target,
                         &projectile.effects,
                         projectile.damage,
                     );
                     delete_projectiles.push(projectile.id);
                 }
+                self.units.insert(target);
             }
             if let Some(attacker) = attacker {
                 self.units.insert(attacker);
@@ -339,6 +356,8 @@ impl RoundState {
             }
             projectile.position += (projectile.target_position - projectile.position)
                 .clamp_len(..=projectile.speed * delta_time);
+
+            self.projectiles.insert(projectile);
         }
         for id in delete_projectiles {
             self.projectiles.remove(&id);
@@ -357,10 +376,9 @@ impl RoundState {
                 for (spawn_point, units) in wave {
                     let spawn_point = self.config.spawn_points[&spawn_point];
                     for unit_type in units {
-                        let template = &self.assets.units.map[&unit_type];
-                        let unit = Unit::new(
-                            self.next_id,
-                            template,
+                        let template = self.assets.units.map[&unit_type].clone();
+                        self.spawn_unit(
+                            &template,
                             Faction::Enemy,
                             spawn_point
                                 + vec2(
@@ -368,14 +386,13 @@ impl RoundState {
                                     global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
                                 ) * Coord::new(0.01),
                         );
-                        self.next_id += 1;
-                        self.units.insert(unit);
                     }
                 }
             }
         }
     }
     fn deal_damage(
+        &mut self,
         mut attacker: Option<&mut Unit>,
         target: &mut Unit,
         effects: &[Effect],
@@ -399,10 +416,10 @@ impl RoundState {
         }
         target.hp -= damage;
         for effect in effects {
-            Self::apply_effect(effect, attacker.as_deref_mut(), target);
+            self.apply_effect(effect, attacker.as_deref_mut(), target);
         }
     }
-    fn apply_effect(effect: &Effect, mut caster: Option<&mut Unit>, target: &mut Unit) {
+    fn apply_effect(&mut self, effect: &Effect, mut caster: Option<&mut Unit>, target: &mut Unit) {
         match effect {
             Effect::AddStatus { status } => {
                 target.statuses.push(status.clone());
@@ -411,6 +428,22 @@ impl RoundState {
                 if let Some(caster) = &mut caster {
                     caster.hp = -100500;
                 }
+            }
+            Effect::Spawn { unit_type } => {
+                let template = self.assets.units.map[unit_type].clone();
+                self.spawn_unit(
+                    &template,
+                    match caster {
+                        Some(unit) => unit.faction,
+                        None => target.faction,
+                    },
+                    target.position
+                        + vec2(
+                            global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                            global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                        ) * Coord::new(0.01),
+                )
+                // self.new_unit();
             }
         }
     }
@@ -435,7 +468,7 @@ impl geng::State for RoundState {
 
         self.process_projectiles(delta_time);
 
-        self.units.retain(|unit| unit.hp > 0);
+        self.process_deaths();
 
         self.check_next_wave();
     }
