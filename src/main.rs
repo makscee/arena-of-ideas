@@ -1,5 +1,6 @@
 #![allow(dead_code, unused_mut, unused_imports, unused_variables)]
 #![deny(unconditional_recursion)]
+
 use geng::prelude::*;
 
 mod assets;
@@ -19,7 +20,6 @@ type Id = i64;
 pub struct Game {
     next_id: Id,
     assets: Assets,
-    config: Config,
     geng: Geng,
     camera: geng::Camera2d,
     units: Collection<Unit>,
@@ -28,13 +28,9 @@ pub struct Game {
 
 impl Game {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
-        let config: Config =
-            serde_json::from_reader(std::fs::File::open(static_path().join("state.json")).unwrap())
-                .unwrap();
-        let mut state = Self {
+        let mut game = Self {
             next_id: 0,
             assets,
-            config: config.clone(),
             geng: geng.clone(),
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
@@ -44,9 +40,9 @@ impl Game {
             units: Collection::new(),
             projectiles: Collection::new(),
         };
-        for unit_type in &config.player {
-            let template = state.assets.units.map[unit_type].clone();
-            state.spawn_unit(
+        for unit_type in &game.assets.config.player.clone() {
+            let template = game.assets.units.map[unit_type].clone();
+            game.spawn_unit(
                 &template,
                 Faction::Player,
                 vec2(
@@ -55,7 +51,7 @@ impl Game {
                 ) * Coord::new(0.01),
             );
         }
-        state
+        game
     }
 }
 

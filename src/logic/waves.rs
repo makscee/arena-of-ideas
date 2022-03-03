@@ -9,10 +9,10 @@ impl Game {
             .count()
             == 0
         {
-            if !self.config.waves.is_empty() {
-                let wave = self.config.waves.remove(0);
+            if !self.assets.config.waves.is_empty() {
+                let wave = self.assets.config.waves.remove(0);
                 for (spawn_point, units) in wave {
-                    let spawn_point = self.config.spawn_points[&spawn_point];
+                    let spawn_point = self.assets.config.spawn_points[&spawn_point];
                     for unit_type in units {
                         let template = self.assets.units.map[&unit_type].clone();
                         self.spawn_unit(
