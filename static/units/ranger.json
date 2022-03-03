@@ -9,9 +9,12 @@
     "attack_cooldown": 1,
     "attack_effects": [
         {
-            "type": "Slow",
-            "percent": 70,
-            "time": 2
+            "type": "AddStatus",
+            "status": {
+                "type": "Slow",
+                "time": 2,
+                "percent": 100
+            }
         }
     ],
     "move_ai": "Advance",

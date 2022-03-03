@@ -41,7 +41,8 @@ pub enum AttackState {
     Cooldown { time: Time },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
 pub enum Status {
     Freeze,
     Slow { percent: f32, time: Time },
@@ -50,9 +51,8 @@ pub enum Status {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
+    AddStatus { status: Status },
     Suicide,
-    FreezeTarget,
-    Slow { percent: f32, time: Time },
 }
 
 #[derive(Serialize, Deserialize, HasId)]
@@ -192,6 +192,7 @@ impl RoundState {
             .iter()
             .any(|status| matches!(status, Status::Freeze))
         {
+            unit.attack_state = AttackState::None;
             return;
         }
         if matches!(unit.attack_state, AttackState::Start { .. }) {
@@ -217,7 +218,7 @@ impl RoundState {
         for status in &unit.statuses {
             match status {
                 Status::Slow { percent, .. } => {
-                    speed *= Coord::new(*percent / 100.0);
+                    speed *= Coord::new(1.0 - *percent / 100.0);
                 }
                 _ => {}
             }
@@ -379,20 +380,13 @@ impl RoundState {
         }
         for effect in effects {
             match effect {
-                Effect::FreezeTarget => {
-                    target.attack_state = AttackState::None;
-                    target.statuses.push(Status::Freeze);
+                Effect::AddStatus { status } => {
+                    target.statuses.push(status.clone());
                 }
                 Effect::Suicide => {
                     if let Some(attacker) = &mut attacker {
                         attacker.hp = -100500;
                     }
-                }
-                Effect::Slow { percent, time } => {
-                    target.statuses.push(Status::Slow {
-                        percent: *percent,
-                        time: *time,
-                    });
                 }
             }
         }
