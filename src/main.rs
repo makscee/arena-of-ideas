@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_mut, unused_imports, unused_variables)]
+#![deny(unconditional_recursion)]
 use geng::prelude::*;
 
 mod assets;
