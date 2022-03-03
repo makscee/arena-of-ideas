@@ -51,6 +51,8 @@ pub struct UnitTemplate {
     pub attack_animation_delay: Time,
     #[serde(default)]
     pub attack_effects: Vec<Effect>,
+    #[serde(default)]
+    pub spawn_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,

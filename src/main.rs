@@ -83,7 +83,7 @@ impl Unit {
         faction: Faction,
         position: Vec2<Coord>,
     ) -> Self {
-        Self {
+        let mut unit = Self {
             id,
             statuses: Vec::new(),
             faction,
@@ -101,7 +101,11 @@ impl Unit {
             move_ai: template.move_ai,
             target_ai: template.target_ai,
             color: template.color,
+        };
+        for effect in &template.spawn_effects {
+            RoundState::apply_effect(effect, None, &mut unit);
         }
+        unit
     }
 
     pub fn radius(&self) -> Coord {
@@ -177,6 +181,9 @@ impl RoundState {
                 Status::Slow { time, .. } => {
                     *time -= delta_time;
                 }
+                Status::Freeze => {
+                    unit.attack_state = AttackState::None;
+                }
                 _ => {}
             }
         }
@@ -192,7 +199,6 @@ impl RoundState {
             .iter()
             .any(|status| matches!(status, Status::Freeze))
         {
-            unit.attack_state = AttackState::None;
             return;
         }
         if matches!(unit.attack_state, AttackState::Start { .. }) {
@@ -379,14 +385,17 @@ impl RoundState {
                 .retain(|status| !matches!(status, Status::Freeze));
         }
         for effect in effects {
-            match effect {
-                Effect::AddStatus { status } => {
-                    target.statuses.push(status.clone());
-                }
-                Effect::Suicide => {
-                    if let Some(attacker) = &mut attacker {
-                        attacker.hp = -100500;
-                    }
+            Self::apply_effect(effect, attacker.as_deref_mut(), target);
+        }
+    }
+    fn apply_effect(effect: &Effect, mut caster: Option<&mut Unit>, target: &mut Unit) {
+        match effect {
+            Effect::AddStatus { status } => {
+                target.statuses.push(status.clone());
+            }
+            Effect::Suicide => {
+                if let Some(caster) = &mut caster {
+                    caster.hp = -100500;
                 }
             }
         }
@@ -401,6 +410,7 @@ impl geng::State for RoundState {
             let mut unit = self.units.remove(&unit_id).unwrap();
 
             self.process_movement(&mut unit, delta_time);
+            self.process_statuses(&mut unit, delta_time);
             self.process_collisions(&mut unit);
             self.process_targeting(&mut unit);
             self.process_attacks(&mut unit, delta_time);

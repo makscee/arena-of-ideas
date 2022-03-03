@@ -7,7 +7,7 @@
     "attack_radius": 10,
     "attack_animation_delay": 0.3,
     "attack_cooldown": 1,
-    "attack_effects": [
+    "spawn_effects": [
         {
             "type": "AddStatus",
             "status": {
