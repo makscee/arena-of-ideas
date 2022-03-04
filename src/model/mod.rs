@@ -128,7 +128,9 @@ impl geng::LoadAsset for UnitTemplate {
 
 pub type Wave = HashMap<String, Vec<UnitType>>;
 
+#[derive(Deref)]
 pub struct UnitTemplates {
+    #[deref]
     pub map: HashMap<String, UnitTemplate>,
 }
 

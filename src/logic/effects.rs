@@ -17,7 +17,7 @@ impl Game {
                 }
             }
             Effect::Spawn { unit_type } => {
-                let template = self.assets.units.map[unit_type].clone();
+                let template = self.assets.units[unit_type].clone();
                 self.spawn_unit(
                     &template,
                     match caster {

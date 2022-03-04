@@ -41,7 +41,7 @@ impl Game {
             projectiles: Collection::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
-            let template = game.assets.units.map[unit_type].clone();
+            let template = game.assets.units[unit_type].clone();
             game.spawn_unit(
                 &template,
                 Faction::Player,
