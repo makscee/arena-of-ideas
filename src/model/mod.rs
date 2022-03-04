@@ -133,27 +133,3 @@ pub struct UnitTemplates {
     #[deref]
     pub map: HashMap<String, UnitTemplate>,
 }
-
-impl geng::LoadAsset for UnitTemplates {
-    fn load(geng: &Geng, path: &str) -> geng::AssetFuture<Self> {
-        let geng = geng.clone();
-        let path = path.to_owned();
-        async move {
-            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            let types: Vec<String> = serde_json::from_str(&json)?;
-            let mut map = HashMap::new();
-            let base_path = &path[..path.rfind('/').unwrap()];
-            for typ in types {
-                let template = <UnitTemplate as geng::LoadAsset>::load(
-                    &geng,
-                    &format!("{}/units/{}.json", base_path, typ),
-                );
-                map.insert(typ, template.await?);
-            }
-            Ok(Self { map })
-        }
-        .boxed_local()
-    }
-
-    const DEFAULT_EXT: Option<&'static str> = Some("json");
-}
