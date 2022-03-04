@@ -1,18 +1,13 @@
 use super::*;
 
 impl Game {
-    pub fn apply_effect(
-        &mut self,
-        effect: &Effect,
-        mut caster: Option<&mut Unit>,
-        target: &mut Unit,
-    ) {
+    pub fn apply_effect(&mut self, effect: &Effect, caster: Option<&mut Unit>, target: &mut Unit) {
         match effect {
             Effect::AddStatus { status } => {
                 target.statuses.push(status.clone());
             }
             Effect::Suicide => {
-                if let Some(caster) = &mut caster {
+                if let Some(caster) = caster {
                     caster.hp = -100500;
                 }
             }
