@@ -1,7 +1,10 @@
 use super::*;
 
 impl Game {
-    pub fn process_collisions(&mut self, unit: &mut Unit) {
+    pub fn process_collisions(&mut self) {
+        self.process_units(Self::process_unit_collisions);
+    }
+    pub fn process_unit_collisions(&mut self, unit: &mut Unit) {
         for other in &mut self.units {
             let delta_pos = other.position - unit.position;
             let penetration = unit.radius() + other.radius() - delta_pos.len();

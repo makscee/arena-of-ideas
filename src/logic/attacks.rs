@@ -1,9 +1,12 @@
 use super::*;
 
 impl Game {
-    pub fn process_attacks(&mut self, unit: &mut Unit, delta_time: Time) {
+    pub fn process_attacks(&mut self) {
+        self.process_units(Self::process_unit_attacks);
+    }
+    fn process_unit_attacks(&mut self, unit: &mut Unit) {
         if let AttackState::Start { time, target } = &mut unit.attack_state {
-            *time += delta_time;
+            *time += self.delta_time;
             if *time > unit.attack_animation_delay {
                 let target = self.units.remove(target);
                 unit.attack_state = AttackState::Cooldown {
@@ -42,9 +45,12 @@ impl Game {
         }
     }
 
-    pub fn process_cooldowns(&mut self, unit: &mut Unit, delta_time: Time) {
+    pub fn process_cooldowns(&mut self) {
+        self.process_units(Self::process_unit_cooldowns);
+    }
+    fn process_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let AttackState::Cooldown { time } = &mut unit.attack_state {
-            *time += delta_time;
+            *time += self.delta_time;
             if *time > unit.attack_cooldown {
                 unit.attack_state = AttackState::None;
             }

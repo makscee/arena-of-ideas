@@ -22,6 +22,7 @@ pub struct Game {
     assets: Assets,
     geng: Geng,
     camera: geng::Camera2d,
+    delta_time: Time,
     units: Collection<Unit>,
     projectiles: Collection<Projectile>,
 }
@@ -37,6 +38,7 @@ impl Game {
                 rotation: 0.0,
                 fov: 10.0,
             },
+            delta_time: Time::new(0.0),
             units: Collection::new(),
             projectiles: Collection::new(),
         };

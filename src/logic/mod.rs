@@ -16,19 +16,23 @@ mod waves;
 pub use util::*;
 
 impl Game {
-    pub fn update(&mut self, delta_time: Time) {
+    fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.units.ids().copied().collect();
-        for unit_id in ids {
-            let mut unit = self.units.remove(&unit_id).unwrap();
-            self.process_movement(&mut unit, delta_time);
-            self.process_statuses(&mut unit, delta_time);
-            self.process_collisions(&mut unit);
-            self.process_targeting(&mut unit);
-            self.process_attacks(&mut unit, delta_time);
-            self.process_cooldowns(&mut unit, delta_time);
+        for id in ids {
+            let mut unit = self.units.remove(&id).unwrap();
+            f(self, &mut unit);
             self.units.insert(unit);
         }
-        self.process_projectiles(delta_time);
+    }
+    pub fn update(&mut self, delta_time: Time) {
+        self.delta_time = delta_time;
+        self.process_movement();
+        self.process_statuses();
+        self.process_collisions();
+        self.process_targeting();
+        self.process_attacks();
+        self.process_cooldowns();
+        self.process_projectiles();
         self.process_deaths();
         self.check_next_wave();
     }

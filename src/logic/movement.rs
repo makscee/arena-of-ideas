@@ -1,7 +1,10 @@
 use super::*;
 
 impl Game {
-    pub fn process_movement(&mut self, unit: &mut Unit, delta_time: Time) {
+    pub fn process_movement(&mut self) {
+        self.process_units(Self::process_unit_movement);
+    }
+    fn process_unit_movement(&mut self, unit: &mut Unit) {
         if unit
             .statuses
             .iter()
@@ -37,6 +40,6 @@ impl Game {
                 _ => {}
             }
         }
-        unit.position += (target_position - unit.position).clamp_len(..=speed * delta_time);
+        unit.position += (target_position - unit.position).clamp_len(..=speed * self.delta_time);
     }
 }
