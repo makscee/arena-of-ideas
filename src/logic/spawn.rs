@@ -9,7 +9,11 @@ impl Game {
             attack_state: AttackState::None,
             hp: template.hp,
             max_hp: template.hp,
-            position,
+            position: position
+                + vec2(
+                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
+                ) * Coord::new(0.01),
             speed: template.speed,
             projectile_speed: template.projectile_speed,
             attack_radius: template.attack_radius,

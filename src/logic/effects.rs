@@ -24,11 +24,7 @@ impl Game {
                         Some(unit) => unit.faction,
                         None => target.faction,
                     },
-                    target.position
-                        + vec2(
-                            global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                            global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                        ) * Coord::new(0.01),
+                    target.position,
                 )
             }
         }

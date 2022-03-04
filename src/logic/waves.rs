@@ -15,15 +15,7 @@ impl Game {
                     let spawn_point = self.assets.config.spawn_points[&spawn_point];
                     for unit_type in units {
                         let template = self.assets.units[&unit_type].clone();
-                        self.spawn_unit(
-                            &template,
-                            Faction::Enemy,
-                            spawn_point
-                                + vec2(
-                                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                                ) * Coord::new(0.01),
-                        );
+                        self.spawn_unit(&template, Faction::Enemy, spawn_point);
                     }
                 }
             }

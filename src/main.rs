@@ -44,14 +44,7 @@ impl Game {
         };
         for unit_type in &game.assets.config.player.clone() {
             let template = game.assets.units[unit_type].clone();
-            game.spawn_unit(
-                &template,
-                Faction::Player,
-                vec2(
-                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                ) * Coord::new(0.01),
-            );
+            game.spawn_unit(&template, Faction::Player, Vec2::ZERO);
         }
         game
     }
