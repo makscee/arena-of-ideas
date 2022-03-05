@@ -7,27 +7,32 @@
     "attack_radius": 10,
     "attack_animation_delay": 0.3,
     "attack_cooldown": 1,
-    "attack_effects": [
-        {
-            "type": "AOE",
-            "radius": 10.0,
-            "filter": "Enemies",
-            "effects": [
-                {
-                    "type": "AddStatus",
-                    "status": {
-                        "type": "Freeze"
-                    }
-                }
-            ]
-        }
-    ],
     "kill_effects": [
         {
             "type": "Spawn",
             "unit_type": "critter"
         }
     ],
+    "abilities": {
+        "MouseLeft": {
+            "effects": [
+                {
+                    "type": "AOE",
+                    "radius": 10.0,
+                    "filter": "Enemies",
+                    "effects": [
+                        {
+                            "type": "AddStatus",
+                            "status": {
+                                "type": "Freeze"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "cooldown": 1.0
+        }
+    },
     "spawn_effects": [
         {
             "type": "AddStatus",

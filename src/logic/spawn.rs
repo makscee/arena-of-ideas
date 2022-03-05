@@ -29,6 +29,7 @@ impl Game {
             move_ai: template.move_ai,
             target_ai: template.target_ai,
             color: template.color,
+            ability_cooldown: None,
         };
         unit.attack_effects.push(Effect::Damage {
             hp: template.attack_damage,

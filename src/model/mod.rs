@@ -29,7 +29,7 @@ pub enum AttackState {
     Cooldown { time: Time },
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
@@ -37,14 +37,14 @@ pub enum Status {
     Slow { percent: f32, time: Time },
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum TargetFilter {
     All,
     Allies,
     Enemies,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
     Damage {
@@ -88,6 +88,7 @@ pub struct Unit {
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,
+    pub ability_cooldown: Option<Time>,
 }
 
 impl Unit {
@@ -109,6 +110,14 @@ pub struct Projectile {
 
 pub type UnitType = String;
 
+pub type Key = String;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Ability {
+    pub effects: Vec<Effect>,
+    pub cooldown: Time,
+}
+
 #[derive(Deserialize, Clone)]
 #[serde(default)]
 pub struct UnitTemplate {
@@ -127,6 +136,7 @@ pub struct UnitTemplate {
     pub kill_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
+    pub abilities: HashMap<Key, Ability>,
     pub color: Color<f32>,
 }
 
@@ -148,6 +158,7 @@ impl Default for UnitTemplate {
             kill_effects: vec![],
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
+            abilities: HashMap::new(),
             color: Color::BLACK,
         }
     }

@@ -28,6 +28,7 @@ pub struct Game {
     dead_units: Collection<Unit>,
     projectiles: Collection<Projectile>,
     effects: Vec<QueuedEffect>,
+    pressed_keys: Vec<Key>,
 }
 
 impl Game {
@@ -47,6 +48,7 @@ impl Game {
             dead_units: Collection::new(),
             projectiles: Collection::new(),
             effects: Vec::new(),
+            pressed_keys: Vec::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
             game.spawn_unit(unit_type, Faction::Player, Vec2::ZERO);
@@ -61,6 +63,14 @@ impl geng::State for Game {
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.draw(framebuffer);
+    }
+    fn handle_event(&mut self, event: geng::Event) {
+        match event {
+            geng::Event::MouseDown { button, .. } => {
+                self.pressed_keys.push(format!("Mouse{:?}", button));
+            }
+            _ => {}
+        }
     }
 }
 

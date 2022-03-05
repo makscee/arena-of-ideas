@@ -1,5 +1,6 @@
 use super::*;
 
+mod abilities;
 mod attacks;
 mod collisions;
 mod deaths;
@@ -27,6 +28,7 @@ impl Game {
     pub fn update(&mut self, delta_time: Time) {
         self.delta_time = delta_time;
         self.process_spawns();
+        self.process_abilities();
         self.process_movement();
         self.process_statuses();
         self.process_collisions();
