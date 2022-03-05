@@ -11,6 +11,7 @@ mod render;
 use assets::*;
 use logic::*;
 use model::*;
+use render::Render;
 
 type Health = R32;
 type Time = R32;
@@ -31,6 +32,7 @@ pub struct Game {
     pressed_keys: Vec<Key>,
     time_bombs: Collection<TimeBomb>,
     dead_time_bombs: Collection<TimeBomb>,
+    render: Render,
 }
 
 impl Game {
@@ -53,6 +55,7 @@ impl Game {
             pressed_keys: Vec::new(),
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
+            render: Render::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
             game.spawn_unit(unit_type, Faction::Player, Vec2::ZERO);
@@ -63,6 +66,7 @@ impl Game {
 
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
+        self.render.update(delta_time as _);
         self.update(Time::new(delta_time as _));
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {

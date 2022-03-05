@@ -1,5 +1,40 @@
 use super::*;
 
+struct Text {
+    position: Vec2<f32>,
+    velocity: Vec2<f32>,
+    time: f32,
+    text: String,
+    color: Color<f32>,
+}
+
+pub struct Render {
+    texts: Vec<Text>,
+}
+
+impl Render {
+    pub fn new() -> Self {
+        Self { texts: Vec::new() }
+    }
+    pub fn update(&mut self, delta_time: f32) {
+        for text in &mut self.texts {
+            text.time += delta_time;
+            text.position += text.velocity * delta_time;
+        }
+        self.texts.retain(|text| text.time < 1.0);
+    }
+    pub fn add_text(&mut self, position: Vec2<Coord>, text: &str, color: Color<f32>) {
+        let velocity = vec2(0.2, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
+        self.texts.push(Text {
+            position: position.map(|x| x.as_f32()) + velocity,
+            time: 0.0,
+            velocity,
+            text: text.to_owned(),
+            color,
+        });
+    }
+}
+
 impl Game {
     pub fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
@@ -76,6 +111,15 @@ impl Game {
                 framebuffer,
                 &self.camera,
                 &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.1, Color::RED),
+            );
+        }
+        for text in &self.render.texts {
+            self.geng.draw_2d(
+                framebuffer,
+                &self.camera,
+                &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, text.color)
+                    .scale_uniform(0.05)
+                    .translate(text.position),
             );
         }
     }

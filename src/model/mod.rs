@@ -37,6 +37,16 @@ pub enum Status {
     Slow { percent: f32, time: Time },
 }
 
+impl Status {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Freeze => "Freeze",
+            Self::Shield => "Shield",
+            Self::Slow { .. } => "Slow",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum TargetFilter {
     All,

@@ -35,7 +35,10 @@ impl Game {
                     }
                     let old_hp = target.hp;
                     target.hp -= damage;
+                    self.render
+                        .add_text(target.position, &format!("-{}", damage), Color::RED);
                     if old_hp > Health::new(0.0) && target.hp <= Health::new(0.0) {
+                        // self.render.add_text(target.position, "KILL", Color::RED);
                         for kill_effect in kill_effects {
                             self.effects.push(QueuedEffect {
                                 effect: kill_effect.clone(),
@@ -50,6 +53,8 @@ impl Game {
                         .target
                         .and_then(|id| self.units.get_mut(&id))
                         .expect("Target not found");
+                    self.render
+                        .add_text(target.position, status.name(), Color::BLUE);
                     target.statuses.push(status.clone());
                 }
                 Effect::Suicide => {
@@ -103,6 +108,7 @@ impl Game {
                                 .or(self.dead_time_bombs.get(&id).map(|bomb| bomb.position))
                         })
                         .expect("Target not found");
+                    self.render.add_text(center, "AOE", Color::RED);
                     for unit in &self.units {
                         if (unit.position - center).len() - unit.radius() > radius {
                             continue;
