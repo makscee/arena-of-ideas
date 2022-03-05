@@ -38,10 +38,26 @@ pub enum Status {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+pub enum TargetFilter {
+    All,
+    Allies,
+    Enemies,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
-    AddStatus { status: Status },
-    Spawn { unit_type: UnitType },
+    AddStatus {
+        status: Status,
+    },
+    Spawn {
+        unit_type: UnitType,
+    },
+    AOE {
+        filter: TargetFilter,
+        radius: Coord,
+        effects: Vec<Effect>,
+    },
     Suicide,
 }
 

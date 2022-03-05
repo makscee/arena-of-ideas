@@ -19,6 +19,39 @@ impl Game {
                 },
                 target.position,
             ),
+            Effect::AOE {
+                radius,
+                filter,
+                effects,
+            } => {
+                let mut caster = caster;
+                let center = target.position;
+                let caster_faction = match &caster {
+                    Some(caster) => caster.faction,
+                    None => todo!(),
+                };
+                self.process_units(|this, unit| {
+                    if (unit.position - center).len() - unit.radius() > *radius {
+                        return;
+                    }
+                    match filter {
+                        TargetFilter::Allies => {
+                            if unit.faction != caster_faction {
+                                return;
+                            }
+                        }
+                        TargetFilter::Enemies => {
+                            if unit.faction == caster_faction {
+                                return;
+                            }
+                        }
+                        TargetFilter::All => {}
+                    }
+                    for effect in effects {
+                        this.apply_effect(effect, caster.as_deref_mut(), unit);
+                    }
+                });
+            }
         }
     }
 }
