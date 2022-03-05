@@ -4,6 +4,7 @@ impl Game {
     pub fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
         for unit in itertools::chain![&self.units, &self.spawning_units] {
+            let template = &self.assets.units[&unit.unit_type];
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
@@ -13,6 +14,12 @@ impl Game {
                         * match &unit.attack_state {
                             AttackState::Start { time, .. } => {
                                 1.0 - 0.25 * (*time / unit.attack_animation_delay).as_f32()
+                            }
+                            _ => 1.0,
+                        }
+                        * match unit.spawn_animation_time_left {
+                            Some(time) if template.spawn_animation_time > Time::new(0.0) => {
+                                1.0 - (time / template.spawn_animation_time).as_f32()
                             }
                             _ => 1.0,
                         },
