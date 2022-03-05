@@ -3,7 +3,7 @@ use super::*;
 impl Game {
     pub fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
-        for unit in &self.units {
+        for unit in itertools::chain![&self.units, &self.spawning_units] {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,

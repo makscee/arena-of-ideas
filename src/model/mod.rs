@@ -22,7 +22,7 @@ pub enum TargetAi {
     Furthest,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum AttackState {
     None,
     Start { time: Time, target: Id },
@@ -45,9 +45,11 @@ pub enum Effect {
     Suicide,
 }
 
-#[derive(Serialize, Deserialize, HasId)]
+#[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,
+    pub spawn_animation_time_left: Option<Time>,
+    pub spawn_effects: Vec<Effect>,
     pub statuses: Vec<Status>,
     pub faction: Faction,
     pub attack_state: AttackState,
@@ -91,8 +93,10 @@ pub struct Projectile {
 pub type UnitType = String;
 
 #[derive(Deserialize, Clone)]
+#[serde(default)]
 pub struct UnitTemplate {
     pub hp: Health,
+    pub spawn_animation_time: Time,
     pub speed: Coord,
     pub projectile_speed: Option<Coord>,
     pub attack_radius: Coord,
@@ -100,17 +104,36 @@ pub struct UnitTemplate {
     pub attack_damage: Health,
     pub attack_cooldown: Time,
     pub attack_animation_delay: Time,
-    #[serde(default)]
     pub attack_effects: Vec<Effect>,
-    #[serde(default)]
     pub spawn_effects: Vec<Effect>,
-    #[serde(default)]
     pub death_effects: Vec<Effect>,
-    #[serde(default)]
     pub kill_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,
+}
+
+impl Default for UnitTemplate {
+    fn default() -> Self {
+        Self {
+            hp: Health::new(1.0),
+            spawn_animation_time: Time::new(0.0),
+            speed: Coord::new(1.0),
+            projectile_speed: None,
+            attack_radius: Coord::new(1.0),
+            size: Coord::new(1.0),
+            attack_damage: Health::new(1.0),
+            attack_cooldown: Time::new(1.0),
+            attack_animation_delay: Time::new(1.0),
+            attack_effects: vec![],
+            spawn_effects: vec![],
+            death_effects: vec![],
+            kill_effects: vec![],
+            move_ai: MoveAi::Advance,
+            target_ai: TargetAi::Closest,
+            color: Color::BLACK,
+        }
+    }
 }
 
 impl geng::LoadAsset for UnitTemplate {

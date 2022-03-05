@@ -26,6 +26,7 @@ impl Game {
     }
     pub fn update(&mut self, delta_time: Time) {
         self.delta_time = delta_time;
+        self.process_spawns();
         self.process_movement();
         self.process_statuses();
         self.process_collisions();

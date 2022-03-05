@@ -1,5 +1,6 @@
 {
     "hp": 1,
+    "spawn_animation_time": 1.0,
     "speed": 1.5,
     "size": 0.3,
     "attack_damage": 1,

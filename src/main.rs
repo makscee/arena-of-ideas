@@ -24,6 +24,7 @@ pub struct Game {
     camera: geng::Camera2d,
     delta_time: Time,
     units: Collection<Unit>,
+    spawning_units: Collection<Unit>,
     projectiles: Collection<Projectile>,
 }
 
@@ -40,6 +41,7 @@ impl Game {
             },
             delta_time: Time::new(0.0),
             units: Collection::new(),
+            spawning_units: Collection::new(),
             projectiles: Collection::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
