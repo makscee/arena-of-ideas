@@ -23,21 +23,11 @@ impl Game {
                             speed: projectile_speed,
                             target_position: target.position,
                             effects: unit.attack_effects.clone(),
-                            kill_effects: unit.kill_effects.clone(),
-                            damage: unit.attack_damage,
                         });
                         self.next_id += 1;
                     } else {
                         let effects = unit.attack_effects.clone();
-                        let kill_effects = unit.kill_effects.clone();
-                        let attack_damage = unit.attack_damage;
-                        self.deal_damage(
-                            Some(unit),
-                            &mut target,
-                            &effects,
-                            &kill_effects,
-                            attack_damage,
-                        );
+                        self.deal_damage(Some(unit), &mut target, &effects);
                     }
                     self.units.insert(target);
                 }

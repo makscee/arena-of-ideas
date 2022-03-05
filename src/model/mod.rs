@@ -47,6 +47,10 @@ pub enum TargetFilter {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
+    Damage {
+        hp: Health,
+        kill_effects: Vec<Effect>,
+    },
     AddStatus {
         status: Status,
     },
@@ -77,10 +81,8 @@ pub struct Unit {
     pub projectile_speed: Option<Coord>,
     pub attack_radius: Coord,
     pub size: Coord,
-    pub attack_damage: Health,
     pub attack_cooldown: Time,
     pub attack_effects: Vec<Effect>,
-    pub kill_effects: Vec<Effect>,
     pub death_effects: Vec<Effect>,
     pub attack_animation_delay: Time,
     pub move_ai: MoveAi,
@@ -103,8 +105,6 @@ pub struct Projectile {
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub effects: Vec<Effect>,
-    pub kill_effects: Vec<Effect>,
-    pub damage: Health,
 }
 
 pub type UnitType = String;

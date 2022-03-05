@@ -22,16 +22,18 @@ impl Game {
             projectile_speed: template.projectile_speed,
             attack_radius: template.attack_radius,
             size: template.size,
-            attack_damage: template.attack_damage,
             attack_cooldown: template.attack_cooldown,
             attack_animation_delay: template.attack_animation_delay,
             attack_effects: template.attack_effects.clone(),
-            kill_effects: template.kill_effects.clone(),
             death_effects: template.death_effects.clone(),
             move_ai: template.move_ai,
             target_ai: template.target_ai,
             color: template.color,
         };
+        unit.attack_effects.push(Effect::Damage {
+            hp: template.attack_damage,
+            kill_effects: template.kill_effects.clone(),
+        });
         self.next_id += 1;
         self.spawning_units.insert(unit);
     }
