@@ -49,8 +49,12 @@ impl Game {
             }
         }
         for mut unit in new_units {
-            for effect in &unit.spawn_effects.clone() {
-                self.apply_effect(effect, None, &mut unit);
+            for effect in &unit.spawn_effects {
+                self.effects.push(QueuedEffect {
+                    effect: effect.clone(),
+                    caster: Some(unit.id),
+                    target: Some(unit.id),
+                });
             }
             self.units.insert(unit);
         }

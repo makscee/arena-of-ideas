@@ -26,8 +26,13 @@ impl Game {
                         });
                         self.next_id += 1;
                     } else {
-                        let effects = unit.attack_effects.clone();
-                        self.deal_damage(Some(unit), &mut target, &effects);
+                        for effect in &unit.attack_effects {
+                            self.effects.push(QueuedEffect {
+                                effect: effect.clone(),
+                                caster: Some(unit.id),
+                                target: Some(target.id),
+                            });
+                        }
                     }
                     self.units.insert(target);
                 }

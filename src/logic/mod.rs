@@ -2,7 +2,6 @@ use super::*;
 
 mod attacks;
 mod collisions;
-mod damage;
 mod deaths;
 mod effects;
 mod movement;
@@ -13,6 +12,7 @@ mod targeting;
 mod util;
 mod waves;
 
+pub use effects::*;
 pub use util::*;
 
 impl Game {
@@ -34,6 +34,7 @@ impl Game {
         self.process_attacks();
         self.process_cooldowns();
         self.process_projectiles();
+        self.process_effects();
         self.process_deaths();
         self.check_next_wave();
     }

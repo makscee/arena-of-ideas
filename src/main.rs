@@ -25,7 +25,9 @@ pub struct Game {
     delta_time: Time,
     units: Collection<Unit>,
     spawning_units: Collection<Unit>,
+    dead_units: Collection<Unit>,
     projectiles: Collection<Projectile>,
+    effects: Vec<QueuedEffect>,
 }
 
 impl Game {
@@ -42,7 +44,9 @@ impl Game {
             delta_time: Time::new(0.0),
             units: Collection::new(),
             spawning_units: Collection::new(),
+            dead_units: Collection::new(),
             projectiles: Collection::new(),
+            effects: Vec::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
             game.spawn_unit(unit_type, Faction::Player, Vec2::ZERO);

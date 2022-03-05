@@ -10,7 +10,13 @@ impl Game {
             if let Some(mut target) = self.units.remove(&projectile.target) {
                 projectile.target_position = target.position;
                 if (projectile.position - target.position).len() < target.radius() {
-                    self.deal_damage(attacker.as_mut(), &mut target, &projectile.effects);
+                    for effect in &projectile.effects {
+                        self.effects.push(QueuedEffect {
+                            effect: effect.clone(),
+                            caster: Some(projectile.attacker),
+                            target: Some(target.id),
+                        });
+                    }
                     delete_projectiles.push(projectile.id);
                 }
                 self.units.insert(target);
