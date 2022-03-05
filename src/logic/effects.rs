@@ -8,7 +8,7 @@ impl Game {
             }
             Effect::Suicide => {
                 if let Some(caster) = caster {
-                    caster.hp = -100500;
+                    caster.hp = Health::new(-100500.0);
                 }
             }
             Effect::Spawn { unit_type } => {

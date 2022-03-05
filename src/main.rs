@@ -12,7 +12,7 @@ use assets::*;
 use logic::*;
 use model::*;
 
-type Health = i32;
+type Health = R32;
 type Time = R32;
 type Coord = R32;
 type Id = i64;

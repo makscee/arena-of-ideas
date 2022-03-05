@@ -10,18 +10,18 @@ impl Game {
         mut damage: Health,
     ) {
         damage = min(damage, target.hp);
-        if damage != 0 {
+        if damage > Health::new(0.0) {
             if let Some((index, _)) = target
                 .statuses
                 .iter()
                 .enumerate()
                 .find(|(_, status)| matches!(status, Status::Shield))
             {
-                damage = 0;
+                damage = Health::new(0.0);
                 target.statuses.remove(index);
             }
         }
-        if damage != 0 {
+        if damage > Health::new(0.0) {
             target
                 .statuses
                 .retain(|status| !matches!(status, Status::Freeze));
@@ -31,7 +31,7 @@ impl Game {
         for effect in effects {
             self.apply_effect(effect, attacker.as_deref_mut(), target);
         }
-        if old_hp > 0 && target.hp <= 0 {
+        if old_hp > Health::new(0.0) && target.hp <= Health::new(0.0) {
             for effect in kill_effects {
                 self.apply_effect(effect, attacker.as_deref_mut(), target);
             }
