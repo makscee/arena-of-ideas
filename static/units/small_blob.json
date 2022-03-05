@@ -7,6 +7,25 @@
     "attack_radius": 0.5,
     "attack_animation_delay": 0.5,
     "attack_cooldown": 1.0,
+    "death_effects": [
+        {
+            "type": "TimeBomb",
+            "time": 3.0,
+            "effects": [
+                {
+                    "type": "AOE",
+                    "filter": "All",
+                    "radius": 5.0,
+                    "effects": [
+                        {
+                            "type": "Damage",
+                            "hp": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "color": "green"

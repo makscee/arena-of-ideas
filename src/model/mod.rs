@@ -44,11 +44,21 @@ pub enum TargetFilter {
     Enemies,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, HasId)]
+pub struct TimeBomb {
+    pub id: Id,
+    pub position: Vec2<Coord>,
+    pub time: Time,
+    pub caster: Option<Id>,
+    pub effects: Vec<Effect>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
     Damage {
         hp: Health,
+        #[serde(default)]
         kill_effects: Vec<Effect>,
     },
     AddStatus {
@@ -60,6 +70,10 @@ pub enum Effect {
     AOE {
         filter: TargetFilter,
         radius: Coord,
+        effects: Vec<Effect>,
+    },
+    TimeBomb {
+        time: Time,
         effects: Vec<Effect>,
     },
     Suicide,

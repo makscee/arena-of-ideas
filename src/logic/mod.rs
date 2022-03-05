@@ -10,6 +10,7 @@ mod projectiles;
 mod spawn;
 mod statuses;
 mod targeting;
+mod time_bombs;
 mod util;
 mod waves;
 
@@ -27,6 +28,7 @@ impl Game {
     }
     pub fn update(&mut self, delta_time: Time) {
         self.delta_time = delta_time;
+        self.process_time_bombs();
         self.process_spawns();
         self.process_abilities();
         self.process_movement();

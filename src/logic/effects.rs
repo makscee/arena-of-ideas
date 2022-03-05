@@ -70,6 +70,20 @@ impl Game {
                     let position = target.position;
                     self.spawn_unit(&unit_type, faction, position);
                 }
+                Effect::TimeBomb { time, effects } => {
+                    let target = effect
+                        .target
+                        .and_then(|id| self.units.get(&id).or(self.dead_units.get(&id)))
+                        .expect("Target not found");
+                    self.time_bombs.insert(TimeBomb {
+                        id: self.next_id,
+                        position: target.position,
+                        caster: effect.caster,
+                        time,
+                        effects,
+                    });
+                    self.next_id += 1;
+                }
                 Effect::AOE {
                     radius,
                     filter,
@@ -80,11 +94,15 @@ impl Game {
                         .and_then(|id| self.units.get(&id).or(self.dead_units.get(&id)))
                         .expect("Caster not found");
                     let caster_faction = caster.faction;
-                    let target = effect
+                    let center = effect
                         .target
-                        .and_then(|id| self.units.get(&id))
+                        .and_then(|id| {
+                            self.units
+                                .get(&id)
+                                .map(|unit| unit.position)
+                                .or(self.dead_time_bombs.get(&id).map(|bomb| bomb.position))
+                        })
                         .expect("Target not found");
-                    let center = target.position;
                     for unit in &self.units {
                         if (unit.position - center).len() - unit.radius() > radius {
                             continue;

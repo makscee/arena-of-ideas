@@ -29,6 +29,8 @@ pub struct Game {
     projectiles: Collection<Projectile>,
     effects: Vec<QueuedEffect>,
     pressed_keys: Vec<Key>,
+    time_bombs: Collection<TimeBomb>,
+    dead_time_bombs: Collection<TimeBomb>,
 }
 
 impl Game {
@@ -49,6 +51,8 @@ impl Game {
             projectiles: Collection::new(),
             effects: Vec::new(),
             pressed_keys: Vec::new(),
+            time_bombs: Collection::new(),
+            dead_time_bombs: Collection::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
             game.spawn_unit(unit_type, Faction::Player, Vec2::ZERO);
