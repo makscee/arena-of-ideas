@@ -14,8 +14,7 @@ impl Game {
                 for (spawn_point, units) in wave {
                     let spawn_point = self.assets.config.spawn_points[&spawn_point];
                     for unit_type in units {
-                        let template = self.assets.units[&unit_type].clone();
-                        self.spawn_unit(&template, Faction::Enemy, spawn_point);
+                        self.spawn_unit(&unit_type, Faction::Enemy, spawn_point);
                     }
                 }
             }

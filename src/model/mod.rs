@@ -48,6 +48,7 @@ pub enum Effect {
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,
+    pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
     pub spawn_effects: Vec<Effect>,
     pub statuses: Vec<Status>,

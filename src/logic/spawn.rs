@@ -1,9 +1,11 @@
 use super::*;
 
 impl Game {
-    pub fn spawn_unit(&mut self, template: &UnitTemplate, faction: Faction, position: Vec2<Coord>) {
+    pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Vec2<Coord>) {
+        let template = &self.assets.units[unit_type];
         let mut unit = Unit {
             id: self.next_id,
+            unit_type: unit_type.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
             spawn_effects: template.spawn_effects.clone(),
             statuses: Vec::new(),
