@@ -75,14 +75,14 @@ impl Game {
                     filter,
                     effects,
                 } => {
-                    let caster_faction = match effect.caster.and_then(|id| self.units.get_mut(&id))
-                    {
-                        Some(caster) => caster.faction,
-                        None => todo!(),
-                    };
+                    let caster = effect
+                        .caster
+                        .and_then(|id| self.units.get(&id).or(self.dead_units.get(&id)))
+                        .expect("Caster not found");
+                    let caster_faction = caster.faction;
                     let target = effect
                         .target
-                        .and_then(|id| self.units.get_mut(&id))
+                        .and_then(|id| self.units.get(&id))
                         .expect("Target not found");
                     let center = target.position;
                     for unit in &self.units {
