@@ -15,18 +15,18 @@ pub struct Config {
 }
 
 impl geng::LoadAsset for UnitTemplates {
-    fn load(geng: &Geng, path: &str) -> geng::AssetFuture<Self> {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let types: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
-            let base_path = &path[..path.rfind('/').unwrap()];
+            let base_path = path.parent().unwrap();
             for typ in types {
                 let template = <UnitTemplate as geng::LoadAsset>::load(
                     &geng,
-                    &format!("{}/units/{}.json", base_path, typ),
+                    &base_path.join("units").join(format!("{}.json", typ)),
                 );
                 map.insert(typ, template.await?);
             }

@@ -91,7 +91,7 @@ fn main() {
         geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
-            <Assets as geng::LoadAsset>::load(&geng, static_path().to_str().unwrap()),
+            <Assets as geng::LoadAsset>::load(&geng, &static_path()),
             {
                 let geng = geng.clone();
                 move |assets| {
