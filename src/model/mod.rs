@@ -71,6 +71,9 @@ pub enum Effect {
         #[serde(default)]
         kill_effects: Vec<Effect>,
     },
+    Lifesteal {
+        percent: R32,
+    },
     AddStatus {
         status: Status,
     },

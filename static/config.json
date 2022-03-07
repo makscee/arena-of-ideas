@@ -1,6 +1,7 @@
 {
     "player": [
-        "ranger"
+        "ranger",
+        "lifedrainer"
     ],
     "spawn_points": {
         "Left": [
