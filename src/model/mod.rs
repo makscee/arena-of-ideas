@@ -64,10 +64,32 @@ pub struct TimeBomb {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(try_from = "String")]
+pub enum HealthValue {
+    Absolute(Health),
+    /// Some percent from hp
+    Relative(R32),
+}
+
+impl TryFrom<String> for HealthValue {
+    type Error = <f32 as std::str::FromStr>::Err;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.ends_with('%') {
+            let percent = R32::new(value[..value.len() - 1].parse()?);
+            Ok(Self::Relative(percent))
+        } else {
+            let value = Health::new(value.parse()?);
+            Ok(Self::Absolute(value))
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
     Damage {
-        hp: Health,
+        hp: HealthValue,
         #[serde(default)]
         kill_effects: Vec<Effect>,
     },

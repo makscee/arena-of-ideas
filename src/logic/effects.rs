@@ -15,7 +15,12 @@ impl Game {
                         .target
                         .and_then(|id| self.units.get_mut(&id))
                         .expect("Target not found");
-                    let mut damage = hp;
+                    let mut damage = match hp {
+                        HealthValue::Absolute(hp) => hp,
+                        HealthValue::Relative(percent) => {
+                            target.max_hp * percent / Health::new(100.0)
+                        }
+                    };
                     damage = min(damage, target.hp);
                     if damage > Health::new(0.0) {
                         if let Some((index, _)) = target
