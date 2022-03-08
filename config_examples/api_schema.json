@@ -1,0 +1,121 @@
+{
+	"triggers":
+	// sets: переменные которые будут заданы
+	// reads: переменные которые будут прочитаны
+	// type: ограничение по типу эффекта
+	// sub_triggers: дополнительные триггеры которые могут быть вызваны
+	{
+		"OnAttack":
+		{
+			"sets": ["target","damage"],
+			"reads": ["damage"],
+			// если одинаковая переменная есть в reads и sets, то в случае наличия будет прочитана, иначе задается дефолтное значение
+		},
+		"AfterAttack":
+		{
+			"sets": ["target","damage"],
+			"reads": ["damage"],
+		},
+		"BeforeAttack":
+		{
+			"sets": ["target","damage"],
+			"reads": ["damage"],
+		},
+		"OnTakeDamage":
+		{
+			"sets": ["master","target","damage"]
+		},
+		"OnKill":
+		{
+			"sets": ["target"]
+		},
+		"OnStatusApply":
+		{
+			"type": "status"
+		},
+		"OnStatusRemove":
+		{
+			"type": "status"
+		},
+		"UnitEnterAura":
+		{
+			"type": "aura",
+			"sets": ["target"]
+		},
+		"UnitExitAura":
+		{
+			"type": "aura",
+			"sets": ["target"]
+		},
+		"TimeTrigger":
+		{
+			"reads": ["duration","trigger_every"],
+			"sets": ["time","trigger_count"],
+			"sub_triggers": ["OnStart", "OnComplete"]
+		},
+		"CountTrigger":
+		{
+			"reads": ["max_count","incr_delay"]
+		},
+	},
+
+	"functions":
+	// params: то что будет в скобках при вызове по порядку
+	// triggers: триггеры которые могут быть вызваны функцией
+	{
+		"setStat": 
+		{
+			"params": ["target","statType","value"]
+		},
+		"launchProjectile":
+		{
+			"params": ["master","target","projectileSpeed"],
+			"triggers": ["OnProjectileReach"]
+		},
+		"addFlag":
+		{
+			"params": ["target","unitFlag"]
+		},
+		"removeFlag":
+		{
+			"params": ["target","unitFlag"]
+		},
+		"addStatus":
+		{
+			"params": ["target","statusName"]
+		},
+		"removeStatus":
+		{
+			"params": ["target","statusName"]
+		},
+		"revive":
+		{
+			"params": ["target"]
+		},
+		"addStatMod":
+		{
+			"params": ["target","statType","multiplier"]
+		},
+		"removeStatMod":
+		{
+			"params": ["target","statType","multiplier"]
+		},
+		"getUnitsInArea":
+		{
+			"params": ["position","radius","faction","count","predicate"]
+		},
+		"doEffect":
+		{
+			"params": ["effectName"]
+		},
+	},
+
+	"conditions":
+	// функции которые всегда возвращают true или false, могут быть использованы в if
+	{
+		"chance":
+		{
+			"params": ["percent"]
+		},
+	}
+}
