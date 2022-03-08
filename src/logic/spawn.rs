@@ -33,6 +33,7 @@ impl Game {
         };
         unit.attack_effects.push(Effect::Damage {
             hp: HealthValue::Absolute(template.attack_damage),
+            lifesteal: HealthValue::Absolute(R32::ZERO),
             kill_effects: template.kill_effects.clone(),
         });
         self.next_id += 1;

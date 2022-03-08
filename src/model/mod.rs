@@ -71,6 +71,12 @@ pub enum HealthValue {
     Relative(R32),
 }
 
+impl Default for HealthValue {
+    fn default() -> Self {
+        Self::Absolute(Health::ZERO)
+    }
+}
+
 impl TryFrom<String> for HealthValue {
     type Error = <f32 as std::str::FromStr>::Err;
 
@@ -91,10 +97,9 @@ pub enum Effect {
     Damage {
         hp: HealthValue,
         #[serde(default)]
+        lifesteal: HealthValue,
+        #[serde(default)]
         kill_effects: Vec<Effect>,
-    },
-    Lifesteal {
-        percent: R32,
     },
     AddStatus {
         status: Status,
