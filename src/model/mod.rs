@@ -97,6 +97,7 @@ pub enum Effect {
     Damage {
         hp: HealthValue,
         #[serde(default)]
+        /// HP to heal self relative to the damage done
         lifesteal: HealthValue,
         #[serde(default)]
         kill_effects: Vec<Effect>,
