@@ -1,0 +1,31 @@
+{
+    "hp": 5,
+    "spawn_animation_time": 1.0,
+    "speed": 1,
+    "size": 1,
+    "attack_damage": 2,
+    "attack_radius": 0.5,
+    "attack_animation_delay": 0.25,
+    "attack_cooldown": 1.0,
+    "abilities": {
+        "MouseLeft": {
+            "effects": [
+                {
+                    "type": "AOE",
+                    "radius": 10.0,
+                    "filter": "Enemies",
+                    "effects": [
+                        {
+                            "type": "Lifesteal",
+                            "percent": 10
+                        }
+                    ]
+                }
+            ],
+            "cooldown": 1.0
+        }
+    },
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "color": "#ff0022"
+}

@@ -48,6 +48,42 @@ impl Game {
                         }
                     }
                 }
+                Effect::Lifesteal { percent } => {
+                    let target = effect
+                        .target
+                        .and_then(|id| self.units.get_mut(&id))
+                        .expect("Target not found");
+
+                    let mut damage = target.max_hp * percent / Health::new(100.0);
+                    damage = damage.min(target.hp);
+
+                    if damage > Health::new(0.0) {
+                        if let Some((index, _)) = target
+                            .statuses
+                            .iter()
+                            .enumerate()
+                            .find(|(_, status)| matches!(status, Status::Shield))
+                        {
+                            damage = Health::new(0.0);
+                            target.statuses.remove(index);
+                        }
+                    }
+                    if damage > Health::new(0.0) {
+                        target
+                            .statuses
+                            .retain(|status| !matches!(status, Status::Freeze));
+                    }
+
+                    target.hp -= damage;
+                    self.render
+                        .add_text(target.position, &format!("-{}", damage), Color::RED);
+
+                    let caster = effect
+                        .caster
+                        .and_then(|id| self.units.get_mut(&id))
+                        .expect("Caster not found");
+                    caster.hp = (caster.hp + damage).min(caster.max_hp);
+                }
                 Effect::AddStatus { status } => {
                     let target = effect
                         .target

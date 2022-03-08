@@ -29,6 +29,17 @@ impl Game {
                     }
                 }
             }
+            MoveAi::KeepClose => {
+                // TODO: better implementation?
+                let closest_ally = self
+                    .units
+                    .iter()
+                    .filter(|other| other.faction == unit.faction)
+                    .min_by_key(|other| (other.position - unit.position).len());
+                if let Some(closest_ally) = closest_ally {
+                    target_position = closest_ally.position;
+                }
+            }
             _ => todo!(),
         }
         let mut speed = unit.speed;
