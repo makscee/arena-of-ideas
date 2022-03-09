@@ -96,7 +96,6 @@ pub struct Unit {
     pub id: Id,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
-    pub spawn_effects: Vec<Effect>,
     pub statuses: Vec<Status>,
     pub faction: Faction,
     pub attack_state: AttackState,
@@ -107,11 +106,11 @@ pub struct Unit {
     pub projectile_speed: Option<Coord>,
     pub attack: AttackProperties,
     pub size: Coord,
-    pub death_effects: Vec<Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,
     pub ability_cooldown: Option<Time>,
+    pub on: HashMap<Trigger, Vec<Effect>>,
 }
 
 impl Unit {
@@ -153,6 +152,13 @@ pub struct AttackProperties {
     pub effects: Vec<Effect>,
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum Trigger {
+    Death,
+    Kill,
+    Spawn,
+}
+
 #[derive(Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
@@ -162,9 +168,7 @@ pub struct UnitTemplate {
     pub projectile_speed: Option<Coord>,
     pub size: Coord,
     pub attack: AttackProperties,
-    pub spawn_effects: Vec<Effect>,
-    pub death_effects: Vec<Effect>,
-    pub kill_effects: Vec<Effect>,
+    pub on: HashMap<Trigger, Vec<Effect>>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
@@ -186,9 +190,7 @@ impl Default for UnitTemplate {
                 animation_delay: Time::new(1.0),
                 effects: vec![],
             },
-            spawn_effects: vec![],
-            death_effects: vec![],
-            kill_effects: vec![],
+            on: HashMap::new(),
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
             abilities: HashMap::new(),

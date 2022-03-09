@@ -7,7 +7,7 @@ impl Logic<'_> {
             id: self.model.next_id,
             unit_type: unit_type.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
-            spawn_effects: template.spawn_effects.clone(),
+            on: template.on.clone(),
             statuses: Vec::new(),
             faction,
             attack_state: AttackState::None,
@@ -22,7 +22,6 @@ impl Logic<'_> {
             projectile_speed: template.projectile_speed,
             size: template.size,
             attack: template.attack.clone(),
-            death_effects: template.death_effects.clone(),
             move_ai: template.move_ai,
             target_ai: template.target_ai,
             color: template.color,
@@ -31,7 +30,7 @@ impl Logic<'_> {
         unit.attack.effects.push(Effect::Damage(DamageEffect {
             hp: DamageValue::Absolute(template.attack.damage),
             lifesteal: DamageValue::Absolute(R32::ZERO),
-            kill_effects: template.kill_effects.clone(),
+            kill_effects: template.on.get(&Trigger::Kill).cloned().unwrap_or_default(),
         }));
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
@@ -48,12 +47,14 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            for effect in &unit.spawn_effects {
-                self.effects.push(QueuedEffect {
-                    effect: effect.clone(),
-                    caster: Some(unit.id),
-                    target: Some(unit.id),
-                });
+            if let Some(effects) = unit.on.get(&Trigger::Spawn) {
+                for effect in effects {
+                    self.effects.push(QueuedEffect {
+                        effect: effect.clone(),
+                        caster: Some(unit.id),
+                        target: Some(unit.id),
+                    });
+                }
             }
             self.model.units.insert(unit);
         }

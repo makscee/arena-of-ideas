@@ -9,12 +9,22 @@
         "animation_delay": 0.3,
         "cooldown": 1
     },
-    "kill_effects": [
-        {
-            "type": "Spawn",
-            "unit_type": "critter"
-        }
-    ],
+    "on": {
+        "Kill": [
+            {
+                "type": "Spawn",
+                "unit_type": "critter"
+            }
+        ],
+        "Spawn": [
+            {
+                "type": "AddStatus",
+                "status": {
+                    "type": "Shield"
+                }
+            }
+        ]
+    },
     "abilities": {
         "MouseLeft": {
             "effects": [
@@ -35,14 +45,6 @@
             "cooldown": 1.0
         }
     },
-    "spawn_effects": [
-        {
-            "type": "AddStatus",
-            "status": {
-                "type": "Shield"
-            }
-        }
-    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "color": "magenta"
