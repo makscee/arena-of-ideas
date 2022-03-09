@@ -28,7 +28,7 @@ pub struct Game {
     spawning_units: Collection<Unit>,
     dead_units: Collection<Unit>,
     projectiles: Collection<Projectile>,
-    effects: Vec<QueuedEffect>,
+    effects: Vec<QueuedEffect<Effect>>,
     pressed_keys: Vec<Key>,
     time_bombs: Collection<TimeBomb>,
     dead_time_bombs: Collection<TimeBomb>,

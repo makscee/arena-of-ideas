@@ -31,11 +31,11 @@ impl Game {
             color: template.color,
             ability_cooldown: None,
         };
-        unit.attack_effects.push(Effect::Damage {
+        unit.attack_effects.push(Effect::Damage(DamageEffect {
             hp: DamageValue::Absolute(template.attack_damage),
             lifesteal: DamageValue::Absolute(R32::ZERO),
             kill_effects: template.kill_effects.clone(),
-        });
+        }));
         self.next_id += 1;
         self.spawning_units.insert(unit);
     }
