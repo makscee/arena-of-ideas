@@ -7,7 +7,7 @@ impl Logic<'_> {
     fn process_unit_attacks(&mut self, unit: &mut Unit) {
         if let AttackState::Start { time, target } = &mut unit.attack_state {
             *time += self.delta_time;
-            if *time > unit.attack_animation_delay {
+            if *time > unit.attack.animation_delay {
                 let target = self.model.units.remove(target);
                 unit.attack_state = AttackState::Cooldown {
                     time: Time::new(0.0),
@@ -22,11 +22,11 @@ impl Logic<'_> {
                                 + (target.position - unit.position).normalize() * unit.radius(),
                             speed: projectile_speed,
                             target_position: target.position,
-                            effects: unit.attack_effects.clone(),
+                            effects: unit.attack.effects.clone(),
                         });
                         self.model.next_id += 1;
                     } else {
-                        for effect in &unit.attack_effects {
+                        for effect in &unit.attack.effects {
                             self.effects.push(QueuedEffect {
                                 effect: effect.clone(),
                                 caster: Some(unit.id),
@@ -46,7 +46,7 @@ impl Logic<'_> {
     fn process_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let AttackState::Cooldown { time } = &mut unit.attack_state {
             *time += self.delta_time;
-            if *time > unit.attack_cooldown {
+            if *time > unit.attack.cooldown {
                 unit.attack_state = AttackState::None;
             }
         }

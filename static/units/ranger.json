@@ -3,10 +3,12 @@
     "speed": 1,
     "projectile_speed": 10.0,
     "size": 1,
-    "attack_damage": 3,
-    "attack_radius": 10,
-    "attack_animation_delay": 0.3,
-    "attack_cooldown": 1,
+    "attack": {
+        "damage": 3,
+        "radius": 10,
+        "animation_delay": 0.3,
+        "cooldown": 1
+    },
     "kill_effects": [
         {
             "type": "Spawn",

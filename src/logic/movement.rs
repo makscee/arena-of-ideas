@@ -25,7 +25,7 @@ impl Logic<'_> {
                     .filter(|other| other.faction != unit.faction)
                     .min_by_key(|other| (other.position - unit.position).len());
                 if let Some(closest_enemy) = closest_enemy {
-                    if distance_between_units(closest_enemy, &unit) > unit.attack_radius {
+                    if distance_between_units(closest_enemy, &unit) > unit.attack.radius {
                         target_position = closest_enemy.position;
                     }
                 }

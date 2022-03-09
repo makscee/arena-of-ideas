@@ -20,19 +20,16 @@ impl Logic<'_> {
                 ) * Coord::new(0.01),
             speed: template.speed,
             projectile_speed: template.projectile_speed,
-            attack_radius: template.attack_radius,
             size: template.size,
-            attack_cooldown: template.attack_cooldown,
-            attack_animation_delay: template.attack_animation_delay,
-            attack_effects: template.attack_effects.clone(),
+            attack: template.attack.clone(),
             death_effects: template.death_effects.clone(),
             move_ai: template.move_ai,
             target_ai: template.target_ai,
             color: template.color,
             ability_cooldown: None,
         };
-        unit.attack_effects.push(Effect::Damage(DamageEffect {
-            hp: DamageValue::Absolute(template.attack_damage),
+        unit.attack.effects.push(Effect::Damage(DamageEffect {
+            hp: DamageValue::Absolute(template.attack.damage),
             lifesteal: DamageValue::Absolute(R32::ZERO),
             kill_effects: template.kill_effects.clone(),
         }));

@@ -3,10 +3,12 @@
     "speed": 1.5,
     "projectile_speed": 10.0,
     "size": 0.3,
-    "attack_damage": 1,
-    "attack_radius": 0.5,
-    "attack_animation_delay": 0.5,
-    "attack_cooldown": 1.0,
+    "attack": {
+        "damage": 1,
+        "radius": 0.5,
+        "animation_delay": 0.5,
+        "cooldown": 1.0
+    },
     "death_effects": [
         {
             "type": "TimeBomb",

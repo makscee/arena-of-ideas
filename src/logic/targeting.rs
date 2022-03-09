@@ -23,7 +23,7 @@ impl Logic<'_> {
                 _ => todo!(),
             };
             if let Some(target) = target {
-                if distance_between_units(target, &unit) < unit.attack_radius {
+                if distance_between_units(target, &unit) < unit.attack.radius {
                     unit.attack_state = AttackState::Start {
                         time: Time::new(0.0),
                         target: target.id,

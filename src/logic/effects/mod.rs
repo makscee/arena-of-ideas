@@ -21,7 +21,7 @@ pub struct QueuedEffect<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
     Damage(DamageEffect),
     AddStatus(AddStatusEffect),

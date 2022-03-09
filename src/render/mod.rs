@@ -48,7 +48,7 @@ impl Game {
                     unit.radius().as_f32()
                         * match &unit.attack_state {
                             AttackState::Start { time, .. } => {
-                                1.0 - 0.25 * (*time / unit.attack_animation_delay).as_f32()
+                                1.0 - 0.25 * (*time / unit.attack.animation_delay).as_f32()
                             }
                             _ => 1.0,
                         }

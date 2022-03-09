@@ -105,12 +105,9 @@ pub struct Unit {
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub projectile_speed: Option<Coord>,
-    pub attack_radius: Coord,
+    pub attack: AttackProperties,
     pub size: Coord,
-    pub attack_cooldown: Time,
-    pub attack_effects: Vec<Effect>,
     pub death_effects: Vec<Effect>,
-    pub attack_animation_delay: Time,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub color: Color<f32>,
@@ -139,24 +136,32 @@ pub type UnitType = String;
 pub type Key = String;
 
 #[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Ability {
     pub effects: Vec<Effect>,
     pub cooldown: Time,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct AttackProperties {
+    pub damage: Health,
+    pub cooldown: Time,
+    pub animation_delay: Time,
+    pub radius: Coord,
+    #[serde(default)]
+    pub effects: Vec<Effect>,
+}
+
 #[derive(Deserialize, Clone)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
     pub hp: Health,
     pub spawn_animation_time: Time,
     pub speed: Coord,
     pub projectile_speed: Option<Coord>,
-    pub attack_radius: Coord,
     pub size: Coord,
-    pub attack_damage: Health,
-    pub attack_cooldown: Time,
-    pub attack_animation_delay: Time,
-    pub attack_effects: Vec<Effect>,
+    pub attack: AttackProperties,
     pub spawn_effects: Vec<Effect>,
     pub death_effects: Vec<Effect>,
     pub kill_effects: Vec<Effect>,
@@ -173,12 +178,14 @@ impl Default for UnitTemplate {
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
             projectile_speed: None,
-            attack_radius: Coord::new(1.0),
             size: Coord::new(1.0),
-            attack_damage: Health::new(1.0),
-            attack_cooldown: Time::new(1.0),
-            attack_animation_delay: Time::new(1.0),
-            attack_effects: vec![],
+            attack: AttackProperties {
+                radius: Coord::new(1.0),
+                damage: Health::new(1.0),
+                cooldown: Time::new(1.0),
+                animation_delay: Time::new(1.0),
+                effects: vec![],
+            },
             spawn_effects: vec![],
             death_effects: vec![],
             kill_effects: vec![],
