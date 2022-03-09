@@ -37,11 +37,11 @@ impl Game {
             kill_effects: template.kill_effects.clone(),
         }));
         self.next_id += 1;
-        self.spawning_units.insert(unit);
+        self.model.spawning_units.insert(unit);
     }
     pub fn process_spawns(&mut self) {
         let mut new_units = Vec::new();
-        for unit in &mut self.spawning_units {
+        for unit in &mut self.model.spawning_units {
             if let Some(time) = &mut unit.spawn_animation_time_left {
                 *time -= self.delta_time;
                 if *time <= Time::new(0.0) {
@@ -58,9 +58,10 @@ impl Game {
                     target: Some(unit.id),
                 });
             }
-            self.units.insert(unit);
+            self.model.units.insert(unit);
         }
-        self.spawning_units
+        self.model
+            .spawning_units
             .retain(|unit| unit.spawn_animation_time_left.is_some());
     }
 }

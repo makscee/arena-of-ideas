@@ -3,6 +3,7 @@ use super::*;
 impl Game {
     pub fn check_next_wave(&mut self) {
         if self
+            .model
             .units
             .iter()
             .filter(|unit| unit.faction != Faction::Player)

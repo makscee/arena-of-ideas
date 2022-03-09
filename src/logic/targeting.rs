@@ -15,6 +15,7 @@ impl Game {
         if let AttackState::None = unit.attack_state {
             let target = match unit.target_ai {
                 TargetAi::Closest => self
+                    .model
                     .units
                     .iter_mut()
                     .filter(|other| other.faction != unit.faction)

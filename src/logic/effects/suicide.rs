@@ -8,7 +8,7 @@ impl Game {
         &mut self,
         QueuedEffect { caster, .. }: QueuedEffect<SuicideEffect>,
     ) {
-        if let Some(caster) = caster.and_then(|id| self.units.get_mut(&id)) {
+        if let Some(caster) = caster.and_then(|id| self.model.units.get_mut(&id)) {
             caster.hp = Health::new(0.0);
         }
     }

@@ -2,7 +2,7 @@ use super::*;
 
 impl Game {
     pub fn process_abilities(&mut self) {
-        for unit in &mut self.units {
+        for unit in &mut self.model.units {
             if let Some(time) = &mut unit.ability_cooldown {
                 *time -= self.delta_time;
                 if *time < Time::new(0.0) {
@@ -11,7 +11,7 @@ impl Game {
             }
         }
         for key in self.pressed_keys.drain(..) {
-            for unit in &mut self.units {
+            for unit in &mut self.model.units {
                 let template = &self.assets.units[&unit.unit_type];
                 if unit.ability_cooldown.is_some() {
                     continue;

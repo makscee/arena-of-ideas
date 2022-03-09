@@ -38,7 +38,7 @@ impl Render {
 impl Game {
     pub fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
-        for unit in itertools::chain![&self.units, &self.spawning_units] {
+        for unit in itertools::chain![&self.model.units, &self.model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
             self.geng.draw_2d(
                 framebuffer,
@@ -106,7 +106,7 @@ impl Game {
                 ),
             );
         }
-        for projectile in &self.projectiles {
+        for projectile in &self.model.projectiles {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,

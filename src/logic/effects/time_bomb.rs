@@ -16,9 +16,9 @@ impl Game {
         }: QueuedEffect<TimeBombEffect>,
     ) {
         let target = target
-            .and_then(|id| self.units.get(&id).or(self.dead_units.get(&id)))
+            .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
             .expect("Target not found");
-        self.time_bombs.insert(TimeBomb {
+        self.model.time_bombs.insert(TimeBomb {
             id: self.next_id,
             position: target.position,
             caster,

@@ -20,7 +20,7 @@ impl Game {
         }: QueuedEffect<DamageEffect>,
     ) {
         let target = target
-            .and_then(|id| self.units.get_mut(&id))
+            .and_then(|id| self.model.units.get_mut(&id))
             .expect("Target not found");
         let mut damage = match effect.hp {
             DamageValue::Absolute(hp) => hp,
@@ -63,7 +63,7 @@ impl Game {
             DamageValue::Absolute(hp) => hp,
             DamageValue::Relative(percent) => damage * percent / Health::new(100.0),
         };
-        if let Some(caster) = caster.and_then(|id| self.units.get_mut(&id)) {
+        if let Some(caster) = caster.and_then(|id| self.model.units.get_mut(&id)) {
             caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
         }
     }

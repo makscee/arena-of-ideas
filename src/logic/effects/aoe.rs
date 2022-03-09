@@ -17,19 +17,20 @@ impl Game {
         }: QueuedEffect<AoeEffect>,
     ) {
         let caster = caster
-            .and_then(|id| self.units.get(&id).or(self.dead_units.get(&id)))
+            .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
             .expect("Caster not found");
         let caster_faction = caster.faction;
         let center = target
             .and_then(|id| {
-                self.units
+                self.model.units.get(&id).map(|unit| unit.position).or(self
+                    .model
+                    .dead_time_bombs
                     .get(&id)
-                    .map(|unit| unit.position)
-                    .or(self.dead_time_bombs.get(&id).map(|bomb| bomb.position))
+                    .map(|bomb| bomb.position))
             })
             .expect("Target not found");
         self.render.add_text(center, "AOE", Color::RED);
-        for unit in &self.units {
+        for unit in &self.model.units {
             if (unit.position - center).len() - unit.radius() > effect.radius {
                 continue;
             }

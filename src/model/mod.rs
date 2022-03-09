@@ -210,3 +210,25 @@ pub struct UnitTemplates {
     #[deref]
     pub map: HashMap<String, UnitTemplate>,
 }
+
+pub struct Model {
+    pub units: Collection<Unit>,
+    pub spawning_units: Collection<Unit>,
+    pub dead_units: Collection<Unit>,
+    pub projectiles: Collection<Projectile>,
+    pub time_bombs: Collection<TimeBomb>,
+    pub dead_time_bombs: Collection<TimeBomb>,
+}
+
+impl Model {
+    pub fn new() -> Self {
+        Self {
+            units: Collection::new(),
+            spawning_units: Collection::new(),
+            dead_units: Collection::new(),
+            projectiles: Collection::new(),
+            time_bombs: Collection::new(),
+            dead_time_bombs: Collection::new(),
+        }
+    }
+}

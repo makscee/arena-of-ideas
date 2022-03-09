@@ -19,6 +19,7 @@ impl Game {
         match unit.move_ai {
             MoveAi::Advance => {
                 let closest_enemy = self
+                    .model
                     .units
                     .iter()
                     .filter(|other| other.faction != unit.faction)
@@ -32,6 +33,7 @@ impl Game {
             MoveAi::KeepClose => {
                 // TODO: better implementation?
                 let closest_ally = self
+                    .model
                     .units
                     .iter()
                     .filter(|other| other.faction == unit.faction)

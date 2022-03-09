@@ -19,11 +19,11 @@ pub use util::*;
 
 impl Game {
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
-        let ids: Vec<Id> = self.units.ids().copied().collect();
+        let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for id in ids {
-            let mut unit = self.units.remove(&id).unwrap();
+            let mut unit = self.model.units.remove(&id).unwrap();
             f(self, &mut unit);
-            self.units.insert(unit);
+            self.model.units.insert(unit);
         }
     }
     pub fn update(&mut self, delta_time: Time) {

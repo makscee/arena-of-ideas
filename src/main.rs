@@ -24,14 +24,9 @@ pub struct Game {
     geng: Geng,
     camera: geng::Camera2d,
     delta_time: Time,
-    units: Collection<Unit>,
-    spawning_units: Collection<Unit>,
-    dead_units: Collection<Unit>,
-    projectiles: Collection<Projectile>,
+    model: Model,
     effects: Vec<QueuedEffect<Effect>>,
     pressed_keys: Vec<Key>,
-    time_bombs: Collection<TimeBomb>,
-    dead_time_bombs: Collection<TimeBomb>,
     render: Render,
 }
 
@@ -47,14 +42,9 @@ impl Game {
                 fov: 10.0,
             },
             delta_time: Time::new(0.0),
-            units: Collection::new(),
-            spawning_units: Collection::new(),
-            dead_units: Collection::new(),
-            projectiles: Collection::new(),
+            model: Model::new(),
             effects: Vec::new(),
             pressed_keys: Vec::new(),
-            time_bombs: Collection::new(),
-            dead_time_bombs: Collection::new(),
             render: Render::new(),
         };
         for unit_type in &game.assets.config.player.clone() {
