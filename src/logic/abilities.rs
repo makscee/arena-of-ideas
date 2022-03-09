@@ -1,6 +1,6 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn process_abilities(&mut self) {
         for unit in &mut self.model.units {
             if let Some(time) = &mut unit.ability_cooldown {
@@ -12,7 +12,7 @@ impl Game {
         }
         for key in self.pressed_keys.drain(..) {
             for unit in &mut self.model.units {
-                let template = &self.assets.units[&unit.unit_type];
+                let template = &self.model.unit_templates[&unit.unit_type];
                 if unit.ability_cooldown.is_some() {
                     continue;
                 }

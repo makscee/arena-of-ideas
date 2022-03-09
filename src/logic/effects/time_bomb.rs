@@ -6,7 +6,7 @@ pub struct TimeBombEffect {
     pub effects: Vec<Effect>,
 }
 
-impl Game {
+impl Logic<'_> {
     pub fn process_time_bomb_effect(
         &mut self,
         QueuedEffect {
@@ -19,12 +19,12 @@ impl Game {
             .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
             .expect("Target not found");
         self.model.time_bombs.insert(TimeBomb {
-            id: self.next_id,
+            id: self.model.next_id,
             position: target.position,
             caster,
             time: effect.time,
             effects: effect.effects,
         });
-        self.next_id += 1;
+        self.model.next_id += 1;
     }
 }

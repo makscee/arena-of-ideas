@@ -1,10 +1,10 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Vec2<Coord>) {
-        let template = &self.assets.units[unit_type];
+        let template = &self.model.unit_templates[unit_type];
         let mut unit = Unit {
-            id: self.next_id,
+            id: self.model.next_id,
             unit_type: unit_type.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
             spawn_effects: template.spawn_effects.clone(),
@@ -36,7 +36,7 @@ impl Game {
             lifesteal: DamageValue::Absolute(R32::ZERO),
             kill_effects: template.kill_effects.clone(),
         }));
-        self.next_id += 1;
+        self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
     }
     pub fn process_spawns(&mut self) {

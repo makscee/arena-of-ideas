@@ -1,6 +1,6 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn process_projectiles(&mut self) {
         let mut delete_projectiles = Vec::new();
         for id in self.model.projectiles.ids().copied().collect::<Vec<Id>>() {

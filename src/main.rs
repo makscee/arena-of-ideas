@@ -19,13 +19,10 @@ type Coord = R32;
 type Id = i64;
 
 pub struct Game {
-    next_id: Id,
     assets: Assets,
     geng: Geng,
     camera: geng::Camera2d,
-    delta_time: Time,
     model: Model,
-    effects: Vec<QueuedEffect<Effect>>,
     pressed_keys: Vec<Key>,
     render: Render,
 }
@@ -33,23 +30,18 @@ pub struct Game {
 impl Game {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
         let mut game = Self {
-            next_id: 0,
-            assets,
             geng: geng.clone(),
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
                 fov: 10.0,
             },
-            delta_time: Time::new(0.0),
-            model: Model::new(),
-            effects: Vec::new(),
-            pressed_keys: Vec::new(),
+            model: Model::new(assets.config.clone(), assets.units.clone()),
             render: Render::new(),
+            pressed_keys: Vec::new(),
+            assets,
         };
-        for unit_type in &game.assets.config.player.clone() {
-            game.spawn_unit(unit_type, Faction::Player, Vec2::ZERO);
-        }
+        Logic::initialize(&mut game.model, &game.assets.config);
         game
     }
 }

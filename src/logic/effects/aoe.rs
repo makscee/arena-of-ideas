@@ -7,7 +7,7 @@ pub struct AoeEffect {
     pub effects: Vec<Effect>,
 }
 
-impl Game {
+impl Logic<'_> {
     pub fn process_aoe_effect(
         &mut self,
         QueuedEffect {
@@ -29,7 +29,9 @@ impl Game {
                     .map(|bomb| bomb.position))
             })
             .expect("Target not found");
-        self.render.add_text(center, "AOE", Color::RED);
+        if let Some(render) = &mut self.render {
+            render.add_text(center, "AOE", Color::RED);
+        }
         for unit in &self.model.units {
             if (unit.position - center).len() - unit.radius() > effect.radius {
                 continue;

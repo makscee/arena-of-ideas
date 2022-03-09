@@ -1,6 +1,6 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn process_movement(&mut self) {
         self.process_units(Self::process_unit_movement);
     }

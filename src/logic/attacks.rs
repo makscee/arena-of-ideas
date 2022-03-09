@@ -1,6 +1,6 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn process_attacks(&mut self) {
         self.process_units(Self::process_unit_attacks);
     }
@@ -15,7 +15,7 @@ impl Game {
                 if let Some(mut target) = target {
                     if let Some(projectile_speed) = unit.projectile_speed {
                         self.model.projectiles.insert(Projectile {
-                            id: self.next_id,
+                            id: self.model.next_id,
                             attacker: unit.id,
                             target: target.id,
                             position: unit.position
@@ -24,7 +24,7 @@ impl Game {
                             target_position: target.position,
                             effects: unit.attack_effects.clone(),
                         });
-                        self.next_id += 1;
+                        self.model.next_id += 1;
                     } else {
                         for effect in &unit.attack_effects {
                             self.effects.push(QueuedEffect {

@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SuicideEffect {}
 
-impl Game {
+impl Logic<'_> {
     pub fn process_suicide_effect(
         &mut self,
         QueuedEffect { caster, .. }: QueuedEffect<SuicideEffect>,

@@ -1,6 +1,6 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn process_deaths(&mut self) {
         self.process_units(Self::process_unit_death);
         for unit in &self.model.units {

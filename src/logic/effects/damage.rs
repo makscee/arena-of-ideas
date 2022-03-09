@@ -10,7 +10,7 @@ pub struct DamageEffect {
     pub kill_effects: Vec<Effect>,
 }
 
-impl Game {
+impl Logic<'_> {
     pub fn process_damage_effect(
         &mut self,
         QueuedEffect {
@@ -45,8 +45,9 @@ impl Game {
         }
         let old_hp = target.hp;
         target.hp -= damage;
-        self.render
-            .add_text(target.position, &format!("-{}", damage), Color::RED);
+        if let Some(render) = &mut self.render {
+            render.add_text(target.position, &format!("-{}", damage), Color::RED);
+        }
         if old_hp > Health::new(0.0) && target.hp <= Health::new(0.0) {
             // self.render.add_text(target.position, "KILL", Color::RED);
             for kill_effect in effect.kill_effects {

@@ -205,30 +205,36 @@ impl geng::LoadAsset for UnitTemplate {
 
 pub type Wave = HashMap<String, Vec<UnitType>>;
 
-#[derive(Deref)]
+#[derive(Deref, Clone)]
 pub struct UnitTemplates {
     #[deref]
     pub map: HashMap<String, UnitTemplate>,
 }
 
 pub struct Model {
+    pub next_id: Id,
     pub units: Collection<Unit>,
     pub spawning_units: Collection<Unit>,
     pub dead_units: Collection<Unit>,
     pub projectiles: Collection<Projectile>,
     pub time_bombs: Collection<TimeBomb>,
     pub dead_time_bombs: Collection<TimeBomb>,
+    pub config: Config,
+    pub unit_templates: UnitTemplates,
 }
 
 impl Model {
-    pub fn new() -> Self {
+    pub fn new(config: Config, unit_templates: UnitTemplates) -> Self {
         Self {
+            next_id: 0,
             units: Collection::new(),
             spawning_units: Collection::new(),
             dead_units: Collection::new(),
             projectiles: Collection::new(),
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
+            config,
+            unit_templates,
         }
     }
 }

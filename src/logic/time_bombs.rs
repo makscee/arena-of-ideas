@@ -1,6 +1,6 @@
 use super::*;
 
-impl Game {
+impl Logic<'_> {
     pub fn process_time_bombs(&mut self) {
         for bomb in &mut self.model.time_bombs {
             bomb.time -= self.delta_time;

@@ -31,7 +31,7 @@ pub enum Effect {
     Suicide(SuicideEffect),
 }
 
-impl Game {
+impl Logic<'_> {
     pub fn process_effects(&mut self) {
         while let Some(effect) = self.effects.pop() {
             let caster = effect.caster;

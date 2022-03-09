@@ -5,7 +5,7 @@ pub struct SpawnEffect {
     pub unit_type: UnitType,
 }
 
-impl Game {
+impl Logic<'_> {
     pub fn process_spawn_effect(
         &mut self,
         QueuedEffect {
