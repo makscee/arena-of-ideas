@@ -13,11 +13,7 @@ impl Logic<'_> {
             attack_state: AttackState::None,
             hp: template.hp,
             max_hp: template.hp,
-            position: position
-                + vec2(
-                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                    global_rng().gen_range(Coord::new(-1.0)..=Coord::new(1.0)),
-                ) * Coord::new(0.01),
+            position,
             speed: template.speed,
             projectile_speed: template.projectile_speed,
             size: template.size,
