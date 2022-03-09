@@ -1,13 +1,19 @@
 pub use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum DamageTrigger {
+    Kill,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct DamageEffect {
     pub hp: DamageValue,
     #[serde(default)]
     /// HP to heal self relative to the damage done
     pub lifesteal: DamageValue,
     #[serde(default)]
-    pub kill_effects: Vec<Effect>,
+    pub on: HashMap<DamageTrigger, Vec<Effect>>,
 }
 
 impl Logic<'_> {
@@ -50,12 +56,14 @@ impl Logic<'_> {
         }
         if old_hp > Health::new(0.0) && target.hp <= Health::new(0.0) {
             // self.render.add_text(target.position, "KILL", Color::RED);
-            for kill_effect in effect.kill_effects {
-                self.effects.push(QueuedEffect {
-                    effect: kill_effect.clone(),
-                    caster,
-                    target: Some(target.id),
-                });
+            if let Some(effects) = effect.on.get(&DamageTrigger::Kill) {
+                for kill_effect in effects {
+                    self.effects.push(QueuedEffect {
+                        effect: kill_effect.clone(),
+                        caster,
+                        target: Some(target.id),
+                    });
+                }
             }
         }
 

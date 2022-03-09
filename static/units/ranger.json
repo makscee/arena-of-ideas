@@ -11,12 +11,14 @@
             {
                 "type": "Damage",
                 "hp": "3",
-                "kill_effects": [
-                    {
-                        "type": "Spawn",
-                        "unit_type": "critter"
-                    }
-                ]
+                "on": {
+                    "Kill": [
+                        {
+                            "type": "Spawn",
+                            "unit_type": "critter"
+                        }
+                    ]
+                }
             }
         ]
     },
