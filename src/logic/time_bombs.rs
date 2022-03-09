@@ -5,13 +5,11 @@ impl Logic<'_> {
         for bomb in &mut self.model.time_bombs {
             bomb.time -= self.delta_time;
             if bomb.time <= Time::ZERO {
-                for effect in &bomb.effects {
-                    self.effects.push(QueuedEffect {
-                        effect: effect.clone(),
-                        caster: bomb.caster,
-                        target: Some(bomb.id),
-                    });
-                }
+                self.effects.push(QueuedEffect {
+                    effect: bomb.effect.clone(),
+                    caster: bomb.caster,
+                    target: Some(bomb.id),
+                });
                 self.model.dead_time_bombs.insert(bomb.clone());
             }
         }

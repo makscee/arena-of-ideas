@@ -7,51 +7,41 @@
         "radius": 10,
         "animation_delay": 0.3,
         "cooldown": 1,
-        "effects": [
-            {
-                "type": "Chain",
-                "targets": 3,
-                "jump_distance": 3,
-                "effects": [
-                    {
-                        "type": "Damage",
-                        "hp": "1"
-                    }
-                ],
-                "jump_modifier": {
-                    "type": "Weaken",
-                    "percent": 50
-                }
+        "effect": {
+            "type": "Chain",
+            "targets": 3,
+            "jump_distance": 3,
+            "effect": {
+                "type": "Damage",
+                "hp": "1"
+            },
+            "jump_modifier": {
+                "type": "Weaken",
+                "percent": 50
             }
-        ]
+        }
     },
     "on": {
-        "Spawn": [
-            {
-                "type": "AddStatus",
-                "status": {
-                    "type": "Shield"
-                }
+        "Spawn": {
+            "type": "AddStatus",
+            "status": {
+                "type": "Shield"
             }
-        ]
+        }
     },
     "abilities": {
         "MouseLeft": {
-            "effects": [
-                {
-                    "type": "AOE",
-                    "radius": 10.0,
-                    "filter": "Enemies",
-                    "effects": [
-                        {
-                            "type": "AddStatus",
-                            "status": {
-                                "type": "Freeze"
-                            }
-                        }
-                    ]
+            "effect": {
+                "type": "AOE",
+                "radius": 10.0,
+                "filter": "Enemies",
+                "effect": {
+                    "type": "AddStatus",
+                    "status": {
+                        "type": "Freeze"
+                    }
                 }
-            ],
+            },
             "cooldown": 1.0
         }
     },

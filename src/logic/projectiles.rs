@@ -10,13 +10,11 @@ impl Logic<'_> {
             if let Some(mut target) = self.model.units.remove(&projectile.target) {
                 projectile.target_position = target.position;
                 if (projectile.position - target.position).len() < target.radius() {
-                    for effect in &projectile.effects {
-                        self.effects.push(QueuedEffect {
-                            effect: effect.clone(),
-                            caster: Some(projectile.attacker),
-                            target: Some(target.id),
-                        });
-                    }
+                    self.effects.push(QueuedEffect {
+                        effect: projectile.effect.clone(),
+                        caster: Some(projectile.attacker),
+                        target: Some(target.id),
+                    });
                     delete_projectiles.push(projectile.id);
                 }
                 self.model.units.insert(target);

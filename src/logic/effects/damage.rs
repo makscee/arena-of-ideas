@@ -13,7 +13,7 @@ pub struct DamageEffect {
     /// HP to heal self relative to the damage done
     pub lifesteal: DamageValue,
     #[serde(default)]
-    pub on: HashMap<DamageTrigger, Vec<Effect>>,
+    pub on: HashMap<DamageTrigger, Effect>,
 }
 
 impl Logic<'_> {
@@ -56,14 +56,12 @@ impl Logic<'_> {
         }
         if old_hp > Health::new(0.0) && target.hp <= Health::new(0.0) {
             // self.render.add_text(target.position, "KILL", Color::RED);
-            if let Some(effects) = effect.on.get(&DamageTrigger::Kill) {
-                for kill_effect in effects {
-                    self.effects.push(QueuedEffect {
-                        effect: kill_effect.clone(),
-                        caster,
-                        target: Some(target.id),
-                    });
-                }
+            if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
+                self.effects.push(QueuedEffect {
+                    effect: effect.clone(),
+                    caster,
+                    target: Some(target.id),
+                });
             }
         }
 

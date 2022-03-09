@@ -31,13 +31,11 @@ impl Logic<'_> {
                     None => continue,
                 };
                 unit.ability_cooldown = Some(ability.cooldown);
-                for effect in &ability.effects {
-                    self.effects.push(QueuedEffect {
-                        effect: effect.clone(),
-                        caster: Some(unit.id),
-                        target: Some(unit.id),
-                    });
-                }
+                self.effects.push(QueuedEffect {
+                    effect: ability.effect.clone(),
+                    caster: Some(unit.id),
+                    target: Some(unit.id),
+                });
             }
         }
     }

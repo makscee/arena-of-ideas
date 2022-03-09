@@ -5,7 +5,7 @@ pub use super::*;
 pub struct ChainEffect {
     pub targets: usize,
     pub jump_distance: Coord,
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
     pub jump_modifier: Modifier,
 }
 
@@ -19,20 +19,16 @@ impl Logic<'_> {
         }: QueuedEffect<ChainEffect>,
     ) {
         let mut touched = HashSet::new();
-        let mut touch_effects = effect.effects.clone();
+        let mut touch_effect = effect.effect.clone();
         let mut target = self.model.units.get(&target.unwrap()).unwrap();
         while touched.len() < effect.targets {
             touched.insert(target.id);
-            for effect in &touch_effects {
-                self.effects.push(QueuedEffect {
-                    caster,
-                    target: Some(target.id),
-                    effect: effect.clone(),
-                });
-            }
-            for touch_effect in &mut touch_effects {
-                touch_effect.apply_modifier(&effect.jump_modifier);
-            }
+            self.effects.push(QueuedEffect {
+                caster,
+                target: Some(target.id),
+                effect: touch_effect.clone(),
+            });
+            touch_effect.apply_modifier(&effect.jump_modifier);
             target = match self
                 .model
                 .units

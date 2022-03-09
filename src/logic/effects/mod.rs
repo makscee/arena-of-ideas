@@ -27,13 +27,20 @@ pub struct QueuedEffect<T> {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
-    Damage(DamageEffect),
-    AddStatus(AddStatusEffect),
-    Spawn(SpawnEffect),
-    AOE(AoeEffect),
-    TimeBomb(TimeBombEffect),
-    Suicide(SuicideEffect),
-    Chain(ChainEffect),
+    Damage(Box<DamageEffect>),
+    AddStatus(Box<AddStatusEffect>),
+    Spawn(Box<SpawnEffect>),
+    AOE(Box<AoeEffect>),
+    TimeBomb(Box<TimeBombEffect>),
+    Suicide(Box<SuicideEffect>),
+    Chain(Box<ChainEffect>),
+    List { effects: Vec<Effect> },
+}
+
+impl Default for Effect {
+    fn default() -> Self {
+        Self::List { effects: vec![] }
+    }
 }
 
 impl Logic<'_> {
@@ -43,40 +50,49 @@ impl Logic<'_> {
             let target = effect.target;
             match effect.effect {
                 Effect::Damage(effect) => self.process_damage_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
                 Effect::AddStatus(effect) => self.process_add_status_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
                 Effect::Suicide(effect) => self.process_suicide_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
                 Effect::Spawn(effect) => self.process_spawn_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
                 Effect::TimeBomb(effect) => self.process_time_bomb_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
                 Effect::AOE(effect) => self.process_aoe_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
                 Effect::Chain(effect) => self.process_chain_effect(QueuedEffect {
-                    effect,
+                    effect: *effect,
                     caster,
                     target,
                 }),
+                Effect::List { effects } => {
+                    for effect in effects {
+                        self.effects.push(QueuedEffect {
+                            effect,
+                            caster,
+                            target,
+                        });
+                    }
+                }
             }
         }
     }

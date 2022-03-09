@@ -7,33 +7,25 @@
         "radius": 0.5,
         "animation_delay": 0.5,
         "cooldown": 1.0,
-        "effects": [
-            {
-                "type": "Damage",
-                "hp": "1"
-            }
-        ]
+        "effect": {
+            "type": "Damage",
+            "hp": "1"
+        }
     },
     "on": {
-        "Death": [
-            {
-                "type": "TimeBomb",
-                "time": 3.0,
-                "effects": [
-                    {
-                        "type": "AOE",
-                        "filter": "All",
-                        "radius": 5.0,
-                        "effects": [
-                            {
-                                "type": "Damage",
-                                "hp": "10"
-                            }
-                        ]
-                    }
-                ]
+        "Death": {
+            "type": "TimeBomb",
+            "time": 3.0,
+            "effect": {
+                "type": "AOE",
+                "filter": "All",
+                "radius": 5.0,
+                "effect": {
+                    "type": "Damage",
+                    "hp": "10"
+                }
             }
-        ]
+        }
     },
     "move_ai": "Advance",
     "target_ai": "Closest",

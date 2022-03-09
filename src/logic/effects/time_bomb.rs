@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TimeBombEffect {
     pub time: Time,
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
 }
 
 impl Logic<'_> {
@@ -23,7 +23,7 @@ impl Logic<'_> {
             position: target.position,
             caster,
             time: effect.time,
-            effects: effect.effects,
+            effect: effect.effect,
         });
         self.model.next_id += 1;
     }

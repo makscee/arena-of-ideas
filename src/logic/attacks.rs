@@ -22,17 +22,15 @@ impl Logic<'_> {
                                 + (target.position - unit.position).normalize() * unit.radius(),
                             speed: projectile_speed,
                             target_position: target.position,
-                            effects: unit.attack.effects.clone(),
+                            effect: unit.attack.effect.clone(),
                         });
                         self.model.next_id += 1;
                     } else {
-                        for effect in &unit.attack.effects {
-                            self.effects.push(QueuedEffect {
-                                effect: effect.clone(),
-                                caster: Some(unit.id),
-                                target: Some(target.id),
-                            });
-                        }
+                        self.effects.push(QueuedEffect {
+                            effect: unit.attack.effect.clone(),
+                            caster: Some(unit.id),
+                            target: Some(target.id),
+                        });
                     }
                     self.model.units.insert(target);
                 }

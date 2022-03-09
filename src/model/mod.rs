@@ -60,7 +60,7 @@ pub struct TimeBomb {
     pub position: Vec2<Coord>,
     pub time: Time,
     pub caster: Option<Id>,
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -110,7 +110,7 @@ pub struct Unit {
     pub target_ai: TargetAi,
     pub color: Color<f32>,
     pub ability_cooldown: Option<Time>,
-    pub on: HashMap<UnitTrigger, Vec<Effect>>,
+    pub on: HashMap<UnitTrigger, Effect>,
 }
 
 impl Unit {
@@ -127,7 +127,7 @@ pub struct Projectile {
     pub target_position: Vec2<Coord>,
     pub position: Vec2<Coord>,
     pub speed: Coord,
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
 }
 
 pub type UnitType = String;
@@ -137,7 +137,7 @@ pub type Key = String;
 #[derive(Debug, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Ability {
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
     pub cooldown: Time,
 }
 
@@ -148,7 +148,7 @@ pub struct AttackProperties {
     pub animation_delay: Time,
     pub radius: Coord,
     #[serde(default)]
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
@@ -166,7 +166,7 @@ pub struct UnitTemplate {
     pub projectile_speed: Option<Coord>,
     pub size: Coord,
     pub attack: AttackProperties,
-    pub on: HashMap<UnitTrigger, Vec<Effect>>,
+    pub on: HashMap<UnitTrigger, Effect>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
@@ -185,7 +185,7 @@ impl Default for UnitTemplate {
                 radius: Coord::new(1.0),
                 cooldown: Time::new(1.0),
                 animation_delay: Time::new(1.0),
-                effects: vec![],
+                effect: default(),
             },
             on: HashMap::new(),
             move_ai: MoveAi::Advance,

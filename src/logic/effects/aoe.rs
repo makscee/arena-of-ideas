@@ -4,7 +4,7 @@ use super::*;
 pub struct AoeEffect {
     pub filter: TargetFilter,
     pub radius: Coord,
-    pub effects: Vec<Effect>,
+    pub effect: Effect,
 }
 
 impl Logic<'_> {
@@ -49,13 +49,11 @@ impl Logic<'_> {
                 }
                 TargetFilter::All => {}
             }
-            for new_effect in &effect.effects {
-                self.effects.push(QueuedEffect {
-                    effect: new_effect.clone(),
-                    caster: Some(caster.id),
-                    target: Some(unit.id),
-                });
-            }
+            self.effects.push(QueuedEffect {
+                effect: effect.effect.clone(),
+                caster: Some(caster.id),
+                target: Some(unit.id),
+            });
         }
     }
 }

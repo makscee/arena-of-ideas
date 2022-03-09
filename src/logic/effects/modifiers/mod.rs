@@ -17,18 +17,17 @@ impl WeakenModifier {
             Effect::AddStatus(_) => {}
             Effect::Spawn(_) => {}
             Effect::AOE(effect) => {
-                for effect in &mut effect.effects {
-                    self.apply(effect);
-                }
+                self.apply(&mut effect.effect);
             }
             Effect::TimeBomb(effect) => {
-                for effect in &mut effect.effects {
-                    self.apply(effect);
-                }
+                self.apply(&mut effect.effect);
             }
             Effect::Suicide(_) => {}
             Effect::Chain(effect) => {
-                for effect in &mut effect.effects {
+                self.apply(&mut effect.effect);
+            }
+            Effect::List { effects } => {
+                for effect in effects {
                     self.apply(effect);
                 }
             }
