@@ -65,19 +65,19 @@ pub struct TimeBomb {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(try_from = "String")]
-pub enum HealthValue {
+pub enum DamageValue {
     Absolute(Health),
     /// Some percent from hp
     Relative(R32),
 }
 
-impl Default for HealthValue {
+impl Default for DamageValue {
     fn default() -> Self {
         Self::Absolute(Health::ZERO)
     }
 }
 
-impl TryFrom<String> for HealthValue {
+impl TryFrom<String> for DamageValue {
     type Error = <f32 as std::str::FromStr>::Err;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -95,10 +95,10 @@ impl TryFrom<String> for HealthValue {
 #[serde(tag = "type")]
 pub enum Effect {
     Damage {
-        hp: HealthValue,
+        hp: DamageValue,
         #[serde(default)]
         /// HP to heal self relative to the damage done
-        lifesteal: HealthValue,
+        lifesteal: DamageValue,
         #[serde(default)]
         kill_effects: Vec<Effect>,
     },

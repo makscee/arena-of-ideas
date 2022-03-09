@@ -20,8 +20,8 @@ impl Game {
                         .and_then(|id| self.units.get_mut(&id))
                         .expect("Target not found");
                     let mut damage = match hp {
-                        HealthValue::Absolute(hp) => hp,
-                        HealthValue::Relative(percent) => {
+                        DamageValue::Absolute(hp) => hp,
+                        DamageValue::Relative(percent) => {
                             target.max_hp * percent / Health::new(100.0)
                         }
                     };
@@ -59,8 +59,8 @@ impl Game {
 
                     // Lifesteal
                     let lifesteal = match lifesteal {
-                        HealthValue::Absolute(hp) => hp,
-                        HealthValue::Relative(percent) => damage * percent / Health::new(100.0),
+                        DamageValue::Absolute(hp) => hp,
+                        DamageValue::Relative(percent) => damage * percent / Health::new(100.0),
                     };
                     if let Some(caster) = effect.caster.and_then(|id| self.units.get_mut(&id)) {
                         caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
