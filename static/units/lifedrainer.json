@@ -16,8 +16,9 @@
                     "filter": "Enemies",
                     "effects": [
                         {
-                            "type": "Lifesteal",
-                            "percent": 10
+                            "type": "Damage",
+                            "hp": "10%",
+                            "lifesteal": "100%"
                         }
                     ]
                 }
