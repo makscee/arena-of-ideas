@@ -9,11 +9,19 @@
         "cooldown": 1,
         "effects": [
             {
-                "type": "ChainDamage",
-                "base_damage": 1,
-                "loss": 50,
+                "type": "Chain",
                 "targets": 3,
-                "jump_distance": 3
+                "jump_distance": 3,
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "hp": "1"
+                    }
+                ],
+                "jump_modifier": {
+                    "type": "Weaken",
+                    "percent": 50
+                }
             }
         ]
     },

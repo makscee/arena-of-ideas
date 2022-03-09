@@ -2,16 +2,18 @@ use super::*;
 
 mod add_status;
 mod aoe;
-mod chain_damage;
+mod chain;
 mod damage;
+mod modifiers;
 mod spawn;
 mod suicide;
 mod time_bomb;
 
 pub use add_status::*;
 pub use aoe::*;
-pub use chain_damage::*;
+pub use chain::*;
 pub use damage::*;
+pub use modifiers::*;
 pub use spawn::*;
 pub use suicide::*;
 pub use time_bomb::*;
@@ -31,7 +33,7 @@ pub enum Effect {
     AOE(AoeEffect),
     TimeBomb(TimeBombEffect),
     Suicide(SuicideEffect),
-    ChainDamage(ChainDamageEffect),
+    Chain(ChainEffect),
 }
 
 impl Logic<'_> {
@@ -70,7 +72,7 @@ impl Logic<'_> {
                     caster,
                     target,
                 }),
-                Effect::ChainDamage(effect) => self.process_chain_effect(QueuedEffect {
+                Effect::Chain(effect) => self.process_chain_effect(QueuedEffect {
                     effect,
                     caster,
                     target,

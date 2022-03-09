@@ -2,11 +2,11 @@ pub use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct ChainDamageEffect {
-    pub base_damage: Health,
-    pub loss: R32,
+pub struct ChainEffect {
     pub targets: usize,
     pub jump_distance: Coord,
+    pub effects: Vec<Effect>,
+    pub jump_modifier: EffectModifier,
 }
 
 impl Logic<'_> {
@@ -16,23 +16,23 @@ impl Logic<'_> {
             effect,
             caster,
             target,
-        }: QueuedEffect<ChainDamageEffect>,
+        }: QueuedEffect<ChainEffect>,
     ) {
         let mut touched = HashSet::new();
-        let mut damage = effect.base_damage;
+        let mut touch_effects = effect.effects.clone();
         let mut target = self.model.units.get(&target.unwrap()).unwrap();
         while touched.len() < effect.targets {
             touched.insert(target.id);
-            self.effects.push(QueuedEffect {
-                caster,
-                target: Some(target.id),
-                effect: Effect::Damage(DamageEffect {
-                    hp: DamageValue::Absolute(damage),
-                    lifesteal: DamageValue::Absolute(R32::ZERO),
-                    on: default(),
-                }),
-            });
-            damage -= damage * (effect.loss / r32(100.0));
+            for effect in &touch_effects {
+                self.effects.push(QueuedEffect {
+                    caster,
+                    target: Some(target.id),
+                    effect: effect.clone(),
+                });
+            }
+            for touch_effect in &mut touch_effects {
+                touch_effect.apply_modifier(&effect.jump_modifier);
+            }
             target = match self
                 .model
                 .units
