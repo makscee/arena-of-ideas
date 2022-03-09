@@ -1,0 +1,19 @@
+{
+    "tier": 4,
+    "hp": 2,
+    "speed": 1,
+    "size": 1,
+    "attack": {
+        "damage": 1,
+        "radius": 10,
+        "animation_delay": 0.75,
+        "cooldown": 1.25,
+        "projectile_speed": 10
+    },
+    "move_ai": "Avoid",
+    "target_ai": "Biggest",
+    "alliances": [
+        "Archers",
+        "Assassins"
+    ]
+}
