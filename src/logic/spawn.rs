@@ -23,11 +23,6 @@ impl Logic<'_> {
             color: template.color,
             ability_cooldown: None,
         };
-        unit.attack.effects.push(Effect::Damage(DamageEffect {
-            hp: DamageValue::Absolute(template.attack.damage),
-            lifesteal: DamageValue::Absolute(R32::ZERO),
-            kill_effects: template.on.get(&Trigger::Kill).cloned().unwrap_or_default(),
-        }));
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
     }
@@ -43,7 +38,7 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            if let Some(effects) = unit.on.get(&Trigger::Spawn) {
+            if let Some(effects) = unit.on.get(&UnitTrigger::Spawn) {
                 for effect in effects {
                     self.effects.push(QueuedEffect {
                         effect: effect.clone(),

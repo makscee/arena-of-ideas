@@ -4,18 +4,23 @@
     "projectile_speed": 10.0,
     "size": 1,
     "attack": {
-        "damage": 3,
         "radius": 10,
         "animation_delay": 0.3,
-        "cooldown": 1
+        "cooldown": 1,
+        "effects": [
+            {
+                "type": "Damage",
+                "hp": "3",
+                "kill_effects": [
+                    {
+                        "type": "Spawn",
+                        "unit_type": "critter"
+                    }
+                ]
+            }
+        ]
     },
     "on": {
-        "Kill": [
-            {
-                "type": "Spawn",
-                "unit_type": "critter"
-            }
-        ],
         "Spawn": [
             {
                 "type": "AddStatus",

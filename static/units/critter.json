@@ -4,11 +4,14 @@
     "speed": 1.5,
     "size": 0.3,
     "attack": {
-        "damage": 1,
         "radius": 0.5,
         "animation_delay": 0.0,
         "cooldown": 1.0,
         "effects": [
+            {
+                "type": "Damage",
+                "hp": "1"
+            },
             {
                 "type": "Suicide"
             }

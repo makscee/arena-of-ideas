@@ -4,10 +4,15 @@
     "projectile_speed": 10.0,
     "size": 1,
     "attack": {
-        "damage": 2,
         "radius": 0.5,
         "animation_delay": 0.5,
-        "cooldown": 0.5
+        "cooldown": 0.5,
+        "effects": [
+            {
+                "type": "Damage",
+                "hp": "2"
+            }
+        ]
     },
     "on": {
         "Death": [

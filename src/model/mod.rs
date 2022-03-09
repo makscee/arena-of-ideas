@@ -110,7 +110,7 @@ pub struct Unit {
     pub target_ai: TargetAi,
     pub color: Color<f32>,
     pub ability_cooldown: Option<Time>,
-    pub on: HashMap<Trigger, Vec<Effect>>,
+    pub on: HashMap<UnitTrigger, Vec<Effect>>,
 }
 
 impl Unit {
@@ -144,7 +144,6 @@ pub struct Ability {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct AttackProperties {
-    pub damage: Health,
     pub cooldown: Time,
     pub animation_delay: Time,
     pub radius: Coord,
@@ -153,9 +152,8 @@ pub struct AttackProperties {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-pub enum Trigger {
+pub enum UnitTrigger {
     Death,
-    Kill,
     Spawn,
 }
 
@@ -168,7 +166,7 @@ pub struct UnitTemplate {
     pub projectile_speed: Option<Coord>,
     pub size: Coord,
     pub attack: AttackProperties,
-    pub on: HashMap<Trigger, Vec<Effect>>,
+    pub on: HashMap<UnitTrigger, Vec<Effect>>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
@@ -185,7 +183,6 @@ impl Default for UnitTemplate {
             size: Coord::new(1.0),
             attack: AttackProperties {
                 radius: Coord::new(1.0),
-                damage: Health::new(1.0),
                 cooldown: Time::new(1.0),
                 animation_delay: Time::new(1.0),
                 effects: vec![],
