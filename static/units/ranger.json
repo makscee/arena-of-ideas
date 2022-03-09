@@ -9,16 +9,11 @@
         "cooldown": 1,
         "effects": [
             {
-                "type": "Damage",
-                "hp": "3",
-                "on": {
-                    "Kill": [
-                        {
-                            "type": "Spawn",
-                            "unit_type": "critter"
-                        }
-                    ]
-                }
+                "type": "ChainDamage",
+                "base_damage": 1,
+                "loss": 50,
+                "targets": 3,
+                "jump_distance": 3
             }
         ]
     },
