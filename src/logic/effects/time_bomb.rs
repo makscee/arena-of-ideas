@@ -1,5 +1,11 @@
 use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TimeBombEffect {
+    pub time: Time,
+    pub effects: Vec<Effect>,
+}
+
 impl Game {
     pub fn process_time_bomb_effect(
         &mut self,

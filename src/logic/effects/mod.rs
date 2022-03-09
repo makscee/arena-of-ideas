@@ -7,10 +7,28 @@ mod spawn;
 mod suicide;
 mod time_bomb;
 
+pub use add_status::*;
+pub use aoe::*;
+pub use damage::*;
+pub use spawn::*;
+pub use suicide::*;
+pub use time_bomb::*;
+
 pub struct QueuedEffect<T> {
     pub effect: T,
     pub caster: Option<Id>,
     pub target: Option<Id>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum Effect {
+    Damage(DamageEffect),
+    AddStatus(AddStatusEffect),
+    Spawn(SpawnEffect),
+    AOE(AoeEffect),
+    TimeBomb(TimeBombEffect),
+    Suicide(SuicideEffect),
 }
 
 impl Game {

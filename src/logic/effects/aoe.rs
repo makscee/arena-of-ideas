@@ -1,5 +1,12 @@
 use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AoeEffect {
+    pub filter: TargetFilter,
+    pub radius: Coord,
+    pub effects: Vec<Effect>,
+}
+
 impl Game {
     pub fn process_aoe_effect(
         &mut self,

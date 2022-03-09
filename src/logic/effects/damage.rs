@@ -1,5 +1,15 @@
 pub use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DamageEffect {
+    pub hp: DamageValue,
+    #[serde(default)]
+    /// HP to heal self relative to the damage done
+    pub lifesteal: DamageValue,
+    #[serde(default)]
+    pub kill_effects: Vec<Effect>,
+}
+
 impl Game {
     pub fn process_damage_effect(
         &mut self,

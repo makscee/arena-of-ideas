@@ -91,53 +91,6 @@ impl TryFrom<String> for DamageValue {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DamageEffect {
-    pub hp: DamageValue,
-    #[serde(default)]
-    /// HP to heal self relative to the damage done
-    pub lifesteal: DamageValue,
-    #[serde(default)]
-    pub kill_effects: Vec<Effect>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AddStatusEffect {
-    pub status: Status,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SpawnEffect {
-    pub unit_type: UnitType,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AoeEffect {
-    pub filter: TargetFilter,
-    pub radius: Coord,
-    pub effects: Vec<Effect>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TimeBombEffect {
-    pub time: Time,
-    pub effects: Vec<Effect>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SuicideEffect {}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type")]
-pub enum Effect {
-    Damage(DamageEffect),
-    AddStatus(AddStatusEffect),
-    Spawn(SpawnEffect),
-    AOE(AoeEffect),
-    TimeBomb(TimeBombEffect),
-    Suicide(SuicideEffect),
-}
-
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,

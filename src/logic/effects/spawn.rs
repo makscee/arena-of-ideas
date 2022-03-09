@@ -1,5 +1,10 @@
 use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SpawnEffect {
+    pub unit_type: UnitType,
+}
+
 impl Game {
     pub fn process_spawn_effect(
         &mut self,

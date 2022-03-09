@@ -1,5 +1,8 @@
 use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SuicideEffect {}
+
 impl Game {
     pub fn process_suicide_effect(
         &mut self,

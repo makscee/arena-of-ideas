@@ -1,5 +1,10 @@
 use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AddStatusEffect {
+    pub status: Status,
+}
+
 impl Game {
     pub fn process_add_status_effect(
         &mut self,
