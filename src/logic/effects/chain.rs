@@ -6,7 +6,7 @@ pub struct ChainEffect {
     pub targets: usize,
     pub jump_distance: Coord,
     pub effects: Vec<Effect>,
-    pub jump_modifier: EffectModifier,
+    pub jump_modifier: Modifier,
 }
 
 impl Logic<'_> {

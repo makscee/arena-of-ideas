@@ -2,11 +2,11 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct WeakenEffectModifier {
+pub struct WeakenModifier {
     pub percent: R32,
 }
 
-impl WeakenEffectModifier {
+impl WeakenModifier {
     pub fn apply(&self, effect: &mut Effect) {
         let multiplier = R32::ONE - self.percent / r32(100.0);
         match effect {
@@ -38,14 +38,14 @@ impl WeakenEffectModifier {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
-pub enum EffectModifier {
-    Weaken(WeakenEffectModifier),
+pub enum Modifier {
+    Weaken(WeakenModifier),
 }
 
 impl Effect {
-    pub fn apply_modifier(&mut self, modifier: &EffectModifier) {
+    pub fn apply_modifier(&mut self, modifier: &Modifier) {
         match modifier {
-            EffectModifier::Weaken(modifier) => modifier.apply(self),
+            Modifier::Weaken(modifier) => modifier.apply(self),
         }
     }
 }
