@@ -20,15 +20,20 @@ impl geng::LoadAsset for UnitTemplates {
         let path = path.to_owned();
         async move {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            let types: Vec<String> = serde_json::from_str(&json)?;
+            let packs: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
-            let base_path = path.parent().unwrap();
-            for typ in types {
-                let template = <UnitTemplate as geng::LoadAsset>::load(
-                    &geng,
-                    &base_path.join("units").join(format!("{}.json", typ)),
-                );
-                map.insert(typ, template.await?);
+            for pack in packs {
+                let base_path = path.parent().unwrap().join(pack);
+                let json =
+                    <String as geng::LoadAsset>::load(&geng, &base_path.join("_list.json")).await?;
+                let types: Vec<String> = serde_json::from_str(&json)?;
+                for typ in types {
+                    let template = <UnitTemplate as geng::LoadAsset>::load(
+                        &geng,
+                        &base_path.join(format!("{}.json", typ)),
+                    );
+                    map.insert(typ, template.await?);
+                }
             }
             Ok(Self { map })
         }
