@@ -136,7 +136,7 @@ pub type UnitType = String;
 
 pub type Key = String;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Ability {
     pub effect: Effect,
@@ -159,7 +159,7 @@ pub enum UnitTrigger {
     Spawn,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
     pub hp: Health,

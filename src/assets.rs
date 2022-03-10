@@ -28,11 +28,24 @@ impl geng::LoadAsset for UnitTemplates {
                     <String as geng::LoadAsset>::load(&geng, &base_path.join("_list.json")).await?;
                 let types: Vec<String> = serde_json::from_str(&json)?;
                 for typ in types {
-                    let template = <UnitTemplate as geng::LoadAsset>::load(
+                    let mut json = <serde_json::Value as geng::LoadAsset>::load(
                         &geng,
                         &base_path.join(format!("{}.json", typ)),
-                    );
-                    map.insert(typ, template.await?);
+                    )
+                    .await?;
+                    if let Some(base) = json.get_mut("base") {
+                        let base = base.take();
+                        let base = base.as_str().expect("base must be a string");
+                        let base = &map[base];
+                        let mut base_json = serde_json::to_value(base).unwrap();
+                        base_json
+                            .as_object_mut()
+                            .unwrap()
+                            .append(&mut json.as_object_mut().unwrap());
+                        json = base_json;
+                    }
+                    let template = serde_json::from_value(json)?;
+                    map.insert(typ, template);
                 }
             }
             Ok(Self { map })
