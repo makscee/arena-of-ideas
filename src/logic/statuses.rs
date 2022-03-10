@@ -10,6 +10,10 @@ impl Logic<'_> {
                 Status::Slow { time, .. } => {
                     *time -= self.delta_time;
                 }
+                Status::Stun { time, .. } => {
+                    *time -= self.delta_time;
+                    unit.attack_state = AttackState::None;
+                }
                 Status::Freeze => {
                     unit.attack_state = AttackState::None;
                 }
@@ -17,7 +21,7 @@ impl Logic<'_> {
             }
         }
         unit.statuses.retain(|status| match status {
-            Status::Slow { time, .. } => *time > Time::ZERO,
+            Status::Slow { time, .. } | Status::Stun { time, .. } => *time > Time::ZERO,
             _ => true,
         });
     }

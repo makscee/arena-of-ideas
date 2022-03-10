@@ -8,7 +8,7 @@ impl Logic<'_> {
         if unit
             .statuses
             .iter()
-            .any(|status| matches!(status, Status::Freeze))
+            .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
         {
             return;
         }

@@ -33,6 +33,7 @@ pub enum AttackState {
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
+    Stun { time: Time },
     Shield,
     Slow { percent: f32, time: Time },
 }
@@ -41,6 +42,7 @@ impl Status {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Freeze => "Freeze",
+            Self::Stun { .. } => "Stun",
             Self::Shield => "Shield",
             Self::Slow { .. } => "Slow",
         }
