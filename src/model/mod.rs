@@ -105,7 +105,6 @@ pub struct Unit {
     pub max_hp: Health,
     pub position: Vec2<Coord>,
     pub speed: Coord,
-    pub projectile_speed: Option<Coord>,
     pub attack: AttackProperties,
     pub size: Coord,
     pub move_ai: MoveAi,
@@ -165,7 +164,6 @@ pub struct UnitTemplate {
     pub hp: Health,
     pub spawn_animation_time: Time,
     pub speed: Coord,
-    pub projectile_speed: Option<Coord>,
     pub size: Coord,
     pub attack: AttackProperties,
     pub on: HashMap<UnitTrigger, Effect>,
@@ -181,7 +179,6 @@ impl Default for UnitTemplate {
             hp: Health::new(1.0),
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
-            projectile_speed: None,
             size: Coord::new(1.0),
             attack: AttackProperties {
                 radius: Coord::new(1.0),

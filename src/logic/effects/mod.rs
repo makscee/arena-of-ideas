@@ -5,6 +5,7 @@ mod aoe;
 mod chain;
 mod damage;
 mod modifiers;
+mod projectile;
 mod spawn;
 mod suicide;
 mod time_bomb;
@@ -14,6 +15,7 @@ pub use aoe::*;
 pub use chain::*;
 pub use damage::*;
 pub use modifiers::*;
+pub use projectile::*;
 pub use spawn::*;
 pub use suicide::*;
 pub use time_bomb::*;
@@ -27,6 +29,7 @@ pub struct QueuedEffect<T> {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
+    Projectile(Box<ProjectileEffect>),
     Damage(Box<DamageEffect>),
     AddStatus(Box<AddStatusEffect>),
     Spawn(Box<SpawnEffect>),
@@ -50,6 +53,11 @@ impl Logic<'_> {
             let target = effect.target;
             match effect.effect {
                 Effect::Damage(effect) => self.process_damage_effect(QueuedEffect {
+                    effect: *effect,
+                    caster,
+                    target,
+                }),
+                Effect::Projectile(effect) => self.process_projectile_effect(QueuedEffect {
                     effect: *effect,
                     caster,
                     target,

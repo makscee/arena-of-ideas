@@ -8,32 +8,16 @@ impl Logic<'_> {
         if let AttackState::Start { time, target } = &mut unit.attack_state {
             *time += self.delta_time;
             if *time > unit.attack.animation_delay {
-                let target = self.model.units.remove(target);
+                if let Some(target) = self.model.units.get(target) {
+                    self.effects.push(QueuedEffect {
+                        effect: unit.attack.effect.clone(),
+                        caster: Some(unit.id),
+                        target: Some(target.id),
+                    });
+                }
                 unit.attack_state = AttackState::Cooldown {
                     time: Time::new(0.0),
                 };
-                if let Some(mut target) = target {
-                    if let Some(projectile_speed) = unit.projectile_speed {
-                        self.model.projectiles.insert(Projectile {
-                            id: self.model.next_id,
-                            attacker: unit.id,
-                            target: target.id,
-                            position: unit.position
-                                + (target.position - unit.position).normalize() * unit.radius(),
-                            speed: projectile_speed,
-                            target_position: target.position,
-                            effect: unit.attack.effect.clone(),
-                        });
-                        self.model.next_id += 1;
-                    } else {
-                        self.effects.push(QueuedEffect {
-                            effect: unit.attack.effect.clone(),
-                            caster: Some(unit.id),
-                            target: Some(target.id),
-                        });
-                    }
-                    self.model.units.insert(target);
-                }
             }
         }
     }

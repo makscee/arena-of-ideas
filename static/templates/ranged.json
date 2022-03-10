@@ -6,10 +6,13 @@
         "radius": 10,
         "animation_delay": 0.75,
         "cooldown": 1.25,
-        "projectile_speed": 10,
         "effect": {
-            "type": "Damage",
-            "hp": "1"
+            "type": "Projectile",
+            "speed": 10,
+            "effect": {
+                "type": "Damage",
+                "hp": "1"
+            }
         }
     },
     "move_ai": "KeepClose",

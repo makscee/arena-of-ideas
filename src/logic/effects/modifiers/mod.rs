@@ -14,6 +14,9 @@ impl WeakenModifier {
                 DamageValue::Absolute(value) => *value *= multiplier,
                 DamageValue::Relative(value) => *value *= multiplier,
             },
+            Effect::Projectile(effect) => {
+                self.apply(&mut effect.effect);
+            }
             Effect::AddStatus(_) => {}
             Effect::Spawn(_) => {}
             Effect::AOE(effect) => {

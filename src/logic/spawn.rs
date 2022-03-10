@@ -15,7 +15,6 @@ impl Logic<'_> {
             max_hp: template.hp,
             position,
             speed: template.speed,
-            projectile_speed: template.projectile_speed,
             size: template.size,
             attack: template.attack.clone(),
             move_ai: template.move_ai,
