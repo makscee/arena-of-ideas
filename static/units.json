@@ -1,5 +1,6 @@
 [
     "templates",
     "test_units",
-    "units"
+    "units/enemy",
+    "units/player"
 ]
