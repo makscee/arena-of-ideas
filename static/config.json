@@ -1,6 +1,6 @@
 {
     "player": [
-        "ranger"
+        "experimenter"
     ],
     "spawn_points": {
         "Left": [
@@ -18,22 +18,9 @@
     },
     "waves": [
         {
-            "Left": [
+            "Top": [
                 "blob"
-            ],
-            "Top": [
-                "small_blob"
-            ],
-            "Right": [
-                "small_blob"
             ]
-        },
-        {
-            "Left": [],
-            "Top": [
-                "big_blob"
-            ],
-            "Right": []
         }
     ]
 }

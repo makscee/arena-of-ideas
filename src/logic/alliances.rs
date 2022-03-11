@@ -50,7 +50,47 @@ impl Alliance {
                         _ => {}
                     });
             }
-            Self::Spawners => {}
+            Self::Spawners => {
+                let big_critter_percent = 10.0;
+                template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
+                    damage_type: None,
+                    effect: Effect::Random {
+                        choices: vec![
+                            WeighedEffect {
+                                weight: 100.0 - big_critter_percent,
+                                effect: Effect::Spawn(Box::new(SpawnEffect {
+                                    unit_type: "critter".to_owned(),
+                                })),
+                            },
+                            WeighedEffect {
+                                weight: big_critter_percent,
+                                effect: Effect::Spawn(Box::new(SpawnEffect {
+                                    unit_type: "big_critter".to_owned(),
+                                })),
+                            },
+                        ],
+                    },
+                }));
+                template
+                    .triggers
+                    .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
+                        AddStatusEffect {
+                            who: Who::Caster,
+                            status: Status::Aura(Aura {
+                                distance: None,
+                                alliance: Some(Alliance::Critters),
+                                status: Box::new(Status::Modifier(Modifier::Strength(
+                                    StrengthModifier {
+                                        multiplier: r32(1.0),
+                                        add: r32(2.0),
+                                    },
+                                ))),
+                                time: None,
+                            }),
+                        },
+                    ))));
+            }
+            Self::Critters => {}
         }
     }
 }

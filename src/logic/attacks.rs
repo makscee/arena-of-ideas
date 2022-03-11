@@ -9,8 +9,14 @@ impl Logic<'_> {
             *time += self.delta_time;
             if *time > unit.attack.animation_delay {
                 if let Some(target) = self.model.units.get(target) {
+                    let mut effect = unit.attack.effect.clone();
+                    for status in &unit.all_statuses {
+                        if let Status::Modifier(modifier) = status {
+                            effect.apply_modifier(modifier);
+                        }
+                    }
                     self.effects.push(QueuedEffect {
-                        effect: unit.attack.effect.clone(),
+                        effect,
                         caster: Some(unit.id),
                         target: Some(target.id),
                     });

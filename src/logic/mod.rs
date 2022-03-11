@@ -41,11 +41,11 @@ impl<'a> Logic<'a> {
         logic.process();
     }
     pub fn process(&mut self) {
+        self.process_statuses();
         self.process_time_bombs();
         self.process_spawns();
         self.process_abilities();
         self.process_movement();
-        self.process_statuses();
         self.process_collisions();
         self.process_targeting();
         self.process_attacks();

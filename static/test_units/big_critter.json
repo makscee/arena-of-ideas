@@ -2,7 +2,7 @@
     "hp": 1,
     "spawn_animation_time": 1.0,
     "speed": 1.5,
-    "size": 0.3,
+    "size": 0.5,
     "attack": {
         "radius": 0.5,
         "animation_delay": 0.0,
@@ -20,10 +20,7 @@
             ]
         }
     },
-    "alliances": [
-        "Critters"
-    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "color": "#ff7700"
+    "color": "red"
 }

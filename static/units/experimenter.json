@@ -1,0 +1,39 @@
+{
+    "hp": 2,
+    "speed": 1,
+    "size": 1,
+    "attack": {
+        "radius": 10,
+        "animation_delay": 0.75,
+        "cooldown": 1.25,
+        "effect": {
+            "type": "Projectile",
+            "speed": 10,
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "Ranged"
+                ],
+                "hp": "1"
+            }
+        }
+    },
+    "triggers": [
+        {
+            "on": "Kill",
+            "damage_type": "Crit",
+            "type": "Repeat",
+            "times": 3,
+            "effect": {
+                "type": "Spawn",
+                "unit_type": "critter"
+            }
+        }
+    ],
+    "alliances": [
+        "Assassins",
+        "Spawners"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest"
+}

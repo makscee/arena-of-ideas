@@ -1,9 +1,10 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum Alliance {
     Spawners,
     Assassins,
+    Critters,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -36,12 +37,22 @@ pub enum AttackState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Aura {
+    pub distance: Option<Coord>,
+    pub alliance: Option<Alliance>, // TODO: Filter
+    pub status: Box<Status>,
+    pub time: Option<Time>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
     Stun { time: Time },
     Shield,
     Slow { percent: f32, time: Time },
+    Modifier(Modifier),
+    Aura(Aura),
 }
 
 impl Status {
@@ -51,6 +62,8 @@ impl Status {
             Self::Stun { .. } => "Stun",
             Self::Shield => "Shield",
             Self::Slow { .. } => "Slow",
+            Self::Aura { .. } => "Aura",
+            Self::Modifier(..) => "Modifier",
         }
     }
 }
@@ -73,25 +86,37 @@ pub struct TimeBomb {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(try_from = "String")]
-pub enum DamageValue {
-    Absolute(Health),
-    /// Some percent from hp
-    Relative(R32),
+pub struct DamageValue {
+    pub absolute: Health,
+    pub relative: R32,
 }
 
 impl Mul<R32> for DamageValue {
     type Output = Self;
     fn mul(self, rhs: R32) -> Self {
-        match self {
-            Self::Absolute(value) => Self::Absolute(value * rhs),
-            Self::Relative(value) => Self::Relative(value * rhs),
+        Self {
+            absolute: self.absolute * rhs,
+            relative: self.relative * rhs,
+        }
+    }
+}
+
+impl Add<Health> for DamageValue {
+    type Output = Self;
+    fn add(self, rhs: R32) -> Self {
+        Self {
+            absolute: self.absolute + rhs,
+            relative: self.relative,
         }
     }
 }
 
 impl Default for DamageValue {
     fn default() -> Self {
-        Self::Absolute(Health::ZERO)
+        Self {
+            absolute: Health::ZERO,
+            relative: R32::ZERO,
+        }
     }
 }
 
@@ -101,10 +126,16 @@ impl TryFrom<String> for DamageValue {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.ends_with('%') {
             let percent = R32::new(value[..value.len() - 1].parse()?);
-            Ok(Self::Relative(percent))
+            Ok(Self {
+                absolute: Health::ZERO,
+                relative: percent,
+            })
         } else {
             let value = Health::new(value.parse()?);
-            Ok(Self::Absolute(value))
+            Ok(Self {
+                absolute: value,
+                relative: R32::ZERO,
+            })
         }
     }
 }
@@ -114,7 +145,8 @@ pub struct Unit {
     pub id: Id,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
-    pub statuses: Vec<Status>,
+    pub attached_statuses: Vec<Status>,
+    pub all_statuses: Vec<Status>,
     pub faction: Faction,
     pub attack_state: AttackState,
     pub hp: Health,

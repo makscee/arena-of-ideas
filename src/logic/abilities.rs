@@ -20,7 +20,7 @@ impl Logic<'_> {
                     continue;
                 }
                 if unit
-                    .statuses
+                    .all_statuses
                     .iter()
                     .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
                 {

@@ -38,7 +38,7 @@ impl Logic<'_> {
             if let Some(render) = &mut self.render {
                 render.add_text(target.position, effect.status.name(), Color::BLUE);
             }
-            target.statuses.push(effect.status);
+            target.attached_statuses.push(effect.status);
         }
     }
 }

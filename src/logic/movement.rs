@@ -6,7 +6,7 @@ impl Logic<'_> {
     }
     fn process_unit_movement(&mut self, unit: &mut Unit) {
         if unit
-            .statuses
+            .all_statuses
             .iter()
             .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
         {
@@ -45,7 +45,7 @@ impl Logic<'_> {
             _ => todo!(),
         }
         let mut speed = unit.speed;
-        for status in &unit.statuses {
+        for status in &unit.all_statuses {
             match status {
                 Status::Slow { percent, .. } => {
                     speed *= Coord::new(1.0 - *percent / 100.0);

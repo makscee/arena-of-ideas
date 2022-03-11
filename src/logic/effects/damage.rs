@@ -40,31 +40,35 @@ impl Logic<'_> {
         let target_unit = target
             .and_then(|id| self.model.units.get_mut(&id))
             .expect("Target not found");
-        let mut damage = match effect.hp {
-            DamageValue::Absolute(hp) => hp,
-            DamageValue::Relative(percent) => target_unit.max_hp * percent / Health::new(100.0),
-        };
+        let mut damage =
+            target_unit.max_hp * effect.hp.relative / Health::new(100.0) + effect.hp.absolute;
         damage = min(damage, target_unit.hp);
         if damage > Health::new(0.0) {
             if let Some((index, _)) = target_unit
-                .statuses
+                .attached_statuses
                 .iter()
                 .enumerate()
                 .find(|(_, status)| matches!(status, Status::Shield))
             {
                 damage = Health::new(0.0);
-                target_unit.statuses.remove(index);
+                target_unit.attached_statuses.remove(index);
+            } else if target_unit
+                .all_statuses
+                .iter()
+                .any(|status| matches!(status, Status::Shield))
+            {
+                damage = Health::new(0.0);
             }
         }
         if damage > Health::new(0.0) {
             target_unit
-                .statuses
+                .attached_statuses
                 .retain(|status| !matches!(status, Status::Freeze));
         }
         let old_hp = target_unit.hp;
         target_unit.hp -= damage;
         if let Some(render) = &mut self.render {
-            render.add_text(target_unit.position, &format!("-{}", damage), Color::RED);
+            render.add_text(target_unit.position, &format!("{}", -damage), Color::RED);
         }
         let killed = old_hp > Health::new(0.0) && target_unit.hp <= Health::new(0.0);
         if killed {
@@ -79,10 +83,8 @@ impl Logic<'_> {
         }
 
         // Lifesteal
-        let lifesteal = match effect.lifesteal {
-            DamageValue::Absolute(hp) => hp,
-            DamageValue::Relative(percent) => damage * percent / Health::new(100.0),
-        };
+        let lifesteal =
+            damage * effect.lifesteal.relative / Health::new(100.0) + effect.lifesteal.absolute;
         if let Some(caster) = caster.and_then(|id| self.model.units.get_mut(&id)) {
             caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
         }

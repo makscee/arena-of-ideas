@@ -61,14 +61,14 @@ impl Game {
                     {
                         let mut color = unit.color;
                         if unit
-                            .statuses
+                            .all_statuses
                             .iter()
                             .any(|status| matches!(status, Status::Freeze))
                         {
                             color = Color::CYAN;
                         }
                         if unit
-                            .statuses
+                            .all_statuses
                             .iter()
                             .any(|status| matches!(status, Status::Slow { .. }))
                         {
@@ -79,7 +79,7 @@ impl Game {
                 ),
             );
             if unit
-                .statuses
+                .all_statuses
                 .iter()
                 .any(|status| matches!(status, Status::Shield))
             {

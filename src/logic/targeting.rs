@@ -6,7 +6,7 @@ impl Logic<'_> {
     }
     fn process_unit_targeting(&mut self, unit: &mut Unit) {
         if unit
-            .statuses
+            .all_statuses
             .iter()
             .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
         {
