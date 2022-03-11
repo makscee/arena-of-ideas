@@ -111,7 +111,7 @@ pub struct Unit {
     pub target_ai: TargetAi,
     pub color: Color<f32>,
     pub ability_cooldown: Option<Time>,
-    pub on: HashMap<UnitTrigger, Effect>,
+    pub on: UnitTriggers,
 }
 
 impl Unit {
@@ -152,10 +152,11 @@ pub struct AttackProperties {
     pub effect: Effect,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-pub enum UnitTrigger {
-    Death,
-    Spawn,
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct UnitTriggers {
+    pub death: Effect,
+    pub spawn: Effect,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -166,7 +167,7 @@ pub struct UnitTemplate {
     pub speed: Coord,
     pub size: Coord,
     pub attack: AttackProperties,
-    pub on: HashMap<UnitTrigger, Effect>,
+    pub on: UnitTriggers,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
@@ -186,7 +187,7 @@ impl Default for UnitTemplate {
                 animation_delay: Time::new(1.0),
                 effect: default(),
             },
-            on: HashMap::new(),
+            on: default(),
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
             abilities: HashMap::new(),

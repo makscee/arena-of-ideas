@@ -37,13 +37,11 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            if let Some(effect) = unit.on.get(&UnitTrigger::Spawn) {
-                self.effects.push(QueuedEffect {
-                    effect: effect.clone(),
-                    caster: Some(unit.id),
-                    target: Some(unit.id),
-                });
-            }
+            self.effects.push(QueuedEffect {
+                effect: unit.on.spawn.clone(),
+                caster: Some(unit.id),
+                target: Some(unit.id),
+            });
             self.model.units.insert(unit);
         }
         self.model

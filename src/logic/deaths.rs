@@ -12,13 +12,11 @@ impl Logic<'_> {
     }
     fn process_unit_death(&mut self, unit: &mut Unit) {
         if unit.hp <= Health::new(0.0) {
-            if let Some(effect) = unit.on.get(&UnitTrigger::Death) {
-                self.effects.push(QueuedEffect {
-                    effect: effect.clone(),
-                    caster: Some(unit.id),
-                    target: Some(unit.id),
-                });
-            }
+            self.effects.push(QueuedEffect {
+                effect: unit.on.death.clone(),
+                caster: Some(unit.id),
+                target: Some(unit.id),
+            });
         }
     }
 }

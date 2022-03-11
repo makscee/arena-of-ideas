@@ -16,7 +16,7 @@
         }
     },
     "on": {
-        "Death": {
+        "death": {
             "type": "TimeBomb",
             "time": 3.0,
             "effect": {

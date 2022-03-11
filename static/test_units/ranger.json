@@ -27,7 +27,7 @@
         }
     },
     "on": {
-        "Spawn": {
+        "spawn": {
             "type": "AddStatus",
             "status": {
                 "type": "Shield"
