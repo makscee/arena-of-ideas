@@ -51,26 +51,36 @@ impl Alliance {
                     });
             }
             Self::Spawners => {
-                let big_critter_percent = 10.0;
                 template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
                     damage_type: None,
-                    effect: Effect::Random {
-                        choices: vec![
-                            WeighedEffect {
-                                weight: 100.0 - big_critter_percent,
-                                effect: Effect::Spawn(Box::new(SpawnEffect {
-                                    unit_type: "critter".to_owned(),
-                                })),
-                            },
-                            WeighedEffect {
-                                weight: big_critter_percent,
-                                effect: Effect::Spawn(Box::new(SpawnEffect {
-                                    unit_type: "big_critter".to_owned(),
-                                })),
-                            },
-                        ],
-                    },
+                    effect: Effect::Spawn(Box::new(SpawnEffect {
+                        unit_type: "critter".to_owned(),
+                    })),
                 }));
+                let big_critter_percent = 10.0;
+                template.walk_effects_mut(&mut |effect| match effect {
+                    Effect::Spawn(spawn) => {
+                        if spawn.unit_type == "critter" {
+                            *effect = Effect::Random {
+                                choices: vec![
+                                    WeighedEffect {
+                                        weight: 100.0 - big_critter_percent,
+                                        effect: Effect::Spawn(Box::new(SpawnEffect {
+                                            unit_type: "critter".to_owned(),
+                                        })),
+                                    },
+                                    WeighedEffect {
+                                        weight: big_critter_percent,
+                                        effect: Effect::Spawn(Box::new(SpawnEffect {
+                                            unit_type: "big_critter".to_owned(),
+                                        })),
+                                    },
+                                ],
+                            }
+                        }
+                    }
+                    _ => {}
+                });
                 template
                     .triggers
                     .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
