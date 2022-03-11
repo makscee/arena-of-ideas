@@ -1,6 +1,11 @@
 {
     "player": [
-        "player"
+        "rogue",
+        "rogue",
+        "rogue",
+        "rogue",
+        "rogue",
+        "rogue"
     ],
     "spawn_points": {
         "Left": [
