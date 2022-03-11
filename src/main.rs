@@ -1,12 +1,14 @@
 #![allow(dead_code, unused_mut, unused_imports, unused_variables)]
 #![deny(unconditional_recursion)]
 
+use clap::Parser;
 use geng::prelude::*;
 
 mod assets;
 mod logic;
 mod model;
 mod render;
+mod simulate;
 
 use assets::*;
 use logic::*;
@@ -64,7 +66,20 @@ impl geng::State for Game {
     }
 }
 
+#[derive(clap::Parser)]
+struct Opts {
+    #[clap(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    Simulate1x1(simulate::Simulate1x1),
+}
+
 fn main() {
+    let opts = Opts::parse();
+
     logger::init().unwrap();
     geng::setup_panic_handler();
     let geng = Geng::new("Arena of Ideas");
@@ -78,6 +93,17 @@ fn main() {
                 let geng = geng.clone();
                 move |assets| {
                     let assets = assets.expect("Failed to load assets");
+
+                    match opts.command {
+                        Some(command) => match command {
+                            Commands::Simulate1x1(simulate) => {
+                                simulate.run(assets).unwrap();
+                                std::process::exit(0);
+                            }
+                        },
+                        None => (),
+                    }
+
                     Game::new(&geng, assets)
                 }
             },
