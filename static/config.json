@@ -21,6 +21,17 @@
             "Top": [
                 "big_blob"
             ]
+        },
+        {
+            "Top": [
+                "shooter"
+            ],
+            "Left": [
+                "shooter"
+            ],
+            "Right": [
+                "shooter"
+            ]
         }
     ]
 }

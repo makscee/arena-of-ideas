@@ -1,0 +1,24 @@
+{
+    "hp": 1,
+    "speed": 0.7,
+    "size": 1,
+    "attack": {
+        "radius": 10,
+        "animation_delay": 1,
+        "cooldown": 3,
+        "effect": {
+            "type": "Projectile",
+            "speed": 10,
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "Ranged"
+                ],
+                "hp": "1"
+            }
+        }
+    },
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "color": "gray"
+}
