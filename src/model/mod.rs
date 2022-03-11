@@ -65,12 +65,22 @@ pub struct TimeBomb {
     pub effect: Effect,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(try_from = "String")]
 pub enum DamageValue {
     Absolute(Health),
     /// Some percent from hp
     Relative(R32),
+}
+
+impl Mul<R32> for DamageValue {
+    type Output = Self;
+    fn mul(self, rhs: R32) -> Self {
+        match self {
+            Self::Absolute(value) => Self::Absolute(value * rhs),
+            Self::Relative(value) => Self::Relative(value * rhs),
+        }
+    }
 }
 
 impl Default for DamageValue {
