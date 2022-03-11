@@ -7,7 +7,7 @@ impl Logic<'_> {
             id: self.model.next_id,
             unit_type: unit_type.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
-            on: template.on.clone(),
+            triggers: template.triggers.clone(),
             statuses: Vec::new(),
             faction,
             attack_state: AttackState::None,
@@ -38,11 +38,15 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            self.effects.push(QueuedEffect {
-                effect: unit.on.spawn.clone(),
-                caster: Some(unit.id),
-                target: Some(unit.id),
-            });
+            for trigger in &unit.triggers {
+                if let UnitTrigger::Spawn(effect) = trigger {
+                    self.effects.push(QueuedEffect {
+                        effect: effect.clone(),
+                        caster: Some(unit.id),
+                        target: Some(unit.id),
+                    });
+                }
+            }
             self.model.units.insert(unit);
         }
         self.model

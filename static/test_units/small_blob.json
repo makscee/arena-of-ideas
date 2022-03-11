@@ -15,8 +15,9 @@
             }
         }
     },
-    "on": {
-        "death": {
+    "triggers": [
+        {
+            "on": "Death",
             "type": "TimeBomb",
             "time": 3.0,
             "effect": {
@@ -29,7 +30,7 @@
                 }
             }
         }
-    },
+    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "color": "green"

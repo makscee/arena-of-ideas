@@ -26,14 +26,15 @@
             }
         }
     },
-    "on": {
-        "spawn": {
+    "triggers": [
+        {
+            "on": "Spawn",
             "type": "AddStatus",
             "status": {
                 "type": "Shield"
             }
         }
-    },
+    ],
     "abilities": {
         "MouseLeft": {
             "effect": {

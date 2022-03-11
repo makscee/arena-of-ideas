@@ -94,15 +94,19 @@ impl Logic<'_> {
                 .or(self.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                if match &caster.on.kill.damage_type {
-                    Some(damage_type) => effect.types.contains(damage_type),
-                    None => true,
-                } {
-                    self.effects.push(QueuedEffect {
-                        caster: Some(caster.id),
-                        target,
-                        effect: caster.on.kill.effect.clone(),
-                    });
+                for trigger in &caster.triggers {
+                    if let UnitTrigger::Kill(trigger) = trigger {
+                        if match &trigger.damage_type {
+                            Some(damage_type) => effect.types.contains(damage_type),
+                            None => true,
+                        } {
+                            self.effects.push(QueuedEffect {
+                                caster: Some(caster.id),
+                                target,
+                                effect: trigger.effect.clone(),
+                            });
+                        }
+                    }
                 }
             }
         }

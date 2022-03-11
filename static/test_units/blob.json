@@ -11,12 +11,13 @@
             "speed": 10,
             "effect": {
                 "type": "Damage",
-                "hp": "2"
+                "hp": "0.1"
             }
         }
     },
-    "on": {
-        "death": {
+    "triggers": [
+        {
+            "on": "Death",
             "type": "List",
             "effects": [
                 {
@@ -37,7 +38,7 @@
                 }
             ]
         }
-    },
+    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "color": "yellow"
