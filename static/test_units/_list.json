@@ -1,9 +1,5 @@
 [
-    "small_blob",
-    "blob",
-    "big_blob",
-    "ranger",
     "critter",
     "big_critter",
-    "lifedrainer"
+    "player"
 ]

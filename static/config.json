@@ -1,6 +1,6 @@
 {
     "player": [
-        "experimenter"
+        "player"
     ],
     "spawn_points": {
         "Left": [
@@ -19,7 +19,7 @@
     "waves": [
         {
             "Top": [
-                "blob"
+                "big_blob"
             ]
         }
     ]
