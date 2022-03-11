@@ -58,7 +58,8 @@ impl Logic<'_> {
         if let Some(render) = &mut self.render {
             render.add_text(target_unit.position, &format!("-{}", damage), Color::RED);
         }
-        if old_hp > Health::new(0.0) && target_unit.hp <= Health::new(0.0) {
+        let killed = old_hp > Health::new(0.0) && target_unit.hp <= Health::new(0.0);
+        if killed {
             // self.render.add_text(target.position, "KILL", Color::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
                 self.effects.push(QueuedEffect {
@@ -84,15 +85,17 @@ impl Logic<'_> {
                 .get(&caster)
                 .or(self.model.dead_units.get(&caster))
                 .unwrap();
-            if match &caster.on.kill.damage_type {
-                Some(damage_type) => effect.types.contains(damage_type),
-                None => true,
-            } {
-                self.effects.push(QueuedEffect {
-                    caster: Some(caster.id),
-                    target,
-                    effect: caster.on.kill.effect.clone(),
-                });
+            if killed {
+                if match &caster.on.kill.damage_type {
+                    Some(damage_type) => effect.types.contains(damage_type),
+                    None => true,
+                } {
+                    self.effects.push(QueuedEffect {
+                        caster: Some(caster.id),
+                        target,
+                        effect: caster.on.kill.effect.clone(),
+                    });
+                }
             }
         }
     }
