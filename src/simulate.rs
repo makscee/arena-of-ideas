@@ -12,8 +12,8 @@ pub struct Simulate1x1 {
     enemy: Option<String>,
     #[clap(short, long, default_value = "1")]
     runs: usize,
-    #[clap(default_value = "60")]
-    fps: f32,
+    #[clap(short, long, default_value = "0.02")]
+    delta_time: f32,
 }
 
 impl Simulate1x1 {
@@ -24,28 +24,45 @@ impl Simulate1x1 {
             true => assets.config.player = vec![self.player],
         }
         match self.enemy {
-            Some(enemy) => match assets.units.contains_key(&enemy) {
-                false => return Err(SimulationError::UnknownUnit(enemy)),
-                true => {
-                    let spawn_point = assets
-                        .config
-                        .spawn_points
-                        .iter()
-                        .next()
-                        .expect("No spawn points declared")
-                        .0
-                        .clone();
-                    let mut wave = HashMap::new();
-                    wave.insert(spawn_point, vec![enemy]);
-                    assets.config.waves = vec![wave];
-                }
-            },
-            None => todo!(),
+            Some(enemy) if !assets.units.contains_key(&enemy) => {
+                return Err(SimulationError::UnknownUnit(enemy))
+            }
+            _ => (),
         }
 
         let mut wins = 0;
         for _ in 0..self.runs {
-            let simulation = Simulation::new(assets.units.clone(), assets.config.clone());
+            let enemy = self
+                .enemy
+                .as_ref()
+                .unwrap_or_else(|| {
+                    // Select randomly
+                    assets
+                        .units
+                        .iter()
+                        .choose(&mut rand::thread_rng())
+                        .expect("Could not find a random unit")
+                        .0
+                })
+                .clone();
+
+            let spawn_point = assets
+                .config
+                .spawn_points
+                .iter()
+                .next()
+                .expect("No spawn points declared")
+                .0
+                .clone();
+            let mut wave = HashMap::new();
+            wave.insert(spawn_point, vec![enemy]);
+            assets.config.waves = vec![wave];
+
+            let simulation = Simulation::new(
+                assets.units.clone(),
+                assets.config.clone(),
+                R32::new(self.delta_time),
+            );
             let result = simulation.run();
             if result.player_won {
                 wins += 1;
@@ -92,11 +109,11 @@ struct SimulationResult {
 }
 
 impl Simulation {
-    pub fn new(units: UnitTemplates, config: Config) -> Self {
+    pub fn new(units: UnitTemplates, config: Config, delta_time: R32) -> Self {
         Self {
             config: config.clone(),
             model: Model::new(config, units),
-            delta_time: R32::new(1.0),
+            delta_time,
         }
     }
 
