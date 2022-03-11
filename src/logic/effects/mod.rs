@@ -45,6 +45,7 @@ pub enum Effect {
     TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
+    Repeat { times: usize, effect: Box<Effect> },
     Random { choices: Vec<WeighedEffect> },
     List { effects: Vec<Effect> },
 }
@@ -102,6 +103,15 @@ impl Logic<'_> {
                     caster,
                     target,
                 }),
+                Effect::Repeat { times, effect } => {
+                    for _ in 0..times {
+                        self.effects.push(QueuedEffect {
+                            effect: (*effect).clone(),
+                            caster,
+                            target,
+                        });
+                    }
+                }
                 Effect::List { effects } => {
                     for effect in effects {
                         self.effects.push(QueuedEffect {

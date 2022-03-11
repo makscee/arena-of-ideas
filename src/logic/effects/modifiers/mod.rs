@@ -30,6 +30,9 @@ impl WeakenModifier {
             Effect::Chain(effect) => {
                 self.apply(&mut effect.effect);
             }
+            Effect::Repeat { effect, .. } => {
+                self.apply(effect);
+            }
             Effect::List { effects } => {
                 for effect in effects {
                     self.apply(effect);
