@@ -1,11 +1,6 @@
 {
     "player": [
-        "rogue",
-        "rogue",
-        "rogue",
-        "rogue",
-        "rogue",
-        "rogue"
+        "sniper"
     ],
     "spawn_points": {
         "Left": [
@@ -24,18 +19,28 @@
     "waves": [
         {
             "Top": [
-                "big_blob"
-            ]
-        },
-        {
-            "Top": [
-                "shooter"
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob"
             ],
             "Left": [
-                "shooter"
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob"
             ],
             "Right": [
-                "shooter"
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob",
+                "small_blob"
             ]
         }
     ]

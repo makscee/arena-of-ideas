@@ -1,6 +1,7 @@
 use super::*;
 
 mod add_status;
+mod add_targets;
 mod aoe;
 mod chain;
 mod damage;
@@ -11,6 +12,7 @@ mod suicide;
 mod time_bomb;
 
 pub use add_status::*;
+pub use add_targets::*;
 pub use aoe::*;
 pub use chain::*;
 pub use damage::*;
@@ -45,6 +47,7 @@ pub enum Effect {
     TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
+    AddTargets(Box<AddTargetsEffect>),
     Repeat { times: usize, effect: Box<Effect> },
     Random { choices: Vec<WeighedEffect> },
     List { effects: Vec<Effect> },
@@ -62,6 +65,7 @@ impl Effect {
             Self::TimeBomb(effect) => effect.walk_children_mut(f),
             Self::Suicide(effect) => effect.walk_children_mut(f),
             Self::Chain(effect) => effect.walk_children_mut(f),
+            Self::AddTargets(effect) => effect.walk_children_mut(f),
             Self::Repeat { effect, .. } => effect.walk_mut(f),
             Self::Random { choices } => {
                 for choice in choices {
@@ -122,6 +126,11 @@ impl Logic<'_> {
                     target,
                 }),
                 Effect::AOE(effect) => self.process_aoe_effect(QueuedEffect {
+                    effect: *effect,
+                    caster,
+                    target,
+                }),
+                Effect::AddTargets(effect) => self.process_add_targets_effect(QueuedEffect {
                     effect: *effect,
                     caster,
                     target,

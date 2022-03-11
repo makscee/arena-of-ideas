@@ -5,6 +5,7 @@ pub enum Alliance {
     Spawners,
     Assassins,
     Critters,
+    Archers,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]

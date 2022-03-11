@@ -100,6 +100,42 @@ impl Alliance {
                         },
                     ))));
             }
+            Self::Archers => {
+                template.walk_effects_mut(&mut |effect| match effect {
+                    Effect::Projectile(projectile) => {
+                        *effect = Effect::Random {
+                            choices: vec![
+                                WeighedEffect {
+                                    weight: 40.0,
+                                    effect: effect.clone(),
+                                },
+                                WeighedEffect {
+                                    weight: 15.0,
+                                    effect: Effect::AddTargets(Box::new(AddTargetsEffect {
+                                        effect: effect.clone(),
+                                        additional_targets: Some(2),
+                                    })),
+                                },
+                                WeighedEffect {
+                                    weight: 20.0,
+                                    effect: Effect::AddTargets(Box::new(AddTargetsEffect {
+                                        effect: effect.clone(),
+                                        additional_targets: Some(4),
+                                    })),
+                                },
+                                WeighedEffect {
+                                    weight: 25.0,
+                                    effect: Effect::AddTargets(Box::new(AddTargetsEffect {
+                                        effect: effect.clone(),
+                                        additional_targets: None,
+                                    })),
+                                },
+                            ],
+                        }
+                    }
+                    _ => {}
+                });
+            }
             Self::Critters => {}
         }
     }

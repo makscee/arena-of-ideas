@@ -1,0 +1,27 @@
+{
+    "hp": 2,
+    "speed": 1,
+    "size": 1,
+    "attack": {
+        "radius": 10,
+        "animation_delay": 0.75,
+        "cooldown": 1.25,
+        "effect": {
+            "type": "Projectile",
+            "speed": 10,
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "Ranged"
+                ],
+                "hp": "1"
+            }
+        }
+    },
+    "alliances": [
+        "Assassins",
+        "Archers"
+    ],
+    "move_ai": "Avoid",
+    "target_ai": "Biggest"
+}
