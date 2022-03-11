@@ -17,9 +17,15 @@ impl Logic<'_> {
                 TargetAi::Closest => self
                     .model
                     .units
-                    .iter_mut()
+                    .iter()
                     .filter(|other| other.faction != unit.faction)
                     .min_by_key(|other| (other.position - unit.position).len()),
+                TargetAi::Biggest => self
+                    .model
+                    .units
+                    .iter()
+                    .filter(|other| other.faction != unit.faction)
+                    .max_by_key(|other| other.hp),
                 _ => todo!(),
             };
             if let Some(target) = target {
