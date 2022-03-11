@@ -34,6 +34,11 @@ impl WeakenModifier {
                     self.apply(effect);
                 }
             }
+            Effect::Random { choices } => {
+                for choice in choices {
+                    self.apply(&mut choice.effect);
+                }
+            }
         }
     }
 }

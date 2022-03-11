@@ -27,6 +27,13 @@ pub struct QueuedEffect<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WeighedEffect {
+    pub weight: f32,
+    #[serde(flatten)]
+    pub effect: Effect,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
     Projectile(Box<ProjectileEffect>),
@@ -37,6 +44,7 @@ pub enum Effect {
     TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
+    Random { choices: Vec<WeighedEffect> },
     List { effects: Vec<Effect> },
 }
 
@@ -100,6 +108,18 @@ impl Logic<'_> {
                             target,
                         });
                     }
+                }
+                Effect::Random { choices } => {
+                    let effect = choices
+                        .choose_weighted(&mut global_rng(), |choice| choice.weight)
+                        .unwrap()
+                        .effect
+                        .clone();
+                    self.effects.push(QueuedEffect {
+                        effect,
+                        caster,
+                        target,
+                    });
                 }
             }
         }

@@ -10,17 +10,19 @@
             "type": "Projectile",
             "speed": 10,
             "effect": {
-                "type": "Chain",
-                "targets": 3,
-                "jump_distance": 3,
-                "effect": {
-                    "type": "Damage",
-                    "hp": "1"
-                },
-                "jump_modifier": {
-                    "type": "Weaken",
-                    "percent": 50
-                }
+                "type": "Random",
+                "choices": [
+                    {
+                        "weight": 1,
+                        "type": "Damage",
+                        "hp": "1"
+                    },
+                    {
+                        "weight": 1,
+                        "type": "Damage",
+                        "hp": "-1"
+                    }
+                ]
             }
         }
     },
