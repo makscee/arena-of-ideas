@@ -1,7 +1,19 @@
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Who {
+    Caster,
+    Target,
+}
+
+fn default_who() -> Who {
+    Who::Target
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddStatusEffect {
+    #[serde(default = "default_who")]
+    pub who: Who,
     pub status: Status,
 }
 
@@ -12,14 +24,21 @@ impl AddStatusEffect {
 impl Logic<'_> {
     pub fn process_add_status_effect(
         &mut self,
-        QueuedEffect { target, effect, .. }: QueuedEffect<AddStatusEffect>,
+        QueuedEffect {
+            caster,
+            target,
+            effect,
+        }: QueuedEffect<AddStatusEffect>,
     ) {
-        let target = target
-            .and_then(|id| self.model.units.get_mut(&id))
-            .expect("Target not found");
-        if let Some(render) = &mut self.render {
-            render.add_text(target.position, effect.status.name(), Color::BLUE);
+        let target = match effect.who {
+            Who::Caster => caster,
+            Who::Target => target,
+        };
+        if let Some(target) = target.and_then(|id| self.model.units.get_mut(&id)) {
+            if let Some(render) = &mut self.render {
+                render.add_text(target.position, effect.status.name(), Color::BLUE);
+            }
+            target.statuses.push(effect.status);
         }
-        target.statuses.push(effect.status);
     }
 }
