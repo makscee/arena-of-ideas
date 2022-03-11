@@ -9,6 +9,9 @@ impl Logic<'_> {
             .filter(|unit| unit.faction != Faction::Player)
             .count()
             == 0
+            && self.model.spawning_units.is_empty()
+            && self.model.time_bombs.is_empty()
+            && self.effects.is_empty()
         {
             if !self.model.config.waves.is_empty() {
                 let wave = self.model.config.waves.remove(0);
