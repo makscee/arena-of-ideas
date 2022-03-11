@@ -44,7 +44,10 @@ impl geng::LoadAsset for UnitTemplates {
                             .append(&mut json.as_object_mut().unwrap());
                         json = base_json;
                     }
-                    let template = serde_json::from_value(json)?;
+                    let mut template: UnitTemplate = serde_json::from_value(json)?;
+                    for alliance in template.alliances.clone() {
+                        alliance.apply(&mut template);
+                    }
                     map.insert(typ, template);
                 }
             }

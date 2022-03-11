@@ -1,6 +1,12 @@
 use super::*;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
+pub enum Alliance {
+    Spawners,
+    Assassins,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum Faction {
     Player,
     Enemy,
@@ -122,6 +128,7 @@ pub struct Unit {
     pub color: Color<f32>,
     pub ability_cooldown: Option<Time>,
     pub on: UnitTriggers,
+    pub alliances: HashSet<Alliance>,
 }
 
 impl Unit {
@@ -191,6 +198,7 @@ pub struct UnitTemplate {
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
     pub color: Color<f32>,
+    pub alliances: HashSet<Alliance>,
 }
 
 impl Default for UnitTemplate {
@@ -211,6 +219,7 @@ impl Default for UnitTemplate {
             target_ai: TargetAi::Closest,
             abilities: HashMap::new(),
             color: Color::BLACK,
+            alliances: default(),
         }
     }
 }

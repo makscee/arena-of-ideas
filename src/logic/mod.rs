@@ -1,6 +1,7 @@
 use super::*;
 
 mod abilities;
+mod alliances;
 mod attacks;
 mod collisions;
 mod deaths;

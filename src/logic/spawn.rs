@@ -21,6 +21,7 @@ impl Logic<'_> {
             target_ai: template.target_ai,
             color: template.color,
             ability_cooldown: None,
+            alliances: template.alliances.clone(),
         };
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
