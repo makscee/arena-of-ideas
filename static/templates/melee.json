@@ -8,6 +8,9 @@
         "cooldown": 0.75,
         "effect": {
             "type": "Damage",
+            "types": [
+                "Melee"
+            ],
             "hp": "2"
         }
     },

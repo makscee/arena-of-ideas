@@ -11,6 +11,9 @@
             "speed": 10,
             "effect": {
                 "type": "Damage",
+                "types": [
+                    "Ranged"
+                ],
                 "hp": "1"
             }
         }

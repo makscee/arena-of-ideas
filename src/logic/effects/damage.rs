@@ -5,6 +5,8 @@ pub enum DamageTrigger {
     Kill,
 }
 
+pub type DamageType = String;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct DamageEffect {
@@ -12,6 +14,8 @@ pub struct DamageEffect {
     #[serde(default)]
     /// HP to heal self relative to the damage done
     pub lifesteal: DamageValue,
+    #[serde(default)]
+    pub types: HashSet<DamageType>,
     #[serde(default)]
     pub on: HashMap<DamageTrigger, Effect>,
 }
