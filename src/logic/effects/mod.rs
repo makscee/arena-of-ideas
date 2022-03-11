@@ -36,6 +36,7 @@ pub struct WeighedEffect {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
+    Noop,
     Projectile(Box<ProjectileEffect>),
     Damage(Box<DamageEffect>),
     AddStatus(Box<AddStatusEffect>),
@@ -50,7 +51,7 @@ pub enum Effect {
 
 impl Default for Effect {
     fn default() -> Self {
-        Self::List { effects: vec![] }
+        Self::Noop
     }
 }
 
@@ -60,6 +61,7 @@ impl Logic<'_> {
             let caster = effect.caster;
             let target = effect.target;
             match effect.effect {
+                Effect::Noop => {}
                 Effect::Damage(effect) => self.process_damage_effect(QueuedEffect {
                     effect: *effect,
                     caster,

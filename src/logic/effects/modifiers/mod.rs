@@ -10,6 +10,7 @@ impl WeakenModifier {
     pub fn apply(&self, effect: &mut Effect) {
         let multiplier = R32::ONE - self.percent / r32(100.0);
         match effect {
+            Effect::Noop => {}
             Effect::Damage(effect) => match &mut effect.hp {
                 DamageValue::Absolute(value) => *value *= multiplier,
                 DamageValue::Relative(value) => *value *= multiplier,
