@@ -30,6 +30,19 @@ impl Logic<'_> {
                     }
                 }
             }
+            MoveAi::Avoid => {
+                let closest_enemy = self
+                    .model
+                    .units
+                    .iter()
+                    .filter(|other| other.faction != unit.faction)
+                    .min_by_key(|other| (other.position - unit.position).len());
+                if let Some(closest_enemy) = closest_enemy {
+                    if distance_between_units(closest_enemy, &unit) > unit.attack.radius {
+                        target_position = unit.position + (unit.position - closest_enemy.position);
+                    }
+                }
+            }
             MoveAi::KeepClose => {
                 // TODO: better implementation?
                 let closest_ally = self
@@ -42,7 +55,6 @@ impl Logic<'_> {
                     target_position = closest_ally.position;
                 }
             }
-            _ => todo!(),
         }
         let mut speed = unit.speed;
         for status in &unit.all_statuses {
