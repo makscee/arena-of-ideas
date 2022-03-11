@@ -50,6 +50,34 @@ pub enum Effect {
     List { effects: Vec<Effect> },
 }
 
+impl Effect {
+    pub fn walk_mut(&mut self, mut f: &mut impl FnMut(&mut Effect)) {
+        match self {
+            Self::Noop => {}
+            Self::Projectile(effect) => effect.walk_children_mut(f),
+            Self::Damage(effect) => effect.walk_children_mut(f),
+            Self::AddStatus(effect) => effect.walk_children_mut(f),
+            Self::Spawn(effect) => effect.walk_children_mut(f),
+            Self::AOE(effect) => effect.walk_children_mut(f),
+            Self::TimeBomb(effect) => effect.walk_children_mut(f),
+            Self::Suicide(effect) => effect.walk_children_mut(f),
+            Self::Chain(effect) => effect.walk_children_mut(f),
+            Self::Repeat { effect, .. } => effect.walk_mut(f),
+            Self::Random { choices } => {
+                for choice in choices {
+                    choice.effect.walk_mut(f);
+                }
+            }
+            Self::List { effects } => {
+                for effect in effects {
+                    effect.walk_mut(f);
+                }
+            }
+        }
+        f(self);
+    }
+}
+
 impl Default for Effect {
     fn default() -> Self {
         Self::Noop

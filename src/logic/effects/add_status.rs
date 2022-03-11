@@ -5,6 +5,10 @@ pub struct AddStatusEffect {
     pub status: Status,
 }
 
+impl AddStatusEffect {
+    pub fn walk_children_mut(&mut self, _f: &mut impl FnMut(&mut Effect)) {}
+}
+
 impl Logic<'_> {
     pub fn process_add_status_effect(
         &mut self,

@@ -20,6 +20,14 @@ pub struct DamageEffect {
     pub on: HashMap<DamageTrigger, Effect>,
 }
 
+impl DamageEffect {
+    pub fn walk_children_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
+        for effect in self.on.values_mut() {
+            effect.walk_mut(f);
+        }
+    }
+}
+
 impl Logic<'_> {
     pub fn process_damage_effect(
         &mut self,

@@ -7,6 +7,12 @@ pub struct AoeEffect {
     pub effect: Effect,
 }
 
+impl AoeEffect {
+    pub fn walk_children_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
+        self.effect.walk_mut(f);
+    }
+}
+
 impl Logic<'_> {
     pub fn process_aoe_effect(
         &mut self,
