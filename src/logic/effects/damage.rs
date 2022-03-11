@@ -29,42 +29,42 @@ impl Logic<'_> {
             target,
         }: QueuedEffect<DamageEffect>,
     ) {
-        let target = target
+        let target_unit = target
             .and_then(|id| self.model.units.get_mut(&id))
             .expect("Target not found");
         let mut damage = match effect.hp {
             DamageValue::Absolute(hp) => hp,
-            DamageValue::Relative(percent) => target.max_hp * percent / Health::new(100.0),
+            DamageValue::Relative(percent) => target_unit.max_hp * percent / Health::new(100.0),
         };
-        damage = min(damage, target.hp);
+        damage = min(damage, target_unit.hp);
         if damage > Health::new(0.0) {
-            if let Some((index, _)) = target
+            if let Some((index, _)) = target_unit
                 .statuses
                 .iter()
                 .enumerate()
                 .find(|(_, status)| matches!(status, Status::Shield))
             {
                 damage = Health::new(0.0);
-                target.statuses.remove(index);
+                target_unit.statuses.remove(index);
             }
         }
         if damage > Health::new(0.0) {
-            target
+            target_unit
                 .statuses
                 .retain(|status| !matches!(status, Status::Freeze));
         }
-        let old_hp = target.hp;
-        target.hp -= damage;
+        let old_hp = target_unit.hp;
+        target_unit.hp -= damage;
         if let Some(render) = &mut self.render {
-            render.add_text(target.position, &format!("-{}", damage), Color::RED);
+            render.add_text(target_unit.position, &format!("-{}", damage), Color::RED);
         }
-        if old_hp > Health::new(0.0) && target.hp <= Health::new(0.0) {
+        if old_hp > Health::new(0.0) && target_unit.hp <= Health::new(0.0) {
             // self.render.add_text(target.position, "KILL", Color::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
                 self.effects.push(QueuedEffect {
                     effect: effect.clone(),
                     caster,
-                    target: Some(target.id),
+                    target: Some(target_unit.id),
                 });
             }
         }
@@ -76,6 +76,24 @@ impl Logic<'_> {
         };
         if let Some(caster) = caster.and_then(|id| self.model.units.get_mut(&id)) {
             caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
+        }
+        if let Some(caster) = caster {
+            let caster = self
+                .model
+                .units
+                .get(&caster)
+                .or(self.model.dead_units.get(&caster))
+                .unwrap();
+            if match &caster.on.kill.damage_type {
+                Some(damage_type) => effect.types.contains(damage_type),
+                None => true,
+            } {
+                self.effects.push(QueuedEffect {
+                    caster: Some(caster.id),
+                    target,
+                    effect: caster.on.kill.effect.clone(),
+                });
+            }
         }
     }
 }

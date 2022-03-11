@@ -154,9 +154,18 @@ pub struct AttackProperties {
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(default, deny_unknown_fields)]
+pub struct UnitKillTrigger {
+    pub damage_type: Option<DamageType>,
+    #[serde(flatten)]
+    pub effect: Effect,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default, deny_unknown_fields)]
 pub struct UnitTriggers {
     pub death: Effect,
     pub spawn: Effect,
+    pub kill: UnitKillTrigger,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
