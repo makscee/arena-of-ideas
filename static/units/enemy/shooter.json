@@ -21,7 +21,7 @@
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
-        "type": "Texture",
-        "path": "../../png/shooter.png"
+        "type": "Shader",
+        "path": "shooter.glsl"
     }
 }

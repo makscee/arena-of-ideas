@@ -110,6 +110,79 @@ impl Game {
                             .translate(unit.position.map(|x| x.as_f32())),
                     );
                 }
+                RenderMode::Shader { program } => {
+                    let quad = ugli::VertexBuffer::new_dynamic(
+                        self.geng.ugli(),
+                        vec![
+                            draw_2d::Vertex {
+                                a_pos: vec2(-1.0, -1.0),
+                            },
+                            draw_2d::Vertex {
+                                a_pos: vec2(1.0, -1.0),
+                            },
+                            draw_2d::Vertex {
+                                a_pos: vec2(1.0, 1.0),
+                            },
+                            draw_2d::Vertex {
+                                a_pos: vec2(-1.0, 1.0),
+                            },
+                        ],
+                    );
+                    let framebuffer_size = framebuffer.size();
+                    let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
+                        * Mat3::scale_uniform(
+                            unit.radius().as_f32()
+                                * match &unit.attack_state {
+                                    AttackState::Start { time, .. } => {
+                                        1.0 - 0.25 * (*time / unit.attack.animation_delay).as_f32()
+                                    }
+                                    _ => 1.0,
+                                }
+                                * match unit.spawn_animation_time_left {
+                                    Some(time)
+                                        if template.spawn_animation_time > Time::new(0.0) =>
+                                    {
+                                        1.0 - (time / template.spawn_animation_time).as_f32()
+                                    }
+                                    _ => 1.0,
+                                },
+                        );
+                    ugli::draw(
+                        framebuffer,
+                        program,
+                        ugli::DrawMode::TriangleFan,
+                        &quad,
+                        (
+                            ugli::uniforms! {
+                                u_time: self.time,
+                                u_unit_position: unit.position.map(|x| x.as_f32()),
+                                u_unit_radius: unit.radius().as_f32(),
+                                u_spawn: match unit.spawn_animation_time_left {
+                                    Some(time)
+                                        if template.spawn_animation_time > Time::new(0.0) =>
+                                    {
+                                        1.0 - (time / template.spawn_animation_time).as_f32()
+                                    }
+                                    _ => 1.0,
+                                },
+                                u_attack: match &unit.attack_state {
+                                    AttackState::Start { time, .. } => {
+                                        (*time / unit.attack.animation_delay).as_f32()
+                                    }
+                                    _ => 0.0,
+                                },
+                            },
+                            geng::camera2d_uniforms(
+                                &self.camera,
+                                framebuffer_size.map(|x| x as f32),
+                            ),
+                        ),
+                        ugli::DrawParameters {
+                            blend_mode: Some(default()),
+                            ..default()
+                        },
+                    );
+                }
             }
             if unit
                 .all_statuses

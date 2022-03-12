@@ -224,12 +224,14 @@ pub enum UnitTrigger {
 pub enum RenderConfig {
     Circle { color: Color<f32> },
     Texture { path: String },
+    Shader { path: String },
 }
 
 #[derive(Clone)]
 pub enum RenderMode {
     Circle { color: Color<f32> },
     Texture { texture: Rc<ugli::Texture> },
+    Shader { program: Rc<ugli::Program> },
 }
 
 impl Default for RenderMode {
@@ -315,6 +317,9 @@ impl UnitTemplate {
             RenderConfig::Circle { color } => RenderMode::Circle { color },
             RenderConfig::Texture { ref path } => RenderMode::Texture {
                 texture: geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
+            },
+            RenderConfig::Shader { ref path } => RenderMode::Shader {
+                program: geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
             },
         };
         Ok(())

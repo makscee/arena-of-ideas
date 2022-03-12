@@ -18,29 +18,8 @@
     },
     "waves": [
         {
-            "Top": [
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob"
-            ],
-            "Left": [
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob"
-            ],
             "Right": [
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob",
-                "small_blob"
+                "shooter"
             ]
         }
     ]

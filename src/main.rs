@@ -23,6 +23,7 @@ type Id = i64;
 pub struct Game {
     assets: Assets,
     geng: Geng,
+    time: f32,
     camera: geng::Camera2d,
     model: Model,
     pressed_keys: Vec<Key>,
@@ -33,6 +34,7 @@ impl Game {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
         let mut game = Self {
             geng: geng.clone(),
+            time: 0.0,
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
@@ -50,6 +52,7 @@ impl Game {
 
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
+        self.time += delta_time as f32;
         self.render.update(delta_time as _);
         self.update(Time::new(delta_time as _));
     }
