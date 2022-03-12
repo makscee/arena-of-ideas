@@ -1,7 +1,7 @@
 use super::*;
 
 impl Alliance {
-    pub fn apply(&self, template: &mut UnitTemplate) {
+    pub fn apply(&self, template: &mut UnitTemplate, alliance_members: u32) {
         match self {
             Self::Assassins => {
                 let crit_percent = 15.0;

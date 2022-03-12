@@ -45,9 +45,6 @@ impl geng::LoadAsset for UnitTemplates {
                         json = base_json;
                     }
                     let mut template: UnitTemplate = serde_json::from_value(json)?;
-                    for alliance in template.alliances.clone() {
-                        alliance.apply(&mut template);
-                    }
                     template.load_render(&geng, &base_path).await?;
                     info!(
                         "{:?} => {}",

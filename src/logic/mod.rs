@@ -35,9 +35,7 @@ impl<'a> Logic<'a> {
             pressed_keys: Vec::new(),
             render: None,
         };
-        for unit_type in &config.player {
-            logic.spawn_unit(unit_type, Faction::Player, Vec2::ZERO);
-        }
+        logic.spawn_player(config);
         logic.process();
     }
     pub fn process(&mut self) {
@@ -61,6 +59,37 @@ impl<'a> Logic<'a> {
             let mut unit = self.model.units.remove(&id).unwrap();
             f(self, &mut unit);
             self.model.units.insert(unit);
+        }
+    }
+    fn spawn_player(&mut self, config: &Config) {
+        let mut to_spawn = config
+            .player
+            .iter()
+            .map(|unit| (unit, self.model.unit_templates[unit].clone()))
+            .collect::<Vec<_>>();
+
+        // Count members in each alliance
+        let mut members = HashMap::new();
+        for alliance in to_spawn
+            .iter()
+            .flat_map(|(_, unit)| &unit.alliances)
+            .map(|alliance| *alliance as u32)
+        {
+            let entry = members.entry(alliance).or_insert(0);
+            *entry += 1;
+        }
+
+        // Apply effects
+        for (_, unit) in &mut to_spawn {
+            for alliance in unit.alliances.clone() {
+                let members = members[&(alliance as u32)];
+                alliance.apply(unit, members);
+            }
+        }
+
+        // Spawn
+        for (unit_type, template) in to_spawn {
+            self.spawn_template(unit_type, template, Faction::Player, Vec2::ZERO);
         }
     }
 }
