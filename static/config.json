@@ -1,6 +1,9 @@
 {
     "player": [
-        "sniper"
+        "sniper",
+        "experimenter",
+        "ranger",
+        "rogue"
     ],
     "spawn_points": {
         "Left": [
@@ -18,6 +21,13 @@
     },
     "waves": [
         {
+            "Top": [
+                "small_blob",
+                "blob"
+            ],
+            "Left": [
+                "big_blob"
+            ],
             "Right": [
                 "shooter"
             ]
