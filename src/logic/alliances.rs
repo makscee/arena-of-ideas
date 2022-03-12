@@ -1,7 +1,7 @@
 use super::*;
 
 impl Alliance {
-    pub fn apply(&self, template: &mut UnitTemplate, alliance_members: u32) {
+    pub fn apply(&self, template: &mut UnitTemplate, party_members: usize) {
         match self {
             Self::Assassins => {
                 let crit_percent = 15.0;
@@ -19,29 +19,44 @@ impl Alliance {
                                     WeighedEffect {
                                         weight: crit_percent,
                                         effect: Effect::List {
-                                            effects: vec![
-                                                Effect::Damage(Box::new(DamageEffect {
-                                                    hp: damage.hp * r32(3.0),
-                                                    lifesteal: damage.lifesteal,
-                                                    types: {
-                                                        let mut types = damage.types.clone();
-                                                        types.insert("Crit".to_owned());
-                                                        types
-                                                    },
-                                                    on: damage.on.clone(),
-                                                })),
-                                                Effect::AddStatus(Box::new(AddStatusEffect {
-                                                    who: Who::Target,
-                                                    status: Status::Slow {
-                                                        percent: 70.0,
-                                                        time: r32(3.0),
-                                                    },
-                                                })),
-                                                Effect::AddStatus(Box::new(AddStatusEffect {
-                                                    who: Who::Caster,
-                                                    status: Status::Shield,
-                                                })),
-                                            ],
+                                            effects: {
+                                                let mut effects = Vec::new();
+                                                if party_members >= 2 {
+                                                    effects.push(Effect::Damage(Box::new(
+                                                        DamageEffect {
+                                                            hp: damage.hp * r32(3.0),
+                                                            lifesteal: damage.lifesteal,
+                                                            types: {
+                                                                let mut types =
+                                                                    damage.types.clone();
+                                                                types.insert("Crit".to_owned());
+                                                                types
+                                                            },
+                                                            on: damage.on.clone(),
+                                                        },
+                                                    )));
+                                                }
+                                                if party_members >= 4 {
+                                                    effects.push(Effect::AddStatus(Box::new(
+                                                        AddStatusEffect {
+                                                            who: Who::Target,
+                                                            status: Status::Slow {
+                                                                percent: 70.0,
+                                                                time: r32(3.0),
+                                                            },
+                                                        },
+                                                    )));
+                                                }
+                                                if party_members >= 6 {
+                                                    effects.push(Effect::AddStatus(Box::new(
+                                                        AddStatusEffect {
+                                                            who: Who::Caster,
+                                                            status: Status::Shield,
+                                                        },
+                                                    )));
+                                                }
+                                                effects
+                                            },
                                         },
                                     },
                                 ],
@@ -51,87 +66,82 @@ impl Alliance {
                     });
             }
             Self::Spawners => {
-                template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
-                    damage_type: None,
-                    effect: Effect::Spawn(Box::new(SpawnEffect {
-                        unit_type: "critter".to_owned(),
-                    })),
-                }));
-                let big_critter_percent = 10.0;
-                template.walk_effects_mut(&mut |effect| match effect {
-                    Effect::Spawn(spawn) => {
-                        if spawn.unit_type == "critter" {
-                            *effect = Effect::Random {
-                                choices: vec![
-                                    WeighedEffect {
-                                        weight: 100.0 - big_critter_percent,
-                                        effect: Effect::Spawn(Box::new(SpawnEffect {
-                                            unit_type: "critter".to_owned(),
-                                        })),
-                                    },
-                                    WeighedEffect {
-                                        weight: big_critter_percent,
-                                        effect: Effect::Spawn(Box::new(SpawnEffect {
-                                            unit_type: "big_critter".to_owned(),
-                                        })),
-                                    },
-                                ],
+                if party_members >= 4 {
+                    template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
+                        damage_type: None,
+                        effect: Effect::Spawn(Box::new(SpawnEffect {
+                            unit_type: "critter".to_owned(),
+                        })),
+                    }));
+                }
+                if party_members >= 6 {
+                    let big_critter_percent = 10.0;
+                    template.walk_effects_mut(&mut |effect| match effect {
+                        Effect::Spawn(spawn) => {
+                            if spawn.unit_type == "critter" {
+                                *effect = Effect::Random {
+                                    choices: vec![
+                                        WeighedEffect {
+                                            weight: 100.0 - big_critter_percent,
+                                            effect: Effect::Spawn(Box::new(SpawnEffect {
+                                                unit_type: "critter".to_owned(),
+                                            })),
+                                        },
+                                        WeighedEffect {
+                                            weight: big_critter_percent,
+                                            effect: Effect::Spawn(Box::new(SpawnEffect {
+                                                unit_type: "big_critter".to_owned(),
+                                            })),
+                                        },
+                                    ],
+                                }
                             }
                         }
-                    }
-                    _ => {}
-                });
-                template
-                    .triggers
-                    .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
-                        AddStatusEffect {
-                            who: Who::Caster,
-                            status: Status::Aura(Aura {
-                                distance: None,
-                                alliance: Some(Alliance::Critters),
-                                status: Box::new(Status::Modifier(Modifier::Strength(
-                                    StrengthModifier {
-                                        multiplier: r32(1.0),
-                                        add: r32(2.0),
-                                    },
-                                ))),
-                                time: None,
-                            }),
-                        },
-                    ))));
+                        _ => {}
+                    });
+                }
+                if party_members >= 2 {
+                    template
+                        .triggers
+                        .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
+                            AddStatusEffect {
+                                who: Who::Caster,
+                                status: Status::Aura(Aura {
+                                    distance: None,
+                                    alliance: Some(Alliance::Critters),
+                                    status: Box::new(Status::Modifier(Modifier::Strength(
+                                        StrengthModifier {
+                                            multiplier: r32(1.0),
+                                            add: r32(2.0),
+                                        },
+                                    ))),
+                                    time: None,
+                                }),
+                            },
+                        ))));
+                }
             }
             Self::Archers => {
                 template.walk_effects_mut(&mut |effect| match effect {
                     Effect::Projectile(projectile) => {
-                        *effect = Effect::Random {
-                            choices: vec![
-                                WeighedEffect {
-                                    weight: 40.0,
-                                    effect: effect.clone(),
-                                },
-                                WeighedEffect {
-                                    weight: 15.0,
-                                    effect: Effect::AddTargets(Box::new(AddTargetsEffect {
-                                        effect: effect.clone(),
-                                        additional_targets: Some(2),
-                                    })),
-                                },
-                                WeighedEffect {
-                                    weight: 20.0,
-                                    effect: Effect::AddTargets(Box::new(AddTargetsEffect {
-                                        effect: effect.clone(),
-                                        additional_targets: Some(4),
-                                    })),
-                                },
-                                WeighedEffect {
-                                    weight: 25.0,
-                                    effect: Effect::AddTargets(Box::new(AddTargetsEffect {
-                                        effect: effect.clone(),
-                                        additional_targets: None,
-                                    })),
-                                },
-                            ],
-                        }
+                        *effect = if party_members >= 6 {
+                            Effect::AddTargets(Box::new(AddTargetsEffect {
+                                effect: effect.clone(),
+                                additional_targets: None,
+                            }))
+                        } else if party_members >= 4 {
+                            Effect::AddTargets(Box::new(AddTargetsEffect {
+                                effect: effect.clone(),
+                                additional_targets: Some(4),
+                            }))
+                        } else if party_members >= 2 {
+                            Effect::AddTargets(Box::new(AddTargetsEffect {
+                                effect: effect.clone(),
+                                additional_targets: Some(2),
+                            }))
+                        } else {
+                            effect.clone()
+                        };
                     }
                     _ => {}
                 });
