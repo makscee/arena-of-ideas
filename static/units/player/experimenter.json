@@ -35,5 +35,9 @@
         "Spawners"
     ],
     "move_ai": "KeepClose",
-    "target_ai": "Closest"
+    "target_ai": "Closest",
+    "render": {
+        "type": "Texture",
+        "path": "../../png/experimenter.png"
+    }
 }

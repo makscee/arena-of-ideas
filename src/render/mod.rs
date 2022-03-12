@@ -42,7 +42,7 @@ impl Game {
             let template = &self.assets.units[&unit.unit_type];
 
             match &unit.render {
-                RenderTemplate::Circle { color } => {
+                RenderMode::Circle { color } => {
                     self.geng.draw_2d(
                         framebuffer,
                         &self.camera,
@@ -82,6 +82,32 @@ impl Game {
                                 color
                             },
                         ),
+                    );
+                }
+                RenderMode::Texture { texture } => {
+                    self.geng.draw_2d(
+                        framebuffer,
+                        &self.camera,
+                        &draw_2d::TexturedQuad::unit(&**texture)
+                            .scale_uniform(
+                                unit.radius().as_f32()
+                                    * match &unit.attack_state {
+                                        AttackState::Start { time, .. } => {
+                                            1.0 - 0.25
+                                                * (*time / unit.attack.animation_delay).as_f32()
+                                        }
+                                        _ => 1.0,
+                                    }
+                                    * match unit.spawn_animation_time_left {
+                                        Some(time)
+                                            if template.spawn_animation_time > Time::new(0.0) =>
+                                        {
+                                            1.0 - (time / template.spawn_animation_time).as_f32()
+                                        }
+                                        _ => 1.0,
+                                    },
+                            )
+                            .translate(unit.position.map(|x| x.as_f32())),
                     );
                 }
             }

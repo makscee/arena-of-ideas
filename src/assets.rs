@@ -48,6 +48,7 @@ impl geng::LoadAsset for UnitTemplates {
                     for alliance in template.alliances.clone() {
                         alliance.apply(&mut template);
                     }
+                    template.load_render(&geng, &base_path).await?;
                     info!(
                         "{:?} => {}",
                         typ,

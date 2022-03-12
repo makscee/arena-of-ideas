@@ -24,7 +24,7 @@
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
-        "type": "Circle",
-        "color": "gray"
+        "type": "Texture",
+        "path": "../../png/ranger.png"
     }
 }

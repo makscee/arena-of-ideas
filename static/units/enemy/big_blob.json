@@ -25,7 +25,7 @@
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
-        "type": "Circle",
-        "color": "red"
+        "type": "Texture",
+        "path": "../../png/big_blob.png"
     }
 }

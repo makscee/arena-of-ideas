@@ -18,5 +18,9 @@
         "Assassins"
     ],
     "move_ai": "Advance",
-    "target_ai": "Closest"
+    "target_ai": "Closest",
+    "render": {
+        "type": "Texture",
+        "path": "../../png/rogue.png"
+    }
 }

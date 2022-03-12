@@ -23,5 +23,9 @@
         "Archers"
     ],
     "move_ai": "Avoid",
-    "target_ai": "Biggest"
+    "target_ai": "Biggest",
+    "render": {
+        "type": "Texture",
+        "path": "../../png/sniper.png"
+    }
 }

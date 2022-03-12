@@ -161,7 +161,8 @@ pub struct Unit {
     pub ability_cooldown: Option<Time>,
     pub triggers: Vec<UnitTrigger>,
     pub alliances: HashSet<Alliance>,
-    pub render: RenderTemplate,
+    #[serde(skip)]
+    pub render: RenderMode,
 }
 
 impl Unit {
@@ -220,8 +221,23 @@ pub enum UnitTrigger {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
-pub enum RenderTemplate {
+pub enum RenderConfig {
     Circle { color: Color<f32> },
+    Texture { path: String },
+}
+
+#[derive(Clone)]
+pub enum RenderMode {
+    Circle { color: Color<f32> },
+    Texture { texture: Rc<ugli::Texture> },
+}
+
+impl Default for RenderMode {
+    fn default() -> Self {
+        Self::Circle {
+            color: Color::BLACK,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -237,7 +253,10 @@ pub struct UnitTemplate {
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
     pub alliances: HashSet<Alliance>,
-    pub render: RenderTemplate,
+    #[serde(rename = "render")]
+    pub render_config: RenderConfig,
+    #[serde(skip)]
+    pub render_mode: RenderMode,
 }
 
 impl UnitTemplate {
@@ -275,11 +294,30 @@ impl Default for UnitTemplate {
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
             abilities: HashMap::new(),
-            render: RenderTemplate::Circle {
+            render_config: RenderConfig::Circle {
+                color: Color::BLACK,
+            },
+            render_mode: RenderMode::Circle {
                 color: Color::BLACK,
             },
             alliances: default(),
         }
+    }
+}
+
+impl UnitTemplate {
+    pub async fn load_render(
+        &mut self,
+        geng: &Geng,
+        base_path: &std::path::Path,
+    ) -> anyhow::Result<()> {
+        self.render_mode = match self.render_config {
+            RenderConfig::Circle { color } => RenderMode::Circle { color },
+            RenderConfig::Texture { ref path } => RenderMode::Texture {
+                texture: geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
+            },
+        };
+        Ok(())
     }
 }
 
@@ -289,7 +327,9 @@ impl geng::LoadAsset for UnitTemplate {
         let path = path.to_owned();
         async move {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            Ok(serde_json::from_str(&json)?)
+            let mut result: Self = serde_json::from_str(&json)?;
+            result.load_render(&geng, &path.parent().unwrap()).await?;
+            Ok(result)
         }
         .boxed_local()
     }
