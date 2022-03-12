@@ -158,10 +158,10 @@ pub struct Unit {
     pub size: Coord,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
-    pub color: Color<f32>,
     pub ability_cooldown: Option<Time>,
     pub triggers: Vec<UnitTrigger>,
     pub alliances: HashSet<Alliance>,
+    pub render: RenderTemplate,
 }
 
 impl Unit {
@@ -219,6 +219,12 @@ pub enum UnitTrigger {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum RenderTemplate {
+    Circle { color: Color<f32> },
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
     pub hp: Health,
@@ -230,8 +236,8 @@ pub struct UnitTemplate {
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
-    pub color: Color<f32>,
     pub alliances: HashSet<Alliance>,
+    pub render: RenderTemplate,
 }
 
 impl UnitTemplate {
@@ -269,7 +275,9 @@ impl Default for UnitTemplate {
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
             abilities: HashMap::new(),
-            color: Color::BLACK,
+            render: RenderTemplate::Circle {
+                color: Color::BLACK,
+            },
             alliances: default(),
         }
     }

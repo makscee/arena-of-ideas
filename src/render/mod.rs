@@ -40,44 +40,51 @@ impl Game {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
         for unit in itertools::chain![&self.model.units, &self.model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
-            self.geng.draw_2d(
-                framebuffer,
-                &self.camera,
-                &draw_2d::Ellipse::circle(
-                    unit.position.map(|x| x.as_f32()),
-                    unit.radius().as_f32()
-                        * match &unit.attack_state {
-                            AttackState::Start { time, .. } => {
-                                1.0 - 0.25 * (*time / unit.attack.animation_delay).as_f32()
-                            }
-                            _ => 1.0,
-                        }
-                        * match unit.spawn_animation_time_left {
-                            Some(time) if template.spawn_animation_time > Time::new(0.0) => {
-                                1.0 - (time / template.spawn_animation_time).as_f32()
-                            }
-                            _ => 1.0,
-                        },
-                    {
-                        let mut color = unit.color;
-                        if unit
-                            .all_statuses
-                            .iter()
-                            .any(|status| matches!(status, Status::Freeze))
-                        {
-                            color = Color::CYAN;
-                        }
-                        if unit
-                            .all_statuses
-                            .iter()
-                            .any(|status| matches!(status, Status::Slow { .. }))
-                        {
-                            color = Color::GRAY;
-                        }
-                        color
-                    },
-                ),
-            );
+
+            match &unit.render {
+                RenderTemplate::Circle { color } => {
+                    self.geng.draw_2d(
+                        framebuffer,
+                        &self.camera,
+                        &draw_2d::Ellipse::circle(
+                            unit.position.map(|x| x.as_f32()),
+                            unit.radius().as_f32()
+                                * match &unit.attack_state {
+                                    AttackState::Start { time, .. } => {
+                                        1.0 - 0.25 * (*time / unit.attack.animation_delay).as_f32()
+                                    }
+                                    _ => 1.0,
+                                }
+                                * match unit.spawn_animation_time_left {
+                                    Some(time)
+                                        if template.spawn_animation_time > Time::new(0.0) =>
+                                    {
+                                        1.0 - (time / template.spawn_animation_time).as_f32()
+                                    }
+                                    _ => 1.0,
+                                },
+                            {
+                                let mut color = *color;
+                                if unit
+                                    .all_statuses
+                                    .iter()
+                                    .any(|status| matches!(status, Status::Freeze))
+                                {
+                                    color = Color::CYAN;
+                                }
+                                if unit
+                                    .all_statuses
+                                    .iter()
+                                    .any(|status| matches!(status, Status::Slow { .. }))
+                                {
+                                    color = Color::GRAY;
+                                }
+                                color
+                            },
+                        ),
+                    );
+                }
+            }
             if unit
                 .all_statuses
                 .iter()

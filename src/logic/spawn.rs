@@ -20,7 +20,7 @@ impl Logic<'_> {
             attack: template.attack.clone(),
             move_ai: template.move_ai,
             target_ai: template.target_ai,
-            color: template.color,
+            render: template.render.clone(),
             ability_cooldown: None,
             alliances: template.alliances.clone(),
         };

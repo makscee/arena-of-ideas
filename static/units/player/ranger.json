@@ -23,5 +23,8 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "color": "gray"
+    "render": {
+        "type": "Circle",
+        "color": "gray"
+    }
 }
