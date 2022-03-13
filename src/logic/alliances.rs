@@ -4,24 +4,24 @@ impl Alliance {
     pub fn apply(&self, template: &mut UnitTemplate, party_members: usize) {
         match self {
             Self::Assassins => {
-                let crit_percent = 15.0;
-                template
-                    .attack
-                    .effect
-                    .walk_mut(&mut |effect| match &effect {
-                        Effect::Damage(damage) => {
-                            *effect = Effect::Random {
-                                choices: vec![
-                                    WeighedEffect {
-                                        weight: 100.0 - crit_percent,
-                                        effect: effect.clone(),
-                                    },
-                                    WeighedEffect {
-                                        weight: crit_percent,
-                                        effect: Effect::List {
-                                            effects: {
-                                                let mut effects = Vec::new();
-                                                if party_members >= 2 {
+                if party_members >= 2 {
+                    let crit_percent = 15.0;
+                    template
+                        .attack
+                        .effect
+                        .walk_mut(&mut |effect| match &effect {
+                            Effect::Damage(damage) => {
+                                *effect = Effect::Random {
+                                    choices: vec![
+                                        WeighedEffect {
+                                            weight: 100.0 - crit_percent,
+                                            effect: effect.clone(),
+                                        },
+                                        WeighedEffect {
+                                            weight: crit_percent,
+                                            effect: Effect::List {
+                                                effects: {
+                                                    let mut effects = Vec::new();
                                                     effects.push(Effect::Damage(Box::new(
                                                         DamageEffect {
                                                             hp: damage.hp * r32(3.0),
@@ -35,35 +35,35 @@ impl Alliance {
                                                             on: damage.on.clone(),
                                                         },
                                                     )));
-                                                }
-                                                if party_members >= 4 {
-                                                    effects.push(Effect::AddStatus(Box::new(
-                                                        AddStatusEffect {
-                                                            who: Who::Target,
-                                                            status: Status::Slow {
-                                                                percent: 70.0,
-                                                                time: r32(3.0),
+                                                    if party_members >= 4 {
+                                                        effects.push(Effect::AddStatus(Box::new(
+                                                            AddStatusEffect {
+                                                                who: Who::Target,
+                                                                status: Status::Slow {
+                                                                    percent: 70.0,
+                                                                    time: r32(3.0),
+                                                                },
                                                             },
-                                                        },
-                                                    )));
-                                                }
-                                                if party_members >= 6 {
-                                                    effects.push(Effect::AddStatus(Box::new(
-                                                        AddStatusEffect {
-                                                            who: Who::Caster,
-                                                            status: Status::Shield,
-                                                        },
-                                                    )));
-                                                }
-                                                effects
+                                                        )));
+                                                    }
+                                                    if party_members >= 6 {
+                                                        effects.push(Effect::AddStatus(Box::new(
+                                                            AddStatusEffect {
+                                                                who: Who::Caster,
+                                                                status: Status::Shield,
+                                                            },
+                                                        )));
+                                                    }
+                                                    effects
+                                                },
                                             },
                                         },
-                                    },
-                                ],
-                            };
-                        }
-                        _ => {}
-                    });
+                                    ],
+                                };
+                            }
+                            _ => {}
+                        });
+                }
             }
             Self::Spawners => {
                 if party_members >= 4 {
