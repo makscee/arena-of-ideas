@@ -9,6 +9,7 @@ mod logic;
 mod model;
 mod render;
 mod simulate;
+mod tests;
 
 use assets::*;
 use logic::*;
@@ -77,6 +78,7 @@ struct Opts {
 
 #[derive(clap::Subcommand)]
 enum Commands {
+    Test,
     Simulate1x1(simulate::Simulate1x1),
 }
 
@@ -101,6 +103,10 @@ fn main() {
                         Some(command) => match command {
                             Commands::Simulate1x1(simulate) => {
                                 simulate.run(assets).unwrap();
+                                std::process::exit(0);
+                            }
+                            Commands::Test => {
+                                tests::run_tests(assets);
                                 std::process::exit(0);
                             }
                         },
