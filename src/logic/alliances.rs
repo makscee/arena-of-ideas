@@ -149,18 +149,21 @@ impl Alliance {
             Self::Critters => {}
             Self::Freezers => {
                 if party_members >= 2 {
-                    template.walk_effects_mut(&mut |effect| {
-                        *effect = Effect::MaybeModify(Box::new(MaybeModifyEffect {
-                            base_effect: effect.clone(),
-                            condition: Condition::UnitHasStatus {
-                                who: Who::Target,
-                                status: Status::Freeze,
-                            },
-                            modifier: Modifier::Strength(StrengthModifier {
-                                multiplier: r32(2.0),
-                                add: R32::ZERO,
-                            }),
-                        }))
+                    template.walk_effects_mut(&mut |effect| match effect {
+                        Effect::Damage(damage) => {
+                            *effect = Effect::MaybeModify(Box::new(MaybeModifyEffect {
+                                base_effect: effect.clone(),
+                                condition: Condition::UnitHasStatus {
+                                    who: Who::Target,
+                                    status: Status::Freeze,
+                                },
+                                modifier: Modifier::Strength(StrengthModifier {
+                                    multiplier: r32(2.0),
+                                    add: R32::ZERO,
+                                }),
+                            }))
+                        }
+                        _ => {}
                     })
                 }
 
