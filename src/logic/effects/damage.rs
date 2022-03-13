@@ -64,6 +64,21 @@ impl Logic<'_> {
             target_unit
                 .attached_statuses
                 .retain(|status| !matches!(status, Status::Freeze));
+
+            for trigger in &target_unit.triggers {
+                if let UnitTrigger::TakeDamage(trigger) = trigger {
+                    if match &trigger.damage_type {
+                        Some(damage_type) => effect.types.contains(damage_type),
+                        None => true,
+                    } {
+                        self.effects.push(QueuedEffect {
+                            caster,
+                            target,
+                            effect: trigger.effect.clone(),
+                        });
+                    }
+                }
+            }
         }
         let old_hp = target_unit.hp;
         target_unit.hp -= damage;

@@ -11,7 +11,9 @@
             "condition": {
                 "type": "UnitHasStatus",
                 "who": "Target",
-                "status": "Frozen"
+                "status": {
+                    "type": "Freeze"
+                }
             },
             "then": {
                 "type": "Damage",

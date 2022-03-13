@@ -6,6 +6,7 @@ pub enum Alliance {
     Assassins,
     Critters,
     Archers,
+    Freezers,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -37,7 +38,7 @@ pub enum AttackState {
     Cooldown { time: Time },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Aura {
     pub distance: Option<Coord>,
     pub alliance: Option<Alliance>, // TODO: Filter
@@ -45,7 +46,7 @@ pub struct Aura {
     pub time: Option<Time>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
@@ -90,6 +91,15 @@ pub struct TimeBomb {
 pub struct DamageValue {
     pub absolute: Health,
     pub relative: R32,
+}
+
+impl DamageValue {
+    pub fn absolute(value: f32) -> Self {
+        Self {
+            absolute: Health::new(value),
+            relative: R32::ZERO,
+        }
+    }
 }
 
 impl Mul<R32> for DamageValue {
@@ -211,12 +221,21 @@ pub struct UnitKillTrigger {
     pub effect: Effect,
 }
 
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct UnitTakeDamageTrigger {
+    pub damage_type: Option<DamageType>,
+    #[serde(flatten)]
+    pub effect: Effect,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "on", deny_unknown_fields)]
 pub enum UnitTrigger {
     Death(Effect),
     Spawn(Effect),
     Kill(UnitKillTrigger),
+    TakeDamage(UnitTakeDamageTrigger),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -269,6 +288,9 @@ impl UnitTemplate {
                 UnitTrigger::Death(effect) => effect.walk_mut(f),
                 UnitTrigger::Spawn(effect) => effect.walk_mut(f),
                 UnitTrigger::Kill(trigger) => {
+                    trigger.effect.walk_mut(f);
+                }
+                UnitTrigger::TakeDamage(trigger) => {
                     trigger.effect.walk_mut(f);
                 }
             }

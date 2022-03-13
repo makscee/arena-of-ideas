@@ -5,6 +5,8 @@ mod add_targets;
 mod aoe;
 mod chain;
 mod damage;
+mod if_effect;
+mod maybe_modify;
 mod modifiers;
 mod projectile;
 mod spawn;
@@ -16,6 +18,8 @@ pub use add_targets::*;
 pub use aoe::*;
 pub use chain::*;
 pub use damage::*;
+pub use if_effect::*;
+pub use maybe_modify::*;
 pub use modifiers::*;
 pub use projectile::*;
 pub use spawn::*;
@@ -51,6 +55,8 @@ pub enum Effect {
     Repeat { times: usize, effect: Box<Effect> },
     Random { choices: Vec<WeighedEffect> },
     List { effects: Vec<Effect> },
+    If(Box<IfEffect>),
+    MaybeModify(Box<MaybeModifyEffect>),
 }
 
 impl Effect {
@@ -77,6 +83,8 @@ impl Effect {
                     effect.walk_mut(f);
                 }
             }
+            Self::If(effect) => effect.walk_children_mut(f),
+            Self::MaybeModify(effect) => effect.walk_children_mut(f),
         }
         f(self);
     }
@@ -170,6 +178,16 @@ impl Logic<'_> {
                         target,
                     });
                 }
+                Effect::If(effect) => self.process_if_effect(QueuedEffect {
+                    effect: *effect,
+                    caster,
+                    target,
+                }),
+                Effect::MaybeModify(effect) => self.process_maybe_modify_effect(QueuedEffect {
+                    effect: *effect,
+                    caster,
+                    target,
+                }),
             }
         }
     }

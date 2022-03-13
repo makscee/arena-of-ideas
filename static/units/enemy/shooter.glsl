@@ -36,7 +36,7 @@ void main() {
     vec3 col = vec3(1.0, 1.0, 1.0);
     if (dist < 1.0 - thickness)
     {
-        if (mod(round(distShifted * float(segments)), 2.0) == 1.0)
+        if (mod(floor(distShifted * float(segments) + 0.5), 2.0) == 1.0)
             col = c1;
         else col = c2;
     }

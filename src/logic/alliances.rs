@@ -147,6 +147,63 @@ impl Alliance {
                 });
             }
             Self::Critters => {}
+            Self::Freezers => {
+                if party_members >= 2 {
+                    template.walk_effects_mut(&mut |effect| {
+                        *effect = Effect::MaybeModify(Box::new(MaybeModifyEffect {
+                            base_effect: effect.clone(),
+                            condition: Condition::UnitHasStatus {
+                                who: Who::Target,
+                                status: Status::Freeze,
+                            },
+                            modifier: Modifier::Strength(StrengthModifier {
+                                multiplier: r32(2.0),
+                                add: R32::ZERO,
+                            }),
+                        }))
+                    })
+                }
+
+                if party_members >= 4 {
+                    template
+                        .triggers
+                        .push(UnitTrigger::TakeDamage(UnitTakeDamageTrigger {
+                            damage_type: None,
+                            effect: Effect::AddStatus(Box::new(AddStatusEffect {
+                                who: Who::Caster,
+                                status: Status::Freeze,
+                            })),
+                        }));
+                }
+
+                if party_members >= 6 {
+                    template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
+                        damage_type: None,
+                        effect: Effect::If(Box::new(IfEffect {
+                            condition: Condition::UnitHasStatus {
+                                who: Who::Target,
+                                status: Status::Freeze,
+                            },
+                            then: {
+                                Effect::Projectile(Box::new(ProjectileEffect {
+                                    speed: r32(10.0),
+                                    effect: Effect::Damage(Box::new(DamageEffect {
+                                        hp: DamageValue::absolute(1.0),
+                                        lifesteal: DamageValue::default(),
+                                        types: {
+                                            let mut types = HashSet::new();
+                                            types.insert("Ranged".to_owned());
+                                            types
+                                        },
+                                        on: HashMap::new(),
+                                    })),
+                                }))
+                            },
+                            r#else: Effect::Noop,
+                        })),
+                    }));
+                }
+            }
         }
     }
 }
