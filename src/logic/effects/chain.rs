@@ -29,7 +29,7 @@ impl Logic<'_> {
         let mut target = self.model.units.get(&target.unwrap()).unwrap();
         while touched.len() < effect.targets {
             touched.insert(target.id);
-            self.effects.push(QueuedEffect {
+            self.effects.push_back(QueuedEffect {
                 caster,
                 target: Some(target.id),
                 effect: touch_effect.clone(),

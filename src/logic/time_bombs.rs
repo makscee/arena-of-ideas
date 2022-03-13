@@ -5,7 +5,7 @@ impl Logic<'_> {
         for bomb in &mut self.model.time_bombs {
             bomb.time -= self.delta_time;
             if bomb.time <= Time::ZERO {
-                self.effects.push(QueuedEffect {
+                self.effects.push_back(QueuedEffect {
                     effect: bomb.effect.clone(),
                     caster: bomb.caster,
                     target: Some(bomb.id),

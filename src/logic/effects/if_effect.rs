@@ -48,7 +48,7 @@ impl Logic<'_> {
         } else {
             effect.r#else
         };
-        self.effects.push(QueuedEffect {
+        self.effects.push_back(QueuedEffect {
             effect,
             caster,
             target,

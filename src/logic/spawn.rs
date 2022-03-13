@@ -50,7 +50,7 @@ impl Logic<'_> {
         for mut unit in new_units {
             for trigger in &unit.triggers {
                 if let UnitTrigger::Spawn(effect) = trigger {
-                    self.effects.push(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect: effect.clone(),
                         caster: Some(unit.id),
                         target: Some(unit.id),

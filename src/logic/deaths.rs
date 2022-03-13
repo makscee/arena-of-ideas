@@ -14,7 +14,7 @@ impl Logic<'_> {
         if unit.hp <= Health::new(0.0) {
             for trigger in &unit.triggers {
                 if let UnitTrigger::Death(effect) = trigger {
-                    self.effects.push(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect: effect.clone(),
                         caster: Some(unit.id),
                         target: Some(unit.id),

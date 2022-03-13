@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 mod abilities;
@@ -21,7 +23,7 @@ pub use util::*;
 pub struct Logic<'a> {
     pub model: &'a mut Model,
     pub delta_time: Time,
-    pub effects: Vec<QueuedEffect<Effect>>,
+    pub effects: VecDeque<QueuedEffect<Effect>>,
     pub pressed_keys: Vec<Key>,
     pub render: Option<&'a mut Render>,
 }
@@ -31,7 +33,7 @@ impl<'a> Logic<'a> {
         let mut logic = Self {
             model,
             delta_time: Time::new(0.0),
-            effects: Vec::new(),
+            effects: VecDeque::new(),
             pressed_keys: Vec::new(),
             render: None,
         };
@@ -89,7 +91,7 @@ impl Game {
         let mut logic = Logic {
             model: &mut self.model,
             delta_time,
-            effects: Vec::new(),
+            effects: VecDeque::new(),
             pressed_keys: mem::take(&mut self.pressed_keys),
             render: Some(&mut self.render),
         };

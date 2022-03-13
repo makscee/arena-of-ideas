@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use geng::prelude::*;
 
 use crate::{
@@ -124,7 +126,7 @@ impl Simulation {
             let mut logic = Logic {
                 model: &mut self.model,
                 delta_time: self.delta_time,
-                effects: Vec::new(),
+                effects: VecDeque::new(),
                 pressed_keys: Vec::new(),
                 render: None,
             };

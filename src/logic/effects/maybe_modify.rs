@@ -39,7 +39,7 @@ impl Logic<'_> {
         if condition {
             effect.base_effect.apply_modifier(&effect.modifier);
         }
-        self.effects.push(QueuedEffect {
+        self.effects.push_back(QueuedEffect {
             effect: effect.base_effect,
             caster,
             target,

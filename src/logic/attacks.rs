@@ -15,7 +15,7 @@ impl Logic<'_> {
                             effect.apply_modifier(modifier);
                         }
                     }
-                    self.effects.push(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect,
                         caster: Some(unit.id),
                         target: Some(target.id),

@@ -49,7 +49,7 @@ impl Logic<'_> {
             }
         }
         for target in targets {
-            self.effects.push(QueuedEffect {
+            self.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
                 caster: Some(caster.id),
                 target: Some(target),

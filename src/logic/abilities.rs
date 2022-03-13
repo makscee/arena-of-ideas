@@ -31,7 +31,7 @@ impl Logic<'_> {
                     None => continue,
                 };
                 unit.ability_cooldown = Some(ability.cooldown);
-                self.effects.push(QueuedEffect {
+                self.effects.push_back(QueuedEffect {
                     effect: ability.effect.clone(),
                     caster: Some(unit.id),
                     target: Some(unit.id),

@@ -55,7 +55,7 @@ impl Logic<'_> {
                 }
                 TargetFilter::All => {}
             }
-            self.effects.push(QueuedEffect {
+            self.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
                 caster: Some(caster.id),
                 target: Some(unit.id),

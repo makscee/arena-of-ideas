@@ -98,7 +98,7 @@ impl Default for Effect {
 
 impl Logic<'_> {
     pub fn process_effects(&mut self) {
-        while let Some(effect) = self.effects.pop() {
+        while let Some(effect) = self.effects.pop_front() {
             let caster = effect.caster;
             let target = effect.target;
             match effect.effect {
@@ -150,7 +150,7 @@ impl Logic<'_> {
                 }),
                 Effect::Repeat { times, effect } => {
                     for _ in 0..times {
-                        self.effects.push(QueuedEffect {
+                        self.effects.push_back(QueuedEffect {
                             effect: (*effect).clone(),
                             caster,
                             target,
@@ -159,7 +159,7 @@ impl Logic<'_> {
                 }
                 Effect::List { effects } => {
                     for effect in effects {
-                        self.effects.push(QueuedEffect {
+                        self.effects.push_back(QueuedEffect {
                             effect,
                             caster,
                             target,
@@ -172,7 +172,7 @@ impl Logic<'_> {
                         .unwrap()
                         .effect
                         .clone();
-                    self.effects.push(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect,
                         caster,
                         target,

@@ -71,7 +71,7 @@ impl Logic<'_> {
                         Some(damage_type) => effect.types.contains(damage_type),
                         None => true,
                     } {
-                        self.effects.push(QueuedEffect {
+                        self.effects.push_back(QueuedEffect {
                             caster,
                             target,
                             effect: trigger.effect.clone(),
@@ -89,7 +89,7 @@ impl Logic<'_> {
         if killed {
             // self.render.add_text(target.position, "KILL", Color::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
-                self.effects.push(QueuedEffect {
+                self.effects.push_back(QueuedEffect {
                     effect: effect.clone(),
                     caster,
                     target: Some(target_unit.id),
@@ -117,7 +117,7 @@ impl Logic<'_> {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,
                         } {
-                            self.effects.push(QueuedEffect {
+                            self.effects.push_back(QueuedEffect {
                                 caster: Some(caster.id),
                                 target,
                                 effect: trigger.effect.clone(),

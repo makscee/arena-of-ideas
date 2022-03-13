@@ -10,7 +10,7 @@ impl Logic<'_> {
             if let Some(mut target) = self.model.units.remove(&projectile.target) {
                 projectile.target_position = target.position;
                 if (projectile.position - target.position).len() < target.radius() {
-                    self.effects.push(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect: projectile.effect.clone(),
                         caster: Some(projectile.attacker),
                         target: Some(target.id),
