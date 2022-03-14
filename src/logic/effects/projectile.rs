@@ -22,16 +22,15 @@ impl Logic<'_> {
             .target
             .and_then(|id| self.model.units.get(&id))
             .expect("Target not found");
-        let caster = context
-            .caster
+        let from = context
+            .from
             .and_then(|id| self.model.units.get(&id))
             .expect("Caster not found");
         self.model.projectiles.insert(Projectile {
             id: self.model.next_id,
-            attacker: caster.id,
+            attacker: from.id,
             target: target.id,
-            position: caster.position
-                + (target.position - caster.position).normalize() * caster.radius(),
+            position: from.position + (target.position - from.position).normalize() * from.radius(),
             speed: effect.speed,
             target_position: target.position,
             effect: effect.effect.clone(),
