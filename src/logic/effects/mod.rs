@@ -4,6 +4,7 @@ mod add_status;
 mod add_targets;
 mod aoe;
 mod chain;
+mod change_context;
 mod damage;
 mod if_effect;
 mod maybe_modify;
@@ -17,6 +18,7 @@ pub use add_status::*;
 pub use add_targets::*;
 pub use aoe::*;
 pub use chain::*;
+pub use change_context::*;
 pub use damage::*;
 pub use if_effect::*;
 pub use maybe_modify::*;
@@ -72,6 +74,7 @@ pub enum Effect {
     List { effects: Vec<Effect> },
     If(Box<IfEffect>),
     MaybeModify(Box<MaybeModifyEffect>),
+    ChangeContext(Box<ChangeContextEffect>),
 }
 
 impl Effect {
@@ -100,6 +103,7 @@ impl Effect {
             }
             Self::If(effect) => effect.walk_children_mut(f),
             Self::MaybeModify(effect) => effect.walk_children_mut(f),
+            Self::ChangeContext(effect) => effect.walk_children_mut(f),
         }
         f(self);
     }
@@ -180,6 +184,10 @@ impl Logic<'_> {
                     context,
                 }),
                 Effect::MaybeModify(effect) => self.process_maybe_modify_effect(QueuedEffect {
+                    effect: *effect,
+                    context,
+                }),
+                Effect::ChangeContext(effect) => self.process_change_context_effect(QueuedEffect {
                     effect: *effect,
                     context,
                 }),

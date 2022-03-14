@@ -188,17 +188,21 @@ impl Alliance {
                                 status: Status::Freeze,
                             },
                             then: {
-                                Effect::Projectile(Box::new(ProjectileEffect {
-                                    speed: r32(10.0),
-                                    effect: Effect::Damage(Box::new(DamageEffect {
-                                        hp: DamageValue::absolute(1.0),
-                                        lifesteal: DamageValue::default(),
-                                        types: {
-                                            let mut types = HashSet::new();
-                                            types.insert("Ranged".to_owned());
-                                            types
-                                        },
-                                        on: HashMap::new(),
+                                Effect::AOE(Box::new(AoeEffect {
+                                    filter: TargetFilter::Enemies,
+                                    radius: r32(0.5),
+                                    effect: Effect::Projectile(Box::new(ProjectileEffect {
+                                        speed: r32(10.0),
+                                        effect: Effect::Damage(Box::new(DamageEffect {
+                                            hp: DamageValue::absolute(1.0),
+                                            lifesteal: DamageValue::default(),
+                                            types: {
+                                                let mut types = HashSet::new();
+                                                types.insert("Ranged".to_owned());
+                                                types
+                                            },
+                                            on: HashMap::new(),
+                                        })),
                                     })),
                                 }))
                             },
