@@ -56,9 +56,8 @@ impl Logic<'_> {
             self.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
-                    caster: Some(caster.id),
-                    from: Some(caster.id),
                     target: Some(unit.id),
+                    ..context
                 },
             });
         }

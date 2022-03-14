@@ -4,12 +4,12 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct ChangeContextEffect {
     #[serde(default)]
-    caster: Option<Who>,
+    pub caster: Option<Who>,
     #[serde(default)]
-    from: Option<Who>,
+    pub from: Option<Who>,
     #[serde(default)]
-    target: Option<Who>,
-    effect: Effect,
+    pub target: Option<Who>,
+    pub effect: Effect,
 }
 
 impl ChangeContextEffect {
