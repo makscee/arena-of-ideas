@@ -18,21 +18,19 @@ impl ChainEffect {
 impl Logic<'_> {
     pub fn process_chain_effect(
         &mut self,
-        QueuedEffect {
-            effect,
-            caster,
-            target,
-        }: QueuedEffect<ChainEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<ChainEffect>,
     ) {
         let mut touched = HashSet::new();
         let mut touch_effect = effect.effect.clone();
-        let mut target = self.model.units.get(&target.unwrap()).unwrap();
+        let mut target = self.model.units.get(&context.target.unwrap()).unwrap();
         while touched.len() < effect.targets {
             touched.insert(target.id);
             self.effects.push_back(QueuedEffect {
-                caster,
-                target: Some(target.id),
                 effect: touch_effect.clone(),
+                context: EffectContext {
+                    target: Some(target.id),
+                    ..context
+                },
             });
             touch_effect.apply_modifier(&effect.jump_modifier);
             target = match self

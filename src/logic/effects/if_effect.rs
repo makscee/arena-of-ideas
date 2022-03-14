@@ -22,20 +22,10 @@ impl IfEffect {
 }
 
 impl Logic<'_> {
-    pub fn process_if_effect(
-        &mut self,
-        QueuedEffect {
-            effect,
-            caster,
-            target,
-        }: QueuedEffect<IfEffect>,
-    ) {
+    pub fn process_if_effect(&mut self, QueuedEffect { effect, context }: QueuedEffect<IfEffect>) {
         let condition = match &effect.condition {
             Condition::UnitHasStatus { who, status } => {
-                let who = match who {
-                    Who::Caster => caster,
-                    Who::Target => target,
-                };
+                let who = context.get(*who);
                 let who = who
                     .and_then(|id| self.model.units.get(&id))
                     .expect("Caster or Target not found");
@@ -48,10 +38,6 @@ impl Logic<'_> {
         } else {
             effect.r#else
         };
-        self.effects.push_back(QueuedEffect {
-            effect,
-            caster,
-            target,
-        })
+        self.effects.push_back(QueuedEffect { effect, context })
     }
 }

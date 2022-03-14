@@ -16,16 +16,14 @@ impl AddTargetsEffect {
 impl Logic<'_> {
     pub fn process_add_targets_effect(
         &mut self,
-        QueuedEffect {
-            effect,
-            caster,
-            target,
-        }: QueuedEffect<AddTargetsEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<AddTargetsEffect>,
     ) {
-        let caster = caster
+        let caster = context
+            .caster
             .and_then(|id| self.model.units.get(&id))
             .expect("Caster not found");
-        let target = target
+        let target = context
+            .target
             .and_then(|id| self.model.units.get(&id))
             .expect("Target not found");
         let mut targets: HashSet<Id> = default();
@@ -51,8 +49,11 @@ impl Logic<'_> {
         for target in targets {
             self.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
-                caster: Some(caster.id),
-                target: Some(target),
+                context: EffectContext {
+                    caster: Some(caster.id),
+                    target: Some(target),
+                    ..context
+                },
             });
         }
     }

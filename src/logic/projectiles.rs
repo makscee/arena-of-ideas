@@ -12,8 +12,11 @@ impl Logic<'_> {
                 if (projectile.position - target.position).len() < target.radius() {
                     self.effects.push_back(QueuedEffect {
                         effect: projectile.effect.clone(),
-                        caster: Some(projectile.attacker),
-                        target: Some(target.id),
+                        context: EffectContext {
+                            caster: Some(projectile.attacker),
+                            from: Some(target.id),
+                            target: Some(target.id),
+                        },
                     });
                     delete_projectiles.push(projectile.id);
                 }

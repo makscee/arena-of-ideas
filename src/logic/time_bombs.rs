@@ -7,8 +7,11 @@ impl Logic<'_> {
             if bomb.time <= Time::ZERO {
                 self.effects.push_back(QueuedEffect {
                     effect: bomb.effect.clone(),
-                    caster: bomb.caster,
-                    target: Some(bomb.id),
+                    context: EffectContext {
+                        caster: bomb.caster,
+                        from: Some(bomb.id),
+                        target: Some(bomb.id),
+                    },
                 });
                 self.model.dead_time_bombs.insert(bomb.clone());
             }

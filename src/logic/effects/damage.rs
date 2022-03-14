@@ -31,13 +31,10 @@ impl DamageEffect {
 impl Logic<'_> {
     pub fn process_damage_effect(
         &mut self,
-        QueuedEffect {
-            effect,
-            caster,
-            target,
-        }: QueuedEffect<DamageEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<DamageEffect>,
     ) {
-        let target_unit = target
+        let target_unit = context
+            .target
             .and_then(|id| self.model.units.get_mut(&id))
             .expect("Target not found");
         let mut damage =
@@ -72,9 +69,8 @@ impl Logic<'_> {
                         None => true,
                     } {
                         self.effects.push_back(QueuedEffect {
-                            caster,
-                            target,
                             effect: trigger.effect.clone(),
+                            context,
                         });
                     }
                 }
@@ -91,8 +87,10 @@ impl Logic<'_> {
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
                 self.effects.push_back(QueuedEffect {
                     effect: effect.clone(),
-                    caster,
-                    target: Some(target_unit.id),
+                    context: EffectContext {
+                        target: Some(target_unit.id),
+                        ..context
+                    },
                 });
             }
         }
@@ -100,10 +98,10 @@ impl Logic<'_> {
         // Lifesteal
         let lifesteal =
             damage * effect.lifesteal.relative / Health::new(100.0) + effect.lifesteal.absolute;
-        if let Some(caster) = caster.and_then(|id| self.model.units.get_mut(&id)) {
+        if let Some(caster) = context.caster.and_then(|id| self.model.units.get_mut(&id)) {
             caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
         }
-        if let Some(caster) = caster {
+        if let Some(caster) = context.caster {
             let caster = self
                 .model
                 .units
@@ -118,9 +116,11 @@ impl Logic<'_> {
                             None => true,
                         } {
                             self.effects.push_back(QueuedEffect {
-                                caster: Some(caster.id),
-                                target,
                                 effect: trigger.effect.clone(),
+                                context: EffectContext {
+                                    caster: Some(caster.id),
+                                    ..context
+                                },
                             });
                         }
                     }

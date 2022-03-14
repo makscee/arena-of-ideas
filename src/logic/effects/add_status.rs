@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum Who {
     Caster,
     Target,
@@ -24,16 +24,9 @@ impl AddStatusEffect {
 impl Logic<'_> {
     pub fn process_add_status_effect(
         &mut self,
-        QueuedEffect {
-            caster,
-            target,
-            effect,
-        }: QueuedEffect<AddStatusEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<AddStatusEffect>,
     ) {
-        let target = match effect.who {
-            Who::Caster => caster,
-            Who::Target => target,
-        };
+        let target = context.get(effect.who);
         if let Some(target) = target.and_then(|id| self.model.units.get_mut(&id)) {
             if let Some(render) = &mut self.render {
                 render.add_text(target.position, effect.status.name(), Color::BLUE);

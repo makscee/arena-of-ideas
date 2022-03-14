@@ -19,16 +19,12 @@ impl Logic<'_> {
         &mut self,
         QueuedEffect {
             mut effect,
-            caster,
-            target,
+            context,
         }: QueuedEffect<MaybeModifyEffect>,
     ) {
         let condition = match &effect.condition {
             Condition::UnitHasStatus { who, status } => {
-                let who = match who {
-                    Who::Caster => caster,
-                    Who::Target => target,
-                };
+                let who = context.get(*who);
                 let who = who
                     .and_then(|id| self.model.units.get(&id))
                     .expect("Caster or Target not found");
@@ -41,8 +37,7 @@ impl Logic<'_> {
         }
         self.effects.push_back(QueuedEffect {
             effect: effect.base_effect,
-            caster,
-            target,
+            context,
         })
     }
 }

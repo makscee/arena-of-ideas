@@ -16,16 +16,14 @@ impl ProjectileEffect {
 impl Logic<'_> {
     pub fn process_projectile_effect(
         &mut self,
-        QueuedEffect {
-            effect,
-            caster,
-            target,
-        }: QueuedEffect<ProjectileEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<ProjectileEffect>,
     ) {
-        let target = target
+        let target = context
+            .target
             .and_then(|id| self.model.units.get(&id))
             .expect("Target not found");
-        let caster = caster
+        let caster = context
+            .caster
             .and_then(|id| self.model.units.get(&id))
             .expect("Caster not found");
         self.model.projectiles.insert(Projectile {

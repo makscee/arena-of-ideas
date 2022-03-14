@@ -17,8 +17,11 @@ impl Logic<'_> {
                     }
                     self.effects.push_back(QueuedEffect {
                         effect,
-                        caster: Some(unit.id),
-                        target: Some(target.id),
+                        context: EffectContext {
+                            caster: Some(unit.id),
+                            from: Some(unit.id),
+                            target: Some(target.id),
+                        },
                     });
                 }
                 unit.attack_state = AttackState::Cooldown {

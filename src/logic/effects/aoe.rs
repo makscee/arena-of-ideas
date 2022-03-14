@@ -16,17 +16,15 @@ impl AoeEffect {
 impl Logic<'_> {
     pub fn process_aoe_effect(
         &mut self,
-        QueuedEffect {
-            target,
-            caster,
-            effect,
-        }: QueuedEffect<AoeEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<AoeEffect>,
     ) {
-        let caster = caster
+        let caster = context
+            .caster
             .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
             .expect("Caster not found");
         let caster_faction = caster.faction;
-        let center = target
+        let center = context
+            .target
             .and_then(|id| {
                 self.model.units.get(&id).map(|unit| unit.position).or(self
                     .model
@@ -57,8 +55,11 @@ impl Logic<'_> {
             }
             self.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
-                caster: Some(caster.id),
-                target: Some(unit.id),
+                context: EffectContext {
+                    caster: Some(caster.id),
+                    from: Some(caster.id),
+                    target: Some(unit.id),
+                },
             });
         }
     }

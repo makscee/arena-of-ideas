@@ -52,8 +52,11 @@ impl Logic<'_> {
                 if let UnitTrigger::Spawn(effect) = trigger {
                     self.effects.push_back(QueuedEffect {
                         effect: effect.clone(),
-                        caster: Some(unit.id),
-                        target: Some(unit.id),
+                        context: EffectContext {
+                            caster: Some(unit.id),
+                            from: Some(unit.id),
+                            target: Some(unit.id),
+                        },
                     });
                 }
             }

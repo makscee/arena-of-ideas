@@ -28,8 +28,23 @@ pub use time_bomb::*;
 
 pub struct QueuedEffect<T> {
     pub effect: T,
+    pub context: EffectContext,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct EffectContext {
     pub caster: Option<Id>,
+    pub from: Option<Id>,
     pub target: Option<Id>,
+}
+
+impl EffectContext {
+    pub fn get(&self, who: Who) -> Option<Id> {
+        match who {
+            Who::Caster => self.caster,
+            Who::Target => self.target,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -99,71 +114,57 @@ impl Default for Effect {
 impl Logic<'_> {
     pub fn process_effects(&mut self) {
         while let Some(effect) = self.effects.pop_front() {
-            let caster = effect.caster;
-            let target = effect.target;
-            match effect.effect {
+            let QueuedEffect { effect, context } = effect;
+
+            match effect {
                 Effect::Noop => {}
                 Effect::Damage(effect) => self.process_damage_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::Projectile(effect) => self.process_projectile_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::AddStatus(effect) => self.process_add_status_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::Suicide(effect) => self.process_suicide_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::Spawn(effect) => self.process_spawn_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::TimeBomb(effect) => self.process_time_bomb_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::AOE(effect) => self.process_aoe_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::AddTargets(effect) => self.process_add_targets_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::Chain(effect) => self.process_chain_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::Repeat { times, effect } => {
                     for _ in 0..times {
                         self.effects.push_back(QueuedEffect {
                             effect: (*effect).clone(),
-                            caster,
-                            target,
+                            context,
                         });
                     }
                 }
                 Effect::List { effects } => {
                     for effect in effects {
-                        self.effects.push_back(QueuedEffect {
-                            effect,
-                            caster,
-                            target,
-                        });
+                        self.effects.push_back(QueuedEffect { effect, context });
                     }
                 }
                 Effect::Random { choices } => {
@@ -172,21 +173,15 @@ impl Logic<'_> {
                         .unwrap()
                         .effect
                         .clone();
-                    self.effects.push_back(QueuedEffect {
-                        effect,
-                        caster,
-                        target,
-                    });
+                    self.effects.push_back(QueuedEffect { effect, context });
                 }
                 Effect::If(effect) => self.process_if_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
                 Effect::MaybeModify(effect) => self.process_maybe_modify_effect(QueuedEffect {
                     effect: *effect,
-                    caster,
-                    target,
+                    context,
                 }),
             }
         }

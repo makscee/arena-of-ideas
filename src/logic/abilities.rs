@@ -33,8 +33,11 @@ impl Logic<'_> {
                 unit.ability_cooldown = Some(ability.cooldown);
                 self.effects.push_back(QueuedEffect {
                     effect: ability.effect.clone(),
-                    caster: Some(unit.id),
-                    target: Some(unit.id),
+                    context: EffectContext {
+                        caster: Some(unit.id),
+                        from: Some(unit.id),
+                        target: Some(unit.id),
+                    },
                 });
             }
         }

@@ -12,17 +12,15 @@ impl SpawnEffect {
 impl Logic<'_> {
     pub fn process_spawn_effect(
         &mut self,
-        QueuedEffect {
-            target,
-            caster,
-            effect,
-        }: QueuedEffect<SpawnEffect>,
+        QueuedEffect { effect, context }: QueuedEffect<SpawnEffect>,
     ) {
-        let caster = caster
+        let caster = context
+            .caster
             .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
             .expect("Caster not found");
         let faction = caster.faction;
-        let target = target
+        let target = context
+            .target
             .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
             .expect("Target not found");
         let position = target.position;
