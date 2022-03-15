@@ -26,6 +26,7 @@ impl Logic<'_> {
             .from
             .and_then(|id| self.model.units.get(&id))
             .expect("Caster not found");
+        assert_ne!(target.id, from.id);
         self.model.projectiles.insert(Projectile {
             id: self.model.next_id,
             attacker: from.id,
