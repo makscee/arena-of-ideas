@@ -56,27 +56,6 @@ pub struct WeighedEffect {
     pub effect: Effect,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
-pub enum Effect {
-    Noop,
-    Projectile(Box<ProjectileEffect>),
-    Damage(Box<DamageEffect>),
-    AddStatus(Box<AddStatusEffect>),
-    Spawn(Box<SpawnEffect>),
-    AOE(Box<AoeEffect>),
-    TimeBomb(Box<TimeBombEffect>),
-    Suicide(Box<SuicideEffect>),
-    Chain(Box<ChainEffect>),
-    AddTargets(Box<AddTargetsEffect>),
-    Repeat { times: usize, effect: Box<Effect> },
-    Random { choices: Vec<WeighedEffect> },
-    List { effects: Vec<Effect> },
-    If(Box<IfEffect>),
-    MaybeModify(Box<MaybeModifyEffect>),
-    ChangeContext(Box<ChangeContextEffect>),
-}
-
 impl Effect {
     pub fn walk_mut(&mut self, mut f: &mut impl FnMut(&mut Effect)) {
         match self {

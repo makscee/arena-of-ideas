@@ -6,6 +6,9 @@ pub struct Assets {
     pub config: Config,
 }
 
+pub type Key = String;
+pub type Wave = HashMap<String, Vec<UnitType>>;
+
 #[derive(geng::Assets, Deserialize, Clone)]
 #[asset(json)]
 pub struct Config {
