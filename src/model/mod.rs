@@ -2,9 +2,11 @@ use super::*;
 
 mod ability;
 mod alliances;
+mod condition;
 mod damage_value;
 mod effect;
 mod factions;
+mod modifier;
 mod projectile;
 mod status;
 mod time_bomb;
@@ -12,9 +14,11 @@ mod unit;
 
 pub use ability::*;
 pub use alliances::*;
+pub use condition::*;
 pub use damage_value::*;
 pub use effect::*;
 pub use factions::*;
+pub use modifier::*;
 pub use projectile::*;
 pub use status::*;
 pub use time_bomb::*;

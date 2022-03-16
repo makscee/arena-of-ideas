@@ -127,16 +127,19 @@ impl Alliance {
                         *effect = if party_members >= 6 {
                             Effect::AddTargets(Box::new(AddTargetsEffect {
                                 effect: effect.clone(),
+                                condition: Condition::Always,
                                 additional_targets: None,
                             }))
                         } else if party_members >= 4 {
                             Effect::AddTargets(Box::new(AddTargetsEffect {
                                 effect: effect.clone(),
+                                condition: Condition::Always,
                                 additional_targets: Some(4),
                             }))
                         } else if party_members >= 2 {
                             Effect::AddTargets(Box::new(AddTargetsEffect {
                                 effect: effect.clone(),
+                                condition: Condition::Always,
                                 additional_targets: Some(2),
                             }))
                         } else {

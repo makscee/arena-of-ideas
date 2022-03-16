@@ -1,17 +1,11 @@
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
+#[serde(tag = "type", deny_unknown_fields, rename = "If")]
 pub struct IfEffect {
     pub condition: Condition,
     pub then: Effect,
     pub r#else: Effect,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
-pub enum Condition {
-    UnitHasStatus { who: Who, status: Status },
 }
 
 impl IfEffect {

@@ -8,17 +8,7 @@ impl Logic<'_> {
             context,
         }: QueuedEffect<MaybeModifyEffect>,
     ) {
-        let condition = match &effect.condition {
-            Condition::UnitHasStatus { who, status } => {
-                let who = context.get(*who);
-                let who = who
-                    .and_then(|id| self.model.units.get(&id))
-                    .expect("Caster or Target not found");
-                who.all_statuses.contains(status)
-            }
-        };
-
-        if condition {
+        if self.check_condition(&effect.condition, &context) {
             effect.base_effect.apply_modifier(&effect.modifier);
         }
         self.effects.push_back(QueuedEffect {

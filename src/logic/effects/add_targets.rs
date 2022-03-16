@@ -26,6 +26,9 @@ impl Logic<'_> {
                 .filter(|unit| unit.faction == target.faction)
                 .filter(|unit| !targets.contains(&unit.id))
                 .filter(|unit| distance_between_units(unit, caster) < caster.attack.radius)
+                .filter(|unit| {
+                    self.check_condition(&effect.condition, &EffectContext { ..context })
+                })
                 .choose(&mut global_rng())
             {
                 targets.insert(another.id);

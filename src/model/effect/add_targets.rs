@@ -4,6 +4,8 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct AddTargetsEffect {
     pub additional_targets: Option<usize>,
+    #[serde(default)]
+    pub condition: Condition,
     pub effect: Effect,
 }
 

@@ -1,12 +1,5 @@
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub struct StrengthModifier {
-    pub multiplier: R32,
-    pub add: R32,
-}
-
 impl StrengthModifier {
     pub fn apply(&self, effect: &mut Effect) {
         effect.walk_mut(&mut |effect| match effect {
@@ -14,12 +7,6 @@ impl StrengthModifier {
             _ => {}
         });
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(tag = "type", deny_unknown_fields)]
-pub enum Modifier {
-    Strength(StrengthModifier),
 }
 
 impl Effect {
