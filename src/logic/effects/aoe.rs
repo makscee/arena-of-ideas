@@ -3,6 +3,8 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AoeEffect {
     pub filter: TargetFilter,
+    #[serde(default)]
+    pub skip_current_target: bool,
     pub radius: Coord,
     pub effect: Effect,
 }
@@ -37,6 +39,9 @@ impl Logic<'_> {
             render.add_text(center, "AOE", Color::RED);
         }
         for unit in &self.model.units {
+            if effect.skip_current_target && Some(unit.id) == context.target {
+                continue;
+            }
             if (unit.position - center).len() - unit.radius() > effect.radius {
                 continue;
             }
