@@ -55,6 +55,7 @@ impl UnitTemplate {
                 UnitTrigger::TakeDamage(trigger) => {
                     trigger.effect.walk_mut(f);
                 }
+                UnitTrigger::ShieldBroken(trigger) => {}
             }
         }
         for ability in self.abilities.values_mut() {

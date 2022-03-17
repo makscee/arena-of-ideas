@@ -6,6 +6,7 @@ mod aoe;
 mod chain;
 mod change_context;
 mod damage;
+mod heal;
 mod if_effect;
 mod maybe_modify;
 mod projectile;
@@ -19,6 +20,7 @@ pub use aoe::*;
 pub use chain::*;
 pub use change_context::*;
 pub use damage::*;
+pub use heal::*;
 pub use if_effect::*;
 pub use maybe_modify::*;
 pub use projectile::*;
@@ -45,4 +47,5 @@ pub enum Effect {
     If(Box<IfEffect>),
     MaybeModify(Box<MaybeModifyEffect>),
     ChangeContext(Box<ChangeContextEffect>),
+    Heal(Box<HealEffect>),
 }

@@ -7,6 +7,7 @@ mod chain;
 mod change_context;
 mod condition;
 mod damage;
+mod heal;
 mod if_effect;
 mod maybe_modify;
 mod modifiers;
@@ -70,6 +71,7 @@ impl Effect {
             Self::If(effect) => effect.walk_children_mut(f),
             Self::MaybeModify(effect) => effect.walk_children_mut(f),
             Self::ChangeContext(effect) => effect.walk_children_mut(f),
+            Self::Heal(effect) => effect.walk_children_mut(f),
         }
         f(self);
     }
@@ -154,6 +156,10 @@ impl Logic<'_> {
                     context,
                 }),
                 Effect::ChangeContext(effect) => self.process_change_context_effect(QueuedEffect {
+                    effect: *effect,
+                    context,
+                }),
+                Effect::Heal(effect) => self.process_heal_effect(QueuedEffect {
                     effect: *effect,
                     context,
                 }),

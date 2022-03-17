@@ -16,6 +16,12 @@ pub struct UnitTakeDamageTrigger {
     pub effect: Effect,
 }
 
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct UnitShieldBrokenTrigger {
+    pub heal: DamageValue,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "on", deny_unknown_fields)]
 pub enum UnitTrigger {
@@ -23,4 +29,5 @@ pub enum UnitTrigger {
     Spawn(Effect),
     Kill(UnitKillTrigger),
     TakeDamage(UnitTakeDamageTrigger),
+    ShieldBroken(UnitShieldBrokenTrigger),
 }

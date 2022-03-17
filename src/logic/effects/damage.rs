@@ -22,6 +22,21 @@ impl Logic<'_> {
             .iter()
             .position(|status| matches!(status, Status::Shield))
         {
+            for trigger in &target_unit.triggers {
+                if let UnitTrigger::ShieldBroken(UnitShieldBrokenTrigger { heal }) = *trigger {
+                    let heal = heal.absolute + damage * heal.relative;
+                    self.effects.push_back(QueuedEffect {
+                        context: EffectContext {
+                            caster: None,
+                            from: None,
+                            target: Some(target_unit.id),
+                        },
+                        effect: Effect::Heal(Box::new(HealEffect {
+                            hp: DamageValue::absolute(heal.as_f32()),
+                        })),
+                    });
+                }
+            }
             damage = Health::new(0.0);
             target_unit.attached_statuses.remove(index);
         } else if target_unit
