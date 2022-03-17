@@ -7,4 +7,5 @@ pub enum Alliance {
     Critters,
     Archers,
     Freezers,
+    Warriors,
 }

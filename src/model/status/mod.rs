@@ -9,6 +9,7 @@ pub enum Status {
     Slow { percent: f32, time: Time },
     Modifier(Modifier),
     Aura(Aura),
+    Protection { percent: f32 },
 }
 
 impl Status {
@@ -20,6 +21,7 @@ impl Status {
             Self::Slow { .. } => "Slow",
             Self::Aura { .. } => "Aura",
             Self::Modifier(..) => "Modifier",
+            Self::Protection { .. } => "Protection",
         }
     }
 }

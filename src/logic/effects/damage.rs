@@ -48,6 +48,11 @@ impl Logic<'_> {
                 }
             }
         }
+        for status in &target_unit.all_statuses {
+            if let Status::Protection { percent } = *status {
+                damage *= r32(1.0 - percent / 100.0);
+            }
+        }
         let old_hp = target_unit.hp;
         target_unit.hp -= damage;
         if let Some(render) = &mut self.render {

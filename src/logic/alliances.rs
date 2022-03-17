@@ -220,6 +220,26 @@ impl Alliance {
                     }));
                 }
             }
+            Self::Warriors => {
+                let mut protection = 0.0;
+                if party_members >= 3 {
+                    protection = 30.0;
+                } else if party_members >= 6 {
+                    protection = 50.0;
+                }
+                if protection != 0.0 {
+                    template
+                        .triggers
+                        .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
+                            AddStatusEffect {
+                                who: Who::Target,
+                                status: Status::Protection {
+                                    percent: protection,
+                                },
+                            },
+                        ))));
+                }
+            }
         }
     }
 }
