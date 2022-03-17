@@ -3,7 +3,7 @@
     "spawn_animation_time": 1.0,
     "speed": 1.5,
     "size": 0.3,
-    "attack": {
+    "action": {
         "radius": 0.5,
         "animation_delay": 0.0,
         "cooldown": 1.0,

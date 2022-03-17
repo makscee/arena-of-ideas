@@ -2,7 +2,7 @@
     "hp": 1,
     "speed": 0.7,
     "size": 1,
-    "attack": {
+    "action": {
         "radius": 10,
         "animation_delay": 1,
         "cooldown": 3,

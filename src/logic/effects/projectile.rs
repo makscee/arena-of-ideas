@@ -16,7 +16,7 @@ impl Logic<'_> {
         assert_ne!(target.id, from.id);
         self.model.projectiles.insert(Projectile {
             id: self.model.next_id,
-            attacker: from.id,
+            caster: from.id,
             target: target.id,
             position: from.position + (target.position - from.position).normalize() * from.radius(),
             speed: effect.speed,

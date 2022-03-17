@@ -10,10 +10,10 @@ impl Logic<'_> {
                     }
                     Status::Stun { time, .. } => {
                         *time -= self.delta_time;
-                        unit.attack_state = AttackState::None;
+                        unit.action_state = ActionState::None;
                     }
                     Status::Freeze => {
-                        unit.attack_state = AttackState::None;
+                        unit.action_state = ActionState::None;
                     }
                     Status::Aura(Aura { time, .. }) => {
                         if let Some(time) = time {

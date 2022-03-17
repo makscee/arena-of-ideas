@@ -49,9 +49,9 @@ impl Game {
                         &draw_2d::Ellipse::circle(
                             unit.position.map(|x| x.as_f32()),
                             unit.radius().as_f32()
-                                * match &unit.attack_state {
-                                    AttackState::Start { time, .. } => {
-                                        1.0 - 0.25 * (*time / unit.attack.animation_delay).as_f32()
+                                * match &unit.action_state {
+                                    ActionState::Start { time, .. } => {
+                                        1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
                                     }
                                     _ => 1.0,
                                 }
@@ -91,10 +91,10 @@ impl Game {
                         &draw_2d::TexturedQuad::unit(&**texture)
                             .scale_uniform(
                                 unit.radius().as_f32()
-                                    * match &unit.attack_state {
-                                        AttackState::Start { time, .. } => {
+                                    * match &unit.action_state {
+                                        ActionState::Start { time, .. } => {
                                             1.0 - 0.25
-                                                * (*time / unit.attack.animation_delay).as_f32()
+                                                * (*time / unit.action.animation_delay).as_f32()
                                         }
                                         _ => 1.0,
                                     }
@@ -132,9 +132,9 @@ impl Game {
                     let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
                         * Mat3::scale_uniform(
                             unit.radius().as_f32()
-                                * match &unit.attack_state {
-                                    AttackState::Start { time, .. } => {
-                                        1.0 - 0.25 * (*time / unit.attack.animation_delay).as_f32()
+                                * match &unit.action_state {
+                                    ActionState::Start { time, .. } => {
+                                        1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
                                     }
                                     _ => 1.0,
                                 }
@@ -165,9 +165,9 @@ impl Game {
                                     }
                                     _ => 1.0,
                                 },
-                                u_attack: match &unit.attack_state {
-                                    AttackState::Start { time, .. } => {
-                                        (*time / unit.attack.animation_delay).as_f32()
+                                u_action: match &unit.action_state {
+                                    ActionState::Start { time, .. } => {
+                                        (*time / unit.action.animation_delay).as_f32()
                                     }
                                     _ => 0.0,
                                 },

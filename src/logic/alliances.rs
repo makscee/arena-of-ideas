@@ -7,7 +7,7 @@ impl Alliance {
                 if party_members >= 2 {
                     let crit_percent = 15.0;
                     template
-                        .attack
+                        .action
                         .effect
                         .walk_mut(&mut |effect| match &effect {
                             Effect::Damage(damage) => {

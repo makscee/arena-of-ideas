@@ -30,7 +30,7 @@ pub struct UnitTemplate {
     pub spawn_animation_time: Time,
     pub speed: Coord,
     pub size: Coord,
-    pub attack: AttackProperties,
+    pub action: ActionProperties,
     pub triggers: Vec<UnitTrigger>,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
@@ -44,7 +44,7 @@ pub struct UnitTemplate {
 
 impl UnitTemplate {
     pub fn walk_effects_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
-        self.attack.effect.walk_mut(f);
+        self.action.effect.walk_mut(f);
         for trigger in &mut self.triggers {
             match trigger {
                 UnitTrigger::Death(effect) => effect.walk_mut(f),
@@ -71,7 +71,7 @@ impl Default for UnitTemplate {
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
             size: Coord::new(1.0),
-            attack: AttackProperties {
+            action: ActionProperties {
                 radius: Coord::new(1.0),
                 cooldown: Time::new(1.0),
                 animation_delay: Time::new(1.0),

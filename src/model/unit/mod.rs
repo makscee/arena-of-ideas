@@ -11,7 +11,7 @@ pub use trigger::*;
 pub type UnitType = String;
 
 #[derive(Serialize, Deserialize, Clone)]
-pub enum AttackState {
+pub enum ActionState {
     None,
     Start { time: Time, target: Id },
     Cooldown { time: Time },
@@ -19,7 +19,7 @@ pub enum AttackState {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct AttackProperties {
+pub struct ActionProperties {
     pub cooldown: Time,
     pub animation_delay: Time,
     pub radius: Coord,
@@ -35,12 +35,12 @@ pub struct Unit {
     pub attached_statuses: Vec<Status>,
     pub all_statuses: Vec<Status>,
     pub faction: Faction,
-    pub attack_state: AttackState,
+    pub action_state: ActionState,
     pub hp: Health,
     pub max_hp: Health,
     pub position: Vec2<Coord>,
     pub speed: Coord,
-    pub attack: AttackProperties,
+    pub action: ActionProperties,
     pub size: Coord,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,

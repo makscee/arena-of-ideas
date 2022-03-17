@@ -3,8 +3,8 @@ use std::collections::VecDeque;
 use super::*;
 
 mod abilities;
+mod actions;
 mod alliances;
-mod attacks;
 mod collisions;
 mod deaths;
 mod effects;
@@ -48,7 +48,7 @@ impl<'a> Logic<'a> {
         self.process_movement();
         self.process_collisions();
         self.process_targeting();
-        self.process_attacks();
+        self.process_actions();
         self.process_cooldowns();
         self.process_projectiles();
         self.process_deaths();

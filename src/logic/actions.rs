@@ -1,15 +1,15 @@
 use super::*;
 
 impl Logic<'_> {
-    pub fn process_attacks(&mut self) {
-        self.process_units(Self::process_unit_attacks);
+    pub fn process_actions(&mut self) {
+        self.process_units(Self::process_unit_actions);
     }
-    fn process_unit_attacks(&mut self, unit: &mut Unit) {
-        if let AttackState::Start { time, target } = &mut unit.attack_state {
+    fn process_unit_actions(&mut self, unit: &mut Unit) {
+        if let ActionState::Start { time, target } = &mut unit.action_state {
             *time += self.delta_time;
-            if *time > unit.attack.animation_delay {
+            if *time > unit.action.animation_delay {
                 if let Some(target) = self.model.units.get(target) {
-                    let mut effect = unit.attack.effect.clone();
+                    let mut effect = unit.action.effect.clone();
                     for status in &unit.all_statuses {
                         if let Status::Modifier(modifier) = status {
                             effect.apply_modifier(modifier);
@@ -24,7 +24,7 @@ impl Logic<'_> {
                         },
                     });
                 }
-                unit.attack_state = AttackState::Cooldown {
+                unit.action_state = ActionState::Cooldown {
                     time: Time::new(0.0),
                 };
             }
@@ -35,10 +35,10 @@ impl Logic<'_> {
         self.process_units(Self::process_unit_cooldowns);
     }
     fn process_unit_cooldowns(&mut self, unit: &mut Unit) {
-        if let AttackState::Cooldown { time } = &mut unit.attack_state {
+        if let ActionState::Cooldown { time } = &mut unit.action_state {
             *time += self.delta_time;
-            if *time > unit.attack.cooldown {
-                unit.attack_state = AttackState::None;
+            if *time > unit.action.cooldown {
+                unit.action_state = ActionState::None;
             }
         }
     }

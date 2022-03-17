@@ -6,14 +6,14 @@ impl Logic<'_> {
         for id in self.model.projectiles.ids().copied().collect::<Vec<Id>>() {
             let mut projectile = self.model.projectiles.remove(&id).unwrap();
 
-            let mut attacker = self.model.units.remove(&projectile.attacker);
+            let mut caster = self.model.units.remove(&projectile.caster);
             if let Some(mut target) = self.model.units.remove(&projectile.target) {
                 projectile.target_position = target.position;
                 if (projectile.position - target.position).len() < target.radius() {
                     self.effects.push_back(QueuedEffect {
                         effect: projectile.effect.clone(),
                         context: EffectContext {
-                            caster: Some(projectile.attacker),
+                            caster: Some(projectile.caster),
                             from: Some(target.id),
                             target: Some(target.id),
                         },
@@ -22,8 +22,8 @@ impl Logic<'_> {
                 }
                 self.model.units.insert(target);
             }
-            if let Some(attacker) = attacker {
-                self.model.units.insert(attacker);
+            if let Some(caster) = caster {
+                self.model.units.insert(caster);
             }
             let max_distance = projectile.speed * self.delta_time;
             let distance = (projectile.target_position - projectile.position).len();

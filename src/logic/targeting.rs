@@ -12,7 +12,7 @@ impl Logic<'_> {
         {
             return;
         }
-        if let AttackState::None = unit.attack_state {
+        if let ActionState::None = unit.action_state {
             let target = match unit.target_ai {
                 TargetAi::Closest => self
                     .model
@@ -29,8 +29,8 @@ impl Logic<'_> {
                 _ => todo!(),
             };
             if let Some(target) = target {
-                if distance_between_units(target, &unit) < unit.attack.radius {
-                    unit.attack_state = AttackState::Start {
+                if distance_between_units(target, &unit) < unit.action.radius {
+                    unit.action_state = ActionState::Start {
                         time: Time::new(0.0),
                         target: target.id,
                     }
