@@ -12,47 +12,58 @@ impl Logic<'_> {
         let mut damage =
             target_unit.max_hp * effect.hp.relative / Health::new(100.0) + effect.hp.absolute;
         damage = min(damage, target_unit.hp);
-        if damage > Health::new(0.0) {
-            if let Some((index, _)) = target_unit
-                .attached_statuses
-                .iter()
-                .enumerate()
-                .find(|(_, status)| matches!(status, Status::Shield))
-            {
-                damage = Health::new(0.0);
-                target_unit.attached_statuses.remove(index);
-            } else if target_unit
-                .all_statuses
-                .iter()
-                .any(|status| matches!(status, Status::Shield))
-            {
-                damage = Health::new(0.0);
-            }
+        if damage <= Health::new(0.0) {
+            return;
         }
-        if damage > Health::new(0.0) {
-            target_unit
-                .attached_statuses
-                .retain(|status| !matches!(status, Status::Freeze));
 
-            for trigger in &target_unit.triggers {
-                if let UnitTrigger::TakeDamage(trigger) = trigger {
-                    if match &trigger.damage_type {
-                        Some(damage_type) => effect.types.contains(damage_type),
-                        None => true,
-                    } {
-                        self.effects.push_back(QueuedEffect {
-                            effect: trigger.effect.clone(),
-                            context,
-                        });
-                    }
+        // Shield
+        if let Some(index) = target_unit
+            .attached_statuses
+            .iter()
+            .position(|status| matches!(status, Status::Shield))
+        {
+            damage = Health::new(0.0);
+            target_unit.attached_statuses.remove(index);
+        } else if target_unit
+            .all_statuses
+            .iter()
+            .any(|status| matches!(status, Status::Shield))
+        {
+            damage = Health::new(0.0);
+        }
+        if damage <= Health::new(0.0) {
+            return;
+        }
+
+        // Freeze
+        target_unit
+            .attached_statuses
+            .retain(|status| !matches!(status, Status::Freeze));
+
+        for trigger in &target_unit.triggers {
+            if let UnitTrigger::TakeDamage(trigger) = trigger {
+                if match &trigger.damage_type {
+                    Some(damage_type) => effect.types.contains(damage_type),
+                    None => true,
+                } {
+                    self.effects.push_back(QueuedEffect {
+                        effect: trigger.effect.clone(),
+                        context,
+                    });
                 }
             }
         }
+
+        // Protection
         for status in &target_unit.all_statuses {
             if let Status::Protection { percent } = *status {
                 damage *= r32(1.0 - percent / 100.0);
             }
         }
+        if damage <= Health::new(0.0) {
+            return;
+        }
+
         let old_hp = target_unit.hp;
         target_unit.hp -= damage;
         if let Some(render) = &mut self.render {
