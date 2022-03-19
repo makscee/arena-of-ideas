@@ -1,6 +1,6 @@
 use super::*;
 
-mod add_status;
+mod attach_status;
 mod add_targets;
 mod aoe;
 mod chain;
@@ -50,7 +50,7 @@ impl Effect {
             Self::Noop => {}
             Self::Projectile(effect) => effect.walk_children_mut(f),
             Self::Damage(effect) => effect.walk_children_mut(f),
-            Self::AddStatus(effect) => effect.walk_children_mut(f),
+            Self::AttachStatus(effect) => effect.walk_children_mut(f),
             Self::Spawn(effect) => effect.walk_children_mut(f),
             Self::AOE(effect) => effect.walk_children_mut(f),
             Self::TimeBomb(effect) => effect.walk_children_mut(f),
@@ -98,7 +98,7 @@ impl Logic<'_> {
                     effect: *effect,
                     context,
                 }),
-                Effect::AddStatus(effect) => self.process_add_status_effect(QueuedEffect {
+                Effect::AttachStatus(effect) => self.process_add_status_effect(QueuedEffect {
                     effect: *effect,
                     context,
                 }),

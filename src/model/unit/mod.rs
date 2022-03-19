@@ -32,7 +32,7 @@ pub struct Unit {
     pub id: Id,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
-    pub attached_statuses: Vec<Status>,
+    pub attached_statuses: Vec<AttachedStatus>,
     pub all_statuses: Vec<Status>,
     pub faction: Faction,
     pub action_state: ActionState,

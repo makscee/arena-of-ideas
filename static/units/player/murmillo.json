@@ -28,7 +28,7 @@
         "MouseRight": {
             "cooldown": 3,
             "effect": {
-                "type": "AddStatus",
+                "type": "AttachStatus",
                 "status": {
                     "type": "Shield"
                 }

@@ -25,7 +25,7 @@
                 "skip_current_target": true,
                 "radius": 3,
                 "effect": {
-                    "type": "AddStatus",
+                    "type": "AttachStatus",
                     "status": {
                         "type": "Freeze"
                     }

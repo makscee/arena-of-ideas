@@ -34,7 +34,7 @@ pub enum Effect {
     Noop,
     Projectile(Box<ProjectileEffect>),
     Damage(Box<DamageEffect>),
-    AddStatus(Box<AddStatusEffect>),
+    AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
     TimeBomb(Box<TimeBombEffect>),

@@ -17,10 +17,17 @@ pub enum Status {
     Freeze,
     Stun { time: Time },
     Shield,
-    Slow { percent: f32, time: Time },
+    Slow { percent: f32 },
     Modifier(Modifier),
     Aura(Aura),
     Protection { percent: f32 },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AttachedStatus {
+    #[serde(flatten)]
+    pub status: Status,
+    pub time: Option<Time>,
 }
 
 impl Status {
@@ -42,5 +49,4 @@ pub struct Aura {
     pub distance: Option<Coord>,
     pub alliance: Option<Alliance>, // TODO: Filter
     pub status: Box<Status>,
-    pub time: Option<Time>,
 }

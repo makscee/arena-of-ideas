@@ -20,7 +20,7 @@ impl Logic<'_> {
         if let Some(index) = target_unit
             .attached_statuses
             .iter()
-            .position(|status| matches!(status, Status::Shield))
+            .position(|status| status.status.r#type() == StatusType::Shield)
         {
             for trigger in &target_unit.triggers {
                 if let UnitTrigger::ShieldBroken(UnitShieldBrokenTrigger { heal }) = *trigger {
@@ -53,7 +53,7 @@ impl Logic<'_> {
         // Freeze
         target_unit
             .attached_statuses
-            .retain(|status| !matches!(status, Status::Freeze));
+            .retain(|status| status.status.r#type() != StatusType::Freeze);
 
         for trigger in &target_unit.triggers {
             if let UnitTrigger::TakeDamage(trigger) = trigger {

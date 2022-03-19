@@ -17,7 +17,7 @@
                     ]
                 },
                 {
-                    "type": "AddStatus",
+                    "type": "AttachStatus",
                     "status": {
                         "type": "Freeze"
                     }

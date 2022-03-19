@@ -11,12 +11,12 @@ fn default_who() -> Who {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AddStatusEffect {
+pub struct AttachStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
-    pub status: Status,
+    pub status: AttachedStatus,
 }
 
-impl AddStatusEffect {
+impl AttachStatusEffect {
     pub fn walk_children_mut(&mut self, _f: &mut impl FnMut(&mut Effect)) {}
 }

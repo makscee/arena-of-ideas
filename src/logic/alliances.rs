@@ -36,23 +36,28 @@ impl Alliance {
                                                         },
                                                     )));
                                                     if party_members >= 4 {
-                                                        effects.push(Effect::AddStatus(Box::new(
-                                                            AddStatusEffect {
+                                                        effects.push(Effect::AttachStatus(
+                                                            Box::new(AttachStatusEffect {
                                                                 who: Who::Target,
-                                                                status: Status::Slow {
-                                                                    percent: 70.0,
-                                                                    time: r32(3.0),
+                                                                status: AttachedStatus {
+                                                                    status: Status::Slow {
+                                                                        percent: 70.0,
+                                                                    },
+                                                                    time: Some(r32(3.0)),
                                                                 },
-                                                            },
-                                                        )));
+                                                            }),
+                                                        ));
                                                     }
                                                     if party_members >= 6 {
-                                                        effects.push(Effect::AddStatus(Box::new(
-                                                            AddStatusEffect {
+                                                        effects.push(Effect::AttachStatus(
+                                                            Box::new(AttachStatusEffect {
                                                                 who: Who::Caster,
-                                                                status: Status::Shield,
-                                                            },
-                                                        )));
+                                                                status: AttachedStatus {
+                                                                    status: Status::Shield,
+                                                                    time: None,
+                                                                },
+                                                            }),
+                                                        ));
                                                     }
                                                     effects
                                                 },
@@ -103,20 +108,22 @@ impl Alliance {
                 if party_members >= 2 {
                     template
                         .triggers
-                        .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
-                            AddStatusEffect {
+                        .push(UnitTrigger::Spawn(Effect::AttachStatus(Box::new(
+                            AttachStatusEffect {
                                 who: Who::Caster,
-                                status: Status::Aura(Aura {
-                                    distance: None,
-                                    alliance: Some(Alliance::Critters),
-                                    status: Box::new(Status::Modifier(Modifier::Strength(
-                                        StrengthModifier {
-                                            multiplier: r32(1.0),
-                                            add: r32(2.0),
-                                        },
-                                    ))),
+                                status: AttachedStatus {
+                                    status: Status::Aura(Aura {
+                                        distance: None,
+                                        alliance: Some(Alliance::Critters),
+                                        status: Box::new(Status::Modifier(Modifier::Strength(
+                                            StrengthModifier {
+                                                multiplier: r32(1.0),
+                                                add: r32(2.0),
+                                            },
+                                        ))),
+                                    }),
                                     time: None,
-                                }),
+                                },
                             },
                         ))));
                 }
@@ -175,9 +182,12 @@ impl Alliance {
                         .triggers
                         .push(UnitTrigger::TakeDamage(UnitTakeDamageTrigger {
                             damage_type: None,
-                            effect: Effect::AddStatus(Box::new(AddStatusEffect {
+                            effect: Effect::AttachStatus(Box::new(AttachStatusEffect {
                                 who: Who::Caster,
-                                status: Status::Freeze,
+                                status: AttachedStatus {
+                                    status: Status::Freeze,
+                                    time: None,
+                                },
                             })),
                         }));
                 }
@@ -230,11 +240,14 @@ impl Alliance {
                 if protection != 0.0 {
                     template
                         .triggers
-                        .push(UnitTrigger::Spawn(Effect::AddStatus(Box::new(
-                            AddStatusEffect {
+                        .push(UnitTrigger::Spawn(Effect::AttachStatus(Box::new(
+                            AttachStatusEffect {
                                 who: Who::Target,
-                                status: Status::Protection {
-                                    percent: protection,
+                                status: AttachedStatus {
+                                    status: Status::Protection {
+                                        percent: protection,
+                                    },
+                                    time: None,
                                 },
                             },
                         ))));

@@ -4,41 +4,34 @@ impl Logic<'_> {
     pub fn process_statuses(&mut self) {
         for unit in &mut self.model.units {
             for status in &mut unit.attached_statuses {
-                match status {
-                    Status::Slow { time, .. } => {
-                        *time -= self.delta_time;
-                    }
-                    Status::Stun { time, .. } => {
-                        *time -= self.delta_time;
-                        unit.action_state = ActionState::None;
-                    }
-                    Status::Freeze => {
-                        unit.action_state = ActionState::None;
-                    }
-                    Status::Aura(Aura { time, .. }) => {
-                        if let Some(time) = time {
-                            *time -= self.delta_time;
-                        }
-                    }
-                    _ => {}
+                if let Some(time) = &mut status.time {
+                    *time -= self.delta_time;
+                }
+                if let StatusType::Freeze | StatusType::Stun = status.status.r#type() {
+                    unit.action_state = ActionState::None;
                 }
             }
-            unit.attached_statuses.retain(|status| match status {
-                Status::Slow { time, .. } | Status::Stun { time, .. } => *time > Time::ZERO,
-                Status::Aura(Aura {
-                    time: Some(time), ..
-                }) => *time > Time::ZERO,
-                _ => true,
+            unit.attached_statuses.retain(|status| {
+                if let Some(time) = status.time {
+                    if time <= R32::ZERO {
+                        return false;
+                    }
+                }
+                true
             });
         }
         for unit in &mut self.model.units {
-            unit.all_statuses = unit.attached_statuses.clone();
+            unit.all_statuses = unit
+                .attached_statuses
+                .iter()
+                .map(|status| status.status.clone())
+                .collect();
         }
 
         let mut auras: Vec<(Id, Aura)> = Vec::new();
         for unit in &self.model.units {
             for status in &unit.attached_statuses {
-                if let Status::Aura(aura) = status {
+                if let Status::Aura(aura) = &status.status {
                     auras.push((unit.id, aura.clone()));
                 }
             }
