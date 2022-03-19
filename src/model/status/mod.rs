@@ -14,9 +14,7 @@ pub enum StatusType {
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
-    Stun {
-        time: Time,
-    },
+    Stun,
     Shield,
     Slow {
         percent: f32,
@@ -44,7 +42,7 @@ impl Status {
     pub fn r#type(&self) -> StatusType {
         match self {
             Self::Freeze => StatusType::Freeze,
-            Self::Stun { .. } => StatusType::Stun,
+            Self::Stun => StatusType::Stun,
             Self::Shield => StatusType::Shield,
             Self::Slow { .. } => StatusType::Slow,
             Self::Protection { .. } => StatusType::Protection,
