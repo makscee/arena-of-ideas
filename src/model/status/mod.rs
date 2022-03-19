@@ -1,5 +1,16 @@
 use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum StatusType {
+    Freeze,
+    Stun,
+    Shield,
+    Slow,
+    Modifier,
+    Aura,
+    Protection,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum Status {
@@ -13,15 +24,15 @@ pub enum Status {
 }
 
 impl Status {
-    pub fn name(&self) -> &'static str {
+    pub fn r#type(&self) -> StatusType {
         match self {
-            Self::Freeze => "Freeze",
-            Self::Stun { .. } => "Stun",
-            Self::Shield => "Shield",
-            Self::Slow { .. } => "Slow",
-            Self::Aura { .. } => "Aura",
-            Self::Modifier(..) => "Modifier",
-            Self::Protection { .. } => "Protection",
+            Self::Freeze => StatusType::Freeze,
+            Self::Stun { .. } => StatusType::Stun,
+            Self::Shield => StatusType::Shield,
+            Self::Slow { .. } => StatusType::Slow,
+            Self::Aura { .. } => StatusType::Aura,
+            Self::Modifier(..) => StatusType::Modifier,
+            Self::Protection { .. } => StatusType::Protection,
         }
     }
 }
