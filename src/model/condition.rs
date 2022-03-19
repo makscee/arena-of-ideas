@@ -4,7 +4,11 @@ use super::*;
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Condition {
     Always,
-    UnitHasStatus { who: Who, status: Status },
+    UnitHasStatus {
+        who: Who,
+        #[serde(rename = "status")]
+        status_type: StatusType,
+    },
 }
 
 impl Default for Condition {

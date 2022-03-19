@@ -165,7 +165,7 @@ impl Alliance {
                                 base_effect: effect.clone(),
                                 condition: Condition::UnitHasStatus {
                                     who: Who::Target,
-                                    status: Status::Freeze,
+                                    status_type: StatusType::Freeze,
                                 },
                                 modifier: Modifier::Strength(StrengthModifier {
                                     multiplier: r32(2.0),
@@ -198,7 +198,7 @@ impl Alliance {
                         effect: Effect::If(Box::new(IfEffect {
                             condition: Condition::UnitHasStatus {
                                 who: Who::Target,
-                                status: Status::Freeze,
+                                status_type: StatusType::Freeze,
                             },
                             then: {
                                 Effect::ChangeContext(Box::new(ChangeContextEffect {

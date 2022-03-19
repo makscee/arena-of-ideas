@@ -6,24 +6,34 @@ pub enum StatusType {
     Stun,
     Shield,
     Slow,
-    Modifier,
-    Aura,
     Protection,
+    Other,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Status {
     Freeze,
-    Stun { time: Time },
+    Stun {
+        time: Time,
+    },
     Shield,
-    Slow { percent: f32 },
+    Slow {
+        percent: f32,
+    },
     Modifier(Modifier),
     Aura(Aura),
-    Protection { percent: f32 },
+    Protection {
+        percent: f32,
+    },
+    DetectAttachedStatus {
+        on: TargetFilter,
+        status: StatusType,
+        effect: Effect,
+    },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AttachedStatus {
     #[serde(flatten)]
     pub status: Status,
@@ -37,14 +47,15 @@ impl Status {
             Self::Stun { .. } => StatusType::Stun,
             Self::Shield => StatusType::Shield,
             Self::Slow { .. } => StatusType::Slow,
-            Self::Aura { .. } => StatusType::Aura,
-            Self::Modifier(..) => StatusType::Modifier,
             Self::Protection { .. } => StatusType::Protection,
+            Self::Aura { .. } | Self::Modifier(..) | Status::DetectAttachedStatus { .. } => {
+                StatusType::Other
+            }
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Aura {
     pub distance: Option<Coord>,
     pub alliance: Option<Alliance>, // TODO: Filter

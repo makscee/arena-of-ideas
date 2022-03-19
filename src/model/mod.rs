@@ -24,7 +24,7 @@ pub use status::*;
 pub use time_bomb::*;
 pub use unit::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TargetFilter {
     All,
     Allies,
