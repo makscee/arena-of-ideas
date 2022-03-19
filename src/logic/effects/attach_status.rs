@@ -1,7 +1,7 @@
 use super::*;
 
 impl Logic<'_> {
-    pub fn process_add_status_effect(
+    pub fn process_attach_status_effect(
         &mut self,
         QueuedEffect { effect, context }: QueuedEffect<AttachStatusEffect>,
     ) {

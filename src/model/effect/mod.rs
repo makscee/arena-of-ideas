@@ -1,8 +1,8 @@
 use super::*;
 
-mod add_status;
 mod add_targets;
 mod aoe;
+mod attach_status;
 mod chain;
 mod change_context;
 mod damage;
@@ -14,9 +14,9 @@ mod spawn;
 mod suicide;
 mod time_bomb;
 
-pub use add_status::*;
 pub use add_targets::*;
 pub use aoe::*;
+pub use attach_status::*;
 pub use chain::*;
 pub use change_context::*;
 pub use damage::*;

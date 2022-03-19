@@ -98,7 +98,7 @@ impl Logic<'_> {
                     effect: *effect,
                     context,
                 }),
-                Effect::AttachStatus(effect) => self.process_add_status_effect(QueuedEffect {
+                Effect::AttachStatus(effect) => self.process_attach_status_effect(QueuedEffect {
                     effect: *effect,
                     context,
                 }),
