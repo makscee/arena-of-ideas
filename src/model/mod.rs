@@ -24,11 +24,21 @@ pub use status::*;
 pub use time_bomb::*;
 pub use unit::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
     All,
     Allies,
     Enemies,
+}
+
+impl TargetFilter {
+    pub fn matches(&self, a: Faction, b: Faction) -> bool {
+        match self {
+            Self::Allies => a == b,
+            Self::Enemies => a != b,
+            Self::All => true,
+        }
+    }
 }
 
 pub struct Model {

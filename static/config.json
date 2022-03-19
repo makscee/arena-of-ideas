@@ -8,7 +8,8 @@
         "frozen_blade",
         "chill_knight",
         "ice_archer",
-        "murmillo"
+        "murmillo",
+        "cold_detector"
     ],
     "spawn_points": {
         "Left": [

@@ -81,6 +81,7 @@ impl Logic<'_> {
 
         let old_hp = target_unit.hp;
         target_unit.hp -= damage;
+        let target_unit = self.model.units.get(&context.target.unwrap()).unwrap();
         if let Some(render) = &mut self.render {
             render.add_text(target_unit.position, &format!("{}", -damage), Color::RED);
         }
@@ -120,14 +121,12 @@ impl Logic<'_> {
                         } {
                             self.effects.push_back(QueuedEffect {
                                 effect: trigger.effect.clone(),
-                                context: EffectContext {
-                                    caster: Some(caster.id),
-                                    ..context
-                                },
+                                context,
                             });
                         }
                     }
                 }
+                self.kill(context.target.unwrap());
             }
         }
     }

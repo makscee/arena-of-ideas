@@ -30,24 +30,15 @@ impl Logic<'_> {
             if (unit.position - center).len() - unit.radius() > effect.radius {
                 continue;
             }
-            match effect.filter {
-                TargetFilter::Allies => {
-                    if unit.faction != caster_faction {
-                        continue;
-                    }
-                }
-                TargetFilter::Enemies => {
-                    if unit.faction == caster_faction {
-                        continue;
-                    }
-                }
-                TargetFilter::All => {}
+            if !effect.filter.matches(unit.faction, caster_faction) {
+                continue;
             }
             self.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
+                    caster: context.caster,
+                    from: context.target,
                     target: Some(unit.id),
-                    ..context
                 },
             });
         }

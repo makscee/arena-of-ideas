@@ -6,7 +6,8 @@ impl Logic<'_> {
         QueuedEffect { context, .. }: QueuedEffect<SuicideEffect>,
     ) {
         if let Some(caster) = context.caster.and_then(|id| self.model.units.get_mut(&id)) {
-            caster.hp = Health::new(0.0);
+            let caster_id = caster.id;
+            self.kill(caster_id);
         }
     }
 }

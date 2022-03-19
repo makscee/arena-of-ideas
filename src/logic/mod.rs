@@ -51,9 +51,9 @@ impl<'a> Logic<'a> {
         self.process_actions();
         self.process_cooldowns();
         self.process_projectiles();
-        self.process_deaths();
         self.check_next_wave();
         self.process_effects();
+        self.process_deaths();
     }
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.model.units.ids().copied().collect();

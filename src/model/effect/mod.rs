@@ -32,6 +32,7 @@ pub use time_bomb::*;
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
     Noop,
+    InstantAction,
     Projectile(Box<ProjectileEffect>),
     Damage(Box<DamageEffect>),
     AttachStatus(Box<AttachStatusEffect>),

@@ -1,14 +1,15 @@
 use super::*;
 
-mod attach_status;
 mod add_targets;
 mod aoe;
+mod attach_status;
 mod chain;
 mod change_context;
 mod condition;
 mod damage;
 mod heal;
 mod if_effect;
+mod instant_action;
 mod maybe_modify;
 mod modifiers;
 mod projectile;
@@ -48,6 +49,7 @@ impl Effect {
     pub fn walk_mut(&mut self, mut f: &mut impl FnMut(&mut Effect)) {
         match self {
             Self::Noop => {}
+            Self::InstantAction => {}
             Self::Projectile(effect) => effect.walk_children_mut(f),
             Self::Damage(effect) => effect.walk_children_mut(f),
             Self::AttachStatus(effect) => effect.walk_children_mut(f),
@@ -85,11 +87,10 @@ impl Default for Effect {
 
 impl Logic<'_> {
     pub fn process_effects(&mut self) {
-        while let Some(effect) = self.effects.pop_front() {
-            let QueuedEffect { effect, context } = effect;
-
+        while let Some(QueuedEffect { effect, context }) = self.effects.pop_front() {
             match effect {
                 Effect::Noop => {}
+                Effect::InstantAction => self.process_instant_action(context),
                 Effect::Damage(effect) => self.process_damage_effect(QueuedEffect {
                     effect: *effect,
                     context,
