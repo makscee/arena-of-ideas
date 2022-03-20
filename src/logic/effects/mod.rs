@@ -36,6 +36,27 @@ impl EffectContext {
             Who::Target => self.target,
         }
     }
+    pub fn to_string(&self, logic: &Logic) -> String {
+        format!(
+            "caster: {}, from: {}, target: {}",
+            self.unit_to_string(self.caster, logic),
+            self.unit_to_string(self.from, logic),
+            self.unit_to_string(self.target, logic),
+        )
+    }
+    pub fn unit_to_string(&self, unit: Option<Id>, logic: &Logic) -> String {
+        match unit {
+            Some(id) => {
+                if let Some(unit) = logic.model.units.get(&id) {
+                    format!("{}#{}", unit.unit_type, id)
+                } else {
+                    let unit = logic.model.dead_units.get(&id).unwrap();
+                    format!("{}#{}(dead)", unit.unit_type, id)
+                }
+            }
+            None => "None".to_owned(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -88,6 +109,7 @@ impl Default for Effect {
 impl Logic<'_> {
     pub fn process_effects(&mut self) {
         while let Some(QueuedEffect { effect, context }) = self.effects.pop_front() {
+            debug!("Processing {:?} on {}", effect, context.to_string(self));
             match effect {
                 Effect::Noop => {}
                 Effect::InstantAction => self.process_instant_action(context),
