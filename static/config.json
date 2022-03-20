@@ -9,7 +9,8 @@
         "chill_knight",
         "ice_archer",
         "murmillo",
-        "cold_detector"
+        "cold_detector",
+        "tank"
     ],
     "spawn_points": {
         "Left": [

@@ -13,7 +13,28 @@ impl Logic<'_> {
             return;
         }
         if let ActionState::None = unit.action_state {
-            let target = match unit.target_ai {
+            // Priorities Taunt'ed enemies
+            let target = self
+                .model
+                .units
+                .iter()
+                .filter(|other| other.faction != unit.faction)
+                .filter_map(|other| {
+                    other.all_statuses.iter().find_map(|status| match status {
+                        Status::Taunt { radius } => {
+                            let distance = (other.position - unit.position).len();
+                            if distance <= *radius {
+                                Some((other, distance))
+                            } else {
+                                None
+                            }
+                        }
+                        _ => None,
+                    })
+                })
+                .min_by_key(|(_, distance)| *distance)
+                .map(|(unit, _)| unit);
+            let target = target.or_else(|| match unit.target_ai {
                 TargetAi::Closest => self
                     .model
                     .units
@@ -27,9 +48,10 @@ impl Logic<'_> {
                     .filter(|other| other.faction != unit.faction)
                     .max_by_key(|other| other.hp),
                 _ => todo!(),
-            };
+            });
             if let Some(target) = target {
                 if distance_between_units(target, &unit) < unit.action.radius {
+                    assert_ne!(target.id, unit.id);
                     unit.action_state = ActionState::Start {
                         time: Time::new(0.0),
                         target: target.id,

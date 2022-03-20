@@ -29,6 +29,9 @@ pub enum Status {
         status: StatusType,
         effect: Effect,
     },
+    Taunt {
+        radius: Coord,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -46,9 +49,10 @@ impl Status {
             Self::Shield => StatusType::Shield,
             Self::Slow { .. } => StatusType::Slow,
             Self::Protection { .. } => StatusType::Protection,
-            Self::Aura { .. } | Self::Modifier(..) | Status::DetectAttachedStatus { .. } => {
-                StatusType::Other
-            }
+            Self::Aura { .. }
+            | Self::Modifier(..)
+            | Self::DetectAttachedStatus { .. }
+            | Self::Taunt { .. } => StatusType::Other,
         }
     }
 }
