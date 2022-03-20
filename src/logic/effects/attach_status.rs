@@ -36,7 +36,7 @@ impl Logic<'_> {
                         if !on.matches(target.faction, other.faction) {
                             continue;
                         }
-                        self.effects.push_back(QueuedEffect {
+                        self.effects.push_front(QueuedEffect {
                             effect: effect.clone(),
                             context: EffectContext {
                                 caster: Some(other.id),

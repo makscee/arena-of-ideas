@@ -7,6 +7,6 @@ impl Logic<'_> {
         } else {
             effect.r#else
         };
-        self.effects.push_back(QueuedEffect { effect, context })
+        self.effects.push_front(QueuedEffect { effect, context })
     }
 }

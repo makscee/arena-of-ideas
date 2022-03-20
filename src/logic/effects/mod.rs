@@ -151,15 +151,15 @@ impl Logic<'_> {
                 }),
                 Effect::Repeat { times, effect } => {
                     for _ in 0..times {
-                        self.effects.push_back(QueuedEffect {
+                        self.effects.push_front(QueuedEffect {
                             effect: (*effect).clone(),
                             context,
                         });
                     }
                 }
                 Effect::List { effects } => {
-                    for effect in effects {
-                        self.effects.push_back(QueuedEffect { effect, context });
+                    for effect in effects.into_iter().rev() {
+                        self.effects.push_front(QueuedEffect { effect, context });
                     }
                 }
                 Effect::Random { choices } => {
@@ -168,7 +168,7 @@ impl Logic<'_> {
                         .unwrap()
                         .effect
                         .clone();
-                    self.effects.push_back(QueuedEffect { effect, context });
+                    self.effects.push_front(QueuedEffect { effect, context });
                 }
                 Effect::If(effect) => self.process_if_effect(QueuedEffect {
                     effect: *effect,

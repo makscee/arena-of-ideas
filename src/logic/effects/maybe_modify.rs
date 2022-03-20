@@ -11,7 +11,7 @@ impl Logic<'_> {
         if self.check_condition(&effect.condition, &context) {
             effect.base_effect.apply_modifier(&effect.modifier);
         }
-        self.effects.push_back(QueuedEffect {
+        self.effects.push_front(QueuedEffect {
             effect: effect.base_effect,
             context,
         })

@@ -8,9 +8,10 @@ impl Logic<'_> {
         let mut touched = HashSet::new();
         let mut touch_effect = effect.effect.clone();
         let mut target = self.model.units.get(&context.target.unwrap()).unwrap();
+        let mut effects = Vec::new();
         while touched.len() < effect.targets {
             touched.insert(target.id);
-            self.effects.push_back(QueuedEffect {
+            effects.push(QueuedEffect {
                 effect: touch_effect.clone(),
                 context: EffectContext {
                     target: Some(target.id),
@@ -29,6 +30,9 @@ impl Logic<'_> {
                 Some(unit) => unit,
                 None => break,
             }
+        }
+        for effect in effects.into_iter().rev() {
+            self.effects.push_front(effect);
         }
     }
 }

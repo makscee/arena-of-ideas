@@ -25,7 +25,7 @@ impl Logic<'_> {
             for trigger in &target_unit.triggers {
                 if let UnitTrigger::ShieldBroken(UnitShieldBrokenTrigger { heal }) = *trigger {
                     let heal = heal.absolute + damage * heal.relative;
-                    self.effects.push_back(QueuedEffect {
+                    self.effects.push_front(QueuedEffect {
                         context: EffectContext {
                             caster: None,
                             from: None,
@@ -61,7 +61,7 @@ impl Logic<'_> {
                     Some(damage_type) => effect.types.contains(damage_type),
                     None => true,
                 } {
-                    self.effects.push_back(QueuedEffect {
+                    self.effects.push_front(QueuedEffect {
                         effect: trigger.effect.clone(),
                         context,
                     });
@@ -89,7 +89,7 @@ impl Logic<'_> {
         if killed {
             // self.render.add_text(target.position, "KILL", Color::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
-                self.effects.push_back(QueuedEffect {
+                self.effects.push_front(QueuedEffect {
                     effect: effect.clone(),
                     context: EffectContext {
                         target: Some(target_unit.id),
@@ -119,7 +119,7 @@ impl Logic<'_> {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,
                         } {
-                            self.effects.push_back(QueuedEffect {
+                            self.effects.push_front(QueuedEffect {
                                 effect: trigger.effect.clone(),
                                 context,
                             });

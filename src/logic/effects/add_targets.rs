@@ -37,7 +37,7 @@ impl Logic<'_> {
             }
         }
         for target in targets {
-            self.effects.push_back(QueuedEffect {
+            self.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
                     caster: Some(caster.id),

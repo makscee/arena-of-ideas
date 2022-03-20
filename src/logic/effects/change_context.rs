@@ -5,7 +5,7 @@ impl Logic<'_> {
         &mut self,
         QueuedEffect { effect, context }: QueuedEffect<ChangeContextEffect>,
     ) {
-        self.effects.push_back(QueuedEffect {
+        self.effects.push_front(QueuedEffect {
             effect: effect.effect,
             context: EffectContext {
                 caster: match effect.caster {

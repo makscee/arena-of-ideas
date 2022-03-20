@@ -33,7 +33,7 @@ impl Logic<'_> {
             if !effect.filter.matches(unit.faction, caster_faction) {
                 continue;
             }
-            self.effects.push_back(QueuedEffect {
+            self.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
                     caster: context.caster,
