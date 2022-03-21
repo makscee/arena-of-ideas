@@ -241,6 +241,50 @@ impl Alliance {
                     });
                 }
             }
+            Self::Healers => {
+                if party_members >= 2 {
+                    template.walk_effects_mut(&mut |effect| {
+                        if let Effect::Heal(effect) = effect {
+                            effect.hp = effect.hp * r32(1.25);
+                        }
+                    });
+                }
+                if party_members >= 4 {
+                    template.walk_effects_mut(&mut |effect| {
+                        let p = 0.1;
+                        if let Effect::Heal(_) = effect {
+                            *effect = Effect::List(Box::new(ListEffect {
+                                effects: vec![
+                                    effect.clone(),
+                                    Effect::Random(Box::new(RandomEffect {
+                                        choices: vec![
+                                            WeightedEffect {
+                                                weight: p,
+                                                effect: Effect::AttachStatus(Box::new(
+                                                    AttachStatusEffect {
+                                                        who: Who::Target,
+                                                        status: AttachedStatus {
+                                                            status: Status::Shield,
+                                                            time: None,
+                                                        },
+                                                    },
+                                                )),
+                                            },
+                                            WeightedEffect {
+                                                weight: 1.0 - p,
+                                                effect: Effect::noop(),
+                                            },
+                                        ],
+                                    })),
+                                ],
+                            }));
+                        }
+                    });
+                }
+                if party_members >= 6 {
+                    // TODO
+                }
+            }
         }
     }
 }

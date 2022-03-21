@@ -8,4 +8,5 @@ pub enum Alliance {
     Archers,
     Freezers,
     Warriors,
+    Healers,
 }
