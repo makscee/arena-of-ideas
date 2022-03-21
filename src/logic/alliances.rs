@@ -11,15 +11,15 @@ impl Alliance {
                         .effect
                         .walk_mut(&mut |effect| match &effect {
                             Effect::Damage(damage) => {
-                                *effect = Effect::Random {
+                                *effect = Effect::Random(Box::new(RandomEffect {
                                     choices: vec![
-                                        WeighedEffect {
+                                        WeightedEffect {
                                             weight: 100.0 - crit_percent,
                                             effect: effect.clone(),
                                         },
-                                        WeighedEffect {
+                                        WeightedEffect {
                                             weight: crit_percent,
-                                            effect: Effect::List {
+                                            effect: Effect::List(Box::new(ListEffect {
                                                 effects: {
                                                     let mut effects = Vec::new();
                                                     effects.push(Effect::Damage(Box::new(
@@ -61,10 +61,10 @@ impl Alliance {
                                                     }
                                                     effects
                                                 },
-                                            },
+                                            })),
                                         },
                                     ],
-                                };
+                                }));
                             }
                             _ => {}
                         });
@@ -87,22 +87,22 @@ impl Alliance {
                     template.walk_effects_mut(&mut |effect| match effect {
                         Effect::Spawn(spawn) => {
                             if spawn.unit_type == "critter" {
-                                *effect = Effect::Random {
+                                *effect = Effect::Random(Box::new(RandomEffect {
                                     choices: vec![
-                                        WeighedEffect {
+                                        WeightedEffect {
                                             weight: 100.0 - big_critter_percent,
                                             effect: Effect::Spawn(Box::new(SpawnEffect {
                                                 unit_type: "critter".to_owned(),
                                             })),
                                         },
-                                        WeighedEffect {
+                                        WeightedEffect {
                                             weight: big_critter_percent,
                                             effect: Effect::Spawn(Box::new(SpawnEffect {
                                                 unit_type: "big_critter".to_owned(),
                                             })),
                                         },
                                     ],
-                                }
+                                }));
                             }
                         }
                         _ => {}
@@ -218,7 +218,7 @@ impl Alliance {
                                         })),
                                     }))
                                 },
-                                r#else: Effect::Noop,
+                                r#else: Effect::noop(),
                             })),
                         }),
                         time: None,

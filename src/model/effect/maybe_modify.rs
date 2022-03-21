@@ -8,8 +8,21 @@ pub struct MaybeModifyEffect {
     pub modifier: Modifier,
 }
 
-impl MaybeModifyEffect {
-    pub fn walk_children_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
+impl EffectContainer for MaybeModifyEffect {
+    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {
         self.base_effect.walk_mut(f);
+    }
+}
+
+impl EffectImpl for MaybeModifyEffect {
+    fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
+        let mut effect = *self;
+        if logic.check_condition(&effect.condition, &context) {
+            effect.base_effect.apply_modifier(&effect.modifier);
+        }
+        logic.effects.push_front(QueuedEffect {
+            effect: effect.base_effect,
+            context,
+        });
     }
 }
