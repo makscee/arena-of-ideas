@@ -16,8 +16,7 @@ impl Logic<'_> {
             id: self.model.next_id,
             unit_type: unit_type.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
-            triggers: template.triggers,
-            attached_statuses: Vec::new(),
+            attached_statuses: template.statuses.clone(),
             all_statuses: Vec::new(),
             faction,
             action_state: ActionState::None,
@@ -48,8 +47,8 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            for trigger in &unit.triggers {
-                if let UnitTrigger::Spawn(effect) = trigger {
+            for status in &unit.all_statuses {
+                if let Status::BattleCry(effect) = status {
                     self.effects.push_back(QueuedEffect {
                         effect: effect.clone(),
                         context: EffectContext {

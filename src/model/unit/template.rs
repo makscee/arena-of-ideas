@@ -31,8 +31,8 @@ pub struct UnitTemplate {
     pub speed: Coord,
     pub size: Coord,
     pub action: ActionProperties,
-    pub triggers: Vec<UnitTrigger>,
     pub move_ai: MoveAi,
+    pub statuses: Vec<AttachedStatus>,
     pub target_ai: TargetAi,
     pub abilities: HashMap<Key, Ability>,
     pub alliances: HashSet<Alliance>,
@@ -45,18 +45,8 @@ pub struct UnitTemplate {
 impl UnitTemplate {
     pub fn walk_effects_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
         self.action.effect.walk_mut(f);
-        for trigger in &mut self.triggers {
-            match trigger {
-                UnitTrigger::Death(effect) => effect.walk_mut(f),
-                UnitTrigger::Spawn(effect) => effect.walk_mut(f),
-                UnitTrigger::Kill(trigger) => {
-                    trigger.effect.walk_mut(f);
-                }
-                UnitTrigger::TakeDamage(trigger) => {
-                    trigger.effect.walk_mut(f);
-                }
-                UnitTrigger::ShieldBroken(trigger) => {}
-            }
+        for status in &mut self.statuses {
+            status.status.walk_effects_mut(f);
         }
         for ability in self.abilities.values_mut() {
             ability.effect.walk_mut(f);
@@ -77,7 +67,7 @@ impl Default for UnitTemplate {
                 animation_delay: Time::new(1.0),
                 effect: default(),
             },
-            triggers: default(),
+            statuses: default(),
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
             abilities: HashMap::new(),

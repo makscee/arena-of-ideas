@@ -14,9 +14,9 @@
             "hp": "2"
         }
     },
-    "triggers": [
+    "statuses": [
         {
-            "on": "ShieldBroken",
+            "status_type": "ShieldBroken",
             "heal": "100%"
         }
     ],
@@ -30,7 +30,7 @@
             "effect": {
                 "type": "AttachStatus",
                 "status": {
-                    "type": "Shield"
+                    "status_type": "Shield"
                 }
             }
         }

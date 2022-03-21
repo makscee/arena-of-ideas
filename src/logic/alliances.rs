@@ -72,12 +72,15 @@ impl Alliance {
             }
             Self::Spawners => {
                 if party_members >= 4 {
-                    template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
-                        damage_type: None,
-                        effect: Effect::Spawn(Box::new(SpawnEffect {
-                            unit_type: "critter".to_owned(),
-                        })),
-                    }));
+                    template.statuses.push(AttachedStatus {
+                        status: Status::Kill(UnitKillTrigger {
+                            damage_type: None,
+                            effect: Effect::Spawn(Box::new(SpawnEffect {
+                                unit_type: "critter".to_owned(),
+                            })),
+                        }),
+                        time: None,
+                    });
                 }
                 if party_members >= 6 {
                     let big_critter_percent = 10.0;
@@ -106,26 +109,19 @@ impl Alliance {
                     });
                 }
                 if party_members >= 2 {
-                    template
-                        .triggers
-                        .push(UnitTrigger::Spawn(Effect::AttachStatus(Box::new(
-                            AttachStatusEffect {
-                                who: Who::Caster,
-                                status: AttachedStatus {
-                                    status: Status::Aura(Aura {
-                                        distance: None,
-                                        alliance: Some(Alliance::Critters),
-                                        status: Box::new(Status::Modifier(Modifier::Strength(
-                                            StrengthModifier {
-                                                multiplier: r32(1.0),
-                                                add: r32(2.0),
-                                            },
-                                        ))),
-                                    }),
-                                    time: None,
+                    template.statuses.push(AttachedStatus {
+                        status: Status::Aura(Aura {
+                            distance: None,
+                            alliance: Some(Alliance::Critters),
+                            status: Box::new(Status::Modifier(Modifier::Strength(
+                                StrengthModifier {
+                                    multiplier: r32(1.0),
+                                    add: r32(2.0),
                                 },
-                            },
-                        ))));
+                            ))),
+                        }),
+                        time: None,
+                    });
                 }
             }
             Self::Archers => {
@@ -178,9 +174,8 @@ impl Alliance {
                 }
 
                 if party_members >= 4 {
-                    template
-                        .triggers
-                        .push(UnitTrigger::TakeDamage(UnitTakeDamageTrigger {
+                    template.statuses.push(AttachedStatus {
+                        status: Status::Injured(UnitTakeDamageTrigger {
                             damage_type: None,
                             effect: Effect::AttachStatus(Box::new(AttachStatusEffect {
                                 who: Who::Caster,
@@ -189,40 +184,45 @@ impl Alliance {
                                     time: None,
                                 },
                             })),
-                        }));
+                        }),
+                        time: None,
+                    });
                 }
 
                 if party_members >= 6 {
-                    template.triggers.push(UnitTrigger::Kill(UnitKillTrigger {
-                        damage_type: None,
-                        effect: Effect::If(Box::new(IfEffect {
-                            condition: Condition::UnitHasStatus {
-                                who: Who::Target,
-                                status_type: StatusType::Freeze,
-                            },
-                            then: {
-                                Effect::AOE(Box::new(AoeEffect {
-                                    filter: TargetFilter::Enemies,
-                                    skip_current_target: true,
-                                    radius: r32(0.5),
-                                    effect: Effect::Projectile(Box::new(ProjectileEffect {
-                                        speed: r32(10.0),
-                                        effect: Effect::Damage(Box::new(DamageEffect {
-                                            hp: DamageValue::absolute(1.0),
-                                            lifesteal: DamageValue::default(),
-                                            types: {
-                                                let mut types = HashSet::new();
-                                                types.insert("Ranged".to_owned());
-                                                types
-                                            },
-                                            on: HashMap::new(),
+                    template.statuses.push(AttachedStatus {
+                        status: Status::Kill(UnitKillTrigger {
+                            damage_type: None,
+                            effect: Effect::If(Box::new(IfEffect {
+                                condition: Condition::UnitHasStatus {
+                                    who: Who::Target,
+                                    status_type: StatusType::Freeze,
+                                },
+                                then: {
+                                    Effect::AOE(Box::new(AoeEffect {
+                                        filter: TargetFilter::Enemies,
+                                        skip_current_target: true,
+                                        radius: r32(0.5),
+                                        effect: Effect::Projectile(Box::new(ProjectileEffect {
+                                            speed: r32(10.0),
+                                            effect: Effect::Damage(Box::new(DamageEffect {
+                                                hp: DamageValue::absolute(1.0),
+                                                lifesteal: DamageValue::default(),
+                                                types: {
+                                                    let mut types = HashSet::new();
+                                                    types.insert("Ranged".to_owned());
+                                                    types
+                                                },
+                                                on: HashMap::new(),
+                                            })),
                                         })),
-                                    })),
-                                }))
-                            },
-                            r#else: Effect::Noop,
-                        })),
-                    }));
+                                    }))
+                                },
+                                r#else: Effect::Noop,
+                            })),
+                        }),
+                        time: None,
+                    });
                 }
             }
             Self::Warriors => {
@@ -233,19 +233,12 @@ impl Alliance {
                     protection = 50.0;
                 }
                 if protection != 0.0 {
-                    template
-                        .triggers
-                        .push(UnitTrigger::Spawn(Effect::AttachStatus(Box::new(
-                            AttachStatusEffect {
-                                who: Who::Target,
-                                status: AttachedStatus {
-                                    status: Status::Protection {
-                                        percent: protection,
-                                    },
-                                    time: None,
-                                },
-                            },
-                        ))));
+                    template.statuses.push(AttachedStatus {
+                        status: Status::Protection {
+                            percent: protection,
+                        },
+                        time: None,
+                    });
                 }
             }
         }

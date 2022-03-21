@@ -45,7 +45,6 @@ pub struct Unit {
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
-    pub triggers: Vec<UnitTrigger>,
     pub alliances: HashSet<Alliance>,
     #[serde(skip)]
     pub render: RenderMode,

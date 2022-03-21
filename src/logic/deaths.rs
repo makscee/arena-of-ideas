@@ -4,8 +4,8 @@ impl Logic<'_> {
     pub fn kill(&mut self, id: Id) {
         let unit = self.model.units.get_mut(&id).unwrap();
         unit.hp = Health::new(0.0);
-        for trigger in &unit.triggers {
-            if let UnitTrigger::Death(effect) = trigger {
+        for status in &unit.all_statuses {
+            if let Status::DeathRattle(effect) = status {
                 self.effects.push_front(QueuedEffect {
                     effect: effect.clone(),
                     context: EffectContext {

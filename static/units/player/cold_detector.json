@@ -18,17 +18,13 @@
             }
         }
     },
-    "triggers": [
+    "statuses": [
         {
-            "on": "Spawn",
-            "type": "AttachStatus",
-            "status": {
-                "type": "DetectAttachedStatus",
-                "on": "Enemies",
-                "status": "Freeze",
-                "effect": {
-                    "type": "InstantAction"
-                }
+            "status_type": "DetectAttachedStatus",
+            "on": "Enemies",
+            "status": "Freeze",
+            "effect": {
+                "type": "InstantAction"
             }
         }
     ],

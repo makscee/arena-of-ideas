@@ -11,9 +11,9 @@
             "hp": "2"
         }
     },
-    "triggers": [
+    "statuses": [
         {
-            "on": "Death",
+            "status_type": "DeathRattle",
             "type": "Repeat",
             "times": 3,
             "effect": {

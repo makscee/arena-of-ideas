@@ -27,7 +27,7 @@
                 "effect": {
                     "type": "AttachStatus",
                     "status": {
-                        "type": "Freeze"
+                        "status_type": "Freeze"
                     }
                 }
             }

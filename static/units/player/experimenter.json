@@ -18,9 +18,9 @@
             }
         }
     },
-    "triggers": [
+    "statuses": [
         {
-            "on": "Kill",
+            "status_type": "Kill",
             "damage_type": "Crit",
             "type": "Repeat",
             "times": 3,

@@ -14,14 +14,10 @@
             "hp": "2"
         }
     },
-    "triggers": [
+    "statuses": [
         {
-            "on": "Spawn",
-            "type": "AttachStatus",
-            "status": {
-                "type": "Taunt",
-                "radius": 5
-            }
+            "status_type": "Taunt",
+            "radius": 5
         }
     ],
     "alliances": [

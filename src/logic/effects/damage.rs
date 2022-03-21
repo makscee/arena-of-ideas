@@ -22,8 +22,8 @@ impl Logic<'_> {
             .iter()
             .position(|status| status.status.r#type() == StatusType::Shield)
         {
-            for trigger in &target_unit.triggers {
-                if let UnitTrigger::ShieldBroken(UnitShieldBrokenTrigger { heal }) = *trigger {
+            for status in &target_unit.all_statuses {
+                if let Status::ShieldBroken(UnitShieldBrokenTrigger { heal }) = *status {
                     let heal = heal.absolute + damage * heal.relative;
                     self.effects.push_front(QueuedEffect {
                         context: EffectContext {
@@ -55,8 +55,8 @@ impl Logic<'_> {
             .attached_statuses
             .retain(|status| status.status.r#type() != StatusType::Freeze);
 
-        for trigger in &target_unit.triggers {
-            if let UnitTrigger::TakeDamage(trigger) = trigger {
+        for status in &target_unit.all_statuses {
+            if let Status::Injured(trigger) = status {
                 if match &trigger.damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
                     None => true,
@@ -113,8 +113,8 @@ impl Logic<'_> {
                 .or(self.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                for trigger in &caster.triggers {
-                    if let UnitTrigger::Kill(trigger) = trigger {
+                for status in &caster.all_statuses {
+                    if let Status::Kill(trigger) = status {
                         if match &trigger.damage_type {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,

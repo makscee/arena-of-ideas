@@ -7,11 +7,12 @@ pub enum StatusType {
     Shield,
     Slow,
     Protection,
+    DeathRattle,
     Other,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "status_type")]
 pub enum Status {
     Freeze,
     Stun,
@@ -32,6 +33,11 @@ pub enum Status {
     Taunt {
         radius: Coord,
     },
+    DeathRattle(Effect),
+    BattleCry(Effect),
+    Kill(UnitKillTrigger),
+    Injured(UnitTakeDamageTrigger),
+    ShieldBroken(UnitShieldBrokenTrigger),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -49,10 +55,33 @@ impl Status {
             Self::Shield => StatusType::Shield,
             Self::Slow { .. } => StatusType::Slow,
             Self::Protection { .. } => StatusType::Protection,
-            Self::Aura { .. }
-            | Self::Modifier(..)
+            Self::DeathRattle { .. } => StatusType::DeathRattle,
+            Self::BattleCry { .. }
+            | Self::Aura { .. }
+            | Self::Modifier { .. }
             | Self::DetectAttachedStatus { .. }
-            | Self::Taunt { .. } => StatusType::Other,
+            | Self::Taunt { .. }
+            | Self::Kill { .. }
+            | Self::ShieldBroken { .. }
+            | Self::Injured { .. } => StatusType::Other,
+        }
+    }
+    pub fn walk_effects_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
+        match self {
+            Status::Freeze => {}
+            Status::Stun => {}
+            Status::Shield => {}
+            Status::Slow { .. } => {}
+            Status::Modifier { .. } => {}
+            Status::Aura(Aura { status, .. }) => status.walk_effects_mut(f),
+            Status::Protection { .. } => {}
+            Status::DetectAttachedStatus { effect, .. } => effect.walk_mut(f),
+            Status::Taunt { .. } => todo!(),
+            Status::DeathRattle(effect) => effect.walk_mut(f),
+            Status::BattleCry(effect) => effect.walk_mut(f),
+            Status::Kill(trigger) => trigger.effect.walk_mut(f),
+            Status::Injured(trigger) => trigger.effect.walk_mut(f),
+            Status::ShieldBroken(_) => {}
         }
     }
 }

@@ -14,6 +14,7 @@ fn default_who() -> Who {
 pub struct AttachStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
+    // #[serde(flatten)] // NO, or we get recursion in json kek
     pub status: AttachedStatus,
 }
 

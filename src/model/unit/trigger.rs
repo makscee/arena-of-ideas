@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct UnitKillTrigger {
     pub damage_type: Option<DamageType>,
@@ -8,26 +8,16 @@ pub struct UnitKillTrigger {
     pub effect: Effect,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
 pub struct UnitTakeDamageTrigger {
     pub damage_type: Option<DamageType>,
     #[serde(flatten)]
     pub effect: Effect,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
 pub struct UnitShieldBrokenTrigger {
     pub heal: DamageValue,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(tag = "on", deny_unknown_fields)]
-pub enum UnitTrigger {
-    Death(Effect),
-    Spawn(Effect),
-    Kill(UnitKillTrigger),
-    TakeDamage(UnitTakeDamageTrigger),
-    ShieldBroken(UnitShieldBrokenTrigger),
 }
