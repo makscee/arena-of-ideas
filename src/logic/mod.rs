@@ -52,6 +52,29 @@ impl<'a> Logic<'a> {
         self.process_cooldowns();
         self.process_projectiles();
         self.check_next_wave();
+        while self.model.free_revives > 0 {
+            if let Some(unit) = self
+                .model
+                .dead_units
+                .iter()
+                .filter(|unit| unit.faction == Faction::Player)
+                .next()
+            {
+                self.effects.push_back(QueuedEffect {
+                    effect: Effect::Revive(Box::new(ReviveEffect {
+                        hp: DamageValue::relative(100.0),
+                    })),
+                    context: EffectContext {
+                        caster: None,
+                        from: None,
+                        target: Some(unit.id),
+                    },
+                });
+                self.model.free_revives -= 1;
+            } else {
+                break;
+            }
+        }
         self.process_effects();
         self.process_deaths();
     }
@@ -87,6 +110,15 @@ impl<'a> Logic<'a> {
         // Spawn
         for (unit_type, template) in to_spawn {
             self.spawn_template(unit_type, template, Faction::Player, Vec2::ZERO);
+        }
+
+        if alliance_counts
+            .get(&Alliance::Healers)
+            .copied()
+            .unwrap_or(0)
+            >= 6
+        {
+            self.model.free_revives += 1;
         }
     }
 }

@@ -14,6 +14,12 @@ impl DamageValue {
             relative: R32::ZERO,
         }
     }
+    pub fn relative(value: f32) -> Self {
+        Self {
+            absolute: Health::new(0.0),
+            relative: R32::new(value),
+        }
+    }
 }
 
 impl Mul<R32> for DamageValue {

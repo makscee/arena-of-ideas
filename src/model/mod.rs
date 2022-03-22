@@ -50,6 +50,7 @@ pub struct Model {
     pub time_bombs: Collection<TimeBomb>,
     pub dead_time_bombs: Collection<TimeBomb>,
     pub config: Config,
+    pub free_revives: usize,
     pub unit_templates: UnitTemplates,
 }
 
@@ -64,6 +65,7 @@ impl Model {
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
             config,
+            free_revives: 0,
             unit_templates,
         }
     }

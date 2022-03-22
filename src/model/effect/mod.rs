@@ -15,6 +15,7 @@ mod noop;
 mod projectile;
 mod random;
 mod repeat;
+mod revive;
 mod spawn;
 mod suicide;
 mod time_bomb;
@@ -34,6 +35,7 @@ pub use noop::*;
 pub use projectile::*;
 pub use random::*;
 pub use repeat::*;
+pub use revive::*;
 pub use spawn::*;
 pub use suicide::*;
 pub use time_bomb::*;
@@ -59,6 +61,7 @@ pub enum Effect {
     MaybeModify(Box<MaybeModifyEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     Heal(Box<HealEffect>),
+    Revive(Box<ReviveEffect>),
 }
 
 impl Default for Effect {
@@ -102,6 +105,7 @@ impl Effect {
             Effect::MaybeModify(effect) => &mut **effect,
             Effect::ChangeContext(effect) => &mut **effect,
             Effect::Heal(effect) => &mut **effect,
+            Effect::Revive(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -124,6 +128,7 @@ impl Effect {
             Effect::MaybeModify(effect) => effect,
             Effect::ChangeContext(effect) => effect,
             Effect::Heal(effect) => effect,
+            Effect::Revive(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
