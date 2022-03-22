@@ -18,10 +18,10 @@ impl EffectContainer for AddTargetsEffect {
 impl EffectImpl for AddTargetsEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let caster = context
-            .caster
+        let from = context
+            .from
             .and_then(|id| logic.model.units.get(&id))
-            .expect("Caster not found");
+            .expect("From not found");
         let target = context
             .target
             .and_then(|id| logic.model.units.get(&id))
@@ -38,7 +38,7 @@ impl EffectImpl for AddTargetsEffect {
                 .iter()
                 .filter(|unit| unit.faction == target.faction)
                 .filter(|unit| !targets.contains(&unit.id))
-                .filter(|unit| distance_between_units(unit, caster) < caster.action.radius)
+                .filter(|unit| distance_between_units(unit, from) < from.action.radius)
                 .filter(|unit| {
                     logic.check_condition(&effect.condition, &EffectContext { ..context })
                 })
@@ -53,7 +53,6 @@ impl EffectImpl for AddTargetsEffect {
             logic.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
-                    caster: Some(caster.id),
                     target: Some(target),
                     ..context
                 },
