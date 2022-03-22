@@ -19,11 +19,11 @@ pub struct Simulate1x1 {
 }
 
 impl Simulate1x1 {
-    pub fn run(self, mut assets: Assets) -> Result<(), SimulationError> {
+    pub fn run(self, assets: Assets, mut config: Config) -> Result<(), SimulationError> {
         // Load player and enemy units
         match assets.units.contains_key(&self.player) {
             false => return Err(SimulationError::UnknownUnit(self.player)),
-            true => assets.config.player = vec![self.player],
+            true => config.player = vec![self.player],
         }
         match self.enemy {
             Some(enemy) if !assets.units.contains_key(&enemy) => {
@@ -48,8 +48,7 @@ impl Simulate1x1 {
                 })
                 .clone();
 
-            let spawn_point = assets
-                .config
+            let spawn_point = config
                 .spawn_points
                 .iter()
                 .next()
@@ -58,11 +57,11 @@ impl Simulate1x1 {
                 .clone();
             let mut wave = HashMap::new();
             wave.insert(spawn_point, vec![enemy]);
-            assets.config.waves = vec![wave];
+            config.waves = vec![wave];
 
             let simulation = Simulation::new(
                 assets.units.clone(),
-                assets.config.clone(),
+                config.clone(),
                 R32::new(self.delta_time),
             );
             let result = simulation.run();

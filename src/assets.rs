@@ -3,7 +3,6 @@ use super::*;
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
-    pub config: Config,
 }
 
 pub type Key = String;

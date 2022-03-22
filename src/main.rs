@@ -32,7 +32,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(geng: &Geng, assets: Assets) -> Self {
+    pub fn new(geng: &Geng, assets: Assets, config: Config) -> Self {
         let mut game = Self {
             geng: geng.clone(),
             time: 0.0,
@@ -41,12 +41,12 @@ impl Game {
                 rotation: 0.0,
                 fov: 10.0,
             },
-            model: Model::new(assets.config.clone(), assets.units.clone()),
+            model: Model::new(config.clone(), assets.units.clone()),
             render: Render::new(),
             pressed_keys: Vec::new(),
             assets,
         };
-        Logic::initialize(&mut game.model, &game.assets.config);
+        Logic::initialize(&mut game.model, &config);
         game
     }
 }
@@ -72,6 +72,8 @@ impl geng::State for Game {
 
 #[derive(clap::Parser)]
 struct Opts {
+    #[clap(long)]
+    config: Option<std::path::PathBuf>,
     #[clap(subcommand)]
     command: Option<Commands>,
 }
@@ -88,21 +90,34 @@ fn main() {
     logger::init().unwrap();
     geng::setup_panic_handler();
     let geng = Geng::new("Arena of Ideas");
+    let config_path = opts
+        .config
+        .clone()
+        .unwrap_or(static_path().join("config.json"));
     geng::run(
         &geng,
         geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
-            <Assets as geng::LoadAsset>::load(&geng, &static_path()),
             {
                 let geng = geng.clone();
-                move |assets| {
-                    let assets = assets.expect("Failed to load assets");
-
+                async move {
+                    let assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
+                        .await
+                        .expect("Failed to load assets");
+                    let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
+                        .await
+                        .expect("Failed to load config");
+                    (assets, config)
+                }
+            },
+            {
+                let geng = geng.clone();
+                move |(assets, config)| {
                     match opts.command {
                         Some(command) => match command {
                             Commands::Simulate1x1(simulate) => {
-                                simulate.run(assets).unwrap();
+                                simulate.run(assets, config).unwrap();
                                 std::process::exit(0);
                             }
                             Commands::Test => {
@@ -113,7 +128,7 @@ fn main() {
                         None => (),
                     }
 
-                    Game::new(&geng, assets)
+                    Game::new(&geng, assets, config)
                 }
             },
         ),
