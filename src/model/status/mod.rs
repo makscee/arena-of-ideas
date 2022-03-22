@@ -38,6 +38,11 @@ pub enum Status {
     Kill(UnitKillTrigger),
     Injured(UnitTakeDamageTrigger),
     ShieldBroken(UnitShieldBrokenTrigger),
+    Gain(Effect),
+    Scavenge {
+        who: TargetFilter,
+        effect: Effect,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -63,7 +68,9 @@ impl Status {
             | Self::Taunt { .. }
             | Self::Kill { .. }
             | Self::ShieldBroken { .. }
-            | Self::Injured { .. } => StatusType::Other,
+            | Self::Injured { .. }
+            | Self::Gain { .. }
+            | Self::Scavenge { .. } => StatusType::Other,
         }
     }
     pub fn walk_effects_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
@@ -76,12 +83,14 @@ impl Status {
             Status::Aura(Aura { status, .. }) => status.walk_effects_mut(f),
             Status::Protection { .. } => {}
             Status::DetectAttachedStatus { effect, .. } => effect.walk_mut(f),
-            Status::Taunt { .. } => todo!(),
+            Status::Taunt { .. } => {}
             Status::DeathRattle(effect) => effect.walk_mut(f),
             Status::BattleCry(effect) => effect.walk_mut(f),
             Status::Kill(trigger) => trigger.effect.walk_mut(f),
             Status::Injured(trigger) => trigger.effect.walk_mut(f),
             Status::ShieldBroken(_) => {}
+            Status::Gain(effect) => effect.walk_mut(f),
+            Status::Scavenge { effect, .. } => effect.walk_mut(f),
         }
     }
 }

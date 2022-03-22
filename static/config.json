@@ -11,7 +11,8 @@
         "murmillo",
         "cold_detector",
         "tank",
-        "cryonist"
+        "cryonist",
+        "egg_collector"
     ],
     "spawn_points": {
         "Left": [

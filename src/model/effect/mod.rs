@@ -2,6 +2,7 @@ use super::*;
 
 mod add_targets;
 mod aoe;
+mod apply_gained;
 mod attach_status;
 mod chain;
 mod change_context;
@@ -22,6 +23,7 @@ mod time_bomb;
 
 pub use add_targets::*;
 pub use aoe::*;
+pub use apply_gained::*;
 pub use attach_status::*;
 pub use chain::*;
 pub use change_context::*;
@@ -62,6 +64,7 @@ pub enum Effect {
     ChangeContext(Box<ChangeContextEffect>),
     Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
+    ApplyGained(Box<ApplyGainedEffect>),
 }
 
 impl Default for Effect {
@@ -106,6 +109,7 @@ impl Effect {
             Effect::ChangeContext(effect) => &mut **effect,
             Effect::Heal(effect) => &mut **effect,
             Effect::Revive(effect) => &mut **effect,
+            Effect::ApplyGained(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -129,6 +133,7 @@ impl Effect {
             Effect::ChangeContext(effect) => effect,
             Effect::Heal(effect) => effect,
             Effect::Revive(effect) => effect,
+            Effect::ApplyGained(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
