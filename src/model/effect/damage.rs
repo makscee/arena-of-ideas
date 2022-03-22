@@ -13,7 +13,7 @@ pub struct DamageEffect {
     pub hp: DamageValue,
     #[serde(default)]
     /// HP to heal self relative to the damage done
-    pub lifesteal: DamageValue,
+    pub lifesteal: HealEffect,
     #[serde(default)]
     pub types: HashSet<DamageType>,
     #[serde(default)]
@@ -136,10 +136,22 @@ impl EffectImpl for DamageEffect {
         }
 
         // Lifesteal
-        let lifesteal = damage * effect.lifesteal.relative + effect.lifesteal.absolute;
-        if let Some(caster) = context.caster.and_then(|id| logic.model.units.get_mut(&id)) {
-            caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
+        let lifesteal = damage * effect.lifesteal.hp.relative + effect.lifesteal.hp.absolute;
+        if lifesteal > Health::ZERO {
+            let lifesteal = Effect::Heal(Box::new(HealEffect {
+                hp: DamageValue::absolute(lifesteal.as_f32()),
+                ..effect.lifesteal
+            }));
+            logic.effects.push_front(QueuedEffect {
+                effect: lifesteal,
+                context: EffectContext {
+                    target: context.caster,
+                    ..context
+                },
+            });
         }
+
+        // Kill trigger
         if let Some(caster) = context.caster {
             let caster = logic
                 .model

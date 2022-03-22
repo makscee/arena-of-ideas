@@ -25,7 +25,7 @@ impl Alliance {
                                                     effects.push(Effect::Damage(Box::new(
                                                         DamageEffect {
                                                             hp: damage.hp * r32(3.0),
-                                                            lifesteal: damage.lifesteal,
+                                                            lifesteal: damage.lifesteal.clone(),
                                                             types: {
                                                                 let mut types =
                                                                     damage.types.clone();
@@ -207,7 +207,7 @@ impl Alliance {
                                             speed: r32(10.0),
                                             effect: Effect::Damage(Box::new(DamageEffect {
                                                 hp: DamageValue::absolute(1.0),
-                                                lifesteal: DamageValue::default(),
+                                                lifesteal: HealEffect::default(),
                                                 types: {
                                                     let mut types = HashSet::new();
                                                     types.insert("Ranged".to_owned());
@@ -287,27 +287,14 @@ impl Alliance {
             }
             Self::Vampires => {
                 if party_members >= 2 {
-                    let mut vampirism = HealEffect {
-                        hp: DamageValue::relative(0.2),
-                        heal_past_max: DamageValue::ZERO,
-                        max_hp: DamageValue::ZERO,
-                    };
-                    if party_members >= 4 {
-                        vampirism.heal_past_max = DamageValue::relative(0.4);
-                    }
-                    let vampirism = Effect::ChangeContext(Box::new(ChangeContextEffect {
-                        caster: None,
-                        from: None,
-                        target: Some(Who::Caster),
-                        effect: Effect::Heal(Box::new(vampirism)),
-                    }));
                     template.walk_effects_mut(&mut |effect| {
-                        if let Effect::Damage(_) = effect {
-                            *effect = Effect::List(Box::new(ListEffect {
-                                effects: vec![effect.clone(), vampirism.clone()],
-                            }))
+                        if let Effect::Damage(effect) = effect {
+                            effect.lifesteal.hp = effect.lifesteal.hp + DamageValue::relative(0.2);
+                            if party_members >= 4 {
+                                effect.lifesteal.heal_past_max = DamageValue::relative(0.4);
+                            }
                         }
-                    })
+                    });
                 }
                 if party_members >= 6 {
                     template.statuses.push(AttachedStatus {

@@ -15,7 +15,9 @@
                         "Melee"
                     ],
                     "hp": "10%",
-                    "lifesteal": "100%"
+                    "lifesteal": {
+                        "hp": "100%"
+                    }
                 }
             ]
         }

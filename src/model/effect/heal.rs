@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct HealEffect {
     #[serde(default)]

@@ -47,6 +47,16 @@ impl Add<Health> for DamageValue {
     }
 }
 
+impl Add<Self> for DamageValue {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            absolute: self.absolute + rhs.absolute,
+            relative: self.relative + rhs.relative,
+        }
+    }
+}
+
 impl Default for DamageValue {
     fn default() -> Self {
         Self::ZERO
