@@ -12,7 +12,8 @@
         "cold_detector",
         "tank",
         "cryonist",
-        "egg_collector"
+        "egg_collector",
+        "dracula"
     ],
     "alliances": {
         "Spawners": 6,
@@ -21,7 +22,8 @@
         "Archers": 6,
         "Freezers": 6,
         "Warriors": 6,
-        "Healers": 6
+        "Healers": 6,
+        "Vampires": 6
     },
     "spawn_points": {
         "Left": [

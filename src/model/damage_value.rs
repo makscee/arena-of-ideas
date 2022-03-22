@@ -8,6 +8,11 @@ pub struct DamageValue {
 }
 
 impl DamageValue {
+    pub const ZERO: Self = Self {
+        absolute: Health::ZERO,
+        relative: R32::ZERO,
+    };
+
     pub fn absolute(value: f32) -> Self {
         Self {
             absolute: Health::new(value),
@@ -44,10 +49,7 @@ impl Add<Health> for DamageValue {
 
 impl Default for DamageValue {
     fn default() -> Self {
-        Self {
-            absolute: Health::ZERO,
-            relative: R32::ZERO,
-        }
+        Self::ZERO
     }
 }
 

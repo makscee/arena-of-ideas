@@ -285,6 +285,41 @@ impl Alliance {
                     // TODO
                 }
             }
+            Self::Vampires => {
+                if party_members >= 2 {
+                    let mut vampirism = HealEffect {
+                        hp: DamageValue::relative(0.2),
+                        heal_past_max: DamageValue::ZERO,
+                        max_hp: DamageValue::ZERO,
+                    };
+                    if party_members >= 4 {
+                        vampirism.heal_past_max = DamageValue::relative(0.4);
+                    }
+                    template.walk_effects_mut(&mut |effect| {
+                        if let Effect::Damage(_) = effect {
+                            *effect = Effect::List(Box::new(ListEffect {
+                                effects: vec![
+                                    effect.clone(),
+                                    Effect::Heal(Box::new(vampirism.clone())),
+                                ],
+                            }))
+                        }
+                    })
+                }
+                if party_members >= 6 {
+                    template.statuses.push(AttachedStatus {
+                        time: None,
+                        status: Status::Kill(UnitKillTrigger {
+                            damage_type: None,
+                            effect: Effect::Heal(Box::new(HealEffect {
+                                hp: DamageValue::ZERO,
+                                heal_past_max: DamageValue::ZERO,
+                                max_hp: DamageValue::absolute(1.0),
+                            })),
+                        }),
+                    })
+                }
+            }
         }
     }
 }

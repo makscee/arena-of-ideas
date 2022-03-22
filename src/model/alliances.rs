@@ -9,4 +9,5 @@ pub enum Alliance {
     Freezers,
     Warriors,
     Healers,
+    Vampires,
 }

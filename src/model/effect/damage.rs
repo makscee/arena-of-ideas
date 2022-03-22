@@ -59,6 +59,8 @@ impl EffectImpl for DamageEffect {
                         },
                         effect: Effect::Heal(Box::new(HealEffect {
                             hp: DamageValue::absolute(heal.as_f32()),
+                            heal_past_max: DamageValue::ZERO,
+                            max_hp: DamageValue::ZERO,
                         })),
                     });
                 }
