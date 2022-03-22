@@ -295,13 +295,16 @@ impl Alliance {
                     if party_members >= 4 {
                         vampirism.heal_past_max = DamageValue::relative(0.4);
                     }
+                    let vampirism = Effect::ChangeContext(Box::new(ChangeContextEffect {
+                        caster: None,
+                        from: None,
+                        target: Some(Who::Caster),
+                        effect: Effect::Heal(Box::new(vampirism)),
+                    }));
                     template.walk_effects_mut(&mut |effect| {
                         if let Effect::Damage(_) = effect {
                             *effect = Effect::List(Box::new(ListEffect {
-                                effects: vec![
-                                    effect.clone(),
-                                    Effect::Heal(Box::new(vampirism.clone())),
-                                ],
+                                effects: vec![effect.clone(), vampirism.clone()],
                             }))
                         }
                     })
