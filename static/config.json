@@ -14,7 +14,8 @@
         "cryonist",
         "egg_collector",
         "dracula",
-        "dr_acula"
+        "dr_acula",
+        "lifestealer"
     ],
     "alliances": {
         "Spawners": 6,

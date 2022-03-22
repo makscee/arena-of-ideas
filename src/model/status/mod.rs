@@ -5,6 +5,7 @@ pub enum StatusType {
     Freeze,
     Stun,
     Shield,
+    Invulnerability,
     Slow,
     Protection,
     DeathRattle,
@@ -17,6 +18,7 @@ pub enum Status {
     Freeze,
     Stun,
     Shield,
+    Invulnerability,
     Slow {
         percent: f32,
     },
@@ -58,6 +60,7 @@ impl Status {
             Self::Freeze => StatusType::Freeze,
             Self::Stun => StatusType::Stun,
             Self::Shield => StatusType::Shield,
+            Self::Invulnerability => StatusType::Invulnerability,
             Self::Slow { .. } => StatusType::Slow,
             Self::Protection { .. } => StatusType::Protection,
             Self::DeathRattle { .. } => StatusType::DeathRattle,
@@ -78,6 +81,7 @@ impl Status {
             Status::Freeze => {}
             Status::Stun => {}
             Status::Shield => {}
+            Status::Invulnerability => {}
             Status::Slow { .. } => {}
             Status::Modifier { .. } => {}
             Status::Aura(Aura { status, .. }) => status.walk_effects_mut(f),

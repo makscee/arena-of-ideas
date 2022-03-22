@@ -42,6 +42,15 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
+        // Invulnerability
+        if target_unit
+            .all_statuses
+            .iter()
+            .any(|status| matches!(status, Status::Invulnerability))
+        {
+            return;
+        }
+
         // Shield
         if let Some(index) = target_unit
             .attached_statuses

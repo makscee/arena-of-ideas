@@ -1,0 +1,52 @@
+{
+    "hp": 5,
+    "speed": 1,
+    "size": 1,
+    "action": {
+        "radius": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.75,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "Damage",
+                    "types": [
+                        "Melee"
+                    ],
+                    "hp": "10%"
+                },
+                {
+                    "type": "ChangeContext",
+                    "target": "Caster",
+                    "effect": {
+                        "type": "Heal",
+                        "hp": "100%"
+                    }
+                }
+            ]
+        }
+    },
+    "abilities": {
+        "MouseLeft": {
+            "cooldown": 3,
+            "effect": {
+                "type": "AttachStatus",
+                "status": {
+                    "status_type": "Invulnerability",
+                    "time": 3
+                }
+            }
+        }
+    },
+    "alliances": [
+        "Vampires",
+        "Assassins"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "render": {
+        "type": "Texture",
+        "path": "../../png/lifestealer.png"
+    }
+}
