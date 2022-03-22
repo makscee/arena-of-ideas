@@ -36,7 +36,15 @@ impl Logic<'_> {
     }
     fn process_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let ActionState::Cooldown { time } = &mut unit.action_state {
-            *time += self.delta_time;
+            let attack_speed = unit.all_statuses.iter().fold(1.0, |speed, status| {
+                speed
+                    + if let Status::AttackSpeed { percent } = status {
+                        *percent / 100.0
+                    } else {
+                        0.0
+                    }
+            });
+            *time += self.delta_time * r32(attack_speed);
             if *time > unit.action.cooldown {
                 unit.action_state = ActionState::None;
             }

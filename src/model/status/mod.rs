@@ -9,6 +9,7 @@ pub enum StatusType {
     Slow,
     Protection,
     DeathRattle,
+    AttackSpeed,
     Other,
 }
 
@@ -45,6 +46,9 @@ pub enum Status {
         who: TargetFilter,
         effect: Effect,
     },
+    AttackSpeed {
+        percent: f32,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +68,7 @@ impl Status {
             Self::Slow { .. } => StatusType::Slow,
             Self::Protection { .. } => StatusType::Protection,
             Self::DeathRattle { .. } => StatusType::DeathRattle,
+            Self::AttackSpeed { .. } => StatusType::AttackSpeed,
             Self::BattleCry { .. }
             | Self::Aura { .. }
             | Self::Modifier { .. }
@@ -84,6 +89,7 @@ impl Status {
             Status::Invulnerability => {}
             Status::Slow { .. } => {}
             Status::Modifier { .. } => {}
+            Status::AttackSpeed { .. } => {}
             Status::Aura(Aura { status, .. }) => status.walk_effects_mut(f),
             Status::Protection { .. } => {}
             Status::DetectAttachedStatus { effect, .. } => effect.walk_mut(f),

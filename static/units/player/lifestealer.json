@@ -31,11 +31,24 @@
         "MouseLeft": {
             "cooldown": 3,
             "effect": {
-                "type": "AttachStatus",
-                "status": {
-                    "status_type": "Invulnerability",
-                    "time": 3
-                }
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "AttachStatus",
+                        "status": {
+                            "status_type": "Invulnerability",
+                            "time": 3
+                        }
+                    },
+                    {
+                        "type": "AttachStatus",
+                        "status": {
+                            "status_type": "AttackSpeed",
+                            "percent": 175,
+                            "time": 3
+                        }
+                    }
+                ]
             }
         }
     },
