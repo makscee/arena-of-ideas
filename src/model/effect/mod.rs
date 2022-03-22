@@ -6,6 +6,7 @@ mod apply_gained;
 mod attach_status;
 mod chain;
 mod change_context;
+mod change_target;
 mod damage;
 mod heal;
 mod if_effect;
@@ -27,6 +28,7 @@ pub use apply_gained::*;
 pub use attach_status::*;
 pub use chain::*;
 pub use change_context::*;
+pub use change_target::*;
 pub use damage::*;
 pub use heal::*;
 pub use if_effect::*;
@@ -65,6 +67,7 @@ pub enum Effect {
     Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
+    ChangeTarget(Box<ChangeTargetEffect>),
 }
 
 impl Default for Effect {
@@ -110,6 +113,7 @@ impl Effect {
             Effect::Heal(effect) => &mut **effect,
             Effect::Revive(effect) => &mut **effect,
             Effect::ApplyGained(effect) => &mut **effect,
+            Effect::ChangeTarget(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -134,6 +138,7 @@ impl Effect {
             Effect::Heal(effect) => effect,
             Effect::Revive(effect) => effect,
             Effect::ApplyGained(effect) => effect,
+            Effect::ChangeTarget(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
