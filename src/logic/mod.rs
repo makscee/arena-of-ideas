@@ -70,12 +70,17 @@ impl<'a> Logic<'a> {
             .map(|unit| (unit, self.model.unit_templates[unit].clone()))
             .collect::<Vec<_>>();
 
-        let members = to_spawn.len();
+        let mut alliance_counts = HashMap::new();
+        for (_, unit) in &to_spawn {
+            for alliance in &unit.alliances {
+                *alliance_counts.entry(*alliance).or_default() += 1;
+            }
+        }
 
         // Apply effects
         for (_, unit) in &mut to_spawn {
             for alliance in unit.alliances.clone() {
-                alliance.apply(unit, members);
+                alliance.apply(unit, alliance_counts[&alliance]);
             }
         }
 
