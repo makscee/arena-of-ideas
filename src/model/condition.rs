@@ -9,6 +9,9 @@ pub enum Condition {
         #[serde(rename = "status")]
         status_type: StatusType,
     },
+    UnitInjured {
+        who: Who,
+    }
 }
 
 impl Default for Condition {

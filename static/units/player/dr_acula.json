@@ -22,7 +22,8 @@
                 "type": "ChangeTarget",
                 "filter": "Allies",
                 "condition": {
-                    "type": "Always"
+                    "type": "UnitInjured",
+                    "who": "Target"
                 },
                 "effect": {
                     "type": "Projectile",

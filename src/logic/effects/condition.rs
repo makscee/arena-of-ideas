@@ -8,10 +8,17 @@ impl Logic<'_> {
                 let who = context.get(*who);
                 let who = who
                     .and_then(|id| self.model.units.get(&id))
-                    .expect("Caster or Target not found");
+                    .expect("Caster, From, or Target not found");
                 who.all_statuses
                     .iter()
                     .any(|status| status.r#type() == *status_type)
+            }
+            Condition::UnitInjured { who } => {
+                let who = context.get(*who);
+                let who = who
+                    .and_then(|id| self.model.units.get(&id))
+                    .expect("Caster, From, or Target not found");
+                who.hp < who.max_hp
             }
         }
     }
