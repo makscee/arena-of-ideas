@@ -14,15 +14,8 @@
                     "types": [
                         "Melee"
                     ],
-                    "hp": "10%"
-                },
-                {
-                    "type": "ChangeContext",
-                    "target": "Caster",
-                    "effect": {
-                        "type": "Heal",
-                        "hp": "100%"
-                    }
+                    "hp": "10%",
+                    "lifesteal": "100%"
                 }
             ]
         }

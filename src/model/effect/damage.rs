@@ -35,8 +35,7 @@ impl EffectImpl for DamageEffect {
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
-        let mut damage =
-            target_unit.max_hp * effect.hp.relative / Health::new(100.0) + effect.hp.absolute;
+        let mut damage = target_unit.max_hp * effect.hp.relative + effect.hp.absolute;
         damage = min(damage, target_unit.hp);
         if damage <= Health::new(0.0) {
             return;
@@ -137,8 +136,7 @@ impl EffectImpl for DamageEffect {
         }
 
         // Lifesteal
-        let lifesteal =
-            damage * effect.lifesteal.relative / Health::new(100.0) + effect.lifesteal.absolute;
+        let lifesteal = damage * effect.lifesteal.relative + effect.lifesteal.absolute;
         if let Some(caster) = context.caster.and_then(|id| logic.model.units.get_mut(&id)) {
             caster.hp = (caster.hp + lifesteal).min(caster.max_hp);
         }

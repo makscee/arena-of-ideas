@@ -61,7 +61,7 @@ impl TryFrom<String> for DamageValue {
             let percent = R32::new(value[..value.len() - 1].parse()?);
             Ok(Self {
                 absolute: Health::ZERO,
-                relative: percent,
+                relative: percent / r32(100.0),
             })
         } else {
             let value = Health::new(value.parse()?);
