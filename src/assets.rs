@@ -12,6 +12,7 @@ pub type Wave = HashMap<String, Vec<UnitType>>;
 #[asset(json)]
 pub struct Config {
     pub player: Vec<UnitType>,
+    pub alliances: HashMap<Alliance, usize>,
     pub spawn_points: HashMap<String, Vec2<Coord>>,
     pub waves: Vec<Wave>,
 }

@@ -93,17 +93,10 @@ impl<'a> Logic<'a> {
             .map(|unit| (unit, self.model.unit_templates[unit].clone()))
             .collect::<Vec<_>>();
 
-        let mut alliance_counts = HashMap::new();
-        for (_, unit) in &to_spawn {
-            for alliance in &unit.alliances {
-                *alliance_counts.entry(*alliance).or_default() += 1;
-            }
-        }
-
         // Apply effects
         for (_, unit) in &mut to_spawn {
             for alliance in unit.alliances.clone() {
-                alliance.apply(unit, alliance_counts[&alliance]);
+                alliance.apply(unit, config.alliances[&alliance]);
             }
         }
 
@@ -112,7 +105,8 @@ impl<'a> Logic<'a> {
             self.spawn_template(unit_type, template, Faction::Player, Vec2::ZERO);
         }
 
-        if alliance_counts
+        if config
+            .alliances
             .get(&Alliance::Healers)
             .copied()
             .unwrap_or(0)

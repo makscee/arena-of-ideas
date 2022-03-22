@@ -14,6 +14,15 @@
         "cryonist",
         "egg_collector"
     ],
+    "alliances": {
+        "Spawners": 6,
+        "Assassins": 6,
+        "Critters": 6,
+        "Archers": 6,
+        "Freezers": 6,
+        "Warriors": 6,
+        "Healers": 6
+    },
     "spawn_points": {
         "Left": [
             -6,
