@@ -20,7 +20,7 @@
     },
     "statuses": [
         {
-            "status_type": "Kill",
+            "status_type": "OnKill",
             "damage_type": "Crit",
             "type": "Repeat",
             "times": 3,

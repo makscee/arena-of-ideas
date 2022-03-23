@@ -40,24 +40,19 @@ impl EffectImpl for AttachStatusEffect {
             let target = target.id;
             let target = logic.model.units.get(&target).unwrap();
             for other in &logic.model.units {
-                for status in &other.attached_statuses {
-                    if let Status::DetectAttachedStatus {
-                        on,
-                        status,
-                        ref effect,
-                    } = status.status
-                    {
+                for status in &other.all_statuses {
+                    if let Status::Detect(status) = status {
                         if other.id == target.id {
                             continue;
                         }
-                        if status != status_type {
+                        if status.detect_type != status_type {
                             continue;
                         }
-                        if !on.matches(target.faction, other.faction) {
+                        if !status.on.matches(target.faction, other.faction) {
                             continue;
                         }
                         logic.effects.push_front(QueuedEffect {
-                            effect: effect.clone(),
+                            effect: status.effect.clone(),
                             context: EffectContext {
                                 caster: Some(other.id),
                                 from: Some(other.id),

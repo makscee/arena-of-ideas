@@ -8,7 +8,7 @@ impl Logic<'_> {
         if unit
             .all_statuses
             .iter()
-            .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
+            .any(|status| matches!(status.r#type(), StatusType::Freeze | StatusType::Stun))
         {
             return;
         }
@@ -59,8 +59,8 @@ impl Logic<'_> {
         let mut speed = unit.speed;
         for status in &unit.all_statuses {
             match status {
-                Status::Slow { percent, .. } => {
-                    speed *= Coord::new(1.0 - *percent / 100.0);
+                Status::Slow(status) => {
+                    speed *= Coord::new(1.0 - status.percent / 100.0);
                 }
                 _ => {}
             }

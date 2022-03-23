@@ -45,7 +45,7 @@ impl EffectImpl for DamageEffect {
         if target_unit
             .all_statuses
             .iter()
-            .any(|status| matches!(status, Status::Invulnerability))
+            .any(|status| status.r#type() == StatusType::Invulnerability)
         {
             return;
         }
@@ -57,8 +57,8 @@ impl EffectImpl for DamageEffect {
             .position(|status| status.status.r#type() == StatusType::Shield)
         {
             for status in &target_unit.all_statuses {
-                if let Status::ShieldBroken(UnitShieldBrokenTrigger { heal }) = *status {
-                    let heal = heal.absolute + damage * heal.relative;
+                if let Status::OnShieldBroken(status) = status {
+                    let heal = status.heal.absolute + damage * status.heal.relative;
                     logic.effects.push_front(QueuedEffect {
                         context: EffectContext {
                             caster: None,
@@ -78,7 +78,7 @@ impl EffectImpl for DamageEffect {
         } else if target_unit
             .all_statuses
             .iter()
-            .any(|status| matches!(status, Status::Shield))
+            .any(|status| status.r#type() == StatusType::Shield)
         {
             damage = Health::new(0.0);
         }
@@ -92,13 +92,13 @@ impl EffectImpl for DamageEffect {
             .retain(|status| status.status.r#type() != StatusType::Freeze);
 
         for status in &target_unit.all_statuses {
-            if let Status::Injured(trigger) = status {
-                if match &trigger.damage_type {
+            if let Status::OnTakeDamage(status) = status {
+                if match &status.damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
                     None => true,
                 } {
                     logic.effects.push_front(QueuedEffect {
-                        effect: trigger.effect.clone(),
+                        effect: status.effect.clone(),
                         context,
                     });
                 }
@@ -107,8 +107,8 @@ impl EffectImpl for DamageEffect {
 
         // Protection
         for status in &target_unit.all_statuses {
-            if let Status::Protection { percent } = *status {
-                damage *= r32(1.0 - percent / 100.0);
+            if let Status::Protection(status) = status {
+                damage *= r32(1.0 - status.percent / 100.0);
             }
         }
         if damage <= Health::new(0.0) {
@@ -161,13 +161,13 @@ impl EffectImpl for DamageEffect {
                 .unwrap();
             if killed {
                 for status in &caster.all_statuses {
-                    if let Status::Kill(trigger) = status {
-                        if match &trigger.damage_type {
+                    if let Status::OnKill(status) = status {
+                        if match &status.damage_type {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,
                         } {
                             logic.effects.push_front(QueuedEffect {
-                                effect: trigger.effect.clone(),
+                                effect: status.effect.clone(),
                                 context,
                             });
                         }

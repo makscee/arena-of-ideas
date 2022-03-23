@@ -40,9 +40,11 @@ impl Alliance {
                                                             Box::new(AttachStatusEffect {
                                                                 who: Who::Target,
                                                                 status: AttachedStatus {
-                                                                    status: Status::Slow {
-                                                                        percent: 70.0,
-                                                                    },
+                                                                    status: Status::Slow(Box::new(
+                                                                        SlowStatus {
+                                                                            percent: 70.0,
+                                                                        },
+                                                                    )),
                                                                     time: Some(r32(3.0)),
                                                                 },
                                                             }),
@@ -53,7 +55,9 @@ impl Alliance {
                                                             Box::new(AttachStatusEffect {
                                                                 who: Who::Caster,
                                                                 status: AttachedStatus {
-                                                                    status: Status::Shield,
+                                                                    status: Status::Shield(
+                                                                        Box::new(ShieldStatus {}),
+                                                                    ),
                                                                     time: None,
                                                                 },
                                                             }),
@@ -73,12 +77,12 @@ impl Alliance {
             Self::Spawners => {
                 if party_members >= 4 {
                     template.statuses.push(AttachedStatus {
-                        status: Status::Kill(UnitKillTrigger {
+                        status: Status::OnKill(Box::new(OnKillStatus {
                             damage_type: None,
                             effect: Effect::Spawn(Box::new(SpawnEffect {
                                 unit_type: "critter".to_owned(),
                             })),
-                        }),
+                        })),
                         time: None,
                     });
                 }
@@ -110,16 +114,16 @@ impl Alliance {
                 }
                 if party_members >= 2 {
                     template.statuses.push(AttachedStatus {
-                        status: Status::Aura(Aura {
+                        status: Status::Aura(Box::new(AuraStatus {
                             distance: None,
                             alliance: Some(Alliance::Critters),
-                            status: Box::new(Status::Modifier(Modifier::Strength(
-                                StrengthModifier {
+                            status: Box::new(Status::Modifier(Box::new(ModifierStatus {
+                                modifier: Modifier::Strength(StrengthModifier {
                                     multiplier: r32(1.0),
                                     add: r32(2.0),
-                                },
-                            ))),
-                        }),
+                                }),
+                            }))),
+                        })),
                         time: None,
                     });
                 }
@@ -175,23 +179,23 @@ impl Alliance {
 
                 if party_members >= 4 {
                     template.statuses.push(AttachedStatus {
-                        status: Status::Injured(UnitTakeDamageTrigger {
+                        status: Status::OnTakeDamage(Box::new(OnTakeDamageStatus {
                             damage_type: None,
                             effect: Effect::AttachStatus(Box::new(AttachStatusEffect {
                                 who: Who::Caster,
                                 status: AttachedStatus {
-                                    status: Status::Freeze,
+                                    status: Status::Freeze(Box::new(FreezeStatus {})),
                                     time: None,
                                 },
                             })),
-                        }),
+                        })),
                         time: None,
                     });
                 }
 
                 if party_members >= 6 {
                     template.statuses.push(AttachedStatus {
-                        status: Status::Kill(UnitKillTrigger {
+                        status: Status::OnKill(Box::new(OnKillStatus {
                             damage_type: None,
                             effect: Effect::If(Box::new(IfEffect {
                                 condition: Condition::UnitHasStatus {
@@ -220,7 +224,7 @@ impl Alliance {
                                 },
                                 r#else: Effect::noop(),
                             })),
-                        }),
+                        })),
                         time: None,
                     });
                 }
@@ -234,9 +238,9 @@ impl Alliance {
                 }
                 if protection != 0.0 {
                     template.statuses.push(AttachedStatus {
-                        status: Status::Protection {
+                        status: Status::Protection(Box::new(ProtectionStatus {
                             percent: protection,
-                        },
+                        })),
                         time: None,
                     });
                 }
@@ -264,7 +268,9 @@ impl Alliance {
                                                     AttachStatusEffect {
                                                         who: Who::Target,
                                                         status: AttachedStatus {
-                                                            status: Status::Shield,
+                                                            status: Status::Shield(Box::new(
+                                                                ShieldStatus {},
+                                                            )),
                                                             time: None,
                                                         },
                                                     },
@@ -299,14 +305,14 @@ impl Alliance {
                 if party_members >= 6 {
                     template.statuses.push(AttachedStatus {
                         time: None,
-                        status: Status::Kill(UnitKillTrigger {
+                        status: Status::OnKill(Box::new(OnKillStatus {
                             damage_type: None,
                             effect: Effect::Heal(Box::new(HealEffect {
                                 hp: DamageValue::ZERO,
                                 heal_past_max: DamageValue::ZERO,
                                 max_hp: DamageValue::absolute(1.0),
                             })),
-                        }),
+                        })),
                     })
                 }
             }

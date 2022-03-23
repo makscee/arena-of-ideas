@@ -15,9 +15,9 @@ impl EffectImpl for ApplyGainedEffect {
         caster
             .attached_statuses
             .retain(|status| match &status.status {
-                Status::Gain(effect) => {
+                Status::GainedEffect(status) => {
                     logic.effects.push_front(QueuedEffect {
-                        effect: effect.clone(),
+                        effect: status.effect.clone(),
                         context,
                     });
                     false

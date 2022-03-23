@@ -48,9 +48,9 @@ impl Logic<'_> {
         }
         for mut unit in new_units {
             for status in &unit.all_statuses {
-                if let Status::BattleCry(effect) = status {
+                if let Status::OnSpawn(status) = status {
                     self.effects.push_back(QueuedEffect {
-                        effect: effect.clone(),
+                        effect: status.effect.clone(),
                         context: EffectContext {
                             caster: Some(unit.id),
                             from: Some(unit.id),

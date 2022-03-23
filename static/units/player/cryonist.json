@@ -43,9 +43,9 @@
     },
     "statuses": [
         {
-            "status_type": "DetectAttachedStatus",
+            "status_type": "Detect",
             "on": "Allies",
-            "status": "Freeze",
+            "detect_type": "Freeze",
             "effect": {
                 "type": "Heal",
                 "hp": "5"

@@ -13,7 +13,7 @@
     },
     "statuses": [
         {
-            "status_type": "DeathRattle",
+            "status_type": "OnDeath",
             "type": "Repeat",
             "times": 3,
             "effect": {

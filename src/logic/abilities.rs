@@ -22,7 +22,7 @@ impl Logic<'_> {
                 if unit
                     .all_statuses
                     .iter()
-                    .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
+                    .any(|status| matches!(status.r#type(), StatusType::Freeze | StatusType::Stun))
                 {
                     continue;
                 }

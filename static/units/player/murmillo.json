@@ -16,7 +16,7 @@
     },
     "statuses": [
         {
-            "status_type": "ShieldBroken",
+            "status_type": "OnShieldBroken",
             "heal": "100%"
         }
     ],

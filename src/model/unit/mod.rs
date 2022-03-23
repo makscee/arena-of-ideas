@@ -2,11 +2,9 @@ use super::*;
 
 mod ai;
 mod template;
-mod trigger;
 
 pub use ai::*;
 pub use template::*;
-pub use trigger::*;
 
 pub type UnitType = String;
 

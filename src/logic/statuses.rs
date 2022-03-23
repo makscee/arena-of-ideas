@@ -28,11 +28,11 @@ impl Logic<'_> {
                 .collect();
         }
 
-        let mut auras: Vec<(Id, Aura)> = Vec::new();
+        let mut auras: Vec<(Id, AuraStatus)> = Vec::new();
         for unit in &self.model.units {
             for status in &unit.attached_statuses {
-                if let Status::Aura(aura) = &status.status {
-                    auras.push((unit.id, aura.clone()));
+                if let Status::Aura(status) = &status.status {
+                    auras.push((unit.id, (**status).clone()));
                 }
             }
         }

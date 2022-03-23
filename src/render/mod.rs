@@ -68,7 +68,7 @@ impl Game {
                                 if unit
                                     .all_statuses
                                     .iter()
-                                    .any(|status| matches!(status, Status::Freeze))
+                                    .any(|status| status.r#type() == StatusType::Freeze)
                                 {
                                     color = Color::CYAN;
                                 }
@@ -187,7 +187,7 @@ impl Game {
             if unit
                 .all_statuses
                 .iter()
-                .any(|status| matches!(status, Status::Shield))
+                .any(|status| status.r#type() == StatusType::Shield)
             {
                 self.geng.draw_2d(
                     framebuffer,

@@ -20,9 +20,9 @@
     },
     "statuses": [
         {
-            "status_type": "DetectAttachedStatus",
+            "status_type": "Detect",
             "on": "Enemies",
-            "status": "Freeze",
+            "detect_type": "Freeze",
             "effect": {
                 "type": "InstantAction"
             }

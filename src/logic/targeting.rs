@@ -8,7 +8,7 @@ impl Logic<'_> {
         if unit
             .all_statuses
             .iter()
-            .any(|status| matches!(status, Status::Freeze | Status::Stun { .. }))
+            .any(|status| matches!(status.r#type(), StatusType::Freeze | StatusType::Stun))
         {
             return;
         }
@@ -21,9 +21,9 @@ impl Logic<'_> {
                 .filter(|other| other.faction != unit.faction)
                 .filter_map(|other| {
                     other.all_statuses.iter().find_map(|status| match status {
-                        Status::Taunt { radius } => {
+                        Status::Taunt(status) => {
                             let distance = (other.position - unit.position).len();
-                            if distance <= *radius {
+                            if distance <= status.radius {
                                 Some((other, distance))
                             } else {
                                 None
