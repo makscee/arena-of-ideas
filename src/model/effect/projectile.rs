@@ -24,7 +24,10 @@ impl EffectImpl for ProjectileEffect {
             .from
             .and_then(|id| logic.model.units.get(&id))
             .expect("Caster not found");
-        assert_ne!(target.id, from.id);
+        if target.id == from.id {
+            error!("Projectile target == from");
+            return;
+        }
         logic.model.projectiles.insert(Projectile {
             id: logic.model.next_id,
             caster: from.id,
