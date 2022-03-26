@@ -15,7 +15,8 @@
         "egg_collector",
         "dracula",
         "dr_acula",
-        "lifestealer"
+        "lifestealer",
+        "healer"
     ],
     "alliances": {
         "Spawners": 6,
