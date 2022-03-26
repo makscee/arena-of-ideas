@@ -11,6 +11,7 @@ impl Logic<'_> {
                         caster: bomb.caster,
                         from: Some(bomb.id),
                         target: Some(bomb.id),
+                        vars: default(),
                     },
                 });
                 self.model.dead_time_bombs.insert(bomb.clone());

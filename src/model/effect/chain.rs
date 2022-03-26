@@ -28,7 +28,7 @@ impl EffectImpl for ChainEffect {
                 effect: touch_effect.clone(),
                 context: EffectContext {
                     target: Some(target.id),
-                    ..context
+                    ..context.clone()
                 },
             });
             touch_effect.apply_modifier(&effect.jump_modifier);

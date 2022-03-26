@@ -64,6 +64,7 @@ impl EffectImpl for DamageEffect {
                             caster: None,
                             from: None,
                             target: Some(target_unit.id),
+                            vars: default(),
                         },
                         effect: Effect::Heal(Box::new(HealEffect {
                             hp: DamageValue::absolute(heal.as_f32()),
@@ -129,7 +130,7 @@ impl EffectImpl for DamageEffect {
                     effect: effect.clone(),
                     context: EffectContext {
                         target: Some(target_unit.id),
-                        ..context
+                        ..context.clone()
                     },
                 });
             }
@@ -146,7 +147,7 @@ impl EffectImpl for DamageEffect {
                 effect: lifesteal,
                 context: EffectContext {
                     target: context.caster,
-                    ..context
+                    ..context.clone()
                 },
             });
         }

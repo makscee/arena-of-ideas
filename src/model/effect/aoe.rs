@@ -60,9 +60,9 @@ impl EffectImpl for AoeEffect {
             logic.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
-                    caster: context.caster,
                     from: context.target,
                     target: Some(unit.id),
+                    ..context.clone()
                 },
             });
         }

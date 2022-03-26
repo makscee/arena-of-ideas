@@ -21,6 +21,7 @@ impl Logic<'_> {
                             caster: Some(unit.id),
                             from: Some(unit.id),
                             target: Some(target.id),
+                            vars: default(),
                         },
                     });
                 }

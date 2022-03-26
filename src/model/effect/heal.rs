@@ -37,7 +37,11 @@ impl EffectImpl for HealEffect {
             if let Status::OnHeal(status) = status {
                 logic.effects.push_front(QueuedEffect {
                     effect: status.effect.clone(),
-                    context: context.clone(),
+                    context: {
+                        let mut context = context.clone();
+                        context.vars.insert("HealthRestored".to_owned(), heal);
+                        context
+                    },
                 });
             }
         }

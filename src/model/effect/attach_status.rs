@@ -57,6 +57,7 @@ impl EffectImpl for AttachStatusEffect {
                                 caster: Some(other.id),
                                 from: Some(other.id),
                                 target: Some(target.id),
+                                vars: default(),
                             },
                         });
                     }

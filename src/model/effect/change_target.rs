@@ -33,7 +33,7 @@ impl EffectImpl for ChangeTargetEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
                     target: Some(unit.id),
-                    ..context
+                    ..context.clone()
                 },
             });
         }
