@@ -32,5 +32,14 @@ impl EffectImpl for HealEffect {
             + effect.heal_past_max.absolute;
         let heal = min(heal, max_heal - target_unit.hp);
         target_unit.hp += heal;
+
+        for status in &target_unit.all_statuses {
+            if let Status::OnHeal(status) = status {
+                logic.effects.push_front(QueuedEffect {
+                    effect: status.effect.clone(),
+                    context,
+                });
+            }
+        }
     }
 }

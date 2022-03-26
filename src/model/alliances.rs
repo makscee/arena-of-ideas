@@ -10,4 +10,5 @@ pub enum Alliance {
     Warriors,
     Healers,
     Vampires,
+    Exploders,
 }
