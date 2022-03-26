@@ -8,7 +8,10 @@
         "cooldown": 0.5,
         "effect": {
             "type": "Damage",
-            "hp": "2"
+            "hp": {
+                "type": "Const",
+                "value": 2
+            }
         }
     },
     "statuses": [

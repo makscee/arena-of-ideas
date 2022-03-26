@@ -96,7 +96,7 @@ impl<'a> Logic<'a> {
         // Apply effects
         for (_, unit) in &mut to_spawn {
             for alliance in unit.alliances.clone() {
-                alliance.apply(unit, config.alliances[&alliance]);
+                alliance.apply(unit, config.alliances.get(&alliance).copied().unwrap_or(0));
             }
         }
 

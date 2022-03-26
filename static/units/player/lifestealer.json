@@ -11,7 +11,17 @@
             "types": [
                 "Melee"
             ],
-            "hp": "10%",
+            "hp": {
+                "type": "Mul",
+                "a": {
+                    "type": "FindMaxHealth",
+                    "who": "Target"
+                },
+                "b": {
+                    "type": "Const",
+                    "value": 0.1
+                }
+            },
             "lifesteal": {
                 "hp": "100%"
             }

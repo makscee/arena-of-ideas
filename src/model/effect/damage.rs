@@ -10,7 +10,7 @@ pub type DamageType = String;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct DamageEffect {
-    pub hp: DamageValue,
+    pub hp: Expr,
     #[serde(default)]
     /// HP to heal self relative to the damage done
     pub lifesteal: HealEffect,
@@ -31,11 +31,11 @@ impl EffectContainer for DamageEffect {
 impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
+        let mut damage = effect.hp.calculate(&context, logic);
         let target_unit = context
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
-        let mut damage = target_unit.max_hp * effect.hp.relative + effect.hp.absolute;
         damage = min(damage, target_unit.hp);
         if damage <= Health::new(0.0) {
             return;

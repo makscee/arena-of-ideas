@@ -11,7 +11,10 @@
             "types": [
                 "Melee"
             ],
-            "hp": "2"
+            "hp": {
+                "type": "Const",
+                "value": 2
+            }
         }
     },
     "alliances": [

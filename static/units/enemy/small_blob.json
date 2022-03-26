@@ -15,7 +15,10 @@
                     "filter": "Enemies",
                     "effect": {
                         "type": "Damage",
-                        "hp": "1"
+                        "hp": {
+                            "type": "Const",
+                            "value": 1
+                        }
                     }
                 },
                 {

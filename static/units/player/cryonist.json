@@ -14,7 +14,10 @@
                 "types": [
                     "Ranged"
                 ],
-                "hp": "1"
+                "hp": {
+                    "type": "Const",
+                    "value": 1
+                }
             }
         }
     },

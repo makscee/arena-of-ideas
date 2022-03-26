@@ -12,7 +12,10 @@
             "effects": [
                 {
                     "type": "Damage",
-                    "hp": "1"
+                    "hp": {
+                        "type": "Const",
+                        "value": 1
+                    }
                 },
                 {
                     "type": "Suicide"

@@ -24,7 +24,12 @@ impl Alliance {
                                                     let mut effects = Vec::new();
                                                     effects.push(Effect::Damage(Box::new(
                                                         DamageEffect {
-                                                            hp: damage.hp * r32(3.0),
+                                                            hp: Expr::Mul {
+                                                                a: Box::new(damage.hp.clone()),
+                                                                b: Box::new(Expr::Const {
+                                                                    value: r32(3.0),
+                                                                }),
+                                                            },
                                                             lifesteal: damage.lifesteal.clone(),
                                                             types: {
                                                                 let mut types =
@@ -210,7 +215,7 @@ impl Alliance {
                                         effect: Effect::Projectile(Box::new(ProjectileEffect {
                                             speed: r32(10.0),
                                             effect: Effect::Damage(Box::new(DamageEffect {
-                                                hp: DamageValue::absolute(1.0),
+                                                hp: Expr::Const { value: r32(1.0) },
                                                 lifesteal: HealEffect::default(),
                                                 types: {
                                                     let mut types = HashSet::new();

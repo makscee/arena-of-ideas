@@ -11,7 +11,10 @@
             "effects": [
                 {
                     "type": "Damage",
-                    "hp": "2",
+                    "hp": {
+                        "type": "Const",
+                        "value": 2
+                    },
                     "types": [
                         "Melee"
                     ]
