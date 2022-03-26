@@ -99,7 +99,7 @@ impl EffectImpl for DamageEffect {
                 } {
                     logic.effects.push_front(QueuedEffect {
                         effect: status.effect.clone(),
-                        context,
+                        context: context.clone(),
                     });
                 }
             }
@@ -168,7 +168,7 @@ impl EffectImpl for DamageEffect {
                         } {
                             logic.effects.push_front(QueuedEffect {
                                 effect: status.effect.clone(),
-                                context,
+                                context: context.clone(),
                             });
                         }
                     }

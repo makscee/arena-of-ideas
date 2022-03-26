@@ -19,7 +19,7 @@ impl EffectImpl for RepeatEffect {
         for _ in 0..effect.times {
             logic.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
-                context,
+                context: context.clone(),
             });
         }
     }

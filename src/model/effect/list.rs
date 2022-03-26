@@ -18,7 +18,10 @@ impl EffectImpl for ListEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         for effect in effect.effects.into_iter().rev() {
-            logic.effects.push_front(QueuedEffect { effect, context });
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: context.clone(),
+            });
         }
     }
 }

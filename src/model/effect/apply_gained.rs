@@ -18,7 +18,7 @@ impl EffectImpl for ApplyGainedEffect {
                 Status::GainedEffect(status) => {
                     logic.effects.push_front(QueuedEffect {
                         effect: status.effect.clone(),
-                        context,
+                        context: context.clone(),
                     });
                     false
                 }

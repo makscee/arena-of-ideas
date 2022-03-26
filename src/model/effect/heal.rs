@@ -37,7 +37,7 @@ impl EffectImpl for HealEffect {
             if let Status::OnHeal(status) = status {
                 logic.effects.push_front(QueuedEffect {
                     effect: status.effect.clone(),
-                    context,
+                    context: context.clone(),
                 });
             }
         }
