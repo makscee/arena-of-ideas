@@ -7,19 +7,14 @@
         "animation_delay": 0.25,
         "cooldown": 0.75,
         "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "Damage",
-                    "types": [
-                        "Melee"
-                    ],
-                    "hp": "10%",
-                    "lifesteal": {
-                        "hp": "100%"
-                    }
-                }
-            ]
+            "type": "Damage",
+            "types": [
+                "Melee"
+            ],
+            "hp": "10%",
+            "lifesteal": {
+                "hp": "100%"
+            }
         }
     },
     "abilities": {
