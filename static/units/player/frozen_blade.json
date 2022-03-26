@@ -22,7 +22,7 @@
                 {
                     "type": "AttachStatus",
                     "status": {
-                        "status_type": "Freeze"
+                        "type": "Freeze"
                     }
                 }
             ]

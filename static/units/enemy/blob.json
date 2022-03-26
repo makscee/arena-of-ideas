@@ -16,7 +16,7 @@
     },
     "statuses": [
         {
-            "status_type": "OnDeath",
+            "type": "OnDeath",
             "effect": {
                 "type": "Repeat",
                 "times": 3,

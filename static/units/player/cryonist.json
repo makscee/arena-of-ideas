@@ -38,7 +38,7 @@
                 "effect": {
                     "type": "AttachStatus",
                     "status": {
-                        "status_type": "Freeze"
+                        "type": "Freeze"
                     }
                 }
             }
@@ -46,7 +46,7 @@
     },
     "statuses": [
         {
-            "status_type": "Detect",
+            "type": "Detect",
             "on": "Allies",
             "detect_type": "Freeze",
             "effect": {

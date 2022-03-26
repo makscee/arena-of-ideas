@@ -64,7 +64,7 @@ pub enum StatusType {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "status_type")]
+#[serde(tag = "type")]
 pub enum Status {
     Freeze(Box<FreezeStatus>),
     Stun(Box<StunStatus>),

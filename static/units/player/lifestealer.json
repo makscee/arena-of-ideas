@@ -36,14 +36,14 @@
                     {
                         "type": "AttachStatus",
                         "status": {
-                            "status_type": "Invulnerability",
+                            "type": "Invulnerability",
                             "time": 3
                         }
                     },
                     {
                         "type": "AttachStatus",
                         "status": {
-                            "status_type": "AttackSpeed",
+                            "type": "AttackSpeed",
                             "percent": 175,
                             "time": 3
                         }

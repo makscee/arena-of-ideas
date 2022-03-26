@@ -23,7 +23,7 @@
     },
     "statuses": [
         {
-            "status_type": "Detect",
+            "type": "Detect",
             "on": "Enemies",
             "detect_type": "Freeze",
             "effect": {

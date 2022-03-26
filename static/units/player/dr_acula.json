@@ -19,7 +19,7 @@
     },
     "statuses": [
         {
-            "status_type": "Scavenge",
+            "type": "Scavenge",
             "who": "Enemies",
             "effect": {
                 "type": "ChangeTarget",

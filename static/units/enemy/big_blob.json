@@ -16,12 +16,14 @@
     },
     "statuses": [
         {
-            "status_type": "OnDeath",
-            "type": "Repeat",
-            "times": 3,
+            "type": "OnDeath",
             "effect": {
-                "type": "Spawn",
-                "unit_type": "blob"
+                "type": "Repeat",
+                "times": 3,
+                "effect": {
+                    "type": "Spawn",
+                    "unit_type": "blob"
+                }
             }
         }
     ],

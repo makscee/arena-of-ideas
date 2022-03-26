@@ -19,7 +19,7 @@
     },
     "statuses": [
         {
-            "status_type": "Taunt",
+            "type": "Taunt",
             "radius": 5
         }
     ],

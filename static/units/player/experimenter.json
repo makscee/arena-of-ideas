@@ -23,13 +23,15 @@
     },
     "statuses": [
         {
-            "status_type": "OnKill",
+            "type": "OnKill",
             "damage_type": "Crit",
-            "type": "Repeat",
-            "times": 3,
             "effect": {
-                "type": "Spawn",
-                "unit_type": "critter"
+                "type": "Repeat",
+                "times": 3,
+                "effect": {
+                    "type": "Spawn",
+                    "unit_type": "critter"
+                }
             }
         }
     ],

@@ -19,7 +19,7 @@
     },
     "statuses": [
         {
-            "status_type": "OnShieldBroken",
+            "type": "OnShieldBroken",
             "heal": "100%"
         }
     ],
@@ -33,7 +33,7 @@
             "effect": {
                 "type": "AttachStatus",
                 "status": {
-                    "status_type": "Shield"
+                    "type": "Shield"
                 }
             }
         }

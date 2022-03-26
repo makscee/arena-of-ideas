@@ -19,15 +19,17 @@
     },
     "statuses": [
         {
-            "status_type": "OnHeal",
-            "type": "AOE",
-            "filter": "Enemies",
-            "radius": 3,
+            "type": "OnHeal",
             "effect": {
-                "type": "Damage",
-                "hp": {
-                    "type": "Var",
-                    "name": "HealthRestored"
+                "type": "AOE",
+                "filter": "Enemies",
+                "radius": 3,
+                "effect": {
+                    "type": "Damage",
+                    "hp": {
+                        "type": "Var",
+                        "name": "HealthRestored"
+                    }
                 }
             }
         }
@@ -41,14 +43,14 @@
                     {
                         "type": "AttachStatus",
                         "status": {
-                            "status_type": "Invulnerability",
+                            "type": "Invulnerability",
                             "time": 3
                         }
                     },
                     {
                         "type": "AttachStatus",
                         "status": {
-                            "status_type": "AttackSpeed",
+                            "type": "AttackSpeed",
                             "percent": 175,
                             "time": 3
                         }
