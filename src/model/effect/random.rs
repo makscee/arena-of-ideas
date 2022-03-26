@@ -3,7 +3,6 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightedEffect {
     pub weight: f32,
-    #[serde(flatten)]
     pub effect: Effect,
 }
 

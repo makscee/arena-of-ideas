@@ -36,8 +36,10 @@
                     "type": "AttachStatus",
                     "status": {
                         "status_type": "GainedEffect",
-                        "type": "Spawn",
-                        "unit_type": "critter"
+                        "effect": {
+                            "type": "Spawn",
+                            "unit_type": "critter"
+                        }
                     }
                 }
             }

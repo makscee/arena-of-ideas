@@ -3,7 +3,6 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OnTakeDamageStatus {
     pub damage_type: Option<DamageType>,
-    #[serde(flatten)]
     pub effect: Effect,
 }
 

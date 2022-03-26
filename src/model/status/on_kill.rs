@@ -4,7 +4,6 @@ use super::*;
 #[serde(default)]
 pub struct OnKillStatus {
     pub damage_type: Option<DamageType>,
-    #[serde(flatten)]
     pub effect: Effect,
 }
 

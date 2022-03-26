@@ -2,7 +2,6 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GainedEffectStatus {
-    #[serde(flatten)]
     pub effect: Effect,
 }
 

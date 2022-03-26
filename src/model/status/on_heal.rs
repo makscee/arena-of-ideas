@@ -3,7 +3,6 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct OnHealStatus {
-    #[serde(flatten)]
     pub effect: Effect,
 }
 

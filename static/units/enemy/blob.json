@@ -17,11 +17,13 @@
     "statuses": [
         {
             "status_type": "OnDeath",
-            "type": "Repeat",
-            "times": 3,
             "effect": {
-                "type": "Spawn",
-                "unit_type": "small_blob"
+                "type": "Repeat",
+                "times": 3,
+                "effect": {
+                    "type": "Spawn",
+                    "unit_type": "small_blob"
+                }
             }
         }
     ],
