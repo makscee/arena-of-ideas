@@ -8,7 +8,7 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
         template.walk_effects_mut(&mut |effect| {
             if let Effect::AOE(aoe) = effect {
                 if party_members >= 2 {
-                    aoe.radius *= Coord::new(1.4);
+                    aoe.range *= Coord::new(1.4);
                 }
                 if party_members >= 4 {
                     // Seems like Explode needs to be a separate effect to count the damage done

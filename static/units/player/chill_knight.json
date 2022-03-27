@@ -3,7 +3,7 @@
     "speed": 1,
     "radius": 0.5,
     "action": {
-        "radius": 0.5,
+        "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
         "effect": {
@@ -26,7 +26,7 @@
                 "type": "AOE",
                 "filter": "All",
                 "skip_current_target": true,
-                "radius": 3,
+                "range": 3,
                 "effect": {
                     "type": "AttachStatus",
                     "status": {

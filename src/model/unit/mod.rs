@@ -20,7 +20,7 @@ pub enum ActionState {
 pub struct ActionProperties {
     pub cooldown: Time,
     pub animation_delay: Time,
-    pub radius: Coord,
+    pub range: Coord,
     #[serde(default)]
     pub effect: Effect,
 }

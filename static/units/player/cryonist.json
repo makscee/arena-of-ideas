@@ -3,7 +3,7 @@
     "speed": 1,
     "radius": 0.5,
     "action": {
-        "radius": 10,
+        "range": 10,
         "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
@@ -34,7 +34,7 @@
                 "type": "AOE",
                 "filter": "Allies",
                 "skip_current_target": true,
-                "radius": 100500,
+                "range": 100500,
                 "effect": {
                     "type": "AttachStatus",
                     "status": {

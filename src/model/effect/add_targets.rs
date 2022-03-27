@@ -38,7 +38,7 @@ impl EffectImpl for AddTargetsEffect {
                 .iter()
                 .filter(|unit| unit.faction == target.faction)
                 .filter(|unit| !targets.contains(&unit.id))
-                .filter(|unit| distance_between_units(unit, from) < from.action.radius)
+                .filter(|unit| distance_between_units(unit, from) < from.action.range)
                 .filter(|unit| {
                     logic.check_condition(&effect.condition, &EffectContext { ..context.clone() })
                 })

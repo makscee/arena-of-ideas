@@ -23,7 +23,7 @@ impl Logic<'_> {
                     other.all_statuses.iter().find_map(|status| match status {
                         Status::Taunt(status) => {
                             let distance = (other.position - unit.position).len();
-                            if distance <= status.radius {
+                            if distance <= status.range {
                                 Some((other, distance))
                             } else {
                                 None
@@ -50,7 +50,7 @@ impl Logic<'_> {
                 _ => todo!(),
             });
             if let Some(target) = target {
-                if distance_between_units(target, &unit) < unit.action.radius {
+                if distance_between_units(target, &unit) < unit.action.range {
                     assert_ne!(target.id, unit.id);
                     unit.action_state = ActionState::Start {
                         time: Time::new(0.0),

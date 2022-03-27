@@ -53,7 +53,7 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                             Effect::AOE(Box::new(AoeEffect {
                                 filter: TargetFilter::Enemies,
                                 skip_current_target: true,
-                                radius: r32(0.5),
+                                range: r32(0.5),
                                 effect: Effect::Projectile(Box::new(ProjectileEffect {
                                     speed: r32(10.0),
                                     effect: Effect::Damage(Box::new(DamageEffect {

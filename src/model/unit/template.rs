@@ -62,7 +62,7 @@ impl Default for UnitTemplate {
             speed: Coord::new(1.0),
             radius: Coord::new(0.5),
             action: ActionProperties {
-                radius: Coord::new(1.0),
+                range: Coord::new(1.0),
                 cooldown: Time::new(1.0),
                 animation_delay: Time::new(1.0),
                 effect: default(),

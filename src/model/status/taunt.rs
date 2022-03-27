@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TauntStatus {
-    pub radius: Coord,
+    pub range: Coord,
 }
 
 impl EffectContainer for TauntStatus {

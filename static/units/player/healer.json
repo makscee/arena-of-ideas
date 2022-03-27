@@ -3,7 +3,7 @@
     "speed": 1,
     "radius": 0.5,
     "action": {
-        "radius": 15,
+        "range": 15,
         "animation_delay": 0.75,
         "cooldown": 5,
         "effect": {

@@ -5,7 +5,7 @@ pub struct AoeEffect {
     pub filter: TargetFilter,
     #[serde(default)]
     pub skip_current_target: bool,
-    pub radius: Coord,
+    pub range: Coord,
     pub effect: Effect,
 }
 
@@ -51,7 +51,7 @@ impl EffectImpl for AoeEffect {
             if effect.skip_current_target && Some(unit.id) == context.target {
                 continue;
             }
-            if (unit.position - center).len() - unit.radius > effect.radius {
+            if (unit.position - center).len() - unit.radius > effect.range {
                 continue;
             }
             if !effect.filter.matches(unit.faction, caster_faction) {

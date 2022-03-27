@@ -3,7 +3,7 @@
     "speed": 1,
     "radius": 0.5,
     "action": {
-        "radius": 0.5,
+        "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
         "effect": {
@@ -20,7 +20,7 @@
     "statuses": [
         {
             "type": "Taunt",
-            "radius": 5
+            "range": 5
         }
     ],
     "alliances": [
