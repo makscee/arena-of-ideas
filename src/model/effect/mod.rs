@@ -22,6 +22,7 @@ mod random;
 mod repeat;
 mod revive;
 mod spawn;
+mod splash;
 mod suicide;
 mod time_bomb;
 
@@ -47,6 +48,7 @@ pub use random::*;
 pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
+pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 
@@ -77,6 +79,7 @@ pub enum Effect {
     ChangeStat(Box<ChangeStatEffect>),
     Delayed(Box<DelayedEffect>),
     Action(Box<ActionEffect>),
+    Splash(Box<ActionEffect>),
 }
 
 impl std::fmt::Debug for Effect {
@@ -106,6 +109,7 @@ impl std::fmt::Debug for Effect {
             Self::ChangeStat(effect) => effect.fmt(f),
             Self::Delayed(effect) => effect.fmt(f),
             Self::Action(effect) => effect.fmt(f),
+            Self::Splash(effect) => effect.fmt(f),
         }
     }
 }
@@ -157,6 +161,7 @@ impl Effect {
             Effect::ChangeStat(effect) => &mut **effect,
             Effect::Delayed(effect) => &mut **effect,
             Effect::Action(effect) => &mut **effect,
+            Effect::Splash(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -185,6 +190,7 @@ impl Effect {
             Effect::ChangeStat(effect) => effect,
             Effect::Delayed(effect) => effect,
             Effect::Action(effect) => effect,
+            Effect::Splash(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
