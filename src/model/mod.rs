@@ -43,6 +43,7 @@ impl TargetFilter {
 
 pub struct Model {
     pub next_id: Id,
+    pub time: Time,
     pub units: Collection<Unit>,
     pub spawning_units: Collection<Unit>,
     pub dead_units: Collection<Unit>,
@@ -52,12 +53,14 @@ pub struct Model {
     pub config: Config,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
+    pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
 }
 
 impl Model {
     pub fn new(config: Config, unit_templates: UnitTemplates) -> Self {
         Self {
             next_id: 0,
+            time: Time::ZERO,
             units: Collection::new(),
             spawning_units: Collection::new(),
             dead_units: Collection::new(),
@@ -67,6 +70,7 @@ impl Model {
             config,
             free_revives: 0,
             unit_templates,
+            delayed_effects: default(),
         }
     }
 }

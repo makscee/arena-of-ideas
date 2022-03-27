@@ -80,6 +80,7 @@ impl<'a> Logic<'a> {
         }
         self.process_effects();
         self.process_deaths();
+        self.model.time += self.delta_time;
     }
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.model.units.ids().copied().collect();

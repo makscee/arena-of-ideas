@@ -49,6 +49,17 @@ impl EffectContext {
 
 impl Logic<'_> {
     pub fn process_effects(&mut self) {
+        while let Some(effect) = self.model.delayed_effects.pop() {
+            if effect.effect.time > self.model.time {
+                self.model.delayed_effects.push(effect);
+                break;
+            }
+            self.effects.push_back(QueuedEffect {
+                context: effect.context,
+                effect: effect.effect.effect,
+            });
+        }
+
         const MAX_ITERATIONS: usize = 1000;
         let mut iterations = 0;
         while let Some(QueuedEffect { effect, context }) = self.effects.pop_front() {
