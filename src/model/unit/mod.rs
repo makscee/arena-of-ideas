@@ -47,3 +47,24 @@ pub struct Unit {
     #[serde(skip)]
     pub render: RenderMode,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum UnitStat {
+    MaxHealth,
+    Radius,
+}
+
+impl Unit {
+    pub fn stat(&self, stat: UnitStat) -> R32 {
+        match stat {
+            UnitStat::MaxHealth => self.max_hp,
+            UnitStat::Radius => self.radius,
+        }
+    }
+    pub fn stat_mut(&mut self, stat: UnitStat) -> &mut R32 {
+        match stat {
+            UnitStat::MaxHealth => &mut self.max_hp,
+            UnitStat::Radius => &mut self.radius,
+        }
+    }
+}
