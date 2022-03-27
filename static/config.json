@@ -27,7 +27,8 @@
         "Freezers": 6,
         "Warriors": 6,
         "Healers": 6,
-        "Vampires": 6
+        "Vampires": 6,
+        "Exploders": 6
     },
     "spawn_points": {
         "Left": [
