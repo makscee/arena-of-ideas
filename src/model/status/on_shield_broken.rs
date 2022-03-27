@@ -2,11 +2,13 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OnShieldBrokenStatus {
-    pub heal: DamageValue,
+    pub effect: Effect,
 }
 
 impl EffectContainer for OnShieldBrokenStatus {
-    fn walk_effects_mut(&mut self, _f: &mut dyn FnMut(&mut Effect)) {}
+    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {
+        self.effect.walk_mut(f)
+    }
 }
 
 impl StatusImpl for OnShieldBrokenStatus {}

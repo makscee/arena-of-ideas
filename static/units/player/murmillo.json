@@ -20,7 +20,13 @@
     "statuses": [
         {
             "type": "OnShieldBroken",
-            "heal": "100%"
+            "effect": {
+                "type": "Heal",
+                "value": {
+                    "type": "Var",
+                    "name": "DamageBlocked"
+                }
+            }
         }
     ],
     "alliances": [

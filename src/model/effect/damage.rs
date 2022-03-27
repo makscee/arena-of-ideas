@@ -56,19 +56,18 @@ impl EffectImpl for DamageEffect {
         {
             for status in &target_unit.all_statuses {
                 if let Status::OnShieldBroken(status) = status {
-                    let heal = status.heal.absolute + damage * status.heal.relative;
                     logic.effects.push_front(QueuedEffect {
-                        context: EffectContext {
-                            caster: None,
-                            from: None,
-                            target: Some(target_unit.id),
-                            vars: default(),
+                        context: {
+                            let mut context = EffectContext {
+                                caster: None,
+                                from: None,
+                                target: Some(target_unit.id),
+                                vars: default(),
+                            };
+                            context.vars.insert("DamageBlocked".to_owned(), damage);
+                            context
                         },
-                        effect: Effect::Heal(Box::new(HealEffect {
-                            value: Expr::Const { value: heal },
-                            heal_past_max: None,
-                            add_max_hp: None,
-                        })),
+                        effect: status.effect.clone(),
                     });
                 }
             }
