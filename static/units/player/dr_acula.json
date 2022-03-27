@@ -21,6 +21,7 @@
         {
             "type": "Scavenge",
             "who": "Enemies",
+            "range": 10,
             "effect": {
                 "type": "ChangeTarget",
                 "filter": "Allies",

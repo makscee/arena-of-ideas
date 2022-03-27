@@ -4,6 +4,7 @@ impl Logic<'_> {
     pub fn kill(&mut self, id: Id) {
         let unit = self.model.units.get_mut(&id).unwrap();
         unit.health = Health::new(0.0);
+        let unit = self.model.units.get(&id).unwrap();
         for status in &unit.all_statuses {
             if let Status::OnDeath(status) = status {
                 self.effects.push_front(QueuedEffect {
@@ -15,6 +16,35 @@ impl Logic<'_> {
                         vars: default(),
                     },
                 });
+            }
+        }
+        for other in &self.model.units {
+            if other.id == unit.id {
+                continue;
+            }
+            for status in &other.all_statuses {
+                if let Status::Scavenge(status) = status {
+                    if !status.who.matches(other.faction, unit.faction) {
+                        continue;
+                    }
+                    if let Some(alliance) = status.alliance {
+                        if !unit.alliances.contains(&alliance) {
+                            continue;
+                        }
+                    }
+                    if distance_between_units(other, unit) > status.range {
+                        continue;
+                    }
+                    self.effects.push_back(QueuedEffect {
+                        effect: status.effect.clone(),
+                        context: EffectContext {
+                            caster: Some(other.id),
+                            from: Some(other.id),
+                            target: Some(unit.id),
+                            vars: default(),
+                        },
+                    })
+                }
             }
         }
     }

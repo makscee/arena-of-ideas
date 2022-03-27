@@ -3,6 +3,8 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ScavengeStatus {
     pub who: TargetFilter,
+    pub range: Coord,
+    pub alliance: Option<Alliance>,
     pub effect: Effect,
 }
 
