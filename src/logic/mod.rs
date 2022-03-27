@@ -4,7 +4,6 @@ use super::*;
 
 mod abilities;
 mod actions;
-mod alliances;
 mod collisions;
 mod deaths;
 mod effects;
@@ -94,26 +93,11 @@ impl<'a> Logic<'a> {
             .map(|unit| (unit, self.model.unit_templates[unit].clone()))
             .collect::<Vec<_>>();
 
-        // Apply effects
-        for (_, unit) in &mut to_spawn {
-            for alliance in unit.alliances.clone() {
-                alliance.apply(unit, config.alliances.get(&alliance).copied().unwrap_or(0));
-            }
-        }
+        self.initialize_alliances(config);
 
-        // Spawn
-        for (unit_type, template) in to_spawn {
+        for unit_type in &config.player {
+            let template = self.model.unit_templates[unit_type].clone();
             self.spawn_template(unit_type, template, Faction::Player, Vec2::ZERO);
-        }
-
-        if config
-            .alliances
-            .get(&Alliance::Healers)
-            .copied()
-            .unwrap_or(0)
-            >= 6
-        {
-            self.model.free_revives += 1;
         }
     }
 }

@@ -116,8 +116,9 @@ impl geng::LoadAsset for UnitTemplate {
     const DEFAULT_EXT: Option<&'static str> = Some("json");
 }
 
-#[derive(Deref, Clone)]
+#[derive(Deref, DerefMut, Clone)]
 pub struct UnitTemplates {
     #[deref]
+    #[deref_mut]
     pub map: HashMap<String, UnitTemplate>,
 }

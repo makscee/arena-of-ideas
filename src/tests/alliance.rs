@@ -8,7 +8,7 @@ pub fn test_alliances(assets: &Assets) {
         for level in 0..=max_level {
             let mut unit = template.clone();
             for alliance in &template.alliances {
-                alliance.apply(&mut unit, level);
+                // TODO: alliance.apply(&mut unit, level);
             }
 
             println!("^- Unit: {name}, alliance level: {level}");
