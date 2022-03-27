@@ -4,9 +4,9 @@ impl StrengthModifier {
     pub fn apply(&self, effect: &mut Effect) {
         effect.walk_mut(&mut |effect| match effect {
             Effect::Damage(damage) => {
-                damage.hp = Expr::Sum {
+                damage.value = Expr::Sum {
                     a: Box::new(Expr::Mul {
-                        a: Box::new(damage.hp.clone()),
+                        a: Box::new(damage.value.clone()),
                         b: Box::new(Expr::Const {
                             value: self.multiplier,
                         }),

@@ -24,8 +24,8 @@ impl Alliance {
                                                     let mut effects = Vec::new();
                                                     effects.push(Effect::Damage(Box::new(
                                                         DamageEffect {
-                                                            hp: Expr::Mul {
-                                                                a: Box::new(damage.hp.clone()),
+                                                            value: Expr::Mul {
+                                                                a: Box::new(damage.value.clone()),
                                                                 b: Box::new(Expr::Const {
                                                                     value: r32(3.0),
                                                                 }),
@@ -214,7 +214,7 @@ impl Alliance {
                                         effect: Effect::Projectile(Box::new(ProjectileEffect {
                                             speed: r32(10.0),
                                             effect: Effect::Damage(Box::new(DamageEffect {
-                                                hp: Expr::Const { value: r32(1.0) },
+                                                value: Expr::Const { value: r32(1.0) },
                                                 types: {
                                                     let mut types = HashSet::new();
                                                     types.insert("Ranged".to_owned());

@@ -18,7 +18,7 @@ impl Logic<'_> {
                 let who = who
                     .and_then(|id| self.model.units.get(&id))
                     .expect("Caster, From, or Target not found");
-                who.hp < who.max_hp
+                who.health < who.max_hp
             }
         }
     }

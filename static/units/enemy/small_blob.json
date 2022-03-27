@@ -1,5 +1,5 @@
 {
-    "hp": 1,
+    "health": 1,
     "speed": 1.5,
     "size": 0.3,
     "action": {
@@ -15,7 +15,7 @@
                     "filter": "Enemies",
                     "effect": {
                         "type": "Damage",
-                        "hp": {
+                        "value": {
                             "type": "Const",
                             "value": 1
                         }

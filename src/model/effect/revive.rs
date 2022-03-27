@@ -18,7 +18,7 @@ impl EffectImpl for ReviveEffect {
             .target
             .and_then(|id| logic.model.dead_units.remove(&id))
             .expect("Target not found");
-        unit.hp = health;
+        unit.health = health;
         logic.model.units.insert(unit);
     }
 }

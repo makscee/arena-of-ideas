@@ -207,7 +207,7 @@ impl Game {
                         * Mat3::scale_uniform(unit.radius().as_f32())
                         * Mat3::translate(vec2(0.0, 1.2))
                         * Mat3::scale(
-                            0.1 * vec2(10.0 * unit.hp.as_f32() / unit.max_hp.as_f32(), 1.0),
+                            0.1 * vec2(10.0 * unit.health.as_f32() / unit.max_hp.as_f32(), 1.0),
                         ),
                 ),
             );

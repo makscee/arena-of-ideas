@@ -1,5 +1,5 @@
 {
-    "hp": 5,
+    "health": 5,
     "speed": 1,
     "size": 1,
     "action": {
@@ -19,7 +19,7 @@
                     "Melee",
                     "Crit"
                 ],
-                "hp": {
+                "value": {
                     "type": "Const",
                     "value": 6
                 }
@@ -29,7 +29,7 @@
                 "types": [
                     "Melee"
                 ],
-                "hp": {
+                "value": {
                     "type": "Const",
                     "value": 2
                 }

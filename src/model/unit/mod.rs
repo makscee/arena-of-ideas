@@ -34,7 +34,7 @@ pub struct Unit {
     pub all_statuses: Vec<Status>,
     pub faction: Faction,
     pub action_state: ActionState,
-    pub hp: Health,
+    pub health: Health,
     pub max_hp: Health,
     pub position: Vec2<Coord>,
     pub speed: Coord,

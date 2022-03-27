@@ -35,8 +35,8 @@ impl EffectImpl for HealEffect {
 
         target_unit.max_hp += add_max_hp;
         let max_health = target_unit.max_hp + heal_past_max;
-        let value = min(value, max_health - target_unit.hp);
-        target_unit.hp += value;
+        let value = min(value, max_health - target_unit.health);
+        target_unit.health += value;
 
         for status in &target_unit.all_statuses {
             if let Status::OnHeal(status) = status {

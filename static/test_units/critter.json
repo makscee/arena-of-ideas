@@ -1,5 +1,5 @@
 {
-    "hp": 1,
+    "health": 1,
     "spawn_animation_time": 1.0,
     "speed": 1.5,
     "size": 0.3,
@@ -12,7 +12,7 @@
             "effects": [
                 {
                     "type": "Damage",
-                    "hp": {
+                    "value": {
                         "type": "Const",
                         "value": 1
                     }

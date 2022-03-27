@@ -11,7 +11,7 @@ pub type DamageType = String;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct DamageEffect {
-    pub hp: Expr,
+    pub value: Expr,
     #[serde(default)]
     pub types: HashSet<DamageType>,
     #[serde(default)]
@@ -29,12 +29,12 @@ impl EffectContainer for DamageEffect {
 impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let mut damage = effect.hp.calculate(&context, logic);
+        let mut damage = effect.value.calculate(&context, logic);
         let target_unit = context
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
-        damage = min(damage, target_unit.hp);
+        damage = min(damage, target_unit.health);
         if damage <= Health::new(0.0) {
             return;
         }
@@ -113,13 +113,13 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        let old_hp = target_unit.hp;
-        target_unit.hp -= damage;
+        let old_hp = target_unit.health;
+        target_unit.health -= damage;
         let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
         if let Some(render) = &mut logic.render {
             render.add_text(target_unit.position, &format!("{}", -damage), Color::RED);
         }
-        let killed = old_hp > Health::new(0.0) && target_unit.hp <= Health::new(0.0);
+        let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 
         if let Some(effect) = effect.on.get(&DamageTrigger::Injure) {
             logic.effects.push_front(QueuedEffect {

@@ -1,5 +1,5 @@
 {
-    "hp": 300,
+    "health": 300,
     "speed": 1,
     "size": 1,
     "action": {
@@ -14,7 +14,7 @@
                 "types": [
                     "Ranged"
                 ],
-                "hp": {
+                "value": {
                     "type": "Const",
                     "value": 1
                 }

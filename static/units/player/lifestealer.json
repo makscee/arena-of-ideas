@@ -1,5 +1,5 @@
 {
-    "hp": 5,
+    "health": 5,
     "speed": 1,
     "size": 1,
     "action": {
@@ -11,7 +11,7 @@
             "types": [
                 "Melee"
             ],
-            "hp": {
+            "value": {
                 "type": "Mul",
                 "a": {
                     "type": "FindMaxHealth",

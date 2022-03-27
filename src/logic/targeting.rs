@@ -46,7 +46,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction != unit.faction)
-                    .max_by_key(|other| other.hp),
+                    .max_by_key(|other| other.health),
                 _ => todo!(),
             });
             if let Some(target) = target {
