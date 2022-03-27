@@ -39,7 +39,7 @@ impl Game {
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
-                fov: 10.0,
+                fov: 20.0,
             },
             model: Model::new(config.clone(), assets.units.clone()),
             render: Render::new(),
