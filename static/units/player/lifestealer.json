@@ -22,8 +22,18 @@
                     "value": 0.1
                 }
             },
-            "lifesteal": {
-                "hp": "100%"
+            "on": {
+                "Injure": {
+                    "type": "ChangeContext",
+                    "target": "Caster",
+                    "effect": {
+                        "type": "Heal",
+                        "value": {
+                            "type": "Var",
+                            "name": "DamageDealt"
+                        }
+                    }
+                }
             }
         }
     },

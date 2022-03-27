@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum DamageTrigger {
+    Injure,
     Kill,
 }
 
@@ -11,9 +12,6 @@ pub type DamageType = String;
 #[serde(deny_unknown_fields)]
 pub struct DamageEffect {
     pub hp: Expr,
-    #[serde(default)]
-    /// HP to heal self relative to the damage done
-    pub lifesteal: HealEffect,
     #[serde(default)]
     pub types: HashSet<DamageType>,
     #[serde(default)]
@@ -67,9 +65,9 @@ impl EffectImpl for DamageEffect {
                             vars: default(),
                         },
                         effect: Effect::Heal(Box::new(HealEffect {
-                            hp: DamageValue::absolute(heal.as_f32()),
-                            heal_past_max: DamageValue::ZERO,
-                            max_hp: DamageValue::ZERO,
+                            value: Expr::Const { value: heal },
+                            heal_past_max: None,
+                            add_max_hp: None,
                         })),
                     });
                 }
@@ -123,33 +121,26 @@ impl EffectImpl for DamageEffect {
             render.add_text(target_unit.position, &format!("{}", -damage), Color::RED);
         }
         let killed = old_hp > Health::new(0.0) && target_unit.hp <= Health::new(0.0);
+
+        if let Some(effect) = effect.on.get(&DamageTrigger::Injure) {
+            logic.effects.push_front(QueuedEffect {
+                effect: effect.clone(),
+                context: {
+                    let mut context = context.clone();
+                    context.vars.insert("DamageDealt".to_owned(), damage);
+                    context
+                },
+            });
+        }
+
         if killed {
             // logic.render.add_text(target.position, "KILL", Color::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
                 logic.effects.push_front(QueuedEffect {
                     effect: effect.clone(),
-                    context: EffectContext {
-                        target: Some(target_unit.id),
-                        ..context.clone()
-                    },
+                    context: context.clone(),
                 });
             }
-        }
-
-        // Lifesteal
-        let lifesteal = damage * effect.lifesteal.hp.relative + effect.lifesteal.hp.absolute;
-        if lifesteal > Health::ZERO {
-            let lifesteal = Effect::Heal(Box::new(HealEffect {
-                hp: DamageValue::absolute(lifesteal.as_f32()),
-                ..effect.lifesteal
-            }));
-            logic.effects.push_front(QueuedEffect {
-                effect: lifesteal,
-                context: EffectContext {
-                    target: context.caster,
-                    ..context.clone()
-                },
-            });
         }
 
         // Kill trigger

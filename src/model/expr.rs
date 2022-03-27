@@ -14,9 +14,7 @@ impl Expr {
     pub fn calculate(&self, context: &EffectContext, logic: &Logic) -> R32 {
         match self {
             Self::Const { value } => *value,
-            Self::Var { name } => {
-                todo!()
-            }
+            Self::Var { name } => context.vars[name],
             Self::Sum { a, b } => a.calculate(context, logic) + b.calculate(context, logic),
             Self::Mul { a, b } => a.calculate(context, logic) * b.calculate(context, logic),
             Self::FindMaxHealth { who } => {

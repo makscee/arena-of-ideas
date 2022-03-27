@@ -17,7 +17,10 @@
                 "speed": 10,
                 "effect": {
                     "type": "Heal",
-                    "hp": "2.0"
+                    "value": {
+                        "type": "Const",
+                        "value": 2
+                    }
                 }
             }
         }

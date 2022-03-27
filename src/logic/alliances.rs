@@ -30,7 +30,6 @@ impl Alliance {
                                                                     value: r32(3.0),
                                                                 }),
                                                             },
-                                                            lifesteal: damage.lifesteal.clone(),
                                                             types: {
                                                                 let mut types =
                                                                     damage.types.clone();
@@ -216,7 +215,6 @@ impl Alliance {
                                             speed: r32(10.0),
                                             effect: Effect::Damage(Box::new(DamageEffect {
                                                 hp: Expr::Const { value: r32(1.0) },
-                                                lifesteal: HealEffect::default(),
                                                 types: {
                                                     let mut types = HashSet::new();
                                                     types.insert("Ranged".to_owned());
@@ -254,7 +252,10 @@ impl Alliance {
                 if party_members >= 2 {
                     template.walk_effects_mut(&mut |effect| {
                         if let Effect::Heal(effect) = effect {
-                            effect.hp = effect.hp * r32(1.25);
+                            effect.value = Expr::Mul {
+                                a: Box::new(effect.value.clone()),
+                                b: Box::new(Expr::Const { value: r32(1.25) }),
+                            };
                         }
                     });
                 }
@@ -300,10 +301,36 @@ impl Alliance {
                 if party_members >= 2 {
                     template.walk_effects_mut(&mut |effect| {
                         if let Effect::Damage(effect) = effect {
-                            effect.lifesteal.hp = effect.lifesteal.hp + DamageValue::relative(0.2);
-                            if party_members >= 4 {
-                                effect.lifesteal.heal_past_max = DamageValue::relative(0.4);
-                            }
+                            let effect = effect.on.entry(DamageTrigger::Injure).or_default();
+                            *effect = Effect::List(Box::new(ListEffect {
+                                effects: vec![
+                                    effect.clone(),
+                                    Effect::ChangeContext(Box::new(ChangeContextEffect {
+                                        caster: None,
+                                        from: Some(Who::Target),
+                                        target: Some(Who::Caster),
+                                        effect: Effect::Heal(Box::new(HealEffect {
+                                            value: Expr::Mul {
+                                                a: Box::new(Expr::Var {
+                                                    name: "DamageDealt".to_owned(),
+                                                }),
+                                                b: Box::new(Expr::Const { value: r32(0.2) }),
+                                            },
+                                            heal_past_max: if party_members >= 4 {
+                                                Some(Expr::Mul {
+                                                    a: Box::new(Expr::FindMaxHealth {
+                                                        who: Who::Caster,
+                                                    }),
+                                                    b: Box::new(Expr::Const { value: r32(0.4) }),
+                                                })
+                                            } else {
+                                                None
+                                            },
+                                            add_max_hp: None,
+                                        })),
+                                    })),
+                                ],
+                            }));
                         }
                     });
                 }
@@ -313,9 +340,9 @@ impl Alliance {
                         status: Status::OnKill(Box::new(OnKillStatus {
                             damage_type: None,
                             effect: Effect::Heal(Box::new(HealEffect {
-                                hp: DamageValue::ZERO,
-                                heal_past_max: DamageValue::ZERO,
-                                max_hp: DamageValue::absolute(1.0),
+                                value: Expr::Const { value: R32::ZERO },
+                                heal_past_max: None,
+                                add_max_hp: Some(Expr::Const { value: r32(1.0) }),
                             })),
                         })),
                     })

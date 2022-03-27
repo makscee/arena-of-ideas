@@ -51,7 +51,10 @@
             "detect_type": "Freeze",
             "effect": {
                 "type": "Heal",
-                "hp": "5"
+                "value": {
+                    "type": "Const",
+                    "value": 5
+                }
             }
         }
     ],

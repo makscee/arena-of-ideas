@@ -1,14 +1,13 @@
 use super::*;
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct HealEffect {
+    pub value: Expr,
     #[serde(default)]
-    pub hp: DamageValue,
+    pub heal_past_max: Option<Expr>,
     #[serde(default)]
-    pub heal_past_max: DamageValue,
-    #[serde(default)]
-    pub max_hp: DamageValue,
+    pub add_max_hp: Option<Expr>,
 }
 
 impl EffectContainer for HealEffect {
@@ -18,20 +17,26 @@ impl EffectContainer for HealEffect {
 impl EffectImpl for HealEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
+
+        let add_max_hp = match &effect.add_max_hp {
+            Some(expr) => expr.calculate(&context, logic),
+            None => R32::ZERO,
+        };
+        let heal_past_max = match &effect.heal_past_max {
+            Some(expr) => expr.calculate(&context, logic),
+            None => R32::ZERO,
+        };
+        let value = effect.value.calculate(&context, logic);
+
         let target_unit = context
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
 
-        let max_heal = target_unit.max_hp * effect.max_hp.relative + effect.max_hp.absolute;
-        target_unit.max_hp += max_heal;
-
-        let heal = target_unit.max_hp * effect.hp.relative + effect.hp.absolute;
-        let max_heal = target_unit.max_hp
-            + target_unit.max_hp * effect.heal_past_max.relative
-            + effect.heal_past_max.absolute;
-        let heal = min(heal, max_heal - target_unit.hp);
-        target_unit.hp += heal;
+        target_unit.max_hp += add_max_hp;
+        let max_health = target_unit.max_hp + heal_past_max;
+        let value = min(value, max_health - target_unit.hp);
+        target_unit.hp += value;
 
         for status in &target_unit.all_statuses {
             if let Status::OnHeal(status) = status {
@@ -39,7 +44,7 @@ impl EffectImpl for HealEffect {
                     effect: status.effect.clone(),
                     context: {
                         let mut context = context.clone();
-                        context.vars.insert("HealthRestored".to_owned(), heal);
+                        context.vars.insert("HealthRestored".to_owned(), value);
                         context
                     },
                 });

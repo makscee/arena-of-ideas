@@ -33,7 +33,17 @@
                     "speed": 1.0,
                     "effect": {
                         "type": "Heal",
-                        "hp": "20%"
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindMaxHealth",
+                                "who": "Target"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0.2
+                            }
+                        }
                     }
                 }
             }
