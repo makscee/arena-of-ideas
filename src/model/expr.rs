@@ -1,10 +1,17 @@
 pub use super::*;
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum VarName {
+    DamageDealt,
+    DamageBlocked,
+    HealthRestored,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Expr {
     Const { value: R32 },
-    Var { name: String },
+    Var { name: VarName },
     Sum { a: Box<Expr>, b: Box<Expr> },
     Mul { a: Box<Expr>, b: Box<Expr> },
     FindMaxHealth { who: Who },

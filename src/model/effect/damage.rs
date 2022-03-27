@@ -64,7 +64,7 @@ impl EffectImpl for DamageEffect {
                                 target: Some(target_unit.id),
                                 vars: default(),
                             };
-                            context.vars.insert("DamageBlocked".to_owned(), damage);
+                            context.vars.insert(VarName::DamageBlocked, damage);
                             context
                         },
                         effect: status.effect.clone(),
@@ -126,7 +126,7 @@ impl EffectImpl for DamageEffect {
                 effect: effect.clone(),
                 context: {
                     let mut context = context.clone();
-                    context.vars.insert("DamageDealt".to_owned(), damage);
+                    context.vars.insert(VarName::DamageDealt, damage);
                     context
                 },
             });

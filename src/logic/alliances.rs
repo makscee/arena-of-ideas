@@ -312,7 +312,7 @@ impl Alliance {
                                         effect: Effect::Heal(Box::new(HealEffect {
                                             value: Expr::Mul {
                                                 a: Box::new(Expr::Var {
-                                                    name: "DamageDealt".to_owned(),
+                                                    name: VarName::DamageDealt,
                                                 }),
                                                 b: Box::new(Expr::Const { value: r32(0.2) }),
                                             },

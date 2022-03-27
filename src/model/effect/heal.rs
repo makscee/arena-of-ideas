@@ -44,7 +44,7 @@ impl EffectImpl for HealEffect {
                     effect: status.effect.clone(),
                     context: {
                         let mut context = context.clone();
-                        context.vars.insert("HealthRestored".to_owned(), value);
+                        context.vars.insert(VarName::HealthRestored, value);
                         context
                     },
                 });
