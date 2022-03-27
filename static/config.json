@@ -18,7 +18,8 @@
         "lifestealer",
         "healer",
         "lifedrainer",
-        "devourer"
+        "devourer",
+        "hedgehog"
     ],
     "alliances": {
         "Spawners": 6,
