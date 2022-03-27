@@ -20,6 +20,7 @@ impl EffectContext {
     pub fn get(&self, who: Who) -> Option<Id> {
         match who {
             Who::Caster => self.caster,
+            Who::From => self.from,
             Who::Target => self.target,
         }
     }

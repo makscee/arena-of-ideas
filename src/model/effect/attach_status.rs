@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum Who {
     Caster,
+    From,
     Target,
 }
 

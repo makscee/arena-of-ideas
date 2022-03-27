@@ -38,24 +38,28 @@
         "MouseLeft": {
             "cooldown": 3,
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "AttachStatus",
-                        "status": {
-                            "type": "Invulnerability",
-                            "time": 3
-                        }
-                    },
-                    {
-                        "type": "AttachStatus",
-                        "status": {
-                            "type": "AttackSpeed",
-                            "percent": 175,
-                            "time": 3
+                "type": "AOE",
+                "filter": "Enemies",
+                "range": 3,
+                "effect": {
+                    "type": "ChangeContext",
+                    "from": "Target",
+                    "target": "Caster",
+                    "effect": {
+                        "type": "Heal",
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindMaxHealth",
+                                "who": "From"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0.1
+                            }
                         }
                     }
-                ]
+                }
             }
         }
     },
