@@ -29,7 +29,7 @@ pub struct UnitTemplate {
     pub health: Health,
     pub spawn_animation_time: Time,
     pub speed: Coord,
-    pub size: Coord,
+    pub radius: Coord,
     pub action: ActionProperties,
     pub move_ai: MoveAi,
     pub statuses: Vec<AttachedStatus>,
@@ -60,7 +60,7 @@ impl Default for UnitTemplate {
             health: Health::new(1.0),
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
-            size: Coord::new(1.0),
+            radius: Coord::new(0.5),
             action: ActionProperties {
                 radius: Coord::new(1.0),
                 cooldown: Time::new(1.0),

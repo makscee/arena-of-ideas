@@ -1,7 +1,7 @@
 {
     "health": 1,
     "speed": 0.7,
-    "size": 1,
+    "radius": 0.5,
     "action": {
         "radius": 10,
         "animation_delay": 1,
