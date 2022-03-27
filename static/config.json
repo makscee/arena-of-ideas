@@ -17,7 +17,8 @@
         "dr_acula",
         "lifestealer",
         "healer",
-        "lifedrainer"
+        "lifedrainer",
+        "devourer"
     ],
     "alliances": {
         "Spawners": 6,

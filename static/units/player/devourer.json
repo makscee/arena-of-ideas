@@ -1,0 +1,90 @@
+{
+    "health": 5,
+    "speed": 1,
+    "radius": 0.5,
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.75,
+        "effect": {
+            "type": "Damage",
+            "types": [
+                "Melee"
+            ],
+            "value": {
+                "type": "Const",
+                "value": 2
+            }
+        }
+    },
+    "statuses": [
+        {
+            "type": "Scavenge",
+            "who": "All",
+            "range": 10,
+            "alliance": "Critters",
+            "effect": {
+                "type": "ChangeContext",
+                "target": "Caster",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeStat",
+                            "stat": "Radius",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "who": "Target",
+                                    "stat": "Radius"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0.05
+                                }
+                            }
+                        },
+                        {
+                            "type": "ChangeStat",
+                            "stat": "MaxHealth",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "who": "Target",
+                                    "stat": "MaxHealth"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0.2
+                                }
+                            }
+                        },
+                        {
+                            "type": "AttachStatus",
+                            "status": {
+                                "type": "Modifier",
+                                "modifier": {
+                                    "type": "Strength",
+                                    "multiplier": 1,
+                                    "add": 0.2
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "alliances": [
+        "Spawners",
+        "Vampires"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "render": {
+        "type": "Texture",
+        "path": "../../png/devourer.png"
+    }
+}
