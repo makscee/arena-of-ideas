@@ -62,7 +62,7 @@ impl<'a> Logic<'a> {
             {
                 self.effects.push_back(QueuedEffect {
                     effect: Effect::Revive(Box::new(ReviveEffect {
-                        hp: DamageValue::relative(100.0),
+                        health: Expr::FindMaxHealth { who: Who::Target },
                     })),
                     context: EffectContext {
                         caster: None,
