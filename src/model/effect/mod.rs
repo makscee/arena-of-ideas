@@ -6,6 +6,7 @@ mod apply_gained;
 mod attach_status;
 mod chain;
 mod change_context;
+mod change_stat;
 mod change_target;
 mod damage;
 mod heal;
@@ -28,6 +29,7 @@ pub use apply_gained::*;
 pub use attach_status::*;
 pub use chain::*;
 pub use change_context::*;
+pub use change_stat::*;
 pub use change_target::*;
 pub use damage::*;
 pub use heal::*;
@@ -68,6 +70,7 @@ pub enum Effect {
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
+    ChangeStat(Box<ChangeStatEffect>),
 }
 
 impl std::fmt::Debug for Effect {
@@ -94,6 +97,7 @@ impl std::fmt::Debug for Effect {
             Self::Revive(effect) => effect.fmt(f),
             Self::ApplyGained(effect) => effect.fmt(f),
             Self::ChangeTarget(effect) => effect.fmt(f),
+            Self::ChangeStat(effect) => effect.fmt(f),
         }
     }
 }
@@ -142,6 +146,7 @@ impl Effect {
             Effect::Revive(effect) => &mut **effect,
             Effect::ApplyGained(effect) => &mut **effect,
             Effect::ChangeTarget(effect) => &mut **effect,
+            Effect::ChangeStat(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -167,6 +172,7 @@ impl Effect {
             Effect::Revive(effect) => effect,
             Effect::ApplyGained(effect) => effect,
             Effect::ChangeTarget(effect) => effect,
+            Effect::ChangeStat(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
