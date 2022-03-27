@@ -32,7 +32,7 @@ impl EffectImpl for ProjectileEffect {
             id: logic.model.next_id,
             caster: from.id,
             target: target.id,
-            position: from.position + (target.position - from.position).normalize() * from.radius(),
+            position: from.position + (target.position - from.position).normalize() * from.radius,
             speed: effect.speed,
             target_position: target.position,
             effect: effect.effect.clone(),

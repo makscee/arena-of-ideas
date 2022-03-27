@@ -7,7 +7,7 @@ impl Logic<'_> {
     pub fn process_unit_collisions(&mut self, unit: &mut Unit) {
         for other in &mut self.model.units {
             let delta_pos = other.position - unit.position;
-            let penetration = unit.radius() + other.radius() - delta_pos.len();
+            let penetration = unit.radius + other.radius - delta_pos.len();
             if penetration > Coord::ZERO {
                 let mut dir = delta_pos.normalize_or_zero();
                 if dir == Vec2::ZERO {

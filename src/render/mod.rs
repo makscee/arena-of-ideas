@@ -48,7 +48,7 @@ impl Game {
                         &self.camera,
                         &draw_2d::Ellipse::circle(
                             unit.position.map(|x| x.as_f32()),
-                            unit.radius().as_f32()
+                            unit.radius.as_f32()
                                 * match &unit.action_state {
                                     ActionState::Start { time, .. } => {
                                         1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
@@ -90,7 +90,7 @@ impl Game {
                         &self.camera,
                         &draw_2d::TexturedQuad::unit(&**texture)
                             .scale_uniform(
-                                unit.radius().as_f32()
+                                unit.radius.as_f32()
                                     * match &unit.action_state {
                                         ActionState::Start { time, .. } => {
                                             1.0 - 0.25
@@ -131,7 +131,7 @@ impl Game {
                     let framebuffer_size = framebuffer.size();
                     let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
                         * Mat3::scale_uniform(
-                            unit.radius().as_f32()
+                            unit.radius.as_f32()
                                 * match &unit.action_state {
                                     ActionState::Start { time, .. } => {
                                         1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
@@ -156,7 +156,7 @@ impl Game {
                             ugli::uniforms! {
                                 u_time: self.time,
                                 u_unit_position: unit.position.map(|x| x.as_f32()),
-                                u_unit_radius: unit.radius().as_f32(),
+                                u_unit_radius: unit.radius.as_f32(),
                                 u_spawn: match unit.spawn_animation_time_left {
                                     Some(time)
                                         if template.spawn_animation_time > Time::new(0.0) =>
@@ -194,7 +194,7 @@ impl Game {
                     &self.camera,
                     &draw_2d::Ellipse::circle(
                         unit.position.map(|x| x.as_f32()),
-                        unit.radius().as_f32() * 1.1,
+                        unit.radius.as_f32() * 1.1,
                         Color::rgba(1.0, 1.0, 0.0, 0.5),
                     ),
                 );
@@ -204,7 +204,7 @@ impl Game {
                 &self.camera,
                 &draw_2d::Quad::unit(Color::GREEN).transform(
                     Mat3::translate(unit.position.map(|x| x.as_f32()))
-                        * Mat3::scale_uniform(unit.radius().as_f32())
+                        * Mat3::scale_uniform(unit.radius.as_f32())
                         * Mat3::translate(vec2(0.0, 1.2))
                         * Mat3::scale(
                             0.1 * vec2(10.0 * unit.health.as_f32() / unit.max_hp.as_f32(), 1.0),

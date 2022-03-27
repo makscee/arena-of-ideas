@@ -39,17 +39,11 @@ pub struct Unit {
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub action: ActionProperties,
-    pub size: Coord,
+    pub radius: Coord,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
     pub alliances: HashSet<Alliance>,
     #[serde(skip)]
     pub render: RenderMode,
-}
-
-impl Unit {
-    pub fn radius(&self) -> Coord {
-        self.size / Coord::new(2.0)
-    }
 }

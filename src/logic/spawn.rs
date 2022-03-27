@@ -24,7 +24,7 @@ impl Logic<'_> {
             max_hp: template.health,
             position,
             speed: template.speed,
-            size: template.size,
+            radius: template.size / r32(2.0),
             action: template.action,
             move_ai: template.move_ai,
             target_ai: template.target_ai,
