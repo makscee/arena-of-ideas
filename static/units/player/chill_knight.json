@@ -23,7 +23,7 @@
         "cooldown": 3,
         "effect": {
             "type": "AOE",
-            "filter": "All",
+            "filter": "Enemies",
             "skip_current_target": true,
             "range": 3,
             "effect": {
