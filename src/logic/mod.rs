@@ -61,7 +61,10 @@ impl<'a> Logic<'a> {
             {
                 self.effects.push_back(QueuedEffect {
                     effect: Effect::Revive(Box::new(ReviveEffect {
-                        health: Expr::FindMaxHealth { who: Who::Target },
+                        health: Expr::FindStat {
+                            who: Who::Target,
+                            stat: UnitStat::MaxHealth,
+                        },
                     })),
                     context: EffectContext {
                         caster: None,

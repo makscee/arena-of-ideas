@@ -52,8 +52,9 @@
                         "value": {
                             "type": "Mul",
                             "a": {
-                                "type": "FindMaxHealth",
-                                "who": "From"
+                                "type": "FindStat",
+                                "who": "From",
+                                "stat": "MaxHealth"
                             },
                             "b": {
                                 "type": "Const",

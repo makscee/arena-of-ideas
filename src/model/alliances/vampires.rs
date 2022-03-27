@@ -25,7 +25,10 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                                     },
                                     heal_past_max: if party_members >= 4 {
                                         Some(Expr::Mul {
-                                            a: Box::new(Expr::FindMaxHealth { who: Who::Caster }),
+                                            a: Box::new(Expr::FindStat {
+                                                who: Who::Caster,
+                                                stat: UnitStat::MaxHealth,
+                                            }),
                                             b: Box::new(Expr::Const { value: r32(0.4) }),
                                         })
                                     } else {

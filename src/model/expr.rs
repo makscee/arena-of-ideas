@@ -14,7 +14,7 @@ pub enum Expr {
     Var { name: VarName },
     Sum { a: Box<Expr>, b: Box<Expr> },
     Mul { a: Box<Expr>, b: Box<Expr> },
-    FindMaxHealth { who: Who },
+    FindStat { who: Who, stat: UnitStat },
 }
 
 impl Expr {
@@ -24,7 +24,7 @@ impl Expr {
             Self::Var { name } => context.vars[name],
             Self::Sum { a, b } => a.calculate(context, logic) + b.calculate(context, logic),
             Self::Mul { a, b } => a.calculate(context, logic) * b.calculate(context, logic),
-            Self::FindMaxHealth { who } => {
+            Self::FindStat { who, stat } => {
                 let target = context.get(*who).unwrap();
                 let target = logic
                     .model
@@ -32,7 +32,7 @@ impl Expr {
                     .get(&target)
                     .or_else(|| logic.model.dead_units.get(&target))
                     .unwrap();
-                target.max_hp
+                target.stat(*stat)
             }
         }
     }
