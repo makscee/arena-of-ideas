@@ -44,7 +44,7 @@ pub use spawn::*;
 pub use suicide::*;
 pub use time_bomb::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Effect {
     Noop(Box<NoopEffect>),
@@ -68,6 +68,34 @@ pub enum Effect {
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
+}
+
+impl std::fmt::Debug for Effect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Noop(effect) => effect.fmt(f),
+            Self::InstantAction(effect) => effect.fmt(f),
+            Self::Projectile(effect) => effect.fmt(f),
+            Self::Damage(effect) => effect.fmt(f),
+            Self::AttachStatus(effect) => effect.fmt(f),
+            Self::Spawn(effect) => effect.fmt(f),
+            Self::AOE(effect) => effect.fmt(f),
+            Self::TimeBomb(effect) => effect.fmt(f),
+            Self::Suicide(effect) => effect.fmt(f),
+            Self::Chain(effect) => effect.fmt(f),
+            Self::AddTargets(effect) => effect.fmt(f),
+            Self::Repeat(effect) => effect.fmt(f),
+            Self::Random(effect) => effect.fmt(f),
+            Self::List(effect) => effect.fmt(f),
+            Self::If(effect) => effect.fmt(f),
+            Self::MaybeModify(effect) => effect.fmt(f),
+            Self::ChangeContext(effect) => effect.fmt(f),
+            Self::Heal(effect) => effect.fmt(f),
+            Self::Revive(effect) => effect.fmt(f),
+            Self::ApplyGained(effect) => effect.fmt(f),
+            Self::ChangeTarget(effect) => effect.fmt(f),
+        }
+    }
 }
 
 impl Default for Effect {
