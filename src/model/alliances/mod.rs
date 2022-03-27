@@ -7,6 +7,7 @@ mod exploders;
 mod freezers;
 mod healers;
 mod spawners;
+mod splashers;
 mod vampires;
 mod warriors;
 
@@ -21,6 +22,7 @@ pub enum Alliance {
     Healers,
     Vampires,
     Exploders,
+    Splashers,
 }
 
 impl Alliance {
@@ -35,6 +37,7 @@ impl Alliance {
             Alliance::Healers => healers::initialize(logic, party_members),
             Alliance::Vampires => vampires::initialize(logic, party_members),
             Alliance::Exploders => exploders::initialize(logic, party_members),
+            Alliance::Splashers => splashers::initialize(logic, party_members),
         }
     }
 }
