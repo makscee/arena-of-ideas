@@ -1,5 +1,6 @@
 use super::*;
 
+mod action;
 mod add_targets;
 mod aoe;
 mod apply_gained;
@@ -24,6 +25,7 @@ mod spawn;
 mod suicide;
 mod time_bomb;
 
+pub use action::*;
 pub use add_targets::*;
 pub use aoe::*;
 pub use apply_gained::*;
@@ -74,6 +76,7 @@ pub enum Effect {
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
     Delayed(Box<DelayedEffect>),
+    Action(Box<ActionEffect>),
 }
 
 impl std::fmt::Debug for Effect {
@@ -102,6 +105,7 @@ impl std::fmt::Debug for Effect {
             Self::ChangeTarget(effect) => effect.fmt(f),
             Self::ChangeStat(effect) => effect.fmt(f),
             Self::Delayed(effect) => effect.fmt(f),
+            Self::Action(effect) => effect.fmt(f),
         }
     }
 }
@@ -152,6 +156,7 @@ impl Effect {
             Effect::ChangeTarget(effect) => &mut **effect,
             Effect::ChangeStat(effect) => &mut **effect,
             Effect::Delayed(effect) => &mut **effect,
+            Effect::Action(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -179,6 +184,7 @@ impl Effect {
             Effect::ChangeTarget(effect) => effect,
             Effect::ChangeStat(effect) => effect,
             Effect::Delayed(effect) => effect,
+            Effect::Action(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
