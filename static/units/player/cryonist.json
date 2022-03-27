@@ -27,19 +27,17 @@
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "abilities": {
-        "MouseLeft": {
-            "cooldown": 3,
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "AOE",
+            "filter": "Allies",
+            "skip_current_target": true,
+            "range": 100500,
             "effect": {
-                "type": "AOE",
-                "filter": "Allies",
-                "skip_current_target": true,
-                "range": 100500,
-                "effect": {
-                    "type": "AttachStatus",
-                    "status": {
-                        "type": "Freeze"
-                    }
+                "type": "AttachStatus",
+                "status": {
+                    "type": "Freeze"
                 }
             }
         }

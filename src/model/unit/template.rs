@@ -34,7 +34,7 @@ pub struct UnitTemplate {
     pub move_ai: MoveAi,
     pub statuses: Vec<AttachedStatus>,
     pub target_ai: TargetAi,
-    pub abilities: HashMap<Key, Ability>,
+    pub ability: Option<Ability>,
     pub alliances: HashSet<Alliance>,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
@@ -48,7 +48,7 @@ impl UnitTemplate {
         for status in &mut self.statuses {
             status.status.walk_effects_mut(f);
         }
-        for ability in self.abilities.values_mut() {
+        for ability in &mut self.ability {
             ability.effect.walk_mut(f);
         }
     }
@@ -70,7 +70,7 @@ impl Default for UnitTemplate {
             statuses: default(),
             move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
-            abilities: HashMap::new(),
+            ability: None,
             render_config: RenderConfig::Circle {
                 color: Color::BLACK,
             },

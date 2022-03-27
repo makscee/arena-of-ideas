@@ -33,14 +33,12 @@
         "Warriors",
         "Assassins"
     ],
-    "abilities": {
-        "MouseRight": {
-            "cooldown": 3,
-            "effect": {
-                "type": "AttachStatus",
-                "status": {
-                    "type": "Shield"
-                }
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "AttachStatus",
+            "status": {
+                "type": "Shield"
             }
         }
     },

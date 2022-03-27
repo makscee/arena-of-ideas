@@ -17,12 +17,10 @@
             }
         }
     },
-    "abilities": {
-        "MouseLeft": {
-            "cooldown": 3,
-            "effect": {
-                "type": "ApplyGained"
-            }
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "ApplyGained"
         }
     },
     "statuses": [

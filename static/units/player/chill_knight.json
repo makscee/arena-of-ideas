@@ -19,19 +19,17 @@
     },
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "abilities": {
-        "MouseLeft": {
-            "cooldown": 3,
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "AOE",
+            "filter": "All",
+            "skip_current_target": true,
+            "range": 3,
             "effect": {
-                "type": "AOE",
-                "filter": "All",
-                "skip_current_target": true,
-                "range": 3,
-                "effect": {
-                    "type": "AttachStatus",
-                    "status": {
-                        "type": "Freeze"
-                    }
+                "type": "AttachStatus",
+                "status": {
+                    "type": "Freeze"
                 }
             }
         }

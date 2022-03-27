@@ -37,29 +37,27 @@
             }
         }
     },
-    "abilities": {
-        "MouseLeft": {
-            "cooldown": 3,
-            "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "AttachStatus",
-                        "status": {
-                            "type": "Invulnerability",
-                            "time": 3
-                        }
-                    },
-                    {
-                        "type": "AttachStatus",
-                        "status": {
-                            "type": "AttackSpeed",
-                            "percent": 175,
-                            "time": 3
-                        }
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "AttachStatus",
+                    "status": {
+                        "type": "Invulnerability",
+                        "time": 3
                     }
-                ]
-            }
+                },
+                {
+                    "type": "AttachStatus",
+                    "status": {
+                        "type": "AttackSpeed",
+                        "percent": 175,
+                        "time": 3
+                    }
+                }
+            ]
         }
     },
     "alliances": [

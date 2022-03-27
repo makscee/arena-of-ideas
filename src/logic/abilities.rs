@@ -10,36 +10,34 @@ impl Logic<'_> {
                 }
             }
         }
-        for key in self.pressed_keys.drain(..) {
-            for unit in &mut self.model.units {
-                let template = &self.model.unit_templates[&unit.unit_type];
-                if unit.ability_cooldown.is_some() {
-                    continue;
+        for key in mem::take(&mut self.pressed_keys) {
+            if key == "MouseLeft" {
+                for unit in &mut self.model.units {
+                    let template = &self.model.unit_templates[&unit.unit_type];
+                    if unit.ability_cooldown.is_some() {
+                        continue;
+                    }
+                    if unit.faction != Faction::Player {
+                        continue;
+                    }
+                    if unit.all_statuses.iter().any(|status| {
+                        matches!(status.r#type(), StatusType::Freeze | StatusType::Stun)
+                    }) {
+                        continue;
+                    }
+                    if let Some(ability) = &template.ability {
+                        unit.ability_cooldown = Some(ability.cooldown);
+                        self.effects.push_back(QueuedEffect {
+                            effect: ability.effect.clone(),
+                            context: EffectContext {
+                                caster: Some(unit.id),
+                                from: Some(unit.id),
+                                target: Some(unit.id),
+                                vars: default(),
+                            },
+                        });
+                    }
                 }
-                if unit.faction != Faction::Player {
-                    continue;
-                }
-                if unit
-                    .all_statuses
-                    .iter()
-                    .any(|status| matches!(status.r#type(), StatusType::Freeze | StatusType::Stun))
-                {
-                    continue;
-                }
-                let ability = match template.abilities.get(&key) {
-                    Some(ability) => ability,
-                    None => continue,
-                };
-                unit.ability_cooldown = Some(ability.cooldown);
-                self.effects.push_back(QueuedEffect {
-                    effect: ability.effect.clone(),
-                    context: EffectContext {
-                        caster: Some(unit.id),
-                        from: Some(unit.id),
-                        target: Some(unit.id),
-                        vars: default(),
-                    },
-                });
             }
         }
     }

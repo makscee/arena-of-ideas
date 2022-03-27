@@ -34,29 +34,27 @@
             }
         }
     ],
-    "abilities": {
-        "MouseLeft": {
-            "cooldown": 3,
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "AOE",
+            "filter": "Enemies",
+            "range": 3,
             "effect": {
-                "type": "AOE",
-                "filter": "Enemies",
-                "range": 3,
+                "type": "ChangeContext",
+                "from": "Target",
+                "target": "Caster",
                 "effect": {
-                    "type": "ChangeContext",
-                    "from": "Target",
-                    "target": "Caster",
-                    "effect": {
-                        "type": "Heal",
-                        "value": {
-                            "type": "Mul",
-                            "a": {
-                                "type": "FindMaxHealth",
-                                "who": "From"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": 0.1
-                            }
+                    "type": "Heal",
+                    "value": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "FindMaxHealth",
+                            "who": "From"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 0.1
                         }
                     }
                 }
