@@ -11,7 +11,7 @@ pub enum Condition {
     },
     UnitInjured {
         who: Who,
-    }
+    },
 }
 
 impl Default for Condition {
