@@ -49,9 +49,17 @@ impl EffectContext {
 
 impl Logic<'_> {
     pub fn process_effects(&mut self) {
+        const MAX_ITERATIONS: usize = 1000;
+        let mut iterations = 0;
         while let Some(QueuedEffect { effect, context }) = self.effects.pop_front() {
             debug!("Processing {:?} on {}", effect, context.to_string(self));
             effect.as_box().process(context, self);
+
+            iterations += 1;
+            if iterations > MAX_ITERATIONS {
+                error!("Exceeded effect processing limit: {}", MAX_ITERATIONS);
+                break;
+            }
         }
     }
 }
