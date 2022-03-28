@@ -28,6 +28,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/ranger.png"
+        "path": "../../svg/ranger.svg"
     }
 }

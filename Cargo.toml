@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 geng = { git = "https://github.com/kuviman/geng" }
 serde = "1"
+resvg = "0.22"
+usvg = "0.22"
+tiny-skia = "0.6"

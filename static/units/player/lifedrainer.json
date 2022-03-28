@@ -74,6 +74,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/lifedrainer.png"
+        "path": "../../svg/lifedrainer.svg"
     }
 }

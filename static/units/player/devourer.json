@@ -85,6 +85,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/devourer.png"
+        "path": "../../svg/devourer.svg"
     }
 }

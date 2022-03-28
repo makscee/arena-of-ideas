@@ -37,6 +37,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/dracula.png"
+        "path": "../../svg/dracula.svg"
     }
 }

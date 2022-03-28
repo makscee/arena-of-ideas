@@ -91,7 +91,49 @@ impl UnitTemplate {
         self.render_mode = match self.render_config {
             RenderConfig::Circle { color } => RenderMode::Circle { color },
             RenderConfig::Texture { ref path } => RenderMode::Texture {
-                texture: geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
+                texture: {
+                    let path = std::path::Path::new(path);
+                    match path.extension().and_then(|s| s.to_str()) {
+                        Some("svg") => {
+                            let data =
+                                <String as geng::LoadAsset>::load(geng, &base_path.join(path))
+                                    .await?;
+                            let tree = usvg::Tree::from_data(
+                                data.as_bytes(),
+                                &usvg::Options::default().to_ref(),
+                            )?;
+                            let mut pixmap = tiny_skia::Pixmap::new(
+                                tree.svg_node().size.width().ceil() as _,
+                                tree.svg_node().size.height().ceil() as _,
+                            )
+                            .unwrap();
+                            resvg::render(
+                                &tree,
+                                usvg::FitTo::Original,
+                                tiny_skia::Transform::identity(),
+                                pixmap.as_mut(),
+                            );
+                            let texture = ugli::Texture::new_with(
+                                geng.ugli(),
+                                vec2(pixmap.width() as usize, pixmap.height() as usize),
+                                |pos| {
+                                    let color = pixmap
+                                        .pixel(pos.x as u32, pixmap.height() - 1 - pos.y as u32)
+                                        .unwrap();
+                                    Color::rgba(
+                                        color.red(),
+                                        color.green(),
+                                        color.blue(),
+                                        color.alpha(),
+                                    )
+                                    .convert()
+                                },
+                            );
+                            Rc::new(texture)
+                        }
+                        _ => geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
+                    }
+                },
             },
             RenderConfig::Shader { ref path } => RenderMode::Shader {
                 program: geng::LoadAsset::load(&geng, &base_path.join(path)).await?,

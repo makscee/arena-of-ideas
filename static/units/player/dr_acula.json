@@ -59,6 +59,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/dr_acula.png"
+        "path": "../../svg/dr_acula.svg"
     }
 }

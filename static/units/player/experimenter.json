@@ -43,6 +43,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/experimenter.png"
+        "path": "../../svg/experimenter.svg"
     }
 }

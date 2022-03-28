@@ -35,6 +35,6 @@
     ],
     "render": {
         "type": "Texture",
-        "path": "../../png/frozen_blade.png"
+        "path": "../../svg/frozen_blade.svg"
     }
 }

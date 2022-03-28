@@ -46,6 +46,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/murmillo.png"
+        "path": "../../svg/murmillo.svg"
     }
 }

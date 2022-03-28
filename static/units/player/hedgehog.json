@@ -46,6 +46,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/hedgehog.png"
+        "path": "../../svg/hedgehog.svg"
     }
 }

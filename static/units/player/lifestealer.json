@@ -69,6 +69,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../png/lifestealer.png"
+        "path": "../../svg/lifestealer.svg"
     }
 }

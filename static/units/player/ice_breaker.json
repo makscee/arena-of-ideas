@@ -44,6 +44,6 @@
     ],
     "render": {
         "type": "Texture",
-        "path": "../../png/ice_breaker.png"
+        "path": "../../svg/ice_breaker.svg"
     }
 }
