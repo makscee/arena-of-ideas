@@ -107,14 +107,17 @@ impl<'a> Logic<'a> {
 }
 
 impl Game {
-    pub fn update(&mut self, delta_time: Time) {
+    pub fn update_model(&mut self, delta_time: Time) {
+        let mut entry: (Time, Model) = self.history.last().unwrap().clone();
         let mut logic = Logic {
-            model: &mut self.model,
+            model: &mut entry.1,
             delta_time,
             effects: VecDeque::new(),
             pressed_keys: mem::take(&mut self.pressed_keys),
             render: Some(&mut self.render),
         };
         logic.process();
+        entry.0 += delta_time;
+        self.history.push(entry);
     }
 }

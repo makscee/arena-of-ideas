@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(HasId)]
+#[derive(HasId, Clone)]
 pub struct Projectile {
     pub id: Id,
     pub caster: Id,

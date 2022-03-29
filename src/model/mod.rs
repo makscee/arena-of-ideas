@@ -41,6 +41,7 @@ impl TargetFilter {
     }
 }
 
+#[derive(Clone)]
 pub struct Model {
     pub next_id: Id,
     pub time: Time,

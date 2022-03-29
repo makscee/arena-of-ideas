@@ -22,31 +22,24 @@ type Coord = R32;
 type Id = i64;
 
 pub struct Game {
-    assets: Assets,
     geng: Geng,
     time: f32,
-    camera: geng::Camera2d,
-    model: Model,
+    history: Vec<(Time, Model)>,
     pressed_keys: Vec<Key>,
     render: Render,
 }
 
 impl Game {
     pub fn new(geng: &Geng, assets: Assets, config: Config) -> Self {
+        let mut model = Model::new(config.clone(), assets.units.clone());
+        Logic::initialize(&mut model, &config);
         let mut game = Self {
             geng: geng.clone(),
             time: 0.0,
-            camera: geng::Camera2d {
-                center: vec2(0.0, 0.0),
-                rotation: 0.0,
-                fov: 20.0,
-            },
-            model: Model::new(config.clone(), assets.units.clone()),
-            render: Render::new(),
+            history: vec![(model.time, model)],
+            render: Render::new(geng, assets),
             pressed_keys: Vec::new(),
-            assets,
         };
-        Logic::initialize(&mut game.model, &config);
         game
     }
 }
@@ -55,10 +48,25 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         self.time += delta_time as f32;
         self.render.update(delta_time as _);
-        self.update(Time::new(delta_time as _));
+        if self.time > self.history.last().unwrap().0.as_f32() {
+            self.update_model(Time::new(
+                self.time - self.history.last().unwrap().0.as_f32(),
+            ));
+        }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.draw(framebuffer);
+        let index = match self
+            .history
+            .binary_search_by_key(&r32(self.time), |(time, _)| *time)
+        {
+            Ok(index) => index,
+            Err(index) => index,
+        };
+        let entry = self
+            .history
+            .get(index)
+            .unwrap_or(self.history.last().unwrap());
+        self.render.draw(entry.0, &entry.1, framebuffer);
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
@@ -67,6 +75,22 @@ impl geng::State for Game {
             }
             _ => {}
         }
+    }
+    fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
+        use geng::ui::*;
+        Box::new(
+            Slider::new(
+                cx,
+                self.time as f64,
+                0.0..=self.history.last().unwrap().0.as_f32() as f64,
+                Box::new(|new_time| self.time = new_time as f32),
+            )
+            .constraints_override(Constraints {
+                min_size: vec2(0.0, 32.0),
+                flex: vec2(1.0, 0.0),
+            })
+            .align(vec2(0.5, 0.0)),
+        )
     }
 }
 

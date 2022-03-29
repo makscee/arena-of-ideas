@@ -9,12 +9,24 @@ struct Text {
 }
 
 pub struct Render {
+    geng: Geng,
+    camera: geng::Camera2d,
+    assets: Assets,
     texts: Vec<Text>,
 }
 
 impl Render {
-    pub fn new() -> Self {
-        Self { texts: Vec::new() }
+    pub fn new(geng: &Geng, assets: Assets) -> Self {
+        Self {
+            geng: geng.clone(),
+            assets,
+            texts: Vec::new(),
+            camera: geng::Camera2d {
+                center: vec2(0.0, 0.0),
+                rotation: 0.0,
+                fov: 20.0,
+            },
+        }
     }
     pub fn update(&mut self, delta_time: f32) {
         for text in &mut self.texts {
@@ -33,12 +45,9 @@ impl Render {
             color,
         });
     }
-}
-
-impl Game {
-    pub fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+    pub fn draw(&mut self, time: Time, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
-        for unit in itertools::chain![&self.model.units, &self.model.spawning_units] {
+        for unit in itertools::chain![&model.units, &model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
 
             match &unit.render {
@@ -154,7 +163,7 @@ impl Game {
                         &quad,
                         (
                             ugli::uniforms! {
-                                u_time: self.time,
+                                u_time: time.as_f32(),
                                 u_unit_position: unit.position.map(|x| x.as_f32()),
                                 u_unit_radius: unit.radius.as_f32(),
                                 u_spawn: match unit.spawn_animation_time_left {
@@ -212,14 +221,14 @@ impl Game {
                 ),
             );
         }
-        for projectile in &self.model.projectiles {
+        for projectile in &model.projectiles {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
                 &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.1, Color::RED),
             );
         }
-        for text in &self.render.texts {
+        for text in &self.texts {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,

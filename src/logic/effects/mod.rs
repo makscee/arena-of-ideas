@@ -3,6 +3,7 @@ use super::*;
 mod condition;
 mod modifiers;
 
+#[derive(Clone)]
 pub struct QueuedEffect<T> {
     pub effect: T,
     pub context: EffectContext,
