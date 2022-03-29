@@ -31,6 +31,7 @@ struct HistoryEntry {
 pub struct Game {
     geng: Geng,
     time: f32,
+    timeline_captured: bool,
     history: Vec<HistoryEntry>,
     pressed_keys: Vec<Key>,
     render: Render,
@@ -50,6 +51,7 @@ impl Game {
             }],
             render: Render::new(geng, assets),
             pressed_keys: Vec::new(),
+            timeline_captured: false,
         };
         game
     }
@@ -57,6 +59,9 @@ impl Game {
 
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
+        if self.timeline_captured {
+            return;
+        }
         self.time += delta_time as f32;
         let last_entry = self.history.last().unwrap();
         if self.time > last_entry.time {
@@ -97,18 +102,20 @@ impl geng::State for Game {
     }
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
         use geng::ui::*;
+        let mut timeline = Slider::new(
+            cx,
+            self.time as f64,
+            0.0..=self.history.last().unwrap().time as f64,
+            Box::new(|new_time| self.time = new_time as f32),
+        );
+        self.timeline_captured = timeline.sense().unwrap().is_captured();
         Box::new(
-            Slider::new(
-                cx,
-                self.time as f64,
-                0.0..=self.history.last().unwrap().time as f64,
-                Box::new(|new_time| self.time = new_time as f32),
-            )
-            .constraints_override(Constraints {
-                min_size: vec2(0.0, 32.0),
-                flex: vec2(1.0, 0.0),
-            })
-            .align(vec2(0.5, 0.0)),
+            timeline
+                .constraints_override(Constraints {
+                    min_size: vec2(0.0, 32.0),
+                    flex: vec2(1.0, 0.0),
+                })
+                .align(vec2(0.5, 0.0)),
         )
     }
 }
