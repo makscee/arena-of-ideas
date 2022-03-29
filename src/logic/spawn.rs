@@ -29,6 +29,7 @@ impl Logic<'_> {
             move_ai: template.move_ai,
             target_ai: template.target_ai,
             render: template.render_mode.clone(),
+            next_action_modifiers: Vec::new(),
             ability_cooldown: None,
             alliances: template.alliances,
         };

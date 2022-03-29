@@ -67,8 +67,17 @@
                                 "type": "Modifier",
                                 "modifier": {
                                     "type": "Strength",
-                                    "multiplier": 1,
-                                    "add": 0.2
+                                    "value": {
+                                        "type": "Sum",
+                                        "a": {
+                                            "type": "Var",
+                                            "name": "Value"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 0.2
+                                        }
+                                    }
                                 }
                             }
                         }

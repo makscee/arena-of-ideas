@@ -15,8 +15,12 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                             status_type: StatusType::Freeze,
                         },
                         modifier: Modifier::Strength(StrengthModifier {
-                            multiplier: r32(2.0),
-                            add: R32::ZERO,
+                            value: Expr::Mul {
+                                a: Box::new(Expr::Var {
+                                    name: VarName::Value,
+                                }),
+                                b: Box::new(Expr::Const { value: r32(2.0) }),
+                            },
                         }),
                     }))
                 }

@@ -16,6 +16,7 @@ mod if_effect;
 mod instant_action;
 mod list;
 mod maybe_modify;
+mod next_action_modifier;
 mod noop;
 mod projectile;
 mod random;
@@ -42,6 +43,7 @@ pub use if_effect::*;
 pub use instant_action::*;
 pub use list::*;
 pub use maybe_modify::*;
+pub use next_action_modifier::*;
 pub use noop::*;
 pub use projectile::*;
 pub use random::*;
@@ -79,7 +81,8 @@ pub enum Effect {
     ChangeStat(Box<ChangeStatEffect>),
     Delayed(Box<DelayedEffect>),
     Action(Box<ActionEffect>),
-    Splash(Box<ActionEffect>),
+    Splash(Box<SplashEffect>),
+    NextActionModifier(Box<NextActionModifierEffect>),
 }
 
 impl std::fmt::Debug for Effect {
@@ -110,6 +113,7 @@ impl std::fmt::Debug for Effect {
             Self::Delayed(effect) => effect.fmt(f),
             Self::Action(effect) => effect.fmt(f),
             Self::Splash(effect) => effect.fmt(f),
+            Self::NextActionModifier(effect) => effect.fmt(f),
         }
     }
 }
@@ -162,6 +166,7 @@ impl Effect {
             Effect::Delayed(effect) => &mut **effect,
             Effect::Action(effect) => &mut **effect,
             Effect::Splash(effect) => &mut **effect,
+            Effect::NextActionModifier(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -191,6 +196,7 @@ impl Effect {
             Effect::Delayed(effect) => effect,
             Effect::Action(effect) => effect,
             Effect::Splash(effect) => effect,
+            Effect::NextActionModifier(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

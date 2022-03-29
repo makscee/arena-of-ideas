@@ -5,6 +5,7 @@ use super::*;
 pub struct SplashEffect {
     pub degrees: R32,
     pub effect: Effect,
+    pub effect_on_caster: Effect,
 }
 
 impl EffectContainer for SplashEffect {
@@ -24,6 +25,7 @@ impl EffectImpl for SplashEffect {
             .target
             .and_then(|id| logic.model.units.get(&id))
             .expect("Target not found");
+        let mut target_count = 0;
         for unit in &logic.model.units {
             if unit.id == from.id {
                 continue;
@@ -52,6 +54,18 @@ impl EffectImpl for SplashEffect {
                     ..context.clone()
                 },
             });
+            target_count += 1;
         }
+        logic.effects.push_front(QueuedEffect {
+            effect: effect.effect_on_caster,
+            context: {
+                let mut context = context.clone();
+                context.target = context.caster;
+                context
+                    .vars
+                    .insert(VarName::TargetCount, r32(target_count as f32));
+                context
+            },
+        })
     }
 }

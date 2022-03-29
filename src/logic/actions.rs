@@ -10,6 +10,9 @@ impl Logic<'_> {
             if *time > unit.action.animation_delay {
                 if let Some(target) = self.model.units.get(target) {
                     let mut effect = unit.action.effect.clone();
+                    for modifier in mem::take(&mut unit.next_action_modifiers) {
+                        effect.apply_modifier(&modifier);
+                    }
                     for status in &unit.all_statuses {
                         if let Status::Modifier(status) = status {
                             effect.apply_modifier(&status.modifier);

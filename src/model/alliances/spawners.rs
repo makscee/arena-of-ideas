@@ -50,8 +50,12 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                     alliance: Some(Alliance::Critters),
                     status: Box::new(Status::Modifier(Box::new(ModifierStatus {
                         modifier: Modifier::Strength(StrengthModifier {
-                            multiplier: r32(1.0),
-                            add: r32(2.0),
+                            value: Expr::Sum {
+                                a: Box::new(Expr::Var {
+                                    name: VarName::Value,
+                                }),
+                                b: Box::new(Expr::Const { value: r32(2.0) }),
+                            },
                         }),
                     }))),
                 })),
