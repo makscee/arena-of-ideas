@@ -24,7 +24,7 @@ pub struct Logic<'a> {
     pub delta_time: Time,
     pub effects: VecDeque<QueuedEffect<Effect>>,
     pub pressed_keys: Vec<Key>,
-    pub render: Option<&'a mut Render>,
+    pub render: Option<&'a mut RenderModel>,
 }
 
 impl<'a> Logic<'a> {
@@ -106,18 +106,20 @@ impl<'a> Logic<'a> {
     }
 }
 
-impl Game {
-    pub fn update_model(&mut self, delta_time: Time) {
-        let mut entry: (Time, Model) = self.history.last().unwrap().clone();
+impl Model {
+    pub fn update(
+        &mut self,
+        pressed_keys: Vec<Key>,
+        delta_time: Time,
+        render: Option<&mut RenderModel>,
+    ) {
         let mut logic = Logic {
-            model: &mut entry.1,
+            model: self,
             delta_time,
             effects: VecDeque::new(),
-            pressed_keys: mem::take(&mut self.pressed_keys),
-            render: Some(&mut self.render),
+            pressed_keys,
+            render,
         };
         logic.process();
-        entry.0 += delta_time;
-        self.history.push(entry);
     }
 }

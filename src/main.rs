@@ -14,17 +14,24 @@ mod tests;
 use assets::*;
 use logic::*;
 use model::*;
-use render::Render;
+use render::{Render, RenderModel};
 
 type Health = R32;
 type Time = R32;
 type Coord = R32;
 type Id = i64;
 
+#[derive(Clone)]
+struct HistoryEntry {
+    time: f32,
+    model: Model,
+    render: RenderModel,
+}
+
 pub struct Game {
     geng: Geng,
     time: f32,
-    history: Vec<(Time, Model)>,
+    history: Vec<HistoryEntry>,
     pressed_keys: Vec<Key>,
     render: Render,
 }
@@ -36,7 +43,11 @@ impl Game {
         let mut game = Self {
             geng: geng.clone(),
             time: 0.0,
-            history: vec![(model.time, model)],
+            history: vec![HistoryEntry {
+                time: 0.0,
+                model,
+                render: RenderModel::new(),
+            }],
             render: Render::new(geng, assets),
             pressed_keys: Vec::new(),
         };
@@ -47,17 +58,24 @@ impl Game {
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         self.time += delta_time as f32;
-        self.render.update(delta_time as _);
-        if self.time > self.history.last().unwrap().0.as_f32() {
-            self.update_model(Time::new(
-                self.time - self.history.last().unwrap().0.as_f32(),
-            ));
+        let last_entry = self.history.last().unwrap();
+        if self.time > last_entry.time {
+            let delta_time = self.time - last_entry.time;
+            let mut new_entry = last_entry.clone();
+            new_entry.model.update(
+                mem::take(&mut self.pressed_keys),
+                Time::new(delta_time),
+                Some(&mut new_entry.render),
+            );
+            new_entry.render.update(delta_time);
+            new_entry.time = self.time;
+            self.history.push(new_entry);
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         let index = match self
             .history
-            .binary_search_by_key(&r32(self.time), |(time, _)| *time)
+            .binary_search_by_key(&r32(self.time), |entry| r32(entry.time))
         {
             Ok(index) => index,
             Err(index) => index,
@@ -66,7 +84,8 @@ impl geng::State for Game {
             .history
             .get(index)
             .unwrap_or(self.history.last().unwrap());
-        self.render.draw(entry.0, &entry.1, framebuffer);
+        self.render
+            .draw(entry.time, &entry.model, &entry.render, framebuffer);
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
@@ -82,7 +101,7 @@ impl geng::State for Game {
             Slider::new(
                 cx,
                 self.time as f64,
-                0.0..=self.history.last().unwrap().0.as_f32() as f64,
+                0.0..=self.history.last().unwrap().time as f64,
                 Box::new(|new_time| self.time = new_time as f32),
             )
             .constraints_override(Constraints {

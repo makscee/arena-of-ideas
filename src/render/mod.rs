@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 struct Text {
     position: Vec2<f32>,
     velocity: Vec2<f32>,
@@ -8,25 +9,14 @@ struct Text {
     color: Color<f32>,
 }
 
-pub struct Render {
-    geng: Geng,
-    camera: geng::Camera2d,
-    assets: Assets,
+#[derive(Clone)]
+pub struct RenderModel {
     texts: Vec<Text>,
 }
 
-impl Render {
-    pub fn new(geng: &Geng, assets: Assets) -> Self {
-        Self {
-            geng: geng.clone(),
-            assets,
-            texts: Vec::new(),
-            camera: geng::Camera2d {
-                center: vec2(0.0, 0.0),
-                rotation: 0.0,
-                fov: 20.0,
-            },
-        }
+impl RenderModel {
+    pub fn new() -> Self {
+        Self { texts: Vec::new() }
     }
     pub fn update(&mut self, delta_time: f32) {
         for text in &mut self.texts {
@@ -45,7 +35,33 @@ impl Render {
             color,
         });
     }
-    pub fn draw(&mut self, time: Time, model: &Model, framebuffer: &mut ugli::Framebuffer) {
+}
+
+pub struct Render {
+    geng: Geng,
+    camera: geng::Camera2d,
+    assets: Assets,
+}
+
+impl Render {
+    pub fn new(geng: &Geng, assets: Assets) -> Self {
+        Self {
+            geng: geng.clone(),
+            assets,
+            camera: geng::Camera2d {
+                center: vec2(0.0, 0.0),
+                rotation: 0.0,
+                fov: 20.0,
+            },
+        }
+    }
+    pub fn draw(
+        &mut self,
+        game_time: f32,
+        model: &Model,
+        render_model: &RenderModel,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
         ugli::clear(framebuffer, Some(Color::WHITE), None);
         for unit in itertools::chain![&model.units, &model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
@@ -163,7 +179,7 @@ impl Render {
                         &quad,
                         (
                             ugli::uniforms! {
-                                u_time: time.as_f32(),
+                                u_time: game_time,
                                 u_unit_position: unit.position.map(|x| x.as_f32()),
                                 u_unit_radius: unit.radius.as_f32(),
                                 u_spawn: match unit.spawn_animation_time_left {
@@ -228,7 +244,7 @@ impl Render {
                 &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.1, Color::RED),
             );
         }
-        for text in &self.texts {
+        for text in &render_model.texts {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
