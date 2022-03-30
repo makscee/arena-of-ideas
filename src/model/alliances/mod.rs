@@ -2,6 +2,7 @@ use super::*;
 
 mod archers;
 mod assassins;
+mod chainers;
 mod critters;
 mod exploders;
 mod freezers;
@@ -23,6 +24,7 @@ pub enum Alliance {
     Vampires,
     Exploders,
     Splashers,
+    Chainers,
 }
 
 impl Alliance {
@@ -38,6 +40,7 @@ impl Alliance {
             Alliance::Vampires => vampires::initialize(logic, party_members),
             Alliance::Exploders => exploders::initialize(logic, party_members),
             Alliance::Splashers => splashers::initialize(logic, party_members),
+            Alliance::Chainers => chainers::initialize(logic, party_members),
         }
     }
 }
