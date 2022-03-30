@@ -14,6 +14,7 @@ mod on_shield_broken;
 mod on_spawn;
 mod on_take_damage;
 mod protection;
+mod repeating_effect;
 mod scavenge;
 mod shield;
 mod slow;
@@ -34,6 +35,7 @@ pub use on_shield_broken::*;
 pub use on_spawn::*;
 pub use on_take_damage::*;
 pub use protection::*;
+pub use repeating_effect::*;
 pub use scavenge::*;
 pub use shield::*;
 pub use slow::*;
@@ -61,6 +63,7 @@ pub enum StatusType {
     GainedEffect,
     Scavenge,
     AttackSpeed,
+    RepeatingEffect,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -85,6 +88,7 @@ pub enum Status {
     GainedEffect(Box<GainedEffectStatus>),
     Scavenge(Box<ScavengeStatus>),
     AttackSpeed(Box<AttackSpeedStatus>),
+    RepeatingEffect(Box<RepeatingEffectStatus>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -119,6 +123,7 @@ impl Status {
             Self::GainedEffect(status) => &mut **status,
             Self::Scavenge(status) => &mut **status,
             Self::AttackSpeed(status) => &mut **status,
+            Self::RepeatingEffect(status) => &mut **status,
         }
     }
     pub fn as_box(self) -> Box<dyn StatusImpl> {
@@ -142,6 +147,7 @@ impl Status {
             Self::GainedEffect(status) => status,
             Self::Scavenge(status) => status,
             Self::AttackSpeed(status) => status,
+            Self::RepeatingEffect(status) => status,
         }
     }
     pub fn r#type(&self) -> StatusType {
@@ -165,6 +171,7 @@ impl Status {
             Self::GainedEffect(status) => StatusType::GainedEffect,
             Self::Scavenge(status) => StatusType::Scavenge,
             Self::AttackSpeed(status) => StatusType::AttackSpeed,
+            Self::RepeatingEffect(status) => StatusType::AttackSpeed,
         }
     }
     pub fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {

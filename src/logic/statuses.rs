@@ -10,6 +10,25 @@ impl Logic<'_> {
                 if let StatusType::Freeze | StatusType::Stun = status.status.r#type() {
                     unit.action_state = ActionState::None;
                 }
+                if let Status::RepeatingEffect(repeating_status) = &mut status.status {
+                    repeating_status.next_tick -= self.delta_time;
+                    while repeating_status.next_tick < Time::ZERO {
+                        if let Some(tick_time) = repeating_status.tick_time {
+                            repeating_status.next_tick += tick_time;
+                        } else {
+                            repeating_status.next_tick = Time::ZERO;
+                        }
+                    }
+                    self.effects.push_back(QueuedEffect {
+                        effect: repeating_status.effect.clone(),
+                        context: EffectContext {
+                            caster: status.caster,
+                            from: None,
+                            target: Some(unit.id),
+                            vars: default(),
+                        },
+                    });
+                }
             }
             unit.attached_statuses.retain(|status| {
                 if let Some(time) = status.time {
