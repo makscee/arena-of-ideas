@@ -15,7 +15,8 @@ fn default_who() -> Who {
 pub struct AttachStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
-    pub status: AttachedStatus,
+    pub status: Status,
+    pub time: Option<Time>,
 }
 
 impl EffectContainer for AttachStatusEffect {
@@ -25,17 +26,21 @@ impl EffectContainer for AttachStatusEffect {
 impl EffectImpl for AttachStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let status_type = effect.status.status.r#type();
+        let status_type = effect.status.r#type();
         let target = context.get(effect.who);
         if let Some(target) = target.and_then(|id| logic.model.units.get_mut(&id)) {
             if let Some(render) = &mut logic.render {
                 render.add_text(
                     target.position,
-                    &format!("{:?}", effect.status.status.r#type()),
+                    &format!("{:?}", effect.status.r#type()),
                     Color::BLUE,
                 );
             }
-            target.attached_statuses.push(effect.status);
+            target.attached_statuses.push(AttachedStatus {
+                caster: context.caster,
+                status: effect.status,
+                time: effect.time,
+            });
 
             let target = target.id;
             let target = logic.model.units.get(&target).unwrap();

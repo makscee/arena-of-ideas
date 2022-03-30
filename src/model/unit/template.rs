@@ -32,7 +32,7 @@ pub struct UnitTemplate {
     pub radius: Coord,
     pub action: ActionProperties,
     pub move_ai: MoveAi,
-    pub statuses: Vec<AttachedStatus>,
+    pub statuses: Vec<Status>,
     pub target_ai: TargetAi,
     pub ability: Option<Ability>,
     pub alliances: HashSet<Alliance>,
@@ -46,7 +46,7 @@ impl UnitTemplate {
     pub fn walk_effects_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
         self.action.effect.walk_mut(f);
         for status in &mut self.statuses {
-            status.status.walk_effects_mut(f);
+            status.walk_effects_mut(f);
         }
         for ability in &mut self.ability {
             ability.effect.walk_mut(f);

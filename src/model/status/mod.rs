@@ -91,6 +91,7 @@ pub enum Status {
 pub struct AttachedStatus {
     #[serde(flatten)]
     pub status: Status,
+    pub caster: Option<Id>,
     pub time: Option<Time>,
 }
 

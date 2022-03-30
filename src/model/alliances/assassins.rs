@@ -39,12 +39,10 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                                                 effects.push(Effect::AttachStatus(Box::new(
                                                     AttachStatusEffect {
                                                         who: Who::Target,
-                                                        status: AttachedStatus {
-                                                            status: Status::Slow(Box::new(
-                                                                SlowStatus { percent: 70.0 },
-                                                            )),
-                                                            time: Some(r32(3.0)),
-                                                        },
+                                                        status: Status::Slow(Box::new(
+                                                            SlowStatus { percent: 70.0 },
+                                                        )),
+                                                        time: Some(r32(3.0)),
                                                     },
                                                 )));
                                             }
@@ -52,12 +50,10 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                                                 effects.push(Effect::AttachStatus(Box::new(
                                                     AttachStatusEffect {
                                                         who: Who::Caster,
-                                                        status: AttachedStatus {
-                                                            status: Status::Shield(Box::new(
-                                                                ShieldStatus {},
-                                                            )),
-                                                            time: None,
-                                                        },
+                                                        status: Status::Shield(Box::new(
+                                                            ShieldStatus {},
+                                                        )),
+                                                        time: None,
                                                     },
                                                 )));
                                             }

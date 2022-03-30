@@ -16,7 +16,15 @@ impl Logic<'_> {
             id: self.model.next_id,
             unit_type: unit_type.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
-            attached_statuses: template.statuses.clone(),
+            attached_statuses: template
+                .statuses
+                .iter()
+                .map(|status| AttachedStatus {
+                    status: status.clone(),
+                    caster: None,
+                    time: None,
+                })
+                .collect(),
             all_statuses: Vec::new(),
             faction,
             action_state: ActionState::None,

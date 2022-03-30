@@ -29,12 +29,8 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                                         effect: Effect::AttachStatus(Box::new(
                                             AttachStatusEffect {
                                                 who: Who::Target,
-                                                status: AttachedStatus {
-                                                    status: Status::Shield(Box::new(
-                                                        ShieldStatus {},
-                                                    )),
-                                                    time: None,
-                                                },
+                                                status: Status::Shield(Box::new(ShieldStatus {})),
+                                                time: None,
                                             },
                                         )),
                                     },

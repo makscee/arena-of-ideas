@@ -29,24 +29,22 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
         }
 
         if party_members >= 4 {
-            template.statuses.push(AttachedStatus {
-                status: Status::OnTakeDamage(Box::new(OnTakeDamageStatus {
+            template
+                .statuses
+                .push(Status::OnTakeDamage(Box::new(OnTakeDamageStatus {
                     damage_type: None,
                     effect: Effect::AttachStatus(Box::new(AttachStatusEffect {
                         who: Who::Caster,
-                        status: AttachedStatus {
-                            status: Status::Freeze(Box::new(FreezeStatus {})),
-                            time: None,
-                        },
+                        status: Status::Freeze(Box::new(FreezeStatus {})),
+                        time: None,
                     })),
-                })),
-                time: None,
-            });
+                })));
         }
 
         if party_members >= 6 {
-            template.statuses.push(AttachedStatus {
-                status: Status::OnKill(Box::new(OnKillStatus {
+            template
+                .statuses
+                .push(Status::OnKill(Box::new(OnKillStatus {
                     damage_type: None,
                     effect: Effect::If(Box::new(IfEffect {
                         condition: Condition::UnitHasStatus {
@@ -74,9 +72,7 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                         },
                         r#else: Effect::noop(),
                     })),
-                })),
-                time: None,
-            });
+                })));
         }
     }
 }

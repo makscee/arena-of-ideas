@@ -12,12 +12,11 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
             protection = 50.0;
         }
         if protection != 0.0 {
-            template.statuses.push(AttachedStatus {
-                status: Status::Protection(Box::new(ProtectionStatus {
+            template
+                .statuses
+                .push(Status::Protection(Box::new(ProtectionStatus {
                     percent: protection,
-                })),
-                time: None,
-            });
+                })));
         }
     }
 }

@@ -43,17 +43,16 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
             });
         }
         if party_members >= 6 {
-            template.statuses.push(AttachedStatus {
-                time: None,
-                status: Status::OnKill(Box::new(OnKillStatus {
+            template
+                .statuses
+                .push(Status::OnKill(Box::new(OnKillStatus {
                     damage_type: None,
                     effect: Effect::Heal(Box::new(HealEffect {
                         value: Expr::Const { value: R32::ZERO },
                         heal_past_max: None,
                         add_max_hp: Some(Expr::Const { value: r32(1.0) }),
                     })),
-                })),
-            })
+                })))
         }
     }
 }

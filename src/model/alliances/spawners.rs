@@ -7,15 +7,14 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
         }
 
         if party_members >= 4 {
-            template.statuses.push(AttachedStatus {
-                status: Status::OnKill(Box::new(OnKillStatus {
+            template
+                .statuses
+                .push(Status::OnKill(Box::new(OnKillStatus {
                     damage_type: None,
                     effect: Effect::Spawn(Box::new(SpawnEffect {
                         unit_type: "critter".to_owned(),
                     })),
-                })),
-                time: None,
-            });
+                })));
         }
         if party_members >= 6 {
             let big_critter_percent = 10.0;
@@ -44,23 +43,20 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
             });
         }
         if party_members >= 2 {
-            template.statuses.push(AttachedStatus {
-                status: Status::Aura(Box::new(AuraStatus {
-                    distance: None,
-                    alliance: Some(Alliance::Critters),
-                    status: Box::new(Status::Modifier(Box::new(ModifierStatus {
-                        modifier: Modifier::Strength(StrengthModifier {
-                            value: Expr::Sum {
-                                a: Box::new(Expr::Var {
-                                    name: VarName::Value,
-                                }),
-                                b: Box::new(Expr::Const { value: r32(2.0) }),
-                            },
-                        }),
-                    }))),
-                })),
-                time: None,
-            });
+            template.statuses.push(Status::Aura(Box::new(AuraStatus {
+                distance: None,
+                alliance: Some(Alliance::Critters),
+                status: Box::new(Status::Modifier(Box::new(ModifierStatus {
+                    modifier: Modifier::Strength(StrengthModifier {
+                        value: Expr::Sum {
+                            a: Box::new(Expr::Var {
+                                name: VarName::Value,
+                            }),
+                            b: Box::new(Expr::Const { value: r32(2.0) }),
+                        },
+                    }),
+                }))),
+            })));
         }
     }
 }
