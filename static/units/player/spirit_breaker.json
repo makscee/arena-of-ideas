@@ -17,16 +17,30 @@
             },
             "on": {
                 "Injure": {
-                    "type": "AOE",
-                    "filter": "Enemies",
-                    "range": 5,
-                    "effect": {
-                        "type": "AttachStatus",
-                        "time": 3,
-                        "status": {
-                            "type": "Stun"
+                    "type": "Random",
+                    "choices": [
+                        {
+                            "weight": 25,
+                            "effect": {
+                                "type": "AOE",
+                                "filter": "Enemies",
+                                "range": 5,
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "time": 3,
+                                    "status": {
+                                        "type": "Stun"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "weight": 75,
+                            "effect": {
+                                "type": "Noop"
+                            }
                         }
-                    }
+                    ]
                 }
             }
         }
@@ -38,6 +52,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/spirit_break.svg"
+        "path": "../../svg/spirit_breaker.svg"
     }
 }

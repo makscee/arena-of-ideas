@@ -19,7 +19,8 @@
         "healer",
         "lifedrainer",
         "devourer",
-        "hedgehog"
+        "hedgehog",
+        "spirit_breaker"
     ],
     "alliances": {
         "Spawners": 6,
