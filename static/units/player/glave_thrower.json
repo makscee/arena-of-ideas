@@ -7,12 +7,10 @@
         "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
-            "type": "Chain",
+            "type": "Glave",
             "targets": 4,
-            "split_probability": 0,
-            "jump_distance": 10,
+            "jump_distance": 5,
             "effect": {
-                "type": "Projectile",
                 "speed": 10,
                 "effect": {
                     "type": "Damage",

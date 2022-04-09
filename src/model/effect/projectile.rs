@@ -30,7 +30,7 @@ impl EffectImpl for ProjectileEffect {
         }
         logic.model.projectiles.insert(Projectile {
             id: logic.model.next_id,
-            caster: from.id,
+            caster: context.caster.expect("Projectile caster is undefined"),
             target: target.id,
             position: from.position + (target.position - from.position).normalize() * from.radius,
             speed: effect.speed,

@@ -11,6 +11,7 @@ mod change_stat;
 mod change_target;
 mod damage;
 mod delayed;
+mod glave;
 mod heal;
 mod if_effect;
 mod instant_action;
@@ -38,6 +39,7 @@ pub use change_stat::*;
 pub use change_target::*;
 pub use damage::*;
 pub use delayed::*;
+pub use glave::*;
 pub use heal::*;
 pub use if_effect::*;
 pub use instant_action::*;
@@ -67,6 +69,7 @@ pub enum Effect {
     TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
+    Glave(Box<GlaveEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
@@ -98,6 +101,7 @@ impl std::fmt::Debug for Effect {
             Self::TimeBomb(effect) => effect.fmt(f),
             Self::Suicide(effect) => effect.fmt(f),
             Self::Chain(effect) => effect.fmt(f),
+            Self::Glave(effect) => effect.fmt(f),
             Self::AddTargets(effect) => effect.fmt(f),
             Self::Repeat(effect) => effect.fmt(f),
             Self::Random(effect) => effect.fmt(f),
@@ -151,6 +155,7 @@ impl Effect {
             Effect::TimeBomb(effect) => &mut **effect,
             Effect::Suicide(effect) => &mut **effect,
             Effect::Chain(effect) => &mut **effect,
+            Effect::Glave(effect) => &mut **effect,
             Effect::AddTargets(effect) => &mut **effect,
             Effect::Repeat(effect) => &mut **effect,
             Effect::Random(effect) => &mut **effect,
@@ -181,6 +186,7 @@ impl Effect {
             Effect::TimeBomb(effect) => effect,
             Effect::Suicide(effect) => effect,
             Effect::Chain(effect) => effect,
+            Effect::Glave(effect) => effect,
             Effect::AddTargets(effect) => effect,
             Effect::Repeat(effect) => effect,
             Effect::Random(effect) => effect,
