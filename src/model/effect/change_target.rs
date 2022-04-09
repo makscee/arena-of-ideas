@@ -24,7 +24,7 @@ impl EffectImpl for ChangeTargetEffect {
             .model
             .units
             .iter()
-            .filter(|unit| unit.id != caster.id)
+            .filter(|unit| unit.id != caster.id && Some(unit.id) != context.target)
             .filter(|unit| effect.filter.matches(unit.faction, caster.faction))
             .filter(|unit| logic.check_condition(&effect.condition, &context))
             .choose(&mut global_rng())
@@ -33,7 +33,7 @@ impl EffectImpl for ChangeTargetEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
                     target: Some(unit.id),
-                    ..context.clone()
+                    ..context
                 },
             });
         }

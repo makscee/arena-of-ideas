@@ -36,7 +36,7 @@ impl EffectImpl for ChangeContextEffect {
                     Some(who) => context.get(who),
                     None => context.target,
                 },
-                ..context.clone()
+                ..context
             },
         });
     }
