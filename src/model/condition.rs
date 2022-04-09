@@ -12,6 +12,9 @@ pub enum Condition {
     UnitInjured {
         who: Who,
     },
+    Distance {
+        max_distance: Coord,
+    },
 }
 
 impl Default for Condition {
