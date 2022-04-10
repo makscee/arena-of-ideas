@@ -20,7 +20,7 @@ impl Logic<'_> {
                     .expect("Caster, From, or Target not found");
                 who.health < who.max_hp
             }
-            Condition::Distance { max_distance } => {
+            Condition::InRange { max_distance } => {
                 let from = context
                     .from
                     .and_then(|id| self.model.units.get(&id))

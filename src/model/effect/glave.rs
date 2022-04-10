@@ -28,7 +28,7 @@ impl EffectImpl for GlaveEffect {
                     inner_effect.clone(),
                     Effect::ChangeTarget(Box::new(ChangeTargetEffect {
                         filter: TargetFilter::Enemies,
-                        condition: Condition::Distance {
+                        condition: Condition::InRange {
                             max_distance: effect.jump_distance,
                         },
                         effect: Effect::Glave(Box::new(GlaveEffect {

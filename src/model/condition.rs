@@ -12,7 +12,7 @@ pub enum Condition {
     UnitInjured {
         who: Who,
     },
-    Distance {
+    InRange {
         max_distance: Coord,
     },
 }
