@@ -4,6 +4,7 @@ impl Logic<'_> {
     pub fn check_condition(&self, condition: &Condition, context: &EffectContext) -> bool {
         match condition {
             Condition::Always => true,
+            Condition::Not { condition } => !self.check_condition(&*condition, context),
             Condition::UnitHasStatus { who, status_type } => {
                 let who = context.get(*who);
                 let who = who

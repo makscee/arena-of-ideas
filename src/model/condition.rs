@@ -4,6 +4,9 @@ use super::*;
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Condition {
     Always,
+    Not {
+        condition: Box<Condition>,
+    },
     UnitHasStatus {
         who: Who,
         #[serde(rename = "status")]
