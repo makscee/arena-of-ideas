@@ -30,7 +30,7 @@
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
-        "type": "Texture",
-        "path": "../../svg/big_blob.svg"
+        "type": "Shader",
+        "path": "../../shaders/blob_enemy.glsl"
     }
 }
