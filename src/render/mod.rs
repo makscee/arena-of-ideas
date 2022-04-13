@@ -44,14 +44,14 @@ pub struct Render {
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: Assets) -> Self {
+    pub fn new(geng: &Geng, assets: Assets, config: Config) -> Self {
         Self {
             geng: geng.clone(),
             assets,
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
-                fov: 20.0,
+                fov: config.fov,
             },
         }
     }

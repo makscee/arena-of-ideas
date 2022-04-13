@@ -15,6 +15,7 @@ pub struct Config {
     pub alliances: HashMap<Alliance, usize>,
     pub spawn_points: HashMap<String, Vec2<Coord>>,
     pub waves: Vec<Wave>,
+    pub fov: f32,
 }
 
 impl geng::LoadAsset for UnitTemplates {

@@ -49,7 +49,7 @@ impl Game {
                 model,
                 render: RenderModel::new(),
             }],
-            render: Render::new(geng, assets),
+            render: Render::new(geng, assets, config),
             pressed_keys: Vec::new(),
             timeline_captured: false,
         };

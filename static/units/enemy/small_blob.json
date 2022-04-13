@@ -1,6 +1,6 @@
 {
     "health": 1,
-    "speed": 1.5,
+    "speed": 0.6,
     "radius": 0.15,
     "action": {
         "range": 0.5,
