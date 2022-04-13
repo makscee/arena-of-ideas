@@ -99,9 +99,9 @@ impl<'a> Logic<'a> {
 
         self.initialize_alliances(config);
 
+        let spawn_point = config.spawn_points["Heroes"];
         for unit_type in &config.player {
             let template = self.model.unit_templates[unit_type].clone();
-            let spawn_point = config.spawn_points["Heroes"];
             self.spawn_template(unit_type, template, Faction::Player, spawn_point);
         }
     }
