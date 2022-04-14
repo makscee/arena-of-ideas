@@ -1,0 +1,36 @@
+{
+    "health": 2,
+    "speed": 1,
+    "radius": 0.5,
+    "action": {
+        "range": 15,
+        "animation_delay": 0.75,
+        "cooldown": 5,
+        "effect": {
+            "type": "ChangeTarget",
+            "filter": "Allies",
+            "condition": {
+                "type": "Always"
+            },
+            "effect": {
+                "type": "Projectile",
+                "speed": 10,
+                "effect": {
+                    "type": "AttachStatus",
+                    "status": {
+                        "type": "Shield"
+                    }
+                }
+            }
+        }
+    },
+    "alliances": [
+        "Healers"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "render": {
+        "type": "Shader",
+        "path": "../../shaders/blob_enemy.glsl"
+    }
+}
