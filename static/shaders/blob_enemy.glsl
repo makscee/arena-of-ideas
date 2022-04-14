@@ -33,20 +33,28 @@ float animationFunc(float x)
     + float(x > 1. && x < 2.) * ((x * b - t) * (x * b - t));
 }
 
-vec3 getRingColor(
-    vec2 uv, float r, float thickness, float glow, float glowStartV,
-    vec3 colorRing, vec3 colorGlow, float innerMult, float outerMult)
+vec4 alphaBlend(vec4 c1, vec4 c2)
+{
+    return vec4(
+        mix(c1.r, c2.r, c2.a),
+        mix(c1.g, c2.g, c2.a),
+        mix(c1.b, c2.b, c2.a),
+        max(c1.a, c2.a) + c1.a * c2.a);
+}
+
+float getRingAlpha(
+    vec2 uv, float r, float thickness, float glow, float glowStartV, float innerMult, float outerMult)
 {
     float dist = distance(uv, vec2(0.));
     float circleDist = abs(r - dist);
     float halfThickness = thickness * .5;
     glow *= max(r, 0.5);
-    return float(circleDist < halfThickness) * colorRing
-        + float(circleDist > halfThickness && circleDist < halfThickness + glow)
+    return max(float(circleDist < halfThickness),
+
+        float(circleDist > halfThickness && circleDist < halfThickness + glow)
         * mix(glowStartV, 0., (circleDist - halfThickness) / glow)
         * (float(dist > r) * outerMult + float(dist < r) * 1.)
-        * (float(dist < r) * innerMult + float(dist > r) * 1.)
-        * colorGlow;
+        * (float(dist < r) * innerMult + float(dist > r) * 1.));
 }
 
 void main() {
@@ -79,17 +87,17 @@ void main() {
     float distOuter = outerR - distCenter;
     float distInner = innerR - distCenter;
     float distInner2 = innerR2 - distCenter;
-    float val = distCenter;
 
-    vec3 col = vec3(0.0,0.0,0.0);
-    col += getRingColor(uv, outerR, thicknessOuter, glow, .3, colors[0], colors[0], 1.5, 0.);
-    col += getRingColor(uv, innerR, 0., glow * 1.5, .5, colors[0], colors[0], 1.7, 1.) * innerAlpha;
-    col += getRingColor(uv, innerR2, thicknessInner * .5, glow * 2., .9, colors[1], colors[0], 1., .5) * innerAlpha2;
+    vec4 col = vec4(colors[0], getRingAlpha(uv, outerR, thicknessOuter, glow, .3, 1.5, 0.));
+    col = alphaBlend(col, vec4(colors[0], getRingAlpha(uv, outerR, thicknessOuter, glow, .3, 1.5, 0.)));
+    col = alphaBlend(col, vec4(colors[0], getRingAlpha(uv, innerR, 0., glow * 1.5, .5, 1.7, 1.) * innerAlpha));
+    col = alphaBlend(col, vec4(colors[1], getRingAlpha(uv, innerR2, thicknessInner * .5, glow * 2., .9, 1., .5) * innerAlpha2));
     
-    float v = mix(0.5, 0.0, distance(uv, vec2(cos(u_time * 1.13 + sin(u_time * .5) * 2.), sin(u_time * 2.73)) * innerR * .8)) * float(distCenter < outerR + thicknessOuter * .5);
-    col += float(v > 0.) * v * colors[0] * (1.5 - glow);
+    float v = mix(0.5, 0.0, distance(uv,
+        vec2(cos(u_time * 1.13 + sin(u_time * .5) * 2.),
+            sin(u_time * 2.73)) * innerR * .8)) * float(distCenter < outerR + thicknessOuter * .5);
+    col = alphaBlend(col, vec4(colors[0], v));
 
-    // Output to screen
-    gl_FragColor = vec4(col, 1. - distance(colors[0], col));
+    gl_FragColor = col;
 }
 #endif
