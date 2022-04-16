@@ -8,6 +8,7 @@ mod freeze;
 mod gained_effect;
 mod invulnerability;
 mod modifier;
+mod on_deal_damage;
 mod on_death;
 mod on_heal;
 mod on_kill;
@@ -30,6 +31,7 @@ pub use freeze::*;
 pub use gained_effect::*;
 pub use invulnerability::*;
 pub use modifier::*;
+pub use on_deal_damage::*;
 pub use on_death::*;
 pub use on_heal::*;
 pub use on_kill::*;
@@ -60,6 +62,7 @@ pub enum StatusType {
     OnSpawn,
     OnKill,
     OnHeal,
+    OnDealDamage,
     OnTakeDamage,
     OnShieldBroken,
     GainedEffect,
@@ -86,6 +89,7 @@ pub enum Status {
     OnSpawn(Box<OnSpawnStatus>),
     OnKill(Box<OnKillStatus>),
     OnHeal(Box<OnHealStatus>),
+    OnDealDamage(Box<OnDealDamageStatus>),
     OnTakeDamage(Box<OnTakeDamageStatus>),
     OnShieldBroken(Box<OnShieldBrokenStatus>),
     GainedEffect(Box<GainedEffectStatus>),
@@ -122,6 +126,7 @@ impl Status {
             Self::OnSpawn(status) => &mut **status,
             Self::OnKill(status) => &mut **status,
             Self::OnHeal(status) => &mut **status,
+            Self::OnDealDamage(status) => &mut **status,
             Self::OnTakeDamage(status) => &mut **status,
             Self::OnShieldBroken(status) => &mut **status,
             Self::GainedEffect(status) => &mut **status,
@@ -147,6 +152,7 @@ impl Status {
             Self::OnSpawn(status) => status,
             Self::OnKill(status) => status,
             Self::OnHeal(status) => status,
+            Self::OnDealDamage(status) => status,
             Self::OnTakeDamage(status) => status,
             Self::OnShieldBroken(status) => status,
             Self::GainedEffect(status) => status,
@@ -172,6 +178,7 @@ impl Status {
             Self::OnSpawn(status) => StatusType::OnSpawn,
             Self::OnKill(status) => StatusType::OnKill,
             Self::OnHeal(status) => StatusType::OnHeal,
+            Self::OnDealDamage(status) => StatusType::OnDealDamage,
             Self::OnTakeDamage(status) => StatusType::OnTakeDamage,
             Self::OnShieldBroken(status) => StatusType::OnShieldBroken,
             Self::GainedEffect(status) => StatusType::GainedEffect,

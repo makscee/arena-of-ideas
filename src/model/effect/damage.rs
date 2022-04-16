@@ -121,6 +121,22 @@ impl EffectImpl for DamageEffect {
         }
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 
+        if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
+            for status in &caster_unit.all_statuses {
+                if let Status::OnDealDamage(status) = status {
+                    if match &status.damage_type {
+                        Some(damage_type) => effect.types.contains(damage_type),
+                        None => true,
+                    } {
+                        logic.effects.push_front(QueuedEffect {
+                            effect: status.effect.clone(),
+                            context: context.clone(),
+                        })
+                    }
+                }
+            }
+        }
+
         if let Some(effect) = effect.on.get(&DamageTrigger::Injure) {
             logic.effects.push_front(QueuedEffect {
                 effect: effect.clone(),
