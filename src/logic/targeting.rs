@@ -17,10 +17,12 @@ impl Logic<'_> {
         // or use `unit.faction` instead of `unit_faction`
         // The same code is used in the `ChangeTarget` effect
         let unit_faction = unit
-            .all_statuses
+            .attached_statuses
             .iter()
-            .find_map(|status| match status {
-                Status::Charmed(charm) => Some(charm.master_faction),
+            .find_map(|status| match &status.status {
+                Status::Charmed(charm) => status
+                    .caster
+                    .and_then(|id| self.model.units.get(&id).map(|unit| unit.faction)),
                 _ => None,
             })
             .unwrap_or(unit.faction);

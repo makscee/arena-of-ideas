@@ -25,10 +25,12 @@ impl EffectImpl for ChangeTargetEffect {
         // or use `unit.faction` instead of `unit_faction`
         // The same code is used in the initial targetting
         let caster_faction = caster
-            .all_statuses
+            .attached_statuses
             .iter()
-            .find_map(|status| match status {
-                Status::Charmed(charm) => Some(charm.master_faction),
+            .find_map(|status| match &status.status {
+                Status::Charmed(charm) => status
+                    .caster
+                    .and_then(|id| logic.model.units.get(&id).map(|unit| unit.faction)),
                 _ => None,
             })
             .unwrap_or(caster.faction);
