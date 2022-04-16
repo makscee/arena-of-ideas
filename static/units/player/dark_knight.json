@@ -1,0 +1,63 @@
+{
+    "health": 5,
+    "speed": 1,
+    "radius": 0.5,
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.75,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "Damage",
+                    "types": [
+                        "Melee"
+                    ],
+                    "value": {
+                        "type": "Const",
+                        "value": 2
+                    }
+                },
+                {
+                    "type": "Splash",
+                    "degrees": 60,
+                    "effect_on_caster": {
+                        "type": "Noop"
+                    },
+                    "effect": {
+                        "type": "Random",
+                        "choices": [
+                            {
+                                "weight": 90,
+                                "effect": {
+                                    "type": "Noop"
+                                }
+                            },
+                            {
+                                "weight": 90,
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "time": 3,
+                                    "status": {
+                                        "type": "Charmed"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "alliances": [
+        "Charmers",
+        "Splashers"
+    ],
+    "render": {
+        "type": "Texture",
+        "path": "../../svg/dark_knight.svg"
+    }
+}
