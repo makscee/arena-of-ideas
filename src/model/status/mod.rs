@@ -2,6 +2,7 @@ use super::*;
 
 mod attack_speed;
 mod aura;
+mod charmed;
 mod detect;
 mod freeze;
 mod gained_effect;
@@ -23,6 +24,7 @@ mod taunt;
 
 pub use attack_speed::*;
 pub use aura::*;
+pub use charmed::*;
 pub use detect::*;
 pub use freeze::*;
 pub use gained_effect::*;
@@ -64,6 +66,7 @@ pub enum StatusType {
     Scavenge,
     AttackSpeed,
     RepeatingEffect,
+    Charmed,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -89,6 +92,7 @@ pub enum Status {
     Scavenge(Box<ScavengeStatus>),
     AttackSpeed(Box<AttackSpeedStatus>),
     RepeatingEffect(Box<RepeatingEffectStatus>),
+    Charmed(Box<CharmedStatus>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -124,6 +128,7 @@ impl Status {
             Self::Scavenge(status) => &mut **status,
             Self::AttackSpeed(status) => &mut **status,
             Self::RepeatingEffect(status) => &mut **status,
+            Self::Charmed(status) => &mut **status,
         }
     }
     pub fn as_box(self) -> Box<dyn StatusImpl> {
@@ -148,6 +153,7 @@ impl Status {
             Self::Scavenge(status) => status,
             Self::AttackSpeed(status) => status,
             Self::RepeatingEffect(status) => status,
+            Self::Charmed(status) => status,
         }
     }
     pub fn r#type(&self) -> StatusType {
@@ -172,6 +178,7 @@ impl Status {
             Self::Scavenge(status) => StatusType::Scavenge,
             Self::AttackSpeed(status) => StatusType::AttackSpeed,
             Self::RepeatingEffect(status) => StatusType::AttackSpeed,
+            Self::Charmed(status) => StatusType::Charmed,
         }
     }
     pub fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {
