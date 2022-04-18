@@ -18,5 +18,9 @@
         }
     },
     "move_ai": "Advance",
-    "target_ai": "Closest"
+    "target_ai": "Closest",
+    "render": {
+        "type": "Shader",
+        "path": "shaders/melee_hero.glsl"
+    }
 }

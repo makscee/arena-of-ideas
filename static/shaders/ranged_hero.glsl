@@ -18,60 +18,44 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-vec3 getTriangleColor(vec2 uv, float ang, vec3 col, float size)
+vec3 getAngleColor(vec2 uv, vec3 col, float height)
 {
-    const float tan3 = tan(pi/3.0);
-    const float innerRad = sqrt(3.0) / 6.0;
-    vec2 tuv = uv;
-    tuv = vec2(
-        tuv.x * cos(ang) + tuv.y * sin(ang),
-        -tuv.x * sin(ang) + tuv.y * cos(ang));
-    
-    return col * float(
-                   tuv.y + innerRad < (tuv.x + size) * tan3 + tan3 / 2.0
-                && tuv.y + innerRad < -(tuv.x - size) * tan3 + tan3 / 2.0
-                && tuv.y + innerRad > -size
-                );
+    return col * float(uv.y < -abs(uv.x * .5) + height);
 }
 
 void main() {
     vec2 uv = v_quad_pos;
-
     vec3 colors[3];
     colors[0] = u_alliance_color_1.rgb;
     colors[1] = u_alliance_color_2.rgb;
     colors[2] = u_alliance_color_3.rgb;
 
-    
     float anim = animationFunc(u_action) / 4.;
-    
     float dist = distance(uv,vec2(0.0,0.0));
     
-    vec4 col = vec4(0.,0.,0.,0.);
+    vec4 col = vec4(0.);
     if (dist < 1.0 - thickness)
     {
-        col = vec4(colors[0],1);
-        const float timeShift = 0.18;
-        const float sizeShift = 0.15;
-        float ang;
-        for (float i = 8.0; i >= -1.0; i -= 1.0)
+        col = vec4(colors[2],1.);
+        float heightShift = 0.2 + anim / 8.;
+        const float timeShift = 0.4;
+        for (float i = 10.; i >= -12.; i--)
         {
-            vec3 c = colors[mod(int(i + 10000.), 3)];
-            ang = sin(u_time + timeShift * i);
-            vec3 tc = getTriangleColor(uv,ang,c,sizeShift*i - sizeShift*0.0 + anim * -2.);
-            if (tc != vec3(0.0,0.0,0.0))
-                col = vec4(tc,1.);
+            float h = .35 + i * heightShift - (float(i <= -1.) * heightShift * 1.5) + sin(u_time + timeShift * i) * heightShift;
+            vec3 ac = getAngleColor(uv, colors[mod(int(i + 3000.), 3)], h);
+            if (ac != vec3(0.,0.,0.))
+                col = vec4(ac,1.);
         }
     }
     else if (dist > 1.0 - thickness && dist < 1.0 + thickness) {
-        col = vec4(colors[0],1);
+        col = vec4(colors[0],1.);
     }
     else if (dist > 1.0 && dist < 1.0 + glow)
     {
         float v = (dist - 1.0) / glow;
         col = vec4(colors[0], mix(glowStart, 0., v));
     } else {
-        col = vec4(0);
+        col.a = 0.0;
     }
 
     gl_FragColor = col;

@@ -33,8 +33,5 @@
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "render": {
-        "type": "Shader",
-        "path": "shaders/blob_enemy.glsl"
-    }
+    "base": "ranged"
 }

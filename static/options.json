@@ -1,16 +1,16 @@
 {
     "alliance_colors": {
-        "Spawners": "#abc",
-        "Assassins": "#abc",
-        "Critters": "#abc",
-        "Archers": "#abc",
-        "Freezers": "#abc",
-        "Warriors": "#abc",
-        "Healers": "#abc",
-        "Vampires": "#abc",
-        "Exploders": "#abc",
-        "Splashers": "#abc",
-        "Chainers": "#abc",
-        "Charmers": "#abc"
+        "Spawners": "#b8860b",
+        "Assassins": "#ffd700",
+        "Critters": "#b8860b",
+        "Archers": "#a0522d",
+        "Freezers": "#1e90ff",
+        "Warriors": "#a0522d",
+        "Healers": "#db7093",
+        "Vampires": "#dc143c",
+        "Exploders": "#ff4500",
+        "Splashers": "#eee8aa",
+        "Chainers": "#d8bfd8",
+        "Charmers": "#ff1493"
     }
 }

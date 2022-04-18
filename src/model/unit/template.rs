@@ -72,10 +72,10 @@ impl Default for UnitTemplate {
             target_ai: TargetAi::Closest,
             ability: None,
             render_config: RenderConfig::Circle {
-                color: Color::BLACK,
+                color: Color::WHITE,
             },
             render_mode: RenderMode::Circle {
-                color: Color::BLACK,
+                color: Color::WHITE,
             },
             alliances: default(),
         }

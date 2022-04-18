@@ -1,8 +1,4 @@
-uniform float u_time;
-uniform vec2 u_unit_position;
-uniform float u_unit_radius;
-uniform float u_spawn;
-uniform float u_action;
+#include <common.glsl>
 
 varying vec2 v_quad_pos;
 
@@ -22,26 +18,6 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-const float pi = 3.14159;
-
-float animationFunc(float x)
-{
-    const float t = 4.2;
-    const float b = 2.1;
-    return float(x < 0.769) * ((x * 1.3 - 1.) * (x * 1.3 - 1.) - 1.)
-    - float(x > 0.769 && x < 1.)
-    + float(x > 1. && x < 2.) * ((x * b - t) * (x * b - t));
-}
-
-vec4 alphaBlend(vec4 c1, vec4 c2)
-{
-    return vec4(
-        mix(c1.r, c2.r, c2.a),
-        mix(c1.g, c2.g, c2.a),
-        mix(c1.b, c2.b, c2.a),
-        max(c1.a, c2.a) + c1.a * c2.a);
-}
-
 float getRingAlpha(
     vec2 uv, float r, float thickness, float glow, float glowStartV, float innerMult, float outerMult)
 {
@@ -58,8 +34,6 @@ float getRingAlpha(
 }
 
 void main() {
-    const float thicknessOuter = 0.07;
-    const float thicknessInner = thicknessOuter * .5;
     float glow = 0.35 + sin(u_time) * .1;
 
     vec2 uv = v_quad_pos;

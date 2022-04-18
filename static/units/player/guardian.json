@@ -5,7 +5,7 @@
     "action": {
         "range": 15,
         "animation_delay": 0.75,
-        "cooldown": 5,
+        "cooldown": 2,
         "effect": {
             "type": "ChangeTarget",
             "filter": "Allies",

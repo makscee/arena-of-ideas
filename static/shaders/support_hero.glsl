@@ -35,43 +35,33 @@ vec3 getTriangleColor(vec2 uv, float ang, vec3 col, float size)
 }
 
 void main() {
+    const int segments = 5;
     vec2 uv = v_quad_pos;
-
     vec3 colors[3];
     colors[0] = u_alliance_color_1.rgb;
     colors[1] = u_alliance_color_2.rgb;
     colors[2] = u_alliance_color_3.rgb;
-
     
     float anim = animationFunc(u_action) / 4.;
     
     float dist = distance(uv,vec2(0.0,0.0));
+    float centerShift = (sin(u_time * 2.0) + 1.0) / 8.0;
+    float distShifted = smoothstep(centerShift,1.0 - thickness,dist);
     
-    vec4 col = vec4(0.,0.,0.,0.);
+    vec4 col = vec4(0.);
     if (dist < 1.0 - thickness)
     {
-        col = vec4(colors[0],1);
-        const float timeShift = 0.18;
-        const float sizeShift = 0.15;
-        float ang;
-        for (float i = 8.0; i >= -1.0; i -= 1.0)
-        {
-            vec3 c = colors[mod(int(i + 10000.), 3)];
-            ang = sin(u_time + timeShift * i);
-            vec3 tc = getTriangleColor(uv,ang,c,sizeShift*i - sizeShift*0.0 + anim * -2.);
-            if (tc != vec3(0.0,0.0,0.0))
-                col = vec4(tc,1.);
-        }
+        col = vec4(colors[mod(int(round(distShifted * float(segments))), 3)],1.);
     }
     else if (dist > 1.0 - thickness && dist < 1.0 + thickness) {
-        col = vec4(colors[0],1);
+        col = vec4(colors[0],1.);
     }
     else if (dist > 1.0 && dist < 1.0 + glow)
     {
         float v = (dist - 1.0) / glow;
         col = vec4(colors[0], mix(glowStart, 0., v));
     } else {
-        col = vec4(0);
+        col.a = 0.0;
     }
 
     gl_FragColor = col;
