@@ -47,6 +47,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/glave_thrower.svg"
+        "path": "svg/glave_thrower.svg"
     }
 }

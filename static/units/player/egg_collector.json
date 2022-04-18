@@ -51,6 +51,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/egg_collector.svg"
+        "path": "svg/egg_collector.svg"
     }
 }

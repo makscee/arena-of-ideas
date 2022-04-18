@@ -39,6 +39,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/cold_detector.svg"
+        "path": "svg/cold_detector.svg"
     }
 }

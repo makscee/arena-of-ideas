@@ -25,6 +25,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Shader",
-        "path": "shooter.glsl"
+        "path": "shaders/shooter.glsl"
     }
 }

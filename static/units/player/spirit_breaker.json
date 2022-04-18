@@ -52,6 +52,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/spirit_breaker.svg"
+        "path": "svg/spirit_breaker.svg"
     }
 }

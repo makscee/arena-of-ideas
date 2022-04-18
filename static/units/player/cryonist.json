@@ -58,6 +58,6 @@
     ],
     "render": {
         "type": "Texture",
-        "path": "../../svg/cryonist.svg"
+        "path": "svg/cryonist.svg"
     }
 }

@@ -32,6 +32,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/healer.svg"
+        "path": "svg/healer.svg"
     }
 }

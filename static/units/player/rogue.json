@@ -24,6 +24,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/rogue.svg"
+        "path": "svg/rogue.svg"
     }
 }

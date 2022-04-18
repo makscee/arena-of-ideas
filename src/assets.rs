@@ -65,7 +65,7 @@ impl geng::LoadAsset for UnitTemplates {
                         json.as_object_mut().unwrap().remove("base");
                     }
                     let mut template: UnitTemplate = serde_json::from_value(json)?;
-                    template.load_render(&geng, &base_path).await?;
+                    template.load_render(&geng, &static_path()).await?;
                     info!(
                         "{:?} => {}",
                         typ,

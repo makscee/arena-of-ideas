@@ -39,6 +39,6 @@
     ],
     "render": {
         "type": "Texture",
-        "path": "../../svg/chill_knight.svg"
+        "path": "svg/chill_knight.svg"
     }
 }

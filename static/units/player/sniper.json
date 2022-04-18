@@ -29,6 +29,6 @@
     "target_ai": "Biggest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/sniper.svg"
+        "path": "svg/sniper.svg"
     }
 }

@@ -58,6 +58,6 @@
     ],
     "render": {
         "type": "Texture",
-        "path": "../../svg/dark_knight.svg"
+        "path": "svg/dark_knight.svg"
     }
 }

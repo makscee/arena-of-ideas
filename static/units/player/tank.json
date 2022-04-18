@@ -30,6 +30,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/tank.svg"
+        "path": "svg/tank.svg"
     }
 }

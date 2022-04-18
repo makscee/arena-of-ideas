@@ -37,6 +37,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Texture",
-        "path": "../../svg/ice_archer.svg"
+        "path": "svg/ice_archer.svg"
     }
 }
