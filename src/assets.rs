@@ -1,8 +1,15 @@
 use super::*;
 
+#[derive(Deserialize, geng::Assets)]
+#[asset(json)]
+pub struct Options {
+    pub alliance_colors: HashMap<Alliance, Color<f32>>,
+}
+
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
+    pub options: Options,
 }
 
 pub type Key = String;

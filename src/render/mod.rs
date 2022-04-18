@@ -172,6 +172,14 @@ impl Render {
                                     _ => 1.0,
                                 },
                         );
+
+                    let mut alliances: Vec<Alliance> = unit.alliances.iter().copied().collect();
+                    alliances.sort();
+                    let alliance_colors: Vec<Color<f32>> = alliances
+                        .iter()
+                        .map(|alliance| self.assets.options.alliance_colors[alliance])
+                        .collect();
+
                     ugli::draw(
                         framebuffer,
                         program,
@@ -196,6 +204,10 @@ impl Render {
                                     }
                                     _ => 0.0,
                                 },
+                                u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
+                                u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
+                                u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
+                                u_alliance_count: alliance_colors.len(),
                             },
                             geng::camera2d_uniforms(
                                 &self.camera,

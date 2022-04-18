@@ -1,0 +1,16 @@
+{
+    "alliance_colors": {
+        "Spawners": "#abc",
+        "Assassins": "#abc",
+        "Critters": "#abc",
+        "Archers": "#abc",
+        "Freezers": "#abc",
+        "Warriors": "#abc",
+        "Healers": "#abc",
+        "Vampires": "#abc",
+        "Exploders": "#abc",
+        "Splashers": "#abc",
+        "Chainers": "#abc",
+        "Charmers": "#abc"
+    }
+}

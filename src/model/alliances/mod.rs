@@ -13,7 +13,7 @@ mod splashers;
 mod vampires;
 mod warriors;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
 pub enum Alliance {
     Spawners,
     Assassins,
