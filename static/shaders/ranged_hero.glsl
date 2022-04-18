@@ -41,7 +41,7 @@ void main() {
         const float timeShift = 0.4;
         for (float i = 10.; i >= -12.; i--)
         {
-            float h = .35 + i * heightShift - (float(i <= -1.) * heightShift * 1.5) + sin(u_time + timeShift * i) * heightShift;
+            float h = .35 + i * heightShift - (float(i <= -1.) * heightShift * 1.5) + sin(u_time + timeShift * i) * heightShift * (1. - anim);
             vec3 ac = getAngleColor(uv, colors[mod(int(i + 3000.), 3)], h);
             if (ac != vec3(0.,0.,0.))
                 col = vec4(ac,1.);
