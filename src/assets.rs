@@ -23,6 +23,14 @@ impl geng::LoadAsset for UnitTemplates {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
+            geng.shader_lib().add(
+                "common.glsl",
+                &<String as geng::LoadAsset>::load(
+                    &geng,
+                    &path.parent().unwrap().join("common.glsl"),
+                )
+                .await?,
+            );
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let packs: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
