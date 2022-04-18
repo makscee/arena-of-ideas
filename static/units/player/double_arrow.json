@@ -1,0 +1,40 @@
+{
+    "health": 2,
+    "speed": 1,
+    "radius": 0.5,
+    "action": {
+        "range": 15,
+        "animation_delay": 0.75,
+        "cooldown": 1.25,
+        "effect": {
+            "type": "AddTargets",
+            "condition": {
+                "type": "Always"
+            },
+            "additional_targets": 1,
+            "effect": {
+                "type": "Projectile",
+                "speed": 10,
+                "effect": {
+                    "type": "Damage",
+                    "types": [
+                        "Ranged"
+                    ],
+                    "value": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                }
+            }
+        }
+    },
+    "alliances": [
+        "Archers"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "render": {
+        "type": "Shader",
+        "path": "../../shaders/blob_enemy.glsl"
+    }
+}

@@ -8,5 +8,9 @@
         "cooldown": 5
     },
     "move_ai": "KeepClose",
-    "target_ai": "Closest"
+    "target_ai": "Closest",
+    "render": {
+        "type": "Shader",
+        "path": "../shaders/caster_hero.glsl"
+    }
 }
