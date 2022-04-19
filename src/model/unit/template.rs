@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum RenderConfig {
     Circle { color: Color<f32> },
@@ -82,15 +82,15 @@ impl Default for UnitTemplate {
     }
 }
 
-impl UnitTemplate {
-    pub async fn load_render(
-        &mut self,
+impl RenderMode {
+    pub async fn load(
+        config: &RenderConfig,
         geng: &Geng,
         base_path: &std::path::Path,
-    ) -> anyhow::Result<()> {
-        self.render_mode = match self.render_config {
-            RenderConfig::Circle { color } => RenderMode::Circle { color },
-            RenderConfig::Texture { ref path } => RenderMode::Texture {
+    ) -> anyhow::Result<Self> {
+        match config {
+            &RenderConfig::Circle { color } => Ok(RenderMode::Circle { color }),
+            RenderConfig::Texture { path } => Ok(RenderMode::Texture {
                 texture: {
                     let path = std::path::Path::new(path);
                     match path.extension().and_then(|s| s.to_str()) {
@@ -134,11 +134,21 @@ impl UnitTemplate {
                         _ => geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
                     }
                 },
-            },
-            RenderConfig::Shader { ref path } => RenderMode::Shader {
+            }),
+            RenderConfig::Shader { ref path } => Ok(RenderMode::Shader {
                 program: geng::LoadAsset::load(&geng, &base_path.join(path)).await?,
-            },
-        };
+            }),
+        }
+    }
+}
+
+impl UnitTemplate {
+    pub async fn load_render(
+        &mut self,
+        geng: &Geng,
+        base_path: &std::path::Path,
+    ) -> anyhow::Result<()> {
+        self.render_mode = RenderMode::load(&self.render_config, geng, base_path).await?;
         Ok(())
     }
 }
