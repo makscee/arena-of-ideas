@@ -7,9 +7,8 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    const float padding = 1.;
     v_quad_pos = a_pos * (1.0 + padding);
-    float size = u_unit_radius * u_spawn * (1.0 - 0.25 * u_action);
+    float size = (u_unit_radius - 0.3) * u_spawn * (1.0 - 0.25 * u_action);
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -18,20 +17,20 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-vec3 getTriangleColor(vec2 uv, float ang, vec3 col, float size)
+float getTriangleAlpha(vec2 uv, float ang, float size, float thickness)
 {
     const float tan3 = tan(pi/3.0);
     const float innerRad = sqrt(3.0) / 6.0;
-    vec2 tuv = uv;
-    tuv = vec2(
-        tuv.x * cos(ang) + tuv.y * sin(ang),
-        -tuv.x * sin(ang) + tuv.y * cos(ang));
+    vec2 tuv = vec2(
+        uv.x * cos(ang) + uv.y * sin(ang),
+        -uv.x * sin(ang) + uv.y * cos(ang));
     
-    return col * float(
-                   tuv.y + innerRad < (tuv.x + size) * tan3 + tan3 / 2.0
-                && tuv.y + innerRad < -(tuv.x - size) * tan3 + tan3 / 2.0
-                && tuv.y + innerRad > -size
-                );
+    return float(
+                   abs(tuv.y + innerRad - (tuv.x + size) * tan3 - tan3 / 2.0) < thickness
+                || abs(tuv.y + innerRad + (tuv.x - size) * tan3 - tan3 / 2.0) < thickness
+                || abs(tuv.y + innerRad + size) < thickness * .5
+                )
+        * float(tuv.y + innerRad < (tuv.x + size) * tan3 + tan3 / 2.0 && tuv.y + innerRad < -(tuv.x - size) * tan3 + tan3 / 2.0 && tuv.y + innerRad > -size);
 }
 
 void main() {
@@ -48,30 +47,31 @@ void main() {
     float dist = distance(uv,vec2(0.0,0.0));
     
     vec4 col = vec4(0.,0.,0.,0.);
-    if (dist < 1.0 - thickness)
+    const float timeShift = 0.13;
+    float angShift = 0.05 + cos(u_time * .33);
+    const float sizeShift = 0.15;
+    const float lineThickness = 0.1;
+    float ang = 0.;
+
+    for (int i = 0; i < u_alliance_count * 3; i++)
     {
-        col = vec4(colors[0],1);
-        const float timeShift = 0.18;
-        const float sizeShift = 0.15;
-        float ang;
-        for (float i = 8.0; i >= -1.0; i -= 1.0)
-        {
-            vec3 c = colors[mod(int(i + 10000.), 3)];
-            ang = sin(u_time + timeShift * i);
-            vec3 tc = getTriangleColor(uv,ang,c,sizeShift*i - sizeShift*0.0 + anim * -2.);
-            if (tc != vec3(0.0,0.0,0.0))
-                col = vec4(tc,1.);
-        }
+        vec3 curCol = colors[int(mod((i + u_alliance_count * 100), u_alliance_count))];
+        float curAlpha = getTriangleAlpha(uv, ang + float(i + 1) * angShift, 0.2 + float(i) * sizeShift * sin(u_time + timeShift * float(i)), lineThickness);
+        col = alphaBlend(col, vec4(curCol, curAlpha));
     }
-    else if (dist > 1.0 - thickness && dist < 1.0 + thickness) {
-        col = vec4(colors[0],1);
+
+    col.a = clamp(0.25 - (dist - 1.) / glow + float(dist < 1.) * .1,0.,1.);
+
+    float mainTriangle = getTriangleAlpha(uv,ang,0.,100.);
+    col = alphaBlend(col, vec4(colors[0],mainTriangle));
+
+    if (dist > 1.0 - thickness && dist < 1.0 + thickness) {
+        col = alphaBlend(col, vec4(colors[0],1));
     }
     else if (dist > 1.0 && dist < 1.0 + glow)
     {
         float v = (dist - 1.0) / glow;
-        col = vec4(colors[0], mix(glowStart, 0., v));
-    } else {
-        col = vec4(0);
+        col = alphaBlend(col, vec4(colors[0], mix(glowStart, glowEnd, v)));
     }
 
     gl_FragColor = col;

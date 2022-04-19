@@ -1,7 +1,5 @@
 {
     "health": 2,
-    "speed": 1,
-    "radius": 0.5,
     "action": {
         "range": 10,
         "animation_delay": 0.75,
@@ -45,8 +43,5 @@
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "render": {
-        "type": "Texture",
-        "path": "svg/glave_thrower.svg"
-    }
+    "base": "ranged"
 }

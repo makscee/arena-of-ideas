@@ -1,7 +1,5 @@
 {
     "health": 5,
-    "speed": 1,
-    "radius": 0.5,
     "action": {
         "range": 0.5,
         "animation_delay": 0.25,
@@ -42,8 +40,5 @@
         "Freezers",
         "Assassins"
     ],
-    "render": {
-        "type": "Texture",
-        "path": "svg/ice_breaker.svg"
-    }
+    "base": "melee"
 }

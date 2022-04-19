@@ -1,7 +1,5 @@
 {
     "health": 2,
-    "speed": 1,
-    "radius": 0.5,
     "action": {
         "range": 10,
         "animation_delay": 1,
@@ -26,8 +24,5 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "render": {
-        "type": "Texture",
-        "path": "svg/ranger.svg"
-    }
+    "base": "ranged"
 }

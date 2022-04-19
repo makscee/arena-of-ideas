@@ -1,7 +1,9 @@
 const float pi = 3.14159;
 const float thickness = 0.07;
-const float glow = 1.;
+const float glow = 1.5;
 const float glowStart = 0.6;
+const float glowEnd = 0.05;
+const float padding = 1.5;
 
 const float thicknessOuter = 0.07;
 const float thicknessInner = thicknessOuter * .5;
@@ -23,7 +25,7 @@ vec4 alphaBlend(vec4 c1, vec4 c2)
         mix(c1.r, c2.r, c2.a),
         mix(c1.g, c2.g, c2.a),
         mix(c1.b, c2.b, c2.a),
-        max(c1.a, c2.a) + c1.a * c2.a);
+        clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
 }
 
 float animationFunc(float x)

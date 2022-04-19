@@ -1,7 +1,5 @@
 {
     "health": 2,
-    "speed": 1,
-    "radius": 0.5,
     "action": {
         "range": 10,
         "animation_delay": 0.75,
@@ -27,8 +25,5 @@
     ],
     "move_ai": "Avoid",
     "target_ai": "Biggest",
-    "render": {
-        "type": "Texture",
-        "path": "svg/sniper.svg"
-    }
+    "base": "ranged"
 }

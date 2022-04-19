@@ -1,7 +1,7 @@
 {
     "health": 2,
     "speed": 0.5,
-    "radius": 0.5,
+    "radius": 1.0,
     "action": {
         "range": 0,
         "animation_delay": 0,
@@ -11,6 +11,6 @@
     "target_ai": "Closest",
     "render": {
         "type": "Shader",
-        "path": "shaders/support_hero.glsl"
+        "path": "shaders/caster_hero.glsl"
     }
 }

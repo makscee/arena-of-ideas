@@ -1,7 +1,5 @@
 {
     "health": 2,
-    "speed": 1,
-    "radius": 0.5,
     "action": {
         "range": 15,
         "animation_delay": 0.75,
@@ -25,7 +23,9 @@
         }
     },
     "alliances": [
-        "Healers"
+        "Healers",
+        "Vampires",
+        "Freezers"
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
