@@ -23,7 +23,7 @@
         "Assassins",
         "Archers"
     ],
-    "move_ai": "Avoid",
+    "move_ai": "KeepClose",
     "target_ai": "Biggest",
     "base": "ranged"
 }

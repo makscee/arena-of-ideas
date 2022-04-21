@@ -56,23 +56,23 @@ void main() {
     for (int i = 0; i < u_alliance_count * 3; i++)
     {
         vec3 curCol = colors[int(mod((i + u_alliance_count * 100), u_alliance_count))];
-        float curAlpha = getTriangleAlpha(uv, ang + float(i + 1) * angShift, 0.2 + float(i) * sizeShift * sin(u_time + timeShift * float(i)), lineThickness);
+        float curAlpha = getTriangleAlpha(uv, ang + float(i + 1) * angShift, 0.1 + float(i) * sizeShift * sin(u_time + timeShift * float(i)), lineThickness);
         col = alphaBlend(col, vec4(curCol, curAlpha));
     }
 
-    col.a = clamp(0.25 - (dist - 1.) / glow + float(dist < 1.) * .1,0.,1.);
-
-    float mainTriangle = getTriangleAlpha(uv,ang,0.,100.);
-    col = alphaBlend(col, vec4(colors[0],mainTriangle));
+    col.a = 0.4 - (dist - 1.) / glow;
+    col = alphaBlend(col, vec4(colors[0],getTriangleAlpha(uv,ang,0.,100.)));
+    col = alphaBlend(col, vec4(colors[1],float(u_alliance_count > 1 && dist < 1.) * getTriangleAlpha(uv,ang,0.2,.2)));
+    col = alphaBlend(col, vec4(colors[2],float(u_alliance_count > 2 && dist < 1.) * getTriangleAlpha(uv,ang,0.4,.2)));
 
     if (dist > 1.0 - thickness && dist < 1.0 + thickness) {
         col = alphaBlend(col, vec4(colors[0],1));
     }
-    else if (dist > 1.0 && dist < 1.0 + glow)
-    {
-        float v = (dist - 1.0) / glow;
-        col = alphaBlend(col, vec4(colors[0], mix(glowStart, glowEnd, v)));
-    }
+    // else if (dist > 1.0 && dist < 1.0 + glow)
+    // {
+    //     float v = (dist - 1.0) / glow;
+    //     col = alphaBlend(col, vec4(colors[0], mix(glowStart, glowEnd, v)));
+    // }
 
     gl_FragColor = col;
 }

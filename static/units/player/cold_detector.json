@@ -31,7 +31,8 @@
     ],
     "alliances": [
         "Freezers",
-        "Archers"
+        "Archers",
+        "Vampires"
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",

@@ -1,8 +1,8 @@
 const float pi = 3.14159;
 const float thickness = 0.07;
-const float glow = 1.5;
-const float glowStart = 0.6;
-const float glowEnd = 0.05;
+const float glow = 3.;
+const float glowStart = 0.8;
+const float glowEnd = 0.1;
 const float padding = 1.5;
 
 const float thicknessOuter = 0.07;

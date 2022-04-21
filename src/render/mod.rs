@@ -174,7 +174,6 @@ impl Render {
                         );
 
                     let mut alliances: Vec<Alliance> = unit.alliances.iter().copied().collect();
-                    alliances.sort();
                     let alliance_colors: Vec<Color<f32>> = alliances
                         .iter()
                         .map(|alliance| self.assets.options.alliance_colors[alliance])
