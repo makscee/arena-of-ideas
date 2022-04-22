@@ -1,4 +1,8 @@
 [
     "shaders/blob_enemy.glsl",
-    "shaders/shooter.glsl"
+    "shaders/caster_hero.glsl",
+    "shaders/melee_hero.glsl",
+    "shaders/ranged_hero.glsl",
+    "shaders/shooter_enemy.glsl",
+    "shaders/support_hero.glsl"
 ]
