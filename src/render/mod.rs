@@ -66,7 +66,8 @@ impl Render {
         for unit in itertools::chain![&model.units, &model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
 
-            match &unit.render {
+            let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
+            match &render {
                 RenderMode::Circle { color } => {
                     self.geng.draw_2d(
                         framebuffer,

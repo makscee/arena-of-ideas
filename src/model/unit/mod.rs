@@ -46,7 +46,7 @@ pub struct Unit {
     pub alliances: HashSet<Alliance>,
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
-    pub render: RenderMode,
+    pub render: RenderConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
