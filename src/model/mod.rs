@@ -7,6 +7,7 @@ mod effect;
 mod expr;
 mod factions;
 mod modifier;
+mod particle;
 mod projectile;
 mod status;
 mod time_bomb;
@@ -19,6 +20,7 @@ pub use effect::*;
 pub use expr::*;
 pub use factions::*;
 pub use modifier::*;
+pub use particle::*;
 pub use projectile::*;
 pub use status::*;
 pub use time_bomb::*;
@@ -51,6 +53,7 @@ pub struct Model {
     pub projectiles: Collection<Projectile>,
     pub time_bombs: Collection<TimeBomb>,
     pub dead_time_bombs: Collection<TimeBomb>,
+    pub particles: Collection<Particle>,
     pub config: Config,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
@@ -68,6 +71,7 @@ impl Model {
             projectiles: Collection::new(),
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
+            particles: Collection::new(),
             config,
             free_revives: 0,
             unit_templates,

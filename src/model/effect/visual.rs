@@ -1,20 +1,24 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct VisualEffect {
+    pub duration: Time,
+    #[serde(default = "default_parent")]
+    pub parent: Who,
+    #[serde(default = "default_follow")]
+    pub follow: bool,
+    pub radius: Coord,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
-    #[serde(skip)]
-    pub render_mode: RenderMode,
 }
 
-impl std::fmt::Debug for VisualEffect {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("VisualEffect")
-            .field("render_config", &self.render_config)
-            .finish()
-    }
+fn default_follow() -> bool {
+    false
+}
+
+fn default_parent() -> Who {
+    Who::Target
 }
 
 impl EffectContainer for VisualEffect {
@@ -24,18 +28,22 @@ impl EffectContainer for VisualEffect {
 impl EffectImpl for VisualEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let caster = logic.model.units.get_mut(&context.caster.unwrap()).unwrap();
-        caster
-            .attached_statuses
-            .retain(|status| match &status.status {
-                Status::GainedEffect(status) => {
-                    logic.effects.push_front(QueuedEffect {
-                        effect: status.effect.clone(),
-                        context: context.clone(),
-                    });
-                    false
-                }
-                _ => true,
-            });
+
+        let parent = context.get(effect.parent);
+        let position = parent
+            .and_then(|parent| logic.model.units.get(&parent))
+            .map(|unit| unit.position)
+            .expect("Parent not found");
+        let parent = parent.filter(|_| effect.follow);
+
+        logic.model.particles.insert(Particle {
+            id: logic.model.next_id,
+            radius: effect.radius,
+            time_left: Some(effect.duration),
+            render_config: effect.render_config,
+            parent,
+            position,
+        });
+        logic.model.next_id += 1;
     }
 }

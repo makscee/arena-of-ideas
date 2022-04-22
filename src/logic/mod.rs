@@ -15,6 +15,7 @@ mod targeting;
 mod time_bombs;
 mod util;
 mod waves;
+mod particles;
 
 pub use effects::*;
 pub use util::*;
@@ -40,6 +41,7 @@ impl<'a> Logic<'a> {
         logic.process();
     }
     pub fn process(&mut self) {
+        self.process_particles();
         self.process_statuses();
         self.process_time_bombs();
         self.process_spawns();
