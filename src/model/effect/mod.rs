@@ -27,6 +27,7 @@ mod spawn;
 mod splash;
 mod suicide;
 mod time_bomb;
+mod visual;
 
 pub use action::*;
 pub use add_targets::*;
@@ -55,6 +56,7 @@ pub use spawn::*;
 pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
+pub use visual::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
@@ -86,6 +88,7 @@ pub enum Effect {
     Action(Box<ActionEffect>),
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
+    Visual(Box<VisualEffect>),
 }
 
 impl std::fmt::Debug for Effect {
@@ -118,6 +121,7 @@ impl std::fmt::Debug for Effect {
             Self::Action(effect) => effect.fmt(f),
             Self::Splash(effect) => effect.fmt(f),
             Self::NextActionModifier(effect) => effect.fmt(f),
+            Self::Visual(effect) => effect.fmt(f),
         }
     }
 }
@@ -172,6 +176,7 @@ impl Effect {
             Effect::Action(effect) => &mut **effect,
             Effect::Splash(effect) => &mut **effect,
             Effect::NextActionModifier(effect) => &mut **effect,
+            Effect::Visual(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -203,6 +208,7 @@ impl Effect {
             Effect::Action(effect) => effect,
             Effect::Splash(effect) => effect,
             Effect::NextActionModifier(effect) => effect,
+            Effect::Visual(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

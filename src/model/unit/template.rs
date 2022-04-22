@@ -149,6 +149,13 @@ impl UnitTemplate {
         base_path: &std::path::Path,
     ) -> anyhow::Result<()> {
         self.render_mode = RenderMode::load(&self.render_config, geng, base_path).await?;
+        self.walk_effects_mut(&mut |effect| match effect {
+            Effect::Visual(effect) => {
+                effect.render_mode =
+                    RenderMode::load(&effect.render_config, geng, base_path).await?;
+            }
+            _ => {}
+        });
         Ok(())
     }
 }
