@@ -25,5 +25,9 @@
     ],
     "move_ai": "KeepClose",
     "target_ai": "Biggest",
-    "base": "ranged"
+    "base": "ranged",
+    "render": {
+        "type": "Texture",
+        "path": "svg/sniper.svg"
+    }
 }

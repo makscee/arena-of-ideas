@@ -42,5 +42,9 @@
     },
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "base": "melee"
+    "base": "melee",
+    "render": {
+        "type": "Texture",
+        "path": "svg/murmillo.svg"
+    }
 }

@@ -31,5 +31,9 @@
     "alliances": [
         "Freezers"
     ],
-    "base": "melee"
+    "base": "melee",
+    "render": {
+        "type": "Texture",
+        "path": "svg/frozen_blade.svg"
+    }
 }

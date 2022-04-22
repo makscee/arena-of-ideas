@@ -1,0 +1,4 @@
+[
+    "shaders/blob_enemy.glsl",
+    "shaders/shooter.glsl"
+]

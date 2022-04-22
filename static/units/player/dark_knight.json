@@ -54,5 +54,9 @@
         "Charmers",
         "Splashers"
     ],
-    "base": "melee"
+    "base": "melee",
+    "render": {
+        "type": "Texture",
+        "path": "svg/dark_knight.svg"
+    }
 }

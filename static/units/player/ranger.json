@@ -24,5 +24,9 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "base": "ranged"
+    "base": "ranged",
+    "render": {
+        "type": "Texture",
+        "path": "svg/ranger.svg"
+    }
 }

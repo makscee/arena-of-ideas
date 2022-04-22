@@ -40,5 +40,9 @@
         "Freezers",
         "Assassins"
     ],
-    "base": "melee"
+    "base": "melee",
+    "render": {
+        "type": "Texture",
+        "path": "svg/ice_breaker.svg"
+    }
 }
