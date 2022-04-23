@@ -126,9 +126,15 @@ impl Render {
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let some_scale = match unit.spawn_animation_time_left {
+        let spawn_scale = match unit.spawn_animation_time_left {
             Some(time) if template.spawn_animation_time > Time::new(0.0) => {
                 1.0 - (time / template.spawn_animation_time).as_f32()
+            }
+            _ => 1.0,
+        };
+        let attack_scale = match &unit.action_state {
+            ActionState::Start { time, .. } => {
+                1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
             }
             _ => 1.0,
         };
@@ -140,14 +146,7 @@ impl Render {
                     &self.camera,
                     &draw_2d::Ellipse::circle(
                         unit.position.map(|x| x.as_f32()),
-                        unit.radius.as_f32()
-                            * match &unit.action_state {
-                                ActionState::Start { time, .. } => {
-                                    1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
-                                }
-                                _ => 1.0,
-                            }
-                            * some_scale,
+                        unit.radius.as_f32() * attack_scale * spawn_scale,
                         {
                             let mut color = *color;
                             if unit
@@ -174,16 +173,7 @@ impl Render {
                     framebuffer,
                     &self.camera,
                     &draw_2d::TexturedQuad::unit(&**texture)
-                        .scale_uniform(
-                            unit.radius.as_f32()
-                                * match &unit.action_state {
-                                    ActionState::Start { time, .. } => {
-                                        1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
-                                    }
-                                    _ => 1.0,
-                                }
-                                * some_scale,
-                        )
+                        .scale_uniform(unit.radius.as_f32() * attack_scale * spawn_scale)
                         .translate(unit.position.map(|x| x.as_f32())),
                 );
             }
@@ -207,16 +197,7 @@ impl Render {
                 );
                 let framebuffer_size = framebuffer.size();
                 let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
-                    * Mat3::scale_uniform(
-                        unit.radius.as_f32()
-                            * match &unit.action_state {
-                                ActionState::Start { time, .. } => {
-                                    1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
-                                }
-                                _ => 1.0,
-                            }
-                            * some_scale,
-                    );
+                    * Mat3::scale_uniform(unit.radius.as_f32() * attack_scale * spawn_scale);
 
                 let mut alliances: Vec<Alliance> = unit.alliances.iter().copied().collect();
                 let alliance_colors: Vec<Color<f32>> = alliances
@@ -234,7 +215,7 @@ impl Render {
                             u_time: game_time,
                             u_unit_position: unit.position.map(|x| x.as_f32()),
                             u_unit_radius: unit.radius.as_f32(),
-                            u_spawn: some_scale,
+                            u_spawn: spawn_scale,
                             u_action: match &unit.action_state {
                                 ActionState::Start { time, .. } => {
                                     (*time / unit.action.animation_delay).as_f32()
