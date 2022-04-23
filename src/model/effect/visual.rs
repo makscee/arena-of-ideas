@@ -39,7 +39,8 @@ impl EffectImpl for VisualEffect {
         logic.model.particles.insert(Particle {
             id: logic.model.next_id,
             radius: effect.radius,
-            time_left: Some(effect.duration),
+            duration: effect.duration,
+            time_left: effect.duration,
             render_config: effect.render_config,
             parent,
             position,

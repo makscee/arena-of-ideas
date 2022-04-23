@@ -6,6 +6,7 @@ pub struct Particle {
     pub parent: Option<Id>,
     pub position: Vec2<Coord>,
     pub radius: Coord,
-    pub time_left: Option<Time>,
+    pub duration: Time,
+    pub time_left: Time,
     pub render_config: RenderConfig,
 }
