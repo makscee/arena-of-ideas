@@ -218,7 +218,9 @@ impl Render {
                 };
 
                 let target_dir = target
-                    .map_or(Vec2::ZERO, |target| target.position - unit.position)
+                    .map_or(Vec2::ZERO, |target| {
+                        (target.position - unit.position).normalize_or_zero()
+                    })
                     .map(|x| x.as_f32());
 
                 ugli::draw(
