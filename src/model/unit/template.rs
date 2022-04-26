@@ -1,36 +1,5 @@
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
-pub enum RenderConfig {
-    Circle { color: Color<f32> },
-    Texture { path: String },
-    Shader { path: String },
-}
-
-#[derive(Clone)]
-pub enum RenderMode {
-    Circle { color: Color<f32> },
-    Texture { texture: Rc<ugli::Texture> },
-    Shader { program: Rc<ugli::Program> },
-}
-
-impl Default for RenderConfig {
-    fn default() -> Self {
-        Self::Circle {
-            color: Color::BLACK,
-        }
-    }
-}
-
-impl Default for RenderMode {
-    fn default() -> Self {
-        Self::Circle {
-            color: Color::BLACK,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {

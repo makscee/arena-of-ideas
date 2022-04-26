@@ -177,7 +177,10 @@ impl Render {
                         .translate(unit.position.map(|x| x.as_f32())),
                 );
             }
-            RenderMode::Shader { program } => {
+            RenderMode::Shader {
+                program,
+                parameters,
+            } => {
                 let quad = ugli::VertexBuffer::new_dynamic(
                     self.geng.ugli(),
                     vec![
@@ -228,6 +231,7 @@ impl Render {
                             u_alliance_count: alliance_colors.len(),
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        parameters,
                     ),
                     ugli::DrawParameters {
                         blend_mode: Some(default()),
@@ -266,7 +270,10 @@ impl Render {
                         .translate(particle.position.map(|x| x.as_f32())),
                 );
             }
-            RenderMode::Shader { program } => {
+            RenderMode::Shader {
+                program,
+                parameters,
+            } => {
                 let quad = ugli::VertexBuffer::new_dynamic(
                     self.geng.ugli(),
                     vec![
@@ -306,6 +313,7 @@ impl Render {
                             u_alliance_count: 0,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        parameters,
                     ),
                     ugli::DrawParameters {
                         blend_mode: Some(default()),

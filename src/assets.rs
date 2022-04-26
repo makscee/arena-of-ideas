@@ -54,7 +54,7 @@ impl Assets {
                     ))
                     .clone(),
             },
-            RenderConfig::Shader { path } => RenderMode::Shader {
+            RenderConfig::Shader { path, parameters } => RenderMode::Shader {
                 program: self
                     .shaders
                     .get(path)
@@ -62,6 +62,7 @@ impl Assets {
                         "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
                     ))
                     .clone(),
+                parameters: parameters.clone(), // TODO: avoid cloning
             },
         }
     }
