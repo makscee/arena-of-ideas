@@ -67,7 +67,7 @@ impl Render {
             let template = &self.assets.units[&unit.unit_type];
 
             let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
-            self.draw_unit(unit, template, &render, game_time, framebuffer);
+            self.draw_unit(unit, template, &render, model, game_time, framebuffer);
             if unit
                 .all_statuses
                 .iter()
@@ -123,6 +123,7 @@ impl Render {
         unit: &Unit,
         template: &UnitTemplate,
         render_mode: &RenderMode,
+        model: &Model,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
@@ -208,6 +209,20 @@ impl Render {
                     .map(|alliance| self.assets.options.alliance_colors[alliance])
                     .collect();
 
+                let (action_time, target) = match &unit.action_state {
+                    ActionState::Start { time, target } => (
+                        (*time / unit.action.animation_delay).as_f32(),
+                        model.units.get(&target).map(|unit| unit),
+                    ),
+                    _ => (0.0, None),
+                };
+
+                let target_dir = target
+                    .map_or(Vec2::ZERO, |target| {
+                        (target.position - unit.position).normalize_or_zero()
+                    })
+                    .map(|x| x.as_f32());
+
                 ugli::draw(
                     framebuffer,
                     program,
@@ -219,12 +234,12 @@ impl Render {
                             u_unit_position: unit.position.map(|x| x.as_f32()),
                             u_unit_radius: unit.radius.as_f32(),
                             u_spawn: spawn_scale,
-                            u_action: match &unit.action_state {
-                                ActionState::Start { time, .. } => {
-                                    (*time / unit.action.animation_delay).as_f32()
-                                }
-                                _ => 0.0,
-                            },
+                            u_action: action_time,
+                            u_cooldown: unit.action.cooldown.as_f32(),
+                            u_target_dir: target_dir,
+                            u_random: unit.random_number.as_f32(),
+                            u_action_time: unit.last_action_time.as_f32(),
+                            u_injure_time: unit.last_injure_time.as_f32(),
                             u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
                             u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
                             u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),

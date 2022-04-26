@@ -47,6 +47,9 @@ pub struct Unit {
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
     pub render: RenderConfig,
+    pub last_action_time: Time,
+    pub last_injure_time: Time,
+    pub random_number: R32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]

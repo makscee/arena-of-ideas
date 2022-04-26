@@ -40,6 +40,9 @@ impl Logic<'_> {
             next_action_modifiers: Vec::new(),
             ability_cooldown: None,
             alliances: template.alliances,
+            last_action_time: Time::new(0.0),
+            last_injure_time: Time::new(0.0),
+            random_number: r32(global_rng().gen_range(0.0..=1.0)),
         };
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
