@@ -237,6 +237,7 @@ impl Render {
                             u_target_dir: target_dir,
                             u_random: unit.random_number.as_f32(),
                             u_action_time: unit.last_action_time.as_f32(),
+                            u_injure_time: unit.last_injure_time.as_f32(),
                             u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
                             u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
                             u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
