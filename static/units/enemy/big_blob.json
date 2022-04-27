@@ -17,13 +17,32 @@
     "statuses": [
         {
             "type": "OnDeath",
-            "effect": {
-                "type": "Repeat",
-                "times": 3,
-                "effect": {
-                    "type": "Spawn",
-                    "unit_type": "blob"
+            "effect":{
+                "type": "List",
+                "effects": [
+                {
+                    "type": "Repeat",
+                    "times": 3,
+                    "effect": {
+                        "type": "Spawn",
+                        "unit_type": "blob"
+                    }
+                },
+                {
+                    "type": "Visual",
+                    "duration": 1.0,
+                    "parent": "Caster",
+                    "follow": false,
+                    "radius": 3.0,
+                    "render": {
+                        "type": "Shader",
+                        "path": "shaders/vfx_explosion.glsl",
+                        "parameters": {
+                            "color": "#dc143c"
+                        }
+                    }
                 }
+            ]
             }
         }
     ],

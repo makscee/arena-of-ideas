@@ -9,10 +9,12 @@ const float thicknessOuter = 0.07;
 const float thicknessInner = thicknessOuter * .5;
 
 uniform float u_time;
-uniform vec2 u_unit_position;
-uniform float u_unit_radius;
+uniform float u_injure_time;
 uniform float u_spawn;
 uniform float u_action;
+
+uniform vec2 u_unit_position;
+uniform float u_unit_radius;
 
 uniform vec4 u_alliance_color_1;
 uniform vec4 u_alliance_color_2;
@@ -45,4 +47,20 @@ int mod(int a, int b)
 float round(float v)
 {
 	return floor(v) + float(v - floor(v) > 0.5) * 1.;
+}
+
+float rand(int i)
+{
+    return fract(sin(dot(vec2(i,0.) ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+vec2 randCircle(int i) 
+{
+    float r2p = rand(i) * pi * 2.;
+    return vec2(cos(r2p), sin(r2p));
+}
+
+float e_invSquare(float t)
+{
+    return 1. - (t - 1.) * (t - 1.);
 }

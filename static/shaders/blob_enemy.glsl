@@ -18,6 +18,8 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
+const float injureAnimationTime = 0.5;
+
 float getRingAlpha(
     vec2 uv, float r, float thickness, float glow, float glowStartV, float innerMult, float outerMult)
 {
@@ -62,6 +64,7 @@ void main() {
     float distInner = innerR - distCenter;
     float distInner2 = innerR2 - distCenter;
 
+
     vec4 col = vec4(colors[0], getRingAlpha(uv, outerR, thicknessOuter, glow, .3, 1.5, 0.));
     col = alphaBlend(col, vec4(colors[0], getRingAlpha(uv, outerR, thicknessOuter, glow, .3, 1.5, 0.)));
     col = alphaBlend(col, vec4(colors[0], getRingAlpha(uv, innerR, 0., glow * 1.5, .5, 1.7, 1.) * innerAlpha));
@@ -71,6 +74,11 @@ void main() {
         vec2(cos(u_time * 1.13 + sin(u_time * .5) * 2.),
             sin(u_time * 2.73)) * innerR * .8)) * float(distCenter < outerR + thicknessOuter * .5);
     col = alphaBlend(col, vec4(colors[0], v));
+
+    if (u_injure_time > 0. && abs(u_injure_time - u_time) < injureAnimationTime && distCenter < outerR)
+    {
+        col = alphaBlend(col, vec4(vec3(1.), 1. - (u_time - u_injure_time) / injureAnimationTime));
+    }
 
     gl_FragColor = col;
 }

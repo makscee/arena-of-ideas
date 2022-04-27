@@ -18,6 +18,8 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
+uniform vec4 color;
+
 float getRingAlpha(
     vec2 uv, float r, float thickness, float glow, float glowStart, float glowEnd, float innerMult, float outerMult)
 {
@@ -37,14 +39,13 @@ void main() {
     const float final_radius = 0.5;
     const float inside_alpha = 1.0;
     vec2 uv = v_quad_pos;
-    vec3 color = vec3(1);
-    vec4 col = vec4(color,0.);
+    vec4 col = vec4(color.rgb,0.);
     float t = 1. - u_spawn;
 
     float radius = t * final_radius;
     float dist = distance(uv, vec2(0.));
     float alpha = 1. - t;
-    col = alphaBlend(col, vec4(color, alpha * getRingAlpha(uv, radius, 0.1, .3 + radius, 1., 0.1, 1., 1.)));
+    col = alphaBlend(col, vec4(color.rgb, alpha * getRingAlpha(uv, radius, 0.1, .3 + radius, 1., 0.1, 1., 1.)));
     col.a = max(col.a, float(dist < radius) * inside_alpha * alpha);
 
     gl_FragColor = col;

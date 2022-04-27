@@ -5,5 +5,6 @@
     "shaders/ranged_hero.glsl",
     "shaders/shooter_enemy.glsl",
     "shaders/support_hero.glsl",
-    "shaders/vfx_explosion.glsl"
+    "shaders/vfx_explosion.glsl",
+    "shaders/vfx_particle_burst.glsl"
 ]
