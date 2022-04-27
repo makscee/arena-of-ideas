@@ -3,6 +3,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
+    pub tier: Tier,
     pub health: Health,
     pub spawn_animation_time: Time,
     pub speed: Coord,
@@ -32,6 +33,7 @@ impl UnitTemplate {
 impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
+            tier: Tier::new(1).unwrap(),
             health: Health::new(1.0),
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),

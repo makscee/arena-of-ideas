@@ -1,4 +1,5 @@
 {
+    "tier": 2,
     "health": 5,
     "action": {
         "range": 0.5,
