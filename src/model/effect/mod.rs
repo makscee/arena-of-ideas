@@ -94,6 +94,8 @@ pub enum Effect {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EffectPreset {
     pub preset: String,
+    #[serde(flatten)]
+    pub overrides: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -245,10 +247,15 @@ impl Effect {
 }
 
 impl EffectPreset {
-    fn into_effect(self, presets: &Effects) -> Effect {
-        presets
+    fn into_effect(mut self, presets: &Effects) -> Effect {
+        let preset = presets
             .get(&self.preset)
-            .expect(&format!("Failed to find a preset effect: {}", self.preset))
-            .clone()
+            .expect(&format!("Failed to find a preset effect: {}", self.preset));
+        let mut preset_json = serde_json::to_value(preset).unwrap();
+        preset_json
+            .as_object_mut()
+            .unwrap()
+            .append(&mut self.overrides);
+        serde_json::from_value(preset_json).expect("Failed to override fields of the preset")
     }
 }
