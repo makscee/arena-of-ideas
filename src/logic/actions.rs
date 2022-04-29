@@ -28,6 +28,7 @@ impl Logic<'_> {
                         },
                     });
                 }
+                unit.last_action_time = self.model.time;
                 unit.action_state = ActionState::Cooldown {
                     time: Time::new(0.0),
                 };
