@@ -91,6 +91,33 @@ pub enum Effect {
     Visual(Box<VisualEffect>),
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EffectPreset {
+    pub preset: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum EffectConfig {
+    Effect(Effect),
+    Preset(EffectPreset),
+}
+
+impl EffectConfig {
+    pub fn into_effect(self, presets: &Effects) -> Effect {
+        match self {
+            Self::Effect(effect) => effect,
+            Self::Preset(preset) => preset.into_effect(presets),
+        }
+    }
+}
+
+impl Default for EffectConfig {
+    fn default() -> Self {
+        Self::Effect(Effect::default())
+    }
+}
+
 impl std::fmt::Debug for Effect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -214,5 +241,14 @@ impl Effect {
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
         self.as_mut().walk_effects_mut(f);
         f(self);
+    }
+}
+
+impl EffectPreset {
+    fn into_effect(self, presets: &Effects) -> Effect {
+        presets
+            .get(&self.preset)
+            .expect(&format!("Failed to find a preset effect: {}", self.preset))
+            .clone()
     }
 }

@@ -2,6 +2,24 @@ use super::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
+pub struct UnitTemplateConfig {
+    pub tier: Tier,
+    pub health: Health,
+    pub spawn_animation_time: Time,
+    pub speed: Coord,
+    pub radius: Coord,
+    pub action: ActionPropertiesConfig,
+    pub move_ai: MoveAi,
+    pub statuses: Vec<Status>,
+    pub target_ai: TargetAi,
+    pub ability: Option<Ability>,
+    pub alliances: HashSet<Alliance>,
+    #[serde(rename = "render")]
+    pub render_config: RenderConfig,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
     pub tier: Tier,
     pub health: Health,
@@ -30,7 +48,26 @@ impl UnitTemplate {
     }
 }
 
-impl Default for UnitTemplate {
+impl UnitTemplateConfig {
+    pub fn into_template(self, presets: &Effects) -> UnitTemplate {
+        UnitTemplate {
+            tier: self.tier,
+            health: self.health,
+            spawn_animation_time: self.spawn_animation_time,
+            speed: self.speed,
+            radius: self.radius,
+            action: self.action.into_action_properties(presets),
+            move_ai: self.move_ai,
+            statuses: self.statuses,
+            target_ai: self.target_ai,
+            ability: self.ability,
+            alliances: self.alliances,
+            render_config: self.render_config,
+        }
+    }
+}
+
+impl Default for UnitTemplateConfig {
     fn default() -> Self {
         Self {
             tier: Tier::new(1).unwrap(),
@@ -38,7 +75,7 @@ impl Default for UnitTemplate {
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
             radius: Coord::new(0.5),
-            action: ActionProperties {
+            action: ActionPropertiesConfig {
                 range: Coord::new(1.0),
                 cooldown: Time::new(1.0),
                 animation_delay: Time::new(1.0),
@@ -53,6 +90,12 @@ impl Default for UnitTemplate {
             },
             alliances: default(),
         }
+    }
+}
+
+impl Default for UnitTemplate {
+    fn default() -> Self {
+        UnitTemplateConfig::default().into_template(&Effects { map: default() })
     }
 }
 

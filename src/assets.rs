@@ -31,6 +31,13 @@ pub struct Shaders {
     pub map: HashMap<String, Rc<ugli::Program>>,
 }
 
+#[derive(Deref, DerefMut)]
+pub struct Effects {
+    #[deref]
+    #[deref_mut]
+    pub map: HashMap<String, Effect>,
+}
+
 #[derive(geng::Assets, Deserialize, Clone)]
 #[asset(json)]
 pub struct Config {
@@ -81,6 +88,7 @@ impl geng::LoadAsset for UnitTemplates {
                 )
                 .await?,
             );
+            let presets = Effects::load(&geng, &static_path().join("effects.json")).await?;
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let packs: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
@@ -107,7 +115,10 @@ impl geng::LoadAsset for UnitTemplates {
                         json = base_json;
                         json.as_object_mut().unwrap().remove("base");
                     }
-                    let mut template: UnitTemplate = serde_json::from_value(json)?;
+
+                    let template_config: UnitTemplateConfig = serde_json::from_value(json)?;
+                    let template = template_config.into_template(&presets);
+
                     info!(
                         "{:?} => {}",
                         typ,
@@ -191,6 +202,29 @@ impl geng::LoadAsset for Textures {
                     _ => geng::LoadAsset::load(&geng, &texture_path).await?,
                 };
                 map.insert(path, texture);
+            }
+            Ok(Self { map })
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some("json");
+}
+
+impl geng::LoadAsset for Effects {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
+            let base_path = path.parent().unwrap();
+            let effects: Vec<String> = serde_json::from_str(&json)?;
+            let mut map = HashMap::new();
+            for path in effects {
+                let effect_path = base_path.join(&path);
+                let json = <String as geng::LoadAsset>::load(&geng, &effect_path).await?;
+                let effect = serde_json::from_str(&json)?;
+                map.insert(path, effect);
             }
             Ok(Self { map })
         }
