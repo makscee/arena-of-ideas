@@ -59,7 +59,7 @@ pub use time_bomb::*;
 pub use visual::*;
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
+#[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]
 pub enum Effect {
     Noop(Box<NoopEffect>),
     InstantAction(Box<InstantActionEffect>),
@@ -92,7 +92,40 @@ pub enum Effect {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct EffectPreset {
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum RawEffect {
+    Noop(Box<NoopEffect>),
+    InstantAction(Box<InstantActionEffect>),
+    Projectile(Box<ProjectileEffect>),
+    Damage(Box<DamageEffect>),
+    AttachStatus(Box<AttachStatusEffect>),
+    Spawn(Box<SpawnEffect>),
+    AOE(Box<AoeEffect>),
+    TimeBomb(Box<TimeBombEffect>),
+    Suicide(Box<SuicideEffect>),
+    Chain(Box<ChainEffect>),
+    Glave(Box<GlaveEffect>),
+    AddTargets(Box<AddTargetsEffect>),
+    Repeat(Box<RepeatEffect>),
+    Random(Box<RandomEffect>),
+    List(Box<ListEffect>),
+    If(Box<IfEffect>),
+    MaybeModify(Box<MaybeModifyEffect>),
+    ChangeContext(Box<ChangeContextEffect>),
+    Heal(Box<HealEffect>),
+    Revive(Box<ReviveEffect>),
+    ApplyGained(Box<ApplyGainedEffect>),
+    ChangeTarget(Box<ChangeTargetEffect>),
+    ChangeStat(Box<ChangeStatEffect>),
+    Delayed(Box<DelayedEffect>),
+    Action(Box<ActionEffect>),
+    Splash(Box<SplashEffect>),
+    NextActionModifier(Box<NextActionModifierEffect>),
+    Visual(Box<VisualEffect>),
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct EffectPreset {
     pub preset: String,
     #[serde(flatten)]
     pub overrides: serde_json::Map<String, serde_json::Value>,
@@ -100,15 +133,15 @@ pub struct EffectPreset {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]
-pub enum EffectConfig {
-    Effect(Effect),
+enum EffectConfig {
+    Effect(RawEffect),
     Preset(EffectPreset),
 }
 
 impl EffectConfig {
     pub fn into_effect(self, presets: &Effects) -> Effect {
         match self {
-            Self::Effect(effect) => effect,
+            Self::Effect(effect) => effect.into(),
             Self::Preset(preset) => preset.into_effect(presets),
         }
     }
@@ -116,7 +149,7 @@ impl EffectConfig {
 
 impl Default for EffectConfig {
     fn default() -> Self {
-        Self::Effect(Effect::default())
+        Self::Effect(RawEffect::default())
     }
 }
 
@@ -155,6 +188,53 @@ impl std::fmt::Debug for Effect {
     }
 }
 
+impl From<RawEffect> for Effect {
+    fn from(effect: RawEffect) -> Self {
+        match effect {
+            RawEffect::Noop(effect) => Self::Noop(effect),
+            RawEffect::InstantAction(effect) => Self::InstantAction(effect),
+            RawEffect::Projectile(effect) => Self::Projectile(effect),
+            RawEffect::Damage(effect) => Self::Damage(effect),
+            RawEffect::AttachStatus(effect) => Self::AttachStatus(effect),
+            RawEffect::Spawn(effect) => Self::Spawn(effect),
+            RawEffect::AOE(effect) => Self::AOE(effect),
+            RawEffect::TimeBomb(effect) => Self::TimeBomb(effect),
+            RawEffect::Suicide(effect) => Self::Suicide(effect),
+            RawEffect::Chain(effect) => Self::Chain(effect),
+            RawEffect::Glave(effect) => Self::Glave(effect),
+            RawEffect::AddTargets(effect) => Self::AddTargets(effect),
+            RawEffect::Repeat(effect) => Self::Repeat(effect),
+            RawEffect::Random(effect) => Self::Random(effect),
+            RawEffect::List(effect) => Self::List(effect),
+            RawEffect::If(effect) => Self::If(effect),
+            RawEffect::MaybeModify(effect) => Self::MaybeModify(effect),
+            RawEffect::ChangeContext(effect) => Self::ChangeContext(effect),
+            RawEffect::Heal(effect) => Self::Heal(effect),
+            RawEffect::Revive(effect) => Self::Revive(effect),
+            RawEffect::ApplyGained(effect) => Self::ApplyGained(effect),
+            RawEffect::ChangeTarget(effect) => Self::ChangeTarget(effect),
+            RawEffect::ChangeStat(effect) => Self::ChangeStat(effect),
+            RawEffect::Delayed(effect) => Self::Delayed(effect),
+            RawEffect::Action(effect) => Self::Action(effect),
+            RawEffect::Splash(effect) => Self::Splash(effect),
+            RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
+            RawEffect::Visual(effect) => Self::Visual(effect),
+        }
+    }
+}
+
+impl Default for RawEffect {
+    fn default() -> Self {
+        Self::noop()
+    }
+}
+
+impl RawEffect {
+    pub fn noop() -> Self {
+        Self::Noop(Box::new(NoopEffect {}))
+    }
+}
+
 impl Default for Effect {
     fn default() -> Self {
         Self::noop()
@@ -163,7 +243,7 @@ impl Default for Effect {
 
 impl Effect {
     pub fn noop() -> Self {
-        Self::Noop(Box::new(NoopEffect {}))
+        RawEffect::noop().into()
     }
 }
 
@@ -243,6 +323,18 @@ impl Effect {
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
         self.as_mut().walk_effects_mut(f);
         f(self);
+    }
+}
+
+impl From<EffectConfig> for Effect {
+    fn from(config: EffectConfig) -> Self {
+        match config {
+            EffectConfig::Effect(effect) => effect.into(),
+            EffectConfig::Preset(preset) => {
+                let presets = EFFECT_PRESETS.lock().unwrap();
+                preset.into_effect(&*presets)
+            }
+        }
     }
 }
 

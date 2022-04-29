@@ -18,33 +18,12 @@ pub enum ActionState {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct ActionPropertiesConfig {
-    pub cooldown: Time,
-    pub animation_delay: Time,
-    pub range: Coord,
-    #[serde(default)]
-    pub effect: EffectConfig,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
 pub struct ActionProperties {
     pub cooldown: Time,
     pub animation_delay: Time,
     pub range: Coord,
     #[serde(default)]
     pub effect: Effect,
-}
-
-impl ActionPropertiesConfig {
-    pub fn into_action_properties(self, presets: &Effects) -> ActionProperties {
-        ActionProperties {
-            cooldown: self.cooldown,
-            animation_delay: self.animation_delay,
-            range: self.range,
-            effect: self.effect.into_effect(presets),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, HasId, Clone)]

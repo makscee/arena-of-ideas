@@ -1,10 +1,17 @@
 use super::*;
 
+use once_cell::sync::Lazy;
+
 #[derive(Deserialize, geng::Assets)]
 #[asset(json)]
 pub struct Options {
     pub alliance_colors: HashMap<Alliance, Color<f32>>,
 }
+
+// Used because deserializing with state is not as trivial as writing
+// `#[derive(Deserialize)]`, and requires too much boilerplate.
+pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
+    Lazy::new(|| Mutex::new(Effects { map: default() }));
 
 #[derive(geng::Assets)]
 pub struct Assets {
@@ -88,7 +95,10 @@ impl geng::LoadAsset for UnitTemplates {
                 )
                 .await?,
             );
-            let presets = Effects::load(&geng, &static_path().join("effects.json")).await?;
+
+            *EFFECT_PRESETS.lock().unwrap() =
+                Effects::load(&geng, &static_path().join("effects.json")).await?;
+
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let packs: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
@@ -116,8 +126,7 @@ impl geng::LoadAsset for UnitTemplates {
                         json.as_object_mut().unwrap().remove("base");
                     }
 
-                    let template_config: UnitTemplateConfig = serde_json::from_value(json)?;
-                    let template = template_config.into_template(&presets);
+                    let template: UnitTemplate = serde_json::from_value(json)?;
 
                     info!(
                         "{:?} => {}",
