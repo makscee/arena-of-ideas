@@ -21,9 +21,5 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "base": "melee",
-    "render": {
-        "type": "Texture",
-        "path": "svg/rogue.svg"
-    }
+    "base": "melee"
 }

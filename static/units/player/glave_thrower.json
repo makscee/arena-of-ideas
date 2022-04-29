@@ -44,9 +44,5 @@
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "base": "ranged",
-    "render": {
-        "type": "Texture",
-        "path": "svg/glave_thrower.svg"
-    }
+    "base": "ranged"
 }

@@ -17,62 +17,43 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-float getTriangleAlpha(vec2 uv, float ang, float size, float thickness)
+vec3 mixColors(float t)
 {
-    const float tan3 = tan(pi/3.0);
-    const float innerRad = sqrt(3.0) / 6.0;
-    vec2 tuv = vec2(
-        uv.x * cos(ang) + uv.y * sin(ang),
-        -uv.x * sin(ang) + uv.y * cos(ang));
-    
-    return float(
-                   abs(tuv.y + innerRad - (tuv.x + size) * tan3 - tan3 / 2.0) < thickness
-                || abs(tuv.y + innerRad + (tuv.x - size) * tan3 - tan3 / 2.0) < thickness
-                || abs(tuv.y + innerRad + size) < thickness * .5
-                )
-        * float(tuv.y + innerRad < (tuv.x + size) * tan3 + tan3 / 2.0 && tuv.y + innerRad < -(tuv.x - size) * tan3 + tan3 / 2.0 && tuv.y + innerRad > -size);
+    t += float(t < 0.);
+    int colorInd = int(t * alCountF);
+    vec3 c1 = colors[colorInd];
+    vec3 c2 = colors[int(mod(float(colorInd + 1), alCountF))];
+    return mix(c1, c2, t * alCountF - float(colorInd));
+}
+
+vec4 getRingColor(float rad, float h)
+{
+    float t = rad / pi / 2.;
+
+    vec4 glowColor = vec4(mixColors(1. - t - 1. / alCountF / 2.), glowValue((h - c_thickness) / c_glowRange));
+    vec4 insideColor = vec4(colors[int((pi * 2. - rad) / (pi * 2. / alCountF))], 1.);
+
+    vec4 col = float(h > c_thickness && h - c_thickness < c_glowRange) * glowColor
+        + float(h < c_thickness) * insideColor;
+    return col;
 }
 
 void main() {
+    commonInit();
     vec2 uv = v_quad_pos;
-
-    vec3 colors[3];
-    colors[0] = u_alliance_color_1.rgb;
-    colors[1] = u_alliance_color_2.rgb;
-    colors[2] = u_alliance_color_3.rgb;
-
     
     float anim = animationFunc(u_action) / 4.;
-    
     float dist = distance(uv,vec2(0.0,0.0));
-    
     vec4 col = vec4(0.,0.,0.,0.);
-    const float timeShift = 0.13;
-    float angShift = 0.05 + cos(u_time * .33);
-    const float sizeShift = 0.15;
-    const float lineThickness = 0.1;
-    float ang = 0.;
 
-    for (int i = 0; i < u_alliance_count * 3; i++)
-    {
-        vec3 curCol = colors[int(mod((i + u_alliance_count * 100), u_alliance_count))];
-        float curAlpha = getTriangleAlpha(uv, ang + float(i + 1) * angShift, 0.1 + float(i) * sizeShift * sin(u_time + timeShift * float(i)), lineThickness);
-        col = alphaBlend(col, vec4(curCol, curAlpha));
-    }
+    float rotation = -vecAngle(u_target_dir);
+    uv = rotateCW(uv, rotation);
+    float distToCircle = abs(dist - u_unit_radius);
+    col = float(distToCircle < c_thickness + c_glowRange) * getRingColor(vecAngle(uv), distToCircle);
 
-    col.a = 0.4 - (dist - 1.) / glow;
-    col = alphaBlend(col, vec4(colors[0],getTriangleAlpha(uv,ang,0.,100.)));
-    col = alphaBlend(col, vec4(colors[1],float(u_alliance_count > 1 && dist < 1.) * getTriangleAlpha(uv,ang,0.2,.2)));
-    col = alphaBlend(col, vec4(colors[2],float(u_alliance_count > 2 && dist < 1.) * getTriangleAlpha(uv,ang,0.4,.2)));
-
-    if (dist > 1.0 - thickness && dist < 1.0 + thickness) {
-        col = alphaBlend(col, vec4(colors[0],1));
-    }
-    // else if (dist > 1.0 && dist < 1.0 + glow)
-    // {
-    //     float v = (dist - 1.0) / glow;
-    //     col = alphaBlend(col, vec4(colors[0], mix(glowStart, glowEnd, v)));
-    // }
+    float cooldownLeft = clamp(1. - (u_time - u_action_time - u_animation_delay) / u_cooldown, 0., 1.);
+    float tDist = triangleDist(uv, -1.7);
+    col = alphaBlend(col, vec4(colors[0], float(tDist < 1. && tDist > 0.97 * cooldownLeft)));
 
     gl_FragColor = col;
 }

@@ -48,9 +48,5 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "base": "melee",
-    "render": {
-        "type": "Texture",
-        "path": "svg/egg_collector.svg"
-    }
+    "base": "melee"
 }

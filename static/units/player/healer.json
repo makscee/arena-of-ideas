@@ -31,9 +31,5 @@
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "base": "caster",
-    "render": {
-        "type": "Texture",
-        "path": "svg/healer.svg"
-    }
+    "base": "caster"
 }

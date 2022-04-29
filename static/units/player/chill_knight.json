@@ -36,9 +36,5 @@
     "alliances": [
         "Freezers"
     ],
-    "base": "melee",
-    "render": {
-        "type": "Texture",
-        "path": "svg/chill_knight.svg"
-    }
+    "base": "melee"
 }

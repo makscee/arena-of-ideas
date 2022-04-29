@@ -56,9 +56,5 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "base": "melee",
-    "render": {
-        "type": "Texture",
-        "path": "svg/dr_acula.svg"
-    }
+    "base": "melee"
 }
