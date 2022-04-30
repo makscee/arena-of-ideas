@@ -96,8 +96,7 @@ impl geng::LoadAsset for UnitTemplates {
                 .await?,
             );
 
-            *EFFECT_PRESETS.lock().unwrap() =
-                Effects::load(&geng, &static_path().join("effects.json")).await?;
+            Effects::load(&geng, &static_path().join("effects.json")).await?;
 
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let packs: Vec<String> = serde_json::from_str(&json)?;
@@ -220,22 +219,22 @@ impl geng::LoadAsset for Textures {
     const DEFAULT_EXT: Option<&'static str> = Some("json");
 }
 
-impl geng::LoadAsset for Effects {
-    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+impl Effects {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<()> {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let base_path = path.parent().unwrap();
             let effects: Vec<String> = serde_json::from_str(&json)?;
-            let mut map = HashMap::new();
+            let mut map = EFFECT_PRESETS.lock().unwrap();
             for path in effects {
                 let effect_path = base_path.join(&path);
                 let json = <String as geng::LoadAsset>::load(&geng, &effect_path).await?;
                 let effect = serde_json::from_str(&json)?;
                 map.insert(path, effect);
             }
-            Ok(Self { map })
+            Ok(())
         }
         .boxed_local()
     }
