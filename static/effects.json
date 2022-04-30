@@ -1,2 +1,5 @@
 [
+	"effects/dd_ranged.json",
+	"effects/projectile_dd_ranged.json",
+	"effects/dd_melee.json"
 ]

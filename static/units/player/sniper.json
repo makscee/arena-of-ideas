@@ -1,48 +1,19 @@
 {
     "tier": 4,
     "health": 2,
-    "action": {
+    "base_damage": 2,
+    "action":
+    {
         "range": 10,
         "animation_delay": 0.5,
         "cooldown": 1,
-        "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "Damage",
-                        "types": [
-                            "Ranged"
-                        ],
-                        "value": {
-                            "type": "Const",
-                            "value": 1
-                        }
-                    },
-                    {
-                        "type": "Visual",
-                        "duration": 0.5,
-                        "parent": "Target",
-                        "follow": false,
-                        "radius": 1.5,
-                        "render": {
-                            "type": "Shader",
-                            "path": "shaders/vfx_particle_burst.glsl",
-                            "parameters": {
-                                "p_startColor": "#dc143c",
-                                "p_endColor": "#1e90ff",
-                                "p_count": 12,
-                                "p_startSize": 0.1
-                            }
-                        }
-                    }
-                ]
-            }
+        "effect":
+        {
+            "preset": "effects/projectile_dd_ranged.json"
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Assassins",
         "Archers"
     ],

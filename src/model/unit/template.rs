@@ -5,6 +5,7 @@ use super::*;
 pub struct UnitTemplate {
     pub tier: Tier,
     pub health: Health,
+    pub base_damage: Health,
     pub spawn_animation_time: Time,
     pub speed: Coord,
     pub radius: Coord,
@@ -35,6 +36,7 @@ impl Default for UnitTemplate {
         Self {
             tier: Tier::new(1).unwrap(),
             health: Health::new(1.0),
+            base_damage: Health::new(1.0),
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
             radius: Coord::new(0.5),

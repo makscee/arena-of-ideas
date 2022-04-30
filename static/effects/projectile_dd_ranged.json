@@ -1,0 +1,43 @@
+{
+    "type": "Projectile",
+    "speed": 10,
+    "effect":
+    {
+        "type": "List",
+        "effects":
+        [
+            {
+                "type": "Damage",
+                "types":
+                [
+                    "Ranged"
+                ],
+                "value":
+                {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "BaseDamage"
+                }
+            },
+            {
+                "type": "Visual",
+                "duration": 0.5,
+                "parent": "Target",
+                "follow": false,
+                "radius": 1.5,
+                "render":
+                {
+                    "type": "Shader",
+                    "path": "shaders/vfx_particle_burst.glsl",
+                    "parameters":
+                    {
+                        "p_startColor": "#dc143c",
+                        "p_endColor": "#1e90ff",
+                        "p_count": 12,
+                        "p_startSize": 0.1
+                    }
+                }
+            }
+        ]
+    }
+}

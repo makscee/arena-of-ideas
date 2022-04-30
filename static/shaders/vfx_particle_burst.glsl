@@ -28,6 +28,7 @@ const float p_trailShift = 0.025;
 const float p_velocity = .6;
 const float p_spinMax = 0.1;
 const float p_startPosRand = 0.1;
+const float p_spawnShift = 0.02;
 
 float p_velocityOverT(int i, float t)
 {
@@ -94,10 +95,11 @@ void main() {
     p_discardCheck(uv, t);
 
     for (int i = 0; i < p_count; i++)
-    {
         for (int j = 0; j < p_trailCount; j++)
-            col = alphaBlend(col, p_renderParticle(i, uv, t - float(j) * p_trailShift));
-    }
+            {
+                float sShift = float(i) * p_spawnShift;
+                col = alphaBlend(col, p_renderParticle(i, uv, t / (1. - sShift) - float(j) * p_trailShift - sShift));
+            }
 
     gl_FragColor = col;
 }

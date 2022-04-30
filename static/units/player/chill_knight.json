@@ -1,39 +1,29 @@
 {
     "tier": 1,
     "health": 5,
-    "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.75,
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Melee"
-            ],
-            "value": {
-                "type": "Const",
-                "value": 2
-            }
-        }
-    },
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "ability": {
+    "ability":
+    {
         "cooldown": 3,
-        "effect": {
+        "effect":
+        {
             "type": "AOE",
             "filter": "Enemies",
             "skip_current_target": true,
             "range": 3,
-            "effect": {
+            "effect":
+            {
                 "type": "AttachStatus",
-                "status": {
+                "status":
+                {
                     "type": "Freeze"
                 }
             }
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Freezers"
     ],
     "base": "melee"

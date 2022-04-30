@@ -1,0 +1,38 @@
+{
+    "type": "List",
+    "effects":
+    [
+        {
+            "type": "Damage",
+            "types":
+            [
+                "Melee"
+            ],
+            "value":
+            {
+                "type": "FindStat",
+                "who": "Caster",
+                "stat": "BaseDamage"
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 0.7,
+            "parent": "Target",
+            "follow": false,
+            "radius": 1.9,
+            "render":
+            {
+                "type": "Shader",
+                "path": "shaders/vfx_particle_burst.glsl",
+                "parameters":
+                {
+                    "p_startColor": "#dc143c",
+                    "p_endColor": "#ff4500",
+                    "p_count": 8,
+                    "p_startSize": 0.2
+                }
+            }
+        }
+    ]
+}

@@ -37,6 +37,7 @@ pub struct Unit {
     pub action_state: ActionState,
     pub health: Health,
     pub max_hp: Health,
+    pub base_damage: Health,
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub action: ActionProperties,
@@ -57,6 +58,7 @@ pub struct Unit {
 pub enum UnitStat {
     MaxHealth,
     Radius,
+    BaseDamage,
 }
 
 impl Unit {
@@ -64,12 +66,14 @@ impl Unit {
         match stat {
             UnitStat::MaxHealth => self.max_hp,
             UnitStat::Radius => self.radius,
+            UnitStat::BaseDamage => self.base_damage,
         }
     }
     pub fn stat_mut(&mut self, stat: UnitStat) -> &mut R32 {
         match stat {
             UnitStat::MaxHealth => &mut self.max_hp,
             UnitStat::Radius => &mut self.radius,
+            UnitStat::BaseDamage => &mut self.base_damage,
         }
     }
 }

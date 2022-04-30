@@ -30,6 +30,7 @@ impl Logic<'_> {
             action_state: ActionState::None,
             health: template.health,
             max_hp: template.health,
+            base_damage: template.base_damage,
             position,
             speed: template.speed,
             radius: template.radius,
