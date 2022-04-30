@@ -227,12 +227,11 @@ impl Effects {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let base_path = path.parent().unwrap();
             let effects: Vec<String> = serde_json::from_str(&json)?;
-            let mut map = EFFECT_PRESETS.lock().unwrap();
             for path in effects {
                 let effect_path = base_path.join(&path);
                 let json = <String as geng::LoadAsset>::load(&geng, &effect_path).await?;
                 let effect = serde_json::from_str(&json)?;
-                map.insert(path, effect);
+                EFFECT_PRESETS.lock().unwrap().insert(path, effect);
             }
             Ok(())
         }
