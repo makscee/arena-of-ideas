@@ -1,33 +1,26 @@
 {
     "tier": 1,
-    "health": 2,
-    "action": {
+    "action":
+    {
         "range": 15,
         "animation_delay": 0.75,
         "cooldown": 1.25,
-        "effect": {
+        "effect":
+        {
             "type": "AddTargets",
-            "condition": {
+            "condition":
+            {
                 "type": "Always"
             },
             "additional_targets": 1,
-            "effect": {
-                "type": "Projectile",
-                "speed": 10,
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "Ranged"
-                    ],
-                    "value": {
-                        "type": "Const",
-                        "value": 1
-                    }
-                }
+            "effect":
+            {
+                "preset": "effects/projectile_dd_ranged.json"
             }
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Archers"
     ],
     "move_ai": "KeepClose",

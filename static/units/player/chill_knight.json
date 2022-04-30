@@ -1,6 +1,5 @@
 {
     "tier": 1,
-    "health": 5,
     "move_ai": "Advance",
     "target_ai": "Closest",
     "ability":

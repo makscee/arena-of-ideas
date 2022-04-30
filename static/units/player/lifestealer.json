@@ -1,57 +1,80 @@
 {
     "tier": 3,
-    "health": 5,
-    "action": {
+    "action":
+    {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Melee"
-            ],
-            "value": {
-                "type": "Mul",
-                "a": {
-                    "type": "FindStat",
-                    "who": "Target",
-                    "stat": "MaxHealth"
-                },
-                "b": {
-                    "type": "Const",
-                    "value": 0.1
-                }
-            },
-            "on": {
-                "Injure": {
-                    "type": "ChangeContext",
-                    "target": "Caster",
-                    "effect": {
-                        "type": "Heal",
-                        "value": {
-                            "type": "Var",
-                            "name": "DamageDealt"
+        "effect":
+        {
+            "type": "List",
+            "effects":
+            [
+                {
+                    "type": "Damage",
+                    "types":
+                    [
+                        "Melee"
+                    ],
+                    "value":
+                    {
+                        "type": "Mul",
+                        "a":
+                        {
+                            "type": "FindStat",
+                            "who": "Target",
+                            "stat": "MaxHealth"
+                        },
+                        "b":
+                        {
+                            "type": "Const",
+                            "value": 0.1
+                        }
+                    },
+                    "on":
+                    {
+                        "Injure":
+                        {
+                            "type": "ChangeContext",
+                            "target": "Caster",
+                            "effect":
+                            {
+                                "type": "Heal",
+                                "value":
+                                {
+                                    "type": "Var",
+                                    "name": "DamageDealt"
+                                }
+                            }
                         }
                     }
+                },
+                {
+                    "preset":"effects/melee_hit_vfx.json"
                 }
-            }
+            ]
         }
     },
-    "ability": {
+    "ability":
+    {
         "cooldown": 3,
-        "effect": {
+        "effect":
+        {
             "type": "List",
-            "effects": [
+            "effects":
+            [
                 {
                     "type": "AttachStatus",
-                    "status": {
+                    "status":
+                    {
                         "type": "Invulnerability",
                         "time": 3
                     }
                 },
                 {
                     "type": "AttachStatus",
-                    "status": {
+                    "status":
+                    {
                         "type": "AttackSpeed",
                         "percent": 175,
                         "time": 3
@@ -60,7 +83,8 @@
             ]
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Vampires",
         "Assassins"
     ],

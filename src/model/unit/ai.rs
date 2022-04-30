@@ -5,6 +5,7 @@ pub enum MoveAi {
     Advance,
     KeepClose,
     Avoid,
+    Stay,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]

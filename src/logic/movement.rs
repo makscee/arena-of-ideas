@@ -55,6 +55,9 @@ impl Logic<'_> {
                     target_position = closest_ally.position;
                 }
             }
+            MoveAi::Stay => {
+                target_position = unit.position;
+            }
         }
         let mut speed = unit.speed;
         for status in &unit.all_statuses {

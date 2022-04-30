@@ -1,50 +1,71 @@
 {
     "tier": 1,
-    "health": 5,
-    "action": {
+    "action":
+    {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Melee"
-            ],
-            "value": {
-                "type": "Const",
-                "value": 2
-            },
-            "on": {
-                "Injure": {
-                    "type": "Random",
-                    "choices": [
+        "effect":
+        {
+            "type": "List",
+            "effects":
+            [
+                {
+                    "type": "Damage",
+                    "types":
+                    [
+                        "Melee"
+                    ],
+                    "value":
+                    {
+                        "type": "FindStat",
+                        "who": "Caster",
+                        "stat": "BaseDamage"
+                    },
+                    "on":
+                    {
+                        "Injure":
                         {
-                            "weight": 25,
-                            "effect": {
-                                "type": "AOE",
-                                "filter": "Enemies",
-                                "range": 5,
-                                "effect": {
-                                    "type": "AttachStatus",
-                                    "time": 3,
-                                    "status": {
-                                        "type": "Stun"
+                            "type": "Random",
+                            "choices":
+                            [
+                                {
+                                    "weight": 25,
+                                    "effect":
+                                    {
+                                        "type": "AOE",
+                                        "filter": "Enemies",
+                                        "range": 5,
+                                        "effect":
+                                        {
+                                            "type": "AttachStatus",
+                                            "time": 3,
+                                            "status":
+                                            {
+                                                "type": "Stun"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "weight": 75,
+                                    "effect":
+                                    {
+                                        "type": "Noop"
                                     }
                                 }
-                            }
-                        },
-                        {
-                            "weight": 75,
-                            "effect": {
-                                "type": "Noop"
-                            }
+                            ]
                         }
-                    ]
+                    }
+                },
+                {
+                    "preset": "effects/melee_hit_vfx.json"
                 }
-            }
+            ]
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Warriors"
     ],
     "move_ai": "Advance",

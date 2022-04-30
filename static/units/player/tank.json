@@ -1,28 +1,33 @@
 {
     "tier": 3,
-    "health": 5,
-    "action": {
+    "action":
+    {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect": {
+        "effect":
+        {
             "type": "Damage",
-            "types": [
+            "types":
+            [
                 "Melee"
             ],
-            "value": {
+            "value":
+            {
                 "type": "Const",
                 "value": 2
             }
         }
     },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "Taunt",
             "range": 5
         }
     ],
-    "alliances": [
+    "alliances":
+    [
         "Warriors"
     ],
     "move_ai": "Advance",

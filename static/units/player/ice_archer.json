@@ -1,34 +1,27 @@
 {
     "tier": 3,
-    "health": 2,
-    "action": {
+    "action":
+    {
         "range": 10,
         "animation_delay": 0.75,
         "cooldown": 1.25,
-        "effect": {
+        "effect":
+        {
             "type": "AddTargets",
-            "condition": {
+            "condition":
+            {
                 "type": "UnitHasStatus",
                 "who": "Target",
                 "status": "Freeze"
             },
-            "effect": {
-                "type": "Projectile",
-                "speed": 10,
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "Ranged"
-                    ],
-                    "value": {
-                        "type": "Const",
-                        "value": 1
-                    }
-                }
+            "effect":
+            {
+                "preset": "effects/projectile_dd_ranged.json"
             }
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Freezers",
         "Archers"
     ],

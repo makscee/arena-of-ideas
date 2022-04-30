@@ -1,40 +1,31 @@
 {
     "tier": 1,
-    "health": 5,
-    "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.75,
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Melee"
-            ],
-            "value": {
-                "type": "Const",
-                "value": 2
-            }
-        }
-    },
-    "ability": {
+    "ability":
+    {
         "cooldown": 3,
-        "effect": {
+        "effect":
+        {
             "type": "ApplyGained"
         }
     },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "Scavenge",
             "who": "Enemies",
             "range": 10,
-            "effect": {
+            "effect":
+            {
                 "type": "ChangeContext",
                 "target": "Caster",
-                "effect": {
+                "effect":
+                {
                     "type": "AttachStatus",
-                    "status": {
+                    "status":
+                    {
                         "type": "GainedEffect",
-                        "effect": {
+                        "effect":
+                        {
                             "type": "Spawn",
                             "unit_type": "critter"
                         }
@@ -43,7 +34,8 @@
             }
         }
     ],
-    "alliances": [
+    "alliances":
+    [
         "Spawners"
     ],
     "move_ai": "Advance",

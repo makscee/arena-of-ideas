@@ -1,40 +1,24 @@
 {
     "tier": 3,
-    "health": 2,
-    "action": {
-        "range": 10,
-        "animation_delay": 0.75,
-        "cooldown": 1.25,
-        "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "Ranged"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                }
-            }
-        }
-    },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "OnKill",
             "damage_type": "Crit",
-            "effect": {
+            "effect":
+            {
                 "type": "Repeat",
                 "times": 3,
-                "effect": {
+                "effect":
+                {
                     "type": "Spawn",
                     "unit_type": "critter"
                 }
             }
         }
     ],
-    "alliances": [
+    "alliances":
+    [
         "Assassins",
         "Spawners"
     ],

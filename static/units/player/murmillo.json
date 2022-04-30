@@ -1,42 +1,33 @@
 {
     "tier": 2,
-    "health": 5,
-    "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.75,
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Melee"
-            ],
-            "value": {
-                "type": "Const",
-                "value": 2
-            }
-        }
-    },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "OnShieldBroken",
-            "effect": {
+            "effect":
+            {
                 "type": "Heal",
-                "value": {
+                "value":
+                {
                     "type": "Var",
                     "name": "DamageBlocked"
                 }
             }
         }
     ],
-    "alliances": [
+    "alliances":
+    [
         "Warriors",
         "Assassins"
     ],
-    "ability": {
+    "ability":
+    {
         "cooldown": 3,
-        "effect": {
+        "effect":
+        {
             "type": "AttachStatus",
-            "status": {
+            "status":
+            {
                 "type": "Shield"
             }
         }

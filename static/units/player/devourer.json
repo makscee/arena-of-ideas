@@ -1,44 +1,35 @@
 {
     "tier": 4,
-    "health": 5,
-    "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.75,
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Melee"
-            ],
-            "value": {
-                "type": "Const",
-                "value": 2
-            }
-        }
-    },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "Scavenge",
             "who": "All",
             "range": 10,
             "alliance": "Critters",
-            "effect": {
+            "effect":
+            {
                 "type": "ChangeContext",
                 "target": "Caster",
-                "effect": {
+                "effect":
+                {
                     "type": "List",
-                    "effects": [
+                    "effects":
+                    [
                         {
                             "type": "ChangeStat",
                             "stat": "Radius",
-                            "value": {
+                            "value":
+                            {
                                 "type": "Sum",
-                                "a": {
+                                "a":
+                                {
                                     "type": "FindStat",
                                     "who": "Target",
                                     "stat": "Radius"
                                 },
-                                "b": {
+                                "b":
+                                {
                                     "type": "Const",
                                     "value": 0.05
                                 }
@@ -47,14 +38,17 @@
                         {
                             "type": "ChangeStat",
                             "stat": "MaxHealth",
-                            "value": {
+                            "value":
+                            {
                                 "type": "Sum",
-                                "a": {
+                                "a":
+                                {
                                     "type": "FindStat",
                                     "who": "Target",
                                     "stat": "MaxHealth"
                                 },
-                                "b": {
+                                "b":
+                                {
                                     "type": "Const",
                                     "value": 0.2
                                 }
@@ -62,17 +56,22 @@
                         },
                         {
                             "type": "AttachStatus",
-                            "status": {
+                            "status":
+                            {
                                 "type": "Modifier",
-                                "modifier": {
+                                "modifier":
+                                {
                                     "type": "Strength",
-                                    "value": {
+                                    "value":
+                                    {
                                         "type": "Sum",
-                                        "a": {
+                                        "a":
+                                        {
                                             "type": "Var",
                                             "name": "Value"
                                         },
-                                        "b": {
+                                        "b":
+                                        {
                                             "type": "Const",
                                             "value": 0.2
                                         }
@@ -85,7 +84,8 @@
             }
         }
     ],
-    "alliances": [
+    "alliances":
+    [
         "Spawners",
         "Vampires"
     ],

@@ -3,22 +3,11 @@
     "speed": 0.4,
     "radius": 1.0,
     "action": {
-        "range": 10,
+        "range": 8,
         "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "Ranged"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                }
-            }
+            "preset": "effects/projectile_dd_ranged.json"
         }
     },
     "move_ai": "KeepClose",

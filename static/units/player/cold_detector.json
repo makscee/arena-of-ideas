@@ -1,36 +1,19 @@
 {
     "tier": 4,
-    "health": 2,
-    "action": {
-        "range": 10,
-        "animation_delay": 0.75,
-        "cooldown": 1.25,
-        "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "Ranged"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                }
-            }
-        }
-    },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "Detect",
             "on": "Enemies",
             "detect_type": "Freeze",
-            "effect": {
+            "effect":
+            {
                 "type": "InstantAction"
             }
         }
     ],
-    "alliances": [
+    "alliances":
+    [
         "Freezers",
         "Archers",
         "Vampires"
@@ -39,4 +22,3 @@
     "target_ai": "Closest",
     "base": "ranged"
 }
-

@@ -1,10 +1,9 @@
 {
     "tier": 4,
-    "health": 2,
     "base_damage": 2,
     "action":
     {
-        "range": 10,
+        "range": 15,
         "animation_delay": 0.5,
         "cooldown": 1,
         "effect":
@@ -17,7 +16,7 @@
         "Assassins",
         "Archers"
     ],
-    "move_ai": "KeepClose",
+    "move_ai": "Stay",
     "target_ai": "Closest",
     "base": "ranged"
 }

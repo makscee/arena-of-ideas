@@ -1,14 +1,18 @@
 {
     "type": "List",
-    "effects": [
+    "effects":
+    [
         {
             "type": "Damage",
-            "types": [
+            "types":
+            [
                 "Ranged"
             ],
-            "value": {
-                "type": "Const",
-                "value": 1
+            "value":
+            {
+                "type": "FindStat",
+                "who": "Caster",
+                "stat": "BaseDamage"
             }
         },
         {
@@ -17,10 +21,12 @@
             "parent": "Target",
             "follow": false,
             "radius": 1.5,
-            "render": {
+            "render":
+            {
                 "type": "Shader",
                 "path": "shaders/vfx_particle_burst.glsl",
-                "parameters": {
+                "parameters":
+                {
                     "p_startColor": "#dc143c",
                     "p_endColor": "#1e90ff",
                     "p_count": 12,

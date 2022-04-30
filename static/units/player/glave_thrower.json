@@ -1,36 +1,36 @@
 {
     "tier": 3,
-    "health": 2,
-    "action": {
+    "action":
+    {
         "range": 10,
         "animation_delay": 0.75,
         "cooldown": 1.25,
-        "effect": {
+        "effect":
+        {
             "type": "Glave",
             "targets": 4,
             "jump_distance": 5,
-            "effect": {
+            "effect":
+            {
                 "speed": 10,
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "Ranged"
-                    ],
-                    "value": {
-                        "type": "Const",
-                        "value": 1
-                    }
+                "effect":
+                {
+                    "preset": "effects/dd_ranged.json"
                 }
             },
-            "jump_modifier": {
+            "jump_modifier":
+            {
                 "type": "Strength",
-                "value": {
+                "value":
+                {
                     "type": "Mul",
-                    "a": {
+                    "a":
+                    {
                         "type": "Var",
                         "name": "Value"
                     },
-                    "b": {
+                    "b":
+                    {
                         "type": "Const",
                         "value": 0.8
                     }
@@ -38,7 +38,8 @@
             }
         }
     },
-    "alliances": [
+    "alliances":
+    [
         "Archers",
         "Chainers"
     ],

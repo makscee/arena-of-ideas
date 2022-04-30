@@ -1,26 +1,7 @@
 {
     "tier": 1,
-    "health": 2,
-    "action": {
-        "range": 10,
-        "animation_delay": 1,
-        "cooldown": 3,
-        "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "Ranged"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                }
-            }
-        }
-    },
-    "alliances": [
+    "alliances":
+    [
         "Archers"
     ],
     "move_ai": "Advance",

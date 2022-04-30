@@ -57,15 +57,32 @@
         {
             "Top": [
                 "small_blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob",
                 "blob"
             ],
             "Left": [
-                "big_blob"
+                "big_blob",
+                "blob",
+                "blob",
+                "blob",
+                "blob"
             ],
             "Right": [
+                "shooter",
+                "shooter",
+                "shooter",
+                "shooter",
                 "shooter"
             ]
         }
     ],
-    "fov": 15
+    "fov": 22
 }

@@ -16,23 +16,7 @@
             }
         },
         {
-            "type": "Visual",
-            "duration": 0.7,
-            "parent": "Target",
-            "follow": false,
-            "radius": 1.9,
-            "render":
-            {
-                "type": "Shader",
-                "path": "shaders/vfx_particle_burst.glsl",
-                "parameters":
-                {
-                    "p_startColor": "#dc143c",
-                    "p_endColor": "#ff4500",
-                    "p_count": 8,
-                    "p_startSize": 0.2
-                }
-            }
+            "preset":"effects/melee_hit_vfx.json"
         }
     ]
 }

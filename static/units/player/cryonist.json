@@ -1,54 +1,42 @@
 {
     "tier": 2,
-    "health": 2,
-    "action": {
-        "range": 10,
-        "animation_delay": 0.75,
-        "cooldown": 1.25,
-        "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "Ranged"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                }
-            }
-        }
-    },
-    "alliances": [
+    "alliances":
+    [
         "Freezers",
         "Healers"
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "ability": {
+    "ability":
+    {
         "cooldown": 3,
-        "effect": {
+        "effect":
+        {
             "type": "AOE",
             "filter": "Allies",
             "skip_current_target": true,
             "range": 100500,
-            "effect": {
+            "effect":
+            {
                 "type": "AttachStatus",
-                "status": {
+                "status":
+                {
                     "type": "Freeze"
                 }
             }
         }
     },
-    "statuses": [
+    "statuses":
+    [
         {
             "type": "Detect",
             "on": "Allies",
             "detect_type": "Freeze",
-            "effect": {
+            "effect":
+            {
                 "type": "Heal",
-                "value": {
+                "value":
+                {
                     "type": "Const",
                     "value": 5
                 }
