@@ -28,7 +28,7 @@ uniform vec4 u_alliance_color_2;
 uniform vec4 u_alliance_color_3;
 uniform int u_alliance_count;
 
-float alCountF = float(u_alliance_count);
+float alCountF;
 vec3 colors[3];
 
 void commonInit()
@@ -36,6 +36,7 @@ void commonInit()
     colors[0] = u_alliance_color_1.rgb;
     colors[1] = u_alliance_color_2.rgb;
     colors[2] = u_alliance_color_3.rgb;
+    alCountF = float(u_alliance_count);
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)
