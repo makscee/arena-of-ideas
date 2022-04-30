@@ -139,7 +139,11 @@ fn main() {
 
     logger::init().unwrap();
     geng::setup_panic_handler();
-    let geng = Geng::new("Arena of Ideas");
+    let geng = Geng::new_with(geng::ContextOptions {
+        title: "Arena of Ideas".to_owned(),
+        shader_prefix: None,
+        ..default()
+    });
     let config_path = opts
         .config
         .clone()
