@@ -23,7 +23,7 @@ vec3 mixColors(float t)
     t += float(t < 0.);
     int colorInd = int(t * alCountF);
     vec3 c1 = colors[colorInd];
-    vec3 c2 = colors[int(mod(float(colorInd + 1), alCountF))];
+    vec3 c2 = colors[mod(colorInd + 1, int(alCountF))];
     return mix(c1, c2, t * alCountF - float(colorInd));
 }
 
