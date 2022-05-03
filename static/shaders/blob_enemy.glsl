@@ -1,8 +1,8 @@
 #include <common.glsl>
 
-varying vec2 v_quad_pos;
 
 #ifdef VERTEX_SHADER
+out vec2 v_quad_pos;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
@@ -17,7 +17,7 @@ void main() {
 #endif
 
 #ifdef FRAGMENT_SHADER
-
+in vec2 v_quad_pos;
 const float injureAnimationTime = 0.5;
 
 float getRingAlpha(
