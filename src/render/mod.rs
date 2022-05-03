@@ -138,7 +138,7 @@ impl Render {
             unit,
             template,
             render_mode,
-            model,
+            Some(model),
             game_time,
             &self.camera,
             framebuffer,
@@ -241,7 +241,7 @@ impl UnitRender {
         unit: &Unit,
         template: &UnitTemplate,
         render_mode: &RenderMode,
-        model: &Model,
+        model: Option<&Model>,
         game_time: f32,
         camera: &impl geng::AbstractCamera2d,
         framebuffer: &mut ugli::Framebuffer,
@@ -331,7 +331,9 @@ impl UnitRender {
                 let (action_time, target) = match &unit.action_state {
                     ActionState::Start { time, target } => (
                         (*time / unit.action.animation_delay).as_f32(),
-                        model.units.get(&target).map(|unit| unit),
+                        model
+                            .and_then(|model| model.units.get(&target))
+                            .map(|unit| unit),
                     ),
                     _ => (0.0, None),
                 };
