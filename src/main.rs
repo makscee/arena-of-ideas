@@ -141,7 +141,10 @@ fn main() {
     geng::setup_panic_handler();
     let geng = Geng::new_with(geng::ContextOptions {
         title: "Arena of Ideas".to_owned(),
-        shader_prefix: None,
+        shader_prefix: Some((
+            include_str!("vertex_prefix.glsl").to_owned(),
+            include_str!("fragment_prefix.glsl").to_owned(),
+        )),
         ..default()
     });
     let config_path = opts
