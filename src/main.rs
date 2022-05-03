@@ -38,7 +38,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(geng: &Geng, assets: Assets, config: Config) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: Config) -> Self {
         let mut model = Model::new(config.clone(), assets.units.clone());
         Logic::initialize(&mut model, &config);
         let mut game = Self {
@@ -185,7 +185,8 @@ fn main() {
                         None => (),
                     }
 
-                    Game::new(&geng, assets, config)
+                    let assets = Rc::new(assets);
+                    Game::new(&geng, &assets, config)
                 }
             },
         ),

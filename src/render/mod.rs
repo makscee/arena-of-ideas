@@ -40,14 +40,14 @@ impl RenderModel {
 pub struct Render {
     geng: Geng,
     camera: geng::Camera2d,
-    assets: Assets,
+    assets: Rc<Assets>,
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: Assets, config: Config) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: Config) -> Self {
         Self {
             geng: geng.clone(),
-            assets,
+            assets: assets.clone(),
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
