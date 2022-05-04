@@ -1,6 +1,8 @@
-use geng::ui::*;
+use geng::{ui::*, Draw2d};
 
 use super::*;
+
+const CARD_SIZE_RATIO: f32 = 1.3269;
 
 impl Shop {
     pub fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {
@@ -16,7 +18,7 @@ impl Shop {
 }
 
 struct UnitCardWidget<'a> {
-    pub unit_render: UnitRender,
+    pub render: UnitRender,
     pub sense: &'a mut Sense,
     pub card: &'a UnitCard,
 }
@@ -25,7 +27,7 @@ impl<'a> UnitCardWidget<'a> {
     pub fn new(geng: &Geng, assets: &Rc<Assets>, cx: &'a Controller, card: &'a UnitCard) -> Self {
         Self {
             sense: cx.get_state(),
-            unit_render: UnitRender::new(geng, assets),
+            render: UnitRender::new(geng, assets),
             card,
         }
     }
@@ -34,7 +36,7 @@ impl<'a> UnitCardWidget<'a> {
 impl<'a> Widget for UnitCardWidget<'a> {
     fn calc_constraints(&mut self, cx: &ConstraintsContext) -> Constraints {
         Constraints {
-            min_size: vec2(0.0, 0.0),
+            min_size: vec2(50.0, 50.0),
             flex: vec2(100.0, 100.0),
         }
     }
@@ -46,13 +48,58 @@ impl<'a> Widget for UnitCardWidget<'a> {
     fn update(&mut self, delta_time: f64) {}
 
     fn draw(&mut self, cx: &mut DrawContext) {
-        self.unit_render.draw_unit(
+        let pixel_camera = &geng::PixelPerfectCamera;
+
+        // Relative to the height
+        // TODO: de-hardcode
+        const TOP_SPACE: f32 = 0.1;
+        const HERO_HEIGHT: f32 = 0.35;
+
+        // Card layout
+        let card_aabb = cx.position.map(|x| x as f32);
+        let height = card_aabb.height().min(card_aabb.width() * CARD_SIZE_RATIO);
+        let width = height / CARD_SIZE_RATIO;
+        let card_aabb = AABB::point(card_aabb.center()).extend_symmetric(vec2(width, height) / 2.0);
+
+        // Hero layout
+        let mut hero_aabb = card_aabb.extend_up(-TOP_SPACE * height);
+        hero_aabb.y_min = hero_aabb.y_max - HERO_HEIGHT * height;
+        let hero_aabb = hero_aabb;
+
+        let mut temp_texture = ugli::Texture::new_with(
+            cx.geng.ugli(),
+            hero_aabb.size().map(|x| x.ceil() as _),
+            |_| Color::TRANSPARENT_BLACK,
+        );
+        let mut temp_framebuffer = ugli::Framebuffer::new_color(
+            cx.geng.ugli(),
+            ugli::ColorAttachment::Texture(&mut temp_texture),
+        );
+
+        self.render.draw_unit(
             &self.card.unit,
             &self.card.template,
             None,
             self.card.game_time.as_f32(),
-            &geng::PixelPerfectCamera,
+            &geng::Camera2d {
+                center: Vec2::ZERO,
+                rotation: 0.0,
+                fov: self.card.unit.radius.as_f32() * 1.5,
+            },
+            &mut temp_framebuffer,
+        );
+
+        // Render
+        draw_2d::TexturedQuad::new(hero_aabb, &temp_texture).draw_2d(
+            cx.geng,
             cx.framebuffer,
+            pixel_camera,
+        );
+
+        draw_2d::TexturedQuad::new(card_aabb, &*self.render.assets.card).draw_2d(
+            cx.geng,
+            cx.framebuffer,
+            pixel_camera,
         );
     }
 

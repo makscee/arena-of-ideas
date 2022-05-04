@@ -45,8 +45,8 @@ pub struct Render {
 }
 
 pub struct UnitRender {
-    geng: Geng,
-    assets: Rc<Assets>,
+    pub geng: Geng,
+    pub assets: Rc<Assets>,
 }
 
 impl Render {

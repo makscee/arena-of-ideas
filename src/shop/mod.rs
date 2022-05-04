@@ -35,6 +35,10 @@ impl geng::State for ShopState {
     fn update(&mut self, delta_time: f64) {
         self.render_shop.update(delta_time as _);
     }
+
+    fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
+        self.shop.ui(cx)
+    }
 }
 
 pub type Money = u32;
@@ -76,36 +80,36 @@ impl Shop {
 
     pub fn drag_shop_unit(&mut self, index: usize) {
         self.drag_stop();
-        if let Some(unit) = self.available.get_mut(index).and_then(|unit| unit.take()) {
-            self.dragging = Some(Dragging::ShopCard(unit, index));
+        if let Some(card) = self.available.get_mut(index).and_then(|unit| unit.take()) {
+            self.dragging = Some(Dragging::ShopCard(card, index));
         }
     }
 
     pub fn drag_party_unit(&mut self, index: usize) {
         self.drag_stop();
-        if let Some(unit) = self.party.get_mut(index).and_then(|unit| unit.take()) {
-            self.dragging = Some(Dragging::PartyCard(unit, index));
+        if let Some(card) = self.party.get_mut(index).and_then(|unit| unit.take()) {
+            self.dragging = Some(Dragging::PartyCard(card, index));
         }
     }
 
     pub fn drag_inventory_unit(&mut self, index: usize) {
         self.drag_stop();
-        if let Some(unit) = self.inventory.get_mut(index).and_then(|unit| unit.take()) {
-            self.dragging = Some(Dragging::InventoryCard(unit, index));
+        if let Some(card) = self.inventory.get_mut(index).and_then(|unit| unit.take()) {
+            self.dragging = Some(Dragging::InventoryCard(card, index));
         }
     }
 
     pub fn drag_stop(&mut self) {
         if let Some(dragging) = self.dragging.take() {
             match dragging {
-                Dragging::ShopCard(unit, index) => {
-                    *self.available.get_mut(index).unwrap() = Some(unit)
+                Dragging::ShopCard(card, index) => {
+                    *self.available.get_mut(index).unwrap() = Some(card)
                 }
-                Dragging::PartyCard(unit, index) => {
-                    *self.party.get_mut(index).unwrap() = Some(unit)
+                Dragging::PartyCard(card, index) => {
+                    *self.party.get_mut(index).unwrap() = Some(card)
                 }
-                Dragging::InventoryCard(unit, index) => {
-                    *self.inventory.get_mut(index).unwrap() = Some(unit)
+                Dragging::InventoryCard(card, index) => {
+                    *self.inventory.get_mut(index).unwrap() = Some(card)
                 }
             }
         }

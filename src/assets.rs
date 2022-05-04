@@ -19,6 +19,7 @@ pub struct Assets {
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
+    pub card: Rc<ugli::Texture>,
 }
 
 pub type Key = String;
