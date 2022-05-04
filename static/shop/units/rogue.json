@@ -1,0 +1,10 @@
+{
+    "tier": 1,
+    "alliances":
+    [
+        "Assassins"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

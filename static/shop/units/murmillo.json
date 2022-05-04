@@ -1,0 +1,38 @@
+{
+    "tier": 2,
+    "statuses":
+    [
+        {
+            "type": "OnShieldBroken",
+            "effect":
+            {
+                "type": "Heal",
+                "value":
+                {
+                    "type": "Var",
+                    "name": "DamageBlocked"
+                }
+            }
+        }
+    ],
+    "alliances":
+    [
+        "Warriors",
+        "Assassins"
+    ],
+    "ability":
+    {
+        "cooldown": 3,
+        "effect":
+        {
+            "type": "AttachStatus",
+            "status":
+            {
+                "type": "Shield"
+            }
+        }
+    },
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

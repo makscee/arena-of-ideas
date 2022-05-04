@@ -1,0 +1,29 @@
+{
+    "tier": 1,
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "ability":
+    {
+        "cooldown": 3,
+        "effect":
+        {
+            "type": "AOE",
+            "filter": "Enemies",
+            "skip_current_target": true,
+            "range": 3,
+            "effect":
+            {
+                "type": "AttachStatus",
+                "status":
+                {
+                    "type": "Freeze"
+                }
+            }
+        }
+    },
+    "alliances":
+    [
+        "Freezers"
+    ],
+    "base": "melee"
+}

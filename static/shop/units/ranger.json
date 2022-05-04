@@ -1,0 +1,10 @@
+{
+    "tier": 1,
+    "alliances":
+    [
+        "Archers"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "ranged"
+}

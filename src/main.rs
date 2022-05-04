@@ -8,6 +8,7 @@ mod assets;
 mod logic;
 mod model;
 mod render;
+mod shop;
 mod simulate;
 mod tests;
 
@@ -15,6 +16,7 @@ use assets::*;
 use logic::*;
 use model::*;
 use render::{Render, RenderModel};
+use shop::*;
 
 type Health = R32;
 type Time = R32;
@@ -165,12 +167,17 @@ fn main() {
                     let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
                         .await
                         .expect("Failed to load config");
-                    (assets, config)
+                    dbg!(static_path().join("shop"));
+                    let shop_config =
+                        <ShopConfig as geng::LoadAsset>::load(&geng, &static_path().join("shop"))
+                            .await
+                            .expect("Failed to load shop config");
+                    (assets, config, shop_config)
                 }
             },
             {
                 let geng = geng.clone();
-                move |(assets, config)| {
+                move |(assets, config, shop_config)| {
                     match opts.command {
                         Some(command) => match command {
                             Commands::Simulate1x1(simulate) => {
@@ -186,7 +193,8 @@ fn main() {
                     }
 
                     let assets = Rc::new(assets);
-                    Game::new(&geng, &assets, config)
+                    // Game::new(&geng, &assets, config)
+                    shop::ShopState::new(&geng, &assets, shop_config)
                 }
             },
         ),

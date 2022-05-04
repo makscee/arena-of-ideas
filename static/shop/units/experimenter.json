@@ -1,0 +1,28 @@
+{
+    "tier": 3,
+    "statuses":
+    [
+        {
+            "type": "OnKill",
+            "damage_type": "Crit",
+            "effect":
+            {
+                "type": "Repeat",
+                "times": 3,
+                "effect":
+                {
+                    "type": "Spawn",
+                    "unit_type": "critter"
+                }
+            }
+        }
+    ],
+    "alliances":
+    [
+        "Assassins",
+        "Spawners"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "base": "ranged"
+}

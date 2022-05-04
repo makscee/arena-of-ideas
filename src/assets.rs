@@ -55,6 +55,11 @@ pub struct Config {
     pub fov: f32,
 }
 
+#[derive(geng::Assets)]
+pub struct ShopConfig {
+    pub units: UnitTemplates,
+}
+
 impl Assets {
     pub fn get_render(&self, config: &RenderConfig) -> RenderMode {
         match config {
@@ -87,18 +92,19 @@ impl geng::LoadAsset for UnitTemplates {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
+            let common_path = static_path().join("common.glsl");
             geng.shader_lib().add(
                 "common.glsl",
-                &<String as geng::LoadAsset>::load(
-                    &geng,
-                    &path.parent().unwrap().join("common.glsl"),
-                )
-                .await?,
+                &<String as geng::LoadAsset>::load(&geng, &common_path)
+                    .await
+                    .context(format!("Failed to load common.glsl from {:?}", common_path))?,
             );
 
             Effects::load(&geng, &static_path().join("effects.json")).await?;
 
-            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
+            let json = <String as geng::LoadAsset>::load(&geng, &path)
+                .await
+                .context(format!("Failed to load unit json from {:?}", path))?;
             let packs: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
             for pack in packs {
@@ -115,7 +121,9 @@ impl geng::LoadAsset for UnitTemplates {
                     if let Some(base) = json.get_mut("base") {
                         let base = base.take();
                         let base = base.as_str().expect("base must be a string");
-                        let base = &map[base];
+                        let base = &map
+                            .get(base)
+                            .expect(&format!("Failed to find unit's base: {}", base));
                         let mut base_json = serde_json::to_value(base).unwrap();
                         base_json
                             .as_object_mut()

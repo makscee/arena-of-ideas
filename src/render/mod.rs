@@ -73,8 +73,7 @@ impl Render {
         for unit in itertools::chain![&model.units, &model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
 
-            let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
-            self.draw_unit(unit, template, &render, model, game_time, framebuffer);
+            self.draw_unit(unit, template, model, game_time, framebuffer);
             if unit
                 .all_statuses
                 .iter()
@@ -129,7 +128,6 @@ impl Render {
         &self,
         unit: &Unit,
         template: &UnitTemplate,
-        render_mode: &RenderMode,
         model: &Model,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
@@ -137,7 +135,6 @@ impl Render {
         self.unit_render.draw_unit(
             unit,
             template,
-            render_mode,
             Some(model),
             game_time,
             &self.camera,
@@ -240,12 +237,12 @@ impl UnitRender {
         &self,
         unit: &Unit,
         template: &UnitTemplate,
-        render_mode: &RenderMode,
         model: Option<&Model>,
         game_time: f32,
         camera: &impl geng::AbstractCamera2d,
         framebuffer: &mut ugli::Framebuffer,
     ) {
+        let render_mode = &self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
         let spawn_scale = match unit.spawn_animation_time_left {
             Some(time) if template.spawn_animation_time > Time::new(0.0) => {
                 1.0 - (time / template.spawn_animation_time).as_f32()

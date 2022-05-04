@@ -1,6 +1,6 @@
 [
-	"effects/dd_ranged.json",
-	"effects/projectile_dd_ranged.json",
-	"effects/melee_hit_vfx.json",
-	"effects/dd_melee.json"
+    "effects/dd_ranged.json",
+    "effects/projectile_dd_ranged.json",
+    "effects/melee_hit_vfx.json",
+    "effects/dd_melee.json"
 ]

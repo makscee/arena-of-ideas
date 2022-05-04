@@ -1,0 +1,31 @@
+{
+    "tier": 3,
+    "action":
+    {
+        "range": 10,
+        "animation_delay": 0.75,
+        "cooldown": 1.25,
+        "effect":
+        {
+            "type": "AddTargets",
+            "condition":
+            {
+                "type": "UnitHasStatus",
+                "who": "Target",
+                "status": "Freeze"
+            },
+            "effect":
+            {
+                "preset": "effects/projectile_dd_ranged.json"
+            }
+        }
+    },
+    "alliances":
+    [
+        "Freezers",
+        "Archers"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "base": "ranged"
+}

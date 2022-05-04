@@ -1,0 +1,44 @@
+{
+    "tier": 1,
+    "ability":
+    {
+        "cooldown": 3,
+        "effect":
+        {
+            "type": "ApplyGained"
+        }
+    },
+    "statuses":
+    [
+        {
+            "type": "Scavenge",
+            "who": "Enemies",
+            "range": 10,
+            "effect":
+            {
+                "type": "ChangeContext",
+                "target": "Caster",
+                "effect":
+                {
+                    "type": "AttachStatus",
+                    "status":
+                    {
+                        "type": "GainedEffect",
+                        "effect":
+                        {
+                            "type": "Spawn",
+                            "unit_type": "critter"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "alliances":
+    [
+        "Spawners"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

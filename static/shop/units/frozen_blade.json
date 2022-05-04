@@ -1,0 +1,33 @@
+{
+    "tier": 1,
+    "action":
+    {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.75,
+        "effect":
+        {
+            "type": "List",
+            "effects":
+            [
+                {
+                    "preset": "effects/dd_melee.json"
+                },
+                {
+                    "type": "AttachStatus",
+                    "status":
+                    {
+                        "type": "Freeze"
+                    }
+                }
+            ]
+        }
+    },
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "alliances":
+    [
+        "Freezers"
+    ],
+    "base": "melee"
+}
