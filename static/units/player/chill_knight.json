@@ -13,11 +13,7 @@
             "range": 3,
             "effect":
             {
-                "type": "AttachStatus",
-                "status":
-                {
-                    "type": "Freeze"
-                }
+                "preset": "effects/attach_status/freeze.json"
             }
         }
     },

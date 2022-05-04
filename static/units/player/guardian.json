@@ -19,11 +19,7 @@
                 "speed": 10,
                 "effect":
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Shield"
-                    }
+                    "preset": "effects/attach_status/shield.json"
                 }
             }
         }

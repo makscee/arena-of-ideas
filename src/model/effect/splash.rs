@@ -6,6 +6,7 @@ pub struct SplashEffect {
     pub degrees: R32,
     pub effect: Effect,
     pub effect_on_caster: Effect,
+    pub range: Coord,
 }
 
 impl EffectContainer for SplashEffect {
@@ -33,7 +34,7 @@ impl EffectImpl for SplashEffect {
             if unit.faction != target.faction {
                 continue;
             }
-            if distance_between_units(unit, from) > from.action.range {
+            if distance_between_units(unit, from) > effect.range {
                 continue;
             }
             // TODO: this only checks that center is in angle

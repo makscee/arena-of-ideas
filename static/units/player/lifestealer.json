@@ -64,12 +64,7 @@
             "effects":
             [
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Invulnerability",
-                        "time": 3
-                    }
+                    "preset": "effects/attach_status/invulnerability.json"
                 },
                 {
                     "type": "AttachStatus",

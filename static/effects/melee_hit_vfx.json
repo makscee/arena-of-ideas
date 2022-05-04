@@ -1,9 +1,9 @@
 {
     "type": "Visual",
-    "duration": 0.7,
+    "duration": 0.5,
     "parent": "Target",
     "follow": false,
-    "radius": 1.9,
+    "radius": 1.6,
     "render":
     {
         "type": "Shader",
@@ -13,7 +13,7 @@
             "p_startColor": "#dc143c",
             "p_endColor": "#ff4500",
             "p_count": 8,
-            "p_startSize": 0.2
+            "p_startSize": 0.12
         }
     }
 }

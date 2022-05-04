@@ -11,24 +11,10 @@
             "effects":
             [
                 {
-                    "type": "Damage",
-                    "types":
-                    [
-                        "Melee"
-                    ],
-                    "value":
-                    {
-                        "type": "Const",
-                        "value": 2
-                    }
+                    "preset": "effects/dd_melee.json"
                 },
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Stun",
-                        "time": 2
-                    }
+                    "preset": "effects/attach_status/stun.json"
                 }
             ]
         }
