@@ -66,6 +66,12 @@ impl<'a> Widget for UnitCardWidget<'a> {
             y_min: 0.02,
             y_max: 0.09,
         };
+        const TIER_AABB: AABB<f32> = AABB {
+            x_min: 0.07,
+            x_max: 0.25,
+            y_min: 0.92,
+            y_max: 0.97,
+        };
 
         // Card layout
         let card_aabb = cx.position.map(|x| x as f32);
@@ -111,6 +117,11 @@ impl<'a> Widget for UnitCardWidget<'a> {
             .map(|x| x * height)
             .translate(card_aabb.bottom_left());
 
+        // Tier
+        let tier_aabb = TIER_AABB
+            .map(|x| x * height)
+            .translate(card_aabb.bottom_left());
+
         // Render
         // Hero
         draw_2d::TexturedQuad::new(hero_aabb, &temp_texture).draw_2d(
@@ -133,6 +144,15 @@ impl<'a> Widget for UnitCardWidget<'a> {
             Color::WHITE,
         )
         .fit_into(hp_aabb)
+        .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
+
+        // Tier
+        draw_2d::Text::unit(
+            &**cx.geng.default_font(),
+            format!("Tier {}", self.card.template.tier),
+            Color::WHITE,
+        )
+        .fit_into(tier_aabb)
         .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
     }
 
