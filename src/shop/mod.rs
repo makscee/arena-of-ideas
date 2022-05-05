@@ -34,6 +34,7 @@ impl geng::State for ShopState {
 
     fn update(&mut self, delta_time: f64) {
         self.render_shop.update(delta_time as _);
+        self.shop.time += Time::new(delta_time as _);
     }
 
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
@@ -46,6 +47,7 @@ pub type Money = u32;
 pub struct Shop {
     pub geng: Geng,
     pub assets: Rc<Assets>,
+    pub time: Time,
     pub tier: Tier,
     pub frozen: bool,
     pub available: Vec<Option<UnitCard>>,
@@ -74,6 +76,7 @@ impl Shop {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
+            time: Time::new(0.0),
             tier: 1,
             frozen: false,
             shop: available.iter().take(6).cloned().collect(),

@@ -6,14 +6,22 @@ pub struct UnitCardWidget<'a> {
     pub render: UnitRender,
     pub sense: &'a mut Sense,
     pub card: &'a UnitCard,
+    pub game_time: f32,
 }
 
 impl<'a> UnitCardWidget<'a> {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, cx: &'a Controller, card: &'a UnitCard) -> Self {
+    pub fn new(
+        geng: &Geng,
+        assets: &Rc<Assets>,
+        cx: &'a Controller,
+        card: &'a UnitCard,
+        game_time: f32,
+    ) -> Self {
         Self {
             sense: cx.get_state(),
             render: UnitRender::new(geng, assets),
             card,
+            game_time,
         }
     }
 }
@@ -83,7 +91,7 @@ impl<'a> Widget for UnitCardWidget<'a> {
             &self.card.unit,
             &self.card.template,
             None,
-            self.card.game_time.as_f32(),
+            self.game_time,
             &geng::Camera2d {
                 center: Vec2::ZERO,
                 rotation: 0.0,
