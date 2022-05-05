@@ -49,6 +49,7 @@ pub struct Shop {
     pub tier: Tier,
     pub frozen: bool,
     pub available: Vec<Option<UnitCard>>,
+    pub shop: Vec<Option<UnitCard>>,
     pub party: Vec<Option<UnitCard>>,
     pub inventory: Vec<Option<UnitCard>>,
     pub dragging: Option<Dragging>,
@@ -66,19 +67,20 @@ impl Shop {
         assets: &Rc<Assets>,
         units: impl Iterator<Item = UnitTemplate>,
     ) -> Self {
+        let available: Vec<_> = units
+            .filter(|unit| unit.tier > 0)
+            .map(|unit| Some(UnitCard::new(unit)))
+            .collect();
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
             tier: 1,
             frozen: false,
-            available: units
-                .filter(|unit| unit.tier > 0)
-                .map(|unit| Some(UnitCard::new(unit)))
-                .take(6)
-                .collect(),
+            shop: available.iter().take(6).cloned().collect(),
             party: vec![],
             inventory: vec![],
             dragging: None,
+            available,
         }
     }
 

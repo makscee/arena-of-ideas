@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct UnitCard {
     pub unit: Unit,
     pub template: UnitTemplate,
