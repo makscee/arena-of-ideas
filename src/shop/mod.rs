@@ -74,6 +74,7 @@ impl Shop {
             available: units
                 .filter(|unit| unit.tier > 0)
                 .map(|unit| Some(UnitCard::new(unit)))
+                .take(6)
                 .collect(),
             party: vec![],
             inventory: vec![],
