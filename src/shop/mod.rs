@@ -49,6 +49,7 @@ pub struct Shop {
     pub assets: Rc<Assets>,
     pub time: Time,
     pub tier: Tier,
+    pub money: Money,
     pub frozen: bool,
     pub available: Vec<Option<UnitCard>>,
     pub shop: Vec<Option<UnitCard>>,
@@ -78,12 +79,22 @@ impl Shop {
             assets: assets.clone(),
             time: Time::new(0.0),
             tier: 1,
+            money: 0,
             frozen: false,
             shop: available.iter().take(6).cloned().collect(),
             party: vec![],
             inventory: vec![],
             dragging: None,
             available,
+        }
+    }
+
+    pub fn tier_up(&mut self) {
+        if let Some(cost) = tier_up_cost(self.tier) {
+            if self.money >= cost {
+                self.tier += 1;
+                self.money -= cost;
+            }
         }
     }
 

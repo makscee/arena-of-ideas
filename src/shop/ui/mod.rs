@@ -12,12 +12,42 @@ const CARDS_SPACE_IN: f64 = 15.0;
 const CARDS_SPACE_OUT: f64 = 10.0;
 
 impl Shop {
-    pub fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {
+    pub fn ui<'a>(&'a mut self, cx: &'a Controller) -> Box<dyn Widget + 'a> {
+        let mut top_left: Vec<Box<dyn Widget>> = vec![];
+        if let Some(cost) = tier_up_cost(self.tier) {
+            let tier_up = Button::new(cx, &format!("Tier Up ({})", cost));
+            if tier_up.was_clicked() {
+                self.tier_up();
+            }
+            top_left.push(Box::new(tier_up));
+        }
+
+        let current_tier = Text::new(
+            format!("Tier {}", self.tier),
+            cx.theme().font.clone(),
+            cx.theme().text_size,
+            Color::WHITE,
+        );
+        top_left.push(Box::new(current_tier));
+
+        let money_text = if self.money == 1 { "coin" } else { "coins" };
+        let money_text = format!("{} {}", self.money, money_text);
+        let money = Text::new(
+            money_text,
+            cx.theme().font.clone(),
+            cx.theme().text_size,
+            Color::WHITE,
+        );
+        top_left.push(Box::new(money));
+
         let shop = ui::column!(
-            CardsRow::new(
-                unit_cards(&self.geng, &self.assets, &self.shop, cx, self.time.as_f32()),
-                CARDS_SPACE_IN,
-                CARDS_SPACE_OUT
+            row!(
+                ui::column(top_left),
+                CardsRow::new(
+                    unit_cards(&self.geng, &self.assets, &self.shop, cx, self.time.as_f32()),
+                    CARDS_SPACE_IN,
+                    CARDS_SPACE_OUT
+                )
             ),
             CardsRow::new(
                 unit_cards(
