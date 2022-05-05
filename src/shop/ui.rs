@@ -146,6 +146,11 @@ impl<'a> Widget for UnitCardWidget<'a> {
         .fit_into(hp_aabb)
         .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
 
+        // Damage
+        draw_2d::Text::unit(&**cx.geng.default_font(), format!("?"), Color::WHITE)
+            .fit_into(damage_aabb)
+            .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
+
         // Tier
         draw_2d::Text::unit(
             &**cx.geng.default_font(),
