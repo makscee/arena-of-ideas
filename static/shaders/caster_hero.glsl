@@ -34,7 +34,7 @@ vec4 renderRing(float rad, float h)
 
 vec4 renderTriangleParticles(vec2 uv, float triangleSize, float t, vec3 color)
 {
-    if (triangleDist(uv, triangleSize) > 1. || t == 1.) return vec4(0);
+    if (triangleDist(uv, triangleSize * (1 - t * 2)) > 1. || t == 1.) return vec4(0);
 
     const float spread = 3;
     float radius = clamp(1 - e_invSquare(t), 0., 1.);
@@ -48,10 +48,10 @@ vec4 renderTriangleParticles(vec2 uv, float triangleSize, float t, vec3 color)
 void main() {
     commonInit();
     vec2 uv = v_quad_pos;
-    
-    float anim = animationFunc(u_action) / 4.;
     float dist = distance(uv,vec2(0.0,0.0));
     vec4 col = vec4(0.,0.,0.,0.);
+    float u_action_time = u_action_time - float(u_action_time == 0) * 1000;
+
 
     //start
 
