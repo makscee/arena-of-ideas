@@ -127,11 +127,11 @@ impl geng::LoadAsset for UnitTemplates {
 
                     let template: UnitTemplate = serde_json::from_value(json)?;
 
-                    info!(
-                        "{:?} => {}",
-                        typ,
-                        serde_json::to_string_pretty(&template).unwrap()
-                    );
+                    // info!(
+                    //     "{:?} => {}",
+                    //     typ,
+                    //     serde_json::to_string_pretty(&template).unwrap()
+                    // );
                     map.insert(typ, template);
                 }
             }

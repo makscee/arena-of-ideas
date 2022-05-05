@@ -12,8 +12,8 @@
         {
             "p_startColor": "#dc143c",
             "p_endColor": "#ff4500",
-            "p_count": 8,
-            "p_startSize": 0.12
+            "p_count": 7,
+            "p_startSize": 0.08
         }
     }
 }
