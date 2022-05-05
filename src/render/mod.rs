@@ -358,7 +358,7 @@ impl UnitRender {
                             u_action: action_time,
                             u_cooldown: unit.action.cooldown.as_f32(),
                             u_animation_delay: unit.action.animation_delay.as_f32(),
-                            u_target_dir: target_dir,
+                            u_face_dir: unit.face_dir.map(|x| x.as_f32()),
                             u_random: unit.random_number.as_f32(),
                             u_action_time: unit.last_action_time.as_f32(),
                             u_injure_time: unit.last_injure_time.as_f32(),

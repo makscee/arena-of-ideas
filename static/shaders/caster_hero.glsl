@@ -60,7 +60,7 @@ void main() {
     float triangleSize = -1.7;
 
     // u_action = e_invSquare(u_action);
-    float rotation = -vecAngle(u_target_dir);
+    float rotation = -vecAngle(u_face_dir);
     uv = rotateCW(uv, rotation);
     float distToCircle = abs(dist - u_unit_radius);
     col = float(distToCircle < c_thickness + c_glowRange) * renderRing(vecAngle(rotateCW(uv, -pi / u_alliance_count)), distToCircle);
@@ -70,7 +70,7 @@ void main() {
     triangleSize *= mix(1. - u_action * u_action, 1., triangleGrowMax);
     float tDist = triangleDist(uv, triangleSize);
     col = alphaBlend(col, vec4(colors[0], float(tDist < 1. && cooldownProgress == 1.)));
-    col = alphaBlend(col, renderTriangleParticles(uv, triangleSize * triangleGrowMax, animationProgress, colors[0]));
+    col = alphaBlend(col, renderTriangleParticles(uv - vec2(0,e_invSquare(animationProgress)) * 1.5, triangleSize * triangleGrowMax, animationProgress, colors[0]));
 
     //end
 

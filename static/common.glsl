@@ -20,7 +20,7 @@ uniform float u_cooldown;
 uniform float u_random;
 
 uniform vec2 u_unit_position;
-uniform vec2 u_target_dir;
+uniform vec2 u_face_dir;
 uniform float u_unit_radius;
 
 uniform vec4 u_alliance_color_1;

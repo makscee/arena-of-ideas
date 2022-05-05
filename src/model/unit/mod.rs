@@ -38,6 +38,7 @@ pub struct Unit {
     pub health: Health,
     pub max_hp: Health,
     pub base_damage: Health,
+    pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub action: ActionProperties,
