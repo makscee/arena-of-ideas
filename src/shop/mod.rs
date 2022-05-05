@@ -69,9 +69,12 @@ impl Shop {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
-            tier: Tier::new(1).unwrap(),
+            tier: 1,
             frozen: false,
-            available: units.map(|unit| Some(UnitCard::new(unit))).collect(),
+            available: units
+                .filter(|unit| unit.tier > 0)
+                .map(|unit| Some(UnitCard::new(unit)))
+                .collect(),
             party: vec![],
             inventory: vec![],
             dragging: None,
@@ -132,9 +135,9 @@ const TIER_UP: [Money; 5] = [5, 6, 7, 8, 9];
 const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
 
 fn tier_up_cost(current_tier: Tier) -> Option<Money> {
-    TIER_UP.get(usize::from(current_tier) - 1).copied()
+    TIER_UP.get(current_tier as usize - 1).copied()
 }
 
 fn tier_units_number(current_tier: Tier) -> Option<usize> {
-    TIER_UNITS.get(usize::from(current_tier) - 1).copied()
+    TIER_UNITS.get(current_tier as usize - 1).copied()
 }

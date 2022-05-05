@@ -3,6 +3,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
+    /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
     pub health: Health,
     pub base_damage: Health,
@@ -34,7 +35,7 @@ impl UnitTemplate {
 impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
-            tier: Tier::new(1).unwrap(),
+            tier: 0,
             health: Health::new(1.0),
             base_damage: Health::new(1.0),
             spawn_animation_time: Time::new(0.0),

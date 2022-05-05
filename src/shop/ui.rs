@@ -54,6 +54,18 @@ impl<'a> Widget for UnitCardWidget<'a> {
         // TODO: de-hardcode
         const TOP_SPACE: f32 = 0.1;
         const HERO_HEIGHT: f32 = 0.35;
+        const HP_AABB: AABB<f32> = AABB {
+            x_min: 0.02,
+            x_max: 0.09,
+            y_min: 0.02,
+            y_max: 0.09,
+        };
+        const DAMAGE_AABB: AABB<f32> = AABB {
+            x_min: 1.0 / CARD_SIZE_RATIO - 0.09,
+            x_max: 1.0 / CARD_SIZE_RATIO - 0.02,
+            y_min: 0.02,
+            y_max: 0.09,
+        };
 
         // Card layout
         let card_aabb = cx.position.map(|x| x as f32);
@@ -89,18 +101,39 @@ impl<'a> Widget for UnitCardWidget<'a> {
             &mut temp_framebuffer,
         );
 
+        // HP
+        let hp_aabb = HP_AABB
+            .map(|x| x * height)
+            .translate(card_aabb.bottom_left());
+
+        // Damage
+        let damage_aabb = DAMAGE_AABB
+            .map(|x| x * height)
+            .translate(card_aabb.bottom_left());
+
         // Render
+        // Hero
         draw_2d::TexturedQuad::new(hero_aabb, &temp_texture).draw_2d(
             cx.geng,
             cx.framebuffer,
             pixel_camera,
         );
 
+        // Card texture
         draw_2d::TexturedQuad::new(card_aabb, &*self.render.assets.card).draw_2d(
             cx.geng,
             cx.framebuffer,
             pixel_camera,
         );
+
+        // HP
+        draw_2d::Text::unit(
+            &**cx.geng.default_font(),
+            format!("{}", self.card.unit.health),
+            Color::WHITE,
+        )
+        .fit_into(hp_aabb)
+        .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
     }
 
     fn handle_event(&mut self, event: &geng::Event) {}

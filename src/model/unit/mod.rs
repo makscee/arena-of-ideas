@@ -7,7 +7,7 @@ pub use ai::*;
 pub use template::*;
 
 pub type UnitType = String;
-pub type Tier = std::num::NonZeroUsize;
+pub type Tier = u32;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ActionState {
