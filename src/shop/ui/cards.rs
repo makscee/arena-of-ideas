@@ -67,7 +67,7 @@ impl<'a> Widget for CardsRow<'a> {
                     .sum::<f64>())
                 / total_flex
         };
-        let mut pos = cx.position.x_min;
+        let mut pos = cx.position.x_min + self.space_out;
         let child_height = cx.position.height() - self.space_out * 2.0;
         for child in &self.children {
             let child = child.deref();
@@ -85,5 +85,13 @@ impl<'a> Widget for CardsRow<'a> {
         for child in &mut self.children {
             f(child.deref_mut());
         }
+    }
+    fn draw(&mut self, cx: &mut geng::ui::DrawContext) {
+        let pixel_camera = &geng::PixelPerfectCamera;
+        draw_2d::Quad::new(
+            cx.position.map(|x| x as f32),
+            Color::rgba(0.3, 0.3, 0.3, 1.0),
+        )
+        .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
     }
 }
