@@ -78,8 +78,8 @@ impl Shop {
             money: 0,
             frozen: false,
             shop: vec![],
-            party: vec![],
-            inventory: vec![],
+            party: vec![None; MAX_PARTY],
+            inventory: vec![None; MAX_INVENTORY],
             dragging: None,
             available: units
                 .filter(|unit| unit.tier > 0)

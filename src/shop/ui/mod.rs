@@ -60,14 +60,20 @@ impl Shop {
 
         let shop = ui::column!(
             ui::row!(
-                ui::column(top_left).align(vec2(0.5, 0.5)),
+                ui::column(top_left)
+                    .align(vec2(0.5, 0.5))
+                    .uniform_padding(5.0),
                 CardsRow::new(
                     unit_cards(&self.geng, &self.assets, &self.shop, cx, self.time.as_f32()),
                     CARDS_SPACE_IN,
                     CARDS_SPACE_OUT
-                ),
-                ui::column(top_right).align(vec2(0.5, 0.5)),
-            ),
+                )
+                .uniform_padding(10.0),
+                ui::column(top_right)
+                    .align(vec2(0.5, 0.5))
+                    .uniform_padding(5.0),
+            )
+            .uniform_padding(5.0),
             CardsRow::new(
                 unit_cards(
                     &self.geng,
@@ -78,7 +84,8 @@ impl Shop {
                 ),
                 CARDS_SPACE_IN,
                 CARDS_SPACE_OUT
-            ),
+            )
+            .uniform_padding(50.0),
             CardsRow::new(
                 unit_cards(
                     &self.geng,
@@ -90,7 +97,9 @@ impl Shop {
                 CARDS_SPACE_IN,
                 CARDS_SPACE_OUT
             )
-        );
+            .uniform_padding(5.0)
+        )
+        .uniform_padding(10.0);
 
         Box::new(shop)
     }
@@ -105,9 +114,14 @@ fn unit_cards<'a>(
 ) -> Vec<Box<dyn Widget + 'a>> {
     cards
         .iter()
-        .filter_map(|card| card.as_ref())
         .map(|card| {
-            Box::new(UnitCardWidget::new(geng, assets, cx, card, game_time)) as Box<dyn Widget>
+            Box::new(UnitCardWidget::new(
+                geng,
+                assets,
+                cx,
+                card.as_ref(),
+                game_time,
+            )) as Box<dyn Widget>
         })
         .collect()
 }

@@ -87,7 +87,8 @@ impl<'a> Widget for CardsRow<'a> {
             pos += width + self.space_in;
         }
 
-        let inner_height = max_width * CARD_SIZE_RATIO as f64 + self.space_out * 2.0;
+        let inner_height =
+            (max_width * CARD_SIZE_RATIO as f64).min(child_height) + self.space_out * 2.0;
         self.inner_pos = AABB::point(cx.position.center())
             .extend_symmetric(vec2(cx.position.width(), inner_height) / 2.0);
     }
