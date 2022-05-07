@@ -51,7 +51,7 @@ pub struct Shop {
     pub tier: Tier,
     pub money: Money,
     pub frozen: bool,
-    pub available: Vec<Option<UnitCard>>,
+    pub available: Vec<UnitTemplate>,
     pub shop: Vec<Option<UnitCard>>,
     pub party: Vec<Option<UnitCard>>,
     pub inventory: Vec<Option<UnitCard>>,
@@ -70,23 +70,24 @@ impl Shop {
         assets: &Rc<Assets>,
         units: impl Iterator<Item = UnitTemplate>,
     ) -> Self {
-        let available: Vec<_> = units
-            .filter(|unit| unit.tier > 0)
-            .map(|unit| Some(UnitCard::new(unit)))
-            .collect();
-        Self {
+        let mut shop = Self {
             geng: geng.clone(),
             assets: assets.clone(),
             time: Time::new(0.0),
             tier: 1,
             money: 0,
             frozen: false,
-            shop: available.iter().take(6).cloned().collect(),
+            shop: vec![],
             party: vec![],
             inventory: vec![],
             dragging: None,
-            available,
-        }
+            available: units
+                .filter(|unit| unit.tier > 0)
+                .map(|unit| unit)
+                .collect(),
+        };
+        shop.reroll();
+        shop
     }
 
     pub fn tier_up(&mut self) {
@@ -99,7 +100,14 @@ impl Shop {
     }
 
     pub fn reroll(&mut self) {
-        todo!()
+        if let Some(units) = tier_units_number(self.tier) {
+            self.shop = self
+                .available
+                .iter()
+                .filter(|unit| unit.tier <= self.tier)
+                .map(|unit| Some(UnitCard::new(unit.clone())))
+                .choose_multiple(&mut global_rng(), units);
+        }
     }
 
     pub fn freeze(&mut self) {
@@ -108,7 +116,7 @@ impl Shop {
 
     pub fn drag_shop_unit(&mut self, index: usize) {
         self.drag_stop();
-        if let Some(card) = self.available.get_mut(index).and_then(|unit| unit.take()) {
+        if let Some(card) = self.shop.get_mut(index).and_then(|unit| unit.take()) {
             self.dragging = Some(Dragging::ShopCard(card, index));
         }
     }
@@ -130,9 +138,7 @@ impl Shop {
     pub fn drag_stop(&mut self) {
         if let Some(dragging) = self.dragging.take() {
             match dragging {
-                Dragging::ShopCard(card, index) => {
-                    *self.available.get_mut(index).unwrap() = Some(card)
-                }
+                Dragging::ShopCard(card, index) => *self.shop.get_mut(index).unwrap() = Some(card),
                 Dragging::PartyCard(card, index) => {
                     *self.party.get_mut(index).unwrap() = Some(card)
                 }
