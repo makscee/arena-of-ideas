@@ -1,10 +1,13 @@
-use geng::{ui::*, Draw2d};
+use geng::ui;
+use geng::{ui::*, Draw2d, Event};
 
 use super::*;
 
+mod button;
 mod card;
 mod cards;
 
+use button::Button;
 use card::*;
 use cards::*;
 
@@ -41,8 +44,8 @@ impl Shop {
         top_left.push(Box::new(money));
 
         let shop = ui::column!(
-            row!(
-                ui::column(top_left),
+            ui::row!(
+                ui::column(top_left).align(vec2(0.5, 0.5)),
                 CardsRow::new(
                     unit_cards(&self.geng, &self.assets, &self.shop, cx, self.time.as_f32()),
                     CARDS_SPACE_IN,
