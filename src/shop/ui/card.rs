@@ -1,6 +1,7 @@
 use super::*;
 
-const CARD_SIZE_RATIO: f32 = 1.3269;
+/// Height divided by width
+pub const CARD_SIZE_RATIO: f32 = 1.3269;
 
 pub struct UnitCardWidget<'a> {
     pub render: UnitRender,

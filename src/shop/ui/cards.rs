@@ -2,6 +2,7 @@ use super::*;
 
 pub struct CardsRow<'a> {
     children: Vec<Box<dyn Widget + 'a>>,
+    inner_pos: AABB<f64>,
     space_in: f64,
     space_out: f64,
 }
@@ -10,6 +11,7 @@ impl<'a> CardsRow<'a> {
     pub fn new(cards: Vec<Box<dyn Widget + 'a>>, space_in: f64, space_out: f64) -> Self {
         Self {
             children: cards,
+            inner_pos: AABB::ZERO,
             space_in,
             space_out,
         }
@@ -71,17 +73,23 @@ impl<'a> Widget for CardsRow<'a> {
         };
         let mut pos = cx.position.x_min + self.space_out;
         let child_height = cx.position.height() - self.space_out * 2.0;
+        let mut max_width: f64 = 0.0;
         for child in &self.children {
             let child = child.deref();
             let width = cx.get_constraints(child).min_size.x
                 + cx.get_constraints(child).flex.x * size_per_flex;
+            max_width = max_width.max(width);
             cx.set_position(
                 child,
-                AABB::point(vec2(pos, cx.position.y_min))
+                AABB::point(vec2(pos, cx.position.y_min + self.space_out))
                     .extend_positive(vec2(width, child_height)),
             );
             pos += width + self.space_in;
         }
+
+        let inner_height = max_width * CARD_SIZE_RATIO as f64 + self.space_out * 2.0;
+        self.inner_pos = AABB::point(cx.position.center())
+            .extend_symmetric(vec2(cx.position.width(), inner_height) / 2.0);
     }
     fn walk_children_mut<'b>(&mut self, mut f: Box<dyn FnMut(&mut dyn Widget) + 'b>) {
         for child in &mut self.children {
@@ -91,7 +99,8 @@ impl<'a> Widget for CardsRow<'a> {
     fn draw(&mut self, cx: &mut geng::ui::DrawContext) {
         let pixel_camera = &geng::PixelPerfectCamera;
         draw_2d::Quad::new(
-            cx.position.map(|x| x as f32),
+            // cx.position.map(|x| x as f32),
+            self.inner_pos.map(|x| x as f32),
             Color::rgba(0.3, 0.3, 0.3, 1.0),
         )
         .draw_2d(cx.geng, cx.framebuffer, pixel_camera);
