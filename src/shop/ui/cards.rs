@@ -60,6 +60,8 @@ impl<'a> Widget for CardsRow<'a> {
             0.0
         } else {
             (cx.position.width()
+                - self.space_out * 2.0
+                - (self.children.len().max(1) - 1) as f64 * self.space_in
                 - self
                     .children
                     .iter()

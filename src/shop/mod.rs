@@ -98,6 +98,14 @@ impl Shop {
         }
     }
 
+    pub fn reroll(&mut self) {
+        todo!()
+    }
+
+    pub fn freeze(&mut self) {
+        self.frozen = !self.frozen;
+    }
+
     pub fn drag_shop_unit(&mut self, index: usize) {
         self.drag_stop();
         if let Some(card) = self.available.get_mut(index).and_then(|unit| unit.take()) {

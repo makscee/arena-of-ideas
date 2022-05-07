@@ -16,6 +16,7 @@ const CARDS_SPACE_OUT: f64 = 10.0;
 
 impl Shop {
     pub fn ui<'a>(&'a mut self, cx: &'a Controller) -> Box<dyn Widget + 'a> {
+        // Top left
         let mut top_left: Vec<Box<dyn Widget>> = vec![];
         if let Some(cost) = tier_up_cost(self.tier) {
             let tier_up = Button::new(cx, &format!("Tier Up ({})", cost));
@@ -43,6 +44,20 @@ impl Shop {
         );
         top_left.push(Box::new(money));
 
+        // Top right
+        let mut top_right: Vec<Box<dyn Widget>> = vec![];
+        let reroll = Button::new(cx, "Reroll");
+        if reroll.was_clicked() {
+            self.reroll();
+        }
+        top_right.push(Box::new(reroll));
+
+        let freeze = Button::new(cx, "Freeze");
+        if freeze.was_clicked() {
+            self.freeze();
+        }
+        top_right.push(Box::new(freeze));
+
         let shop = ui::column!(
             ui::row!(
                 ui::column(top_left).align(vec2(0.5, 0.5)),
@@ -50,7 +65,8 @@ impl Shop {
                     unit_cards(&self.geng, &self.assets, &self.shop, cx, self.time.as_f32()),
                     CARDS_SPACE_IN,
                     CARDS_SPACE_OUT
-                )
+                ),
+                ui::column(top_right).align(vec2(0.5, 0.5)),
             ),
             CardsRow::new(
                 unit_cards(

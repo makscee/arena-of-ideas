@@ -28,10 +28,7 @@ impl<'a> UnitCardWidget<'a> {
 
 impl<'a> Widget for UnitCardWidget<'a> {
     fn calc_constraints(&mut self, cx: &ConstraintsContext) -> Constraints {
-        Constraints {
-            min_size: vec2(50.0, 50.0),
-            flex: vec2(100.0, 100.0),
-        }
+        Constraints::default()
     }
 
     fn sense(&mut self) -> Option<&mut Sense> {
