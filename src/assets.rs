@@ -16,9 +16,35 @@ pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
+    #[asset(load_with = "load_statuses(geng, &base_path)")]
+    pub statuses: HashMap<StatusType, ugli::Program>,
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
+}
+
+async fn load_statuses(
+    geng: &Geng,
+    base_path: &std::path::Path,
+) -> anyhow::Result<HashMap<StatusType, ugli::Program>> {
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("statuses.json"))
+        .await
+        .context("Failed to load statuses.json")?;
+    let paths: HashMap<StatusType, String> =
+        serde_json::from_str(&json).context("Failed to parse statuses.json")?;
+    let result: anyhow::Result<Vec<_>> =
+        future::join_all(paths.into_iter().map(|(status_type, path)| async move {
+            let path = path.as_str();
+            let program =
+                <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+                    .await
+                    .context(format!("Failed to load {path}"))?;
+            Ok::<_, anyhow::Error>((status_type, program))
+        }))
+        .await
+        .into_iter()
+        .collect();
+    result.map(|list| list.into_iter().collect())
 }
 
 pub type Key = String;

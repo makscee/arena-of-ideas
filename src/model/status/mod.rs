@@ -46,7 +46,7 @@ pub use slow::*;
 pub use stun::*;
 pub use taunt::*;
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum StatusType {
     Freeze,
     Stun,
