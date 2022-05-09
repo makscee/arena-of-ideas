@@ -89,6 +89,7 @@ impl Unit {
             health: template.health,
             max_hp: template.health,
             base_damage: template.base_damage,
+            face_dir: Vec2::ZERO,
             position,
             speed: template.speed,
             radius: template.radius,
