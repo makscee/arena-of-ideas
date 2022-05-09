@@ -1,5 +1,4 @@
 pub mod render;
-mod ui;
 mod unit_card;
 
 use super::*;
@@ -15,30 +14,39 @@ pub struct ShopState {
     pub shop: Shop,
     pub render_shop: render::RenderShop,
     pub render: render::Render,
+    pub time: Time,
 }
 
 impl ShopState {
     pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig) -> Self {
         Self {
             shop: Shop::new(geng, assets, config.units.map.values().cloned()), // TODO: possibly optimize
-            render_shop: render::RenderShop::new(),
+            render_shop: render::RenderShop::new(vec2(1.0, 1.0), 0, 0, 0),
             render: render::Render::new(geng, assets, config),
+            time: Time::ZERO,
         }
     }
 }
 
 impl geng::State for ShopState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.render.draw(&self.shop, &self.render_shop, framebuffer);
+        self.render_shop = render::RenderShop::new(
+            framebuffer.size().map(|x| x as _),
+            self.shop.shop.len(),
+            self.shop.party.len(),
+            self.shop.inventory.len(),
+        );
+        self.render.draw(
+            &self.shop,
+            &self.render_shop,
+            self.time.as_f32(),
+            framebuffer,
+        );
     }
 
     fn update(&mut self, delta_time: f64) {
         self.render_shop.update(delta_time as _);
-        self.shop.time += Time::new(delta_time as _);
-    }
-
-    fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
-        self.shop.ui(cx)
+        self.time += Time::new(delta_time as _);
     }
 }
 
@@ -47,17 +55,21 @@ pub type Money = u32;
 pub struct Shop {
     pub geng: Geng,
     pub assets: Rc<Assets>,
-    pub time: Time,
     pub tier: Tier,
     pub money: Money,
     pub frozen: bool,
     pub available: Vec<UnitTemplate>,
-    pub cards: Vec<UnitCard>,
+    pub shop: Vec<Option<UnitCard>>,
+    pub party: Vec<Option<UnitCard>>,
+    pub inventory: Vec<Option<UnitCard>>,
     pub dragging: Option<Dragging>,
 }
 
 pub enum Dragging {
-    Card(UnitCard),
+    Card {
+        card: UnitCard,
+        old_state: CardState,
+    },
 }
 
 impl Shop {
@@ -69,11 +81,12 @@ impl Shop {
         let mut shop = Self {
             geng: geng.clone(),
             assets: assets.clone(),
-            time: Time::new(0.0),
             tier: 1,
             money: 0,
             frozen: false,
-            cards: vec![],
+            shop: vec![],
+            party: vec![None; MAX_PARTY],
+            inventory: vec![None; MAX_INVENTORY],
             dragging: None,
             available: units
                 .filter(|unit| unit.tier > 0)
@@ -95,15 +108,12 @@ impl Shop {
 
     pub fn reroll(&mut self) {
         if let Some(units) = tier_units_number(self.tier) {
-            self.cards = self
+            self.shop = self
                 .available
                 .iter()
                 .filter(|unit| unit.tier <= self.tier)
-                .map(|unit| UnitCard::new(unit.clone(), CardState::Shop { index: 0 }))
+                .map(|unit| Some(UnitCard::new(unit.clone())))
                 .choose_multiple(&mut global_rng(), units);
-            for (index, card) in self.cards.iter_mut().enumerate() {
-                card.state = CardState::Shop { index };
-            }
         }
     }
 
