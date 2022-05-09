@@ -12,20 +12,70 @@ const BUTTON_SPACING: f32 = 0.03;
 /// Height divided by width
 pub const CARD_SIZE_RATIO: f32 = 1.3269;
 
+pub struct LayoutWidget {
+    pub position: AABB<f32>,
+    pub hovered: bool,
+    pub pressed: bool,
+}
+
+impl Default for LayoutWidget {
+    fn default() -> Self {
+        Self {
+            position: AABB::ZERO,
+            hovered: false,
+            pressed: false,
+        }
+    }
+}
+
+impl LayoutWidget {
+    pub fn new(position: AABB<f32>) -> Self {
+        Self {
+            position,
+            hovered: false,
+            pressed: false,
+        }
+    }
+
+    pub fn update(&mut self, position: AABB<f32>) {
+        self.position = position;
+    }
+}
+
 pub struct ShopLayout {
-    pub tier_up: AABB<f32>,
-    pub current_tier: AABB<f32>,
-    pub currency: AABB<f32>,
-    pub reroll: AABB<f32>,
-    pub freeze: AABB<f32>,
-    pub shop: AABB<f32>,
-    pub shop_cards: Vec<AABB<f32>>,
-    pub party: AABB<f32>,
-    pub party_cards: Vec<AABB<f32>>,
-    pub alliances: AABB<f32>,
-    pub inventory: AABB<f32>,
-    pub inventory_cards: Vec<AABB<f32>>,
+    pub tier_up: LayoutWidget,
+    pub current_tier: LayoutWidget,
+    pub currency: LayoutWidget,
+    pub reroll: LayoutWidget,
+    pub freeze: LayoutWidget,
+    pub shop: LayoutWidget,
+    pub shop_cards: Vec<LayoutWidget>,
+    pub party: LayoutWidget,
+    pub party_cards: Vec<LayoutWidget>,
+    pub alliances: LayoutWidget,
+    pub inventory: LayoutWidget,
+    pub inventory_cards: Vec<LayoutWidget>,
     pub drag_card_size: Vec2<f32>,
+}
+
+impl Default for ShopLayout {
+    fn default() -> Self {
+        Self {
+            tier_up: Default::default(),
+            current_tier: Default::default(),
+            currency: Default::default(),
+            reroll: Default::default(),
+            freeze: Default::default(),
+            shop: Default::default(),
+            shop_cards: Default::default(),
+            party: Default::default(),
+            party_cards: Default::default(),
+            alliances: Default::default(),
+            inventory: Default::default(),
+            inventory_cards: Default::default(),
+            drag_card_size: Vec2::ZERO,
+        }
+    }
 }
 
 impl ShopLayout {
@@ -35,6 +85,18 @@ impl ShopLayout {
         party_cards: usize,
         inventory_cards: usize,
     ) -> Self {
+        let mut shop = Self::default();
+        shop.update(screen_size, shop_cards, party_cards, inventory_cards);
+        shop
+    }
+
+    pub fn update(
+        &mut self,
+        screen_size: Vec2<f32>,
+        shop_cards: usize,
+        party_cards: usize,
+        inventory_cards: usize,
+    ) {
         let screen = AABB::point(screen_size * BORDER_SPACING);
         let screen = screen.extend_positive(screen_size * (1.0 - BORDER_SPACING * 2.0));
 
@@ -66,7 +128,7 @@ impl ShopLayout {
                     )
                     .extend_positive(card_size)
                 })
-                .collect()
+                .collect::<Vec<_>>()
         };
 
         let inventory = layout_cards_aabb(bottom_row, inventory_cards);
@@ -112,20 +174,62 @@ impl ShopLayout {
             .extend_down(button_height);
         let freeze = reroll.translate(vec2(0.0, -button_height - button_spacing));
 
-        Self {
-            tier_up,
-            current_tier,
-            currency,
-            reroll,
-            freeze,
-            shop,
-            shop_cards,
-            party,
-            party_cards,
-            alliances,
-            inventory,
-            inventory_cards,
-            drag_card_size: card_size,
+        self.tier_up.update(tier_up);
+        self.current_tier.update(current_tier);
+        self.currency.update(currency);
+        self.reroll.update(reroll);
+        self.freeze.update(freeze);
+        self.shop.update(shop);
+        self.party.update(party);
+        self.alliances.update(alliances);
+        self.inventory.update(inventory);
+        self.drag_card_size = card_size;
+        vec_update(&mut self.shop_cards, &shop_cards);
+        vec_update(&mut self.party_cards, &party_cards);
+        vec_update(&mut self.inventory_cards, &inventory_cards);
+    }
+
+    pub fn walk_widgets_mut(&mut self, f: &mut impl FnMut(&mut LayoutWidget)) {
+        f(&mut self.tier_up);
+        f(&mut self.current_tier);
+        f(&mut self.currency);
+        f(&mut self.reroll);
+        f(&mut self.freeze);
+        f(&mut self.shop);
+        f(&mut self.party);
+        f(&mut self.alliances);
+        f(&mut self.inventory);
+        self.shop_cards
+            .iter_mut()
+            .chain(&mut self.party_cards)
+            .chain(&mut self.inventory_cards)
+            .for_each(|widget| f(widget));
+    }
+}
+
+fn vec_update(vec: &mut Vec<LayoutWidget>, updates: &[AABB<f32>]) {
+    let mut widgets = vec.iter_mut();
+    let mut updates = updates.iter().copied();
+    loop {
+        let widget = widgets.next();
+        let update = updates.next();
+        match (widget, update) {
+            (Some(widget), Some(update)) => {
+                widget.update(update);
+            }
+            (Some(widget), None) => {
+                let delta = vec.len() - updates.len();
+                for _ in 0..delta {
+                    vec.remove(vec.len() - 1);
+                }
+                break;
+            }
+            (None, Some(update)) => {
+                vec.push(LayoutWidget::new(update));
+                vec.extend(updates.map(|position| LayoutWidget::new(position)));
+                break;
+            }
+            (None, None) => break,
         }
     }
 }

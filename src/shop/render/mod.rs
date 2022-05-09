@@ -21,6 +21,18 @@ const BUTTON_COLOR: Color<f32> = Color {
     b: 1.0,
     a: 1.0,
 };
+const BUTTON_HOVER_COLOR: Color<f32> = Color {
+    r: 0.0,
+    g: 0.5,
+    b: 0.8,
+    a: 1.0,
+};
+const BUTTON_PRESS_COLOR: Color<f32> = Color {
+    r: 0.0,
+    g: 0.3,
+    b: 0.6,
+    a: 1.0,
+};
 const TEXT_COLOR: Color<f32> = Color::WHITE;
 
 pub struct RenderShop {
@@ -70,8 +82,9 @@ impl Render {
     ) {
         ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None);
         let camera = &geng::PixelPerfectCamera;
+        let layout = &render.layout;
 
-        draw_2d::Quad::new(render.layout.shop, TEXT_BACKGROUND_COLOR).draw_2d(
+        draw_2d::Quad::new(layout.shop.position, TEXT_BACKGROUND_COLOR).draw_2d(
             &self.geng,
             framebuffer,
             camera,
@@ -83,10 +96,10 @@ impl Render {
                 .get(index)
                 .expect("Invalid shop layout");
             self.card_render
-                .draw(*layout, card.as_ref(), game_time, framebuffer);
+                .draw(layout.position, card.as_ref(), game_time, framebuffer);
         }
 
-        draw_2d::Quad::new(render.layout.party, TEXT_BACKGROUND_COLOR).draw_2d(
+        draw_2d::Quad::new(layout.party.position, TEXT_BACKGROUND_COLOR).draw_2d(
             &self.geng,
             framebuffer,
             camera,
@@ -98,10 +111,10 @@ impl Render {
                 .get(index)
                 .expect("Invalid party layout");
             self.card_render
-                .draw(*layout, card.as_ref(), game_time, framebuffer);
+                .draw(layout.position, card.as_ref(), game_time, framebuffer);
         }
 
-        draw_2d::Quad::new(render.layout.inventory, TEXT_BACKGROUND_COLOR).draw_2d(
+        draw_2d::Quad::new(layout.inventory.position, TEXT_BACKGROUND_COLOR).draw_2d(
             &self.geng,
             framebuffer,
             camera,
@@ -113,7 +126,7 @@ impl Render {
                 .get(index)
                 .expect("Invalid inventory layout");
             self.card_render
-                .draw(*layout, card.as_ref(), game_time, framebuffer);
+                .draw(layout.position, card.as_ref(), game_time, framebuffer);
         }
 
         let text = match tier_up_cost(shop.tier) {
@@ -122,15 +135,15 @@ impl Render {
         };
         draw_rectangle(
             &text,
-            render.layout.tier_up,
-            BUTTON_COLOR,
+            layout.tier_up.position,
+            button_color(&layout.tier_up),
             &self.geng,
             framebuffer,
         );
 
         draw_rectangle(
             &format!("Tier {}", shop.tier),
-            render.layout.current_tier,
+            layout.current_tier.position,
             TEXT_BACKGROUND_COLOR,
             &self.geng,
             framebuffer,
@@ -139,7 +152,7 @@ impl Render {
         let text = if shop.money == 1 { "coin" } else { "coins" };
         draw_rectangle(
             &format!("{} {}", shop.money, text),
-            render.layout.currency,
+            layout.currency.position,
             TEXT_BACKGROUND_COLOR,
             &self.geng,
             framebuffer,
@@ -147,21 +160,21 @@ impl Render {
 
         draw_rectangle(
             &format!("Reroll"),
-            render.layout.reroll,
-            BUTTON_COLOR,
+            layout.reroll.position,
+            button_color(&layout.reroll),
             &self.geng,
             framebuffer,
         );
 
         draw_rectangle(
             &format!("Freeze"),
-            render.layout.freeze,
-            BUTTON_COLOR,
+            layout.freeze.position,
+            button_color(&layout.freeze),
             &self.geng,
             framebuffer,
         );
 
-        draw_2d::Quad::new(render.layout.alliances, TEXT_BACKGROUND_COLOR).draw_2d(
+        draw_2d::Quad::new(layout.alliances.position, TEXT_BACKGROUND_COLOR).draw_2d(
             &self.geng,
             framebuffer,
             camera,
@@ -170,13 +183,23 @@ impl Render {
         if let Some(drag) = &shop.drag {
             match &drag.target {
                 DragTarget::Card { card, .. } => {
-                    let aabb = AABB::point(drag.position)
-                        .extend_symmetric(render.layout.drag_card_size / 2.0);
+                    let aabb =
+                        AABB::point(drag.position).extend_symmetric(layout.drag_card_size / 2.0);
                     self.card_render
                         .draw(aabb, Some(card), game_time, framebuffer);
                 }
             }
         }
+    }
+}
+
+fn button_color(widget: &LayoutWidget) -> Color<f32> {
+    if widget.pressed {
+        BUTTON_PRESS_COLOR
+    } else if widget.hovered {
+        BUTTON_HOVER_COLOR
+    } else {
+        BUTTON_COLOR
     }
 }
 

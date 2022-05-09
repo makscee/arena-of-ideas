@@ -12,6 +12,7 @@ const MAX_PARTY: usize = 7;
 const MAX_INVENTORY: usize = 10;
 
 pub struct ShopState {
+    geng: Geng,
     pub shop: Shop,
     pub render_shop: render::RenderShop,
     pub render: render::Render,
@@ -21,6 +22,7 @@ pub struct ShopState {
 impl ShopState {
     pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig) -> Self {
         Self {
+            geng: geng.clone(),
             shop: Shop::new(geng, assets, config.units.map.values().cloned()), // TODO: possibly optimize
             render_shop: render::RenderShop::new(vec2(1.0, 1.0), 0, 0, 0),
             render: render::Render::new(geng, assets, config),
@@ -31,7 +33,7 @@ impl ShopState {
 
 impl geng::State for ShopState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.render_shop = render::RenderShop::new(
+        self.render_shop.layout.update(
             framebuffer.size().map(|x| x as _),
             self.shop.shop.len(),
             self.shop.party.len(),
@@ -54,12 +56,14 @@ impl geng::State for ShopState {
             geng::Event::MouseDown { position, button } => {
                 if let MouseButton::Left = button {
                     let position = position.map(|x| x as f32);
-                    if let Some(interact) = self.get_under_pos(position) {
-                        match interact {
-                            Interactable::TierUp => self.shop.tier_up(),
-                            Interactable::Reroll => self.shop.reroll(),
-                            Interactable::Freeze => self.shop.freeze(),
-                            Interactable::Card(card) => {
+                    if let Some((interaction, layout)) = self.get_under_pos_mut(position) {
+                        layout.hovered = true;
+                        layout.pressed = true;
+                        match interaction {
+                            Interaction::TierUp => self.shop.tier_up(),
+                            Interaction::Reroll => self.shop.reroll(),
+                            Interaction::Freeze => self.shop.freeze(),
+                            Interaction::Card(card) => {
                                 self.drag_card(card, position);
                             }
                         }
@@ -68,10 +72,22 @@ impl geng::State for ShopState {
             }
             geng::Event::MouseUp { position, button } => {
                 if let MouseButton::Left = button {
+                    self.render_shop
+                        .layout
+                        .walk_widgets_mut(&mut |widget| widget.pressed = false);
                     self.drag_stop();
                 }
             }
             geng::Event::MouseMove { position, .. } => {
+                self.render_shop
+                    .layout
+                    .walk_widgets_mut(&mut |widget| widget.hovered = false);
+                if let Some((_, layout)) =
+                    self.get_under_pos_mut(self.geng.window().mouse_pos().map(|x| x as _))
+                {
+                    layout.hovered = true;
+                }
+
                 if let Some(drag) = &mut self.shop.drag {
                     drag.position = position.map(|x| x as _);
                 }
@@ -81,7 +97,7 @@ impl geng::State for ShopState {
     }
 }
 
-pub enum Interactable {
+pub enum Interaction {
     TierUp,
     Reroll,
     Freeze,
@@ -117,41 +133,44 @@ pub enum DragTarget {
 }
 
 impl ShopState {
-    pub fn get_under_pos(&self, position: Vec2<f32>) -> Option<Interactable> {
-        let layout = &self.render_shop.layout;
-        if let Some((index, _)) = layout
+    pub fn get_under_pos_mut(
+        &mut self,
+        position: Vec2<f32>,
+    ) -> Option<(Interaction, &mut render::LayoutWidget)> {
+        let layout = &mut self.render_shop.layout;
+        if let Some((index, layout)) = layout
             .shop_cards
-            .iter()
+            .iter_mut()
             .enumerate()
-            .find(|(_, aabb)| aabb.contains(position))
+            .find(|(_, layout)| layout.position.contains(position))
         {
-            return Some(Interactable::Card(CardState::Shop { index }));
+            return Some((Interaction::Card(CardState::Shop { index }), layout));
         }
-        if let Some((index, _)) = layout
+        if let Some((index, layout)) = layout
             .party_cards
-            .iter()
+            .iter_mut()
             .enumerate()
-            .find(|(_, aabb)| aabb.contains(position))
+            .find(|(_, layout)| layout.position.contains(position))
         {
-            return Some(Interactable::Card(CardState::Party { index }));
+            return Some((Interaction::Card(CardState::Party { index }), layout));
         }
-        if let Some((index, _)) = layout
+        if let Some((index, layout)) = layout
             .inventory_cards
-            .iter()
+            .iter_mut()
             .enumerate()
-            .find(|(_, aabb)| aabb.contains(position))
+            .find(|(_, layout)| layout.position.contains(position))
         {
-            return Some(Interactable::Card(CardState::Inventory { index }));
+            return Some((Interaction::Card(CardState::Inventory { index }), layout));
         }
 
-        if layout.tier_up.contains(position) {
-            return Some(Interactable::TierUp);
+        if layout.tier_up.position.contains(position) {
+            return Some((Interaction::TierUp, &mut layout.tier_up));
         }
-        if layout.reroll.contains(position) {
-            return Some(Interactable::Reroll);
+        if layout.reroll.position.contains(position) {
+            return Some((Interaction::Reroll, &mut layout.reroll));
         }
-        if layout.freeze.contains(position) {
-            return Some(Interactable::Freeze);
+        if layout.freeze.position.contains(position) {
+            return Some((Interaction::Freeze, &mut layout.freeze));
         }
 
         None
@@ -176,9 +195,9 @@ impl ShopState {
         if let Some(drag) = self.shop.drag.take() {
             match drag.target {
                 DragTarget::Card { card, old_state } => {
-                    if let Some(interact) = self.get_under_pos(drag.position) {
-                        match interact {
-                            Interactable::Card(state) => match self.shop.get_card_mut(&state) {
+                    if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
+                        match interaction {
+                            Interaction::Card(state) => match self.shop.get_card_mut(&state) {
                                 Some(target @ None) => {
                                     // Change placement
                                     *target = Some(card);
