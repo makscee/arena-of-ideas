@@ -4,7 +4,24 @@ mod card;
 mod layout;
 
 pub use card::*;
+use geng::Draw2d;
 pub use layout::*;
+
+const TEXT_OCCUPY_SPACE: f32 = 0.6;
+const BACKGROUND_COLOR: Color<f32> = Color::BLACK;
+const TEXT_BACKGROUND_COLOR: Color<f32> = Color {
+    r: 0.2,
+    g: 0.2,
+    b: 0.2,
+    a: 1.0,
+};
+const BUTTON_COLOR: Color<f32> = Color {
+    r: 0.0,
+    g: 0.7,
+    b: 1.0,
+    a: 1.0,
+};
+const TEXT_COLOR: Color<f32> = Color::WHITE;
 
 pub struct RenderShop {
     pub layout: ShopLayout,
@@ -21,8 +38,6 @@ impl RenderShop {
             layout: ShopLayout::new(screen_size, shop_cards, party_cards, inventory_cards),
         }
     }
-
-    pub fn update(&mut self, delta_tile: f32) {}
 }
 
 pub struct Render {
@@ -53,8 +68,14 @@ impl Render {
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        ugli::clear(framebuffer, Some(Color::BLACK), None);
+        ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None);
+        let camera = &geng::PixelPerfectCamera;
 
+        draw_2d::Quad::new(render.layout.shop, TEXT_BACKGROUND_COLOR).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
         for (index, card) in shop
             .shop
             .iter()
@@ -69,6 +90,11 @@ impl Render {
             self.card_render.draw(*layout, card, game_time, framebuffer);
         }
 
+        draw_2d::Quad::new(render.layout.party, TEXT_BACKGROUND_COLOR).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
         for (index, card) in shop
             .party
             .iter()
@@ -83,6 +109,11 @@ impl Render {
             self.card_render.draw(*layout, card, game_time, framebuffer);
         }
 
+        draw_2d::Quad::new(render.layout.inventory, TEXT_BACKGROUND_COLOR).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
         for (index, card) in shop
             .inventory
             .iter()
@@ -96,5 +127,72 @@ impl Render {
                 .expect("Invalid inventory layout");
             self.card_render.draw(*layout, card, game_time, framebuffer);
         }
+
+        let text = match tier_up_cost(shop.tier) {
+            Some(cost) => format!("Tier Up ({})", cost),
+            None => format!("Tier Up (?)"),
+        };
+        draw_rectangle(
+            &text,
+            render.layout.tier_up,
+            BUTTON_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
+        draw_rectangle(
+            &format!("Tier {}", shop.tier),
+            render.layout.current_tier,
+            TEXT_BACKGROUND_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
+        let text = if shop.money == 1 { "coin" } else { "coins" };
+        draw_rectangle(
+            &format!("{} {}", shop.money, text),
+            render.layout.currency,
+            TEXT_BACKGROUND_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
+        draw_rectangle(
+            &format!("Reroll"),
+            render.layout.reroll,
+            BUTTON_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
+        draw_rectangle(
+            &format!("Freeze"),
+            render.layout.freeze,
+            BUTTON_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
+        draw_2d::Quad::new(render.layout.alliances, TEXT_BACKGROUND_COLOR).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
     }
+}
+
+fn draw_rectangle(
+    text: impl AsRef<str>,
+    aabb: AABB<f32>,
+    color: Color<f32>,
+    geng: &Geng,
+    framebuffer: &mut ugli::Framebuffer,
+) {
+    let camera = &geng::PixelPerfectCamera;
+    draw_2d::Quad::new(aabb, color).draw_2d(geng, framebuffer, camera);
+    draw_2d::Text::unit(&**geng.default_font(), text, TEXT_COLOR)
+        .fit_into(
+            AABB::point(aabb.center()).extend_symmetric(aabb.size() * TEXT_OCCUPY_SPACE / 2.0),
+        )
+        .draw_2d(geng, framebuffer, camera);
 }

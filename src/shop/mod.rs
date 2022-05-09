@@ -45,7 +45,6 @@ impl geng::State for ShopState {
     }
 
     fn update(&mut self, delta_time: f64) {
-        self.render_shop.update(delta_time as _);
         self.time += Time::new(delta_time as _);
     }
 }

@@ -18,9 +18,12 @@ pub struct ShopLayout {
     pub currency: AABB<f32>,
     pub reroll: AABB<f32>,
     pub freeze: AABB<f32>,
+    pub shop: AABB<f32>,
     pub shop_cards: Vec<AABB<f32>>,
+    pub party: AABB<f32>,
     pub party_cards: Vec<AABB<f32>>,
     pub alliances: AABB<f32>,
+    pub inventory: AABB<f32>,
     pub inventory_cards: Vec<AABB<f32>>,
 }
 
@@ -65,20 +68,18 @@ impl ShopLayout {
                 .collect()
         };
 
-        let inventory_cards = layout_cards(
-            layout_cards_aabb(bottom_row, inventory_cards).bottom_left(),
-            inventory_cards,
-        );
+        let inventory = layout_cards_aabb(bottom_row, inventory_cards);
+        let inventory_cards = layout_cards(inventory.bottom_left(), inventory_cards);
 
         let alliances_width = ALLIANCES_WIDTH * screen.width();
         let party = layout_cards_aabb(
             middle_row.extend_right(-alliances_width - column_spacing),
             party_cards,
         );
-        let mid_width = alliances_width + party.width();
-        let bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
+        let mid_width = alliances_width + party.width() + column_spacing;
+        let mut bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
         let party_cards = layout_cards(bot_left, party_cards);
-        let bot_left = bot_left + vec2(0.0, party.width() + column_spacing);
+        bot_left.x += party.width() + column_spacing;
         let alliances = AABB::point(bot_left).extend_positive(vec2(alliances_width, row_height));
 
         let button_spacing = BUTTON_SPACING * screen.height();
@@ -116,9 +117,12 @@ impl ShopLayout {
             currency,
             reroll,
             freeze,
+            shop,
             shop_cards,
+            party,
             party_cards,
             alliances,
+            inventory,
             inventory_cards,
         }
     }
