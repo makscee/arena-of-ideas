@@ -393,7 +393,8 @@ impl UnitRender {
                         }
                     })
                     .collect();
-                for (_status_type, program) in statuses {
+                let status_count = statuses.len();
+                for (status_index, (_status_type, program)) in statuses.into_iter().enumerate() {
                     let mut new_texture =
                         ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
                     {
@@ -412,6 +413,8 @@ impl UnitRender {
                                 &uniforms,
                                 ugli::uniforms! {
                                     u_previous_texture: &texture,
+                                    u_status_count: status_count,
+                                    u_status_index: status_index,
                                 },
                             ),
                             ugli::DrawParameters {
