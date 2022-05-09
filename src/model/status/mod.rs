@@ -105,6 +105,7 @@ pub struct AttachedStatus {
     pub status: Status,
     pub caster: Option<Id>,
     pub time: Option<Time>,
+    pub duration: Option<Time>,
 }
 
 pub trait StatusImpl: EffectContainer {}
