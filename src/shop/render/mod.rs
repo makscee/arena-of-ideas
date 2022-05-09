@@ -89,7 +89,7 @@ impl Render {
             framebuffer,
             camera,
         );
-        for (index, card) in shop.shop.iter().enumerate() {
+        for (index, card) in shop.cards.shop.iter().enumerate() {
             let layout = render
                 .layout
                 .shop_cards
@@ -104,7 +104,7 @@ impl Render {
             framebuffer,
             camera,
         );
-        for (index, card) in shop.party.iter().enumerate() {
+        for (index, card) in shop.cards.party.iter().enumerate() {
             let layout = render
                 .layout
                 .party_cards
@@ -119,7 +119,7 @@ impl Render {
             framebuffer,
             camera,
         );
-        for (index, card) in shop.inventory.iter().enumerate() {
+        for (index, card) in shop.cards.inventory.iter().enumerate() {
             let layout = render
                 .layout
                 .inventory_cards

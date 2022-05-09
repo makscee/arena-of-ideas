@@ -7,9 +7,12 @@ use crate::render::UnitRender;
 use geng::MouseButton;
 use unit_card::*;
 
-const UNIT_COST: Money = 3;
 const MAX_PARTY: usize = 7;
 const MAX_INVENTORY: usize = 10;
+const UNIT_COST: Money = 3;
+const REROLL_COST: Money = 1;
+const TIER_UP_COST: [Money; 5] = [5, 6, 7, 8, 9];
+const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
 
 pub struct ShopState {
     geng: Geng,
@@ -35,9 +38,9 @@ impl geng::State for ShopState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.render_shop.layout.update(
             framebuffer.size().map(|x| x as _),
-            self.shop.shop.len(),
-            self.shop.party.len(),
-            self.shop.inventory.len(),
+            self.shop.cards.shop.len(),
+            self.shop.cards.party.len(),
+            self.shop.cards.inventory.len(),
         );
         self.render.draw(
             &self.shop,
@@ -61,7 +64,7 @@ impl geng::State for ShopState {
                         layout.pressed = true;
                         match interaction {
                             Interaction::TierUp => self.shop.tier_up(),
-                            Interaction::Reroll => self.shop.reroll(),
+                            Interaction::Reroll => self.shop.reroll(false),
                             Interaction::Freeze => self.shop.freeze(),
                             Interaction::Card(card) => {
                                 self.drag_card(card, position);
@@ -113,10 +116,14 @@ pub struct Shop {
     pub money: Money,
     pub frozen: bool,
     pub available: Vec<UnitTemplate>,
+    pub cards: Cards,
+    pub drag: Option<Drag>,
+}
+
+pub struct Cards {
     pub shop: Vec<Option<UnitCard>>,
     pub party: Vec<Option<UnitCard>>,
     pub inventory: Vec<Option<UnitCard>>,
-    pub drag: Option<Drag>,
 }
 
 pub struct Drag {
@@ -178,7 +185,11 @@ impl ShopState {
 
     pub fn drag_card(&mut self, state: CardState, position: Vec2<f32>) {
         self.drag_stop();
-        let card = self.shop.get_card_mut(&state).and_then(|card| card.take());
+        let card = self
+            .shop
+            .cards
+            .get_card_mut(&state)
+            .and_then(|card| card.take());
         if let Some(card) = card {
             self.shop.drag = Some(Drag {
                 start_position: position,
@@ -197,14 +208,27 @@ impl ShopState {
                 DragTarget::Card { card, old_state } => {
                     if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
                         match interaction {
-                            Interaction::Card(state) => match self.shop.get_card_mut(&state) {
-                                Some(target @ None) => {
-                                    // Change placement
-                                    *target = Some(card);
-                                    return;
+                            Interaction::Card(state) => {
+                                match self.shop.cards.get_card_mut(&state) {
+                                    Some(target @ None) => {
+                                        if matches!(old_state, CardState::Shop { .. })
+                                            && !matches!(state, CardState::Shop { .. })
+                                        {
+                                            // Moved from the shop -> check payment
+                                            if self.shop.money >= UNIT_COST {
+                                                self.shop.money -= UNIT_COST;
+                                                *target = Some(card);
+                                                return;
+                                            }
+                                        } else {
+                                            // Change placement
+                                            *target = Some(card);
+                                            return;
+                                        }
+                                    }
+                                    _ => {}
                                 }
-                                _ => {}
-                            },
+                            }
                             _ => {}
                         }
                     }
@@ -212,13 +236,13 @@ impl ShopState {
                     // Return to old state, aka drop
                     match old_state {
                         CardState::Shop { index } => {
-                            *self.shop.shop.get_mut(index).unwrap() = Some(card);
+                            *self.shop.cards.shop.get_mut(index).unwrap() = Some(card);
                         }
                         CardState::Party { index } => {
-                            *self.shop.party.get_mut(index).unwrap() = Some(card);
+                            *self.shop.cards.party.get_mut(index).unwrap() = Some(card);
                         }
                         CardState::Inventory { index } => {
-                            *self.shop.inventory.get_mut(index).unwrap() = Some(card);
+                            *self.shop.cards.inventory.get_mut(index).unwrap() = Some(card);
                         }
                     }
                 }
@@ -239,25 +263,15 @@ impl Shop {
             tier: 1,
             money: 0,
             frozen: false,
-            shop: vec![],
-            party: vec![None; MAX_PARTY],
-            inventory: vec![None; MAX_INVENTORY],
+            cards: Cards::new(),
             drag: None,
             available: units
                 .filter(|unit| unit.tier > 0)
                 .map(|unit| unit)
                 .collect(),
         };
-        shop.reroll();
+        shop.reroll(true);
         shop
-    }
-
-    pub fn get_card_mut(&mut self, state: &CardState) -> Option<&mut Option<UnitCard>> {
-        match state {
-            &CardState::Shop { index } => self.shop.get_mut(index),
-            &CardState::Party { index } => self.party.get_mut(index),
-            &CardState::Inventory { index } => self.inventory.get_mut(index),
-        }
     }
 
     pub fn tier_up(&mut self) {
@@ -269,19 +283,42 @@ impl Shop {
         }
     }
 
-    pub fn reroll(&mut self) {
-        if let Some(units) = tier_units_number(self.tier) {
-            self.shop = self
-                .available
-                .iter()
-                .filter(|unit| unit.tier <= self.tier)
-                .map(|unit| Some(UnitCard::new(unit.clone())))
-                .choose_multiple(&mut global_rng(), units);
+    pub fn reroll(&mut self, force: bool) {
+        if self.money >= REROLL_COST || force {
+            if !force {
+                self.money -= REROLL_COST;
+            }
+            if let Some(units) = tier_units_number(self.tier) {
+                self.cards.shop = self
+                    .available
+                    .iter()
+                    .filter(|unit| unit.tier <= self.tier)
+                    .map(|unit| Some(UnitCard::new(unit.clone())))
+                    .choose_multiple(&mut global_rng(), units);
+            }
         }
     }
 
     pub fn freeze(&mut self) {
         self.frozen = !self.frozen;
+    }
+}
+
+impl Cards {
+    pub fn new() -> Self {
+        Self {
+            shop: vec![],
+            party: vec![None; MAX_PARTY],
+            inventory: vec![None; MAX_INVENTORY],
+        }
+    }
+
+    pub fn get_card_mut(&mut self, state: &CardState) -> Option<&mut Option<UnitCard>> {
+        match state {
+            &CardState::Shop { index } => self.shop.get_mut(index),
+            &CardState::Party { index } => self.party.get_mut(index),
+            &CardState::Inventory { index } => self.inventory.get_mut(index),
+        }
     }
 }
 
@@ -297,11 +334,8 @@ fn earn_money(round: usize) -> Money {
     (4 + round).min(10) as _
 }
 
-const TIER_UP: [Money; 5] = [5, 6, 7, 8, 9];
-const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
-
 fn tier_up_cost(current_tier: Tier) -> Option<Money> {
-    TIER_UP.get(current_tier as usize - 1).copied()
+    TIER_UP_COST.get(current_tier as usize - 1).copied()
 }
 
 fn tier_units_number(current_tier: Tier) -> Option<usize> {
