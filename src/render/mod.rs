@@ -228,7 +228,7 @@ impl UnitRender {
         render_mode: &RenderMode,
         model: Option<&Model>,
         game_time: f32,
-        camera: &impl geng::AbstractCamera2d,
+        camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         let spawn_scale = match unit.spawn_animation_time_left {
@@ -330,9 +330,12 @@ impl UnitRender {
                     .map(|x| x.as_f32());
 
                 // Actual render
-                let texture_size = vec2(128, 128); // TODO: configuring?
                 let texture_position = AABB::point(unit.position.map(|x| x.as_f32()))
                     .extend_uniform(unit.radius.as_f32() * 2.0); // TODO: configuring?
+                let texture_size =
+                    (texture_position.height() * framebuffer.size().y as f32 / camera.fov * 2.0)
+                        .max(1.0) as usize;
+                let texture_size = vec2(texture_size, texture_size);
                 let texture_camera = geng::Camera2d {
                     center: texture_position.center(),
                     rotation: 0.0,
@@ -375,7 +378,7 @@ impl UnitRender {
                         &quad,
                         &uniforms,
                         ugli::DrawParameters {
-                            blend_mode: Some(default()),
+                            // blend_mode: Some(default()),
                             ..default()
                         },
                     );
@@ -418,7 +421,7 @@ impl UnitRender {
                                 },
                             ),
                             ugli::DrawParameters {
-                                blend_mode: Some(default()),
+                                // blend_mode: Some(default()),
                                 ..default()
                             },
                         );
