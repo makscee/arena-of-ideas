@@ -25,6 +25,7 @@ pub struct ShopLayout {
     pub alliances: AABB<f32>,
     pub inventory: AABB<f32>,
     pub inventory_cards: Vec<AABB<f32>>,
+    pub drag_card_size: Vec2<f32>,
 }
 
 impl ShopLayout {
@@ -124,6 +125,7 @@ impl ShopLayout {
             alliances,
             inventory,
             inventory_cards,
+            drag_card_size: card_size,
         }
     }
 }

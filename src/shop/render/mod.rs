@@ -76,18 +76,14 @@ impl Render {
             framebuffer,
             camera,
         );
-        for (index, card) in shop
-            .shop
-            .iter()
-            .enumerate()
-            .filter_map(|(i, card)| card.as_ref().map(|card| (i, card)))
-        {
+        for (index, card) in shop.shop.iter().enumerate() {
             let layout = render
                 .layout
                 .shop_cards
                 .get(index)
                 .expect("Invalid shop layout");
-            self.card_render.draw(*layout, card, game_time, framebuffer);
+            self.card_render
+                .draw(*layout, card.as_ref(), game_time, framebuffer);
         }
 
         draw_2d::Quad::new(render.layout.party, TEXT_BACKGROUND_COLOR).draw_2d(
@@ -95,18 +91,14 @@ impl Render {
             framebuffer,
             camera,
         );
-        for (index, card) in shop
-            .party
-            .iter()
-            .enumerate()
-            .filter_map(|(i, card)| card.as_ref().map(|card| (i, card)))
-        {
+        for (index, card) in shop.party.iter().enumerate() {
             let layout = render
                 .layout
                 .party_cards
                 .get(index)
                 .expect("Invalid party layout");
-            self.card_render.draw(*layout, card, game_time, framebuffer);
+            self.card_render
+                .draw(*layout, card.as_ref(), game_time, framebuffer);
         }
 
         draw_2d::Quad::new(render.layout.inventory, TEXT_BACKGROUND_COLOR).draw_2d(
@@ -114,18 +106,14 @@ impl Render {
             framebuffer,
             camera,
         );
-        for (index, card) in shop
-            .inventory
-            .iter()
-            .enumerate()
-            .filter_map(|(i, card)| card.as_ref().map(|card| (i, card)))
-        {
+        for (index, card) in shop.inventory.iter().enumerate() {
             let layout = render
                 .layout
                 .inventory_cards
                 .get(index)
                 .expect("Invalid inventory layout");
-            self.card_render.draw(*layout, card, game_time, framebuffer);
+            self.card_render
+                .draw(*layout, card.as_ref(), game_time, framebuffer);
         }
 
         let text = match tier_up_cost(shop.tier) {
@@ -178,6 +166,17 @@ impl Render {
             framebuffer,
             camera,
         );
+
+        if let Some(drag) = &shop.drag {
+            match &drag.target {
+                DragTarget::Card { card, .. } => {
+                    let aabb = AABB::point(drag.position)
+                        .extend_symmetric(render.layout.drag_card_size / 2.0);
+                    self.card_render
+                        .draw(aabb, Some(card), game_time, framebuffer);
+                }
+            }
+        }
     }
 }
 

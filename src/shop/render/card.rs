@@ -24,6 +24,12 @@ const TIER_AABB: AABB<f32> = AABB {
     y_min: 0.92,
     y_max: 0.97,
 };
+const CARD_BACKGROUND_COLOR: Color<f32> = Color {
+    r: 0.1,
+    g: 0.1,
+    b: 0.1,
+    a: 1.0,
+};
 
 pub struct CardRender {
     geng: Geng,
@@ -41,13 +47,24 @@ impl CardRender {
     pub fn draw(
         &mut self,
         card_aabb: AABB<f32>,
-        card: &UnitCard,
+        card: Option<&UnitCard>,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let pixel_camera = &geng::PixelPerfectCamera;
+        let camera = &geng::PixelPerfectCamera;
         let width = card_aabb.width();
         let height = card_aabb.height();
+
+        draw_2d::Quad::new(card_aabb, CARD_BACKGROUND_COLOR).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
+
+        let card = match card {
+            Some(card) => card,
+            None => return,
+        };
 
         // Hero layout
         let mut hero_aabb = card_aabb.extend_up(-TOP_SPACE * height);
@@ -97,14 +114,14 @@ impl CardRender {
         draw_2d::TexturedQuad::new(hero_aabb, &temp_texture).draw_2d(
             &self.geng,
             framebuffer,
-            pixel_camera,
+            camera,
         );
 
         // Card texture
         draw_2d::TexturedQuad::new(card_aabb, &*self.render.assets.card).draw_2d(
             &self.geng,
             framebuffer,
-            pixel_camera,
+            camera,
         );
 
         // HP
@@ -114,12 +131,12 @@ impl CardRender {
             Color::WHITE,
         )
         .fit_into(hp_aabb)
-        .draw_2d(&self.geng, framebuffer, pixel_camera);
+        .draw_2d(&self.geng, framebuffer, camera);
 
         // Damage
         draw_2d::Text::unit(&**self.geng.default_font(), format!("?"), Color::WHITE)
             .fit_into(damage_aabb)
-            .draw_2d(&self.geng, framebuffer, pixel_camera);
+            .draw_2d(&self.geng, framebuffer, camera);
 
         // Tier
         draw_2d::Text::unit(
@@ -128,6 +145,6 @@ impl CardRender {
             Color::WHITE,
         )
         .fit_into(tier_aabb)
-        .draw_2d(&self.geng, framebuffer, pixel_camera);
+        .draw_2d(&self.geng, framebuffer, camera);
     }
 }
