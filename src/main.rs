@@ -167,7 +167,6 @@ fn main() {
                     let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
                         .await
                         .expect("Failed to load config");
-                    dbg!(static_path().join("shop"));
                     let shop_config =
                         <ShopConfig as geng::LoadAsset>::load(&geng, &static_path().join("shop"))
                             .await

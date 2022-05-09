@@ -58,70 +58,79 @@ impl Shop {
         }
         top_right.push(Box::new(freeze));
 
-        let shop = ui::column!(
+        let mut shop_cards = vec![];
+        let mut party_cards = vec![];
+        let mut inventory_cards = vec![];
+        let mut drag_card = None;
+        for card in &mut self.cards {
+            let mut widget = Box::new(UnitCardWidget::new(
+                &self.geng,
+                &self.assets,
+                cx,
+                Some(card),
+                self.time.as_f32(),
+            ));
+            let card = widget.card.as_mut().unwrap();
+            if widget.sense.is_captured() && drag_card.is_none() {
+                card.state = CardState::Dragged {
+                    old_state: Box::new(card.state.clone()),
+                };
+                drag_card = Some(widget as Box<dyn Widget>);
+                continue;
+            }
+
+            match &card.state {
+                CardState::Shop { .. } => {
+                    shop_cards.push(widget as Box<dyn Widget>);
+                }
+                CardState::Party { .. } => {
+                    party_cards.push(widget as Box<dyn Widget>);
+                }
+                CardState::Inventory { .. } => {
+                    inventory_cards.push(widget as Box<dyn Widget>);
+                }
+                CardState::Dragged { old_state } => {
+                    if !widget.sense.is_captured() {
+                        card.state = (**old_state).clone();
+                    }
+                }
+            }
+        }
+
+        let fix = |cards: &mut Vec<_>| {
+            if cards.is_empty() {
+                cards.push(Box::new(UnitCardWidget::new(
+                    &self.geng,
+                    &self.assets,
+                    cx,
+                    None,
+                    self.time.as_f32(),
+                )) as Box<dyn Widget>);
+            }
+        };
+        fix(&mut shop_cards);
+        fix(&mut party_cards);
+        fix(&mut inventory_cards);
+
+        let mut shop = ui::stack!(ui::column!(
             ui::row!(
                 ui::column(top_left)
                     .align(vec2(0.5, 0.5))
                     .uniform_padding(5.0),
-                CardsRow::new(
-                    unit_cards(&self.geng, &self.assets, &self.shop, cx, self.time.as_f32()),
-                    CARDS_SPACE_IN,
-                    CARDS_SPACE_OUT
-                )
-                .uniform_padding(10.0),
+                CardsRow::new(shop_cards, CARDS_SPACE_IN, CARDS_SPACE_OUT).uniform_padding(10.0),
                 ui::column(top_right)
                     .align(vec2(0.5, 0.5))
                     .uniform_padding(5.0),
             )
             .uniform_padding(5.0),
-            CardsRow::new(
-                unit_cards(
-                    &self.geng,
-                    &self.assets,
-                    &self.party,
-                    cx,
-                    self.time.as_f32()
-                ),
-                CARDS_SPACE_IN,
-                CARDS_SPACE_OUT
-            )
-            .uniform_padding(50.0),
-            CardsRow::new(
-                unit_cards(
-                    &self.geng,
-                    &self.assets,
-                    &self.inventory,
-                    cx,
-                    self.time.as_f32()
-                ),
-                CARDS_SPACE_IN,
-                CARDS_SPACE_OUT
-            )
-            .uniform_padding(5.0)
+            CardsRow::new(party_cards, CARDS_SPACE_IN, CARDS_SPACE_OUT).uniform_padding(50.0),
+            CardsRow::new(inventory_cards, CARDS_SPACE_IN, CARDS_SPACE_OUT).uniform_padding(5.0)
         )
-        .uniform_padding(10.0);
+        .uniform_padding(10.0));
+        if let Some(dragged) = drag_card {
+            shop.push(dragged);
+        }
 
         Box::new(shop)
     }
-}
-
-fn unit_cards<'a>(
-    geng: &Geng,
-    assets: &Rc<Assets>,
-    cards: &'a [Option<UnitCard>],
-    cx: &'a Controller,
-    game_time: f32,
-) -> Vec<Box<dyn Widget + 'a>> {
-    cards
-        .iter()
-        .map(|card| {
-            Box::new(UnitCardWidget::new(
-                geng,
-                assets,
-                cx,
-                card.as_ref(),
-                game_time,
-            )) as Box<dyn Widget>
-        })
-        .collect()
 }

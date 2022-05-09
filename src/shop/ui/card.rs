@@ -6,7 +6,7 @@ pub const CARD_SIZE_RATIO: f32 = 1.3269;
 pub struct UnitCardWidget<'a> {
     pub render: UnitRender,
     pub sense: &'a mut Sense,
-    pub card: Option<&'a UnitCard>,
+    pub card: Option<&'a mut UnitCard>,
     pub game_time: f32,
 }
 
@@ -15,12 +15,13 @@ impl<'a> UnitCardWidget<'a> {
         geng: &Geng,
         assets: &Rc<Assets>,
         cx: &'a Controller,
-        card: Option<&'a UnitCard>,
+        card: Option<&'a mut UnitCard>,
         game_time: f32,
     ) -> Self {
+        let sense: &'a mut Sense = cx.get_state();
         Self {
-            sense: cx.get_state(),
             render: UnitRender::new(geng, assets),
+            sense,
             card,
             game_time,
         }

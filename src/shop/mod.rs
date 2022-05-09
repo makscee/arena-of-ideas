@@ -52,16 +52,12 @@ pub struct Shop {
     pub money: Money,
     pub frozen: bool,
     pub available: Vec<UnitTemplate>,
-    pub shop: Vec<Option<UnitCard>>,
-    pub party: Vec<Option<UnitCard>>,
-    pub inventory: Vec<Option<UnitCard>>,
+    pub cards: Vec<UnitCard>,
     pub dragging: Option<Dragging>,
 }
 
 pub enum Dragging {
-    ShopCard(UnitCard, usize),
-    PartyCard(UnitCard, usize),
-    InventoryCard(UnitCard, usize),
+    Card(UnitCard),
 }
 
 impl Shop {
@@ -77,9 +73,7 @@ impl Shop {
             tier: 1,
             money: 0,
             frozen: false,
-            shop: vec![],
-            party: vec![None; MAX_PARTY],
-            inventory: vec![None; MAX_INVENTORY],
+            cards: vec![],
             dragging: None,
             available: units
                 .filter(|unit| unit.tier > 0)
@@ -101,12 +95,15 @@ impl Shop {
 
     pub fn reroll(&mut self) {
         if let Some(units) = tier_units_number(self.tier) {
-            self.shop = self
+            self.cards = self
                 .available
                 .iter()
                 .filter(|unit| unit.tier <= self.tier)
-                .map(|unit| Some(UnitCard::new(unit.clone())))
+                .map(|unit| UnitCard::new(unit.clone(), CardState::Shop { index: 0 }))
                 .choose_multiple(&mut global_rng(), units);
+            for (index, card) in self.cards.iter_mut().enumerate() {
+                card.state = CardState::Shop { index };
+            }
         }
     }
 
@@ -114,40 +111,40 @@ impl Shop {
         self.frozen = !self.frozen;
     }
 
-    pub fn drag_shop_unit(&mut self, index: usize) {
-        self.drag_stop();
-        if let Some(card) = self.shop.get_mut(index).and_then(|unit| unit.take()) {
-            self.dragging = Some(Dragging::ShopCard(card, index));
-        }
-    }
-
-    pub fn drag_party_unit(&mut self, index: usize) {
-        self.drag_stop();
-        if let Some(card) = self.party.get_mut(index).and_then(|unit| unit.take()) {
-            self.dragging = Some(Dragging::PartyCard(card, index));
-        }
-    }
-
-    pub fn drag_inventory_unit(&mut self, index: usize) {
-        self.drag_stop();
-        if let Some(card) = self.inventory.get_mut(index).and_then(|unit| unit.take()) {
-            self.dragging = Some(Dragging::InventoryCard(card, index));
-        }
-    }
-
-    pub fn drag_stop(&mut self) {
-        if let Some(dragging) = self.dragging.take() {
-            match dragging {
-                Dragging::ShopCard(card, index) => *self.shop.get_mut(index).unwrap() = Some(card),
-                Dragging::PartyCard(card, index) => {
-                    *self.party.get_mut(index).unwrap() = Some(card)
-                }
-                Dragging::InventoryCard(card, index) => {
-                    *self.inventory.get_mut(index).unwrap() = Some(card)
-                }
-            }
-        }
-    }
+    //    pub fn drag_shop_unit(&mut self, index: usize) {
+    //        self.drag_stop();
+    //        if let Some(card) = self.shop.get_mut(index).and_then(|unit| unit.take()) {
+    //            self.dragging = Some(Dragging::Card(card));
+    //        }
+    //    }
+    //
+    //    pub fn drag_party_unit(&mut self, index: usize) {
+    //        self.drag_stop();
+    //        if let Some(card) = self.party.get_mut(index).and_then(|unit| unit.take()) {
+    //            self.dragging = Some(Dragging::PartyCard(card, index));
+    //        }
+    //    }
+    //
+    //    pub fn drag_inventory_unit(&mut self, index: usize) {
+    //        self.drag_stop();
+    //        if let Some(card) = self.inventory.get_mut(index).and_then(|unit| unit.take()) {
+    //            self.dragging = Some(Dragging::InventoryCard(card, index));
+    //        }
+    //    }
+    //
+    //    pub fn drag_stop(&mut self) {
+    //        if let Some(dragging) = self.dragging.take() {
+    //            match dragging {
+    //                Dragging::ShopCard(card, index) => *self.shop.get_mut(index).unwrap() = Some(card),
+    //                Dragging::PartyCard(card, index) => {
+    //                    *self.party.get_mut(index).unwrap() = Some(card)
+    //                }
+    //                Dragging::InventoryCard(card, index) => {
+    //                    *self.inventory.get_mut(index).unwrap() = Some(card)
+    //                }
+    //            }
+    //        }
+    //    }
 }
 
 fn roll(choices: &[UnitTemplate], tier: Tier, units: usize) -> Vec<UnitTemplate> {
