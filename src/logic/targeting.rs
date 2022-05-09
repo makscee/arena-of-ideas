@@ -65,6 +65,7 @@ impl Logic<'_> {
                 _ => todo!(),
             });
             if let Some(target) = target {
+                unit.face_dir = (target.position - unit.position).normalize_or_zero();
                 if distance_between_units(target, &unit) < unit.action.range {
                     assert_ne!(target.id, unit.id);
                     unit.action_state = ActionState::Start {

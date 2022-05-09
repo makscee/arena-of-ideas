@@ -73,22 +73,8 @@ impl Render {
         for unit in itertools::chain![&model.units, &model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
 
+            let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
             self.draw_unit(unit, template, model, game_time, framebuffer);
-            if unit
-                .all_statuses
-                .iter()
-                .any(|status| status.r#type() == StatusType::Shield)
-            {
-                self.geng.draw_2d(
-                    framebuffer,
-                    &self.camera,
-                    &draw_2d::Ellipse::circle(
-                        unit.position.map(|x| x.as_f32()),
-                        unit.radius.as_f32() * 1.1,
-                        Color::rgba(1.0, 1.0, 0.0, 0.5),
-                    ),
-                );
-            }
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
@@ -341,36 +327,106 @@ impl UnitRender {
                     })
                     .map(|x| x.as_f32());
 
-                ugli::draw(
-                    framebuffer,
-                    program,
-                    ugli::DrawMode::TriangleFan,
-                    &quad,
-                    (
-                        ugli::uniforms! {
-                            u_time: game_time,
-                            u_unit_position: unit.position.map(|x| x.as_f32()),
-                            u_unit_radius: unit.radius.as_f32(),
-                            u_spawn: spawn_scale,
-                            u_action: action_time,
-                            u_cooldown: unit.action.cooldown.as_f32(),
-                            u_animation_delay: unit.action.animation_delay.as_f32(),
-                            u_target_dir: target_dir,
-                            u_random: unit.random_number.as_f32(),
-                            u_action_time: unit.last_action_time.as_f32(),
-                            u_injure_time: unit.last_injure_time.as_f32(),
-                            u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
-                            u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
-                            u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
-                            u_alliance_count: alliance_colors.len(),
-                        },
-                        geng::camera2d_uniforms(camera, framebuffer_size.map(|x| x as f32)),
-                        parameters,
-                    ),
-                    ugli::DrawParameters {
-                        blend_mode: Some(default()),
-                        ..default()
+                // Actual render
+                let texture_size = vec2(128, 128); // TODO: configuring?
+                let texture_position = AABB::point(unit.position.map(|x| x.as_f32()))
+                    .extend_uniform(unit.radius.as_f32() * 2.0); // TODO: configuring?
+                let texture_camera = geng::Camera2d {
+                    center: texture_position.center(),
+                    rotation: 0.0,
+                    fov: texture_position.height(),
+                };
+                let uniforms = (
+                    ugli::uniforms! {
+                        u_time: game_time,
+                        u_unit_position: unit.position.map(|x| x.as_f32()),
+                        u_unit_radius: unit.radius.as_f32(),
+                        u_spawn: spawn_scale,
+                        u_action: action_time,
+                        u_cooldown: unit.action.cooldown.as_f32(),
+                        u_animation_delay: unit.action.animation_delay.as_f32(),
+                        u_face_dir: unit.face_dir.map(|x| x.as_f32()),
+                        u_random: unit.random_number.as_f32(),
+                        u_action_time: unit.last_action_time.as_f32(),
+                        u_injure_time: unit.last_injure_time.as_f32(),
+                        u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
+                        u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
+                        u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
+                        u_alliance_count: alliance_colors.len(),
                     },
+                    geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),
+                    parameters,
+                );
+
+                let mut texture = ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
+                {
+                    let mut framebuffer = ugli::Framebuffer::new_color(
+                        self.geng.ugli(),
+                        ugli::ColorAttachment::Texture(&mut texture),
+                    );
+                    let framebuffer = &mut framebuffer;
+                    ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                    ugli::draw(
+                        framebuffer,
+                        program,
+                        ugli::DrawMode::TriangleFan,
+                        &quad,
+                        &uniforms,
+                        ugli::DrawParameters {
+                            blend_mode: Some(default()),
+                            ..default()
+                        },
+                    );
+                }
+
+                let mut statuses: std::collections::BTreeMap<StatusType, &ugli::Program> = unit
+                    .all_statuses
+                    .iter()
+                    .filter_map(|status| {
+                        let status_type = status.r#type();
+                        if let Some(program) = self.assets.statuses.get(&status_type) {
+                            Some((status_type, program))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                let status_count = statuses.len();
+                for (status_index, (_status_type, program)) in statuses.into_iter().enumerate() {
+                    let mut new_texture =
+                        ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
+                    {
+                        let mut framebuffer = ugli::Framebuffer::new_color(
+                            self.geng.ugli(),
+                            ugli::ColorAttachment::Texture(&mut new_texture),
+                        );
+                        let framebuffer = &mut framebuffer;
+                        ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                        ugli::draw(
+                            framebuffer,
+                            program,
+                            ugli::DrawMode::TriangleFan,
+                            &quad,
+                            (
+                                &uniforms,
+                                ugli::uniforms! {
+                                    u_previous_texture: &texture,
+                                    u_status_count: status_count,
+                                    u_status_index: status_index,
+                                },
+                            ),
+                            ugli::DrawParameters {
+                                blend_mode: Some(default()),
+                                ..default()
+                            },
+                        );
+                    }
+                    texture = new_texture;
+                }
+                self.geng.draw_2d(
+                    framebuffer,
+                    camera,
+                    &draw_2d::TexturedQuad::new(texture_position, texture),
                 );
             }
         }

@@ -13,14 +13,14 @@ const float thicknessInner = thicknessOuter * .5;
 uniform float u_time;
 uniform float u_injure_time;
 uniform float u_spawn;
-uniform float u_action;
+uniform float u_action; // 0 -> 1
 uniform float u_action_time;
 uniform float u_animation_delay;
 uniform float u_cooldown;
 uniform float u_random;
 
 uniform vec2 u_unit_position;
-uniform vec2 u_target_dir;
+uniform vec2 u_face_dir;
 uniform float u_unit_radius;
 
 uniform vec4 u_alliance_color_1;
@@ -104,4 +104,13 @@ float glowValue(float t)
 float triangleDist(vec2 p, float radius)
 {
     return max(abs(p).x * 0.866025 + p.y * 0.5, -p.y) - radius * 0.5;
+}
+
+vec3 mixColors(float t)
+{
+    t += float(t < 0.);
+    int colorInd = int(t * alCountF);
+    vec3 c1 = colors[colorInd];
+    vec3 c2 = colors[mod(colorInd + 1, int(alCountF))];
+    return mix(c1, c2, t * alCountF - float(colorInd));
 }

@@ -32,6 +32,10 @@ impl Logic<'_> {
                 unit.action_state = ActionState::Cooldown {
                     time: Time::new(0.0),
                 };
+            } else {
+                if let Some(target) = self.model.dead_units.get(target) {
+                    unit.action_state = ActionState::None;
+                }
             }
         }
     }

@@ -3,5 +3,6 @@
     "shaders/caster_hero.glsl",
     "shaders/shooter_enemy.glsl",
     "shaders/vfx_explosion.glsl",
-    "shaders/vfx_particle_burst.glsl"
+    "shaders/vfx_particle_burst.glsl",
+    "shaders/vfx_particle_spin.glsl"
 ]

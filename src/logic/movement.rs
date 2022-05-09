@@ -69,5 +69,10 @@ impl Logic<'_> {
             }
         }
         unit.position += (target_position - unit.position).clamp_len(..=speed * self.delta_time);
+
+        if (target_position - unit.position).len().as_f32() > 0.0
+        {
+            unit.face_dir = (target_position - unit.position).normalize_or_zero();
+        }
     }
 }
