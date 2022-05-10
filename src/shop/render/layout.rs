@@ -1,13 +1,14 @@
 use super::*;
 
 // All relative
-const COLUMN_SPACING: f32 = 0.06;
+const COLUMN_SPACING: f32 = 0.04;
 const ROW_SPACING: f32 = 0.125;
 const BORDER_SPACING: f32 = 0.03;
 const CARD_EXTRA_SPACE: f32 = 0.05;
 const ALLIANCES_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
+const GO_WIDTH: f32 = 0.1;
 
 /// Height divided by width
 pub const CARD_SIZE_RATIO: f32 = 1.3269;
@@ -53,6 +54,7 @@ pub struct ShopLayout {
     pub party: LayoutWidget,
     pub party_cards: Vec<LayoutWidget>,
     pub alliances: LayoutWidget,
+    pub go: LayoutWidget,
     pub inventory: LayoutWidget,
     pub inventory_cards: Vec<LayoutWidget>,
     pub drag_card_size: Vec2<f32>,
@@ -61,18 +63,19 @@ pub struct ShopLayout {
 impl Default for ShopLayout {
     fn default() -> Self {
         Self {
-            tier_up: Default::default(),
-            current_tier: Default::default(),
-            currency: Default::default(),
-            reroll: Default::default(),
-            freeze: Default::default(),
-            shop: Default::default(),
-            shop_cards: Default::default(),
-            party: Default::default(),
-            party_cards: Default::default(),
-            alliances: Default::default(),
-            inventory: Default::default(),
-            inventory_cards: Default::default(),
+            tier_up: default(),
+            current_tier: default(),
+            currency: default(),
+            reroll: default(),
+            freeze: default(),
+            shop: default(),
+            shop_cards: default(),
+            party: default(),
+            party_cards: default(),
+            go: default(),
+            alliances: default(),
+            inventory: default(),
+            inventory_cards: default(),
             drag_card_size: Vec2::ZERO,
         }
     }
@@ -109,6 +112,10 @@ impl ShopLayout {
         let card_width = card_height / CARD_SIZE_RATIO;
         let card_size = vec2(card_width, card_height);
 
+        let button_spacing = BUTTON_SPACING * screen.height();
+        let button_width = BUTTON_WIDTH * screen.width();
+        let button_height = (row_height - button_spacing * 2.0) / 3.0;
+
         let bottom_row =
             AABB::point(screen.bottom_left()).extend_positive(vec2(screen.width(), row_height));
         let middle_row = bottom_row.translate(vec2(0.0, row_height + row_spacing));
@@ -135,19 +142,16 @@ impl ShopLayout {
         let inventory_cards = layout_cards(inventory.bottom_left(), inventory_cards);
 
         let alliances_width = ALLIANCES_WIDTH * screen.width();
-        let party = layout_cards_aabb(
-            middle_row.extend_right(-alliances_width - column_spacing),
-            party_cards,
-        );
-        let mid_width = alliances_width + party.width() + column_spacing;
+        let go_width = GO_WIDTH * screen.width();
+        let mid_width = column_spacing + alliances_width + column_spacing + go_width;
+        let party = layout_cards_aabb(middle_row.extend_right(-mid_width), party_cards);
+        let mid_width = mid_width + party.width();
         let mut bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
         let party_cards = layout_cards(bot_left, party_cards);
         bot_left.x += party.width() + column_spacing;
         let alliances = AABB::point(bot_left).extend_positive(vec2(alliances_width, row_height));
-
-        let button_spacing = BUTTON_SPACING * screen.height();
-        let button_width = BUTTON_WIDTH * screen.width();
-        let button_height = (row_height - button_spacing * 2.0) / 3.0;
+        bot_left.x += alliances_width + column_spacing;
+        let go = AABB::point(bot_left).extend_positive(vec2(go_width, row_height));
 
         let top_left_buttons = AABB::point(screen.top_left())
             .extend_right(button_width)
@@ -182,6 +186,7 @@ impl ShopLayout {
         self.shop.update(shop);
         self.party.update(party);
         self.alliances.update(alliances);
+        self.go.update(go);
         self.inventory.update(inventory);
         self.drag_card_size = card_size;
         vec_update(&mut self.shop_cards, &shop_cards);
@@ -198,6 +203,7 @@ impl ShopLayout {
         f(&mut self.shop);
         f(&mut self.party);
         f(&mut self.alliances);
+        f(&mut self.go);
         f(&mut self.inventory);
         self.shop_cards
             .iter_mut()

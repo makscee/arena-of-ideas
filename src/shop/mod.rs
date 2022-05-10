@@ -16,20 +16,31 @@ const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
 
 pub struct ShopState {
     geng: Geng,
+    assets: Rc<Assets>,
     pub shop: Shop,
-    pub render_shop: render::RenderShop,
-    pub render: render::Render,
-    pub time: Time,
+    game_config: Config,
+    render_shop: render::RenderShop,
+    render: render::Render,
+    time: Time,
+    transition: bool,
 }
 
 impl ShopState {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig, game_config: Config) -> Self {
+        let shop = Shop::new(geng, assets, config.units.map.values().cloned()); // TODO: possibly optimize
+        Self::load(geng, assets, shop, game_config)
+    }
+
+    pub fn load(geng: &Geng, assets: &Rc<Assets>, shop: Shop, game_config: Config) -> Self {
         Self {
             geng: geng.clone(),
-            shop: Shop::new(geng, assets, config.units.map.values().cloned()), // TODO: possibly optimize
+            assets: assets.clone(),
             render_shop: render::RenderShop::new(vec2(1.0, 1.0), 0, 0, 0),
-            render: render::Render::new(geng, assets, config),
+            render: render::Render::new(geng, assets),
             time: Time::ZERO,
+            transition: false,
+            game_config,
+            shop,
         }
     }
 }
@@ -66,6 +77,7 @@ impl geng::State for ShopState {
                             Interaction::TierUp => self.shop.tier_up(),
                             Interaction::Reroll => self.shop.reroll(false),
                             Interaction::Freeze => self.shop.freeze(),
+                            Interaction::Go => self.transition = true,
                             Interaction::Card(card) => {
                                 self.drag_card(card, position);
                             }
@@ -98,12 +110,23 @@ impl geng::State for ShopState {
             _ => {}
         }
     }
+
+    fn transition(&mut self) -> Option<geng::Transition> {
+        if !self.transition {
+            return None;
+        }
+        let mut shop = Shop::new(&self.geng, &self.assets, std::iter::empty());
+        std::mem::swap(&mut self.shop, &mut shop);
+        let game_state = Game::new(&self.geng, &self.assets, self.game_config.clone(), shop);
+        Some(geng::Transition::Switch(Box::new(game_state)))
+    }
 }
 
 pub enum Interaction {
     TierUp,
     Reroll,
     Freeze,
+    Go,
     Card(CardState),
 }
 
@@ -178,6 +201,9 @@ impl ShopState {
         }
         if layout.freeze.position.contains(position) {
             return Some((Interaction::Freeze, &mut layout.freeze));
+        }
+        if layout.go.position.contains(position) {
+            return Some((Interaction::Go, &mut layout.go));
         }
 
         None

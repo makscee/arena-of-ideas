@@ -60,7 +60,7 @@ pub struct Render {
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>) -> Self {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -178,6 +178,14 @@ impl Render {
             &format!("TODO: Alliances"),
             layout.alliances.position,
             TEXT_BACKGROUND_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
+        draw_rectangle(
+            &format!("Go"),
+            layout.go.position,
+            button_color(&layout.go),
             &self.geng,
             framebuffer,
         );

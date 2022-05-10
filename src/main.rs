@@ -37,10 +37,11 @@ pub struct Game {
     history: Vec<HistoryEntry>,
     pressed_keys: Vec<Key>,
     render: Render,
+    shop: Shop,
 }
 
 impl Game {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: Config) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: Config, shop: Shop) -> Self {
         let mut model = Model::new(config.clone(), assets.units.clone());
         Logic::initialize(&mut model, &config);
         let mut game = Self {
@@ -54,6 +55,7 @@ impl Game {
             render: Render::new(geng, assets, config),
             pressed_keys: Vec::new(),
             timeline_captured: false,
+            shop,
         };
         game
     }
@@ -193,7 +195,7 @@ fn main() {
 
                     let assets = Rc::new(assets);
                     // Game::new(&geng, &assets, config)
-                    shop::ShopState::new(&geng, &assets, shop_config)
+                    shop::ShopState::new(&geng, &assets, shop_config, config)
                 }
             },
         ),
