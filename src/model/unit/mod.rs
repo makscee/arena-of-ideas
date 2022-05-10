@@ -81,6 +81,7 @@ impl Unit {
                     status: status.clone(),
                     caster: None,
                     time: None,
+                    duration: None,
                 })
                 .collect(),
             all_statuses: Vec::new(),
