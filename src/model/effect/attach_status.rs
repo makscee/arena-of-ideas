@@ -40,6 +40,7 @@ impl EffectImpl for AttachStatusEffect {
                 caster: context.caster,
                 status: effect.status,
                 time: effect.time,
+                duration: effect.time,
             });
 
             let target = target.id;
