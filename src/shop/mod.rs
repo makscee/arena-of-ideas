@@ -10,6 +10,7 @@ use unit_card::*;
 const MAX_PARTY: usize = 7;
 const MAX_INVENTORY: usize = 10;
 const UNIT_COST: Money = 3;
+const UNIT_SELL_COST: Money = 1;
 const REROLL_COST: Money = 1;
 const TIER_UP_COST: [Money; 5] = [5, 6, 7, 8, 9];
 const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
@@ -263,15 +264,19 @@ impl ShopState {
                             Interaction::Card(state) => {
                                 match self.shop.cards.get_card_mut(&state) {
                                     Some(target @ None) => {
-                                        if matches!(old_state, CardState::Shop { .. })
-                                            && !matches!(state, CardState::Shop { .. })
-                                        {
+                                        let from_shop = matches!(old_state, CardState::Shop { .. });
+                                        let to_shop = matches!(state, CardState::Shop { .. });
+                                        if from_shop && !to_shop {
                                             // Moved from the shop -> check payment
                                             if self.shop.money >= UNIT_COST {
                                                 self.shop.money -= UNIT_COST;
                                                 *target = Some(card);
                                                 return;
                                             }
+                                        } else if !from_shop && to_shop {
+                                            // Moved to shop -> sell
+                                            self.shop.money += UNIT_SELL_COST;
+                                            return;
                                         } else {
                                             // Change placement
                                             *target = Some(card);
