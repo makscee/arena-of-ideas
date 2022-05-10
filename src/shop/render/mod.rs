@@ -174,10 +174,12 @@ impl Render {
             framebuffer,
         );
 
-        draw_2d::Quad::new(layout.alliances.position, TEXT_BACKGROUND_COLOR).draw_2d(
+        draw_rectangle(
+            &format!("TODO: Alliances"),
+            layout.alliances.position,
+            TEXT_BACKGROUND_COLOR,
             &self.geng,
             framebuffer,
-            camera,
         );
 
         if let Some(drag) = &shop.drag {
