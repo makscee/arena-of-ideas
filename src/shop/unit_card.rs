@@ -14,9 +14,9 @@ pub enum CardState {
 }
 
 impl UnitCard {
-    pub fn new(template: UnitTemplate) -> Self {
+    pub fn new(template: UnitTemplate, unit_type: UnitType) -> Self {
         Self {
-            unit: Unit::new(&template, 0, "Hero".to_owned(), Faction::Player, Vec2::ZERO),
+            unit: Unit::new(&template, 0, unit_type, Faction::Player, Vec2::ZERO),
             template,
         }
     }

@@ -27,7 +27,7 @@ pub struct ShopState {
 
 impl ShopState {
     pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig, game_config: Config) -> Self {
-        let shop = Shop::new(geng, assets, config.units.map.values().cloned()); // TODO: possibly optimize
+        let shop = Shop::new(geng, assets, config.units.map.into_iter());
         Self::load(geng, assets, shop, game_config)
     }
 
@@ -115,9 +115,35 @@ impl geng::State for ShopState {
         if !self.transition {
             return None;
         }
+        let config = Config {
+            player: self
+                .shop
+                .cards
+                .party
+                .iter()
+                .filter_map(|card| card.as_ref())
+                .map(|card| card.unit.unit_type.clone())
+                .collect(),
+            alliances: {
+                let mut alliances = HashMap::new();
+                for card in self
+                    .shop
+                    .cards
+                    .party
+                    .iter()
+                    .filter_map(|card| card.as_ref())
+                {
+                    for alliance in &card.template.alliances {
+                        *alliances.entry(alliance.clone()).or_insert(0) += 1;
+                    }
+                }
+                alliances
+            },
+            ..self.game_config.clone()
+        };
         let mut shop = Shop::new(&self.geng, &self.assets, std::iter::empty());
         std::mem::swap(&mut self.shop, &mut shop);
-        let game_state = Game::new(&self.geng, &self.assets, self.game_config.clone(), shop);
+        let game_state = Game::new(&self.geng, &self.assets, config, shop);
         Some(geng::Transition::Switch(Box::new(game_state)))
     }
 }
@@ -138,7 +164,7 @@ pub struct Shop {
     pub tier: Tier,
     pub money: Money,
     pub frozen: bool,
-    pub available: Vec<UnitTemplate>,
+    pub available: Vec<(UnitType, UnitTemplate)>,
     pub cards: Cards,
     pub drag: Option<Drag>,
 }
@@ -281,20 +307,17 @@ impl Shop {
     pub fn new(
         geng: &Geng,
         assets: &Rc<Assets>,
-        units: impl Iterator<Item = UnitTemplate>,
+        units: impl Iterator<Item = (UnitType, UnitTemplate)>,
     ) -> Self {
         let mut shop = Self {
             geng: geng.clone(),
             assets: assets.clone(),
             tier: 1,
-            money: 0,
+            money: 10,
             frozen: false,
             cards: Cards::new(),
             drag: None,
-            available: units
-                .filter(|unit| unit.tier > 0)
-                .map(|unit| unit)
-                .collect(),
+            available: units.filter(|(_, unit)| unit.tier > 0).collect(),
         };
         shop.reroll(true);
         shop
@@ -318,8 +341,8 @@ impl Shop {
                 self.cards.shop = self
                     .available
                     .iter()
-                    .filter(|unit| unit.tier <= self.tier)
-                    .map(|unit| Some(UnitCard::new(unit.clone())))
+                    .filter(|(_, unit)| unit.tier <= self.tier)
+                    .map(|(unit_type, unit)| Some(UnitCard::new(unit.clone(), unit_type.clone())))
                     .choose_multiple(&mut global_rng(), units);
             }
         }

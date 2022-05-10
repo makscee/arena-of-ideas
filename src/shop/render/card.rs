@@ -24,6 +24,12 @@ const TIER_AABB: AABB<f32> = AABB {
     y_min: 0.92,
     y_max: 0.97,
 };
+const NAME_AABB: AABB<f32> = AABB {
+    x_min: 0.21,
+    x_max: 0.53,
+    y_min: 0.52,
+    y_max: 0.58,
+};
 const CARD_BACKGROUND_COLOR: Color<f32> = Color {
     r: 0.1,
     g: 0.1,
@@ -109,6 +115,11 @@ impl CardRender {
             .map(|x| x * height)
             .translate(card_aabb.bottom_left());
 
+        // Name
+        let name_aabb = NAME_AABB
+            .map(|x| x * height)
+            .translate(card_aabb.bottom_left());
+
         // Render
         // Hero
         draw_2d::TexturedQuad::new(hero_aabb, &temp_texture).draw_2d(
@@ -145,6 +156,15 @@ impl CardRender {
             Color::WHITE,
         )
         .fit_into(tier_aabb)
+        .draw_2d(&self.geng, framebuffer, camera);
+
+        // Name
+        draw_2d::Text::unit(
+            &**self.geng.default_font(),
+            format!("{}", card.unit.unit_type),
+            Color::WHITE,
+        )
+        .fit_into(name_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
     }
 }
