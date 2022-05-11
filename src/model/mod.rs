@@ -60,6 +60,7 @@ pub struct Model {
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
+    pub transition: bool,
 }
 
 impl Model {
@@ -78,6 +79,7 @@ impl Model {
             free_revives: 0,
             unit_templates,
             delayed_effects: default(),
+            transition: false,
         }
     }
 }

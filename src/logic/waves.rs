@@ -13,7 +13,11 @@ impl Logic<'_> {
             && self.model.time_bombs.is_empty()
             && self.effects.is_empty()
         {
-            if !self.model.config.waves.is_empty() {
+            if self.model.config.waves.is_empty() {
+                // End of round -> go to shop
+                self.model.transition = true;
+            } else {
+                // Next wave
                 let wave = self.model.config.waves.remove(0);
                 for (spawn_point, units) in wave {
                     let spawn_point = self.model.config.spawn_points[&spawn_point];

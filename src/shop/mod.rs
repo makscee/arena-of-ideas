@@ -32,7 +32,12 @@ impl ShopState {
         Self::load(geng, assets, shop, game_config)
     }
 
-    pub fn load(geng: &Geng, assets: &Rc<Assets>, shop: Shop, game_config: Config) -> Self {
+    pub fn load(geng: &Geng, assets: &Rc<Assets>, mut shop: Shop, game_config: Config) -> Self {
+        shop.money += 10.min(4 + shop.round as Money);
+        shop.round += 1;
+        if !shop.frozen {
+            shop.reroll(true);
+        }
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -142,9 +147,7 @@ impl geng::State for ShopState {
             },
             ..self.game_config.clone()
         };
-        let mut shop = Shop::new(&self.geng, &self.assets, std::iter::empty());
-        std::mem::swap(&mut self.shop, &mut shop);
-        let game_state = Game::new(&self.geng, &self.assets, config, shop);
+        let game_state = Game::new(&self.geng, &self.assets, config, self.shop.take());
         Some(geng::Transition::Switch(Box::new(game_state)))
     }
 }
@@ -159,9 +162,11 @@ pub enum Interaction {
 
 pub type Money = u32;
 
+#[derive(Clone)]
 pub struct Shop {
     pub geng: Geng,
     pub assets: Rc<Assets>,
+    pub round: usize,
     pub tier: Tier,
     pub money: Money,
     pub frozen: bool,
@@ -170,18 +175,21 @@ pub struct Shop {
     pub drag: Option<Drag>,
 }
 
+#[derive(Clone)]
 pub struct Cards {
     pub shop: Vec<Option<UnitCard>>,
     pub party: Vec<Option<UnitCard>>,
     pub inventory: Vec<Option<UnitCard>>,
 }
 
+#[derive(Clone)]
 pub struct Drag {
     pub start_position: Vec2<f32>,
     pub position: Vec2<f32>,
     pub target: DragTarget,
 }
 
+#[derive(Clone)]
 pub enum DragTarget {
     Card {
         card: UnitCard,
@@ -314,17 +322,22 @@ impl Shop {
         assets: &Rc<Assets>,
         units: impl Iterator<Item = (UnitType, UnitTemplate)>,
     ) -> Self {
-        let mut shop = Self {
+        Self {
             geng: geng.clone(),
             assets: assets.clone(),
+            round: 0,
             tier: 1,
-            money: 10,
+            money: 0,
             frozen: false,
             cards: Cards::new(),
             drag: None,
             available: units.filter(|(_, unit)| unit.tier > 0).collect(),
-        };
-        shop.reroll(true);
+        }
+    }
+
+    pub fn take(&mut self) -> Self {
+        let mut shop = Shop::new(&self.geng, &self.assets, std::iter::empty());
+        std::mem::swap(self, &mut shop);
         shop
     }
 
@@ -337,6 +350,7 @@ impl Shop {
         }
     }
 
+    /// Rerolls the shop units. If `force` is true, then the cost is not paid.
     pub fn reroll(&mut self, force: bool) {
         if self.money >= REROLL_COST || force {
             if !force {

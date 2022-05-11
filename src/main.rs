@@ -32,6 +32,7 @@ struct HistoryEntry {
 
 pub struct Game {
     geng: Geng,
+    assets: Rc<Assets>,
     time: f32,
     timeline_captured: bool,
     history: Vec<HistoryEntry>,
@@ -46,6 +47,7 @@ impl Game {
         Logic::initialize(&mut model, &config);
         let mut game = Self {
             geng: geng.clone(),
+            assets: assets.clone(),
             time: 0.0,
             history: vec![HistoryEntry {
                 time: 0.0,
@@ -121,6 +123,23 @@ impl geng::State for Game {
                 })
                 .align(vec2(0.5, 0.0)),
         )
+    }
+    fn transition(&mut self) -> Option<geng::Transition> {
+        self.history
+            .last()
+            .map(|entry| (&entry.model, entry.model.transition))
+            .and_then(|(model, transition)| match transition {
+                false => None,
+                true => {
+                    let shop_state = shop::ShopState::load(
+                        &self.geng,
+                        &self.assets,
+                        self.shop.take(),
+                        model.config.clone(),
+                    );
+                    Some(geng::Transition::Switch(Box::new(shop_state)))
+                }
+            })
     }
 }
 
