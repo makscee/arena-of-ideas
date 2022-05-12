@@ -6,13 +6,13 @@ use super::*;
 // TODO: de-hardcode
 const TOP_SPACE: f32 = 0.1;
 const HERO_HEIGHT: f32 = 0.35;
-const HP_AABB: AABB<f32> = AABB {
+const DAMAGE_AABB: AABB<f32> = AABB {
     x_min: 0.02,
     x_max: 0.09,
     y_min: 0.02,
     y_max: 0.09,
 };
-const DAMAGE_AABB: AABB<f32> = AABB {
+const HEALTH_AABB: AABB<f32> = AABB {
     x_min: 1.0 / CARD_SIZE_RATIO - 0.09,
     x_max: 1.0 / CARD_SIZE_RATIO - 0.02,
     y_min: 0.02,
@@ -111,8 +111,8 @@ impl CardRender {
         );
 
         let layout = |aabb: AABB<f32>| aabb.map(|x| x * height).translate(card_aabb.bottom_left());
-        let hp_aabb = layout(HP_AABB);
         let damage_aabb = layout(DAMAGE_AABB);
+        let health_aabb = layout(HEALTH_AABB);
         let tier_aabb = layout(TIER_AABB);
         let alliance_aabb = layout(ALLIANCE_AABB);
         let name_aabb = layout(NAME_AABB);
@@ -133,19 +133,19 @@ impl CardRender {
             camera,
         );
 
-        // HP
+        // Damage
+        draw_2d::Text::unit(&**self.geng.default_font(), format!("?"), Color::WHITE)
+            .fit_into(damage_aabb)
+            .draw_2d(&self.geng, framebuffer, camera);
+
+        // Health
         draw_2d::Text::unit(
             &**self.geng.default_font(),
             format!("{}", card.unit.health),
             Color::WHITE,
         )
-        .fit_into(hp_aabb)
+        .fit_into(health_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
-
-        // Damage
-        draw_2d::Text::unit(&**self.geng.default_font(), format!("?"), Color::WHITE)
-            .fit_into(damage_aabb)
-            .draw_2d(&self.geng, framebuffer, camera);
 
         // Tier
         draw_2d::Text::unit(
