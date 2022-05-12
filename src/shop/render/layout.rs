@@ -122,10 +122,20 @@ impl ShopLayout {
         let top_row = middle_row.translate(vec2(0.0, row_height + row_spacing));
 
         let layout_cards_aabb = |max_space: AABB<f32>, count| {
-            let width = card_size.x * count as f32 + card_extra_space * (count + 1) as f32;
-            AABB::point(max_space.center()).extend_symmetric(vec2(width, row_height) / 2.0)
+            let mut card_size = card_size;
+            let mut width = card_size.x * count as f32 + card_extra_space * (count + 1) as f32;
+            let mut height = row_height;
+            if width > max_space.width() {
+                let scale = max_space.width() / width;
+                width *= scale;
+                height *= scale;
+                card_size *= scale;
+            }
+            let aabb = AABB::point(max_space.center()).extend_symmetric(vec2(width, height) / 2.0);
+            (aabb, card_size)
         };
-        let layout_cards = |bottom_left, count| {
+        let layout_cards = |bottom_left, count, card_size: Vec2<f32>| {
+            let card_extra_space = card_size.y * CARD_EXTRA_SPACE;
             (0..count)
                 .map(|i| {
                     AABB::point(
@@ -138,16 +148,18 @@ impl ShopLayout {
                 .collect::<Vec<_>>()
         };
 
-        let inventory = layout_cards_aabb(bottom_row, inventory_cards);
-        let inventory_cards = layout_cards(inventory.bottom_left(), inventory_cards);
+        let (inventory, inventory_card) = layout_cards_aabb(bottom_row, inventory_cards);
+        let inventory_cards =
+            layout_cards(inventory.bottom_left(), inventory_cards, inventory_card);
 
         let alliances_width = ALLIANCES_WIDTH * screen.width();
         let go_width = GO_WIDTH * screen.width();
         let mid_width = column_spacing + alliances_width + column_spacing + go_width;
-        let party = layout_cards_aabb(middle_row.extend_right(-mid_width), party_cards);
+        let (party, party_card) =
+            layout_cards_aabb(middle_row.extend_right(-mid_width), party_cards);
         let mid_width = mid_width + party.width();
-        let mut bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
-        let party_cards = layout_cards(bot_left, party_cards);
+        let mut bot_left = middle_row.center() - vec2(mid_width, party.height()) / 2.0;
+        let party_cards = layout_cards(bot_left, party_cards, party_card);
         bot_left.x += party.width() + column_spacing;
         let alliances = AABB::point(bot_left).extend_positive(vec2(alliances_width, row_height));
         bot_left.x += alliances_width + column_spacing;
@@ -162,10 +174,8 @@ impl ShopLayout {
         let shop = top_row
             .extend_right(-top_right_buttons.width() - column_spacing)
             .extend_left(-top_left_buttons.width() - column_spacing);
-        let shop_cards = layout_cards(
-            layout_cards_aabb(shop, shop_cards).bottom_left(),
-            shop_cards,
-        );
+        let (shop, shop_card) = layout_cards_aabb(shop, shop_cards);
+        let shop_cards = layout_cards(shop.bottom_left(), shop_cards, shop_card);
 
         let tier_up = AABB::point(top_left_buttons.top_left())
             .extend_right(button_width)
