@@ -134,9 +134,13 @@ impl CardRender {
         );
 
         // Damage
-        draw_2d::Text::unit(&**self.geng.default_font(), format!("?"), Color::WHITE)
-            .fit_into(damage_aabb)
-            .draw_2d(&self.geng, framebuffer, camera);
+        draw_2d::Text::unit(
+            &**self.geng.default_font(),
+            format!("{}", card.unit.base_damage),
+            Color::WHITE,
+        )
+        .fit_into(damage_aabb)
+        .draw_2d(&self.geng, framebuffer, camera);
 
         // Health
         draw_2d::Text::unit(
