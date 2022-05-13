@@ -5,6 +5,11 @@ const float c_glowRange = .2;
 const float c_glowStart = 0.7;
 const float c_glowEnd = 0.0;
 
+const float c_status_radius_delta = .2;
+const float c_status_radius_offset = .4;
+const float c_status_thickness = .035;
+const float c_status_dot_radius = 0.09;
+
 const float padding = 1.5;
 
 const float thicknessOuter = 0.07;
@@ -27,6 +32,10 @@ uniform vec4 u_alliance_color_1;
 uniform vec4 u_alliance_color_2;
 uniform vec4 u_alliance_color_3;
 uniform int u_alliance_count;
+
+uniform int u_status_count;
+uniform int u_status_index;
+uniform vec4 u_status_color;
 
 float alCountF;
 vec3 colors[3];
@@ -111,6 +120,39 @@ vec3 mixColors(float t)
     t += float(t < 0.);
     int colorInd = int(t * alCountF);
     vec3 c1 = colors[colorInd];
-    vec3 c2 = colors[mod(colorInd + 1, int(alCountF))];
+    vec3 c2 = colors[(colorInd + 1) % u_alliance_count];
     return mix(c1, c2, t * alCountF - float(colorInd));
+}
+
+vec3 mix3Colors(float t, vec3 colors[3])
+{
+    t += float(t < 0.);
+    int colorInd = int(t * 3);
+    vec3 c1 = colors[colorInd];
+    vec3 c2 = colors[(colorInd + 1) % 3];
+    return mix(c1, c2, t * 3 - float(colorInd));
+}
+
+vec3 mix2Colors(float t, vec3 colors[2])
+{
+    t += float(t < 0.);
+    int colorInd = int(t * 2);
+    vec3 c1 = colors[colorInd];
+    vec3 c2 = colors[(colorInd + 1) % 3];
+    return mix(c1, c2, t * 2 - float(colorInd));
+}
+
+vec4 renderStatusRing(vec2 uv, vec3 col)
+{
+    const float u_status_duration = 0.;
+    // float u_status_time = 0.8 + sin(iTime) * .5;
+    const float u_status_time = 0.;
+
+    float offset = 1. + c_status_radius_offset + c_status_radius_delta * u_status_index;
+    float rad = abs(vecAngle(uv) - pi);
+    float h = abs(distance(uv,vec2(0.)) - offset);
+    float dotDistance = distance(uv, vec2(0,-1) * offset);
+    return vec4(col, 
+        float(h < c_status_thickness && (u_status_duration == 0. || rad < u_status_time / u_status_duration * pi)
+        || dotDistance < c_status_dot_radius));
 }

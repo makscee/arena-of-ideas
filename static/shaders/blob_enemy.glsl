@@ -7,7 +7,6 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    const float padding = 1.;
     v_quad_pos = a_pos * (1.0 + padding);
     float size = u_unit_radius * u_spawn * (1.0 - 0.25 * u_action);
     vec2 pos = v_quad_pos * size + u_unit_position;
@@ -46,7 +45,7 @@ void main() {
 
     float innerTime = u_time - floor(u_time / pi * 2.) * pi * 2. + u_random * 100.;
 
-    float outerR = 1. - sin(innerTime) * .05, innerR = 0.8 + sin(innerTime) * .5;
+    float outerR = 1., innerR = 0.8 + sin(innerTime) * .5;
 
     const float innerFade = 1.2;
     float innerAlpha = float(cos(innerTime) > 0.)
