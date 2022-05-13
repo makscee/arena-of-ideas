@@ -1,10 +1,10 @@
 use super::*;
+use geng::{prelude::itertools::Itertools, Draw2d};
 
 mod card;
 mod layout;
 
 pub use card::*;
-use geng::Draw2d;
 pub use layout::*;
 
 const TEXT_OCCUPY_SPACE: f32 = 0.6;
@@ -34,6 +34,14 @@ const BUTTON_PRESS_COLOR: Color<f32> = Color {
     a: 1.0,
 };
 const TEXT_COLOR: Color<f32> = Color::WHITE;
+const ALLIANCE_MAX_SIZE: f32 = 0.15;
+const BAR_SIZE: f32 = 0.1;
+const ALLIANCE_BACKGROUND_COLOR: Color<f32> = Color {
+    r: 0.3,
+    g: 0.3,
+    b: 0.3,
+    a: 1.0,
+};
 
 pub struct RenderShop {
     pub layout: ShopLayout,
@@ -175,12 +183,74 @@ impl Render {
         );
 
         draw_rectangle(
-            &format!("TODO: Alliances"),
+            "",
             layout.alliances.position,
             TEXT_BACKGROUND_COLOR,
             &self.geng,
             framebuffer,
         );
+
+        let alliances = calc_alliances(
+            shop.cards
+                .party
+                .iter()
+                .filter_map(|card| card.as_ref())
+                .map(|card| &card.template),
+        );
+        let alliances = alliances.into_iter().sorted().collect::<Vec<_>>();
+        if !alliances.is_empty() {
+            let height = layout.alliances.position.height();
+            let size = (ALLIANCE_MAX_SIZE * height).min(height / alliances.len() as f32);
+            let alliance_size = vec2(size, size);
+            let mut position = layout.alliances.position.top_left() + vec2(size, -size) / 2.0;
+            for (alliance, alliance_count) in alliances {
+                let alliance_color = self
+                    .assets
+                    .options
+                    .alliance_colors
+                    .get(&alliance)
+                    .copied()
+                    .unwrap_or(Color::WHITE);
+                let text_color = Color::WHITE;
+                let text = format!("{:?}", alliance)
+                    .chars()
+                    .next()
+                    .unwrap_or('?')
+                    .to_uppercase()
+                    .to_string();
+                draw_2d::Ellipse::circle(position, size / 2.0, alliance_color).draw_2d(
+                    &self.geng,
+                    framebuffer,
+                    camera,
+                );
+                draw_2d::Text::unit(&**self.geng.default_font(), text, text_color)
+                    .fit_into(AABB::point(position).extend_uniform(size / 2.0 / 2.0.sqrt()))
+                    .draw_2d(&self.geng, framebuffer, camera);
+
+                if let Some(config) = shop.config.render.alliances.get(&alliance) {
+                    let bar_size = vec2(size * BAR_SIZE, size / config.rows as f32);
+                    for x in 0..config.columns {
+                        for y in 0..config.rows {
+                            let position = position
+                                + alliance_size / 2.0
+                                + bar_size * vec2(x as f32, -(y as f32) - 1.0);
+                            let color = if x + y + 1 <= alliance_count {
+                                alliance_color
+                            } else {
+                                ALLIANCE_BACKGROUND_COLOR
+                            };
+                            draw_2d::Quad::new(
+                                AABB::point(position).extend_positive(bar_size),
+                                color,
+                            )
+                            .draw_2d(&self.geng, framebuffer, camera);
+                        }
+                    }
+                }
+
+                position.y -= size;
+            }
+        }
 
         draw_rectangle(
             &format!("Go"),

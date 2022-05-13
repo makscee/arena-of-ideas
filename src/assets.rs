@@ -82,9 +82,33 @@ pub struct Config {
     pub fov: f32,
 }
 
-#[derive(geng::Assets)]
+#[derive(Debug, Deserialize, geng::Assets, Clone)]
+#[asset(json)]
+pub struct ShopRenderConfig {
+    pub alliances: HashMap<Alliance, AllianceRenderConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AllianceRenderConfig {
+    pub rows: usize,
+    pub columns: usize,
+}
+
+#[derive(geng::Assets, Clone)]
 pub struct ShopConfig {
     pub units: UnitTemplates,
+    pub render: ShopRenderConfig,
+}
+
+impl Default for ShopConfig {
+    fn default() -> Self {
+        Self {
+            units: UnitTemplates { map: default() },
+            render: ShopRenderConfig {
+                alliances: default(),
+            },
+        }
+    }
 }
 
 impl Assets {
