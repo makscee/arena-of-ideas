@@ -51,6 +51,7 @@ const CARD_BACKGROUND_COLOR: Color<f32> = Color {
 
 pub struct CardRender {
     geng: Geng,
+    assets: Rc<Assets>,
     render: UnitRender,
 }
 
@@ -58,6 +59,7 @@ impl CardRender {
     pub fn new(geng: &Geng, assets: &Rc<Assets>) -> Self {
         Self {
             geng: geng.clone(),
+            assets: assets.clone(),
             render: UnitRender::new(geng, assets),
         }
     }
@@ -160,14 +162,38 @@ impl CardRender {
         .fit_into(tier_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
 
-        // Tier
-        draw_2d::Text::unit(
-            &**self.geng.default_font(),
-            format!("TODO: Alliances"),
-            Color::WHITE,
-        )
-        .fit_into(alliance_aabb)
-        .draw_2d(&self.geng, framebuffer, camera);
+        // Alliances
+        {
+            let alliances = card.template.alliances.iter().sorted().collect::<Vec<_>>();
+            let size = alliance_aabb.height();
+            let alliance_size = vec2(size, size);
+            let mut position = alliance_aabb.top_left() + vec2(size, -size) / 2.0;
+            for alliance in alliances {
+                let alliance_color = self
+                    .assets
+                    .options
+                    .alliance_colors
+                    .get(&alliance)
+                    .copied()
+                    .unwrap_or(Color::WHITE);
+                let text_color = Color::WHITE;
+                let text = format!("{:?}", alliance)
+                    .chars()
+                    .next()
+                    .unwrap_or('?')
+                    .to_uppercase()
+                    .to_string();
+                draw_2d::Ellipse::circle(position, size / 2.0, alliance_color).draw_2d(
+                    &self.geng,
+                    framebuffer,
+                    camera,
+                );
+                draw_2d::Text::unit(&**self.geng.default_font(), text, text_color)
+                    .fit_into(AABB::point(position).extend_uniform(size / 2.0 / 2.0.sqrt()))
+                    .draw_2d(&self.geng, framebuffer, camera);
+                position.x += size;
+            }
+        }
 
         // Name
         draw_2d::Text::unit(
