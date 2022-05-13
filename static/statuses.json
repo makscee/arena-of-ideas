@@ -1,5 +1,26 @@
 {
     "Shield": {
-        "shader": "shaders/shield.glsl"
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#ffd700"
+        }
+    },
+    "Freeze": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#1e90ff"
+        }
+    },
+    "Stun": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#d8bfd8"
+        }
+    },
+    "Charmed": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#ff1493"
+        }
     }
 }

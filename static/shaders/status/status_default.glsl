@@ -16,8 +16,12 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 uniform sampler2D u_previous_texture;
+in vec2 v_quad_pos;
 void main() {
+    vec2 uv = v_quad_pos;
     vec4 previous_color = texture(u_previous_texture, gl_FragCoord.xy / vec2(textureSize(u_previous_texture, 0)));
-    gl_FragColor = vec4(vec3(1.0, 1.0, 1.0), previous_color.w);
+    float dist = distance(uv, vec2(0));
+    // gl_FragColor = alphaBlend(previous_color, statusTint * float(dist < u_unit_radius));
+    gl_FragColor = alphaBlend(previous_color, renderStatusRing(uv, u_status_color.rgb));
 }
 #endif
