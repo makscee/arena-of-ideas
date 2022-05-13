@@ -1,3 +1,5 @@
 {
-    "Shield": "shaders/shield.glsl"
+    "Shield": {
+        "shader": "shaders/shield.glsl"
+    }
 }
