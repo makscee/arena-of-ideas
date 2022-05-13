@@ -13,11 +13,23 @@ pub struct Options {
 pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
     Lazy::new(|| Mutex::new(Effects { map: default() }));
 
+pub struct StatusRender {
+    pub shader: ugli::Program,
+    pub parameters: ShaderParameters,
+}
+
+#[derive(Deserialize)]
+struct StatusConfig {
+    pub shader: String,
+    #[serde(default)]
+    pub parameters: ShaderParameters,
+}
+
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
     #[asset(load_with = "load_statuses(geng, &base_path)")]
-    pub statuses: HashMap<StatusType, ugli::Program>,
+    pub statuses: HashMap<StatusType, StatusRender>,
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
@@ -26,20 +38,24 @@ pub struct Assets {
 async fn load_statuses(
     geng: &Geng,
     base_path: &std::path::Path,
-) -> anyhow::Result<HashMap<StatusType, ugli::Program>> {
+) -> anyhow::Result<HashMap<StatusType, StatusRender>> {
     let json = <String as geng::LoadAsset>::load(geng, &base_path.join("statuses.json"))
         .await
         .context("Failed to load statuses.json")?;
-    let paths: HashMap<StatusType, String> =
+    let paths: HashMap<StatusType, StatusConfig> =
         serde_json::from_str(&json).context("Failed to parse statuses.json")?;
     let result: anyhow::Result<Vec<_>> =
-        future::join_all(paths.into_iter().map(|(status_type, path)| async move {
-            let path = path.as_str();
+        future::join_all(paths.into_iter().map(|(status_type, config)| async move {
+            let path = config.shader.as_str();
             let program =
                 <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
                     .await
                     .context(format!("Failed to load {path}"))?;
-            Ok::<_, anyhow::Error>((status_type, program))
+            let render = StatusRender {
+                shader: program,
+                parameters: config.parameters,
+            };
+            Ok::<_, anyhow::Error>((status_type, render))
         }))
         .await
         .into_iter()

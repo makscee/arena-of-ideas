@@ -384,7 +384,7 @@ impl UnitRender {
                     );
                 }
 
-                let mut statuses: std::collections::BTreeMap<StatusType, &ugli::Program> = unit
+                let mut statuses: std::collections::BTreeMap<StatusType, &StatusRender> = unit
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
@@ -397,7 +397,17 @@ impl UnitRender {
                     })
                     .collect();
                 let status_count = statuses.len();
-                for (status_index, (_status_type, program)) in statuses.into_iter().enumerate() {
+                for (
+                    status_index,
+                    (
+                        _status_type,
+                        StatusRender {
+                            shader: program,
+                            parameters,
+                        },
+                    ),
+                ) in statuses.into_iter().enumerate()
+                {
                     let mut new_texture =
                         ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
                     {
@@ -419,6 +429,7 @@ impl UnitRender {
                                     u_status_count: status_count,
                                     u_status_index: status_index,
                                 },
+                                parameters,
                             ),
                             ugli::DrawParameters {
                                 // blend_mode: Some(default()),
