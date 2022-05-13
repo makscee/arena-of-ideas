@@ -158,8 +158,9 @@ impl ShopLayout {
         let (party, party_card) =
             layout_cards_aabb(middle_row.extend_right(-mid_width), party_cards);
         let mid_width = mid_width + party.width();
-        let mut bot_left = middle_row.center() - vec2(mid_width, party.height()) / 2.0;
+        let bot_left = middle_row.center() - vec2(mid_width, party.height()) / 2.0;
         let party_cards = layout_cards(bot_left, party_cards, party_card);
+        let mut bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
         bot_left.x += party.width() + column_spacing;
         let alliances = AABB::point(bot_left).extend_positive(vec2(alliances_width, row_height));
         bot_left.x += alliances_width + column_spacing;
