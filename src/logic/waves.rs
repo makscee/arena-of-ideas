@@ -28,6 +28,23 @@ impl Logic<'_> {
         // }
         // }
 
+        let wait_clear = self
+            .model
+            .rounds
+            .front()
+            .and_then(|round| round.waves.front())
+            .map(|wave| wave.wait_clear)
+            .unwrap_or(false);
+        if wait_clear
+            && self
+                .model
+                .units
+                .iter()
+                .any(|unit| unit.faction != Faction::Player)
+        {
+            return;
+        }
+
         if self.model.wave_delay > Time::ZERO {
             self.model.wave_delay -= self.delta_time;
             return;
