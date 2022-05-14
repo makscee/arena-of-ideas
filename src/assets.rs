@@ -71,11 +71,12 @@ async fn load_statuses(
 pub type Key = String;
 pub type SpawnPoint = String;
 
-#[derive(geng::Assets, Debug, Deserialize, Clone)]
-#[asset(json)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
+    #[serde(default)]
     pub statuses: Vec<Status>,
+    #[serde(default)]
     pub waves: VecDeque<Wave>,
 }
 
@@ -196,6 +197,40 @@ impl Assets {
             },
         }
     }
+}
+
+impl geng::LoadAsset for GameRound {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let mut json = <serde_json::Value as geng::LoadAsset>::load(&geng, &path).await?;
+            if let Some(preset) = json.get_mut("preset") {
+                // Load preset
+                let preset = preset.take();
+                let preset = preset.as_str().expect("preset must be a string");
+                let preset = <String as geng::LoadAsset>::load(
+                    &geng,
+                    &path.as_path().parent().unwrap().join(preset),
+                )
+                .await?;
+                let mut preset: GameRound = serde_json::from_str(&preset)?;
+
+                // Parse round
+                json.as_object_mut().unwrap().remove("preset");
+                let round: GameRound = serde_json::from_value(json)?;
+
+                // Append statuses
+                preset.statuses.extend(round.statuses);
+                return Ok(dbg!(preset));
+            }
+            let round: GameRound = serde_json::from_value(json)?;
+            Ok(round)
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some("json");
 }
 
 impl geng::LoadAsset for UnitTemplates {
