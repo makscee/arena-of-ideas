@@ -234,7 +234,7 @@ impl Render {
                             let position = position
                                 + alliance_size / 2.0
                                 + bar_size * vec2(x as f32, -(y as f32) - 1.0);
-                            let color = if x + y + 1 <= alliance_count {
+                            let color = if x * config.rows + y + 1 <= alliance_count {
                                 alliance_color
                             } else {
                                 ALLIANCE_BACKGROUND_COLOR
