@@ -139,7 +139,6 @@ pub struct Config {
     pub player: Vec<UnitType>,
     pub alliances: HashMap<Alliance, usize>,
     pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
-    // pub waves: Vec<Wave>,
     pub fov: f32,
 }
 
