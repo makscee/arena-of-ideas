@@ -30,6 +30,7 @@ impl Logic<'_> {
 
         if self.model.wave_delay > Time::ZERO {
             self.model.wave_delay -= self.delta_time;
+            return;
         }
 
         if let Some(current) = self.model.rounds.front_mut() {
