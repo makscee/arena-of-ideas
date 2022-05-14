@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 use once_cell::sync::Lazy;
@@ -34,6 +36,8 @@ pub struct Assets {
     pub textures: Textures,
     pub shaders: Shaders,
     pub card: Rc<ugli::Texture>,
+    #[asset(path = "rounds/round*.json", range = "1..=1")]
+    pub rounds: Vec<GameRound>,
 }
 
 async fn load_statuses(
@@ -65,7 +69,48 @@ async fn load_statuses(
 }
 
 pub type Key = String;
-pub type Wave = HashMap<String, Vec<UnitType>>;
+pub type SpawnPoint = String;
+
+#[derive(geng::Assets, Debug, Deserialize, Clone)]
+#[asset(json)]
+#[serde(deny_unknown_fields)]
+pub struct GameRound {
+    pub statuses: Vec<Status>,
+    pub waves: VecDeque<Wave>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Wave {
+    #[serde(default = "Wave::default_start_delay")]
+    pub start_delay: Time,
+    #[serde(default = "Wave::default_between_delay")]
+    pub between_delay: Time,
+    #[serde(default = "Wave::default_wait_clear")]
+    pub wait_clear: bool,
+    #[serde(default)]
+    pub statuses: Vec<Status>,
+    #[serde(flatten)]
+    pub spawns: HashMap<SpawnPoint, VecDeque<WaveSpawn>>,
+}
+
+impl Wave {
+    fn default_start_delay() -> Time {
+        Time::ZERO
+    }
+    fn default_between_delay() -> Time {
+        Time::ZERO
+    }
+    fn default_wait_clear() -> bool {
+        false
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct WaveSpawn {
+    pub r#type: UnitType,
+    pub count: usize,
+}
 
 #[derive(Deref, DerefMut)]
 pub struct Textures {
@@ -93,8 +138,8 @@ pub struct Effects {
 pub struct Config {
     pub player: Vec<UnitType>,
     pub alliances: HashMap<Alliance, usize>,
-    pub spawn_points: HashMap<String, Vec2<Coord>>,
-    pub waves: Vec<Wave>,
+    pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
+    // pub waves: Vec<Wave>,
     pub fov: f32,
 }
 

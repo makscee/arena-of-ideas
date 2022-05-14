@@ -8,6 +8,7 @@ mod collisions;
 mod deaths;
 mod effects;
 mod movement;
+mod particles;
 mod projectiles;
 mod spawn;
 mod statuses;
@@ -15,7 +16,6 @@ mod targeting;
 mod time_bombs;
 mod util;
 mod waves;
-mod particles;
 
 pub use effects::*;
 pub use util::*;
@@ -52,7 +52,7 @@ impl<'a> Logic<'a> {
         self.process_actions();
         self.process_cooldowns();
         self.process_projectiles();
-        self.check_next_wave();
+        self.wave_update();
         while self.model.free_revives > 0 {
             if let Some(unit) = self
                 .model

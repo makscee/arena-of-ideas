@@ -57,7 +57,7 @@ impl Simulate1x1 {
                 .clone();
             let mut wave = HashMap::new();
             wave.insert(spawn_point, vec![enemy]);
-            config.waves = vec![wave];
+            // config.waves = vec![wave]; // TODO: fix
 
             let simulation = Simulation::new(
                 assets.units.clone(),
@@ -113,7 +113,7 @@ impl Simulation {
     pub fn new(units: UnitTemplates, config: Config, delta_time: R32) -> Self {
         Self {
             config: config.clone(),
-            model: Model::new(config, units),
+            model: Model::new(config, units, todo!()),
             delta_time,
         }
     }
@@ -147,7 +147,7 @@ impl Simulation {
                 || !enemies_alive
                     && self.model.spawning_units.is_empty()
                     && self.model.time_bombs.is_empty()
-                    && self.model.config.waves.is_empty()
+            // && self.model.config.waves.is_empty() // TODO: fix
             {
                 return SimulationResult {
                     player_won: player_alive,
