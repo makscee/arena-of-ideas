@@ -50,8 +50,8 @@ impl Logic<'_> {
             return;
         }
 
-        if let Some(current) = self.model.rounds.front_mut() {
-            if let Some(wave) = current.waves.front_mut() {
+        if let Some(round) = self.model.rounds.front_mut() {
+            if let Some(wave) = round.waves.front_mut() {
                 let mut next_spawns = wave
                     .spawns
                     .iter_mut()
@@ -78,12 +78,26 @@ impl Logic<'_> {
                             .spawn_points
                             .get(&point)
                             .expect(&format!("Failed to find spawnpoint: {point}"));
-                        self.spawn_unit(&unit_type, Faction::Enemy, position);
+                        let unit = self.spawn_unit(&unit_type, Faction::Enemy, position);
+                        let unit = self.model.spawning_units.get_mut(&unit).unwrap();
+                        let round = self.model.rounds.front().unwrap();
+                        let statuses = round
+                            .statuses
+                            .iter()
+                            .chain(round.waves.front().unwrap().statuses.iter());
+                        for status in statuses {
+                            unit.attached_statuses.push(AttachedStatus {
+                                status: status.clone(),
+                                caster: None,
+                                time: None,
+                                duration: None,
+                            })
+                        }
                     }
                 } else {
                     // Next wave
-                    current.waves.pop_front();
-                    if let Some(next_wave) = current.waves.front() {
+                    round.waves.pop_front();
+                    if let Some(next_wave) = round.waves.front() {
                         self.model.wave_delay = next_wave.start_delay;
                     }
                 }

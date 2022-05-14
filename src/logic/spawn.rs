@@ -1,26 +1,29 @@
 use super::*;
 
 impl Logic<'_> {
-    pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Vec2<Coord>) {
+    /// Spawns the unit and returns its id
+    pub fn spawn_unit(
+        &mut self,
+        unit_type: &UnitType,
+        faction: Faction,
+        position: Vec2<Coord>,
+    ) -> Id {
         let mut template = self.model.unit_templates[unit_type].clone();
-        self.spawn_template(unit_type, template, faction, position);
+        self.spawn_template(unit_type, template, faction, position)
     }
+    /// Spawns the unit and returns its id
     pub fn spawn_template(
         &mut self,
         unit_type: &UnitType,
         template: UnitTemplate,
         faction: Faction,
         position: Vec2<Coord>,
-    ) {
-        let mut unit = Unit::new(
-            &template,
-            self.model.next_id,
-            unit_type.clone(),
-            faction,
-            position,
-        );
+    ) -> Id {
+        let id = self.model.next_id;
+        let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
+        id
     }
     pub fn process_spawns(&mut self) {
         let mut new_units = Vec::new();
