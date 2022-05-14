@@ -59,7 +59,7 @@ pub struct Model {
     pub dead_time_bombs: Collection<TimeBomb>,
     pub particles: Collection<Particle>,
     pub config: Config,
-    pub rounds: VecDeque<GameRound>,
+    pub round: GameRound,
     pub wave_delay: Time,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
@@ -68,7 +68,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(config: Config, unit_templates: UnitTemplates, rounds: VecDeque<GameRound>) -> Self {
+    pub fn new(config: Config, unit_templates: UnitTemplates, round: GameRound) -> Self {
         Self {
             next_id: 0,
             time: Time::ZERO,
@@ -84,7 +84,7 @@ impl Model {
             unit_templates,
             delayed_effects: default(),
             transition: false,
-            rounds,
+            round,
             config,
         }
     }

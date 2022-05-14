@@ -142,7 +142,13 @@ impl geng::State for ShopState {
             },
             ..self.game_config.clone()
         };
-        let game_state = Game::new(&self.geng, &self.assets, config, self.shop.take());
+        let round = self
+            .assets
+            .rounds
+            .get(self.shop.round - 1)
+            .expect(&format!("Failed to find round number: {}", self.shop.round))
+            .clone();
+        let game_state = Game::new(&self.geng, &self.assets, config, self.shop.take(), round);
         Some(geng::Transition::Switch(Box::new(game_state)))
     }
 }
