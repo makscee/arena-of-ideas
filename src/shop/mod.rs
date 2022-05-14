@@ -272,10 +272,15 @@ impl ShopState {
                     if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
                         match interaction {
                             Interaction::Card(state) => {
+                                let from_shop = matches!(old_state, CardState::Shop { .. });
+                                let to_shop = matches!(state, CardState::Shop { .. });
+                                if !from_shop && to_shop {
+                                    // Moved to shop -> sell
+                                    self.shop.money += UNIT_SELL_COST;
+                                    return;
+                                }
                                 match self.shop.cards.get_card_mut(&state) {
                                     Some(target @ None) => {
-                                        let from_shop = matches!(old_state, CardState::Shop { .. });
-                                        let to_shop = matches!(state, CardState::Shop { .. });
                                         if from_shop && !to_shop {
                                             // Moved from the shop -> check payment
                                             if self.shop.money >= UNIT_COST {
@@ -283,10 +288,6 @@ impl ShopState {
                                                 *target = Some(card);
                                                 return;
                                             }
-                                        } else if !from_shop && to_shop {
-                                            // Moved to shop -> sell
-                                            self.shop.money += UNIT_SELL_COST;
-                                            return;
                                         } else {
                                             // Change placement
                                             *target = Some(card);
