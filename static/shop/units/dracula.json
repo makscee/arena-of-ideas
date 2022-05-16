@@ -1,5 +1,5 @@
 {
-    "tier": 3,
+    "tier": 0,
     "action":
     {
         "range": 0.5,
@@ -11,24 +11,10 @@
             "effects":
             [
                 {
-                    "type": "Damage",
-                    "types":
-                    [
-                        "Melee"
-                    ],
-                    "value":
-                    {
-                        "type": "Const",
-                        "value": 2
-                    }
+                    "preset": "effects/dd_melee.json"
                 },
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Stun",
-                        "time": 2
-                    }
+                    "preset": "effects/attach_status/stun.json"
                 }
             ]
         }

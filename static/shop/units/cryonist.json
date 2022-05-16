@@ -1,5 +1,5 @@
 {
-    "tier": 2,
+    "tier": 0,
     "alliances":
     [
         "Freezers",
@@ -9,7 +9,7 @@
     "target_ai": "Closest",
     "ability":
     {
-        "cooldown": 3,
+        "cooldown": 0,
         "effect":
         {
             "type": "AOE",
@@ -18,11 +18,7 @@
             "range": 100500,
             "effect":
             {
-                "type": "AttachStatus",
-                "status":
-                {
-                    "type": "Freeze"
-                }
+                "preset": "effects/attach_status/freeze.json"
             }
         }
     },

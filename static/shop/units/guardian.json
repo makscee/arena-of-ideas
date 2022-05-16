@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 0,
     "action":
     {
         "range": 15,
@@ -19,11 +19,7 @@
                 "speed": 10,
                 "effect":
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Shield"
-                    }
+                    "preset": "effects/attach_status/shield.json"
                 }
             }
         }

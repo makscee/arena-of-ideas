@@ -1,5 +1,5 @@
 {
-    "tier": 2,
+    "tier": 0,
     "statuses":
     [
         {
@@ -25,11 +25,7 @@
         "cooldown": 3,
         "effect":
         {
-            "type": "AttachStatus",
-            "status":
-            {
-                "type": "Shield"
-            }
+            "preset": "effects/attach_status/shield.json"
         }
     },
     "move_ai": "Advance",

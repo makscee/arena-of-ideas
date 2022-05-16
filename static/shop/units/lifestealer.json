@@ -1,5 +1,5 @@
 {
-    "tier": 3,
+    "tier": 0,
     "action":
     {
         "range": 0.5,
@@ -64,12 +64,7 @@
             "effects":
             [
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Invulnerability",
-                        "time": 3
-                    }
+                    "preset": "effects/attach_status/invulnerability.json"
                 },
                 {
                     "type": "AttachStatus",

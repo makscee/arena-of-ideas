@@ -36,7 +36,7 @@ pub struct Assets {
     pub textures: Textures,
     pub shaders: Shaders,
     pub card: Rc<ugli::Texture>,
-    #[asset(path = "rounds/round*.json", range = "1..=1")]
+    #[asset(path = "rounds/round*.json", range = "1..=2")]
     pub rounds: Vec<GameRound>,
 }
 

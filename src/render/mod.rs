@@ -92,7 +92,7 @@ impl Render {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
-                &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.1, Color::RED),
+                &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.35, Color::MAGENTA),
             );
         }
         for particle in &model.particles {
@@ -104,7 +104,7 @@ impl Render {
                 framebuffer,
                 &self.camera,
                 &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, text.color)
-                    .scale_uniform(0.05)
+                    .scale_uniform(0.2)
                     .translate(text.position),
             );
         }

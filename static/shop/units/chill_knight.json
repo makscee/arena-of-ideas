@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 0,
     "move_ai": "Advance",
     "target_ai": "Closest",
     "ability":
@@ -13,11 +13,7 @@
             "range": 3,
             "effect":
             {
-                "type": "AttachStatus",
-                "status":
-                {
-                    "type": "Freeze"
-                }
+                "preset": "effects/attach_status/freeze.json"
             }
         }
     },

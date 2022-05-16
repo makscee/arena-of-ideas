@@ -1,48 +1,13 @@
 {
-    "statuses": [
-        {
-            "type": "Protection",
-            "percent": 10.0
-        }
-    ],
+    "statuses": [],
     "waves": [
         {
             "start_delay": 2,
-            "between_delay": 0.2,
-            "left": [
-                {
-                    "type": "small_blob",
-                    "count": 8
-                }
-            ]
-        },
-        {
-            "start_delay": 2,
-            "between_delay": 0.5,
-            "statuses": [
-                {
-                    "type": "Shield"
-                }
-            ],
-            "left": [
-                {
-                    "type": "blob",
-                    "count": 3
-                }
-            ],
-            "right": [
-                {
-                    "type": "blob",
-                    "count": 3
-                }
-            ]
-        },
-        {
-            "wait_clear": true,
+            "between_delay": 1.5,
             "top": [
                 {
-                    "type": "big_blob",
-                    "count": 1
+                    "type": "small_blob",
+                    "count": 3
                 }
             ]
         }

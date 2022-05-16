@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 0,
     "action":
     {
         "range": 0.5,
@@ -35,15 +35,10 @@
                                     {
                                         "type": "AOE",
                                         "filter": "Enemies",
-                                        "range": 5,
+                                        "range": 3,
                                         "effect":
                                         {
-                                            "type": "AttachStatus",
-                                            "time": 3,
-                                            "status":
-                                            {
-                                                "type": "Stun"
-                                            }
+                                            "preset": "effects/attach_status/stun.json"
                                         }
                                     }
                                 },

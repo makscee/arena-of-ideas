@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 0,
     "action":
     {
         "range": 0.5,
@@ -14,11 +14,7 @@
                     "preset": "effects/dd_melee.json"
                 },
                 {
-                    "type": "AttachStatus",
-                    "status":
-                    {
-                        "type": "Freeze"
-                    }
+                    "preset": "effects/attach_status/freeze.json"
                 }
             ]
         }

@@ -1,50 +1,58 @@
 {
-    "tier": 1,
-    "action": {
+    "health": 50,
+    "tier": 0,
+    "base_damage": 0.5,
+    "speed": 2,
+    "action":
+    {
         "range": 0.5,
         "animation_delay": 0.25,
-        "cooldown": 0.75,
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "Splash",
-                    "range": 5,
-                    "degrees": 60,
-                    "effect_on_caster": {
-                        "type": "Noop"
-                    },
-                    "effect": {
+        "cooldown": 0.5,
+        "effect":
+        {
+            "type": "Splash",
+            "degrees": 60,
+            "range": 5,
+            "effect_on_caster":
+            {
+                "type": "Noop"
+            },
+            "effect":
+            {
+                "type": "List",
+                "effects":
+                [
+                    {
                         "type": "Random",
-                        "choices": [
+                        "choices":
+                        [
                             {
                                 "weight": 90,
-                                "effect": {
+                                "effect":
+                                {
                                     "type": "Noop"
                                 }
                             },
                             {
-                                "weight": 90,
-                                "effect": {
-                                    "type": "AttachStatus",
-                                    "time": 3,
-                                    "status": {
-                                        "type": "Charmed"
-                                    }
+                                "weight": 10,
+                                "effect":
+                                {
+                                    "preset": "effects/attach_status/charmed.json"
                                 }
                             }
                         ]
+                    },
+                    {
+                        "preset": "effects/dd_melee.json"
                     }
-                },
-                {
-                    "preset": "effects/dd_melee.json"
-                }
-            ]
+                ]
+            }
         }
     },
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "alliances": [
+    "alliances":
+    [
         "Charmers",
         "Splashers"
     ],
