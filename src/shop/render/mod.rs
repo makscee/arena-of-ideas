@@ -195,7 +195,7 @@ impl Render {
                 .party
                 .iter()
                 .filter_map(|card| card.as_ref())
-                .map(|card| &card.template),
+                .map(|card| &card.unit),
         );
         let alliances = alliances.into_iter().sorted().collect::<Vec<_>>();
         if !alliances.is_empty() {

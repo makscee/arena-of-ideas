@@ -137,7 +137,7 @@ impl geng::State for ShopState {
                         .party
                         .iter()
                         .filter_map(|card| card.as_ref())
-                        .map(|card| &card.template),
+                        .map(|card| &card.unit),
                 )
             },
             ..self.game_config.clone()
@@ -400,6 +400,21 @@ impl Cards {
         }
     }
 
+    pub fn count_alliances(&self) -> HashMap<Alliance, usize> {
+        let unique_units = self
+            .party
+            .iter()
+            .chain(self.inventory.iter())
+            .filter_map(|card| card.as_ref())
+            .map(|card| (&card.unit.unit_type, &card.unit.alliances))
+            .collect::<HashMap<_, _>>();
+        let mut alliances = HashMap::new();
+        for alliance in unique_units.into_values().flat_map(|alliances| alliances) {
+            *alliances.entry(alliance.clone()).or_insert(0) += 1;
+        }
+        alliances
+    }
+
     pub fn check_triples(&mut self, templates: &UnitTemplates) {
         // Count cards
         let mut counters = HashMap::new();
@@ -442,14 +457,14 @@ impl Cards {
     }
 }
 
-fn calc_alliances<'a>(
-    units: impl IntoIterator<Item = &'a UnitTemplate>,
-) -> HashMap<Alliance, usize> {
+fn calc_alliances<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<Alliance, usize> {
+    let unique_units = units
+        .into_iter()
+        .map(|unit| (&unit.unit_type, &unit.alliances))
+        .collect::<HashMap<_, _>>();
     let mut alliances = HashMap::new();
-    for template in units {
-        for alliance in &template.alliances {
-            *alliances.entry(alliance.clone()).or_insert(0) += 1;
-        }
+    for alliance in unique_units.into_values().flat_map(|alliances| alliances) {
+        *alliances.entry(alliance.clone()).or_insert(0) += 1;
     }
     alliances
 }
