@@ -267,51 +267,56 @@ impl ShopState {
 
     pub fn drag_stop(&mut self) {
         if let Some(drag) = self.shop.drag.take() {
-            match drag.target {
-                DragTarget::Card { card, old_state } => {
-                    if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
-                        match interaction {
-                            Interaction::Card(state) => {
-                                let from_shop = matches!(old_state, CardState::Shop { .. });
-                                let to_shop = matches!(state, CardState::Shop { .. });
-                                if !from_shop && to_shop {
-                                    // Moved to shop -> sell
-                                    self.shop.money += UNIT_SELL_COST;
-                                    return;
-                                }
-                                match self.shop.cards.get_card_mut(&state) {
-                                    Some(target @ None) => {
-                                        if from_shop && !to_shop {
-                                            // Moved from the shop -> check payment
-                                            if self.shop.money >= UNIT_COST {
-                                                self.shop.money -= UNIT_COST;
-                                                *target = Some(card);
-                                                return;
-                                            }
-                                        } else {
-                                            // Change placement
+            self.drag_stop_impl(drag);
+        }
+        self.shop.cards.check_triples(&self.assets.units);
+    }
+
+    fn drag_stop_impl(&mut self, drag: Drag) {
+        match drag.target {
+            DragTarget::Card { card, old_state } => {
+                if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
+                    match interaction {
+                        Interaction::Card(state) => {
+                            let from_shop = matches!(old_state, CardState::Shop { .. });
+                            let to_shop = matches!(state, CardState::Shop { .. });
+                            if !from_shop && to_shop {
+                                // Moved to shop -> sell
+                                self.shop.money += UNIT_SELL_COST;
+                                return;
+                            }
+                            match self.shop.cards.get_card_mut(&state) {
+                                Some(target @ None) => {
+                                    if from_shop && !to_shop {
+                                        // Moved from the shop -> check payment
+                                        if self.shop.money >= UNIT_COST {
+                                            self.shop.money -= UNIT_COST;
                                             *target = Some(card);
                                             return;
                                         }
+                                    } else {
+                                        // Change placement
+                                        *target = Some(card);
+                                        return;
                                     }
-                                    _ => {}
                                 }
+                                _ => {}
                             }
-                            _ => {}
                         }
+                        _ => {}
                     }
+                }
 
-                    // Return to old state, aka drop
-                    match old_state {
-                        CardState::Shop { index } => {
-                            *self.shop.cards.shop.get_mut(index).unwrap() = Some(card);
-                        }
-                        CardState::Party { index } => {
-                            *self.shop.cards.party.get_mut(index).unwrap() = Some(card);
-                        }
-                        CardState::Inventory { index } => {
-                            *self.shop.cards.inventory.get_mut(index).unwrap() = Some(card);
-                        }
+                // Return to old state, aka drop
+                match old_state {
+                    CardState::Shop { index } => {
+                        *self.shop.cards.shop.get_mut(index).unwrap() = Some(card);
+                    }
+                    CardState::Party { index } => {
+                        *self.shop.cards.party.get_mut(index).unwrap() = Some(card);
+                    }
+                    CardState::Inventory { index } => {
+                        *self.shop.cards.inventory.get_mut(index).unwrap() = Some(card);
                     }
                 }
             }
@@ -392,6 +397,47 @@ impl Cards {
             &CardState::Shop { index } => self.shop.get_mut(index),
             &CardState::Party { index } => self.party.get_mut(index),
             &CardState::Inventory { index } => self.inventory.get_mut(index),
+        }
+    }
+
+    pub fn check_triples(&mut self, templates: &UnitTemplates) {
+        // Count cards
+        let mut counters = HashMap::new();
+        for unit_type in self
+            .party
+            .iter()
+            .chain(self.inventory.iter())
+            .filter_map(|card| card.as_ref())
+            .filter(|card| card.template.triple.is_some())
+            .map(|card| card.unit.unit_type.clone())
+        {
+            *counters.entry(unit_type).or_insert(0) += 1;
+        }
+        counters.retain(|_, counter| *counter >= 3); // Remove unneeded counters
+
+        // Replace triples
+        for maybe_card in self.party.iter_mut().chain(self.inventory.iter_mut()) {
+            if let Some(card) = maybe_card {
+                if let Some(counter) = counters.get_mut(&card.unit.unit_type) {
+                    match *counter % 3 {
+                        2 | 0 => {
+                            // Delete the card
+                            *maybe_card = None;
+                            *counter -= 1;
+                        }
+                        1 => {
+                            // Replace the card
+                            let triple = card.template.triple.clone().unwrap();
+                            let template = templates
+                                .get(&triple)
+                                .expect(&format!("Failed to find unit to upgrade to: {triple}"))
+                                .clone();
+                            *card = UnitCard::new(template, triple);
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+            }
         }
     }
 }

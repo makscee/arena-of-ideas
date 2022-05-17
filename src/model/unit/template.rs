@@ -5,6 +5,9 @@ use super::*;
 pub struct UnitTemplate {
     /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
+    /// Units `triple` set to Some get converted to that unit once three of them are bought by the player
+    #[serde(default)]
+    pub triple: Option<UnitType>,
     pub health: Health,
     pub base_damage: Health,
     pub spawn_animation_time: Time,
@@ -36,6 +39,7 @@ impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
             tier: 0,
+            triple: None,
             health: Health::new(1.0),
             base_damage: Health::new(1.0),
             spawn_animation_time: Time::new(0.0),
