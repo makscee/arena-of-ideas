@@ -22,10 +22,11 @@ impl EffectImpl for GlaveEffect {
         if effect.targets >= 1 {
             let mut inner_effect = Effect::Noop(Box::new(NoopEffect {}));
             std::mem::swap(&mut projectile.effect, &mut inner_effect);
+            let first_effect = inner_effect.clone();
             inner_effect.apply_modifier(&effect.jump_modifier);
             projectile.effect = Effect::List(Box::new(ListEffect {
                 effects: vec![
-                    inner_effect.clone(),
+                    first_effect,
                     Effect::ChangeTarget(Box::new(ChangeTargetEffect {
                         filter: TargetFilter::Enemies,
                         condition: Condition::InRange {
