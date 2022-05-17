@@ -118,7 +118,8 @@ impl EffectImpl for DamageEffect {
         target_unit.health -= damage;
         let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
         if let Some(render) = &mut logic.render {
-            render.add_text(target_unit.position, &format!("{}", -damage), Color::RED);
+            let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
+            render.add_text(target_unit.position, &format!("{}", -damage_text), Color::RED);
         }
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 
