@@ -67,6 +67,7 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                                         },
                                         on: HashMap::new(),
                                     })),
+                                    render_config: ProjectileEffect::default_render(),
                                 })),
                             }))
                         },

@@ -5,6 +5,14 @@ use super::*;
 pub struct ProjectileEffect {
     pub speed: Coord,
     pub effect: Effect,
+    #[serde(rename = "render", default = "ProjectileEffect::default_render")]
+    pub render_config: RenderConfig,
+}
+
+impl ProjectileEffect {
+    pub fn default_render() -> RenderConfig {
+        RenderConfig::Circle { color: Color::MAGENTA }
+    }
 }
 
 impl EffectContainer for ProjectileEffect {
@@ -35,7 +43,8 @@ impl EffectImpl for ProjectileEffect {
             position: from.position + (target.position - from.position).normalize() * from.radius,
             speed: effect.speed,
             target_position: target.position,
-            effect: effect.effect.clone(),
+            effect: effect.effect,
+            render_config: effect.render_config,
         });
         logic.model.next_id += 1;
     }

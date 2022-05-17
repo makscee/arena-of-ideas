@@ -89,11 +89,8 @@ impl Render {
             );
         }
         for projectile in &model.projectiles {
-            self.geng.draw_2d(
-                framebuffer,
-                &self.camera,
-                &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.35, Color::MAGENTA),
-            );
+            let render = self.assets.get_render(&projectile.render_config); // TODO: move this into to an earlier phase perhaps
+            self.draw_projectile(projectile, &render, game_time, framebuffer);
         }
         for particle in &model.particles {
             let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps
@@ -197,6 +194,83 @@ impl Render {
                             u_alliance_color_2: Color::WHITE,
                             u_alliance_color_3: Color::WHITE,
                             u_alliance_count: 0,
+                        },
+                        geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        parameters,
+                    ),
+                    ugli::DrawParameters {
+                        blend_mode: Some(default()),
+                        ..default()
+                    },
+                );
+            }
+        }
+    }
+
+    fn draw_projectile(
+        &self,
+        projectile: &Projectile,
+        render_mode: &RenderMode,
+        game_time: f32,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        const RADIUS: f32 = 0.35;
+        match render_mode {
+            RenderMode::Circle { color } => {
+                self.geng.draw_2d(
+                    framebuffer,
+                    &self.camera,
+                    &draw_2d::Ellipse::circle(
+                        projectile.position.map(|x| x.as_f32()),
+                        RADIUS,
+                        *color,
+                    ),
+                );
+            }
+            RenderMode::Texture { texture } => {
+                self.geng.draw_2d(
+                    framebuffer,
+                    &self.camera,
+                    &draw_2d::TexturedQuad::unit(&**texture)
+                        .scale_uniform(RADIUS)
+                        .translate(projectile.position.map(|x| x.as_f32())),
+                );
+            }
+            RenderMode::Shader {
+                program,
+                parameters,
+            } => {
+                let quad = ugli::VertexBuffer::new_dynamic(
+                    self.geng.ugli(),
+                    vec![
+                        draw_2d::Vertex {
+                            a_pos: vec2(-1.0, -1.0),
+                        },
+                        draw_2d::Vertex {
+                            a_pos: vec2(1.0, -1.0),
+                        },
+                        draw_2d::Vertex {
+                            a_pos: vec2(1.0, 1.0),
+                        },
+                        draw_2d::Vertex {
+                            a_pos: vec2(-1.0, 1.0),
+                        },
+                    ],
+                );
+                let framebuffer_size = framebuffer.size();
+                let model_matrix = Mat3::translate(projectile.position.map(|x| x.as_f32()))
+                    * Mat3::scale_uniform(RADIUS);
+
+                ugli::draw(
+                    framebuffer,
+                    program,
+                    ugli::DrawMode::TriangleFan,
+                    &quad,
+                    (
+                        ugli::uniforms! {
+                            u_time: game_time,
+                            u_unit_position: projectile.position.map(|x| x.as_f32()),
+                            u_unit_radius: RADIUS,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                         parameters,

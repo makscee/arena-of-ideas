@@ -36,6 +36,7 @@ impl EffectImpl for GlaveEffect {
                             jump_distance: effect.jump_distance,
                             effect: ProjectileEffect {
                                 effect: inner_effect,
+                                render_config: projectile.render_config.clone(),
                                 ..projectile
                             },
                             jump_modifier: effect.jump_modifier,

@@ -9,4 +9,5 @@ pub struct Projectile {
     pub position: Vec2<Coord>,
     pub speed: Coord,
     pub effect: Effect,
+    pub render_config: RenderConfig,
 }
