@@ -5,6 +5,7 @@ use clap::Parser;
 use geng::prelude::*;
 
 mod assets;
+mod custom;
 mod logic;
 mod model;
 mod render;
@@ -159,6 +160,7 @@ struct Opts {
 
 #[derive(clap::Subcommand)]
 enum Commands {
+    CustomGame(custom::CustomGame),
     Test,
     Simulate1x1(simulate::Simulate1x1),
 }
@@ -206,12 +208,16 @@ fn main() {
                 move |(assets, config, shop_config)| {
                     match opts.command {
                         Some(command) => match command {
-                            Commands::Simulate1x1(simulate) => {
-                                simulate.run(assets, config).unwrap();
-                                std::process::exit(0);
+                            Commands::CustomGame(custom) => {
+                                let assets = Rc::new(assets);
+                                return custom.run(&geng, &assets, shop_config);
                             }
                             Commands::Test => {
                                 tests::run_tests(assets);
+                                std::process::exit(0);
+                            }
+                            Commands::Simulate1x1(simulate) => {
+                                simulate.run(assets, config).unwrap();
                                 std::process::exit(0);
                             }
                         },
@@ -219,8 +225,7 @@ fn main() {
                     }
 
                     let assets = Rc::new(assets);
-                    // Game::new(&geng, &assets, config)
-                    shop::ShopState::new(&geng, &assets, shop_config, config)
+                    Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
                 }
             },
         ),
