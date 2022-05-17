@@ -368,12 +368,20 @@ impl Shop {
                 self.money -= REROLL_COST;
             }
             if let Some(units) = tier_units_number(self.tier) {
-                self.cards.shop = self
+                let mut rng = global_rng();
+                let options = self
                     .available
                     .iter()
                     .filter(|(_, unit)| unit.tier <= self.tier)
                     .map(|(unit_type, unit)| Some(UnitCard::new(unit.clone(), unit_type.clone())))
-                    .choose_multiple(&mut global_rng(), units);
+                    .collect::<Vec<_>>();
+                if options.is_empty() {
+                    self.cards.shop = vec![];
+                    error!("No units are available to roll");
+                }
+                self.cards.shop = (0..units)
+                    .map(|_| options.choose(&mut rng).unwrap().clone())
+                    .collect();
             }
         }
     }
