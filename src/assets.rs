@@ -137,7 +137,9 @@ pub struct Effects {
 #[derive(geng::Assets, Deserialize, Clone)]
 #[asset(json)]
 pub struct Config {
+    #[serde(default)]
     pub player: Vec<UnitType>,
+    #[serde(default)]
     pub alliances: HashMap<Alliance, usize>,
     pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     pub fov: f32,
