@@ -154,13 +154,15 @@ impl CardRender {
         .draw_2d(&self.geng, framebuffer, camera);
 
         // Tier
-        draw_2d::Text::unit(
-            &**self.geng.default_font(),
-            format!("Tier {}", card.template.tier),
-            Color::WHITE,
-        )
-        .fit_into(tier_aabb)
-        .draw_2d(&self.geng, framebuffer, camera);
+        if card.template.tier > 0 {
+            draw_2d::Text::unit(
+                &**self.geng.default_font(),
+                format!("Tier {}", card.template.tier),
+                Color::WHITE,
+            )
+            .fit_into(tier_aabb)
+            .draw_2d(&self.geng, framebuffer, camera);
+        }
 
         // Alliances
         {
