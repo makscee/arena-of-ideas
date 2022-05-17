@@ -157,22 +157,12 @@ pub struct AllianceRenderConfig {
 
 #[derive(geng::Assets, Clone)]
 pub struct ShopConfig {
-    pub units: ShopUnits,
     pub render: ShopRenderConfig,
 }
-
-#[derive(geng::Assets, Clone, Default, Deserialize, Deref, DerefMut)]
-#[asset(json)]
-pub struct ShopUnits(
-    #[deref]
-    #[deref_mut]
-    Vec<UnitType>,
-);
 
 impl Default for ShopConfig {
     fn default() -> Self {
         Self {
-            units: default(),
             render: ShopRenderConfig {
                 alliances: default(),
             },

@@ -321,16 +321,9 @@ impl ShopState {
 
 impl Shop {
     pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig) -> Self {
-        let units = config
+        let units = assets
             .units
             .iter()
-            .map(|unit_type| {
-                let unit = assets
-                    .units
-                    .get(unit_type)
-                    .expect(&format!("Failed to find unit: {unit_type}"));
-                (unit_type, unit)
-            })
             .filter(|(_, unit)| unit.tier > 0)
             .map(|(name, unit)| (name.clone(), unit.clone()))
             .collect();
