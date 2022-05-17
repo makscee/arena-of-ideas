@@ -18,16 +18,16 @@ impl Logic<'_> {
                         } else {
                             repeating_status.next_tick = Time::ZERO;
                         }
+                        self.effects.push_back(QueuedEffect {
+                            effect: repeating_status.effect.clone(),
+                            context: EffectContext {
+                                caster: status.caster,
+                                from: None,
+                                target: Some(unit.id),
+                                vars: default(),
+                            },
+                        });
                     }
-                    self.effects.push_back(QueuedEffect {
-                        effect: repeating_status.effect.clone(),
-                        context: EffectContext {
-                            caster: status.caster,
-                            from: None,
-                            target: Some(unit.id),
-                            vars: default(),
-                        },
-                    });
                 }
             }
             unit.attached_statuses.retain(|status| {
