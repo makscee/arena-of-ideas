@@ -3,6 +3,7 @@
     "sniper",
     "rogue",
     "ranger",
+    "ranger+",
     "ice_breaker",
     "frozen_blade",
     "chill_knight",
@@ -23,5 +24,7 @@
     "glave_thrower",
     "dark_knight",
     "double_arrow",
-    "guardian"
+    "guardian",
+    "shanker",
+    "shanker+"
 ]

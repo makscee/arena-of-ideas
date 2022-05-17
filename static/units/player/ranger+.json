@@ -1,6 +1,7 @@
 {
-    "tier": 1,
-    "triple": "ranger+",
+    "tier": 0,
+    "base_damage": 5,
+    "health": 10,
     "alliances":
     [
         "Archers"

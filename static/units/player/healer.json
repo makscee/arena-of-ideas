@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 0,
     "action":
     {
         "range": 15,
@@ -31,9 +31,7 @@
     },
     "alliances":
     [
-        "Healers",
-        "Vampires",
-        "Freezers"
+        "Healers"
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",

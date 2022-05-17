@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "base_damage": 0.5,
     "action":
     {
         "range": 10,
