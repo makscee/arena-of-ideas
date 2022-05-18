@@ -2,9 +2,9 @@
     "tier": 0,
     "action":
     {
-        "range": 8,
+        "range": 12,
         "animation_delay": 0.75,
-        "cooldown": 1.25,
+        "cooldown": 0.25,
         "effect":
         {
             "type": "AddTargets",
