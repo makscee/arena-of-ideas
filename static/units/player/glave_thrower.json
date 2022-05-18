@@ -10,7 +10,7 @@
         {
             "type": "Glave",
             "targets": 3,
-            "jump_distance": 1,
+            "jump_distance": 5,
             "effect":
             {
                 "speed": 10,

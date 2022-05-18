@@ -7,9 +7,10 @@ impl Logic<'_> {
             let mut projectile = self.model.projectiles.remove(&id).unwrap();
 
             let mut caster = self.model.units.remove(&projectile.caster);
+            let max_distance = projectile.speed * self.delta_time;
             if let Some(mut target) = self.model.units.remove(&projectile.target) {
                 projectile.target_position = target.position;
-                if (projectile.position - target.position).len() < target.radius {
+                if (projectile.position - target.position).len() < max_distance {
                     self.effects.push_back(QueuedEffect {
                         effect: projectile.effect.clone(),
                         context: EffectContext {
@@ -26,7 +27,6 @@ impl Logic<'_> {
             if let Some(caster) = caster {
                 self.model.units.insert(caster);
             }
-            let max_distance = projectile.speed * self.delta_time;
             let distance = (projectile.target_position - projectile.position).len();
             if distance < max_distance {
                 delete_projectiles.push(projectile.id);
