@@ -260,6 +260,10 @@ impl Render {
                 let framebuffer_size = framebuffer.size();
                 let model_matrix = Mat3::translate(projectile.position.map(|x| x.as_f32()))
                     * Mat3::scale_uniform(RADIUS);
+                let velocity = ((projectile.target_position - projectile.position)
+                    .normalize_or_zero()
+                    * projectile.speed)
+                    .map(|x| x.as_f32());
 
                 ugli::draw(
                     framebuffer,
@@ -271,6 +275,7 @@ impl Render {
                             u_time: game_time,
                             u_unit_position: projectile.position.map(|x| x.as_f32()),
                             u_unit_radius: RADIUS,
+                            u_velocity: velocity,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                         parameters,
