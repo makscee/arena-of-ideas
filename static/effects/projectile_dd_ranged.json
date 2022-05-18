@@ -4,5 +4,9 @@
     "effect":
     {
         "preset": "effects/dd_ranged.json"
+    },
+    "render": {
+        "type": "Shader",
+        "path": "shaders/projectile_default.glsl"
     }
 }
