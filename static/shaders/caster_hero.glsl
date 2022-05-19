@@ -18,8 +18,6 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
 
-//common
-
 vec4 renderRing(float rad, float h)
 {
     float t = rad / pi / 2.;
@@ -45,6 +43,14 @@ vec4 renderTriangleParticles(vec2 uv, float triangleSize, float t, vec3 color)
     return vec4(color, float(fract(uv.x) + fract(uv.y) < radius * radius));
 }
 
+vec4 renderAbilityReady(vec2 uv, vec3 color)
+{
+    vec2 center = vec2(0,u_unit_radius + 0.65);
+    float radius = 0.35;
+    float dist = distance(uv,center);
+    return u_ability_ready * float(dist < radius) * vec4(color,1. - dist / radius * dist / radius);
+}
+
 void main() {
     commonInit();
     vec2 uv = v_quad_pos;
@@ -61,6 +67,7 @@ void main() {
 
     // u_action = e_invSquare(u_action);
     float rotation = -vecAngle(u_face_dir);
+    vec2 preRotUv = uv;
     uv = rotateCW(uv, rotation);
     float distToCircle = abs(dist - u_unit_radius);
     col = float(distToCircle < c_thickness + c_glowRange) * renderRing(vecAngle(rotateCW(uv, -pi / u_alliance_count)), distToCircle);
@@ -71,6 +78,7 @@ void main() {
     float tDist = triangleDist(uv, triangleSize);
     col = alphaBlend(col, vec4(colors[0], float(tDist < 1. && cooldownProgress == 1.)));
     col = alphaBlend(col, renderTriangleParticles(uv - vec2(0,e_invSquare(animationProgress)) * 1.5, triangleSize * triangleGrowMax, animationProgress, colors[0]));
+    col = alphaBlend(col, renderAbilityReady(preRotUv, colors[0]));
 
     //end
 

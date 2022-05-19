@@ -22,12 +22,14 @@ uniform float u_action; // 0 -> 1
 uniform float u_action_time;
 uniform float u_animation_delay;
 uniform float u_cooldown;
+uniform float u_ability_ready;
 uniform float u_random;
 uniform float u_padding;
 
 uniform vec2 u_unit_position;
 uniform vec2 u_face_dir;
 uniform float u_unit_radius;
+uniform float u_ability_on_cooldown;
 
 uniform vec4 u_alliance_color_1;
 uniform vec4 u_alliance_color_2;
