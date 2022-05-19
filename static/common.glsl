@@ -25,6 +25,7 @@ uniform float u_cooldown;
 uniform float u_ability_ready;
 uniform float u_random;
 uniform float u_padding;
+uniform float u_health;
 
 uniform vec2 u_unit_position;
 uniform vec2 u_face_dir;

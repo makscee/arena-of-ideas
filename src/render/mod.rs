@@ -446,6 +446,7 @@ impl UnitRender {
                         u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
                         u_alliance_count: alliance_colors.len(),
                         u_ability_ready: is_ability_ready,
+                        u_health: unit.health.as_f32() / unit.max_hp.as_f32(),
                     },
                     geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),
                     parameters,

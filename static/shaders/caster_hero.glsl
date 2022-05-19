@@ -20,13 +20,15 @@ in vec2 v_quad_pos;
 
 vec4 renderRing(float rad, float h)
 {
-    float t = rad / pi / 2.;
+    float radRotated = rad - pi / float(u_alliance_count) + pi * 2;
+    radRotated -= floor(radRotated / pi / 2) * pi * 2;
+    float t = radRotated / pi / 2.;
 
     vec4 glowColor = vec4(mixColors(1. - t - 1. / alCountF / 2.), glowValue((h - c_thickness) / c_glowRange));
-    vec4 insideColor = vec4(colors[int((pi * 2. - rad) / (pi * 2. / alCountF))], 1.);
+    vec4 insideColor = vec4(colors[int((pi * 2. - radRotated) / (pi * 2. / alCountF))], 1.);
 
     vec4 col = float(h > c_thickness && h - c_thickness < c_glowRange) * glowColor
-        + float(h < c_thickness) * insideColor;
+        + float(h < c_thickness) * insideColor * float(h > c_thickness * 1. || abs(rad - pi) < u_health * pi);
     return col;
 }
 
@@ -70,7 +72,7 @@ void main() {
     vec2 preRotUv = uv;
     uv = rotateCW(uv, rotation);
     float distToCircle = abs(dist - u_unit_radius);
-    col = float(distToCircle < c_thickness + c_glowRange) * renderRing(vecAngle(rotateCW(uv, -pi / u_alliance_count)), distToCircle);
+    col = float(distToCircle < c_thickness + c_glowRange) * renderRing(vecAngle(uv), distToCircle);
 
     float animationProgress = clamp((u_time - u_action_time) / fadeAnimation, 0., 1.); // 0 -> 1
     float cooldownProgress = clamp((u_time - u_action_time) / u_cooldown, 0., 1.); // 0 -> 1
