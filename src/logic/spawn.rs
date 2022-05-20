@@ -12,14 +12,14 @@ impl Logic<'_> {
         let id = self.model.next_id;
 
         let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
-        for alliance in &template.alliances {
-            let alliance_members = *self
+        for clan in &template.clans {
+            let clan_members = *self
                 .model
                 .config
-                .alliances
-                .get(alliance)
-                .expect(&format!("Failed to find alliance members of {alliance:?}"));
-            alliance.apply_effects(&mut unit, &self.model.alliance_effects, alliance_members);
+                .clans
+                .get(clan)
+                .expect(&format!("Failed to find clan members of {clan:?}"));
+            clan.apply_effects(&mut unit, &self.model.clan_effects, clan_members);
         }
 
         self.model.next_id += 1;

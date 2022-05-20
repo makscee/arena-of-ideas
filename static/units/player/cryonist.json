@@ -1,38 +1,31 @@
 {
     "tier": 0,
-    "alliances":
-    [
+    "clans": [
         "Freezers",
         "Healers"
     ],
     "move_ai": "KeepClose",
     "target_ai": "Closest",
-    "ability":
-    {
+    "ability": {
         "cooldown": 0,
-        "effect":
-        {
+        "effect": {
             "type": "AOE",
             "filter": "Allies",
             "skip_current_target": true,
             "range": 100500,
-            "effect":
-            {
+            "effect": {
                 "preset": "effects/attach_status/freeze.json"
             }
         }
     },
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "Detect",
             "on": "Allies",
             "detect_type": "Freeze",
-            "effect":
-            {
+            "effect": {
                 "type": "Heal",
-                "value":
-                {
+                "value": {
                     "type": "Const",
                     "value": 5
                 }

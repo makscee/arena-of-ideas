@@ -1,8 +1,7 @@
 {
     "tier": 1,
     "triple": "ranger+",
-    "alliances":
-    [
+    "clans": [
         "Archers"
     ],
     "move_ai": "Advance",

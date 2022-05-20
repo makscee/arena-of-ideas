@@ -53,7 +53,7 @@ impl Game {
         let mut model = Model::new(
             config.clone(),
             assets.units.clone(),
-            assets.alliances.clone(),
+            assets.clans.clone(),
             round,
         );
         Logic::initialize(&mut model, &config);

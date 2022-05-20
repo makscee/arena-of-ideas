@@ -34,9 +34,9 @@ const BUTTON_PRESS_COLOR: Color<f32> = Color {
     a: 1.0,
 };
 const TEXT_COLOR: Color<f32> = Color::WHITE;
-const ALLIANCE_MAX_SIZE: f32 = 0.15;
+const CLAN_MAX_SIZE: f32 = 0.15;
 const BAR_SIZE: f32 = 0.1;
-const ALLIANCE_BACKGROUND_COLOR: Color<f32> = Color {
+const CLAN_BACKGROUND_COLOR: Color<f32> = Color {
     r: 0.3,
     g: 0.3,
     b: 0.3,
@@ -184,41 +184,41 @@ impl Render {
 
         draw_rectangle(
             "",
-            layout.alliances.position,
+            layout.clans.position,
             TEXT_BACKGROUND_COLOR,
             &self.geng,
             framebuffer,
         );
 
-        let alliances = calc_alliances(
+        let clans = calc_clan_members(
             shop.cards
                 .party
                 .iter()
                 .filter_map(|card| card.as_ref())
                 .map(|card| &card.unit),
         );
-        let alliances = alliances.into_iter().sorted().collect::<Vec<_>>();
-        if !alliances.is_empty() {
-            let height = layout.alliances.position.height();
-            let size = (ALLIANCE_MAX_SIZE * height).min(height / alliances.len() as f32);
-            let alliance_size = vec2(size, size);
-            let mut position = layout.alliances.position.top_left() + vec2(size, -size) / 2.0;
-            for (alliance, alliance_count) in alliances {
-                let alliance_color = self
+        let clans = clans.into_iter().sorted().collect::<Vec<_>>();
+        if !clans.is_empty() {
+            let height = layout.clans.position.height();
+            let size = (CLAN_MAX_SIZE * height).min(height / clans.len() as f32);
+            let clan_size = vec2(size, size);
+            let mut position = layout.clans.position.top_left() + vec2(size, -size) / 2.0;
+            for (clan, clan_count) in clans {
+                let clan_color = self
                     .assets
                     .options
-                    .alliance_colors
-                    .get(&alliance)
+                    .clan_colors
+                    .get(&clan)
                     .copied()
                     .unwrap_or(Color::WHITE);
                 let text_color = Color::WHITE;
-                let text = format!("{:?}", alliance)
+                let text = format!("{:?}", clan)
                     .chars()
                     .next()
                     .unwrap_or('?')
                     .to_uppercase()
                     .to_string();
-                draw_2d::Ellipse::circle(position, size / 2.0, alliance_color).draw_2d(
+                draw_2d::Ellipse::circle(position, size / 2.0, clan_color).draw_2d(
                     &self.geng,
                     framebuffer,
                     camera,
@@ -227,17 +227,17 @@ impl Render {
                     .fit_into(AABB::point(position).extend_uniform(size / 2.0 / 2.0.sqrt()))
                     .draw_2d(&self.geng, framebuffer, camera);
 
-                if let Some(config) = shop.config.render.alliances.get(&alliance) {
+                if let Some(config) = shop.config.render.clans.get(&clan) {
                     let bar_size = vec2(size * BAR_SIZE, size / config.rows as f32);
                     for x in 0..config.columns {
                         for y in 0..config.rows {
                             let position = position
-                                + alliance_size / 2.0
+                                + clan_size / 2.0
                                 + bar_size * vec2(x as f32, -(y as f32) - 1.0);
-                            let color = if x * config.rows + y + 1 <= alliance_count {
-                                alliance_color
+                            let color = if x * config.rows + y + 1 <= clan_count {
+                                clan_color
                             } else {
-                                ALLIANCE_BACKGROUND_COLOR
+                                CLAN_BACKGROUND_COLOR
                             };
                             draw_2d::Quad::new(
                                 AABB::point(position).extend_positive(bar_size),

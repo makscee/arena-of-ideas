@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AuraStatus {
     pub distance: Option<Coord>,
-    pub alliance: Option<Alliance>, // TODO: Filter
+    pub clan: Option<Clan>, // TODO: Filter
     pub status: Box<Status>,
 }
 

@@ -2,21 +2,8 @@ use geng::prelude::itertools::Itertools;
 
 use super::*;
 
-mod archers;
-mod assassins;
-mod chainers;
-mod charmers;
-mod critters;
-mod exploders;
-mod freezers;
-mod healers;
-mod spawners;
-mod splashers;
-mod vampires;
-mod warriors;
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
-pub enum Alliance {
+pub enum Clan {
     Spawners,
     Assassins,
     Critters,
@@ -33,7 +20,7 @@ pub enum Alliance {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct AllianceEffect {
+pub struct ClanEffect {
     /// Number of heroes required to activate the effect
     activate: usize,
     /// Whether effects with lower requirements should be removed
@@ -44,12 +31,12 @@ pub struct AllianceEffect {
     factions: Option<Vec<Faction>>,
     /// Filter target units by clan
     #[serde(default)]
-    clans: Option<Vec<Alliance>>,
+    clans: Option<Vec<Clan>>,
     /// Statuses to apply to every target unit
     statuses: Vec<Status>,
 }
 
-impl AllianceEffect {
+impl ClanEffect {
     /// Checks the filters (factions and clans) and applies the
     /// effects if the constraints are met.
     fn apply(&self, unit: &mut Unit) {
@@ -61,7 +48,7 @@ impl AllianceEffect {
             || !self
                 .clans
                 .as_ref()
-                .map(|clans| clans.iter().any(|clan| unit.alliances.contains(clan)))
+                .map(|clans| clans.iter().any(|clan| unit.clans.contains(clan)))
                 .unwrap_or(true)
         {
             return;
@@ -76,8 +63,8 @@ impl AllianceEffect {
     }
 }
 
-impl Alliance {
-    pub fn apply_effects(&self, unit: &mut Unit, effects: &AllianceEffects, party_members: usize) {
+impl Clan {
+    pub fn apply_effects(&self, unit: &mut Unit, effects: &ClanEffects, party_members: usize) {
         let effects = match effects.get(self) {
             Some(effects) => effects,
             None => {

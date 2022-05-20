@@ -2,7 +2,7 @@ use super::*;
 
 pub fn initialize(logic: &mut Logic, party_members: usize) {
     for template in logic.model.unit_templates.values_mut() {
-        if !template.alliances.contains(&Alliance::Spawners) {
+        if !template.clans.contains(&Clan::Spawners) {
             continue;
         }
 
@@ -45,7 +45,7 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
         if party_members >= 2 {
             template.statuses.push(Status::Aura(Box::new(AuraStatus {
                 distance: None,
-                alliance: Some(Alliance::Critters),
+                clan: Some(Clan::Critters),
                 status: Box::new(Status::Modifier(Box::new(ModifierStatus {
                     modifier: Modifier::Strength(StrengthModifier {
                         value: Expr::Sum {

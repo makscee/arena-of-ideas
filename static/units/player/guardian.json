@@ -1,31 +1,25 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 15,
         "animation_delay": 0.75,
         "cooldown": 2,
-        "effect":
-        {
+        "effect": {
             "type": "ChangeTarget",
             "filter": "Allies",
-            "condition":
-            {
+            "condition": {
                 "type": "Always"
             },
-            "effect":
-            {
+            "effect": {
                 "type": "Projectile",
                 "speed": 10,
-                "effect":
-                {
+                "effect": {
                     "preset": "effects/attach_status/shield.json"
                 }
             }
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Healers"
     ],
     "move_ai": "KeepClose",

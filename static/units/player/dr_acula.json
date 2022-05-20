@@ -1,48 +1,38 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect":
-        {
+        "effect": {
             "preset": "effects/dd_melee.json"
         }
     },
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "Scavenge",
             "who": "Enemies",
             "range": 10,
-            "effect":
-            {
+            "effect": {
                 "type": "ChangeTarget",
                 "filter": "Allies",
-                "condition":
-                {
+                "condition": {
                     "type": "UnitInjured",
                     "who": "Target"
                 },
-                "effect":
-                {
+                "effect": {
                     "type": "Projectile",
                     "speed": 1.0,
-                    "effect":
-                    {
+                    "effect": {
                         "type": "Heal",
-                        "value":
-                        {
+                        "value": {
                             "type": "Mul",
-                            "a":
-                            {
+                            "a": {
                                 "type": "FindStat",
                                 "who": "Target",
                                 "stat": "MaxHealth"
                             },
-                            "b":
-                            {
+                            "b": {
                                 "type": "Const",
                                 "value": 0.2
                             }
@@ -52,8 +42,7 @@
             }
         }
     ],
-    "alliances":
-    [
+    "clans": [
         "Vampires",
         "Healers"
     ],

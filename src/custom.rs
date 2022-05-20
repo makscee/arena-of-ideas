@@ -12,7 +12,7 @@ pub struct CustomGame {
 #[asset(json)]
 struct CustomConfig {
     player: Vec<UnitType>,
-    alliances: HashMap<Alliance, usize>,
+    clans: HashMap<Clan, usize>,
     round: GameRound,
     spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     fov: f32,
@@ -32,7 +32,7 @@ impl CustomGame {
         .unwrap();
         let config = Config {
             player: custom.player,
-            alliances: custom.alliances,
+            clans: custom.clans,
             spawn_points: custom.spawn_points,
             fov: custom.fov,
         };

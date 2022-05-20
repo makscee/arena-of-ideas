@@ -69,9 +69,9 @@ impl Logic<'_> {
                     }
                     _ => {}
                 }
-                match &aura.alliance {
-                    Some(alliance) => {
-                        if !other.alliances.contains(alliance) {
+                match &aura.clan {
+                    Some(clan) => {
+                        if !other.clans.contains(clan) {
                             continue;
                         }
                     }

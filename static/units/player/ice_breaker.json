@@ -1,42 +1,33 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect":
-        {
+        "effect": {
             "type": "If",
-            "condition":
-            {
+            "condition": {
                 "type": "UnitHasStatus",
                 "who": "Target",
                 "status": "Freeze"
             },
-            "then":
-            {
+            "then": {
                 "type": "Damage",
-                "types":
-                [
+                "types": [
                     "Melee",
                     "Crit"
                 ],
-                "value":
-                {
+                "value": {
                     "type": "Const",
                     "value": 6
                 }
             },
-            "else":
-            {
+            "else": {
                 "type": "Damage",
-                "types":
-                [
+                "types": [
                     "Melee"
                 ],
-                "value":
-                {
+                "value": {
                     "type": "Const",
                     "value": 2
                 }
@@ -45,8 +36,7 @@
     },
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "alliances":
-    [
+    "clans": [
         "Freezers",
         "Assassins"
     ],

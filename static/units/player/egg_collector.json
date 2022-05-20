@@ -1,31 +1,24 @@
 {
     "tier": 0,
-    "ability":
-    {
+    "ability": {
         "cooldown": 3,
-        "effect":
-        {
+        "effect": {
             "type": "ApplyGained"
         }
     },
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "Scavenge",
             "who": "Enemies",
             "range": 10,
-            "effect":
-            {
+            "effect": {
                 "type": "ChangeContext",
                 "target": "Caster",
-                "effect":
-                {
+                "effect": {
                     "type": "AttachStatus",
-                    "status":
-                    {
+                    "status": {
                         "type": "GainedEffect",
-                        "effect":
-                        {
+                        "effect": {
                             "type": "Spawn",
                             "unit_type": "critter"
                         }
@@ -34,8 +27,7 @@
             }
         }
     ],
-    "alliances":
-    [
+    "clans": [
         "Spawners"
     ],
     "move_ai": "Advance",

@@ -1,12 +1,10 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 10,
         "animation_delay": 0.75,
         "cooldown": 1.25,
-        "effect":
-        {
+        "effect": {
             "type": "Glave",
             "targets": 5,
             "jump_distance": 5,
@@ -29,19 +27,15 @@
                     }
                 }
             },
-            "jump_modifier":
-            {
+            "jump_modifier": {
                 "type": "Strength",
-                "value":
-                {
+                "value": {
                     "type": "Mul",
-                    "a":
-                    {
+                    "a": {
                         "type": "Var",
                         "name": "Value"
                     },
-                    "b":
-                    {
+                    "b": {
                         "type": "Const",
                         "value": 0.8
                     }
@@ -49,8 +43,7 @@
             }
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Archers",
         "Chainers"
     ],

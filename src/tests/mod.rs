@@ -1,9 +1,9 @@
 use crate::*;
 
-mod alliance;
+mod clan;
 
-use alliance::*;
+use clan::*;
 
 pub fn run_tests(assets: Assets) {
-    test_alliances(&assets);
+    test_clans(&assets);
 }

@@ -18,7 +18,7 @@ pub struct UnitTemplate {
     pub statuses: Vec<Status>,
     pub target_ai: TargetAi,
     pub ability: Option<Ability>,
-    pub alliances: HashSet<Alliance>,
+    pub clans: HashSet<Clan>,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
 }
@@ -58,7 +58,7 @@ impl Default for UnitTemplate {
             render_config: RenderConfig::Circle {
                 color: Color::WHITE,
             },
-            alliances: default(),
+            clans: default(),
         }
     }
 }

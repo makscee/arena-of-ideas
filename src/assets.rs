@@ -7,7 +7,7 @@ use once_cell::sync::Lazy;
 #[derive(Deserialize, geng::Assets)]
 #[asset(json)]
 pub struct Options {
-    pub alliance_colors: HashMap<Alliance, Color<f32>>,
+    pub clan_colors: HashMap<Clan, Color<f32>>,
 }
 
 // Used because deserializing with state is not as trivial as writing
@@ -32,7 +32,7 @@ pub struct Assets {
     pub units: UnitTemplates,
     #[asset(load_with = "load_statuses(geng, &base_path)")]
     pub statuses: HashMap<StatusType, StatusRender>,
-    pub alliances: AllianceEffects,
+    pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
@@ -141,7 +141,7 @@ pub struct Config {
     #[serde(default)]
     pub player: Vec<UnitType>,
     #[serde(default)]
-    pub alliances: HashMap<Alliance, usize>,
+    pub clans: HashMap<Clan, usize>,
     pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     pub fov: f32,
 }
@@ -149,11 +149,11 @@ pub struct Config {
 #[derive(Debug, Deserialize, geng::Assets, Clone)]
 #[asset(json)]
 pub struct ShopRenderConfig {
-    pub alliances: HashMap<Alliance, AllianceRenderConfig>,
+    pub clans: HashMap<Clan, ClanRenderConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct AllianceRenderConfig {
+pub struct ClanRenderConfig {
     pub rows: usize,
     pub columns: usize,
 }
@@ -166,17 +166,15 @@ pub struct ShopConfig {
 impl Default for ShopConfig {
     fn default() -> Self {
         Self {
-            render: ShopRenderConfig {
-                alliances: default(),
-            },
+            render: ShopRenderConfig { clans: default() },
         }
     }
 }
 
 #[derive(Clone, Deref)]
-pub struct AllianceEffects {
+pub struct ClanEffects {
     #[deref]
-    pub map: HashMap<Alliance, Vec<AllianceEffect>>,
+    pub map: HashMap<Clan, Vec<ClanEffect>>,
 }
 
 impl Assets {
@@ -302,33 +300,30 @@ impl geng::LoadAsset for UnitTemplates {
     const DEFAULT_EXT: Option<&'static str> = Some("json");
 }
 
-impl geng::LoadAsset for AllianceEffects {
+impl geng::LoadAsset for ClanEffects {
     fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
-            let base_path = path.parent().unwrap().join("alliances");
+            let base_path = path.parent().unwrap().join("clans");
             let path = base_path.join("_list.json");
             let json = <String as geng::LoadAsset>::load(&geng, &path)
                 .await
-                .context(format!(
-                    "Failed to load list of alliance effects from {path:?}"
-                ))?;
-            let paths: HashMap<Alliance, std::path::PathBuf> = serde_json::from_str(&json)
-                .context(format!(
-                    "Failed to parse list of alliance effects from {path:?}"
-                ))?;
+                .context(format!("Failed to load list of clan effects from {path:?}"))?;
+            let paths: HashMap<Clan, std::path::PathBuf> = serde_json::from_str(&json).context(
+                format!("Failed to parse list of clan effects from {path:?}"),
+            )?;
             let mut map = HashMap::new();
-            for (alliance, path) in paths {
+            for (clan, path) in paths {
                 let path = base_path.join(path);
                 let json = <String as geng::LoadAsset>::load(&geng, &path)
                     .await
                     .context(format!(
-                        "Failed to load alliance ({alliance:?}) effects from {path:?}"
+                        "Failed to load clan ({clan:?}) effects from {path:?}"
                     ))?;
-                let effects: Vec<AllianceEffect> = serde_json::from_str(&json)
-                    .context(format!("Failed to parse alliance effects from {path:?}"))?;
-                map.insert(alliance, effects);
+                let effects: Vec<ClanEffect> = serde_json::from_str(&json)
+                    .context(format!("Failed to parse clan effects from {path:?}"))?;
+                map.insert(clan, effects);
             }
             Ok(Self { map })
         }

@@ -1,27 +1,21 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 15,
         "animation_delay": 0.75,
         "cooldown": 5,
-        "effect":
-        {
+        "effect": {
             "type": "ChangeTarget",
             "filter": "Allies",
-            "condition":
-            {
+            "condition": {
                 "type": "Always"
             },
-            "effect":
-            {
+            "effect": {
                 "type": "Projectile",
                 "speed": 10,
-                "effect":
-                {
+                "effect": {
                     "type": "Heal",
-                    "value":
-                    {
+                    "value": {
                         "type": "Const",
                         "value": 2
                     }
@@ -29,8 +23,7 @@
             }
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Healers"
     ],
     "move_ai": "KeepClose",

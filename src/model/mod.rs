@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use super::*;
 
 mod ability;
-mod alliances;
+mod clans;
 mod condition;
 mod effect;
 mod expr;
@@ -17,7 +17,7 @@ mod time_bomb;
 mod unit;
 
 pub use ability::*;
-pub use alliances::*;
+pub use clans::*;
 pub use condition::*;
 pub use effect::*;
 pub use expr::*;
@@ -63,7 +63,7 @@ pub struct Model {
     pub wave_delay: Time,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
-    pub alliance_effects: AllianceEffects,
+    pub clan_effects: ClanEffects,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
     pub transition: bool,
 }
@@ -72,7 +72,7 @@ impl Model {
     pub fn new(
         config: Config,
         unit_templates: UnitTemplates,
-        alliance_effects: AllianceEffects,
+        clan_effects: ClanEffects,
         round: GameRound,
     ) -> Self {
         Self {
@@ -88,7 +88,7 @@ impl Model {
             wave_delay: Time::ZERO,
             free_revives: 0,
             unit_templates,
-            alliance_effects,
+            clan_effects,
             delayed_effects: default(),
             transition: false,
             round,

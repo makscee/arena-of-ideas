@@ -1,18 +1,15 @@
 {
     "tier": 0,
     "base_damage": 2,
-    "action":
-    {
+    "action": {
         "range": 15,
         "animation_delay": 0.5,
         "cooldown": 1,
-        "effect":
-        {
+        "effect": {
             "preset": "effects/projectile_dd_ranged.json"
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Assassins",
         "Archers"
     ],

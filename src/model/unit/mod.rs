@@ -46,7 +46,7 @@ pub struct Unit {
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
-    pub alliances: HashSet<Alliance>,
+    pub clans: HashSet<Clan>,
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
     pub render: RenderConfig,
@@ -100,7 +100,7 @@ impl Unit {
             render: template.render_config.clone(),
             next_action_modifiers: Vec::new(),
             ability_cooldown: None,
-            alliances: template.alliances.clone(),
+            clans: template.clans.clone(),
             last_action_time: Time::new(0.0),
             last_injure_time: Time::new(0.0),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),

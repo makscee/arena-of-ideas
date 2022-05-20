@@ -1,47 +1,36 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect":
-        {
+        "effect": {
             "type": "List",
-            "effects":
-            [
+            "effects": [
                 {
                     "type": "Damage",
-                    "types":
-                    [
+                    "types": [
                         "Melee"
                     ],
-                    "value":
-                    {
+                    "value": {
                         "type": "Mul",
-                        "a":
-                        {
+                        "a": {
                             "type": "FindStat",
                             "who": "Target",
                             "stat": "MaxHealth"
                         },
-                        "b":
-                        {
+                        "b": {
                             "type": "Const",
                             "value": 0.1
                         }
                     },
-                    "on":
-                    {
-                        "Injure":
-                        {
+                    "on": {
+                        "Injure": {
                             "type": "ChangeContext",
                             "target": "Caster",
-                            "effect":
-                            {
+                            "effect": {
                                 "type": "Heal",
-                                "value":
-                                {
+                                "value": {
                                     "type": "Var",
                                     "name": "DamageDealt"
                                 }
@@ -50,26 +39,22 @@
                     }
                 },
                 {
-                    "preset":"effects/melee_hit_vfx.json"
+                    "preset": "effects/melee_hit_vfx.json"
                 }
             ]
         }
     },
-    "ability":
-    {
+    "ability": {
         "cooldown": 3,
-        "effect":
-        {
+        "effect": {
             "type": "List",
-            "effects":
-            [
+            "effects": [
                 {
                     "preset": "effects/attach_status/invulnerability.json"
                 },
                 {
                     "type": "AttachStatus",
-                    "status":
-                    {
+                    "status": {
                         "type": "AttackSpeed",
                         "percent": 175,
                         "time": 3
@@ -78,8 +63,7 @@
             ]
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Vampires",
         "Assassins"
     ],

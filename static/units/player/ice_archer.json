@@ -1,27 +1,22 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 10,
         "animation_delay": 0.75,
         "cooldown": 1.25,
-        "effect":
-        {
+        "effect": {
             "type": "AddTargets",
-            "condition":
-            {
+            "condition": {
                 "type": "UnitHasStatus",
                 "who": "Target",
                 "status": "Freeze"
             },
-            "effect":
-            {
+            "effect": {
                 "preset": "effects/projectile_dd_ranged.json"
             }
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Freezers",
         "Archers"
     ],

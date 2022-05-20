@@ -2,7 +2,7 @@ use super::*;
 
 pub fn initialize(logic: &mut Logic, party_members: usize) {
     for template in logic.model.unit_templates.values_mut() {
-        if !template.alliances.contains(&Alliance::Warriors) {
+        if !template.clans.contains(&Clan::Warriors) {
             continue;
         }
         let mut protection = 0.0;

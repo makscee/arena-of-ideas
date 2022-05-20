@@ -24,7 +24,7 @@ const TIER_AABB: AABB<f32> = AABB {
     y_min: 0.92,
     y_max: 0.97,
 };
-const ALLIANCE_AABB: AABB<f32> = AABB {
+const CLAN_AABB: AABB<f32> = AABB {
     x_min: 1.0 / CARD_SIZE_RATIO - 0.27,
     x_max: 1.0 / CARD_SIZE_RATIO - 0.05,
     y_min: 0.917,
@@ -116,7 +116,7 @@ impl CardRender {
         let damage_aabb = layout(DAMAGE_AABB);
         let health_aabb = layout(HEALTH_AABB);
         let tier_aabb = layout(TIER_AABB);
-        let alliance_aabb = layout(ALLIANCE_AABB);
+        let clan_aabb = layout(CLAN_AABB);
         let name_aabb = layout(NAME_AABB);
         let description_aabb = layout(DESCRIPTION_AABB);
 
@@ -164,28 +164,28 @@ impl CardRender {
             .draw_2d(&self.geng, framebuffer, camera);
         }
 
-        // Alliances
+        // Clans
         {
-            let alliances = card.template.alliances.iter().sorted().collect::<Vec<_>>();
-            let size = alliance_aabb.height();
-            let alliance_size = vec2(size, size);
-            let mut position = alliance_aabb.top_left() + vec2(size, -size) / 2.0;
-            for alliance in alliances {
-                let alliance_color = self
+            let clans = card.template.clans.iter().sorted().collect::<Vec<_>>();
+            let size = clan_aabb.height();
+            let clan_size = vec2(size, size);
+            let mut position = clan_aabb.top_left() + vec2(size, -size) / 2.0;
+            for clan in clans {
+                let clan_color = self
                     .assets
                     .options
-                    .alliance_colors
-                    .get(&alliance)
+                    .clan_colors
+                    .get(&clan)
                     .copied()
                     .unwrap_or(Color::WHITE);
                 let text_color = Color::WHITE;
-                let text = format!("{:?}", alliance)
+                let text = format!("{:?}", clan)
                     .chars()
                     .next()
                     .unwrap_or('?')
                     .to_uppercase()
                     .to_string();
-                draw_2d::Ellipse::circle(position, size / 2.0, alliance_color).draw_2d(
+                draw_2d::Ellipse::circle(position, size / 2.0, clan_color).draw_2d(
                     &self.geng,
                     framebuffer,
                     camera,

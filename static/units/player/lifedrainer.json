@@ -1,19 +1,15 @@
 {
     "tier": 0,
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "OnHeal",
-            "effect":
-            {
+            "effect": {
                 "type": "AOE",
                 "filter": "Enemies",
                 "range": 3,
-                "effect":
-                {
+                "effect": {
                     "type": "Damage",
-                    "value":
-                    {
+                    "value": {
                         "type": "Var",
                         "name": "HealthRestored"
                     }
@@ -21,37 +17,29 @@
             }
         }
     ],
-    "ability":
-    {
+    "ability": {
         "cooldown": 3,
-        "effect":
-        {
+        "effect": {
             "type": "AOE",
             "filter": "Enemies",
             "range": 3,
-            "effect":
-            {
+            "effect": {
                 "type": "ChangeContext",
                 "from": "Target",
                 "target": "Caster",
-                "effect":
-                {
+                "effect": {
                     "type": "Projectile",
                     "speed": 10,
-                    "effect":
-                    {
+                    "effect": {
                         "type": "Heal",
-                        "value":
-                        {
+                        "value": {
                             "type": "Mul",
-                            "a":
-                            {
+                            "a": {
                                 "type": "FindStat",
                                 "who": "From",
                                 "stat": "MaxHealth"
                             },
-                            "b":
-                            {
+                            "b": {
                                 "type": "Const",
                                 "value": 0.1
                             }
@@ -61,8 +49,7 @@
             }
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Vampires",
         "Exploders",
         "Assassins"

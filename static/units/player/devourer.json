@@ -1,35 +1,28 @@
 {
     "tier": 0,
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "Scavenge",
             "who": "All",
             "range": 10,
-            "alliance": "Critters",
-            "effect":
-            {
+            "clan": "Critters",
+            "effect": {
                 "type": "ChangeContext",
                 "target": "Caster",
-                "effect":
-                {
+                "effect": {
                     "type": "List",
-                    "effects":
-                    [
+                    "effects": [
                         {
                             "type": "ChangeStat",
                             "stat": "Radius",
-                            "value":
-                            {
+                            "value": {
                                 "type": "Sum",
-                                "a":
-                                {
+                                "a": {
                                     "type": "FindStat",
                                     "who": "Target",
                                     "stat": "Radius"
                                 },
-                                "b":
-                                {
+                                "b": {
                                     "type": "Const",
                                     "value": 0.05
                                 }
@@ -38,17 +31,14 @@
                         {
                             "type": "ChangeStat",
                             "stat": "MaxHealth",
-                            "value":
-                            {
+                            "value": {
                                 "type": "Sum",
-                                "a":
-                                {
+                                "a": {
                                     "type": "FindStat",
                                     "who": "Target",
                                     "stat": "MaxHealth"
                                 },
-                                "b":
-                                {
+                                "b": {
                                     "type": "Const",
                                     "value": 0.2
                                 }
@@ -56,22 +46,17 @@
                         },
                         {
                             "type": "AttachStatus",
-                            "status":
-                            {
+                            "status": {
                                 "type": "Modifier",
-                                "modifier":
-                                {
+                                "modifier": {
                                     "type": "Strength",
-                                    "value":
-                                    {
+                                    "value": {
                                         "type": "Sum",
-                                        "a":
-                                        {
+                                        "a": {
                                             "type": "Var",
                                             "name": "Value"
                                         },
-                                        "b":
-                                        {
+                                        "b": {
                                             "type": "Const",
                                             "value": 0.2
                                         }
@@ -84,8 +69,7 @@
             }
         }
     ],
-    "alliances":
-    [
+    "clans": [
         "Spawners",
         "Vampires"
     ],

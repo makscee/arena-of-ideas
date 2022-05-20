@@ -1,14 +1,12 @@
 {
     "tier": 0,
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "Taunt",
             "range": 5
         }
     ],
-    "alliances":
-    [
+    "clans": [
         "Warriors"
     ],
     "move_ai": "Advance",

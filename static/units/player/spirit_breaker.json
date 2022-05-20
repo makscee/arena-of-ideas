@@ -1,51 +1,40 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 0.5,
         "animation_delay": 0.25,
         "cooldown": 0.75,
-        "effect":
-        {
+        "effect": {
             "type": "List",
-            "effects":
-            [
+            "effects": [
                 {
                     "type": "Damage",
-                    "types":
-                    [
+                    "types": [
                         "Melee"
                     ],
-                    "value":
-                    {
+                    "value": {
                         "type": "FindStat",
                         "who": "Caster",
                         "stat": "BaseDamage"
                     },
-                    "on":
-                    {
-                        "Injure":
-                        {
+                    "on": {
+                        "Injure": {
                             "type": "Random",
-                            "choices":
-                            [
+                            "choices": [
                                 {
                                     "weight": 25,
-                                    "effect":
-                                    {
+                                    "effect": {
                                         "type": "AOE",
                                         "filter": "Enemies",
                                         "range": 3,
-                                        "effect":
-                                        {
+                                        "effect": {
                                             "preset": "effects/attach_status/stun.json"
                                         }
                                     }
                                 },
                                 {
                                     "weight": 75,
-                                    "effect":
-                                    {
+                                    "effect": {
                                         "type": "Noop"
                                     }
                                 }
@@ -59,8 +48,7 @@
             ]
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Warriors"
     ],
     "move_ai": "Advance",

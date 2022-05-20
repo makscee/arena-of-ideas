@@ -1,26 +1,21 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 12,
         "animation_delay": 0.75,
         "cooldown": 0.25,
-        "effect":
-        {
+        "effect": {
             "type": "AddTargets",
-            "condition":
-            {
+            "condition": {
                 "type": "Always"
             },
             "additional_targets": 1,
-            "effect":
-            {
+            "effect": {
                 "preset": "effects/projectile_dd_ranged.json"
             }
         }
     },
-    "alliances":
-    [
+    "clans": [
         "Archers"
     ],
     "move_ai": "KeepClose",

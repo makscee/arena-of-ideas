@@ -23,7 +23,7 @@
             ]
         }
     },
-    "alliances": [
+    "clans": [
         "Critters"
     ],
     "move_ai": "Advance",

@@ -1,24 +1,20 @@
 {
     "tier": 0,
-    "statuses":
-    [
+    "statuses": [
         {
             "type": "OnKill",
             "damage_type": "Crit",
-            "effect":
-            {
+            "effect": {
                 "type": "Repeat",
                 "times": 3,
-                "effect":
-                {
+                "effect": {
                     "type": "Spawn",
                     "unit_type": "critter"
                 }
             }
         }
     ],
-    "alliances":
-    [
+    "clans": [
         "Assassins",
         "Spawners"
     ],

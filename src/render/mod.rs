@@ -384,10 +384,10 @@ impl UnitRender {
                 let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
                     * Mat3::scale_uniform(unit.radius.as_f32() * attack_scale * spawn_scale);
 
-                let mut alliances: Vec<Alliance> = unit.alliances.iter().copied().collect();
-                let alliance_colors: Vec<Color<f32>> = alliances
+                let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
+                let clan_colors: Vec<Color<f32>> = clans
                     .iter()
-                    .map(|alliance| self.assets.options.alliance_colors[alliance])
+                    .map(|clan| self.assets.options.clan_colors[clan])
                     .collect();
 
                 let (action_time, target) = match &unit.action_state {
@@ -409,9 +409,7 @@ impl UnitRender {
                 let mut is_ability_ready = 0.0; // TODO: rewrite please
                 if let Some(ability) = &template.ability {
                     is_ability_ready = match unit.ability_cooldown {
-                        Some(time) if time > Time::new(0.0) => {
-                            0.0
-                        }
+                        Some(time) if time > Time::new(0.0) => 0.0,
                         _ => 1.0,
                     };
                 }
@@ -441,10 +439,10 @@ impl UnitRender {
                         u_random: unit.random_number.as_f32(),
                         u_action_time: unit.last_action_time.as_f32(),
                         u_injure_time: unit.last_injure_time.as_f32(),
-                        u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
-                        u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
-                        u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
-                        u_alliance_count: alliance_colors.len(),
+                        u_alliance_color_1: clan_colors.get(0).copied().unwrap_or(Color::WHITE),
+                        u_alliance_color_2: clan_colors.get(1).copied().unwrap_or(Color::WHITE),
+                        u_alliance_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
+                        u_alliance_count: clan_colors.len(),
                         u_ability_ready: is_ability_ready,
                         u_health: unit.health.as_f32() / unit.max_hp.as_f32(),
                     },
