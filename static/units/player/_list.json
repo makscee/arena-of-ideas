@@ -2,7 +2,9 @@
     "experimenter",
     "sniper",
     "rogue",
+    "rogue+",
     "ranger",
+    "ranger+",
     "ice_breaker",
     "frozen_blade",
     "chill_knight",
@@ -21,7 +23,9 @@
     "hedgehog",
     "spirit_breaker",
     "glave_thrower",
+    "glave_thrower+",
     "dark_knight",
-    "double_arrow",
-    "guardian"
+    "guardian",
+    "shanker",
+    "shanker+"
 ]

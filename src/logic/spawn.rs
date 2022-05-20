@@ -1,54 +1,29 @@
 use super::*;
 
 impl Logic<'_> {
-    pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Vec2<Coord>) {
+    /// Spawns the unit and returns its id
+    pub fn spawn_unit(
+        &mut self,
+        unit_type: &UnitType,
+        faction: Faction,
+        position: Vec2<Coord>,
+    ) -> Id {
         let mut template = self.model.unit_templates[unit_type].clone();
-        self.spawn_template(unit_type, template, faction, position);
+        self.spawn_template(unit_type, template, faction, position)
     }
+    /// Spawns the unit and returns its id
     pub fn spawn_template(
         &mut self,
         unit_type: &UnitType,
         template: UnitTemplate,
         faction: Faction,
         position: Vec2<Coord>,
-    ) {
-        let mut unit = Unit {
-            id: self.model.next_id,
-            unit_type: unit_type.clone(),
-            spawn_animation_time_left: Some(template.spawn_animation_time),
-            attached_statuses: template
-                .statuses
-                .iter()
-                .map(|status| AttachedStatus {
-                    status: status.clone(),
-                    caster: None,
-                    time: None,
-                    duration: None,
-                })
-                .collect(),
-            all_statuses: Vec::new(),
-            faction,
-            action_state: ActionState::None,
-            health: template.health,
-            max_hp: template.health,
-            base_damage: template.base_damage,
-            face_dir: Vec2::ZERO,
-            position,
-            speed: template.speed,
-            radius: template.radius,
-            action: template.action,
-            move_ai: template.move_ai,
-            target_ai: template.target_ai,
-            render: template.render_config.clone(),
-            next_action_modifiers: Vec::new(),
-            ability_cooldown: None,
-            alliances: template.alliances,
-            last_action_time: Time::new(0.0),
-            last_injure_time: Time::new(0.0),
-            random_number: r32(global_rng().gen_range(0.0..=1.0)),
-        };
+    ) -> Id {
+        let id = self.model.next_id;
+        let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
+        id
     }
     pub fn process_spawns(&mut self) {
         let mut new_units = Vec::new();

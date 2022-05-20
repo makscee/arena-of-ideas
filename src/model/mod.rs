@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 mod ability;
@@ -57,13 +59,16 @@ pub struct Model {
     pub dead_time_bombs: Collection<TimeBomb>,
     pub particles: Collection<Particle>,
     pub config: Config,
+    pub round: GameRound,
+    pub wave_delay: Time,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
+    pub transition: bool,
 }
 
 impl Model {
-    pub fn new(config: Config, unit_templates: UnitTemplates) -> Self {
+    pub fn new(config: Config, unit_templates: UnitTemplates, round: GameRound) -> Self {
         Self {
             next_id: 0,
             time: Time::ZERO,
@@ -74,10 +79,13 @@ impl Model {
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
             particles: Collection::new(),
-            config,
+            wave_delay: Time::ZERO,
             free_revives: 0,
             unit_templates,
             delayed_effects: default(),
+            transition: false,
+            round,
+            config,
         }
     }
 }

@@ -1,0 +1,53 @@
+{
+    "player": [
+        "sniper",
+        "experimenter",
+        "ranger",
+        "rogue"
+    ],
+    "alliances": {
+        "Spawners": 6,
+        "Assassins": 6,
+        "Critters": 6,
+        "Archers": 6,
+        "Freezers": 6,
+        "Warriors": 6,
+        "Healers": 6,
+        "Vampires": 6,
+        "Exploders": 6
+    },
+    "round": {
+        "statuses": [],
+        "waves": [
+            {
+                "start_delay": 2,
+                "between_delay": 1.5,
+                "top": [
+                    {
+                        "type": "small_blob",
+                        "count": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "spawn_points": {
+        "left": [
+            -12,
+            0.0
+        ],
+        "right": [
+            12,
+            0.0
+        ],
+        "top": [
+            0,
+            8
+        ],
+        "Heroes": [
+            0,
+            -5
+        ]
+    },
+    "fov": 22
+}

@@ -1,5 +1,5 @@
 {
-    "tier": 2,
+    "tier": 0,
     "statuses":
     [
         {
@@ -22,7 +22,7 @@
     ],
     "ability":
     {
-        "cooldown": 3,
+        "cooldown": 5,
         "effect":
         {
             "preset": "effects/attach_status/shield.json"

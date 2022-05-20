@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 use once_cell::sync::Lazy;
@@ -33,6 +35,9 @@ pub struct Assets {
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
+    pub card: Rc<ugli::Texture>,
+    #[asset(path = "rounds/round*.json", range = "1..=3")]
+    pub rounds: Vec<GameRound>,
 }
 
 async fn load_statuses(
@@ -64,7 +69,49 @@ async fn load_statuses(
 }
 
 pub type Key = String;
-pub type Wave = HashMap<String, Vec<UnitType>>;
+pub type SpawnPoint = String;
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct GameRound {
+    #[serde(default)]
+    pub statuses: Vec<Status>,
+    #[serde(default)]
+    pub waves: VecDeque<Wave>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Wave {
+    #[serde(default = "Wave::default_start_delay")]
+    pub start_delay: Time,
+    #[serde(default = "Wave::default_between_delay")]
+    pub between_delay: Time,
+    #[serde(default = "Wave::default_wait_clear")]
+    pub wait_clear: bool,
+    #[serde(default)]
+    pub statuses: Vec<Status>,
+    #[serde(flatten)]
+    pub spawns: HashMap<SpawnPoint, VecDeque<WaveSpawn>>,
+}
+
+impl Wave {
+    fn default_start_delay() -> Time {
+        Time::ZERO
+    }
+    fn default_between_delay() -> Time {
+        Time::ZERO
+    }
+    fn default_wait_clear() -> bool {
+        false
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct WaveSpawn {
+    pub r#type: UnitType,
+    pub count: usize,
+}
 
 #[derive(Deref, DerefMut)]
 pub struct Textures {
@@ -90,11 +137,39 @@ pub struct Effects {
 #[derive(geng::Assets, Deserialize, Clone)]
 #[asset(json)]
 pub struct Config {
+    #[serde(default)]
     pub player: Vec<UnitType>,
+    #[serde(default)]
     pub alliances: HashMap<Alliance, usize>,
-    pub spawn_points: HashMap<String, Vec2<Coord>>,
-    pub waves: Vec<Wave>,
+    pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     pub fov: f32,
+}
+
+#[derive(Debug, Deserialize, geng::Assets, Clone)]
+#[asset(json)]
+pub struct ShopRenderConfig {
+    pub alliances: HashMap<Alliance, AllianceRenderConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AllianceRenderConfig {
+    pub rows: usize,
+    pub columns: usize,
+}
+
+#[derive(geng::Assets, Clone)]
+pub struct ShopConfig {
+    pub render: ShopRenderConfig,
+}
+
+impl Default for ShopConfig {
+    fn default() -> Self {
+        Self {
+            render: ShopRenderConfig {
+                alliances: default(),
+            },
+        }
+    }
 }
 
 impl Assets {
@@ -124,23 +199,58 @@ impl Assets {
     }
 }
 
+impl geng::LoadAsset for GameRound {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let mut json = <serde_json::Value as geng::LoadAsset>::load(&geng, &path).await?;
+            if let Some(preset) = json.get_mut("preset") {
+                // Load preset
+                let preset = preset.take();
+                let preset = preset.as_str().expect("preset must be a string");
+                let preset = <String as geng::LoadAsset>::load(
+                    &geng,
+                    &path.as_path().parent().unwrap().join(preset),
+                )
+                .await?;
+                let mut preset: GameRound = serde_json::from_str(&preset)?;
+
+                // Parse round
+                json.as_object_mut().unwrap().remove("preset");
+                let round: GameRound = serde_json::from_value(json)?;
+
+                // Append statuses
+                preset.statuses.extend(round.statuses);
+                return Ok(dbg!(preset));
+            }
+            let round: GameRound = serde_json::from_value(json)?;
+            Ok(round)
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some("json");
+}
+
 impl geng::LoadAsset for UnitTemplates {
     fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
+            let common_path = static_path().join("common.glsl");
             geng.shader_lib().add(
                 "common.glsl",
-                &<String as geng::LoadAsset>::load(
-                    &geng,
-                    &path.parent().unwrap().join("common.glsl"),
-                )
-                .await?,
+                &<String as geng::LoadAsset>::load(&geng, &common_path)
+                    .await
+                    .context(format!("Failed to load common.glsl from {:?}", common_path))?,
             );
 
             Effects::load(&geng, &static_path().join("effects.json")).await?;
 
-            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
+            let json = <String as geng::LoadAsset>::load(&geng, &path)
+                .await
+                .context(format!("Failed to load unit json from {:?}", path))?;
             let packs: Vec<String> = serde_json::from_str(&json)?;
             let mut map = HashMap::new();
             for pack in packs {
@@ -157,7 +267,9 @@ impl geng::LoadAsset for UnitTemplates {
                     if let Some(base) = json.get_mut("base") {
                         let base = base.take();
                         let base = base.as_str().expect("base must be a string");
-                        let base = &map[base];
+                        let base = &map
+                            .get(base)
+                            .expect(&format!("Failed to find unit's base: {}", base));
                         let mut base_json = serde_json::to_value(base).unwrap();
                         base_json
                             .as_object_mut()

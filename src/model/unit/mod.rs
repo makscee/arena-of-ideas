@@ -7,7 +7,7 @@ pub use ai::*;
 pub use template::*;
 
 pub type UnitType = String;
-pub type Tier = std::num::NonZeroUsize;
+pub type Tier = u32;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ActionState {
@@ -63,6 +63,49 @@ pub enum UnitStat {
 }
 
 impl Unit {
+    pub fn new(
+        template: &UnitTemplate,
+        id: Id,
+        unit_type: UnitType,
+        faction: Faction,
+        position: Vec2<Coord>,
+    ) -> Self {
+        Self {
+            id,
+            unit_type,
+            spawn_animation_time_left: Some(template.spawn_animation_time),
+            attached_statuses: template
+                .statuses
+                .iter()
+                .map(|status| AttachedStatus {
+                    status: status.clone(),
+                    caster: None,
+                    time: None,
+                    duration: None,
+                })
+                .collect(),
+            all_statuses: Vec::new(),
+            faction,
+            action_state: ActionState::None,
+            health: template.health,
+            max_hp: template.health,
+            base_damage: template.base_damage,
+            face_dir: Vec2::ZERO,
+            position,
+            speed: template.speed,
+            radius: template.radius,
+            action: template.action.clone(),
+            move_ai: template.move_ai,
+            target_ai: template.target_ai,
+            render: template.render_config.clone(),
+            next_action_modifiers: Vec::new(),
+            ability_cooldown: None,
+            alliances: template.alliances.clone(),
+            last_action_time: Time::new(0.0),
+            last_injure_time: Time::new(0.0),
+            random_number: r32(global_rng().gen_range(0.0..=1.0)),
+        }
+    }
     pub fn stat(&self, stat: UnitStat) -> R32 {
         match stat {
             UnitStat::MaxHealth => self.max_hp,

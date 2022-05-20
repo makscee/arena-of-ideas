@@ -22,11 +22,15 @@ uniform float u_action; // 0 -> 1
 uniform float u_action_time;
 uniform float u_animation_delay;
 uniform float u_cooldown;
+uniform float u_ability_ready;
 uniform float u_random;
+uniform float u_padding;
+uniform float u_health;
 
 uniform vec2 u_unit_position;
 uniform vec2 u_face_dir;
 uniform float u_unit_radius;
+uniform float u_ability_on_cooldown;
 
 uniform vec4 u_alliance_color_1;
 uniform vec4 u_alliance_color_2;
@@ -71,14 +75,16 @@ int mod(int a, int b)
     return a - (b * int(floor(float(a)/float(b))));
 }
 
-float round(float v)
+vec2 N22(vec2 p) 
 {
-	return floor(v) + float(v - floor(v) > 0.5) * 1.;
+  vec3 a = fract(p.xyx*vec3(123.34, 234.34, 345.65));
+  a += dot(a, a+34.45);
+  return fract(vec2(a.x*a.y, a.y*a.z));
 }
 
 float rand(int i)
 {
-    return fract(sin(dot(vec2(i,0.) ,vec2(12.9898,78.233))) * 43758.5453);
+    return N22(vec2(i)).x;
 }
 
 vec2 randCircle(int i) 

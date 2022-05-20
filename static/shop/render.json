@@ -1,0 +1,52 @@
+{
+    "alliances": {
+        "Spawners": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Assassins": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Critters": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Archers": {
+            "rows": 3,
+            "columns": 2
+        },
+        "Freezers": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Warriors": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Healers": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Vampires": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Exploders": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Splashers": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Chainers": {
+            "rows": 2,
+            "columns": 3
+        },
+        "Charmers": {
+            "rows": 2,
+            "columns": 3
+        }
+    }
+}

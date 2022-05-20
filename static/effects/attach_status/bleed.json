@@ -1,0 +1,44 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "AttachStatus",
+            "time": 5,
+            "status": {
+                "type": "RepeatingEffect",
+                "tick_time": 1,
+                "next_tick": 1,
+                "effect": {
+                    "type": "Damage",
+                    "types": [
+                        "Dot"
+                    ],
+                    "value": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                }
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 1.5,
+            "parent": "Target",
+            "follow": true,
+            "radius": 2,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_particle_spin.glsl",
+                "parameters": {
+                    "p_startColor": "#dc143c",
+                    "p_endColor": "#dc143c",
+                    "p_count": 25,
+                    "p_startSize": 0.05,
+                    "p_endSize": 0.01,
+                    "p_spawnShift": 0.005,
+                    "p_trailCount": 3
+                }
+            }
+        }
+    ]
+}

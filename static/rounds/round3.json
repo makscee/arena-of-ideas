@@ -1,0 +1,20 @@
+{
+    "statuses": [],
+    "waves": [
+        {
+            "start_delay": 2,
+            "left": [
+                {
+                    "type": "blob",
+                    "count": 3
+                }
+            ],
+            "right": [
+                {
+                    "type": "blob",
+                    "count": 3
+                }
+            ]
+        }
+    ]
+}

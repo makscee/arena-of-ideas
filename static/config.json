@@ -1,50 +1,14 @@
 {
-    "player": [
-        "sniper",
-        "experimenter",
-        "ranger",
-        "rogue",
-        "ice_breaker",
-        "frozen_blade",
-        "chill_knight",
-        "ice_archer",
-        "murmillo",
-        "cold_detector",
-        "tank",
-        "cryonist",
-        "egg_collector",
-        "dracula",
-        "dr_acula",
-        "lifestealer",
-        "healer",
-        "lifedrainer",
-        "devourer",
-        "hedgehog",
-        "spirit_breaker",
-        "glave_thrower",
-        "dark_knight"
-    ],
-    "alliances": {
-        "Spawners": 6,
-        "Assassins": 6,
-        "Critters": 6,
-        "Archers": 6,
-        "Freezers": 6,
-        "Warriors": 6,
-        "Healers": 6,
-        "Vampires": 6,
-        "Exploders": 6
-    },
     "spawn_points": {
-        "Left": [
+        "left": [
             -12,
             0.0
         ],
-        "Right": [
+        "right": [
             12,
             0.0
         ],
-        "Top": [
+        "top": [
             0,
             8
         ],
@@ -53,36 +17,5 @@
             -5
         ]
     },
-    "waves": [
-        {
-            "Top": [
-                "small_blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob"
-            ],
-            "Left": [
-                "big_blob",
-                "blob",
-                "blob",
-                "blob",
-                "blob"
-            ],
-            "Right": [
-                "shooter",
-                "shooter",
-                "shooter",
-                "shooter",
-                "shooter"
-            ]
-        }
-    ],
     "fov": 22
 }

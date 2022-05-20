@@ -5,9 +5,11 @@ use clap::Parser;
 use geng::prelude::*;
 
 mod assets;
+mod custom;
 mod logic;
 mod model;
 mod render;
+mod shop;
 mod simulate;
 mod tests;
 
@@ -15,6 +17,7 @@ use assets::*;
 use logic::*;
 use model::*;
 use render::{Render, RenderModel};
+use shop::*;
 
 type Health = R32;
 type Time = R32;
@@ -30,19 +33,28 @@ struct HistoryEntry {
 
 pub struct Game {
     geng: Geng,
+    assets: Rc<Assets>,
     time: f32,
     timeline_captured: bool,
     history: Vec<HistoryEntry>,
     pressed_keys: Vec<Key>,
     render: Render,
+    shop: Shop,
 }
 
 impl Game {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: Config) -> Self {
-        let mut model = Model::new(config.clone(), assets.units.clone());
+    pub fn new(
+        geng: &Geng,
+        assets: &Rc<Assets>,
+        config: Config,
+        shop: Shop,
+        round: GameRound,
+    ) -> Self {
+        let mut model = Model::new(config.clone(), assets.units.clone(), round);
         Logic::initialize(&mut model, &config);
         let mut game = Self {
             geng: geng.clone(),
+            assets: assets.clone(),
             time: 0.0,
             history: vec![HistoryEntry {
                 time: 0.0,
@@ -52,6 +64,7 @@ impl Game {
             render: Render::new(geng, assets, config),
             pressed_keys: Vec::new(),
             timeline_captured: false,
+            shop,
         };
         game
     }
@@ -118,6 +131,23 @@ impl geng::State for Game {
                 .align(vec2(0.5, 0.0)),
         )
     }
+    fn transition(&mut self) -> Option<geng::Transition> {
+        self.history
+            .last()
+            .map(|entry| (&entry.model, entry.model.transition))
+            .and_then(|(model, transition)| match transition {
+                false => None,
+                true => {
+                    let shop_state = shop::ShopState::load(
+                        &self.geng,
+                        &self.assets,
+                        self.shop.take(),
+                        model.config.clone(),
+                    );
+                    Some(geng::Transition::Switch(Box::new(shop_state)))
+                }
+            })
+    }
 }
 
 #[derive(clap::Parser)]
@@ -130,6 +160,7 @@ struct Opts {
 
 #[derive(clap::Subcommand)]
 enum Commands {
+    CustomGame(custom::CustomGame),
     Test,
     Simulate1x1(simulate::Simulate1x1),
 }
@@ -165,20 +196,28 @@ fn main() {
                     let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
                         .await
                         .expect("Failed to load config");
-                    (assets, config)
+                    let shop_config =
+                        <ShopConfig as geng::LoadAsset>::load(&geng, &static_path().join("shop"))
+                            .await
+                            .expect("Failed to load shop config");
+                    (assets, config, shop_config)
                 }
             },
             {
                 let geng = geng.clone();
-                move |(assets, config)| {
+                move |(assets, config, shop_config)| {
                     match opts.command {
                         Some(command) => match command {
-                            Commands::Simulate1x1(simulate) => {
-                                simulate.run(assets, config).unwrap();
-                                std::process::exit(0);
+                            Commands::CustomGame(custom) => {
+                                let assets = Rc::new(assets);
+                                return custom.run(&geng, &assets, shop_config);
                             }
                             Commands::Test => {
                                 tests::run_tests(assets);
+                                std::process::exit(0);
+                            }
+                            Commands::Simulate1x1(simulate) => {
+                                simulate.run(assets, config).unwrap();
                                 std::process::exit(0);
                             }
                         },
@@ -186,7 +225,7 @@ fn main() {
                     }
 
                     let assets = Rc::new(assets);
-                    Game::new(&geng, &assets, config)
+                    Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
                 }
             },
         ),

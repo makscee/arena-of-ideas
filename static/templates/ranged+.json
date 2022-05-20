@@ -1,0 +1,20 @@
+{
+    "health": 6,
+    "speed": 0.5,
+    "radius": 1.1,
+    "base_damage": 2,
+    "action": {
+        "range": 8,
+        "animation_delay": 0.75,
+        "cooldown": 1.25,
+        "effect": {
+            "preset": "effects/projectile_dd_ranged.json"
+        }
+    },
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "render": {
+        "type": "Shader",
+        "path": "shaders/caster_hero.glsl"
+    }
+}

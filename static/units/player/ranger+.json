@@ -1,0 +1,29 @@
+{
+    "tier": 0,
+    "action":
+    {
+        "range": 12,
+        "animation_delay": 0.75,
+        "cooldown": 0.25,
+        "effect":
+        {
+            "type": "AddTargets",
+            "condition":
+            {
+                "type": "Always"
+            },
+            "additional_targets": 1,
+            "effect":
+            {
+                "preset": "effects/projectile_dd_ranged.json"
+            }
+        }
+    },
+    "alliances":
+    [
+        "Archers"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "base": "ranged+"
+}

@@ -45,8 +45,8 @@ pub struct Render {
 }
 
 pub struct UnitRender {
-    geng: Geng,
-    assets: Rc<Assets>,
+    pub geng: Geng,
+    pub assets: Rc<Assets>,
 }
 
 impl Render {
@@ -74,26 +74,23 @@ impl Render {
             let template = &self.assets.units[&unit.unit_type];
 
             let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
-            self.draw_unit(unit, template, &render, model, game_time, framebuffer);
-            self.geng.draw_2d(
-                framebuffer,
-                &self.camera,
-                &draw_2d::Quad::unit(Color::GREEN).transform(
-                    Mat3::translate(unit.position.map(|x| x.as_f32()))
-                        * Mat3::scale_uniform(unit.radius.as_f32())
-                        * Mat3::translate(vec2(0.0, 1.2))
-                        * Mat3::scale(
-                            0.1 * vec2(10.0 * unit.health.as_f32() / unit.max_hp.as_f32(), 1.0),
-                        ),
-                ),
-            );
+            self.draw_unit(unit, template, model, game_time, framebuffer);
+            // self.geng.draw_2d(
+            //     framebuffer,
+            //     &self.camera,
+            //     &draw_2d::Quad::unit(Color::GREEN).transform(
+            //         Mat3::translate(unit.position.map(|x| x.as_f32()))
+            //             * Mat3::scale_uniform(unit.radius.as_f32())
+            //             * Mat3::translate(vec2(0.0, 1.2))
+            //             * Mat3::scale(
+            //                 0.1 * vec2(10.0 * unit.health.as_f32() / unit.max_hp.as_f32(), 1.0),
+            //             ),
+            //     ),
+            // );
         }
         for projectile in &model.projectiles {
-            self.geng.draw_2d(
-                framebuffer,
-                &self.camera,
-                &draw_2d::Ellipse::circle(projectile.position.map(|x| x.as_f32()), 0.1, Color::RED),
-            );
+            let render = self.assets.get_render(&projectile.render_config); // TODO: move this into to an earlier phase perhaps
+            self.draw_projectile(projectile, &render, game_time, framebuffer);
         }
         for particle in &model.particles {
             let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps
@@ -104,7 +101,7 @@ impl Render {
                 framebuffer,
                 &self.camera,
                 &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, text.color)
-                    .scale_uniform(0.05)
+                    .scale_uniform(0.2)
                     .translate(text.position),
             );
         }
@@ -114,7 +111,6 @@ impl Render {
         &self,
         unit: &Unit,
         template: &UnitTemplate,
-        render_mode: &RenderMode,
         model: &Model,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
@@ -122,7 +118,6 @@ impl Render {
         self.unit_render.draw_unit(
             unit,
             template,
-            render_mode,
             Some(model),
             game_time,
             &self.camera,
@@ -211,6 +206,88 @@ impl Render {
             }
         }
     }
+
+    fn draw_projectile(
+        &self,
+        projectile: &Projectile,
+        render_mode: &RenderMode,
+        game_time: f32,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        const RADIUS: f32 = 0.35;
+        match render_mode {
+            RenderMode::Circle { color } => {
+                self.geng.draw_2d(
+                    framebuffer,
+                    &self.camera,
+                    &draw_2d::Ellipse::circle(
+                        projectile.position.map(|x| x.as_f32()),
+                        RADIUS,
+                        *color,
+                    ),
+                );
+            }
+            RenderMode::Texture { texture } => {
+                self.geng.draw_2d(
+                    framebuffer,
+                    &self.camera,
+                    &draw_2d::TexturedQuad::unit(&**texture)
+                        .scale_uniform(RADIUS)
+                        .translate(projectile.position.map(|x| x.as_f32())),
+                );
+            }
+            RenderMode::Shader {
+                program,
+                parameters,
+            } => {
+                let quad = ugli::VertexBuffer::new_dynamic(
+                    self.geng.ugli(),
+                    vec![
+                        draw_2d::Vertex {
+                            a_pos: vec2(-1.0, -1.0),
+                        },
+                        draw_2d::Vertex {
+                            a_pos: vec2(1.0, -1.0),
+                        },
+                        draw_2d::Vertex {
+                            a_pos: vec2(1.0, 1.0),
+                        },
+                        draw_2d::Vertex {
+                            a_pos: vec2(-1.0, 1.0),
+                        },
+                    ],
+                );
+                let framebuffer_size = framebuffer.size();
+                let model_matrix = Mat3::translate(projectile.position.map(|x| x.as_f32()))
+                    * Mat3::scale_uniform(RADIUS);
+                let velocity = ((projectile.target_position - projectile.position)
+                    .normalize_or_zero()
+                    * projectile.speed)
+                    .map(|x| x.as_f32());
+
+                ugli::draw(
+                    framebuffer,
+                    program,
+                    ugli::DrawMode::TriangleFan,
+                    &quad,
+                    (
+                        ugli::uniforms! {
+                            u_time: game_time,
+                            u_unit_position: projectile.position.map(|x| x.as_f32()),
+                            u_unit_radius: RADIUS,
+                            u_velocity: velocity,
+                        },
+                        geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        parameters,
+                    ),
+                    ugli::DrawParameters {
+                        blend_mode: Some(default()),
+                        ..default()
+                    },
+                );
+            }
+        }
+    }
 }
 
 impl UnitRender {
@@ -225,12 +302,12 @@ impl UnitRender {
         &self,
         unit: &Unit,
         template: &UnitTemplate,
-        render_mode: &RenderMode,
         model: Option<&Model>,
         game_time: f32,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
     ) {
+        let render_mode = &self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
         let spawn_scale = match unit.spawn_animation_time_left {
             Some(time) if template.spawn_animation_time > Time::new(0.0) => {
                 1.0 - (time / template.spawn_animation_time).as_f32()
@@ -329,6 +406,16 @@ impl UnitRender {
                     })
                     .map(|x| x.as_f32());
 
+                let mut is_ability_ready = 0.0; // TODO: rewrite please
+                if let Some(ability) = &template.ability {
+                    is_ability_ready = match unit.ability_cooldown {
+                        Some(time) if time > Time::new(0.0) => {
+                            0.0
+                        }
+                        _ => 1.0,
+                    };
+                }
+
                 // Actual render
                 let texture_position = AABB::point(unit.position.map(|x| x.as_f32()))
                     .extend_uniform(unit.radius.as_f32() * 2.0); // TODO: configuring?
@@ -358,6 +445,8 @@ impl UnitRender {
                         u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
                         u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
                         u_alliance_count: alliance_colors.len(),
+                        u_ability_ready: is_ability_ready,
+                        u_health: unit.health.as_f32() / unit.max_hp.as_f32(),
                     },
                     geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),
                     parameters,

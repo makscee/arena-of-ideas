@@ -11,19 +11,13 @@ pub fn initialize(logic: &mut Logic, party_members: usize) {
                     Effect::AddTargets(Box::new(AddTargetsEffect {
                         effect: effect.clone(),
                         condition: Condition::Always,
-                        additional_targets: None,
+                        additional_targets: Some(3),
                     }))
-                } else if party_members >= 4 {
+                } else if party_members >= 3 {
                     Effect::AddTargets(Box::new(AddTargetsEffect {
                         effect: effect.clone(),
                         condition: Condition::Always,
-                        additional_targets: Some(4),
-                    }))
-                } else if party_members >= 2 {
-                    Effect::AddTargets(Box::new(AddTargetsEffect {
-                        effect: effect.clone(),
-                        condition: Condition::Always,
-                        additional_targets: Some(2),
+                        additional_targets: Some(1),
                     }))
                 } else {
                     effect.clone()

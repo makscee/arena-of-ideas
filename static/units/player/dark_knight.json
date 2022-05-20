@@ -1,6 +1,6 @@
 {
     "health": 50,
-    "tier": 1,
+    "tier": 0,
     "base_damage": 0.5,
     "speed": 2,
     "action":

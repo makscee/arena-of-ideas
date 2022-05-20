@@ -14,7 +14,7 @@ impl EffectContainer for ChangeTargetEffect {
 }
 
 impl EffectImpl for ChangeTargetEffect {
-    fn process(self: Box<Self>, context: EffectContext, logic: &mut Logic) {
+    fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
         let caster = context
             .caster
@@ -35,21 +35,23 @@ impl EffectImpl for ChangeTargetEffect {
             })
             .unwrap_or(caster.faction);
 
+        let target = context.target;
         if let Some(unit) = logic
             .model
             .units
             .iter()
-            .filter(|unit| unit.id != caster.id && Some(unit.id) != context.target)
+            .filter(|unit| unit.id != caster.id && Some(unit.id) != target)
             .filter(|unit| effect.filter.matches(unit.faction, caster_faction))
-            .filter(|unit| logic.check_condition(&effect.condition, &context))
+            .filter(|unit| {
+                context.target = Some(unit.id);
+                logic.check_condition(&effect.condition, &context)
+            })
             .choose(&mut global_rng())
         {
+            context.target = Some(unit.id);
             logic.effects.push_front(QueuedEffect {
-                effect: effect.effect.clone(),
-                context: EffectContext {
-                    target: Some(unit.id),
-                    ..context
-                },
+                effect: effect.effect,
+                context: dbg!(context),
             });
         }
     }

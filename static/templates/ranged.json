@@ -2,6 +2,7 @@
     "health": 2,
     "speed": 0.4,
     "radius": 1.0,
+    "base_damage": 1,
     "action": {
         "range": 8,
         "animation_delay": 0.75,

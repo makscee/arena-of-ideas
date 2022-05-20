@@ -185,7 +185,7 @@ impl Status {
             Self::GainedEffect(status) => StatusType::GainedEffect,
             Self::Scavenge(status) => StatusType::Scavenge,
             Self::AttackSpeed(status) => StatusType::AttackSpeed,
-            Self::RepeatingEffect(status) => StatusType::AttackSpeed,
+            Self::RepeatingEffect(status) => StatusType::RepeatingEffect,
             Self::Charmed(status) => StatusType::Charmed,
         }
     }
