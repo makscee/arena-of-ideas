@@ -50,7 +50,7 @@ impl Game {
         shop: Shop,
         round: GameRound,
     ) -> Self {
-        let mut model = Model::new(config.clone(), assets.units.clone(), round);
+        let mut model = Model::new(config.clone(), assets.units.clone(), assets.alliances.clone(), round);
         Logic::initialize(&mut model, &config);
         let mut game = Self {
             geng: geng.clone(),

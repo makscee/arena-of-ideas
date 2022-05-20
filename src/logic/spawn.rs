@@ -8,19 +8,20 @@ impl Logic<'_> {
         faction: Faction,
         position: Vec2<Coord>,
     ) -> Id {
-        let mut template = self.model.unit_templates[unit_type].clone();
-        self.spawn_template(unit_type, template, faction, position)
-    }
-    /// Spawns the unit and returns its id
-    pub fn spawn_template(
-        &mut self,
-        unit_type: &UnitType,
-        template: UnitTemplate,
-        faction: Faction,
-        position: Vec2<Coord>,
-    ) -> Id {
+        let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;
+
         let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
+        for alliance in &template.alliances {
+            let alliance_members = *self
+                .model
+                .config
+                .alliances
+                .get(alliance)
+                .expect(&format!("Failed to find alliance members of {alliance:?}"));
+            alliance.apply_effects(&mut unit, &self.model.alliance_effects, alliance_members);
+        }
+
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
         id

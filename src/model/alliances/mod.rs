@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 mod archers;
@@ -29,29 +31,44 @@ pub enum Alliance {
     Charmers,
 }
 
-impl Alliance {
-    fn initialize(&self, logic: &mut Logic, party_members: usize) {
-        match self {
-            Alliance::Spawners => spawners::initialize(logic, party_members),
-            Alliance::Assassins => assassins::initialize(logic, party_members),
-            Alliance::Critters => critters::initialize(logic, party_members),
-            Alliance::Archers => archers::initialize(logic, party_members),
-            Alliance::Freezers => freezers::initialize(logic, party_members),
-            Alliance::Warriors => warriors::initialize(logic, party_members),
-            Alliance::Healers => healers::initialize(logic, party_members),
-            Alliance::Vampires => vampires::initialize(logic, party_members),
-            Alliance::Exploders => exploders::initialize(logic, party_members),
-            Alliance::Splashers => splashers::initialize(logic, party_members),
-            Alliance::Chainers => chainers::initialize(logic, party_members),
-            Alliance::Charmers => charmers::initialize(logic, party_members),
-        }
+#[derive(Debug, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct AllianceEffect {
+    /// Number of heroes required to activate the effect
+    activate: usize,
+    /// Whether effects with lower requirements should be removed
+    #[serde(default)]
+    replace: bool,
+    /// Filter target units by factions
+    #[serde(default)]
+    factions: Option<Vec<Faction>>,
+    /// Filter target units by clan
+    #[serde(default)]
+    clans: Option<Vec<Alliance>>,
+    /// Statuses to apply to every target unit
+    statuses: Vec<Status>,
+}
+
+impl AllianceEffect {
+    fn apply(&self, unit: &mut Unit) {
+        todo!()
     }
 }
 
-impl Logic<'_> {
-    pub fn initialize_alliances(&mut self, config: &Config) {
-        for (alliance, count) in &config.alliances {
-            alliance.initialize(self, *count);
+impl Alliance {
+    pub fn apply_effects(&self, unit: &mut Unit, effects: &AllianceEffects, party_members: usize) {
+        let effects = effects
+            .get(self)
+            .expect(&format!("Failed to find effects for the alliance {self:?}"));
+        let effects = effects
+            .iter()
+            .filter(|effect| effect.activate <= party_members)
+            .sorted_by_key(|effect| effect.activate);
+        for effect in effects {
+            effect.apply(unit);
+            if effect.replace {
+                break;
+            }
         }
     }
 }

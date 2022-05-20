@@ -32,6 +32,7 @@ pub struct Assets {
     pub units: UnitTemplates,
     #[asset(load_with = "load_statuses(geng, &base_path)")]
     pub statuses: HashMap<StatusType, StatusRender>,
+    pub alliances: AllianceEffects,
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
@@ -172,6 +173,12 @@ impl Default for ShopConfig {
     }
 }
 
+#[derive(Clone, Deref)]
+pub struct AllianceEffects {
+    #[deref]
+    pub map: HashMap<Alliance, Vec<AllianceEffect>>,
+}
+
 impl Assets {
     pub fn get_render(&self, config: &RenderConfig) -> RenderMode {
         match config {
@@ -292,6 +299,14 @@ impl geng::LoadAsset for UnitTemplates {
             Ok(Self { map })
         }
         .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some("json");
+}
+
+impl geng::LoadAsset for AllianceEffects {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        todo!()
     }
 
     const DEFAULT_EXT: Option<&'static str> = Some("json");

@@ -63,12 +63,18 @@ pub struct Model {
     pub wave_delay: Time,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
+    pub alliance_effects: AllianceEffects,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
     pub transition: bool,
 }
 
 impl Model {
-    pub fn new(config: Config, unit_templates: UnitTemplates, round: GameRound) -> Self {
+    pub fn new(
+        config: Config,
+        unit_templates: UnitTemplates,
+        alliance_effects: AllianceEffects,
+        round: GameRound,
+    ) -> Self {
         Self {
             next_id: 0,
             time: Time::ZERO,
@@ -82,6 +88,7 @@ impl Model {
             wave_delay: Time::ZERO,
             free_revives: 0,
             unit_templates,
+            alliance_effects,
             delayed_effects: default(),
             transition: false,
             round,
