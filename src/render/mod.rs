@@ -75,18 +75,6 @@ impl Render {
 
             let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
             self.draw_unit(unit, template, model, game_time, framebuffer);
-            // self.geng.draw_2d(
-            //     framebuffer,
-            //     &self.camera,
-            //     &draw_2d::Quad::unit(Color::GREEN).transform(
-            //         Mat3::translate(unit.position.map(|x| x.as_f32()))
-            //             * Mat3::scale_uniform(unit.radius.as_f32())
-            //             * Mat3::translate(vec2(0.0, 1.2))
-            //             * Mat3::scale(
-            //                 0.1 * vec2(10.0 * unit.health.as_f32() / unit.max_hp.as_f32(), 1.0),
-            //             ),
-            //     ),
-            // );
         }
         for projectile in &model.projectiles {
             let render = self.assets.get_render(&projectile.render_config); // TODO: move this into to an earlier phase perhaps
