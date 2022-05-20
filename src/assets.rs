@@ -253,8 +253,6 @@ impl geng::LoadAsset for UnitTemplates {
                     .context(format!("Failed to load common.glsl from {:?}", common_path))?,
             );
 
-            Effects::load(&geng, &static_path().join("effects.json")).await?;
-
             let json = <String as geng::LoadAsset>::load(&geng, &path)
                 .await
                 .context(format!("Failed to load unit json from {:?}", path))?;
@@ -306,10 +304,38 @@ impl geng::LoadAsset for UnitTemplates {
 
 impl geng::LoadAsset for AllianceEffects {
     fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
-        todo!()
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let base_path = path.parent().unwrap().join("alliances");
+            let path = base_path.join("_list.json");
+            let json = <String as geng::LoadAsset>::load(&geng, &path)
+                .await
+                .context(format!(
+                    "Failed to load list of alliance effects from {path:?}"
+                ))?;
+            let paths: HashMap<Alliance, std::path::PathBuf> = serde_json::from_str(&json)
+                .context(format!(
+                    "Failed to parse list of alliance effects from {path:?}"
+                ))?;
+            let mut map = HashMap::new();
+            for (alliance, path) in paths {
+                let path = base_path.join(path);
+                let json = <String as geng::LoadAsset>::load(&geng, &path)
+                    .await
+                    .context(format!(
+                        "Failed to load alliance ({alliance:?}) effects from {path:?}"
+                    ))?;
+                let effects: Vec<AllianceEffect> = serde_json::from_str(&json)
+                    .context(format!("Failed to parse alliance effects from {path:?}"))?;
+                map.insert(alliance, effects);
+            }
+            Ok(Self { map })
+        }
+        .boxed_local()
     }
 
-    const DEFAULT_EXT: Option<&'static str> = Some("json");
+    const DEFAULT_EXT: Option<&'static str> = None;
 }
 
 impl geng::LoadAsset for Shaders {
@@ -389,7 +415,7 @@ impl geng::LoadAsset for Textures {
 }
 
 impl Effects {
-    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<()> {
+    pub fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<()> {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {

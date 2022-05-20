@@ -50,7 +50,12 @@ impl Game {
         shop: Shop,
         round: GameRound,
     ) -> Self {
-        let mut model = Model::new(config.clone(), assets.units.clone(), assets.alliances.clone(), round);
+        let mut model = Model::new(
+            config.clone(),
+            assets.units.clone(),
+            assets.alliances.clone(),
+            round,
+        );
         Logic::initialize(&mut model, &config);
         let mut game = Self {
             geng: geng.clone(),
@@ -190,6 +195,10 @@ fn main() {
             {
                 let geng = geng.clone();
                 async move {
+                    let path = static_path().join("effects.json");
+                    Effects::load(&geng, &path)
+                        .await
+                        .expect(&format!("Failed to load effects from {path:?}"));
                     let assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
                         .await
                         .expect("Failed to load assets");

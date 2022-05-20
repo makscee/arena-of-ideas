@@ -1,0 +1,26 @@
+[
+    {
+        "activate": 4,
+        "replace": true,
+        "factions": [
+            "Player",
+            "Enemy"
+        ],
+        "clans": [
+            "Freezers"
+        ],
+        "statuses": [
+            {
+                "type": "OnTakeDamage",
+                "effect": {
+                    "type": "AOE",
+                    "filter": "Enemies",
+                    "range": 2,
+                    "effect": {
+                        "preset": "effects/attach_status/freeze.json"
+                    }
+                }
+            }
+        ]
+    }
+]
