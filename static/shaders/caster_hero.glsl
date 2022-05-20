@@ -20,7 +20,7 @@ in vec2 v_quad_pos;
 
 vec4 renderRing(float rad, float h)
 {
-    float radRotated = rad - pi / float(u_alliance_count) + pi * 2;
+    float radRotated = rad - pi / float(u_clan_count) + pi * 2;
     radRotated -= floor(radRotated / pi / 2) * pi * 2;
     float t = radRotated / pi / 2.;
 
