@@ -50,8 +50,29 @@ pub struct AllianceEffect {
 }
 
 impl AllianceEffect {
+    /// Checks the filters (factions and clans) and applies the
+    /// effects if the constraints are met.
     fn apply(&self, unit: &mut Unit) {
-        todo!()
+        if !self
+            .factions
+            .as_ref()
+            .map(|factions| factions.contains(&unit.faction))
+            .unwrap_or(true)
+            || !self
+                .clans
+                .as_ref()
+                .map(|clans| clans.iter().any(|clan| unit.alliances.contains(clan)))
+                .unwrap_or(true)
+        {
+            return;
+        }
+        unit.attached_statuses
+            .extend(self.statuses.iter().map(|status| AttachedStatus {
+                status: status.clone(),
+                caster: None,
+                time: None,
+                duration: None,
+            }));
     }
 }
 
