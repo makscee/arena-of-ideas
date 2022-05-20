@@ -57,9 +57,13 @@ impl AllianceEffect {
 
 impl Alliance {
     pub fn apply_effects(&self, unit: &mut Unit, effects: &AllianceEffects, party_members: usize) {
-        let effects = effects
-            .get(self)
-            .expect(&format!("Failed to find effects for the alliance {self:?}"));
+        let effects = match effects.get(self) {
+            Some(effects) => effects,
+            None => {
+                error!("Failed to find effects for the alliance {self:?}");
+                return;
+            }
+        };
         let effects = effects
             .iter()
             .filter(|effect| effect.activate <= party_members)
