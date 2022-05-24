@@ -8,5 +8,7 @@
 	"effects/attach_status/invulnerability.json",
 	"effects/attach_status/stun.json",
 	"effects/attach_status/charmed.json",
-	"effects/attach_status/bleed.json"
+	"effects/attach_status/bleed.json",
+	"effects/dd_bonus_shot.json",
+	"effects/bonus_shot_projectile.json"
 ]

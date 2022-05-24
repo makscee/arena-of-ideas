@@ -52,11 +52,21 @@
             }
         }
     },
+    "statuses": [
+        {
+            "type": "OnDealDamage",
+            "damage_type": "BonusShot",
+            "effect": 
+            {
+                "preset": "effects/attach_status/freeze.json"
+            }
+        }
+    ],
     "clans": [
         "Freezers",
         "Archers"
     ],
     "move_ai": "Stay",
     "target_ai": "Closest",
-    "base": "ranged"
+    "base": "ranged+"
 }

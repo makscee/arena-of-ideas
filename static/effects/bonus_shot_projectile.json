@@ -2,7 +2,7 @@
     "type": "Projectile",
     "speed": 8,
     "effect": {
-        "preset": "effects/dd_ranged.json"
+        "preset": "effects/dd_bonus_shot.json"
     },
     "render": {
         "type": "Shader",
@@ -15,9 +15,9 @@
             "p_radius_end": -0.3,
             "p_glow_radius": 0.6,
             "p_speed": 2.5,
-            "u_clan_color_1": "#dc143c",
-            "u_clan_color_2": "#8a2be2",
-            "u_clan_color_3": "#1e90ff"
+            "u_clan_color_1": "#009C69",
+            "u_clan_color_2": "#66FFCC",
+            "u_clan_color_3": "#108040"
         }
     }
 }

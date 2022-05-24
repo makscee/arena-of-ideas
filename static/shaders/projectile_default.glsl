@@ -88,9 +88,7 @@ void main() {
         gl_FragColor = vec4(0);
         return;
     }
-    colors[0] = vec3(0.862, 0.078, 0.235);
-    colors[1] = vec3(0.541, 0.168, 0.886);
-    colors[2] = vec3(0.117, 0.564, 1);
+    commonInit();
 
     vec4 col = vec4(0);
     for (int i = 0; i < p_count; i++)

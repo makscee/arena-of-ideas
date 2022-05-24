@@ -1,11 +1,11 @@
 {
-    "health": 5,
-    "speed": 0.5,
+    "health": 25,
+    "speed": 0.3,
     "radius": 0.8,
     "action": {
         "range": 0.5,
         "animation_delay": 0.5,
-        "cooldown": 1.25,
+        "cooldown": 3.5,
         "effect": {
             "type": "Damage",
             "value": {
@@ -14,37 +14,6 @@
             }
         }
     },
-    "statuses": [
-        {
-            "type": "OnDeath",
-            "effect":{
-                "type": "List",
-                "effects": [{
-                    "type": "Repeat",
-                    "times": 3,
-                    "effect": {
-                        "type": "Spawn",
-                        "unit_type": "small_blob"
-                    }
-                },
-                {
-                    "type": "Visual",
-                    "duration": 1.0,
-                    "parent": "Caster",
-                    "follow": false,
-                    "radius": 2.0,
-                    "render": {
-                        "type": "Shader",
-                        "path": "shaders/vfx_explosion.glsl",
-                        "parameters": {
-                            "color": "#dc143c"
-                        }
-                    }
-                }
-            ]
-            }
-        }
-    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
