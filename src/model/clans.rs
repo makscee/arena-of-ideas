@@ -18,6 +18,10 @@ pub enum Clan {
     Charmers,
 }
 
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
+struct ClanEffectFilter(Option<HashMap<Faction, Option<Vec<Clan>>>>);
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ClanEffect {
@@ -26,31 +30,33 @@ pub struct ClanEffect {
     /// Whether effects with lower requirements should be removed
     #[serde(default)]
     replace: bool,
-    /// Filter target units by factions
+    /// Filter target units by factions and alliances
     #[serde(default)]
-    factions: Option<Vec<Faction>>,
-    /// Filter target units by clan
-    #[serde(default)]
-    clans: Option<Vec<Clan>>,
+    filter: ClanEffectFilter,
     /// Statuses to apply to every target unit
     statuses: Vec<Status>,
+}
+
+impl ClanEffectFilter {
+    /// Checks whether the unit satisfies the filter conditions
+    fn check(&self, unit: &Unit) -> bool {
+        let filter = match &self.0 {
+            None => return true,
+            Some(filter) => filter,
+        };
+        match filter.get(&unit.faction) {
+            None => false,
+            Some(None) => true,
+            Some(Some(clans)) => clans.iter().any(|clan| unit.clans.contains(clan)),
+        }
+    }
 }
 
 impl ClanEffect {
     /// Checks the filters (factions and clans) and applies the
     /// effects if the constraints are met.
     fn apply(&self, unit: &mut Unit) {
-        if !self
-            .factions
-            .as_ref()
-            .map(|factions| factions.contains(&unit.faction))
-            .unwrap_or(true)
-            || !self
-                .clans
-                .as_ref()
-                .map(|clans| clans.iter().any(|clan| unit.clans.contains(clan)))
-                .unwrap_or(true)
-        {
+        if !self.filter.check(unit) {
             return;
         }
         unit.attached_statuses

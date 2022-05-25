@@ -1,9 +1,9 @@
 [
     {
         "activate": 2,
-        "factions": [
-            "Enemy"
-        ],
+        "filter": {
+            "Enemy": null
+        },
         "statuses": [
             {
                 "type": "SelfDetect",
@@ -16,12 +16,12 @@
     },
     {
         "activate": 4,
-        "factions": [
-            "Player"
-        ],
-        "clans": [
-            "Freezers"
-        ],
+        "filter": {
+            "Player": [
+                "Freezers"
+            ],
+            "Enemy": null
+        },
         "statuses": [
             {
                 "type": "OnTakeDamage",
