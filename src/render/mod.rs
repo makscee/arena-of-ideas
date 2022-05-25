@@ -474,12 +474,10 @@ impl UnitRender {
                 let status_count = statuses.len();
                 for (
                     status_index,
-                    
                         StatusRender {
                             shader: program,
                             parameters,
                         },
-                    
                 ) in statuses.into_iter().enumerate()
                 {
                     let mut new_texture =

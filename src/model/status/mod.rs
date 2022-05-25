@@ -4,6 +4,7 @@ mod attack_speed;
 mod aura;
 mod charmed;
 mod detect;
+mod self_detect;
 mod freeze;
 mod gained_effect;
 mod invulnerability;
@@ -28,6 +29,7 @@ pub use attack_speed::*;
 pub use aura::*;
 pub use charmed::*;
 pub use detect::*;
+pub use self_detect::*;
 pub use freeze::*;
 pub use gained_effect::*;
 pub use invulnerability::*;
@@ -60,6 +62,7 @@ pub enum StatusType {
     Aura,
     Protection,
     Detect,
+    SelfDetect,
     Taunt,
     OnDeath,
     OnSpawn,
@@ -88,6 +91,7 @@ pub enum Status {
     Aura(Box<AuraStatus>),
     Protection(Box<ProtectionStatus>),
     Detect(Box<DetectStatus>),
+    SelfDetect(Box<SelfDetectStatus>),
     Taunt(Box<TauntStatus>),
     OnDeath(Box<OnDeathStatus>),
     OnSpawn(Box<OnSpawnStatus>),
@@ -127,6 +131,7 @@ impl Status {
             Self::Aura(status) => &mut **status,
             Self::Protection(status) => &mut **status,
             Self::Detect(status) => &mut **status,
+            Self::SelfDetect(status) => &mut **status,
             Self::Taunt(status) => &mut **status,
             Self::OnDeath(status) => &mut **status,
             Self::OnSpawn(status) => &mut **status,
@@ -154,6 +159,7 @@ impl Status {
             Self::Aura(status) => status,
             Self::Protection(status) => status,
             Self::Detect(status) => status,
+            Self::SelfDetect(status) => status,
             Self::Taunt(status) => status,
             Self::OnDeath(status) => status,
             Self::OnSpawn(status) => status,
@@ -181,6 +187,7 @@ impl Status {
             Self::Aura(status) => StatusType::Aura,
             Self::Protection(status) => StatusType::Protection,
             Self::Detect(status) => StatusType::Detect,
+            Self::SelfDetect(status) => StatusType::SelfDetect,
             Self::Taunt(status) => StatusType::Taunt,
             Self::OnDeath(status) => StatusType::OnDeath,
             Self::OnSpawn(status) => StatusType::OnSpawn,

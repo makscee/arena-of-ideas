@@ -1,11 +1,9 @@
 {
     "type": "List",
-    "effects":
-    [
+    "effects": [
         {
             "type": "AttachStatus",
-            "status":
-            {
+            "status": {
                 "type": "Shield"
             }
         },
@@ -15,12 +13,10 @@
             "parent": "Target",
             "follow": true,
             "radius": 2,
-            "render":
-            {
+            "render": {
                 "type": "Shader",
                 "path": "shaders/vfx_particle_spin.glsl",
-                "parameters":
-                {
+                "parameters": {
                     "p_startColor": "#ffd700",
                     "p_endColor": "#d8bfd8",
                     "p_count": 25,

@@ -2,6 +2,21 @@
     {
         "activate": 2,
         "factions": [
+            "Enemy"
+        ],
+        "statuses": [
+            {
+                "type": "SelfDetect",
+                "detect_type": "Freeze",
+                "effect": {
+                    "preset": "effects/attach_status/vulnerability.json"
+                }
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "factions": [
             "Player"
         ],
         "clans": [
