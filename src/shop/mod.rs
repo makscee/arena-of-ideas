@@ -378,6 +378,7 @@ impl Shop {
                 if options.is_empty() {
                     self.cards.shop = vec![];
                     error!("No units are available to roll");
+                    return;
                 }
                 self.cards.shop = (0..units)
                     .map(|_| options.choose(&mut rng).unwrap().clone())

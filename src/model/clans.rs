@@ -74,7 +74,7 @@ impl Clan {
         let effects = match effects.get(self) {
             Some(effects) => effects,
             None => {
-                error!("Failed to find effects for the alliance {self:?}");
+                error!("Failed to find effects for the clan {self:?}");
                 return;
             }
         };
@@ -82,7 +82,7 @@ impl Clan {
             .iter()
             .filter(|effect| effect.activate <= party_members)
             .sorted_by_key(|effect| effect.activate);
-        for effect in effects {
+        for effect in effects.rev() {
             effect.apply(unit);
             if effect.replace {
                 break;
