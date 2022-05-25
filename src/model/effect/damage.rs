@@ -107,7 +107,10 @@ impl EffectImpl for DamageEffect {
                 } {
                     logic.effects.push_front(QueuedEffect {
                         effect: status.effect.clone(),
-                        context: context.clone(),
+                        context: EffectContext {
+                            caster: Some(target_unit.id),
+                            ..context.clone()
+                        },
                     });
                 }
             }
@@ -129,7 +132,11 @@ impl EffectImpl for DamageEffect {
         let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
         if let Some(render) = &mut logic.render {
             let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
-            render.add_text(target_unit.position, &format!("{}", -damage_text), Color::RED);
+            render.add_text(
+                target_unit.position,
+                &format!("{}", -damage_text),
+                Color::RED,
+            );
         }
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 

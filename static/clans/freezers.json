@@ -19,15 +19,14 @@
         "filter": {
             "Player": [
                 "Freezers"
-            ],
-            "Enemy": null
+            ]
         },
         "statuses": [
             {
                 "type": "OnTakeDamage",
                 "effect": {
                     "type": "AOE",
-                    "filter": "Allies",
+                    "filter": "Enemies",
                     "range": 2,
                     "effect": {
                         "preset": "effects/attach_status/freeze.json"
