@@ -459,13 +459,13 @@ impl UnitRender {
                     );
                 }
 
-                let mut statuses: std::collections::BTreeMap<StatusType, &StatusRender> = unit
+                let mut statuses: std::vec::Vec<&StatusRender> = unit
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
                         let status_type = status.r#type();
                         if let Some(program) = self.assets.statuses.get(&status_type) {
-                            Some((status_type, program))
+                            Some(program)
                         } else {
                             None
                         }
@@ -474,13 +474,12 @@ impl UnitRender {
                 let status_count = statuses.len();
                 for (
                     status_index,
-                    (
-                        _status_type,
+                    
                         StatusRender {
                             shader: program,
                             parameters,
                         },
-                    ),
+                    
                 ) in statuses.into_iter().enumerate()
                 {
                     let mut new_texture =

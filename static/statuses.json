@@ -22,5 +22,11 @@
         "parameters": {
             "u_status_color": "#ff1493"
         }
+    },
+    "Vulnerability": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#800002"
+        }
     }
 }

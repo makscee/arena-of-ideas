@@ -19,6 +19,7 @@ mod protection;
 mod repeating_effect;
 mod scavenge;
 mod shield;
+mod vulnerability;
 mod slow;
 mod stun;
 mod taunt;
@@ -42,6 +43,7 @@ pub use protection::*;
 pub use repeating_effect::*;
 pub use scavenge::*;
 pub use shield::*;
+pub use vulnerability::*;
 pub use slow::*;
 pub use stun::*;
 pub use taunt::*;
@@ -51,6 +53,7 @@ pub enum StatusType {
     Freeze,
     Stun,
     Shield,
+    Vulnerability,
     Invulnerability,
     Slow,
     Modifier,
@@ -78,6 +81,7 @@ pub enum Status {
     Freeze(Box<FreezeStatus>),
     Stun(Box<StunStatus>),
     Shield(Box<ShieldStatus>),
+    Vulnerability(Box<VulnerabilityStatus>),
     Invulnerability(Box<InvulnerabilityStatus>),
     Slow(Box<SlowStatus>),
     Modifier(Box<ModifierStatus>),
@@ -116,6 +120,7 @@ impl Status {
             Self::Freeze(status) => &mut **status,
             Self::Stun(status) => &mut **status,
             Self::Shield(status) => &mut **status,
+            Self::Vulnerability(status) => &mut **status,
             Self::Invulnerability(status) => &mut **status,
             Self::Slow(status) => &mut **status,
             Self::Modifier(status) => &mut **status,
@@ -142,6 +147,7 @@ impl Status {
             Self::Freeze(status) => status,
             Self::Stun(status) => status,
             Self::Shield(status) => status,
+            Self::Vulnerability(status) => status,
             Self::Invulnerability(status) => status,
             Self::Slow(status) => status,
             Self::Modifier(status) => status,
@@ -168,6 +174,7 @@ impl Status {
             Self::Freeze(status) => StatusType::Freeze,
             Self::Stun(status) => StatusType::Stun,
             Self::Shield(status) => StatusType::Shield,
+            Self::Vulnerability(status) => StatusType::Vulnerability,
             Self::Invulnerability(status) => StatusType::Invulnerability,
             Self::Slow(status) => StatusType::Slow,
             Self::Modifier(status) => StatusType::Modifier,

@@ -84,6 +84,17 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
+        // Vulnerability
+        if let Some(index) = target_unit
+            .attached_statuses
+            .iter()
+            .position(|status| status.status.r#type() == StatusType::Vulnerability)
+        {
+            
+            damage *= r32(2.0);
+            target_unit.attached_statuses.remove(index);
+        }
+
         // Freeze
         target_unit
             .attached_statuses
