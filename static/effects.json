@@ -1,7 +1,9 @@
 [
+	"effects/melee_hit_vfx.json",
+	"effects/ranged_hit_vfx.json",
+	"effects/crit_hit_vfx.json",
 	"effects/dd_ranged.json",
 	"effects/projectile_dd_ranged.json",
-	"effects/melee_hit_vfx.json",
 	"effects/dd_melee.json",
 	"effects/attach_status/freeze.json",
 	"effects/attach_status/shield.json",

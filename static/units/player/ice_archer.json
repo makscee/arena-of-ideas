@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "crit_chance": 70,
     "action": {
         "range": 10,
         "animation_delay": 0.75,

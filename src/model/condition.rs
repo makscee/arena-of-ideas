@@ -18,6 +18,9 @@ pub enum Condition {
     InRange {
         max_distance: Coord,
     },
+    Chance {
+        percent: Expr,
+    }
 }
 
 impl Default for Condition {

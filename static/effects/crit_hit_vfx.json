@@ -3,15 +3,15 @@
     "duration": 0.5,
     "parent": "Target",
     "follow": false,
-    "radius": 1.6,
+    "radius": 2.5,
     "render": {
         "type": "Shader",
         "path": "shaders/vfx_particle_burst.glsl",
         "parameters": {
-            "p_startColor": "#dc143c",
-            "p_endColor": "#ff4500",
-            "p_count": 7,
-            "p_startSize": 0.08
+            "p_startColor": "#FFFFFF",
+            "p_endColor": "#1e90ff",
+            "p_count": 20,
+            "p_startSize": 0.2
         }
     }
 }
