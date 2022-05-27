@@ -34,5 +34,20 @@
                 }
             }
         ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "type": "SelfDetect",
+                "detect_type": "Freeze",
+                "effect": {
+                    "preset": "effects/attach_status/stun.json"
+                }
+            }
+        ]
     }
 ]
