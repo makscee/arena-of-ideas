@@ -1,6 +1,6 @@
 {
     "health": 25,
-    "speed": 0.3,
+    "speed": 0.15,
     "radius": 0.8,
     "action": {
         "range": 0.5,
@@ -14,6 +14,8 @@
             }
         }
     },
+    "statuses": [
+    ],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {

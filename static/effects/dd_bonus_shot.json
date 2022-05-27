@@ -6,7 +6,6 @@
             "type": "Damage",
             "types":
             [
-                "Ranged",
                 "BonusShot"
             ],
             "value":
