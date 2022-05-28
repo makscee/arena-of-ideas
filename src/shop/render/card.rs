@@ -5,6 +5,7 @@ use super::*;
 // Relative to the height
 // TODO: de-hardcode
 const TOP_SPACE: f32 = 0.1;
+const FONT_SIZE: f32 = 0.08;
 const HERO_HEIGHT: f32 = 0.35;
 const DAMAGE_AABB: AABB<f32> = AABB {
     x_min: 0.02,
@@ -207,12 +208,78 @@ impl CardRender {
         .draw_2d(&self.geng, framebuffer, camera);
 
         // Description
-        draw_2d::Text::unit(
+        let font_size = FONT_SIZE * height;
+        draw_text_wrapped(
             &**self.geng.default_font(),
-            format!("TODO: Description"),
+            &card.template.description,
+            font_size,
+            description_aabb,
             Color::WHITE,
-        )
-        .fit_into(description_aabb)
-        .draw_2d(&self.geng, framebuffer, camera);
+            &self.geng,
+            framebuffer,
+            camera,
+        );
     }
+}
+
+fn draw_text_wrapped(
+    font: impl std::borrow::Borrow<geng::Font>,
+    text: impl AsRef<str>,
+    font_size: f32,
+    target: AABB<f32>,
+    color: Color<f32>,
+    geng: &Geng,
+    framebuffer: &mut ugli::Framebuffer,
+    camera: &impl geng::AbstractCamera2d,
+) -> Option<()> {
+    let max_width = target.width();
+    let font = font.borrow();
+    let text = text.as_ref();
+    let mut words = text.split_whitespace();
+    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
+    let mut pos = vec2(target.center().x, target.y_max - font_size);
+
+    let mut line = String::new();
+    let mut line_width = 0.0;
+    if let Some(word) = words.next() {
+        let width = measure(word)?.width();
+        line_width += width;
+        line += word;
+    }
+    loop {
+        while let Some(word) = words.next() {
+            let width = measure(word)?.width();
+            if line_width + width <= max_width {
+                line_width += width;
+                line += " ";
+                line += word;
+            } else {
+                font.draw(
+                    framebuffer,
+                    camera,
+                    &line,
+                    pos,
+                    geng::TextAlign::CENTER,
+                    font_size,
+                    color,
+                );
+                pos.y -= font_size;
+                line = String::new();
+                line_width = width;
+                line += word;
+                continue;
+            }
+        }
+        break;
+    }
+    font.draw(
+        framebuffer,
+        camera,
+        &line,
+        pos,
+        geng::TextAlign::CENTER,
+        font_size,
+        color,
+    );
+    Some(())
 }

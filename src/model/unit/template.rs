@@ -5,6 +5,8 @@ use super::*;
 pub struct UnitTemplate {
     /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
+    /// Description displayed on the unit card
+    pub description: String,
     /// Units `triple` set to Some get converted to that unit once three of them are bought by the player
     #[serde(default)]
     pub triple: Option<UnitType>,
@@ -40,6 +42,7 @@ impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
             tier: 0,
+            description: String::new(),
             triple: None,
             health: Health::new(1.0),
             base_damage: Health::new(1.0),
