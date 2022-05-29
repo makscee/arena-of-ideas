@@ -1,4 +1,5 @@
 {
     "Freezers": "freezers.json",
-    "Archers": "archers.json"
+    "Archers": "archers.json",
+    "Assassins": "assassins.json"
 }

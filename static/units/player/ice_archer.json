@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "triple": "ice_archer+",
     "crit_chance": 70,
     "action": {
         "range": 10,

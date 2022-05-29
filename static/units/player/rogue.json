@@ -1,0 +1,18 @@
+{
+    "tier": 1,
+    "base_damage": 0.5,
+    "clans": [
+        "Assassins"
+    ],
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.25,
+        "effect": {
+            "preset": "effects/dd_melee.json"
+        }
+    },
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

@@ -1,0 +1,18 @@
+[
+    {
+        "activate": 2,
+        "filter": {
+            "Player": [
+                "Assassins"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnSpawn",
+                "effect": {
+                    "preset": "effects/attach_status/shield.json"
+                }
+            }
+        ]
+    }
+]
