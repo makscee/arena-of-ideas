@@ -28,5 +28,11 @@
         "parameters": {
             "u_status_color": "#800002"
         }
+    },
+    "Bleed": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#FC0107"
+        }
     }
 }

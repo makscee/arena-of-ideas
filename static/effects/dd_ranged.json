@@ -44,8 +44,7 @@
                     {
                         "type": "Damage",
                         "types": [
-                            "Ranged",
-                            "Crit"
+                            "Ranged"
                         ],
                         "value": {
                             "type": "FindStat",

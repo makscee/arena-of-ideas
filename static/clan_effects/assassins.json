@@ -14,5 +14,22 @@
                 }
             }
         ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": [
+                "Assassins"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "Crit",
+                "effect": {
+                    "preset": "effects/attach_status/bleed.json"
+                }
+            }
+        ]
     }
 ]
