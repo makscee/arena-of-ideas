@@ -44,5 +44,20 @@
                 }
             }
         ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "type": "OnTakeDamage",
+                "damage_type": "Bleed",
+                "effect": {
+                    "preset": "effects/attach_status/vulnerability.json"
+                }
+            }
+        ]
     }
 ]
