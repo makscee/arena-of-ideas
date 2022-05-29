@@ -71,7 +71,7 @@ impl CardRender {
         card: Option<&UnitCard>,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
-    ) {
+    ) -> Option<Clan> {
         let camera = &geng::PixelPerfectCamera;
         let width = card_aabb.width();
         let height = card_aabb.height();
@@ -84,7 +84,7 @@ impl CardRender {
 
         let card = match card {
             Some(card) => card,
-            None => return,
+            None => return None,
         };
 
         // Hero layout
@@ -166,6 +166,7 @@ impl CardRender {
         }
 
         // Clans
+        let mut selected_clan = None;
         {
             let clans = card.template.clans.iter().sorted().collect::<Vec<_>>();
             let size = clan_aabb.height();
@@ -194,6 +195,13 @@ impl CardRender {
                 draw_2d::Text::unit(&**self.geng.default_font(), text, text_color)
                     .fit_into(AABB::point(position).extend_uniform(size / 2.0 / 2.0.sqrt()))
                     .draw_2d(&self.geng, framebuffer, camera);
+                let mouse_pos = self.geng.window().mouse_pos().map(|x| x as f32);
+                if AABB::point(position)
+                    .extend_uniform(size / 2.0)
+                    .contains(mouse_pos)
+                {
+                    selected_clan = Some(*clan);
+                }
                 position.x += size;
             }
         }
@@ -219,67 +227,7 @@ impl CardRender {
             framebuffer,
             camera,
         );
-    }
-}
 
-fn draw_text_wrapped(
-    font: impl std::borrow::Borrow<geng::Font>,
-    text: impl AsRef<str>,
-    font_size: f32,
-    target: AABB<f32>,
-    color: Color<f32>,
-    geng: &Geng,
-    framebuffer: &mut ugli::Framebuffer,
-    camera: &impl geng::AbstractCamera2d,
-) -> Option<()> {
-    let max_width = target.width();
-    let font = font.borrow();
-    let text = text.as_ref();
-    let mut words = text.split_whitespace();
-    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
-    let mut pos = vec2(target.center().x, target.y_max - font_size);
-
-    let mut line = String::new();
-    let mut line_width = 0.0;
-    if let Some(word) = words.next() {
-        let width = measure(word)?.width();
-        line_width += width;
-        line += word;
+        selected_clan
     }
-    loop {
-        while let Some(word) = words.next() {
-            let width = measure(word)?.width();
-            if line_width + width <= max_width {
-                line_width += width;
-                line += " ";
-                line += word;
-            } else {
-                font.draw(
-                    framebuffer,
-                    camera,
-                    &line,
-                    pos,
-                    geng::TextAlign::CENTER,
-                    font_size,
-                    color,
-                );
-                pos.y -= font_size;
-                line = String::new();
-                line_width = width;
-                line += word;
-                continue;
-            }
-        }
-        break;
-    }
-    font.draw(
-        framebuffer,
-        camera,
-        &line,
-        pos,
-        geng::TextAlign::CENTER,
-        font_size,
-        color,
-    );
-    Some(())
 }

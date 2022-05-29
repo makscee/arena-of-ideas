@@ -154,6 +154,7 @@ pub struct ShopRenderConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ClanRenderConfig {
+    pub description: String,
     pub rows: usize,
     pub columns: usize,
 }
