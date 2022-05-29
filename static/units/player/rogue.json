@@ -1,7 +1,6 @@
 {
     "tier": 1,
     "base_damage": 0.5,
-    "crit_chance": 25,
     "clans": [
         "Assassins"
     ],
