@@ -305,7 +305,7 @@ impl geng::LoadAsset for ClanEffects {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
-            let base_path = path.parent().unwrap().join("clans");
+            let base_path = path.parent().unwrap().join("clan_effects");
             let path = base_path.join("_list.json");
             let json = <String as geng::LoadAsset>::load(&geng, &path)
                 .await
