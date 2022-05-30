@@ -77,6 +77,7 @@ pub enum StatusType {
     RepeatingEffect,
     Charmed,
     Bleed,
+    Plague,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -107,6 +108,7 @@ pub enum Status {
     RepeatingEffect(Box<RepeatingEffectStatus>),
     Charmed(Box<CharmedStatus>),
     Bleed(Box<RepeatingEffectStatus>),
+    Plague(Box<RepeatingEffectStatus>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -148,6 +150,7 @@ impl Status {
             Self::RepeatingEffect(status) => &mut **status,
             Self::Charmed(status) => &mut **status,
             Self::Bleed(status) => &mut **status,
+            Self::Plague(status) => &mut **status,
         }
     }
     pub fn as_box(self) -> Box<dyn StatusImpl> {
@@ -177,6 +180,7 @@ impl Status {
             Self::RepeatingEffect(status) => status,
             Self::Charmed(status) => status,
             Self::Bleed(status) => status,
+            Self::Plague(status) => status,
         }
     }
     pub fn r#type(&self) -> StatusType {
@@ -206,6 +210,7 @@ impl Status {
             Self::RepeatingEffect(status) => StatusType::RepeatingEffect,
             Self::Charmed(status) => StatusType::Charmed,
             Self::Bleed(status) => StatusType::Bleed,
+            Self::Plague(status) => StatusType::Plague,
         }
     }
     pub fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {

@@ -28,6 +28,7 @@ mod splash;
 mod suicide;
 mod time_bomb;
 mod visual;
+mod add_var;
 
 pub use action::*;
 pub use add_targets::*;
@@ -57,6 +58,7 @@ pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 pub use visual::*;
+pub use add_var::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]
@@ -89,6 +91,7 @@ pub enum Effect {
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
+    AddVar(Box<AddVarEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -122,6 +125,7 @@ pub enum RawEffect {
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
+    AddVar(Box<AddVarEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -184,6 +188,7 @@ impl std::fmt::Debug for Effect {
             Self::Splash(effect) => effect.fmt(f),
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
+            Self::AddVar(effect) => effect.fmt(f),
         }
     }
 }
@@ -219,6 +224,7 @@ impl From<RawEffect> for Effect {
             RawEffect::Splash(effect) => Self::Splash(effect),
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
+            RawEffect::AddVar(effect) => Self::AddVar(effect),
         }
     }
 }
@@ -286,6 +292,7 @@ impl Effect {
             Effect::Splash(effect) => &mut **effect,
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
+            Effect::AddVar(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -318,6 +325,7 @@ impl Effect {
             Effect::Splash(effect) => effect,
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
+            Effect::AddVar(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

@@ -34,5 +34,11 @@
         "parameters": {
             "u_status_color": "#FC0107"
         }
+    },
+    "Plague": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#408002"
+        }
     }
 }

@@ -16,8 +16,14 @@ impl EffectImpl for ChangeStatEffect {
         let value = effect.value.calculate(&context, logic);
         let target = context
             .target
-            .and_then(|id| logic.model.units.get_mut(&id))
-            .expect("target not found");
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get_mut(&id)
+                    .or(logic.model.spawning_units.get_mut(&id))
+            })
+            .expect("Target not found");
         *target.stat_mut(effect.stat) = value;
     }
 }
