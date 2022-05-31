@@ -17,6 +17,7 @@ pub enum Clan {
     Chainers,
     Charmers,
     PlagueSpreaders,
+    Skeletons,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

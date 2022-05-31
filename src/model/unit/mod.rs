@@ -62,6 +62,7 @@ pub enum UnitStat {
     Radius,
     BaseDamage,
     CritChance,
+    Speed,
 }
 
 impl Unit {
@@ -115,6 +116,7 @@ impl Unit {
             UnitStat::Radius => self.radius,
             UnitStat::BaseDamage => self.base_damage,
             UnitStat::CritChance => self.crit_chance,
+            UnitStat::Speed => self.speed,
         }
     }
     pub fn stat_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -123,6 +125,7 @@ impl Unit {
             UnitStat::Radius => &mut self.radius,
             UnitStat::BaseDamage => &mut self.base_damage,
             UnitStat::CritChance => &mut self.crit_chance,
+            UnitStat::Speed => &mut self.speed,
         }
     }
 }

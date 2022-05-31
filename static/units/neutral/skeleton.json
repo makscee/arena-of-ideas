@@ -11,15 +11,11 @@
             "preset": "effects/dd_melee.json"
         }
     },
+    "clans": ["Skeletons"],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",
-        "path": "shaders/caster_hero.glsl",
-        "parameters": {
-            "u_clan_color_1": "#E6E6E6",
-            "u_clan_color_2": "#999999",
-            "u_clan_count": 2
-        }
+        "path": "shaders/caster_hero.glsl"
     }
 }

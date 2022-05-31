@@ -1,0 +1,112 @@
+[
+    {
+        "activate": 2,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "type": "OnTakeDamage",
+                "damage_type": "Plague",
+                "effect": {
+                    "type": "Heal",
+                    "value": {
+                        "type": "Const",
+                        "value": 0.5
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": [
+                "Skeletons"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "Melee",
+                "effect": {
+                    "preset": "effects/attach_status/plague.json"
+                }
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Player": [
+                "Skeletons"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnSpawn",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeStat",
+                            "stat": "BaseDamage",
+                            "value": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "FindStat",
+                                    "stat": "BaseDamage",
+                                    "who": "Target"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 2
+                                }
+                            }
+                        },
+                        {
+                            "type": "ChangeStat",
+                            "stat": "MaxHealth",
+                            "value": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "FindStat",
+                                    "stat": "MaxHealth",
+                                    "who": "Target"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 2
+                                }
+                            }
+                        },
+                        {
+                            "type": "ChangeStat",
+                            "stat": "Speed",
+                            "value": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "FindStat",
+                                    "stat": "Speed",
+                                    "who": "Target"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 2
+                                }
+                            }
+                        },
+                        {
+                            "type": "Heal",
+                            "value": {
+                                "type": "Const",
+                                "value": 100500
+                            },
+                            "no_text": true
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+]
