@@ -33,7 +33,27 @@
                     "effect": {
                         "type": "Spawn",
                         "unit_type": "skeleton",
-                        "switch_faction": true
+                        "switch_faction": true,
+                        "after_effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "ChangeStat",
+                                    "stat": "MaxHealth",
+                                    "value": {
+                                        "type": "Var",
+                                        "name": "SpawnHealth"
+                                    }
+                                },
+                                {
+                                    "type": "Heal",
+                                    "value": {
+                                        "type": "Var",
+                                        "name": "SpawnHealth"
+                                    }
+                                }
+                            ]
+                        }
                     }
                 }
             }

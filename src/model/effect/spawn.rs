@@ -5,6 +5,8 @@ pub struct SpawnEffect {
     pub unit_type: UnitType,
     #[serde(default)]
     pub switch_faction: bool,
+    #[serde(default)]
+    pub after_effect: Effect,
 }
 
 impl EffectContainer for SpawnEffect {
@@ -44,30 +46,14 @@ impl EffectImpl for SpawnEffect {
             .expect("Target not found");
         let position = target.position;
         let new_id = logic.spawn_unit(&effect.unit_type, faction, position);
-        if context.vars.contains_key(&VarName::SpawnHealth) {
-            logic.effects.push_back(QueuedEffect {
-                effect: Effect::List(Box::new(ListEffect {
-                    effects: vec![
-                        Effect::ChangeStat(Box::new(ChangeStatEffect {
-                            stat: UnitStat::MaxHealth,
-                            value: Expr::Var {
-                                name: VarName::SpawnHealth,
-                            },
-                        })),
-                        Effect::Heal(Box::new(HealEffect {
-                            value: Expr::Var {
-                                name: VarName::SpawnHealth,
-                            },
-                            heal_past_max: default(),
-                            add_max_hp: default(),
-                        })),
-                    ],
-                })),
-                context: EffectContext {
-                    target: Some(new_id),
-                    ..context.clone()
-                },
-            });
-        }
+
+        logic.effects.push_back(QueuedEffect {
+            effect: effect.after_effect.clone(),
+            context: {
+                let mut context = context.clone();
+                context.target = Some(new_id);
+                context
+            },
+        })
     }
 }
