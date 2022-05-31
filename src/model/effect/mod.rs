@@ -142,15 +142,6 @@ enum EffectConfig {
     Preset(EffectPreset),
 }
 
-impl EffectConfig {
-    pub fn into_effect(self, presets: &Effects) -> Effect {
-        match self {
-            Self::Effect(effect) => effect.into(),
-            Self::Preset(preset) => preset.into_effect(presets),
-        }
-    }
-}
-
 impl Default for EffectConfig {
     fn default() -> Self {
         Self::Effect(RawEffect::default())
@@ -338,24 +329,29 @@ impl From<EffectConfig> for Effect {
     fn from(config: EffectConfig) -> Self {
         match config {
             EffectConfig::Effect(effect) => effect.into(),
-            EffectConfig::Preset(preset) => {
-                let presets = EFFECT_PRESETS.lock().unwrap();
-                preset.into_effect(&*presets)
-            }
+            EffectConfig::Preset(preset) => preset.into(),
         }
     }
 }
 
-impl EffectPreset {
-    fn into_effect(mut self, presets: &Effects) -> Effect {
-        let preset = presets
-            .get(&self.preset)
-            .expect(&format!("Failed to find a preset effect: {}", self.preset));
-        let mut preset_json = serde_json::to_value(preset).unwrap();
+impl From<EffectPreset> for Effect {
+    fn from(mut effect: EffectPreset) -> Self {
+        let mut preset_json = {
+            // Acquire the lock and drop it early to prevent deadlock
+            let presets = EFFECT_PRESETS.lock().unwrap();
+            let preset = presets.get(&effect.preset).expect(&format!(
+                "Failed to find a preset effect: {}",
+                effect.preset
+            ));
+            serde_json::to_value(preset).unwrap()
+        };
         preset_json
             .as_object_mut()
             .unwrap()
-            .append(&mut self.overrides);
-        serde_json::from_value(preset_json).expect("Failed to override fields of the preset")
+            .append(&mut effect.overrides);
+        // Caution: be ware of a deadlock possibility, as Effect parser uses EFFECT_PRESETS
+        let effect: RawEffect =
+            serde_json::from_value(preset_json).expect("Failed to override fields of the preset");
+        effect.into()
     }
 }
