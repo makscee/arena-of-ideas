@@ -4,7 +4,6 @@ mod attack_speed;
 mod aura;
 mod charmed;
 mod detect;
-mod self_detect;
 mod freeze;
 mod gained_effect;
 mod invulnerability;
@@ -19,17 +18,17 @@ mod on_take_damage;
 mod protection;
 mod repeating_effect;
 mod scavenge;
+mod self_detect;
 mod shield;
-mod vulnerability;
 mod slow;
 mod stun;
 mod taunt;
+mod vulnerability;
 
 pub use attack_speed::*;
 pub use aura::*;
 pub use charmed::*;
 pub use detect::*;
-pub use self_detect::*;
 pub use freeze::*;
 pub use gained_effect::*;
 pub use invulnerability::*;
@@ -44,11 +43,12 @@ pub use on_take_damage::*;
 pub use protection::*;
 pub use repeating_effect::*;
 pub use scavenge::*;
+pub use self_detect::*;
 pub use shield::*;
-pub use vulnerability::*;
 pub use slow::*;
 pub use stun::*;
 pub use taunt::*;
+pub use vulnerability::*;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum StatusType {
@@ -78,6 +78,7 @@ pub enum StatusType {
     Charmed,
     Bleed,
     Plague,
+    SiphonLife,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -109,6 +110,7 @@ pub enum Status {
     Charmed(Box<CharmedStatus>),
     Bleed(Box<RepeatingEffectStatus>),
     Plague(Box<RepeatingEffectStatus>),
+    SiphonLife(Box<RepeatingEffectStatus>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -151,6 +153,7 @@ impl Status {
             Self::Charmed(status) => &mut **status,
             Self::Bleed(status) => &mut **status,
             Self::Plague(status) => &mut **status,
+            Self::SiphonLife(status) => &mut **status,
         }
     }
     pub fn as_box(self) -> Box<dyn StatusImpl> {
@@ -181,6 +184,7 @@ impl Status {
             Self::Charmed(status) => status,
             Self::Bleed(status) => status,
             Self::Plague(status) => status,
+            Self::SiphonLife(status) => status,
         }
     }
     pub fn r#type(&self) -> StatusType {
@@ -211,6 +215,7 @@ impl Status {
             Self::Charmed(status) => StatusType::Charmed,
             Self::Bleed(status) => StatusType::Bleed,
             Self::Plague(status) => StatusType::Plague,
+            Self::SiphonLife(status) => StatusType::SiphonLife,
         }
     }
     pub fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {

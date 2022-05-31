@@ -43,8 +43,6 @@ impl EffectImpl for HealEffect {
 
         target_unit.max_hp += add_max_hp;
         let max_health = target_unit.max_hp + heal_past_max;
-        let value = min(value, max_health - target_unit.health);
-        target_unit.health += value;
         if !effect.no_text {
             if let Some(render) = &mut logic.render {
                 let heal_text = (value * r32(10.0)).floor() / r32(10.0);
@@ -55,6 +53,8 @@ impl EffectImpl for HealEffect {
                 );
             }
         }
+        let value = min(value, max_health - target_unit.health);
+        target_unit.health += value;
 
         for status in &target_unit.all_statuses {
             if let Status::OnHeal(status) = status {

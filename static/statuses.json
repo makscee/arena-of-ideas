@@ -40,5 +40,11 @@
         "parameters": {
             "u_status_color": "#408002"
         }
+    },
+    "SiphonLife": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#400080"
+        }
     }
 }

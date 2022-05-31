@@ -34,7 +34,6 @@ impl EffectImpl for DamageEffect {
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
-        damage = min(damage, target_unit.health);
         if damage <= Health::new(0.0) {
             return;
         }

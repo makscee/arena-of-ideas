@@ -11,9 +11,10 @@ impl Logic<'_> {
                     unit.action_state = ActionState::None;
                 }
                 if let Status::RepeatingEffect(repeating_status)
-                    | Status::Bleed(repeating_status)
-                    | Status::Plague(repeating_status)
-                        = &mut status.status {
+                | Status::Bleed(repeating_status)
+                | Status::Plague(repeating_status)
+                | Status::SiphonLife(repeating_status) = &mut status.status
+                {
                     repeating_status.next_tick -= self.delta_time;
                     while repeating_status.next_tick < Time::ZERO {
                         if let Some(tick_time) = repeating_status.tick_time {

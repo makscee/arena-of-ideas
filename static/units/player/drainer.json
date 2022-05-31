@@ -1,0 +1,9 @@
+{
+    "tier": 1,
+    "clans": [
+        "Warlocks"
+    ],
+    "move_ai": "Stay",
+    "target_ai": "Closest",
+    "base": "ranged"
+}

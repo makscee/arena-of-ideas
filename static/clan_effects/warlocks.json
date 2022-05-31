@@ -1,0 +1,111 @@
+[
+    {
+        "activate": 2,
+        "filter": {
+            "Player": [
+                "Warlocks"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "Ranged",
+                "effect": {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "SiphonLife"
+                    },
+                    "then": {
+                        "type": "Noop"
+                    },
+                    "else": {
+                        "preset": "effects/attach_status/siphon_life.json"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "SiphonLife",
+                "effect": {
+                    "type": "Random",
+                    "choices": [
+                        {
+                            "weight": 85,
+                            "effect": {
+                                "type": "Noop"
+                            }
+                        },
+                        {
+                            "weight": 15,
+                            "effect": {
+                                "preset": "effects/attach_status/stun.json"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "SiphonLife",
+                "effect": {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "SiphonLife"
+                    },
+                    "then": {
+                        "type": "AOE",
+                        "filter": "Enemies",
+                        "skip_current_target": true,
+                        "range": 3,
+                        "effect": {
+                            "type": "Damage",
+                            "types": [
+                                "SiphonLife"
+                            ],
+                            "value": {
+                                "type": "Const",
+                                "value": 1
+                            },
+                            "on": {
+                                "Injure": {
+                                    "type": "ChangeContext",
+                                    "target": "Caster",
+                                    "effect": {
+                                        "type": "Heal",
+                                        "value": {
+                                            "type": "Var",
+                                            "name": "DamageDealt"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                }
+            }
+        ]
+    }
+]
