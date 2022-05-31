@@ -8,6 +8,8 @@ pub struct HealEffect {
     pub heal_past_max: Option<Expr>,
     #[serde(default)]
     pub add_max_hp: Option<Expr>,
+    #[serde(default)]
+    pub no_text: bool,
 }
 
 impl EffectContainer for HealEffect {
@@ -43,6 +45,16 @@ impl EffectImpl for HealEffect {
         let max_health = target_unit.max_hp + heal_past_max;
         let value = min(value, max_health - target_unit.health);
         target_unit.health += value;
+        if !effect.no_text {
+            if let Some(render) = &mut logic.render {
+                let heal_text = (value * r32(10.0)).floor() / r32(10.0);
+                render.add_text(
+                    target_unit.position,
+                    &format!("{}", heal_text),
+                    Color::GREEN,
+                );
+            }
+        }
 
         for status in &target_unit.all_statuses {
             if let Status::OnHeal(status) = status {
