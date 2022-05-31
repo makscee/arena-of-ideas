@@ -14,7 +14,10 @@
             "p_radius_start": 0.6,
             "p_radius_end": -0.3,
             "p_glow_radius": 0.6,
-            "p_speed": 2.5
+            "p_speed": 2.5,
+            "u_clan_color_1": "#dc143c",
+            "u_clan_color_2": "#8a2be2",
+            "u_clan_color_3": "#1e90ff"
         }
     }
 }

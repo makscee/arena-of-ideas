@@ -28,6 +28,7 @@ mod splash;
 mod suicide;
 mod time_bomb;
 mod visual;
+mod add_var;
 
 pub use action::*;
 pub use add_targets::*;
@@ -57,6 +58,7 @@ pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 pub use visual::*;
+pub use add_var::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]
@@ -89,6 +91,7 @@ pub enum Effect {
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
+    AddVar(Box<AddVarEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -122,6 +125,7 @@ pub enum RawEffect {
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
+    AddVar(Box<AddVarEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -136,15 +140,6 @@ struct EffectPreset {
 enum EffectConfig {
     Effect(RawEffect),
     Preset(EffectPreset),
-}
-
-impl EffectConfig {
-    pub fn into_effect(self, presets: &Effects) -> Effect {
-        match self {
-            Self::Effect(effect) => effect.into(),
-            Self::Preset(preset) => preset.into_effect(presets),
-        }
-    }
 }
 
 impl Default for EffectConfig {
@@ -184,6 +179,7 @@ impl std::fmt::Debug for Effect {
             Self::Splash(effect) => effect.fmt(f),
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
+            Self::AddVar(effect) => effect.fmt(f),
         }
     }
 }
@@ -219,6 +215,7 @@ impl From<RawEffect> for Effect {
             RawEffect::Splash(effect) => Self::Splash(effect),
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
+            RawEffect::AddVar(effect) => Self::AddVar(effect),
         }
     }
 }
@@ -286,6 +283,7 @@ impl Effect {
             Effect::Splash(effect) => &mut **effect,
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
+            Effect::AddVar(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -318,6 +316,7 @@ impl Effect {
             Effect::Splash(effect) => effect,
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
+            Effect::AddVar(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
@@ -330,24 +329,29 @@ impl From<EffectConfig> for Effect {
     fn from(config: EffectConfig) -> Self {
         match config {
             EffectConfig::Effect(effect) => effect.into(),
-            EffectConfig::Preset(preset) => {
-                let presets = EFFECT_PRESETS.lock().unwrap();
-                preset.into_effect(&*presets)
-            }
+            EffectConfig::Preset(preset) => preset.into(),
         }
     }
 }
 
-impl EffectPreset {
-    fn into_effect(mut self, presets: &Effects) -> Effect {
-        let preset = presets
-            .get(&self.preset)
-            .expect(&format!("Failed to find a preset effect: {}", self.preset));
-        let mut preset_json = serde_json::to_value(preset).unwrap();
+impl From<EffectPreset> for Effect {
+    fn from(mut effect: EffectPreset) -> Self {
+        let mut preset_json = {
+            // Acquire the lock and drop it early to prevent deadlock
+            let presets = EFFECT_PRESETS.lock().unwrap();
+            let preset = presets.get(&effect.preset).expect(&format!(
+                "Failed to find a preset effect: {}",
+                effect.preset
+            ));
+            serde_json::to_value(preset).unwrap()
+        };
         preset_json
             .as_object_mut()
             .unwrap()
-            .append(&mut self.overrides);
-        serde_json::from_value(preset_json).expect("Failed to override fields of the preset")
+            .append(&mut effect.overrides);
+        // Caution: be ware of a deadlock possibility, as Effect parser uses EFFECT_PRESETS
+        let effect: RawEffect =
+            serde_json::from_value(preset_json).expect("Failed to override fields of the preset");
+        effect.into()
     }
 }

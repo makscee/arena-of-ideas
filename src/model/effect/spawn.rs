@@ -3,6 +3,10 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SpawnEffect {
     pub unit_type: UnitType,
+    #[serde(default)]
+    pub switch_faction: bool,
+    #[serde(default)]
+    pub after_effect: Effect,
 }
 
 impl EffectContainer for SpawnEffect {
@@ -22,7 +26,14 @@ impl EffectImpl for SpawnEffect {
                     .or(logic.model.dead_units.get(&id))
             })
             .expect("Caster not found");
-        let faction = caster.faction;
+        let mut faction = caster.faction;
+        if effect.switch_faction {
+            if faction == Faction::Player {
+                faction = Faction::Enemy;
+            } else {
+                faction = Faction::Player;
+            }
+        }
         let target = context
             .target
             .and_then(|id| {
@@ -34,6 +45,15 @@ impl EffectImpl for SpawnEffect {
             })
             .expect("Target not found");
         let position = target.position;
-        logic.spawn_unit(&effect.unit_type, faction, position);
+        let new_id = logic.spawn_unit(&effect.unit_type, faction, position);
+
+        logic.effects.push_back(QueuedEffect {
+            effect: effect.after_effect.clone(),
+            context: {
+                let mut context = context.clone();
+                context.target = Some(new_id);
+                context
+            },
+        })
     }
 }

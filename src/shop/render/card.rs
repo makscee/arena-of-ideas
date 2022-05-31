@@ -5,6 +5,7 @@ use super::*;
 // Relative to the height
 // TODO: de-hardcode
 const TOP_SPACE: f32 = 0.1;
+const FONT_SIZE: f32 = 0.08;
 const HERO_HEIGHT: f32 = 0.35;
 const DAMAGE_AABB: AABB<f32> = AABB {
     x_min: 0.02,
@@ -24,7 +25,7 @@ const TIER_AABB: AABB<f32> = AABB {
     y_min: 0.92,
     y_max: 0.97,
 };
-const ALLIANCE_AABB: AABB<f32> = AABB {
+const CLAN_AABB: AABB<f32> = AABB {
     x_min: 1.0 / CARD_SIZE_RATIO - 0.27,
     x_max: 1.0 / CARD_SIZE_RATIO - 0.05,
     y_min: 0.917,
@@ -70,7 +71,7 @@ impl CardRender {
         card: Option<&UnitCard>,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
-    ) {
+    ) -> Option<Clan> {
         let camera = &geng::PixelPerfectCamera;
         let width = card_aabb.width();
         let height = card_aabb.height();
@@ -83,7 +84,7 @@ impl CardRender {
 
         let card = match card {
             Some(card) => card,
-            None => return,
+            None => return None,
         };
 
         // Hero layout
@@ -116,7 +117,7 @@ impl CardRender {
         let damage_aabb = layout(DAMAGE_AABB);
         let health_aabb = layout(HEALTH_AABB);
         let tier_aabb = layout(TIER_AABB);
-        let alliance_aabb = layout(ALLIANCE_AABB);
+        let clan_aabb = layout(CLAN_AABB);
         let name_aabb = layout(NAME_AABB);
         let description_aabb = layout(DESCRIPTION_AABB);
 
@@ -164,28 +165,29 @@ impl CardRender {
             .draw_2d(&self.geng, framebuffer, camera);
         }
 
-        // Alliances
+        // Clans
+        let mut selected_clan = None;
         {
-            let alliances = card.template.alliances.iter().sorted().collect::<Vec<_>>();
-            let size = alliance_aabb.height();
-            let alliance_size = vec2(size, size);
-            let mut position = alliance_aabb.top_left() + vec2(size, -size) / 2.0;
-            for alliance in alliances {
-                let alliance_color = self
+            let clans = card.template.clans.iter().sorted().collect::<Vec<_>>();
+            let size = clan_aabb.height();
+            let clan_size = vec2(size, size);
+            let mut position = clan_aabb.top_left() + vec2(size, -size) / 2.0;
+            for clan in clans {
+                let clan_color = self
                     .assets
                     .options
-                    .alliance_colors
-                    .get(&alliance)
+                    .clan_colors
+                    .get(&clan)
                     .copied()
                     .unwrap_or(Color::WHITE);
                 let text_color = Color::WHITE;
-                let text = format!("{:?}", alliance)
+                let text = format!("{:?}", clan)
                     .chars()
                     .next()
                     .unwrap_or('?')
                     .to_uppercase()
                     .to_string();
-                draw_2d::Ellipse::circle(position, size / 2.0, alliance_color).draw_2d(
+                draw_2d::Ellipse::circle(position, size / 2.0, clan_color).draw_2d(
                     &self.geng,
                     framebuffer,
                     camera,
@@ -193,6 +195,13 @@ impl CardRender {
                 draw_2d::Text::unit(&**self.geng.default_font(), text, text_color)
                     .fit_into(AABB::point(position).extend_uniform(size / 2.0 / 2.0.sqrt()))
                     .draw_2d(&self.geng, framebuffer, camera);
+                let mouse_pos = self.geng.window().mouse_pos().map(|x| x as f32);
+                if AABB::point(position)
+                    .extend_uniform(size / 2.0)
+                    .contains(mouse_pos)
+                {
+                    selected_clan = Some(*clan);
+                }
                 position.x += size;
             }
         }
@@ -207,12 +216,18 @@ impl CardRender {
         .draw_2d(&self.geng, framebuffer, camera);
 
         // Description
-        draw_2d::Text::unit(
+        let font_size = FONT_SIZE * height;
+        draw_text_wrapped(
             &**self.geng.default_font(),
-            format!("TODO: Description"),
+            &card.template.description,
+            font_size,
+            description_aabb,
             Color::WHITE,
-        )
-        .fit_into(description_aabb)
-        .draw_2d(&self.geng, framebuffer, camera);
+            &self.geng,
+            framebuffer,
+            camera,
+        );
+
+        selected_clan
     }
 }

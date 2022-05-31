@@ -1,0 +1,60 @@
+{
+    "tier": 0,
+    "statuses": [
+        {
+            "type": "OnHeal",
+            "effect": {
+                "type": "AOE",
+                "filter": "Enemies",
+                "range": 3,
+                "effect": {
+                    "type": "Damage",
+                    "value": {
+                        "type": "Var",
+                        "name": "HealthRestored"
+                    }
+                }
+            }
+        }
+    ],
+    "ability": {
+        "cooldown": 3,
+        "effect": {
+            "type": "AOE",
+            "filter": "Enemies",
+            "range": 3,
+            "effect": {
+                "type": "ChangeContext",
+                "from": "Target",
+                "target": "Caster",
+                "effect": {
+                    "type": "Projectile",
+                    "speed": 10,
+                    "effect": {
+                        "type": "Heal",
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "From",
+                                "stat": "MaxHealth"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0.1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "clans": [
+        "Vampires",
+        "Exploders",
+        "Assassins"
+    ],
+    "move_ai": "KeepClose",
+    "target_ai": "Closest",
+    "base": "melee"
+}

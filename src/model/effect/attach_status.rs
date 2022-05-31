@@ -67,6 +67,23 @@ impl EffectImpl for AttachStatusEffect {
                             },
                         });
                     }
+                    if let Status::SelfDetect(status) = status {
+                        if other.id != target.id {
+                            continue;
+                        }
+                        if status.detect_type != status_type {
+                            continue;
+                        }
+                        logic.effects.push_front(QueuedEffect {
+                            effect: status.effect.clone(),
+                            context: EffectContext {
+                                caster: Some(other.id),
+                                from: Some(other.id),
+                                target: Some(target.id),
+                                vars: default(),
+                            },
+                        });
+                    }
                 }
             }
         }

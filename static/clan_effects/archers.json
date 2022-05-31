@@ -1,0 +1,64 @@
+[
+    {
+        "activate": 3,
+        "filter": {
+            "Player": [
+                "Archers"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "Ranged",
+                "effect": {
+                    "type": "Random",
+                    "choices": [
+                        {
+                            "weight": 70,
+                            "effect": {
+                                "type": "Noop"
+                            }
+                        },
+                        {
+                            "weight": 30,
+                            "effect": {
+                                "preset": "effects/bonus_shot_projectile.json"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Player": [
+                "Archers"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "BonusShot",
+                "effect": {
+                    "type": "Random",
+                    "choices": [
+                        {
+                            "weight": 85,
+                            "effect": {
+                                "type": "Noop"
+                            }
+                        },
+                        {
+                            "weight": 15,
+                            "effect": {
+                                "preset": "effects/bonus_shot_projectile.json"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+]

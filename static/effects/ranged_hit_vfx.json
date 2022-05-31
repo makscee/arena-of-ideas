@@ -1,0 +1,17 @@
+{
+    "type": "Visual",
+    "duration": 0.5,
+    "parent": "Target",
+    "follow": false,
+    "radius": 1.5,
+    "render": {
+        "type": "Shader",
+        "path": "shaders/vfx_particle_burst.glsl",
+        "parameters": {
+            "p_startColor": "#dc143c",
+            "p_endColor": "#1e90ff",
+            "p_count": 12,
+            "p_startSize": 0.1
+        }
+    }
+}

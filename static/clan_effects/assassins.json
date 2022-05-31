@@ -1,0 +1,63 @@
+[
+    {
+        "activate": 2,
+        "filter": {
+            "Player": [
+                "Assassins"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnSpawn",
+                "effect": {
+                    "type": "ChangeStat",
+                    "stat": "CritChance",
+                    "value": {
+                        "type": "Sum",
+                        "a": {
+                            "type": "FindStat",
+                            "who": "Target",
+                            "stat": "CritChance"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 15
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": [
+                "Assassins"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnDealDamage",
+                "damage_type": "Crit",
+                "effect": {
+                    "preset": "effects/attach_status/bleed.json"
+                }
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "type": "OnTakeDamage",
+                "damage_type": "Bleed",
+                "effect": {
+                    "preset": "effects/attach_status/vulnerability.json"
+                }
+            }
+        ]
+    }
+]

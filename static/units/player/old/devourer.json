@@ -1,0 +1,79 @@
+{
+    "tier": 0,
+    "statuses": [
+        {
+            "type": "Scavenge",
+            "who": "All",
+            "range": 10,
+            "clan": "Critters",
+            "effect": {
+                "type": "ChangeContext",
+                "target": "Caster",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeStat",
+                            "stat": "Radius",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "who": "Target",
+                                    "stat": "Radius"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0.05
+                                }
+                            }
+                        },
+                        {
+                            "type": "ChangeStat",
+                            "stat": "MaxHealth",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "who": "Target",
+                                    "stat": "MaxHealth"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0.2
+                                }
+                            }
+                        },
+                        {
+                            "type": "AttachStatus",
+                            "status": {
+                                "type": "Modifier",
+                                "modifier": {
+                                    "type": "Strength",
+                                    "value": {
+                                        "type": "Sum",
+                                        "a": {
+                                            "type": "Var",
+                                            "name": "Value"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 0.2
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "clans": [
+        "Spawners",
+        "Vampires"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

@@ -38,6 +38,7 @@ pub struct Unit {
     pub health: Health,
     pub max_hp: Health,
     pub base_damage: Health,
+    pub crit_chance: R32,
     pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
     pub speed: Coord,
@@ -46,7 +47,7 @@ pub struct Unit {
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
-    pub alliances: HashSet<Alliance>,
+    pub clans: HashSet<Clan>,
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
     pub render: RenderConfig,
@@ -60,6 +61,8 @@ pub enum UnitStat {
     MaxHealth,
     Radius,
     BaseDamage,
+    CritChance,
+    Speed,
 }
 
 impl Unit {
@@ -90,6 +93,7 @@ impl Unit {
             health: template.health,
             max_hp: template.health,
             base_damage: template.base_damage,
+            crit_chance: template.crit_chance,
             face_dir: Vec2::ZERO,
             position,
             speed: template.speed,
@@ -100,7 +104,7 @@ impl Unit {
             render: template.render_config.clone(),
             next_action_modifiers: Vec::new(),
             ability_cooldown: None,
-            alliances: template.alliances.clone(),
+            clans: template.clans.clone(),
             last_action_time: Time::new(0.0),
             last_injure_time: Time::new(0.0),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
@@ -111,6 +115,8 @@ impl Unit {
             UnitStat::MaxHealth => self.max_hp,
             UnitStat::Radius => self.radius,
             UnitStat::BaseDamage => self.base_damage,
+            UnitStat::CritChance => self.crit_chance,
+            UnitStat::Speed => self.speed,
         }
     }
     pub fn stat_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -118,6 +124,8 @@ impl Unit {
             UnitStat::MaxHealth => &mut self.max_hp,
             UnitStat::Radius => &mut self.radius,
             UnitStat::BaseDamage => &mut self.base_damage,
+            UnitStat::CritChance => &mut self.crit_chance,
+            UnitStat::Speed => &mut self.speed,
         }
     }
 }

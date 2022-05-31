@@ -32,6 +32,9 @@ impl Logic<'_> {
                     .expect("Caster, From, or Target not found");
                 (target.position - from.position).len() <= *max_distance
             }
+            Condition::Chance { percent } => {
+                r32(global_rng().gen_range(0.0..=100.0)) < percent.calculate(&context, self)
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-    "alliance_colors": {
+    "clan_colors": {
         "Spawners": "#b8860b",
         "Assassins": "#ffd700",
         "Critters": "#b8860b",
@@ -11,6 +11,8 @@
         "Exploders": "#ff4500",
         "Splashers": "#eee8aa",
         "Chainers": "#d8bfd8",
-        "Charmers": "#ff1493"
+        "Charmers": "#ff1493",
+        "Skeletons": "#E6E6E6",
+        "Warlocks": "#400080"
     }
 }

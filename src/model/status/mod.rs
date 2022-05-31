@@ -18,10 +18,12 @@ mod on_take_damage;
 mod protection;
 mod repeating_effect;
 mod scavenge;
+mod self_detect;
 mod shield;
 mod slow;
 mod stun;
 mod taunt;
+mod vulnerability;
 
 pub use attack_speed::*;
 pub use aura::*;
@@ -41,22 +43,26 @@ pub use on_take_damage::*;
 pub use protection::*;
 pub use repeating_effect::*;
 pub use scavenge::*;
+pub use self_detect::*;
 pub use shield::*;
 pub use slow::*;
 pub use stun::*;
 pub use taunt::*;
+pub use vulnerability::*;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum StatusType {
     Freeze,
     Stun,
     Shield,
+    Vulnerability,
     Invulnerability,
     Slow,
     Modifier,
     Aura,
     Protection,
     Detect,
+    SelfDetect,
     Taunt,
     OnDeath,
     OnSpawn,
@@ -70,6 +76,9 @@ pub enum StatusType {
     AttackSpeed,
     RepeatingEffect,
     Charmed,
+    Bleed,
+    Plague,
+    SiphonLife,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -78,12 +87,14 @@ pub enum Status {
     Freeze(Box<FreezeStatus>),
     Stun(Box<StunStatus>),
     Shield(Box<ShieldStatus>),
+    Vulnerability(Box<VulnerabilityStatus>),
     Invulnerability(Box<InvulnerabilityStatus>),
     Slow(Box<SlowStatus>),
     Modifier(Box<ModifierStatus>),
     Aura(Box<AuraStatus>),
     Protection(Box<ProtectionStatus>),
     Detect(Box<DetectStatus>),
+    SelfDetect(Box<SelfDetectStatus>),
     Taunt(Box<TauntStatus>),
     OnDeath(Box<OnDeathStatus>),
     OnSpawn(Box<OnSpawnStatus>),
@@ -97,6 +108,9 @@ pub enum Status {
     AttackSpeed(Box<AttackSpeedStatus>),
     RepeatingEffect(Box<RepeatingEffectStatus>),
     Charmed(Box<CharmedStatus>),
+    Bleed(Box<RepeatingEffectStatus>),
+    Plague(Box<RepeatingEffectStatus>),
+    SiphonLife(Box<RepeatingEffectStatus>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -116,12 +130,14 @@ impl Status {
             Self::Freeze(status) => &mut **status,
             Self::Stun(status) => &mut **status,
             Self::Shield(status) => &mut **status,
+            Self::Vulnerability(status) => &mut **status,
             Self::Invulnerability(status) => &mut **status,
             Self::Slow(status) => &mut **status,
             Self::Modifier(status) => &mut **status,
             Self::Aura(status) => &mut **status,
             Self::Protection(status) => &mut **status,
             Self::Detect(status) => &mut **status,
+            Self::SelfDetect(status) => &mut **status,
             Self::Taunt(status) => &mut **status,
             Self::OnDeath(status) => &mut **status,
             Self::OnSpawn(status) => &mut **status,
@@ -135,6 +151,9 @@ impl Status {
             Self::AttackSpeed(status) => &mut **status,
             Self::RepeatingEffect(status) => &mut **status,
             Self::Charmed(status) => &mut **status,
+            Self::Bleed(status) => &mut **status,
+            Self::Plague(status) => &mut **status,
+            Self::SiphonLife(status) => &mut **status,
         }
     }
     pub fn as_box(self) -> Box<dyn StatusImpl> {
@@ -142,12 +161,14 @@ impl Status {
             Self::Freeze(status) => status,
             Self::Stun(status) => status,
             Self::Shield(status) => status,
+            Self::Vulnerability(status) => status,
             Self::Invulnerability(status) => status,
             Self::Slow(status) => status,
             Self::Modifier(status) => status,
             Self::Aura(status) => status,
             Self::Protection(status) => status,
             Self::Detect(status) => status,
+            Self::SelfDetect(status) => status,
             Self::Taunt(status) => status,
             Self::OnDeath(status) => status,
             Self::OnSpawn(status) => status,
@@ -161,6 +182,9 @@ impl Status {
             Self::AttackSpeed(status) => status,
             Self::RepeatingEffect(status) => status,
             Self::Charmed(status) => status,
+            Self::Bleed(status) => status,
+            Self::Plague(status) => status,
+            Self::SiphonLife(status) => status,
         }
     }
     pub fn r#type(&self) -> StatusType {
@@ -168,12 +192,14 @@ impl Status {
             Self::Freeze(status) => StatusType::Freeze,
             Self::Stun(status) => StatusType::Stun,
             Self::Shield(status) => StatusType::Shield,
+            Self::Vulnerability(status) => StatusType::Vulnerability,
             Self::Invulnerability(status) => StatusType::Invulnerability,
             Self::Slow(status) => StatusType::Slow,
             Self::Modifier(status) => StatusType::Modifier,
             Self::Aura(status) => StatusType::Aura,
             Self::Protection(status) => StatusType::Protection,
             Self::Detect(status) => StatusType::Detect,
+            Self::SelfDetect(status) => StatusType::SelfDetect,
             Self::Taunt(status) => StatusType::Taunt,
             Self::OnDeath(status) => StatusType::OnDeath,
             Self::OnSpawn(status) => StatusType::OnSpawn,
@@ -187,6 +213,9 @@ impl Status {
             Self::AttackSpeed(status) => StatusType::AttackSpeed,
             Self::RepeatingEffect(status) => StatusType::RepeatingEffect,
             Self::Charmed(status) => StatusType::Charmed,
+            Self::Bleed(status) => StatusType::Bleed,
+            Self::Plague(status) => StatusType::Plague,
+            Self::SiphonLife(status) => StatusType::SiphonLife,
         }
     }
     pub fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {

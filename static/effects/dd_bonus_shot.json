@@ -1,0 +1,38 @@
+{
+    "type": "List",
+    "effects":
+    [
+        {
+            "type": "Damage",
+            "types":
+            [
+                "BonusShot"
+            ],
+            "value":
+            {
+                "type": "FindStat",
+                "who": "Caster",
+                "stat": "BaseDamage"
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 0.5,
+            "parent": "Target",
+            "follow": false,
+            "radius": 1.5,
+            "render":
+            {
+                "type": "Shader",
+                "path": "shaders/vfx_particle_burst.glsl",
+                "parameters":
+                {
+                    "p_startColor": "#009C69",
+                    "p_endColor": "#66FFCC",
+                    "p_count": 12,
+                    "p_startSize": 0.1
+                }
+            }
+        }
+    ]
+}

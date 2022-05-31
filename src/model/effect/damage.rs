@@ -34,7 +34,6 @@ impl EffectImpl for DamageEffect {
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
-        damage = min(damage, target_unit.health);
         if damage <= Health::new(0.0) {
             return;
         }
@@ -84,6 +83,16 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
+        // Vulnerability
+        for status in &target_unit.all_statuses {
+            if let Status::Vulnerability(status) = status {
+                damage *= r32(2.0);
+            }
+        }
+        target_unit
+            .attached_statuses
+            .retain(|status| status.status.r#type() != StatusType::Vulnerability);
+
         // Freeze
         target_unit
             .attached_statuses
@@ -97,7 +106,10 @@ impl EffectImpl for DamageEffect {
                 } {
                     logic.effects.push_front(QueuedEffect {
                         effect: status.effect.clone(),
-                        context: context.clone(),
+                        context: EffectContext {
+                            caster: Some(target_unit.id),
+                            ..context.clone()
+                        },
                     });
                 }
             }
@@ -119,7 +131,11 @@ impl EffectImpl for DamageEffect {
         let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
         if let Some(render) = &mut logic.render {
             let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
-            render.add_text(target_unit.position, &format!("{}", -damage_text), Color::RED);
+            render.add_text(
+                target_unit.position,
+                &format!("{}", -damage_text),
+                Color::RED,
+            );
         }
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 

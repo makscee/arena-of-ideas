@@ -1,15 +1,12 @@
 {
     "tier": 0,
-    "action":
-    {
+    "action": {
         "range": 0.5,
         "animation_delay": 0.25,
-        "cooldown": 0.75,
-        "effect":
-        {
+        "cooldown": 3.0,
+        "effect": {
             "type": "List",
-            "effects":
-            [
+            "effects": [
                 {
                     "preset": "effects/dd_melee.json"
                 },
@@ -21,8 +18,7 @@
     },
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "alliances":
-    [
+    "clans": [
         "Freezers"
     ],
     "base": "melee"

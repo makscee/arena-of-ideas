@@ -1,0 +1,7 @@
+{
+    "Freezers": "freezers.json",
+    "Archers": "archers.json",
+    "Assassins": "assassins.json",
+    "PlagueSpreaders": "plague_spreaders.json",
+    "Warlocks": "warlocks.json"
+}

@@ -1,37 +1,61 @@
 {
     "type": "List",
-    "effects":
-    [
+    "effects": [
         {
-            "type": "Damage",
-            "types":
-            [
-                "Ranged"
-            ],
-            "value":
-            {
-                "type": "FindStat",
-                "who": "Caster",
-                "stat": "BaseDamage"
-            }
-        },
-        {
-            "type": "Visual",
-            "duration": 0.5,
-            "parent": "Target",
-            "follow": false,
-            "radius": 1.5,
-            "render":
-            {
-                "type": "Shader",
-                "path": "shaders/vfx_particle_burst.glsl",
-                "parameters":
-                {
-                    "p_startColor": "#dc143c",
-                    "p_endColor": "#1e90ff",
-                    "p_count": 12,
-                    "p_startSize": 0.1
+            "type": "If",
+            "condition": {
+                "type": "Chance",
+                "percent": {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "CritChance"
                 }
+            },
+            "then": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "types": [
+                            "Ranged",
+                            "Crit"
+                        ],
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Caster",
+                                "stat": "BaseDamage"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 3
+                            }
+                        }
+                    },
+                    {
+                        "preset": "effects/crit_hit_vfx.json"
+                    }
+                ]
+            },
+            "else": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "types": [
+                            "Ranged"
+                        ],
+                        "value": {
+                            "type": "FindStat",
+                            "who": "Caster",
+                            "stat": "BaseDamage"
+                        }
+                    },
+                    {
+                        "preset": "effects/ranged_hit_vfx.json"
+                    }
+                ]
             }
         }
     ]

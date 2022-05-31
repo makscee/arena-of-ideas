@@ -1,22 +1,62 @@
 {
     "type": "List",
-    "effects":
-    [
+    "effects": [
         {
-            "type": "Damage",
-            "types":
-            [
-                "Melee"
-            ],
-            "value":
-            {
-                "type": "FindStat",
-                "who": "Caster",
-                "stat": "BaseDamage"
+            "type": "If",
+            "condition": {
+                "type": "Chance",
+                "percent": {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "CritChance"
+                }
+            },
+            "then": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "types": [
+                            "Melee",
+                            "Crit"
+                        ],
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Caster",
+                                "stat": "BaseDamage"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 3
+                            }
+                        }
+                    },
+                    {
+                        "preset": "effects/crit_hit_vfx.json"
+                    }
+                ]
+            },
+            "else": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "types": [
+                            "Melee"
+                        ],
+                        "value": {
+                            "type": "FindStat",
+                            "who": "Caster",
+                            "stat": "BaseDamage"
+                        }
+                    },
+                    {
+                        "preset": "effects/melee_hit_vfx.json"
+                    }
+                ]
             }
-        },
-        {
-            "preset":"effects/melee_hit_vfx.json"
         }
     ]
 }

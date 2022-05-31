@@ -130,8 +130,8 @@ impl geng::State for ShopState {
                 .filter_map(|card| card.as_ref())
                 .map(|card| card.unit.unit_type.clone())
                 .collect(),
-            alliances: {
-                calc_alliances(
+            clans: {
+                calc_clan_members(
                     self.shop
                         .cards
                         .party
@@ -378,6 +378,7 @@ impl Shop {
                 if options.is_empty() {
                     self.cards.shop = vec![];
                     error!("No units are available to roll");
+                    return;
                 }
                 self.cards.shop = (0..units)
                     .map(|_| options.choose(&mut rng).unwrap().clone())
@@ -406,21 +407,6 @@ impl Cards {
             &CardState::Party { index } => self.party.get_mut(index),
             &CardState::Inventory { index } => self.inventory.get_mut(index),
         }
-    }
-
-    pub fn count_alliances(&self) -> HashMap<Alliance, usize> {
-        let unique_units = self
-            .party
-            .iter()
-            .chain(self.inventory.iter())
-            .filter_map(|card| card.as_ref())
-            .map(|card| (&card.unit.unit_type, &card.unit.alliances))
-            .collect::<HashMap<_, _>>();
-        let mut alliances = HashMap::new();
-        for alliance in unique_units.into_values().flat_map(|alliances| alliances) {
-            *alliances.entry(alliance.clone()).or_insert(0) += 1;
-        }
-        alliances
     }
 
     pub fn check_triples(&mut self, templates: &UnitTemplates) {
@@ -465,16 +451,16 @@ impl Cards {
     }
 }
 
-fn calc_alliances<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<Alliance, usize> {
+fn calc_clan_members<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<Clan, usize> {
     let unique_units = units
         .into_iter()
-        .map(|unit| (&unit.unit_type, &unit.alliances))
+        .map(|unit| (&unit.unit_type, &unit.clans))
         .collect::<HashMap<_, _>>();
-    let mut alliances = HashMap::new();
-    for alliance in unique_units.into_values().flat_map(|alliances| alliances) {
-        *alliances.entry(alliance.clone()).or_insert(0) += 1;
+    let mut clans = HashMap::new();
+    for clan in unique_units.into_values().flatten() {
+        *clans.entry(clan.clone()).or_insert(0) += 1;
     }
-    alliances
+    clans
 }
 
 fn roll(choices: &[UnitTemplate], tier: Tier, units: usize) -> Vec<UnitTemplate> {

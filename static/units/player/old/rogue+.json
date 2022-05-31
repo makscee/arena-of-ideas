@@ -1,0 +1,56 @@
+{
+    "tier": 0,
+    "base_damage": 1,
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.25,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/dd_melee.json"
+                },
+                {
+                    "type": "AOE",
+                    "filter": "Enemies",
+                    "skip_current_target": false,
+                    "range": 5,
+                    "effect": {
+                        "type": "AttachStatus",
+                        "time": 0.1,
+                        "status": {
+                            "type": "Stun"
+                        }
+                    }
+                },
+                {
+                    "type": "Visual",
+                    "duration": 0.2,
+                    "parent": "Target",
+                    "follow": true,
+                    "radius": 2,
+                    "render": {
+                        "type": "Shader",
+                        "path": "shaders/vfx_particle_spin.glsl",
+                        "parameters": {
+                            "p_startColor": "#b8860b",
+                            "p_endColor": "#d8bfd8",
+                            "p_count": 15,
+                            "p_startSize": 0.05,
+                            "p_endSize": 0.01,
+                            "p_spawnShift": 0.005,
+                            "p_trailCount": 3
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "clans": [
+        "Assassins"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee+"
+}

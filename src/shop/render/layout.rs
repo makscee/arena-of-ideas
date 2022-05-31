@@ -5,7 +5,7 @@ const COLUMN_SPACING: f32 = 0.04;
 const ROW_SPACING: f32 = 0.125;
 const BORDER_SPACING: f32 = 0.03;
 const CARD_EXTRA_SPACE: f32 = 0.05;
-const ALLIANCES_WIDTH: f32 = 0.1;
+const CLANS_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
 const GO_WIDTH: f32 = 0.1;
@@ -53,7 +53,7 @@ pub struct ShopLayout {
     pub shop_cards: Vec<LayoutWidget>,
     pub party: LayoutWidget,
     pub party_cards: Vec<LayoutWidget>,
-    pub alliances: LayoutWidget,
+    pub clans: LayoutWidget,
     pub go: LayoutWidget,
     pub inventory: LayoutWidget,
     pub inventory_cards: Vec<LayoutWidget>,
@@ -73,7 +73,7 @@ impl Default for ShopLayout {
             party: default(),
             party_cards: default(),
             go: default(),
-            alliances: default(),
+            clans: default(),
             inventory: default(),
             inventory_cards: default(),
             drag_card_size: Vec2::ZERO,
@@ -152,9 +152,9 @@ impl ShopLayout {
         let inventory_cards =
             layout_cards(inventory.bottom_left(), inventory_cards, inventory_card);
 
-        let alliances_width = ALLIANCES_WIDTH * screen.width();
+        let clans_width = CLANS_WIDTH * screen.width();
         let go_width = GO_WIDTH * screen.width();
-        let mid_width = column_spacing + alliances_width + column_spacing + go_width;
+        let mid_width = column_spacing + clans_width + column_spacing + go_width;
         let (party, party_card) =
             layout_cards_aabb(middle_row.extend_right(-mid_width), party_cards);
         let mid_width = mid_width + party.width();
@@ -162,8 +162,8 @@ impl ShopLayout {
         let party_cards = layout_cards(bot_left, party_cards, party_card);
         let mut bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
         bot_left.x += party.width() + column_spacing;
-        let alliances = AABB::point(bot_left).extend_positive(vec2(alliances_width, row_height));
-        bot_left.x += alliances_width + column_spacing;
+        let clans = AABB::point(bot_left).extend_positive(vec2(clans_width, row_height));
+        bot_left.x += clans_width + column_spacing;
         let go = AABB::point(bot_left).extend_positive(vec2(go_width, row_height));
 
         let top_left_buttons = AABB::point(screen.top_left())
@@ -196,7 +196,7 @@ impl ShopLayout {
         self.freeze.update(freeze);
         self.shop.update(shop);
         self.party.update(party);
-        self.alliances.update(alliances);
+        self.clans.update(clans);
         self.go.update(go);
         self.inventory.update(inventory);
         self.drag_card_size = card_size;
@@ -213,7 +213,7 @@ impl ShopLayout {
         f(&mut self.freeze);
         f(&mut self.shop);
         f(&mut self.party);
-        f(&mut self.alliances);
+        f(&mut self.clans);
         f(&mut self.go);
         f(&mut self.inventory);
         self.shop_cards

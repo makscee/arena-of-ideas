@@ -32,10 +32,10 @@ uniform vec2 u_face_dir;
 uniform float u_unit_radius;
 uniform float u_ability_on_cooldown;
 
-uniform vec4 u_alliance_color_1;
-uniform vec4 u_alliance_color_2;
-uniform vec4 u_alliance_color_3;
-uniform int u_alliance_count;
+uniform vec4 u_clan_color_1;
+uniform vec4 u_clan_color_2;
+uniform vec4 u_clan_color_3;
+uniform int u_clan_count;
 
 uniform int u_status_count;
 uniform int u_status_index;
@@ -46,10 +46,10 @@ vec3 colors[3];
 
 void commonInit()
 {
-    colors[0] = u_alliance_color_1.rgb;
-    colors[1] = u_alliance_color_2.rgb;
-    colors[2] = u_alliance_color_3.rgb;
-    alCountF = float(u_alliance_count);
+    colors[0] = u_clan_color_1.rgb;
+    colors[1] = u_clan_color_2.rgb;
+    colors[2] = u_clan_color_3.rgb;
+    alCountF = float(u_clan_count);
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)
@@ -126,7 +126,7 @@ vec3 mixColors(float t)
     t += float(t < 0.);
     int colorInd = int(t * alCountF);
     vec3 c1 = colors[colorInd];
-    vec3 c2 = colors[(colorInd + 1) % u_alliance_count];
+    vec3 c2 = colors[(colorInd + 1) % u_clan_count];
     return mix(c1, c2, t * alCountF - float(colorInd));
 }
 

@@ -1,12 +1,10 @@
 {
     "type": "List",
-    "effects":
-    [
+    "effects": [
         {
             "type": "AttachStatus",
             "time": 3,
-            "status":
-            {
+            "status": {
                 "type": "Charmed"
             }
         },
@@ -16,12 +14,10 @@
             "parent": "Target",
             "follow": true,
             "radius": 2,
-            "render":
-            {
+            "render": {
                 "type": "Shader",
                 "path": "shaders/vfx_particle_spin.glsl",
-                "parameters":
-                {
+                "parameters": {
                     "p_startColor": "#ff1493",
                     "p_endColor": "#d8bfd8",
                     "p_count": 25,

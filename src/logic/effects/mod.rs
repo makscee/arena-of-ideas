@@ -64,7 +64,7 @@ impl Logic<'_> {
         const MAX_ITERATIONS: usize = 1000;
         let mut iterations = 0;
         while let Some(QueuedEffect { effect, context }) = self.effects.pop_front() {
-            debug!("Processing {:?} on {}", effect, context.to_string(self));
+            trace!("Processing {:?} on {}", effect, context.to_string(self));
             effect.as_box().process(context, self);
 
             iterations += 1;

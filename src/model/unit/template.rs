@@ -5,11 +5,14 @@ use super::*;
 pub struct UnitTemplate {
     /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
+    /// Description displayed on the unit card
+    pub description: String,
     /// Units `triple` set to Some get converted to that unit once three of them are bought by the player
     #[serde(default)]
     pub triple: Option<UnitType>,
     pub health: Health,
     pub base_damage: Health,
+    pub crit_chance: R32,
     pub spawn_animation_time: Time,
     pub speed: Coord,
     pub radius: Coord,
@@ -18,7 +21,7 @@ pub struct UnitTemplate {
     pub statuses: Vec<Status>,
     pub target_ai: TargetAi,
     pub ability: Option<Ability>,
-    pub alliances: HashSet<Alliance>,
+    pub clans: HashSet<Clan>,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
 }
@@ -39,9 +42,11 @@ impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
             tier: 0,
+            description: String::new(),
             triple: None,
             health: Health::new(1.0),
             base_damage: Health::new(1.0),
+            crit_chance: r32(0.0),
             spawn_animation_time: Time::new(0.0),
             speed: Coord::new(1.0),
             radius: Coord::new(0.5),
@@ -58,7 +63,7 @@ impl Default for UnitTemplate {
             render_config: RenderConfig::Circle {
                 color: Color::WHITE,
             },
-            alliances: default(),
+            clans: default(),
         }
     }
 }

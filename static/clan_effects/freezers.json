@@ -1,0 +1,53 @@
+[
+    {
+        "activate": 2,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "type": "SelfDetect",
+                "detect_type": "Freeze",
+                "effect": {
+                    "preset": "effects/attach_status/vulnerability.json"
+                }
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": [
+                "Freezers"
+            ]
+        },
+        "statuses": [
+            {
+                "type": "OnTakeDamage",
+                "effect": {
+                    "type": "AOE",
+                    "filter": "Enemies",
+                    "range": 2,
+                    "effect": {
+                        "preset": "effects/attach_status/freeze.json"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "type": "SelfDetect",
+                "detect_type": "Freeze",
+                "effect": {
+                    "preset": "effects/attach_status/stun.json"
+                }
+            }
+        ]
+    }
+]

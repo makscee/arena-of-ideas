@@ -1,0 +1,26 @@
+{
+    "tier": 0,
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.75,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/dd_melee.json"
+                },
+                {
+                    "preset": "effects/attach_status/stun.json"
+                }
+            ]
+        }
+    },
+    "clans": [
+        "Vampires",
+        "Warriors"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

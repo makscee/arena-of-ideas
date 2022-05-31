@@ -75,18 +75,6 @@ impl Render {
 
             let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
             self.draw_unit(unit, template, model, game_time, framebuffer);
-            // self.geng.draw_2d(
-            //     framebuffer,
-            //     &self.camera,
-            //     &draw_2d::Quad::unit(Color::GREEN).transform(
-            //         Mat3::translate(unit.position.map(|x| x.as_f32()))
-            //             * Mat3::scale_uniform(unit.radius.as_f32())
-            //             * Mat3::translate(vec2(0.0, 1.2))
-            //             * Mat3::scale(
-            //                 0.1 * vec2(10.0 * unit.health.as_f32() / unit.max_hp.as_f32(), 1.0),
-            //             ),
-            //     ),
-            // );
         }
         for projectile in &model.projectiles {
             let render = self.assets.get_render(&projectile.render_config); // TODO: move this into to an earlier phase perhaps
@@ -190,10 +178,10 @@ impl Render {
                             u_unit_radius: particle.radius.as_f32(),
                             u_spawn: (particle.time_left / particle.duration).as_f32(),
                             u_action: 0.0,
-                            u_alliance_color_1: Color::WHITE,
-                            u_alliance_color_2: Color::WHITE,
-                            u_alliance_color_3: Color::WHITE,
-                            u_alliance_count: 0,
+                            u_clan_color_1: Color::WHITE,
+                            u_clan_color_2: Color::WHITE,
+                            u_clan_color_3: Color::WHITE,
+                            u_clan_count: 0,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                         parameters,
@@ -384,10 +372,10 @@ impl UnitRender {
                 let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
                     * Mat3::scale_uniform(unit.radius.as_f32() * attack_scale * spawn_scale);
 
-                let mut alliances: Vec<Alliance> = unit.alliances.iter().copied().collect();
-                let alliance_colors: Vec<Color<f32>> = alliances
+                let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
+                let clan_colors: Vec<Color<f32>> = clans
                     .iter()
-                    .map(|alliance| self.assets.options.alliance_colors[alliance])
+                    .map(|clan| self.assets.options.clan_colors[clan])
                     .collect();
 
                 let (action_time, target) = match &unit.action_state {
@@ -409,9 +397,7 @@ impl UnitRender {
                 let mut is_ability_ready = 0.0; // TODO: rewrite please
                 if let Some(ability) = &template.ability {
                     is_ability_ready = match unit.ability_cooldown {
-                        Some(time) if time > Time::new(0.0) => {
-                            0.0
-                        }
+                        Some(time) if time > Time::new(0.0) => 0.0,
                         _ => 1.0,
                     };
                 }
@@ -441,10 +427,10 @@ impl UnitRender {
                         u_random: unit.random_number.as_f32(),
                         u_action_time: unit.last_action_time.as_f32(),
                         u_injure_time: unit.last_injure_time.as_f32(),
-                        u_alliance_color_1: alliance_colors.get(0).copied().unwrap_or(Color::WHITE),
-                        u_alliance_color_2: alliance_colors.get(1).copied().unwrap_or(Color::WHITE),
-                        u_alliance_color_3: alliance_colors.get(2).copied().unwrap_or(Color::WHITE),
-                        u_alliance_count: alliance_colors.len(),
+                        u_clan_color_1: clan_colors.get(0).copied().unwrap_or(Color::WHITE),
+                        u_clan_color_2: clan_colors.get(1).copied().unwrap_or(Color::WHITE),
+                        u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
+                        u_clan_count: clan_colors.len(),
                         u_ability_ready: is_ability_ready,
                         u_health: unit.health.as_f32() / unit.max_hp.as_f32(),
                     },
@@ -473,13 +459,13 @@ impl UnitRender {
                     );
                 }
 
-                let mut statuses: std::collections::BTreeMap<StatusType, &StatusRender> = unit
+                let mut statuses: std::vec::Vec<&StatusRender> = unit
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
                         let status_type = status.r#type();
                         if let Some(program) = self.assets.statuses.get(&status_type) {
-                            Some((status_type, program))
+                            Some(program)
                         } else {
                             None
                         }
@@ -488,13 +474,10 @@ impl UnitRender {
                 let status_count = statuses.len();
                 for (
                     status_index,
-                    (
-                        _status_type,
                         StatusRender {
                             shader: program,
                             parameters,
                         },
-                    ),
                 ) in statuses.into_iter().enumerate()
                 {
                     let mut new_texture =

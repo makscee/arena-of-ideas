@@ -1,0 +1,51 @@
+{
+    "health": 50,
+    "tier": 0,
+    "base_damage": 0.5,
+    "speed": 2,
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.5,
+        "effect": {
+            "type": "Splash",
+            "degrees": 60,
+            "range": 5,
+            "effect_on_caster": {
+                "type": "Noop"
+            },
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Random",
+                        "choices": [
+                            {
+                                "weight": 90,
+                                "effect": {
+                                    "type": "Noop"
+                                }
+                            },
+                            {
+                                "weight": 10,
+                                "effect": {
+                                    "preset": "effects/attach_status/charmed.json"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "preset": "effects/dd_melee.json"
+                    }
+                ]
+            }
+        }
+    },
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "clans": [
+        "Charmers",
+        "Splashers"
+    ],
+    "base": "melee"
+}

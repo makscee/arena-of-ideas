@@ -27,8 +27,8 @@ impl Logic<'_> {
                     if !status.who.matches(other.faction, unit.faction) {
                         continue;
                     }
-                    if let Some(alliance) = status.alliance {
-                        if !unit.alliances.contains(&alliance) {
+                    if let Some(clan) = status.clan {
+                        if !unit.clans.contains(&clan) {
                             continue;
                         }
                     }

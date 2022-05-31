@@ -15,7 +15,7 @@ impl Logic<'_> {
                         effect: projectile.effect.clone(),
                         context: EffectContext {
                             caster: Some(projectile.caster),
-                            from: Some(target.id),
+                            from: Some(projectile.caster),
                             target: Some(target.id),
                             vars: default(),
                         },

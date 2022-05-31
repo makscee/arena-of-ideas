@@ -4,7 +4,7 @@ use super::*;
 pub struct ScavengeStatus {
     pub who: TargetFilter,
     pub range: Coord,
-    pub alliance: Option<Alliance>,
+    pub clan: Option<Clan>,
     pub effect: Effect,
 }
 

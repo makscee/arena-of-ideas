@@ -22,5 +22,29 @@
         "parameters": {
             "u_status_color": "#ff1493"
         }
+    },
+    "Vulnerability": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#800002"
+        }
+    },
+    "Bleed": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#FC0107"
+        }
+    },
+    "Plague": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#408002"
+        }
+    },
+    "SiphonLife": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#400080"
+        }
     }
 }

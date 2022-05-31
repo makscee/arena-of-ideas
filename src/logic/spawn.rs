@@ -8,19 +8,14 @@ impl Logic<'_> {
         faction: Faction,
         position: Vec2<Coord>,
     ) -> Id {
-        let mut template = self.model.unit_templates[unit_type].clone();
-        self.spawn_template(unit_type, template, faction, position)
-    }
-    /// Spawns the unit and returns its id
-    pub fn spawn_template(
-        &mut self,
-        unit_type: &UnitType,
-        template: UnitTemplate,
-        faction: Faction,
-        position: Vec2<Coord>,
-    ) -> Id {
+        let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;
+
         let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
+        for (clan, &clan_members) in &self.model.config.clans {
+            clan.apply_effects(&mut unit, &self.model.clan_effects, clan_members);
+        }
+
         self.model.next_id += 1;
         self.model.spawning_units.insert(unit);
         id
@@ -37,8 +32,10 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            for status in &unit.all_statuses {
-                if let Status::OnSpawn(status) = status {
+            // Check attached_statuse instead of all_statuses
+            // because they are not set for spawning units
+            for status in &unit.attached_statuses {
+                if let Status::OnSpawn(status) = &status.status {
                     self.effects.push_back(QueuedEffect {
                         effect: status.effect.clone(),
                         context: EffectContext {
