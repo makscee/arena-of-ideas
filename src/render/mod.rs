@@ -319,20 +319,21 @@ impl UnitRender {
                         unit.radius.as_f32() * attack_scale * spawn_scale,
                         {
                             let mut color = *color;
-                            if unit
-                                .all_statuses
-                                .iter()
-                                .any(|status| status.r#type() == StatusType::Freeze)
-                            {
-                                color = Color::CYAN;
-                            }
-                            if unit
-                                .all_statuses
-                                .iter()
-                                .any(|status| matches!(status, Status::Slow { .. }))
-                            {
-                                color = Color::GRAY;
-                            }
+                            // TODO: reimplement
+                            // if unit
+                            //     .all_statuses
+                            //     .iter()
+                            //     .any(|status| status.r#type() == StatusType::Freeze)
+                            // {
+                            //     color = Color::CYAN;
+                            // }
+                            // if unit
+                            //     .all_statuses
+                            //     .iter()
+                            //     .any(|status| matches!(status, StatusOld::Slow { .. }))
+                            // {
+                            //     color = Color::GRAY;
+                            // }
                             color
                         },
                     ),
@@ -394,7 +395,7 @@ impl UnitRender {
                     })
                     .map(|x| x.as_f32());
 
-                let mut is_ability_ready = 0.0; // TODO: rewrite please
+                let mut is_ability_ready: f32 = 0.0; // TODO: rewrite please
                 if let Some(ability) = &template.ability {
                     is_ability_ready = match unit.ability_cooldown {
                         Some(time) if time > Time::new(0.0) => 0.0,
@@ -463,8 +464,7 @@ impl UnitRender {
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
-                        let status_type = status.r#type();
-                        if let Some(program) = self.assets.statuses.get(&status_type) {
+                        if let Some(program) = self.assets.statuses.get(&status.status.name) {
                             Some(program)
                         } else {
                             None
@@ -474,10 +474,10 @@ impl UnitRender {
                 let status_count = statuses.len();
                 for (
                     status_index,
-                        StatusRender {
-                            shader: program,
-                            parameters,
-                        },
+                    StatusRender {
+                        shader: program,
+                        parameters,
+                    },
                 ) in statuses.into_iter().enumerate()
                 {
                     let mut new_texture =

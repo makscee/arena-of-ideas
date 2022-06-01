@@ -21,7 +21,7 @@ pub struct StatusRender {
 }
 
 #[derive(Deserialize)]
-struct StatusConfig {
+struct StatusRenderConfig {
     pub shader: String,
     #[serde(default)]
     pub parameters: ShaderParameters,
@@ -31,7 +31,7 @@ struct StatusConfig {
 pub struct Assets {
     pub units: UnitTemplates,
     #[asset(load_with = "load_statuses(geng, &base_path)")]
-    pub statuses: HashMap<StatusType, StatusRender>,
+    pub statuses: HashMap<StatusName, StatusRender>,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
@@ -44,14 +44,14 @@ pub struct Assets {
 async fn load_statuses(
     geng: &Geng,
     base_path: &std::path::Path,
-) -> anyhow::Result<HashMap<StatusType, StatusRender>> {
+) -> anyhow::Result<HashMap<String, StatusRender>> {
     let json = <String as geng::LoadAsset>::load(geng, &base_path.join("statuses.json"))
         .await
         .context("Failed to load statuses.json")?;
-    let paths: HashMap<StatusType, StatusConfig> =
+    let paths: HashMap<StatusName, StatusRenderConfig> =
         serde_json::from_str(&json).context("Failed to parse statuses.json")?;
     let result: anyhow::Result<Vec<_>> =
-        future::join_all(paths.into_iter().map(|(status_type, config)| async move {
+        future::join_all(paths.into_iter().map(|(status_name, config)| async move {
             let path = config.shader.as_str();
             let program =
                 <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
@@ -61,7 +61,7 @@ async fn load_statuses(
                 shader: program,
                 parameters: config.parameters,
             };
-            Ok::<_, anyhow::Error>((status_type, render))
+            Ok::<_, anyhow::Error>((status_name, render))
         }))
         .await
         .into_iter()
@@ -76,7 +76,7 @@ pub type SpawnPoint = String;
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
     #[serde(default)]
-    pub statuses: Vec<Status>,
+    pub statuses: Vec<StatusConfig>,
     #[serde(default)]
     pub waves: VecDeque<Wave>,
 }
@@ -90,7 +90,7 @@ pub struct Wave {
     #[serde(default = "Wave::default_wait_clear")]
     pub wait_clear: bool,
     #[serde(default)]
-    pub statuses: Vec<Status>,
+    pub statuses: Vec<StatusConfig>,
     #[serde(flatten)]
     pub spawns: HashMap<SpawnPoint, VecDeque<WaveSpawn>>,
 }

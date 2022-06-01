@@ -31,8 +31,7 @@ pub struct Unit {
     pub id: Id,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
-    pub attached_statuses: Vec<AttachedStatus>,
-    pub all_statuses: Vec<Status>,
+    pub all_statuses: Vec<AttachedStatus>,
     pub faction: Faction,
     pub action_state: ActionState,
     pub health: Health,
@@ -77,17 +76,12 @@ impl Unit {
             id,
             unit_type,
             spawn_animation_time_left: Some(template.spawn_animation_time),
-            attached_statuses: template
+            all_statuses: template
                 .statuses
                 .iter()
-                .map(|status| AttachedStatus {
-                    status: status.clone(),
-                    caster: None,
-                    time: None,
-                    duration: None,
-                })
+                .cloned()
+                .map(|status| status.attach(Some(id), None))
                 .collect(),
-            all_statuses: Vec::new(),
             faction,
             action_state: ActionState::None,
             health: template.health,

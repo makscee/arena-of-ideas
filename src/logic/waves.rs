@@ -58,15 +58,10 @@ impl Logic<'_> {
                     let statuses = round
                         .statuses
                         .iter()
-                        .chain(round.waves.front().unwrap().statuses.iter());
-                    for status in statuses {
-                        unit.attached_statuses.push(AttachedStatus {
-                            status: status.clone(),
-                            caster: None,
-                            time: None,
-                            duration: None,
-                        })
-                    }
+                        .chain(round.waves.front().unwrap().statuses.iter())
+                        .cloned()
+                        .map(|status| status.attach(Some(unit.id), None));
+                    unit.all_statuses.extend(statuses);
                 }
             } else {
                 // Next wave

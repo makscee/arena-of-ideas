@@ -57,16 +57,17 @@ impl EffectImpl for HealEffect {
         target_unit.health += value;
 
         for status in &target_unit.all_statuses {
-            if let Status::OnHeal(status) = status {
-                logic.effects.push_front(QueuedEffect {
-                    effect: status.effect.clone(),
-                    context: {
-                        let mut context = context.clone();
-                        context.vars.insert(VarName::HealthRestored, value);
-                        context
-                    },
-                });
-            }
+            // TODO: reimplement
+            // if let StatusOld::OnHeal(status) = status {
+            //     logic.effects.push_front(QueuedEffect {
+            //         effect: status.effect.clone(),
+            //         context: {
+            //             let mut context = context.clone();
+            //             context.vars.insert(VarName::HealthRestored, value);
+            //             context
+            //         },
+            //     });
+            // }
         }
     }
 }

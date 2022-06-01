@@ -21,7 +21,9 @@ impl Logic<'_> {
                         continue;
                     }
                     if unit.all_statuses.iter().any(|status| {
-                        matches!(status.r#type(), StatusType::Freeze | StatusType::Stun)
+                        // TODO: reimplement
+                        // matches!(status.r#type(), StatusType::Freeze | StatusType::Stun)
+                        false
                     }) {
                         continue;
                     }

@@ -34,18 +34,19 @@ impl Logic<'_> {
         for mut unit in new_units {
             // Check attached_statuse instead of all_statuses
             // because they are not set for spawning units
-            for status in &unit.attached_statuses {
-                if let Status::OnSpawn(status) = &status.status {
-                    self.effects.push_back(QueuedEffect {
-                        effect: status.effect.clone(),
-                        context: EffectContext {
-                            caster: Some(unit.id),
-                            from: Some(unit.id),
-                            target: Some(unit.id),
-                            vars: default(),
-                        },
-                    });
-                }
+            for status in &unit.all_statuses {
+                // TODO: reimplement
+                // if let StatusOld::OnSpawn(status) = &status.status {
+                //     self.effects.push_back(QueuedEffect {
+                //         effect: status.effect.clone(),
+                //         context: EffectContext {
+                //             caster: Some(unit.id),
+                //             from: Some(unit.id),
+                //             target: Some(unit.id),
+                //             vars: default(),
+                //         },
+                //     });
+                // }
             }
             self.model.units.insert(unit);
         }

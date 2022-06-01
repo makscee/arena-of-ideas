@@ -83,7 +83,7 @@ pub enum StatusType {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
-pub enum Status {
+pub enum StatusOld {
     Freeze(Box<FreezeStatus>),
     Stun(Box<StunStatus>),
     Shield(Box<ShieldStatus>),
@@ -113,18 +113,117 @@ pub enum Status {
     SiphonLife(Box<RepeatingEffectStatus>),
 }
 
+// #[derive(Debug, Serialize, Deserialize, Clone)]
+// pub struct AttachedStatus {
+//     #[serde(flatten)]
+//     pub status: Status,
+//     pub caster: Option<Id>,
+//     pub time: Option<Time>,
+//     pub duration: Option<Time>,
+// }
+
+/// Describes what to do when several equal statuses are attached to the same unit
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AttachedStatus {
-    #[serde(flatten)]
-    pub status: Status,
-    pub caster: Option<Id>,
-    pub time: Option<Time>,
+#[serde(tag = "type")]
+pub enum StatusStacking {
+    /// Statuses are attached independently and treated as different
+    Independent,
+    /// New status only refreshes the timer
+    Refresh,
+    /// New status only increases the stack counter variable
+    Count,
+    /// New status refreshes the timer and increases the stack counter variable
+    CountRefresh,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum StatusTrigger {
+    /// Triggered when the owner deals damage of the specified type (or any type if none is specified)
+    DamageDealt { damage_type: Option<DamageType> },
+    /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
+    DamageTaken { damage_type: Option<DamageType> },
+    /// Triggered when the owner's shield breaks
+    ShieldBroken,
+    /// Triggered when the unit spawns
+    Spawn,
+    /// Triggered when the owner dies
+    Death,
+    /// Triggered when the owner is healed
+    Heal,
+    /// Triggered when the owner kills another unit
+    Kill,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct StatusListener {
+    /// A list of triggers for the effect
+    pub triggers: Vec<StatusTrigger>,
+    /// The effect to apply to the owner when triggered
+    pub effect: Effect,
+}
+
+pub type StatusName = String;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct StatusConfig {
+    /// The name is used when comparing two statuses for equality for a stack
+    /// and for parsing in the unit config
+    pub name: StatusName,
+    pub stacking: StatusStacking,
+    /// If specified, the status will drop after that time,
+    /// otherwise the status will be attached indefinitely
+    /// or until it gets removed manually
     pub duration: Option<Time>,
+    /// A list of triggers for this status
+    pub triggers: Vec<StatusTrigger>,
+    /// Specifications of effects to apply for different subsets of triggers
+    pub listeners: Vec<StatusListener>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct AttachedStatus {
+    /// The actual status that hold all the neccessary logic info
+    pub status: StatusConfig,
+    /// Specifies how much time is left until the status is dropped.
+    /// If `None`, then the status remains attached.
+    pub time: Option<Time>,
+    /// Specifies the owner of the status
+    pub owner: Option<Id>,
+    /// Specifies the caster that applied the status
+    pub caster: Option<Id>,
+    /// Variables that persist for the lifetime of the status
+    pub vars: HashMap<VarName, R32>,
+}
+
+impl StatusConfig {
+    /// Transforms config into an attached status
+    pub fn attach(self, owner: Option<Id>, caster: Option<Id>) -> AttachedStatus {
+        AttachedStatus {
+            time: self.duration,
+            status: self,
+            owner,
+            caster,
+            vars: default(),
+        }
+    }
+}
+
+impl EffectContainer for StatusConfig {
+    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {
+        self.listeners
+            .iter_mut()
+            .map(|listener| &mut listener.effect)
+            .for_each(|effect| f(effect))
+    }
 }
 
 pub trait StatusImpl: EffectContainer {}
 
-impl Status {
+impl StatusOld {
     pub fn as_mut(&mut self) -> &mut dyn StatusImpl {
         match self {
             Self::Freeze(status) => &mut **status,

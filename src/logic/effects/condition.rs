@@ -12,7 +12,7 @@ impl Logic<'_> {
                     .expect("Caster, From, or Target not found");
                 who.all_statuses
                     .iter()
-                    .any(|status| status.r#type() == *status_type)
+                    .any(|status| status.status.name == *status_type)
             }
             Condition::UnitInjured { who } => {
                 let who = context.get(*who);

@@ -14,9 +14,10 @@ impl Logic<'_> {
                         effect.apply_modifier(&modifier);
                     }
                     for status in &unit.all_statuses {
-                        if let Status::Modifier(status) = status {
-                            effect.apply_modifier(&status.modifier);
-                        }
+                        // TODO: reimplement
+                        // if let StatusOld::Modifier(status) = status {
+                        //     effect.apply_modifier(&status.modifier);
+                        // }
                     }
                     self.effects.push_back(QueuedEffect {
                         effect,
@@ -47,11 +48,12 @@ impl Logic<'_> {
         if let ActionState::Cooldown { time } = &mut unit.action_state {
             let attack_speed = unit.all_statuses.iter().fold(1.0, |speed, status| {
                 speed
-                    + if let Status::AttackSpeed(status) = status {
-                        status.percent / 100.0
-                    } else {
-                        0.0
-                    }
+                // TODO: reimplement
+                // + if let StatusOld::AttackSpeed(status) = status {
+                //     status.percent / 100.0
+                // } else {
+                //     0.0
+                // }
             });
             *time += self.delta_time * r32(attack_speed);
             if *time > unit.action.cooldown {
