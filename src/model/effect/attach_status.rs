@@ -15,7 +15,7 @@ fn default_who() -> Who {
 pub struct AttachStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
-    pub status: StatusConfig,
+    pub status: Status,
 }
 
 impl EffectContainer for AttachStatusEffect {

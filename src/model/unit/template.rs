@@ -18,7 +18,7 @@ pub struct UnitTemplate {
     pub radius: Coord,
     pub action: ActionProperties,
     pub move_ai: MoveAi,
-    pub statuses: Vec<StatusConfig>,
+    pub statuses: Vec<Status>,
     pub target_ai: TargetAi,
     pub ability: Option<Ability>,
     pub clans: HashSet<Clan>,

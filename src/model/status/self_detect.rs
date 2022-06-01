@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SelfDetectStatus {
-    pub detect_type: StatusType,
+    pub detect_type: StatusName,
     pub effect: Effect,
 }
 

@@ -4,7 +4,7 @@ use super::*;
 pub struct AuraStatus {
     pub distance: Option<Coord>,
     pub clan: Option<Clan>, // TODO: Filter
-    pub status: Box<StatusOld>,
+    pub status: Box<Status>,
 }
 
 impl EffectContainer for AuraStatus {

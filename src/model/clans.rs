@@ -37,7 +37,7 @@ pub struct ClanEffect {
     #[serde(default)]
     filter: ClanEffectFilter,
     /// Statuses to apply to every target unit
-    statuses: Vec<StatusConfig>,
+    statuses: Vec<Status>,
 }
 
 impl ClanEffectFilter {
