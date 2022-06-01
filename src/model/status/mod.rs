@@ -144,6 +144,12 @@ pub enum StatusTrigger {
     Heal,
     /// Triggered when the owner kills another unit
     Kill,
+    /// Triggered when a unit dies in range
+    Scavenge {
+        who: TargetFilter,
+        range: Coord,
+        clan: Option<Clan>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -200,6 +206,21 @@ impl Status {
             caster,
             vars: default(),
         }
+    }
+}
+
+impl AttachedStatus {
+    /// Reacts to the trigger and returns the relevant effects
+    /// according to the status listeners
+    pub fn trigger<'a>(
+        &'a self,
+        mut filter: impl FnMut(&StatusTrigger) -> bool + 'a,
+    ) -> impl Iterator<Item = (Effect, HashMap<VarName, R32>)> + 'a {
+        self.status
+            .listeners
+            .iter()
+            .filter(move |listener| listener.triggers.iter().any(|trigger| filter(trigger)))
+            .map(|listener| (listener.effect.clone(), self.vars.clone()))
     }
 }
 
