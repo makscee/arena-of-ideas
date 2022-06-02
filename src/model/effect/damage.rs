@@ -99,22 +99,25 @@ impl EffectImpl for DamageEffect {
         //     .all_statuses
         //     .retain(|status| status.status.r#type() != StatusType::Freeze);
 
-        // for status in &target_unit.all_statuses {
-        //     if let StatusOld::OnTakeDamage(status) = status {
-        //         if match &status.damage_type {
-        //             Some(damage_type) => effect.types.contains(damage_type),
-        //             None => true,
-        //         } {
-        //             logic.effects.push_front(QueuedEffect {
-        //                 effect: status.effect.clone(),
-        //                 context: EffectContext {
-        //                     caster: Some(target_unit.id),
-        //                     ..context.clone()
-        //                 },
-        //             });
-        //         }
-        //     }
-        // }
+        for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::DamageTaken { damage_type } => match &damage_type {
+                    Some(damage_type) => effect.types.contains(damage_type),
+                    None => true,
+                },
+                _ => false,
+            })
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: Some(target_unit.id),
+                    from: context.from,
+                    target: context.target,
+                    vars,
+                },
+            })
+        }
 
         // // Protection
         // for status in &target_unit.all_statuses {
