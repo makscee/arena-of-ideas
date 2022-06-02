@@ -150,6 +150,15 @@ pub enum StatusTrigger {
         range: Coord,
         clan: Option<Clan>,
     },
+    /// Triggered when the owner gains an effect via [ApplyGainedEffect]
+    GainedEffect,
+    /// Triggered when some unit acquires the specified status and the filter is satisfied
+    Detect {
+        status_name: StatusName,
+        filter: TargetFilter,
+    },
+    /// Triggered when the owner acquires the specified status
+    SelfDetect { status_name: StatusName },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
