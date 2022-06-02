@@ -56,18 +56,24 @@ impl EffectImpl for HealEffect {
         let value = min(value, max_health - target_unit.health);
         target_unit.health += value;
 
-        for status in &target_unit.all_statuses {
-            // TODO: reimplement
-            // if let StatusOld::OnHeal(status) = status {
-            //     logic.effects.push_front(QueuedEffect {
-            //         effect: status.effect.clone(),
-            //         context: {
-            //             let mut context = context.clone();
-            //             context.vars.insert(VarName::HealthRestored, value);
-            //             context
-            //         },
-            //     });
-            // }
+        for (effect, mut vars) in target_unit
+            .all_statuses
+            .iter()
+            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Heal)))
+        {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: context.caster,
+                    from: context.from,
+                    target: context.target,
+                    vars: {
+                        vars.extend(context.vars.clone());
+                        vars.insert(VarName::HealthRestored, value);
+                        vars
+                    },
+                },
+            })
         }
     }
 }
