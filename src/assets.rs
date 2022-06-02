@@ -13,7 +13,7 @@ pub struct Options {
 // Used because deserializing with state is not as trivial as writing
 // `#[derive(Deserialize)]`, and requires too much boilerplate.
 pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
-    Lazy::new(|| Mutex::new(Effects { map: default() }));
+Lazy::new(|| Mutex::new(Effects { map: default() }));
 
 pub struct StatusRender {
     pub shader: Rc<ugli::Program>,
@@ -52,27 +52,86 @@ impl Statuses {
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
-    pub statuses: Statuses,
-    pub clans: ClanEffects,
-    pub options: Options,
-    pub textures: Textures,
-    pub shaders: Shaders,
-    pub card: Rc<ugli::Texture>,
-    #[asset(path = "rounds/round*.json", range = "1..=3")]
-    pub rounds: Vec<GameRound>,
+    <<<<<<< HEAD
+        pub statuses: Statuses,
+        =======
+            #[asset(load_with = "load_statuses(geng, &base_path)")]
+            pub statuses: HashMap<StatusType, ShaderRender>,
+            #[asset(load_with = "load_field_render(geng, &base_path)")]
+        pub field_render: ShaderRender,
+        >>>>>>> 8bc4118 (Start implementing Field Shader)
+            pub clans: ClanEffects,
+            pub options: Options,
+            pub textures: Textures,
+            pub shaders: Shaders,
+            pub card: Rc<ugli::Texture>,
+            #[asset(path = "rounds/round*.json", range = "1..=3")]
+            pub rounds: Vec<GameRound>,
 }
 
-pub type Key = String;
-pub type SpawnPoint = String;
+<<<<<<< HEAD
+=======
+async fn load_statuses(
+    geng: &Geng,
+    base_path: &std::path::Path,
+    ) -> anyhow::Result<HashMap<StatusType, ShaderRender>> {
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("statuses.json"))
+        .await
+        .context("Failed to load statuses.json")?;
+    let paths: HashMap<StatusType, ShaderConfig> =
+        serde_json::from_str(&json).context("Failed to parse statuses.json")?;
+    let result: anyhow::Result<Vec<_>> =
+        future::join_all(paths.into_iter().map(|(status_type, config)| async move {
+            let path = config.shader.as_str();
+            let program =
+                <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+                .await
+                .context(format!("Failed to load {path}"))?;
+            let render = ShaderRender {
+                shader: program,
+                parameters: config.parameters,
+            };
+            Ok::<_, anyhow::Error>((status_type, render))
+        }))
+    .await
+        .into_iter()
+        .collect();
+    result.map(|list| list.into_iter().collect())
+}
+
+async fn load_field_render(
+    geng: &Geng,
+    base_path: &std::path::Path,
+    ) -> anyhow::Result<ShaderRender> {
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("field_render.json"))
+        .await
+        .context("Failed to load field_render.json")?;
+    let config: ShaderConfig =
+        serde_json::from_str(&json).context("Failed to parse field_render.json")?;
+    let path = config.shader.as_str();
+    let program =
+        <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+        .await
+        .context(format!("Failed to load {path}"))?;
+    let result = ShaderRender {
+        shader: program,
+        parameters: config.parameters,
+    };
+    Ok::<_, anyhow::Error>(result)
+}
+
+>>>>>>> 8bc4118 (Start implementing Field Shader)
+    pub type Key = String;
+    pub type SpawnPoint = String;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct GameRound {
-    #[serde(default)]
-    pub statuses: Vec<Status>,
-    #[serde(default)]
-    pub waves: VecDeque<Wave>,
-}
+    pub struct GameRound {
+        #[serde(default)]
+        pub statuses: Vec<Status>,
+        #[serde(default)]
+        pub waves: VecDeque<Wave>,
+    }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Wave {
@@ -180,10 +239,10 @@ impl Assets {
                 .shaders
                 .get(path)
                 .expect(&format!(
-                    "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
-                ))
+                        "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
+                        ))
                 .clone(),
-            parameters: parameters.clone(), // TODO: avoid cloning
+                parameters: parameters.clone(), // TODO: avoid cloning
         }
     }
 
@@ -195,8 +254,8 @@ impl Assets {
                     .textures
                     .get(path)
                     .expect(&format!(
-                        "Unknown texture: {path:?}. Perhaps you need to add it in textures.json"
-                    ))
+                            "Unknown texture: {path:?}. Perhaps you need to add it in textures.json"
+                            ))
                     .clone(),
             },
             RenderConfig::Shader { path, parameters } => RenderMode::Shader {
@@ -204,10 +263,10 @@ impl Assets {
                     .shaders
                     .get(path)
                     .expect(&format!(
-                        "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
-                    ))
+                            "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
+                            ))
                     .clone(),
-                parameters: parameters.clone(), // TODO: avoid cloning
+                    parameters: parameters.clone(), // TODO: avoid cloning
             },
         }
     }
@@ -226,8 +285,8 @@ impl geng::LoadAsset for GameRound {
                 let preset = <String as geng::LoadAsset>::load(
                     &geng,
                     &path.as_path().parent().unwrap().join(preset),
-                )
-                .await?;
+                    )
+                    .await?;
                 let mut preset: GameRound = serde_json::from_str(&preset)?;
 
                 // Parse round
@@ -256,9 +315,9 @@ impl geng::LoadAsset for UnitTemplates {
             geng.shader_lib().add(
                 "common.glsl",
                 &<String as geng::LoadAsset>::load(&geng, &common_path)
-                    .await
-                    .context(format!("Failed to load common.glsl from {:?}", common_path))?,
-            );
+                .await
+                .context(format!("Failed to load common.glsl from {:?}", common_path))?,
+                );
 
             let json = <String as geng::LoadAsset>::load(&geng, &path)
                 .await
@@ -274,8 +333,8 @@ impl geng::LoadAsset for UnitTemplates {
                     let mut json = <serde_json::Value as geng::LoadAsset>::load(
                         &geng,
                         &base_path.join(format!("{}.json", typ)),
-                    )
-                    .await?;
+                        )
+                        .await?;
                     if let Some(base) = json.get_mut("base") {
                         let base = base.take();
                         let base = base.as_str().expect("base must be a string");
@@ -352,15 +411,15 @@ impl geng::LoadAsset for ClanEffects {
                 .context(format!("Failed to load list of clan effects from {path:?}"))?;
             let paths: HashMap<Clan, std::path::PathBuf> = serde_json::from_str(&json).context(
                 format!("Failed to parse list of clan effects from {path:?}"),
-            )?;
+                )?;
             let mut map = HashMap::new();
             for (clan, path) in paths {
                 let path = base_path.join(path);
                 let json = <String as geng::LoadAsset>::load(&geng, &path)
                     .await
                     .context(format!(
-                        "Failed to load clan ({clan:?}) effects from {path:?}"
-                    ))?;
+                            "Failed to load clan ({clan:?}) effects from {path:?}"
+                            ))?;
                 let effects: Vec<ClanEffect> = serde_json::from_str(&json)
                     .context(format!("Failed to parse clan effects from {path:?}"))?;
                 map.insert(clan, effects);
@@ -412,18 +471,18 @@ impl geng::LoadAsset for Textures {
                         let tree = usvg::Tree::from_data(
                             data.as_bytes(),
                             &usvg::Options::default().to_ref(),
-                        )?;
+                            )?;
                         let mut pixmap = tiny_skia::Pixmap::new(
                             tree.svg_node().size.width().ceil() as _,
                             tree.svg_node().size.height().ceil() as _,
-                        )
-                        .unwrap();
+                            )
+                            .unwrap();
                         resvg::render(
                             &tree,
                             usvg::FitTo::Original,
                             tiny_skia::Transform::identity(),
                             pixmap.as_mut(),
-                        );
+                            );
                         let texture = ugli::Texture::new_with(
                             geng.ugli(),
                             vec2(pixmap.width() as usize, pixmap.height() as usize),
@@ -434,7 +493,7 @@ impl geng::LoadAsset for Textures {
                                 Color::rgba(color.red(), color.green(), color.blue(), color.alpha())
                                     .convert()
                             },
-                        );
+                            );
                         Rc::new(texture)
                     }
                     _ => geng::LoadAsset::load(&geng, &texture_path).await?,

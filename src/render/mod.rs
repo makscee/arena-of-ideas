@@ -70,6 +70,7 @@ impl Render {
         framebuffer: &mut ugli::Framebuffer,
     ) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
+        self.draw_field(&self.assets.field_render, game_time, framebuffer);
         for unit in itertools::chain![&model.units, &model.spawning_units] {
             let template = &self.assets.units[&unit.unit_type];
 
@@ -275,6 +276,53 @@ impl Render {
                 );
             }
         }
+    }
+
+    fn draw_field(
+        &self,
+        shader_render: &ShaderRender,
+        game_time: f32,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        let quad = ugli::VertexBuffer::new_dynamic(
+            self.geng.ugli(),
+            vec![
+                draw_2d::Vertex {
+                    a_pos: vec2(-1.0, -1.0),
+                },
+                draw_2d::Vertex {
+                    a_pos: vec2(1.0, -1.0),
+                },
+                draw_2d::Vertex {
+                    a_pos: vec2(1.0, 1.0),
+                },
+                draw_2d::Vertex {
+                    a_pos: vec2(-1.0, 1.0),
+                },
+            ],
+        );
+        let framebuffer_size = framebuffer.size();
+        let window_size = self.geng.window().size();
+
+        ugli::draw(
+            framebuffer,
+            &shader_render.shader,
+            ugli::DrawMode::TriangleFan,
+            &quad,
+            (
+                ugli::uniforms! {
+                    u_time: game_time,
+                    u_unit_position: vec2(Coord::ZERO, Coord::ZERO).map(|x| x.as_f32()),
+                    u_window_size: window_size,
+                },
+                geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                &shader_render.parameters,
+            ),
+            ugli::DrawParameters {
+                blend_mode: Some(default()),
+                ..default()
+            },
+        );
     }
 }
 
