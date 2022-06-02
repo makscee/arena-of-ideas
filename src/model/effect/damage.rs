@@ -198,19 +198,27 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                for status in &caster.all_statuses {
-                    // TODO: reimplement
-                    // if let StatusOld::OnKill(status) = status {
-                    //     if match &status.damage_type {
-                    //         Some(damage_type) => effect.types.contains(damage_type),
-                    //         None => true,
-                    //     } {
-                    //         logic.effects.push_front(QueuedEffect {
-                    //             effect: status.effect.clone(),
-                    //             context: context.clone(),
-                    //         });
-                    //     }
-                    // }
+                for (effect, mut vars) in caster.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::Kill { damage_type } => match damage_type {
+                            Some(damage_type) => effect.types.contains(damage_type),
+                            None => true,
+                        },
+                        _ => false,
+                    })
+                }) {
+                    logic.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: context.caster,
+                            from: context.from,
+                            target: context.target,
+                            vars: {
+                                vars.extend(context.vars.clone());
+                                vars
+                            },
+                        },
+                    })
                 }
                 logic.kill(context.target.unwrap());
             }

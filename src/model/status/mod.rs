@@ -142,8 +142,8 @@ pub enum StatusTrigger {
     Death,
     /// Triggered when the owner is healed
     Heal,
-    /// Triggered when the owner kills another unit
-    Kill,
+    /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
+    Kill { damage_type: Option<DamageType> },
     /// Triggered when a unit dies in range
     Scavenge {
         who: TargetFilter,
