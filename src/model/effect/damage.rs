@@ -144,19 +144,27 @@ impl EffectImpl for DamageEffect {
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
-            for status in &caster_unit.all_statuses {
-                // TODO: reimplement
-                // if let StatusOld::OnDealDamage(status) = status {
-                //     if match &status.damage_type {
-                //         Some(damage_type) => effect.types.contains(damage_type),
-                //         None => true,
-                //     } {
-                //         logic.effects.push_front(QueuedEffect {
-                //             effect: status.effect.clone(),
-                //             context: context.clone(),
-                //         })
-                //     }
-                // }
+            for (effect, mut vars) in caster_unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::DamageDealt { damage_type } => match damage_type {
+                        Some(damage_type) => effect.types.contains(damage_type),
+                        None => true,
+                    },
+                    _ => false,
+                })
+            }) {
+                logic.effects.push_front(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: context.caster,
+                        from: context.from,
+                        target: context.target,
+                        vars: {
+                            vars.extend(context.vars.clone());
+                            vars
+                        },
+                    },
+                })
             }
         }
 
