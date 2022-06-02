@@ -15,13 +15,13 @@ pub struct Options {
 pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
     Lazy::new(|| Mutex::new(Effects { map: default() }));
 
-pub struct StatusRender {
+pub struct ShaderRender {
     pub shader: ugli::Program,
     pub parameters: ShaderParameters,
 }
 
 #[derive(Deserialize)]
-struct StatusConfig {
+struct ShaderConfig {
     pub shader: String,
     #[serde(default)]
     pub parameters: ShaderParameters,
@@ -31,7 +31,9 @@ struct StatusConfig {
 pub struct Assets {
     pub units: UnitTemplates,
     #[asset(load_with = "load_statuses(geng, &base_path)")]
-    pub statuses: HashMap<StatusType, StatusRender>,
+    pub statuses: HashMap<StatusType, ShaderRender>,
+    #[asset(load_with = "load_field_render(geng, &base_path)")]
+    pub field_render: ShaderRender,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
@@ -44,11 +46,11 @@ pub struct Assets {
 async fn load_statuses(
     geng: &Geng,
     base_path: &std::path::Path,
-) -> anyhow::Result<HashMap<StatusType, StatusRender>> {
+) -> anyhow::Result<HashMap<StatusType, ShaderRender>> {
     let json = <String as geng::LoadAsset>::load(geng, &base_path.join("statuses.json"))
         .await
         .context("Failed to load statuses.json")?;
-    let paths: HashMap<StatusType, StatusConfig> =
+    let paths: HashMap<StatusType, ShaderConfig> =
         serde_json::from_str(&json).context("Failed to parse statuses.json")?;
     let result: anyhow::Result<Vec<_>> =
         future::join_all(paths.into_iter().map(|(status_type, config)| async move {
@@ -57,7 +59,7 @@ async fn load_statuses(
                 <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
                     .await
                     .context(format!("Failed to load {path}"))?;
-            let render = StatusRender {
+            let render = ShaderRender {
                 shader: program,
                 parameters: config.parameters,
             };
@@ -67,6 +69,27 @@ async fn load_statuses(
         .into_iter()
         .collect();
     result.map(|list| list.into_iter().collect())
+}
+
+async fn load_field_render(
+    geng: &Geng,
+    base_path: &std::path::Path,
+) -> anyhow::Result<ShaderRender> {
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("field_render.json"))
+        .await
+        .context("Failed to load field_render.json")?;
+    let config: ShaderConfig =
+        serde_json::from_str(&json).context("Failed to parse field_render.json")?;
+    let path = config.shader.as_str();
+    let program =
+        <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+            .await
+            .context(format!("Failed to load {path}"))?;
+    let result = ShaderRender {
+        shader: program,
+        parameters: config.parameters,
+    };
+    Ok::<_, anyhow::Error>(result)
 }
 
 pub type Key = String;

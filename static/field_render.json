@@ -1,0 +1,6 @@
+{
+    "shader": "shaders/field.glsl",
+    "parameters": {
+        "u_status_color": "#ffd700"
+    }
+}
