@@ -35,6 +35,7 @@ impl Logic<'_> {
             Condition::Chance { percent } => {
                 r32(global_rng().gen_range(0.0..=100.0)) < percent.calculate(&context, self)
             }
+            Condition::Clan { clan, count } => self.model.config.clans[clan] >= *count,
         }
     }
 }

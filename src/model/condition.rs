@@ -20,7 +20,11 @@ pub enum Condition {
     },
     Chance {
         percent: Expr,
-    }
+    },
+    Clan {
+        clan: Clan,
+        count: usize,
+    },
 }
 
 impl Default for Condition {
