@@ -21,8 +21,6 @@ void main() {
 
 in vec2 v_quad_pos;
 
-uniform int p_count = 80;
-uniform float p_life_time = 0.08;
 uniform float p_radius_start = 0.2;
 uniform float p_radius_end = 0.00;
 uniform float p_glow_radius = 0.3;
@@ -37,7 +35,7 @@ float p_spread(int i, int offset)
 
 float p_lifeT(int i, float t)
 {
-    float maxLife = p_life_time + p_spread(i, 1) * 1. * p_life_time;
+    float maxLife = p_lifeTime + p_spread(i, 1) * 1. * p_lifeTime;
     float ut = (t - floor(t / maxLife) * maxLife) / maxLife;
     float lifeT = ut - i / float(p_count);
     lifeT += float(lifeT < 0);
@@ -68,7 +66,12 @@ float p_glow(float dist, float radius)
     return smoothstep(p_glow_radius, 0.1, dist - radius) * .3;
 }
 
-vec4 p_renderParticle(vec2 uv, int i, float t)
+bool p_discardCheck(vec2 uv, float t)
+{
+    return length(uv) > p_speed * 2.;
+}
+
+vec4 p_renderParticle(int i, vec2 uv, float t)
 {
     vec2 position = p_positionOverT(i, t);
     float dist = distance(uv, position);
@@ -77,22 +80,12 @@ vec4 p_renderParticle(vec2 uv, int i, float t)
     return vec4(p_color(i), alpha);
 }
 
-bool p_discardCheck(vec2 uv, float t)
-{
-    return length(uv) > p_speed * 2.;
-}
-
 void main() {
-    if (p_discardCheck(uv, t))
-    {
-        gl_FragColor = vec4(0);
-        return;
-    }
     commonInit();
 
     vec4 col = vec4(0);
     for (int i = 0; i < p_count; i++)
-        col = alphaBlend(col, p_renderParticle(uv, i, t));
+        col = alphaBlend(col, p_renderParticle(i, uv, t));
 
     gl_FragColor = col;
 }

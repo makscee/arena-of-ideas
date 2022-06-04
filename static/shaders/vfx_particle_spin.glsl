@@ -19,17 +19,13 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
 
-uniform vec4 p_startColor;
-uniform vec4 p_endColor;
 uniform float p_startSize;
 uniform float p_endSize;
 
-uniform int p_count;
 uniform float p_spawnShift = 0.01;
 uniform float p_spawnShiftRandom = 0.5;
 uniform int p_trailCount = 4;
 const float p_trailShift = 0.025;
-const float p_velocity = .6;
 const float p_spinMax = 0.0;
 const float p_startPosRand = 0.1;
 
@@ -70,6 +66,11 @@ float p_alphaOverT(int i, float t)
     return clamp(sin(t * pi * 1.2)*3, 0., 1.);
 }
 
+void p_discardCheck(vec2 uv, float t)
+{
+    if (distance(uv,vec2(0.)) > 1. + p_sizeOverT(0, t) * 2.) discard;
+}
+
 vec4 p_renderParticle(int i, vec2 uv, float t)
 {
     if (t < 0.) return vec4(0.);
@@ -78,11 +79,6 @@ vec4 p_renderParticle(int i, vec2 uv, float t)
     float distance = distance(uv, position);
     float alpha = float(distance < radius) * p_alphaOverT(i,t);
     return vec4(p_colorOverT(i,t), alpha);
-}
-
-void p_discardCheck(vec2 uv, float t)
-{
-    if (distance(uv,vec2(0.)) > 1. + p_sizeOverT(0, t) * 2.) discard;
 }
 
 void main() {
