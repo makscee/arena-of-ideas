@@ -1,6 +1,5 @@
 #include <common.glsl>
 
-
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
 attribute vec2 a_pos;
@@ -19,21 +18,18 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
 
-uniform vec4 p_startColor;
-uniform vec4 p_endColor;
 uniform float p_startSize;
 
-uniform int p_count;
 const int p_trailCount = 4;
 const float p_trailShift = 0.025;
-const float p_velocity = .6;
 const float p_spinMax = 0.1;
 const float p_startPosRand = 0.1;
 const float p_spawnShift = 0.02;
+const float velocity = 0.6;
 
 float p_velocityOverT(int i, float t)
 {
-    return e_invSquare(t) * p_velocity * (1. - rand(i + 1) * .2);
+    return e_invSquare(t) * velocity * (1. - rand(i + 1) * .2);
 }
 
 vec2 p_startPosition(int i)
@@ -73,6 +69,11 @@ float p_alphaOverT(int i, float t)
     return mix(1., 0.6, t);
 }
 
+void p_discardCheck(vec2 uv, float t)
+{
+    if (distance(uv,vec2(0.)) > e_invSquare(t) * velocity + p_spinMax + p_startPosRand) discard;
+}
+
 vec4 p_renderParticle(int i, vec2 uv, float t)
 {
     if (t < 0.) return vec4(0.);
@@ -83,17 +84,11 @@ vec4 p_renderParticle(int i, vec2 uv, float t)
     return vec4(p_colorOverT(i,t), alpha);
 }
 
-void p_discardCheck(vec2 uv, float t)
-{
-    if (distance(uv,vec2(0.)) > e_invSquare(t) * p_velocity + p_spinMax + p_startPosRand) discard;
-}
-
 void main() {
     vec2 uv = v_quad_pos;
     float t = 1. - u_spawn;
 
     vec4 col = vec4(0,0,0,0);
-    p_discardCheck(uv, t);
 
     for (int i = 0; i < p_count; i++)
         for (int j = 0; j < p_trailCount; j++)

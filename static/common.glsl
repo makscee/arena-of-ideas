@@ -162,3 +162,92 @@ vec4 renderStatusRing(vec2 uv, vec3 col)
         float(h < c_status_thickness && (u_status_duration == 0. || rad < u_status_time / u_status_duration * pi)
         || dotDistance < c_status_dot_radius));
 }
+
+float smoothhump(float left, float right, float t)
+{
+    return min(smoothstep(0.,left,t), smoothstep(1.,right,t));
+}
+
+
+
+
+// particles
+
+
+uniform vec4 p_startColor = vec4(0.862, 0.078, 0.235, 1);
+uniform vec4 p_endColor = vec4(0.117, 0.564, 1, 1);
+uniform float p_lifeTime = 2;
+uniform float p_radius = 0.1;
+uniform vec2 p_velocity = vec2(0.05,0.3);
+uniform int p_count = 10;
+uniform int p_shape = 0;
+
+#ifdef FRAGMENT_SHADER
+
+#define CIRCLE 1
+#define HEART 2
+
+float p_alphaOverT_def(int i, float t)
+{
+#ifndef p_alphaOverT
+    return smoothhump(0.3,0.5,t);
+#else
+    return p_alphaOverT(i,t);
+#endif
+}
+
+float p_radiusOverT_def(int i, float t)
+{
+#ifndef p_radiusOverT
+    return smoothhump(0.5,0.99,t) * p_radius;
+#else
+    p_radiusOverT(i,t);
+#endif
+}
+
+vec3 p_colorOverT_def(int i, float t)
+{
+#ifndef p_colorOverT
+    return mix(p_startColor.rgb, p_endColor.rgb, t);
+#else
+    return p_colorOverT(i,t);
+#endif
+}
+
+float p_distToShape(vec2 pos, vec2 uv, float radius)
+{
+    if (p_shape == HEART)
+    {
+        uv -= pos;
+        uv /= radius;
+        return (uv.x * uv.x + uv.y * uv.y - 1) * (uv.x * uv.x + uv.y * uv.y - 1) * (uv.x * uv.x + uv.y * uv.y - 1) - uv.x * uv.x * uv.y * uv.y * uv.y;
+    } else if (p_shape == CIRCLE)
+    {
+        return distance(pos, uv) - radius;
+    } else
+    {
+        return 100500;
+    }
+}
+
+vec2 p_positionOverT_def(int i, float t)
+{
+#ifndef p_positionOverT
+    vec2 velocity = rotateCW(p_velocity, (rand(i+2) - 0.5) * pi / 4);
+    vec2 startPos = randCircle(i) * rand(i+1);
+    return mix(startPos, startPos + velocity * p_lifeTime , t);
+#else
+    return p_positionOverT(i,t);
+#endif
+}
+
+void p_discardCheck_def(vec2 uv, float t)
+{
+#ifndef p_discardCheck
+    if (uv.y < -2.) discard;
+#else
+    p_discardCheck(uv, t);
+#endif
+}
+
+#endif

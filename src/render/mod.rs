@@ -548,6 +548,7 @@ impl UnitRender {
                                     u_previous_texture: &texture,
                                     u_status_count: status_count,
                                     u_status_index: status_index,
+                                    u_time: game_time,
                                 },
                                 parameters,
                             ),

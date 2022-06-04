@@ -38,13 +38,20 @@
     "Plague": {
         "shader": "shaders/status/status_default.glsl",
         "parameters": {
-            "u_status_color": "#408002"
+            "u_status_color": "#408002",
+            "p_startColor": "#408002",
+            "p_endColor": "#000000",
+            "p_shape": 1
         }
     },
     "SiphonLife": {
         "shader": "shaders/status/status_default.glsl",
         "parameters": {
-            "u_status_color": "#400080"
+            "u_status_color": "#400080",
+            "p_shape": 1,
+            "p_startColor": "#400080",
+            "p_endColor": "#400080"
+
         }
     }
 }
