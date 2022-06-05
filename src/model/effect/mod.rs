@@ -135,11 +135,28 @@ struct EffectPreset {
     pub overrides: serde_json::Map<String, serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 #[serde(untagged)]
 enum EffectConfig {
     Effect(RawEffect),
     Preset(EffectPreset),
+}
+
+// Implement deserialize manually for better error description
+impl<'de> Deserialize<'de> for EffectConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match EffectPreset::deserialize(value.clone()) {
+            Ok(preset) => return Ok(Self::Preset(preset)),
+            Err(_) => {}
+        }
+        let effect =
+            RawEffect::deserialize(value).map_err(|error| serde::de::Error::custom(error))?;
+        Ok(Self::Effect(effect))
+    }
 }
 
 impl Default for EffectConfig {

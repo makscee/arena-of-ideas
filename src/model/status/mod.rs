@@ -113,6 +113,10 @@ pub use vulnerability::*;
 //     SiphonLife(Box<RepeatingEffectStatus>),
 // }
 
+fn zero() -> R32 {
+    R32::ZERO
+}
+
 /// Describes what to do when several equal statuses are attached to the same unit
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
@@ -159,6 +163,12 @@ pub enum StatusTrigger {
     },
     /// Triggered when the owner acquires the specified status
     SelfDetect { status_name: StatusName },
+    /// Triggered periodically
+    Repeating {
+        tick_time: Time,
+        #[serde(default = "zero")]
+        next_tick: Time,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -197,8 +207,10 @@ pub struct Status {
     /// or until it gets removed manually
     pub duration: Option<Time>,
     /// A list of triggers for this status
+    #[serde(default)]
     pub triggers: Vec<StatusTrigger>,
     /// Specifications of effects to apply for different subsets of triggers
+    #[serde(default)]
     pub listeners: Vec<StatusListener>,
 }
 

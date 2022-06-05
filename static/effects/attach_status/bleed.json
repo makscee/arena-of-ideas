@@ -5,18 +5,31 @@
             "type": "AttachStatus",
             "time": 6,
             "status": {
-                "type": "Bleed",
-                "tick_time": 1,
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "Bleed"
-                    ],
-                    "value": {
-                        "type": "Const",
-                        "value": 1
+                "name": "Bleed",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "duration": 1.5,
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Repeating",
+                                "tick_time": 1
+                            }
+                        ],
+                        "effect": {
+                            "type": "Damage",
+                            "types": [
+                                "Bleed"
+                            ],
+                            "value": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
                     }
-                }
+                ]
             }
         },
         {

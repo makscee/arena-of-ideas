@@ -5,7 +5,11 @@
             "type": "AttachStatus",
             "time": 3,
             "status": {
-                "type": "Stun"
+                "name": "Stun",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "duration": 1.5
             }
         },
         {

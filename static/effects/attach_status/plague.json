@@ -4,59 +4,83 @@
         {
             "type": "AttachStatus",
             "status": {
-                "type": "Plague",
-                "tick_time": 3,
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "Plague"
-                    ],
-                    "value": {
-                        "type": "Const",
-                        "value": 1
+                "name": "Plague",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Repeating",
+                                "tick_time": 3
+                            }
+                        ],
+                        "effect": {
+                            "type": "Damage",
+                            "types": [
+                                "Plague"
+                            ],
+                            "value": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
                     }
-                }
+                ]
             }
         },
         {
             "type": "AttachStatus",
             "status": {
-                "type": "OnDeath",
-                "effect": {
-                    "type": "AddVar",
-                    "name": "SpawnHealth",
-                    "value": {
-                        "type": "FindStat",
-                        "who": "From",
-                        "stat": "MaxHealth"
-                    },
-                    "effect": {
-                        "type": "Spawn",
-                        "unit_type": "skeleton",
-                        "switch_faction": true,
-                        "after_effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "MaxHealth",
-                                    "value": {
-                                        "type": "Var",
-                                        "name": "SpawnHealth"
-                                    }
-                                },
-                                {
-                                    "type": "Heal",
-                                    "value": {
-                                        "type": "Var",
-                                        "name": "SpawnHealth"
-                                    },
-                                    "no_text": true
+                "name": "OnDeath",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Death"
+                            }
+                        ],
+                        "effect": {
+                            "type": "AddVar",
+                            "name": "SpawnHealth",
+                            "value": {
+                                "type": "FindStat",
+                                "who": "From",
+                                "stat": "MaxHealth"
+                            },
+                            "effect": {
+                                "type": "Spawn",
+                                "unit_type": "skeleton",
+                                "switch_faction": true,
+                                "after_effect": {
+                                    "type": "List",
+                                    "effects": [
+                                        {
+                                            "type": "ChangeStat",
+                                            "stat": "MaxHealth",
+                                            "value": {
+                                                "type": "Var",
+                                                "name": "SpawnHealth"
+                                            }
+                                        },
+                                        {
+                                            "type": "Heal",
+                                            "value": {
+                                                "type": "Var",
+                                                "name": "SpawnHealth"
+                                            },
+                                            "no_text": true
+                                        }
+                                    ]
                                 }
-                            ]
+                            }
                         }
                     }
-                }
+                ]
             }
         },
         {

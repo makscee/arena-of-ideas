@@ -12,38 +12,50 @@
     },
     "statuses": [
         {
-            "type": "OnDeath",
-            "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "AOE",
-                        "range": 1,
-                        "filter": "Enemies",
-                        "effect": {
-                            "type": "Damage",
-                            "value": {
-                                "type": "Const",
-                                "value": 3
-                            }
+            "name": "OnDeath",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Death"
                         }
-                    },
-                    {
-                        "type": "Visual",
-                        "duration": 1.0,
-                        "parent": "Caster",
-                        "follow": false,
-                        "radius": 1.5,
-                        "render": {
-                            "type": "Shader",
-                            "path": "shaders/vfx_explosion.glsl",
-                            "parameters": {
-                                "color": "#dc143c"
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AOE",
+                                "range": 1,
+                                "filter": "Enemies",
+                                "effect": {
+                                    "type": "Damage",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                }
+                            },
+                            {
+                                "type": "Visual",
+                                "duration": 1.0,
+                                "parent": "Caster",
+                                "follow": false,
+                                "radius": 1.5,
+                                "render": {
+                                    "type": "Shader",
+                                    "path": "shaders/vfx_explosion.glsl",
+                                    "parameters": {
+                                        "color": "#dc143c"
+                                    }
+                                }
                             }
-                        }
+                        ]
                     }
-                ]
-            }
+                }
+            ]
         }
     ],
     "move_ai": "Advance",

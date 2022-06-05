@@ -8,22 +8,34 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "Ranged",
-                "effect": {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "SiphonLife"
-                    },
-                    "then": {
-                        "type": "Noop"
-                    },
-                    "else": {
-                        "preset": "effects/attach_status/siphon_life.json"
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Ranged"
+                            }
+                        ],
+                        "effect": {
+                            "type": "If",
+                            "condition": {
+                                "type": "UnitHasStatus",
+                                "who": "Target",
+                                "status": "SiphonLife"
+                            },
+                            "then": {
+                                "type": "Noop"
+                            },
+                            "else": {
+                                "preset": "effects/attach_status/siphon_life.json"
+                            }
+                        }
                     }
-                }
+                ]
             }
         ]
     },
@@ -34,25 +46,37 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "SiphonLife",
-                "effect": {
-                    "type": "Random",
-                    "choices": [
-                        {
-                            "weight": 85,
-                            "effect": {
-                                "type": "Noop"
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "SiphonLife"
                             }
-                        },
-                        {
-                            "weight": 15,
-                            "effect": {
-                                "preset": "effects/attach_status/stun.json"
-                            }
+                        ],
+                        "effect": {
+                            "type": "Random",
+                            "choices": [
+                                {
+                                    "weight": 85,
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 15,
+                                    "effect": {
+                                        "preset": "effects/attach_status/stun.json"
+                                    }
+                                }
+                            ]
                         }
-                    ]
-                }
+                    }
+                ]
             }
         ]
     },
@@ -63,48 +87,60 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "SiphonLife",
-                "effect": {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "SiphonLife"
-                    },
-                    "then": {
-                        "type": "AOE",
-                        "filter": "Enemies",
-                        "skip_current_target": true,
-                        "range": 3,
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "SiphonLife"
+                            }
+                        ],
                         "effect": {
-                            "type": "Damage",
-                            "types": [
-                                "SiphonLife"
-                            ],
-                            "value": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "If",
+                            "condition": {
+                                "type": "UnitHasStatus",
+                                "who": "Target",
+                                "status": "SiphonLife"
                             },
-                            "on": {
-                                "Injure": {
-                                    "type": "ChangeContext",
-                                    "target": "Caster",
-                                    "effect": {
-                                        "type": "Heal",
-                                        "value": {
-                                            "type": "Var",
-                                            "name": "DamageDealt"
+                            "then": {
+                                "type": "AOE",
+                                "filter": "Enemies",
+                                "skip_current_target": true,
+                                "range": 3,
+                                "effect": {
+                                    "type": "Damage",
+                                    "types": [
+                                        "SiphonLife"
+                                    ],
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 1
+                                    },
+                                    "on": {
+                                        "Injure": {
+                                            "type": "ChangeContext",
+                                            "target": "Caster",
+                                            "effect": {
+                                                "type": "Heal",
+                                                "value": {
+                                                    "type": "Var",
+                                                    "name": "DamageDealt"
+                                                }
+                                            }
                                         }
                                     }
                                 }
+                            },
+                            "else": {
+                                "type": "Noop"
                             }
                         }
-                    },
-                    "else": {
-                        "type": "Noop"
                     }
-                }
+                ]
             }
         ]
     }

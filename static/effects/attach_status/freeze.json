@@ -4,7 +4,12 @@
         {
             "type": "AttachStatus",
             "status": {
-                "type": "Freeze"
+                "name": "Freeze",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "flags": ["MoveUnable"],
+                "duration": 1.5
             }
         },
         {

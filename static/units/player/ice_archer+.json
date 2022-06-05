@@ -54,12 +54,23 @@
     },
     "statuses": [
         {
-            "type": "OnDealDamage",
-            "damage_type": "BonusShot",
-            "effect": 
-            {
-                "preset": "effects/attach_status/freeze.json"
-            }
+            "name": "OnDealDamage",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "BonusShot"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/attach_status/freeze.json"
+                    }
+                }
+            ]
         }
     ],
     "clans": [

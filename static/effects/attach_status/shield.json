@@ -4,7 +4,10 @@
         {
             "type": "AttachStatus",
             "status": {
-                "type": "Shield"
+                "name": "Shield",
+                "stacking": {
+                    "type": "Refresh"
+                }
             }
         },
         {

@@ -8,25 +8,37 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "Ranged",
-                "effect": {
-                    "type": "Random",
-                    "choices": [
-                        {
-                            "weight": 70,
-                            "effect": {
-                                "type": "Noop"
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Ranged"
                             }
-                        },
-                        {
-                            "weight": 30,
-                            "effect": {
-                                "preset": "effects/bonus_shot_projectile.json"
-                            }
+                        ],
+                        "effect": {
+                            "type": "Random",
+                            "choices": [
+                                {
+                                    "weight": 70,
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 30,
+                                    "effect": {
+                                        "preset": "effects/bonus_shot_projectile.json"
+                                    }
+                                }
+                            ]
                         }
-                    ]
-                }
+                    }
+                ]
             }
         ]
     },
@@ -39,25 +51,37 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "BonusShot",
-                "effect": {
-                    "type": "Random",
-                    "choices": [
-                        {
-                            "weight": 85,
-                            "effect": {
-                                "type": "Noop"
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "BonusShot"
                             }
-                        },
-                        {
-                            "weight": 15,
-                            "effect": {
-                                "preset": "effects/bonus_shot_projectile.json"
-                            }
+                        ],
+                        "effect": {
+                            "type": "Random",
+                            "choices": [
+                                {
+                                    "weight": 85,
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 15,
+                                    "effect": {
+                                        "preset": "effects/bonus_shot_projectile.json"
+                                    }
+                                }
+                            ]
                         }
-                    ]
-                }
+                    }
+                ]
             }
         ]
     }
