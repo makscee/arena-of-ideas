@@ -15,10 +15,13 @@ impl EffectImpl for AddVarEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut Logic) {
         let effect = self.effect.clone();
         let value = self.value.calculate(&context, logic);
-        logic.effects.push_front(QueuedEffect { effect, context: {
-            let mut context = context.clone();
-            context.vars.insert(self.name.clone(), value);
-            context
-        }, });
+        logic.effects.push_front(QueuedEffect {
+            effect,
+            context: {
+                let mut context = context.clone();
+                context.vars.insert(self.name.clone(), value);
+                context
+            },
+        });
     }
 }

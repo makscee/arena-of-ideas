@@ -5,6 +5,13 @@ impl Logic<'_> {
         self.process_units(Self::process_unit_targeting);
     }
     fn process_unit_targeting(&mut self, unit: &mut Unit) {
+        if unit
+            .flags
+            .iter()
+            .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
+        {
+            return;
+        }
         // TODO: reimplement
         // if unit
         //     .all_statuses

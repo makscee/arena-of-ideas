@@ -20,7 +20,7 @@ pub enum Condition {
     },
     Chance {
         percent: Expr,
-    }
+    },
 }
 
 impl Default for Condition {

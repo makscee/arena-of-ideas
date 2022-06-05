@@ -172,6 +172,16 @@ pub struct StatusListener {
 
 pub type StatusName = String;
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub enum UnitStatFlag {
+    MoveUnable,
+    ActionUnable,
+    AbilityUnable,
+    DamageImmune,
+    HealingImmune,
+    AttashStatusImmune,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Status {
@@ -179,6 +189,9 @@ pub struct Status {
     /// and for parsing in the unit config
     pub name: StatusName,
     pub stacking: StatusStacking,
+    /// While the status is active, these flags will be assigned to the owner
+    #[serde(default)]
+    pub flags: Vec<UnitStatFlag>,
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually

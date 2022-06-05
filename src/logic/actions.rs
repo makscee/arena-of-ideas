@@ -8,17 +8,25 @@ impl Logic<'_> {
         if let ActionState::Start { time, target } = &mut unit.action_state {
             *time += self.delta_time;
             if *time > unit.action.animation_delay {
+                if unit
+                    .flags
+                    .iter()
+                    .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
+                {
+                    return;
+                }
+
                 if let Some(target) = self.model.units.get(target) {
                     let mut effect = unit.action.effect.clone();
                     for modifier in mem::take(&mut unit.next_action_modifiers) {
                         effect.apply_modifier(&modifier);
                     }
-                    for status in &unit.all_statuses {
-                        // TODO: reimplement
-                        // if let StatusOld::Modifier(status) = status {
-                        //     effect.apply_modifier(&status.modifier);
-                        // }
-                    }
+                    // for status in &unit.all_statuses {
+                    // TODO: reimplement
+                    // if let StatusOld::Modifier(status) = status {
+                    //     effect.apply_modifier(&status.modifier);
+                    // }
+                    // }
                     self.effects.push_back(QueuedEffect {
                         effect,
                         context: EffectContext {

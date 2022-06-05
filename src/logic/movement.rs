@@ -5,14 +5,13 @@ impl Logic<'_> {
         self.process_units(Self::process_unit_movement);
     }
     fn process_unit_movement(&mut self, unit: &mut Unit) {
-        // TODO: reimplement
-        // if unit
-        //     .all_statuses
-        //     .iter()
-        //     .any(|status| matches!(status.r#type(), StatusType::Freeze | StatusType::Stun))
-        // {
-        //     return;
-        // }
+        if unit
+            .flags
+            .iter()
+            .any(|flag| matches!(flag, UnitStatFlag::MoveUnable))
+        {
+            return;
+        }
         if matches!(unit.action_state, ActionState::Start { .. }) {
             return;
         }

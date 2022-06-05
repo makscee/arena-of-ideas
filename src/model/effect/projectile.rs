@@ -11,7 +11,9 @@ pub struct ProjectileEffect {
 
 impl ProjectileEffect {
     pub fn default_render() -> RenderConfig {
-        RenderConfig::Circle { color: Color::MAGENTA }
+        RenderConfig::Circle {
+            color: Color::MAGENTA,
+        }
     }
 }
 

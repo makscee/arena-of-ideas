@@ -2,6 +2,7 @@ use super::*;
 
 mod action;
 mod add_targets;
+mod add_var;
 mod aoe;
 mod apply_gained;
 mod attach_status;
@@ -28,10 +29,10 @@ mod splash;
 mod suicide;
 mod time_bomb;
 mod visual;
-mod add_var;
 
 pub use action::*;
 pub use add_targets::*;
+pub use add_var::*;
 pub use aoe::*;
 pub use apply_gained::*;
 pub use attach_status::*;
@@ -58,7 +59,6 @@ pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 pub use visual::*;
-pub use add_var::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]

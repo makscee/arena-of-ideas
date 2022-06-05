@@ -38,16 +38,15 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        // TODO: reimplement
-        // // Invulnerability
-        // if target_unit
-        //     .all_statuses
-        //     .iter()
-        //     .any(|status| status.r#type() == StatusType::Invulnerability)
-        // {
-        //     return;
-        // }
+        if target_unit
+            .flags
+            .iter()
+            .any(|flag| matches!(flag, UnitStatFlag::DamageImmune))
+        {
+            return;
+        }
 
+        // TODO: reimplement
         // // Shield
         // if let Some(index) = target_unit
         //     .all_statuses
@@ -80,24 +79,10 @@ impl EffectImpl for DamageEffect {
         // {
         //     damage = Health::new(0.0);
         // }
-        // if damage <= Health::new(0.0) {
-        //     return;
-        // }
 
-        // // Vulnerability
-        // for status in &target_unit.all_statuses {
-        //     if let StatusOld::Vulnerability(status) = status {
-        //         damage *= r32(2.0);
-        //     }
-        // }
-        // target_unit
-        //     .all_statuses
-        //     .retain(|status| status.status.r#type() != StatusType::Vulnerability);
-
-        // // Freeze
-        // target_unit
-        //     .all_statuses
-        //     .retain(|status| status.status.r#type() != StatusType::Freeze);
+        if damage <= Health::new(0.0) {
+            return;
+        }
 
         for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
@@ -119,6 +104,7 @@ impl EffectImpl for DamageEffect {
             })
         }
 
+        // TODO: reimplement
         // // Protection
         // for status in &target_unit.all_statuses {
         //     if let StatusOld::Protection(status) = status {

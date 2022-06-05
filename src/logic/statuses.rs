@@ -8,9 +8,6 @@ impl Logic<'_> {
                     *time -= self.delta_time;
                 }
                 // TODO: reimplement
-                // if let StatusType::Freeze | StatusType::Stun = status.status.r#type() {
-                //     unit.action_state = ActionState::None;
-                // }
                 // if let StatusOld::RepeatingEffect(repeating_status)
                 // | StatusOld::Bleed(repeating_status)
                 // | StatusOld::Plague(repeating_status)
@@ -43,16 +40,23 @@ impl Logic<'_> {
                 }
                 true
             });
+
+            unit.flags = unit
+                .all_statuses
+                .iter()
+                .flat_map(|status| status.status.flags.iter())
+                .copied()
+                .collect();
         }
 
         let mut auras: Vec<(Id, AuraStatus)> = Vec::new();
         for unit in &self.model.units {
-            for status in &unit.all_statuses {
-                // TODO: reimplement
-                // if let StatusOld::Aura(status) = &status.status {
-                //     auras.push((unit.id, (**status).clone()));
-                // }
-            }
+            // for status in &unit.all_statuses {
+            // TODO: reimplement
+            // if let StatusOld::Aura(status) = &status.status {
+            //     auras.push((unit.id, (**status).clone()));
+            // }
+            // }
         }
         for (unit_id, aura) in auras {
             let unit = self.model.units.remove(&unit_id).unwrap();
