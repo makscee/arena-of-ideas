@@ -460,12 +460,12 @@ impl UnitRender {
                     );
                 }
 
-                let mut statuses: std::vec::Vec<&StatusRender> = unit
+                let mut statuses: Vec<&StatusRender> = unit
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
-                        if let Some(program) = self.assets.statuses.get(&status.status.name) {
-                            Some(program)
+                        if let Some(config) = self.assets.statuses.get(&status.status.name) {
+                            Some(&config.render)
                         } else {
                             None
                         }
