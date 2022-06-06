@@ -269,7 +269,7 @@ impl EffectContainer for Status {
 
 pub trait StatusImpl: EffectContainer {}
 
-fn unit_attach_status(status: AttachedStatus, all_statuses: &mut Vec<AttachedStatus>) {
+pub fn unit_attach_status(status: AttachedStatus, all_statuses: &mut Vec<AttachedStatus>) {
     fn replace(
         status: AttachedStatus,
         all_statuses: &mut Vec<AttachedStatus>,
