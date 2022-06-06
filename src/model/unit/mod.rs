@@ -73,6 +73,7 @@ impl Unit {
         unit_type: UnitType,
         faction: Faction,
         position: Vec2<Coord>,
+        statuses: &Statuses,
     ) -> Self {
         Self {
             id,
@@ -81,8 +82,10 @@ impl Unit {
             all_statuses: template
                 .statuses
                 .iter()
-                .cloned()
-                .map(|status| status.attach(Some(id), None))
+                .map(|status| {
+                    let status = statuses.get_config(&status);
+                    status.status.clone().attach(Some(id), None)
+                })
                 .collect(),
             flags: vec![],
             faction,

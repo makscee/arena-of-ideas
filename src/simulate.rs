@@ -113,7 +113,7 @@ impl Simulation {
     pub fn new(units: UnitTemplates, config: Config, delta_time: R32) -> Self {
         Self {
             config: config.clone(),
-            model: Model::new(config, units, todo!(), todo!()),
+            model: Model::new(config, units, todo!(), todo!(), todo!()),
             delta_time,
         }
     }

@@ -11,7 +11,14 @@ impl Logic<'_> {
         let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;
 
-        let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
+        let mut unit = Unit::new(
+            &template,
+            id,
+            unit_type.clone(),
+            faction,
+            position,
+            &self.model.statuses,
+        );
         for (clan, &clan_members) in &self.model.config.clans {
             clan.apply_effects(&mut unit, &self.model.clan_effects, clan_members);
         }

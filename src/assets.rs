@@ -16,37 +16,44 @@ pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
     Lazy::new(|| Mutex::new(Effects { map: default() }));
 
 pub struct StatusRender {
-    pub shader: ugli::Program,
+    pub shader: Rc<ugli::Program>,
     pub parameters: ShaderParameters,
 }
 
-#[derive(Deserialize)]
-struct StatusRenderConfig {
+#[derive(Deserialize, Clone)]
+pub struct StatusRenderConfig {
     pub shader: String,
     #[serde(default)]
     pub parameters: ShaderParameters,
 }
 
-pub struct StatusConfig {
-    pub status: Status,
-    pub render: StatusRender,
-}
+// pub struct StatusConfig {
+//     pub status: Status,
+//     pub render: StatusRender,
+// }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct StatusRawConfig {
+pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
     #[serde(flatten)]
     pub render: StatusRenderConfig,
 }
 
-#[derive(Deref, DerefMut)]
+#[derive(Deref, DerefMut, Clone)]
 pub struct Statuses {
     #[deref]
     #[deref_mut]
     pub map: HashMap<String, StatusConfig>,
 }
+
+impl Statuses {
+    pub fn get_config(&self, status_name: &StatusName) -> &StatusConfig {
+        self.get(status_name).expect(&format!("Failed to get status {status_name}"))
+    }
+}
+
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
@@ -170,6 +177,21 @@ pub struct ClanEffects {
 }
 
 impl Assets {
+    pub fn get_status_render(&self, config: &StatusRenderConfig) -> StatusRender {
+        let path = &config.shader;
+        let parameters = &config.parameters;
+        StatusRender {
+            shader: self
+                    .shaders
+                    .get(path)
+                    .expect(&format!(
+                        "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
+                    ))
+                    .clone(),
+                parameters: parameters.clone(), // TODO: avoid cloning
+        }
+    }
+
     pub fn get_render(&self, config: &RenderConfig) -> RenderMode {
         match config {
             &RenderConfig::Circle { color } => RenderMode::Circle { color },
@@ -310,24 +332,9 @@ impl geng::LoadAsset for Statuses {
                 let json = <String as geng::LoadAsset>::load(&geng, &path)
                     .await
                     .context(format!("Failed to load status from {path:?}"))?;
-                let config: StatusRawConfig = serde_json::from_str(&json)
+                let config: StatusConfig = serde_json::from_str(&json)
                     .context(format!("Failed to parse status from {path:?}"))?;
 
-                // Load shader
-                let path = config.render.shader.as_str();
-                let program =
-                    <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
-                        .await
-                        .context(format!("Failed to load {path}"))?;
-                let render = StatusRender {
-                    shader: program,
-                    parameters: config.render.parameters,
-                };
-
-                let config = StatusConfig {
-                    status: config.status,
-                    render,
-                };
                 map.insert(config.status.name.clone(), config);
             }
             Ok(Self { map })

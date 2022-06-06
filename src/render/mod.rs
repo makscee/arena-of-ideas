@@ -460,12 +460,13 @@ impl UnitRender {
                     );
                 }
 
-                let mut statuses: Vec<&StatusRender> = unit
+                let mut statuses: Vec<_> = unit
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
                         if let Some(config) = self.assets.statuses.get(&status.status.name) {
-                            Some(&config.render)
+                            let render = self.assets.get_status_render(&config.render);
+                            Some(render)
                         } else {
                             None
                         }
@@ -491,7 +492,7 @@ impl UnitRender {
                         ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
                         ugli::draw(
                             framebuffer,
-                            program,
+                            &*program,
                             ugli::DrawMode::TriangleFan,
                             &quad,
                             (
