@@ -11,7 +11,8 @@
                 "effect": {
                     "type": "Damage",
                     "types": [
-                        "SiphonLife"
+                        "SiphonLife",
+                        "SiphonLifeAoe"
                     ],
                     "value": {
                         "type": "Const",
