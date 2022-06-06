@@ -3,12 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "status": {
-                "name": "Shield",
-                "stacking": {
-                    "type": "Refresh"
-                }
-            }
+            "status": "Shield"
         },
         {
             "type": "Visual",

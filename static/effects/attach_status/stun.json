@@ -4,13 +4,7 @@
         {
             "type": "AttachStatus",
             "time": 3,
-            "status": {
-                "name": "Stun",
-                "stacking": {
-                    "type": "Refresh"
-                },
-                "duration": 1.5
-            }
+            "status": "Stun"
         },
         {
             "type": "Visual",

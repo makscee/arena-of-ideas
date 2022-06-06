@@ -1,0 +1,7 @@
+{
+    "name": "Charm",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "duration": 3
+}

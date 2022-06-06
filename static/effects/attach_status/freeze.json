@@ -3,14 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "status": {
-                "name": "Freeze",
-                "stacking": {
-                    "type": "Refresh"
-                },
-                "flags": ["MoveUnable"],
-                "duration": 1.5
-            }
+            "status": "Freeze"
         },
         {
             "type": "Visual",

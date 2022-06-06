@@ -1,0 +1,41 @@
+{
+    "name": "SiphonLife",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "duration": 8,
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "Repeating",
+                    "tick_time": 2,
+                    "next_tick": 2
+                }
+            ],
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "SiphonLife"
+                ],
+                "value": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "on": {
+                    "Injure": {
+                        "type": "ChangeContext",
+                        "target": "Caster",
+                        "effect": {
+                            "type": "Heal",
+                            "value": {
+                                "type": "Var",
+                                "name": "DamageDealt"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

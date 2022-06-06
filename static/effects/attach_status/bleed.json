@@ -3,34 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "time": 6,
-            "status": {
-                "name": "Bleed",
-                "stacking": {
-                    "type": "Refresh"
-                },
-                "duration": 1.5,
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "Repeating",
-                                "tick_time": 1
-                            }
-                        ],
-                        "effect": {
-                            "type": "Damage",
-                            "types": [
-                                "Bleed"
-                            ],
-                            "value": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    }
-                ]
-            }
+            "status": "Bleed"
         },
         {
             "type": "Visual",

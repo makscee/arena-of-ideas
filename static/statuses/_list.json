@@ -2,5 +2,14 @@
     "SmallBlobOnDeath.json",
     "BigBlobOnDeath.json",
     "ShooterOnDeath.json",
-    "IceArcher+OnDealDamage.json"
+    "IceArcher+OnDealDamage.json",
+    "Freeze.json",
+    "Shield.json",
+    "Invulnerability.json",
+    "Stun.json",
+    "Charm.json",
+    "Bleed.json",
+    "Vulnerability.json",
+    "Plague.json",
+    "SiphonLife.json"
 ]

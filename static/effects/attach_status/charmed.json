@@ -3,13 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "status": {
-                "name": "Charmed",
-                "stacking": {
-                    "type": "Refresh"
-                },
-                "duration": 3
-            }
+            "status": "Charm"
         },
         {
             "type": "Visual",
