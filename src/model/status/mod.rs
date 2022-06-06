@@ -189,7 +189,7 @@ pub enum UnitStatFlag {
     AbilityUnable,
     DamageImmune,
     HealingImmune,
-    AttashStatusImmune,
+    AttachStatusImmune,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -268,6 +268,36 @@ impl EffectContainer for Status {
 }
 
 pub trait StatusImpl: EffectContainer {}
+
+fn unit_attach_status(status: AttachedStatus, all_statuses: &mut Vec<AttachedStatus>) {
+    fn replace(
+        status: AttachedStatus,
+        all_statuses: &mut Vec<AttachedStatus>,
+        update: impl FnOnce(&mut AttachedStatus),
+    ) {
+        match all_statuses
+            .iter_mut()
+            .find(|s| s.status.name == status.status.name)
+        {
+            Some(status) => update(status),
+            None => all_statuses.push(status),
+        }
+    }
+
+    match &status.status.stacking {
+        StatusStacking::Independent => all_statuses.push(status),
+        StatusStacking::Refresh => replace(status, all_statuses, |s| {
+            s.time = s.status.duration;
+        }),
+        StatusStacking::Count => replace(status, all_statuses, |s| {
+            *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
+        }),
+        StatusStacking::CountRefresh => replace(status, all_statuses, |s| {
+            s.time = s.status.duration;
+            *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
+        }),
+    }
+}
 
 // impl StatusOld {
 //     pub fn as_mut(&mut self) -> &mut dyn StatusImpl {

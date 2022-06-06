@@ -28,6 +28,15 @@ impl EffectImpl for AttachStatusEffect {
         let status_name = &effect.status.name.clone();
         let target = context.get(effect.who);
         if let Some(target) = target.and_then(|id| logic.model.units.get_mut(&id)) {
+            // Check if unit is immune to status attachment
+            if target
+                .flags
+                .iter()
+                .any(|flag| matches!(flag, UnitStatFlag::AttachStatusImmune))
+            {
+                return;
+            }
+
             if let Some(render) = &mut logic.render {
                 render.add_text(
                     target.position,
@@ -36,9 +45,10 @@ impl EffectImpl for AttachStatusEffect {
                 );
             }
 
-            target
-                .all_statuses
-                .push(effect.status.attach(Some(target.id), context.caster));
+            unit_attach_status(
+                effect.status.attach(Some(target.id), context.caster),
+                &mut target.all_statuses,
+            );
 
             let target = target.id;
             let target = logic.model.units.get(&target).unwrap();
