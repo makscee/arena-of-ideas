@@ -464,12 +464,11 @@ impl UnitRender {
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
-                        if let Some(config) = self.assets.statuses.get(&status.status.name) {
-                            let render = self.assets.get_status_render(&config.render);
-                            Some(render)
-                        } else {
-                            None
-                        }
+                        self.assets
+                            .statuses
+                            .get(&status.status.name)
+                            .and_then(|config| config.render.as_ref())
+                            .map(|render| self.assets.get_status_render(render))
                     })
                     .collect();
                 let status_count = statuses.len();

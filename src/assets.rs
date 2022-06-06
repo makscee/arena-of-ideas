@@ -38,7 +38,7 @@ pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
     #[serde(flatten)]
-    pub render: StatusRenderConfig,
+    pub render: Option<StatusRenderConfig>,
 }
 
 #[derive(Deref, DerefMut, Clone)]
@@ -50,7 +50,8 @@ pub struct Statuses {
 
 impl Statuses {
     pub fn get_config(&self, status_name: &StatusName) -> &StatusConfig {
-        self.get(status_name).expect(&format!("Failed to get status {status_name}"))
+        self.get(status_name)
+            .expect(&format!("Failed to get status {status_name}"))
     }
 }
 
@@ -182,13 +183,13 @@ impl Assets {
         let parameters = &config.parameters;
         StatusRender {
             shader: self
-                    .shaders
-                    .get(path)
-                    .expect(&format!(
-                        "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
-                    ))
-                    .clone(),
-                parameters: parameters.clone(), // TODO: avoid cloning
+                .shaders
+                .get(path)
+                .expect(&format!(
+                    "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
+                ))
+                .clone(),
+            parameters: parameters.clone(), // TODO: avoid cloning
         }
     }
 
