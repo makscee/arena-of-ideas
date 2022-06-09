@@ -14,6 +14,7 @@
 	"effects/attach_status/vulnerability.json",
 	"effects/attach_status/plague.json",
 	"effects/attach_status/siphon_life.json",
+	"effects/attach_status/poison.json",
 	"effects/dd_bonus_shot.json",
 	"effects/bonus_shot_projectile.json"
 ]

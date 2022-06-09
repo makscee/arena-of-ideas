@@ -5,7 +5,7 @@
         {
             "type": "Detect",
             "on": "Enemies",
-            "detect_type": "Freeze",
+            "status_name": "Freeze",
             "effect":
             {
                 "type": "InstantAction"

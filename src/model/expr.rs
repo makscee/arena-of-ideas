@@ -9,6 +9,7 @@ pub enum VarName {
     Value,
     SpawnHealth,
     StackCounter,
+    PoisonTicksLeft,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

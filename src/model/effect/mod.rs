@@ -22,6 +22,7 @@ mod next_action_modifier;
 mod noop;
 mod projectile;
 mod random;
+mod remove_status;
 mod repeat;
 mod revive;
 mod spawn;
@@ -52,6 +53,7 @@ pub use next_action_modifier::*;
 pub use noop::*;
 pub use projectile::*;
 pub use random::*;
+pub use remove_status::*;
 pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
@@ -92,6 +94,7 @@ pub enum Effect {
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
+    RemoveStatus(Box<RemoveStatusEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -126,6 +129,7 @@ pub enum RawEffect {
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
+    RemoveStatus(Box<RemoveStatusEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -197,6 +201,7 @@ impl std::fmt::Debug for Effect {
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
+            Self::RemoveStatus(effect) => effect.fmt(f),
         }
     }
 }
@@ -233,6 +238,7 @@ impl From<RawEffect> for Effect {
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
+            RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
         }
     }
 }
@@ -301,6 +307,7 @@ impl Effect {
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
+            Effect::RemoveStatus(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -334,6 +341,7 @@ impl Effect {
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
             Effect::AddVar(effect) => effect,
+            Effect::RemoveStatus(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

@@ -117,6 +117,16 @@ fn zero() -> R32 {
     R32::ZERO
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum StatusAction {
+    Add,
+    Remove,
+}
+
+fn default_status_action() -> StatusAction {
+    StatusAction::Add
+}
+
 /// Describes what to do when several equal statuses are attached to the same unit
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
@@ -159,10 +169,16 @@ pub enum StatusTrigger {
     /// Triggered when some unit acquires the specified status and the filter is satisfied
     Detect {
         status_name: StatusName,
+        #[serde(default = "default_status_action")]
+        status_action: StatusAction,
         filter: TargetFilter,
     },
     /// Triggered when the owner acquires the specified status
-    SelfDetect { status_name: StatusName },
+    SelfDetect {
+        status_name: StatusName,
+        #[serde(default = "default_status_action")]
+        status_action: StatusAction,
+    },
     /// Triggered periodically
     Repeating {
         tick_time: Time,

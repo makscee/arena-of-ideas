@@ -1,0 +1,84 @@
+{
+    "name": "Poison",
+    "stacking": {
+        "type": "Count"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "Repeating",
+                    "tick_time": 0.3,
+                    "next_tick": 0.3
+                }
+            ],
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "types": [
+                            "Poison"
+                        ],
+                        "value": {
+                            "type": "Var",
+                            "name": "StackCounter"
+                        }
+                    },
+                    {
+                        "type": "AddVar",
+                        "name": "PoisonTicksLeft",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "name": "PoisonTicksLeft"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    },
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "Equal",
+                            "a": {
+                                "type": "Const",
+                                "value": 0
+                            },
+                            "b": {
+                                "type": "Var",
+                                "name": "PoisonTicksLeft"
+                            }
+                        },
+                        "then": {
+                            "type": "RemoveStatus",
+                            "status": "Poison"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "triggers": [
+                {
+                    "type": "SelfDetect",
+                    "status_name": "Poison"
+                }
+            ],
+            "effect": {
+                "type": "AddVar",
+                "name": "PoisonTicksLeft",
+                "value": {
+                    "type": "Const",
+                    "value": 3
+                }
+            }
+        }
+    ]
+}

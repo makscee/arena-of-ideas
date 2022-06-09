@@ -1,3 +1,5 @@
+use crate::model::status::StatusAction;
+
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
@@ -61,7 +63,8 @@ impl EffectImpl for AttachStatusEffect {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::SelfDetect {
                         status_name: detect,
-                    } => detect == status_name,
+                        status_action,
+                    } => detect == status_name && status_action == &StatusAction::Add,
                     _ => false,
                 })
             }) {
@@ -82,9 +85,11 @@ impl EffectImpl for AttachStatusEffect {
                         StatusTrigger::Detect {
                             status_name: detect,
                             filter,
+                            status_action,
                         } => {
                             other.id != target.id
                                 && detect == status_name
+                                && status_action == &StatusAction::Add
                                 && filter.matches(target.faction, other.faction)
                         }
                         _ => false,

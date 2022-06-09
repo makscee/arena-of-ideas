@@ -1,0 +1,21 @@
+{
+    "tier": 1,
+    "base_damage": 0.2,
+    "clans": [
+        "Assassins"
+    ],
+    "action": {
+        "range": 8,
+        "animation_delay": 0.25,
+        "cooldown": 5.5,
+        "effect": {
+            "preset": "effects/projectile_dd_ranged.json"
+        }
+    },
+    "statuses": [
+        "PoisonOnDealDamage"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

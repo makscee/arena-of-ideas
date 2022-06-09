@@ -4,6 +4,7 @@ use super::*;
 pub struct AddVarEffect {
     pub name: VarName,
     pub value: Expr,
+    #[serde(default)]
     pub effect: Effect,
 }
 

@@ -21,6 +21,10 @@ pub enum Condition {
     Chance {
         percent: Expr,
     },
+    Equal {
+        a: Box<Expr>,
+        b: Box<Expr>,
+    },
 }
 
 impl Default for Condition {

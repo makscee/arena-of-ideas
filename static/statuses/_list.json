@@ -11,5 +11,7 @@
     "Bleed.json",
     "Vulnerability.json",
     "Plague.json",
-    "SiphonLife.json"
+    "SiphonLife.json",
+    "Poison.json",
+    "PoisonOnDealDamage.json"
 ]

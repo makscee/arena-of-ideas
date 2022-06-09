@@ -2,6 +2,7 @@ use super::*;
 
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
+        let mut expired: Vec<(i64, String)> = Vec::new();
         for unit in &mut self.model.units {
             for status in &mut unit.all_statuses {
                 if let Some(time) = &mut status.time {
@@ -34,12 +35,26 @@ impl Logic<'_> {
                                 caster: status.caster,
                                 from: None,
                                 target: Some(unit.id),
-                                vars: default(),
+                                vars: status.vars.clone(),
                             },
                         });
                     }
                 }
             }
+
+            expired.extend(
+                (&mut unit.all_statuses)
+                    .iter()
+                    .filter(|x| {
+                        if let Some(time) = x.time {
+                            time <= R32::ZERO
+                        } else {
+                            false
+                        }
+                    })
+                    .map(|status| (unit.id, status.status.name.clone())),
+            );
+
             unit.all_statuses.retain(|status| {
                 if let Some(time) = status.time {
                     if time <= R32::ZERO {
@@ -92,6 +107,59 @@ impl Logic<'_> {
                 // other.all_statuses.push((*aura.status).clone());
             }
             self.model.units.insert(unit);
+        }
+
+        for (owner_id, status_name) in &expired {
+            let owner = self.model.units.get(owner_id).unwrap();
+            for (effect, vars) in owner.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::SelfDetect {
+                        status_name,
+                        status_action,
+                    } => {
+                        status.status.name == *status_name && status_action == &StatusAction::Remove
+                    }
+                    _ => false,
+                })
+            }) {
+                self.effects.push_front(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: Some(owner.id),
+                        from: Some(owner.id),
+                        target: Some(owner.id),
+                        vars,
+                    },
+                })
+            }
+
+            for other in &self.model.units {
+                for (effect, vars) in other.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::Detect {
+                            status_name,
+                            filter,
+                            status_action,
+                        } => {
+                            other.id != owner.id
+                                && status.status.name == *status_name
+                                && status_action == &StatusAction::Remove
+                                && filter.matches(owner.faction, other.faction)
+                        }
+                        _ => false,
+                    })
+                }) {
+                    self.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: Some(other.id),
+                            from: Some(other.id),
+                            target: Some(owner.id),
+                            vars,
+                        },
+                    })
+                }
+            }
         }
     }
 }
