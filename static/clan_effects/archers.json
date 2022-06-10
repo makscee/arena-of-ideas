@@ -10,7 +10,7 @@
             {
                 "name": "OnDealDamage",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
@@ -53,7 +53,7 @@
             {
                 "name": "OnDealDamage",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
