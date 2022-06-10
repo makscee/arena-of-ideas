@@ -1,0 +1,15 @@
+{
+    "tier": 0,
+    "description": "On @Crit @Bonus Shot, +30% @Crit chance",
+    "crit_chance": 30,
+    "clans": [
+        "Archers",
+        "Assassins"
+    ],
+    "statuses": [
+        "SniperOnCrit"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "ranged+"
+}

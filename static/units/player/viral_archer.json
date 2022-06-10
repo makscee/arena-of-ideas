@@ -1,5 +1,6 @@
 {
     "tier": 1,
+    "triple": "viral_archer+",
     "description": "@Scathe 10% chance to apply @Plague",
     "clans": [
         "PlagueSpreaders",

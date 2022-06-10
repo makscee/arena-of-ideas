@@ -1,5 +1,6 @@
 {
     "tier": 1,
+    "triple": "frozen_blade+",
     "action": {
         "range": 0.5,
         "animation_delay": 0.25,
