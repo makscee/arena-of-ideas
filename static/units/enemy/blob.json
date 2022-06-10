@@ -15,6 +15,7 @@
         }
     },
     "statuses": [
+        "Freeze"
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
