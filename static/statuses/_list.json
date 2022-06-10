@@ -10,6 +10,7 @@
     "hero/DrainerHealTaken.json",
     "hero/DarkArcherOnDealDamage.json",
     "hero/DarkArcher+OnDealDamage.json",
+    "hero/IceBreaker+OnCrit.json",
     "hero/SniperOnCrit.json",
     "Freeze.json",
     "Shield.json",
