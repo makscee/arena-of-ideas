@@ -2,7 +2,8 @@
     "SmallBlobOnDeath.json",
     "BigBlobOnDeath.json",
     "ShooterOnDeath.json",
-    "IceArcher+OnDealDamage.json",
+    "hero/IceArcher+OnDealDamage.json",
+    "hero/Rogue+OnDealDamage.json",
     "Freeze.json",
     "Shield.json",
     "Invulnerability.json",
@@ -14,6 +15,5 @@
     "Plague.json",
     "SiphonLife.json",
     "Poison.json",
-    "PoisonOnDealDamage.json",
-    "Rogue+OnDealDamage.json"
+    "PoisonOnDealDamage.json"
 ]

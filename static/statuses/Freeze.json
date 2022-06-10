@@ -3,6 +3,14 @@
     "stacking": {
         "type": "Refresh"
     },
-    "flags": ["MoveUnable"],
-    "duration": 1.5
+    "flags": ["MoveUnable", "ActionUnable"],
+    "listeners": [
+        {
+            "triggers": [{"type":"DamageTaken"}],
+            "effect": {
+                "type": "RemoveStatus",
+                "status": "Freeze"
+            }
+        }
+    ]
 }
