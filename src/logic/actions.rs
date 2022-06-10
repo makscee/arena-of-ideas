@@ -6,16 +6,16 @@ impl Logic<'_> {
     }
     fn process_unit_actions(&mut self, unit: &mut Unit) {
         if let ActionState::Start { time, target } = &mut unit.action_state {
+            if unit
+                .flags
+                .iter()
+                .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
+            {
+                *time = Time::new(0.0);
+                return;
+            }
             *time += self.delta_time;
             if *time > unit.action.animation_delay {
-                if unit
-                    .flags
-                    .iter()
-                    .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
-                {
-                    return;
-                }
-
                 if let Some(target) = self.model.units.get(target) {
                     let mut effect = unit.action.effect.clone();
                     for modifier in mem::take(&mut unit.next_action_modifiers) {
