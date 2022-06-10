@@ -1,8 +1,8 @@
 {
-    "name": "Stun",
+    "name": "MicroStun",
     "stacking": {
         "type": "Independent"
     },
     "flags": ["MoveUnable", "ActionUnable","AbilityUnable"],
-    "duration": 1.5
+    "duration": 0.15
 }

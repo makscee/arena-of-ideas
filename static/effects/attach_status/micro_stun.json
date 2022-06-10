@@ -3,7 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "status": "Stun"
+            "status": "MicroStun"
         },
         {
             "type": "Visual",

@@ -1,0 +1,21 @@
+{
+    "tier": 0,
+    "base_damage": 1.0,
+    "clans": [
+        "Assassins"
+    ],
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.25,
+        "effect": {
+            "preset": "effects/dd_melee.json"
+        }
+    },
+    "statuses": [
+        "Rogue+OnDealDamage"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee+"
+}

@@ -1,7 +1,7 @@
 {
     "name": "SiphonLife",
     "stacking": {
-        "type": "Refresh"
+        "type": "Independent"
     },
     "duration": 8,
     "listeners": [
