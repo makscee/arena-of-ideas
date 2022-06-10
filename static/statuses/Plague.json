@@ -25,6 +25,21 @@
         {
             "triggers": [
                 {
+                    "type": "DamageDealt",
+                    "damage_type": "Melee"
+                },
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Ranged"
+                }
+            ],
+            "effect": {
+                "preset": "effects/attach_status/plague.json"
+            }
+        },
+        {
+            "triggers": [
+                {
                     "type": "Death"
                 }
             ],
