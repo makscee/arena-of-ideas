@@ -33,7 +33,7 @@ impl EffectImpl for ProjectileEffect {
         let from = context
             .from
             .and_then(|id| logic.model.units.get(&id))
-            .expect("Caster not found");
+            .expect("From not found");
         if target.id == from.id {
             error!("Projectile target == from");
             return;
@@ -47,6 +47,7 @@ impl EffectImpl for ProjectileEffect {
             target_position: target.position,
             effect: effect.effect,
             render_config: effect.render_config,
+            vars: context.vars.clone(),
         });
         logic.model.next_id += 1;
     }

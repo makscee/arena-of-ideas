@@ -53,7 +53,7 @@ impl EffectImpl for ChangeTargetEffect {
             context.target = Some(unit.id);
             logic.effects.push_front(QueuedEffect {
                 effect: effect.effect,
-                context: dbg!(context),
+                context,
             });
         }
     }

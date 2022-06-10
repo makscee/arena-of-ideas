@@ -1,0 +1,27 @@
+{
+    "tier": 0,
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        "DrainerHealTaken"
+    ],
+    "ability":
+    {
+        "cooldown": 15,
+        "effect":
+        {
+            "type": "AOE",
+            "filter": "Enemies",
+            "skip_current_target": false,
+            "range": 20,
+            "effect":
+            {
+                "preset": "effects/attach_status/siphon_life.json"
+            }
+        }
+    },
+    "move_ai": "Stay",
+    "target_ai": "Closest",
+    "base": "ranged+"
+}

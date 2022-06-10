@@ -148,14 +148,16 @@ pub enum StatusTrigger {
     DamageDealt { damage_type: Option<DamageType> },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
     DamageTaken { damage_type: Option<DamageType> },
+    /// Triggered when the owner is healed
+    HealTaken,
+    /// Triggered when the owner heals someone
+    HealDealt,
     /// Triggered when the owner's shield breaks
     ShieldBroken,
     /// Triggered when the unit spawns
     Spawn,
     /// Triggered when the owner dies
     Death,
-    /// Triggered when the owner is healed
-    Heal,
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
     Kill { damage_type: Option<DamageType> },
     /// Triggered when a unit dies in range

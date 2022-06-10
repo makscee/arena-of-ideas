@@ -10,4 +10,5 @@ pub struct Projectile {
     pub speed: Coord,
     pub effect: Effect,
     pub render_config: RenderConfig,
+    pub vars: HashMap<VarName, R32>,
 }
