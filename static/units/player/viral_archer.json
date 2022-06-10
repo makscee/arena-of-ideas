@@ -1,0 +1,14 @@
+{
+    "tier": 1,
+    "description": "@Scathe 10% chance to apply @Plague",
+    "clans": [
+        "PlagueSpreaders",
+        "Archers"
+    ],
+    "statuses": [
+        "ViralArcherOnDealDamage"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "ranged"
+}

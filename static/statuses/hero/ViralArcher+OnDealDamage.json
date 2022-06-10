@@ -1,0 +1,19 @@
+{
+    "name": "ViralArcher+OnDealDamage",
+    "stacking": {
+        "type": "Independent"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Ranged"
+                }
+            ],
+            "effect": {
+                "preset": "effects/attach_status/plague.json"
+            }
+        }
+    ]
+}

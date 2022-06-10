@@ -5,6 +5,8 @@
     "hero/IceArcher+OnDealDamage.json",
     "hero/Rogue+OnDealDamage.json",
     "hero/PatientZero+OnTakeDamage.json",
+    "hero/ViralArcherOnDealDamage.json",
+    "hero/ViralArcher+OnDealDamage.json",
     "hero/DrainerHealTaken.json",
     "Freeze.json",
     "Shield.json",
