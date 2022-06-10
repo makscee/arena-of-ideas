@@ -6,8 +6,9 @@ const float c_glowStart = 0.7;
 const float c_glowEnd = 0.0;
 
 const float c_status_radius_delta = .2;
-const float c_status_radius_offset = .4;
-const float c_status_thickness = .035;
+const float c_status_radius_delta_max = .75;
+const float c_status_radius_offset = .3;
+const float c_status_thickness = .025;
 const float c_status_dot_radius = 0.09;
 
 const float padding = 1.5;
@@ -154,7 +155,8 @@ vec4 renderStatusRing(vec2 uv, vec3 col)
     // float u_status_time = 0.8 + sin(iTime) * .5;
     const float u_status_time = 0.;
 
-    float offset = 1. + c_status_radius_offset + c_status_radius_delta * u_status_index;
+    float offset = 1. + c_status_radius_offset + c_status_radius_delta * u_status_index
+        * (min(1., c_status_radius_delta_max / c_status_radius_delta / u_status_count));
     float rad = abs(vecAngle(uv) - pi);
     float h = abs(distance(uv,vec2(0.)) - offset);
     float dotDistance = distance(uv, vec2(0,-1) * offset);
