@@ -1,0 +1,19 @@
+{
+    "name": "DarkArcher+OnDealDamage",
+    "stacking": {
+        "type": "Independent"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Ranged"
+                }
+            ],
+            "effect": {
+                "preset": "effects/bonus_shot_projectile.json"
+            }
+        }
+    ]
+}

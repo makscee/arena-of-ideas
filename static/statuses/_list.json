@@ -8,6 +8,8 @@
     "hero/ViralArcherOnDealDamage.json",
     "hero/ViralArcher+OnDealDamage.json",
     "hero/DrainerHealTaken.json",
+    "hero/DarkArcherOnDealDamage.json",
+    "hero/DarkArcher+OnDealDamage.json",
     "hero/SniperOnCrit.json",
     "Freeze.json",
     "Shield.json",
