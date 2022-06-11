@@ -28,6 +28,7 @@
                     {
                         "type": "AddVar",
                         "name": "PoisonTicksLeft",
+                        "status_name": "Poison",
                         "value": {
                             "type": "Sum",
                             "a": {
@@ -74,6 +75,7 @@
             "effect": {
                 "type": "AddVar",
                 "name": "PoisonTicksLeft",
+                "status_name": "Poison",
                 "value": {
                     "type": "Const",
                     "value": 3

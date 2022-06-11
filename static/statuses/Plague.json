@@ -46,6 +46,7 @@
             "effect": {
                 "type": "AddVar",
                 "name": "SpawnHealth",
+                "status_name": "Plague",
                 "value": {
                     "type": "FindStat",
                     "who": "From",
