@@ -42,22 +42,24 @@ impl Logic<'_> {
                 }
             }
 
+            fn is_expired(status: &AttachedStatus) -> bool {
+                status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
+                    || status
+                        .vars
+                        .get(&VarName::StackCounter)
+                        .map(|count| *count <= R32::ZERO)
+                        .unwrap_or(false)
+            }
+
             // Remember expired statuses
             expired.extend(
                 (&mut unit.all_statuses)
                     .iter()
-                    .filter(|status| status.time.map(|time| time <= Time::ZERO).unwrap_or(false))
+                    .filter(|status| is_expired(status))
                     .map(|status| (unit.id, status.status.name.clone())),
             );
 
-            unit.all_statuses.retain(|status| {
-                if let Some(time) = status.time {
-                    if time <= R32::ZERO {
-                        return false;
-                    }
-                }
-                true
-            });
+            unit.all_statuses.retain(|status| !is_expired(status));
 
             unit.flags = unit
                 .all_statuses
@@ -112,9 +114,7 @@ impl Logic<'_> {
                     StatusTrigger::SelfDetect {
                         status_name,
                         status_action: StatusAction::Remove,
-                    } => {
-                        status.status.name == *status_name
-                    }
+                    } => status.status.name == *status_name,
                     _ => false,
                 })
             }) {
