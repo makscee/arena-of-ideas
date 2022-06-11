@@ -123,8 +123,10 @@ pub enum StatusAction {
     Remove,
 }
 
-fn default_status_action() -> StatusAction {
-    StatusAction::Add
+impl Default for StatusAction {
+    fn default() -> Self {
+        Self::Add
+    }
 }
 
 /// Describes what to do when several equal statuses are attached to the same unit
@@ -171,14 +173,14 @@ pub enum StatusTrigger {
     /// Triggered when some unit acquires the specified status and the filter is satisfied
     Detect {
         status_name: StatusName,
-        #[serde(default = "default_status_action")]
+        #[serde(default)]
         status_action: StatusAction,
         filter: TargetFilter,
     },
     /// Triggered when the owner acquires the specified status
     SelfDetect {
         status_name: StatusName,
-        #[serde(default = "default_status_action")]
+        #[serde(default)]
         status_action: StatusAction,
     },
     /// Triggered periodically
