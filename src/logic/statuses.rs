@@ -2,7 +2,7 @@ use super::*;
 
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
-        let mut expired: Vec<(i64, String)> = Vec::new();
+        let mut expired: Vec<(Id, String)> = Vec::new();
         for unit in &mut self.model.units {
             for status in &mut unit.all_statuses {
                 if let Some(time) = &mut status.time {
@@ -42,16 +42,11 @@ impl Logic<'_> {
                 }
             }
 
+            // Remember expired statuses
             expired.extend(
                 (&mut unit.all_statuses)
                     .iter()
-                    .filter(|x| {
-                        if let Some(time) = x.time {
-                            time <= R32::ZERO
-                        } else {
-                            false
-                        }
-                    })
+                    .filter(|status| status.time.map(|time| time <= Time::ZERO).unwrap_or(false))
                     .map(|status| (unit.id, status.status.name.clone())),
             );
 
@@ -109,15 +104,16 @@ impl Logic<'_> {
             self.model.units.insert(unit);
         }
 
+        // Detect expired statuses
         for (owner_id, status_name) in &expired {
             let owner = self.model.units.get(owner_id).unwrap();
             for (effect, vars) in owner.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::SelfDetect {
                         status_name,
-                        status_action,
+                        status_action: StatusAction::Remove,
                     } => {
-                        status.status.name == *status_name && status_action == &StatusAction::Remove
+                        status.status.name == *status_name
                     }
                     _ => false,
                 })
@@ -139,11 +135,10 @@ impl Logic<'_> {
                         StatusTrigger::Detect {
                             status_name,
                             filter,
-                            status_action,
+                            status_action: StatusAction::Remove,
                         } => {
                             other.id != owner.id
                                 && status.status.name == *status_name
-                                && status_action == &StatusAction::Remove
                                 && filter.matches(owner.faction, other.faction)
                         }
                         _ => false,
