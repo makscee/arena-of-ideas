@@ -287,7 +287,7 @@ impl EffectContainer for Status {
 
 pub trait StatusImpl: EffectContainer {}
 
-pub fn unit_attach_status(status: AttachedStatus, all_statuses: &mut Vec<AttachedStatus>) {
+pub fn unit_attach_status(mut status: AttachedStatus, all_statuses: &mut Vec<AttachedStatus>) {
     fn replace(
         status: AttachedStatus,
         all_statuses: &mut Vec<AttachedStatus>,
@@ -302,8 +302,11 @@ pub fn unit_attach_status(status: AttachedStatus, all_statuses: &mut Vec<Attache
         }
     }
 
+    status.vars.insert(VarName::StackCounter, r32(1.0));
     match &status.status.stacking {
-        StatusStacking::Independent => all_statuses.push(status),
+        StatusStacking::Independent => {
+            all_statuses.push(status);
+        }
         StatusStacking::Refresh => replace(status, all_statuses, |s| {
             s.time = s.status.duration;
         }),
