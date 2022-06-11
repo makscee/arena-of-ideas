@@ -27,17 +27,11 @@ pub struct StatusRenderConfig {
     pub parameters: ShaderParameters,
 }
 
-// pub struct StatusConfig {
-//     pub status: Status,
-//     pub render: StatusRender,
-// }
-
 #[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
-    #[serde(flatten)]
     pub render: Option<StatusRenderConfig>,
 }
 

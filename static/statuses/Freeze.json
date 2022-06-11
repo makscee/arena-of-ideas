@@ -12,5 +12,11 @@
                 "status": "Freeze"
             }
         }
-    ]
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#1e90ff"
+        }
+    }
 }
