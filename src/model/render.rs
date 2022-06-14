@@ -72,7 +72,7 @@ pub enum ShaderParameter {
 }
 
 impl ugli::Uniform for ShaderParameter {
-    fn apply(&self, gl: &ugli_raw::Context, info: &ugli::UniformInfo) {
+    fn apply(&self, gl: &ugli::raw::Context, info: &ugli::UniformInfo) {
         match self {
             Self::Int(value) => value.apply(gl, info),
             Self::Float(value) => value.apply(gl, info),
