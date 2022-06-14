@@ -6,8 +6,8 @@
             "between_delay": 4,
             "top": [
                 {
-                    "type": "blob",
-                    "count": 3
+                    "type": "big_blob",
+                    "count": 1
                 }
             ]
         }

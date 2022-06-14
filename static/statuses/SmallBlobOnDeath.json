@@ -20,8 +20,9 @@
                         "effect": {
                             "type": "Damage",
                             "value": {
-                                "type": "Const",
-                                "value": 3
+                                "type": "FindStat",
+                                "who": "Caster",
+                                "stat": "BaseDamage"
                             }
                         }
                     },

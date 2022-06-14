@@ -52,8 +52,6 @@
     "statuses": [
         "IceBreaker+OnCrit"  
     ],
-    "move_ai": "Advance",
-    "target_ai": "Closest",
     "clans": [
         "Freezers",
         "Assassins"

@@ -18,8 +18,6 @@
             ]
         }
     },
-    "move_ai": "Advance",
-    "target_ai": "Closest",
     "clans": [
         "Freezers"
     ],

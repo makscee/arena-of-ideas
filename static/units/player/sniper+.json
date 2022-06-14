@@ -9,7 +9,5 @@
     "statuses": [
         "SniperOnCrit"
     ],
-    "move_ai": "Advance",
-    "target_ai": "Closest",
     "base": "ranged+"
 }

@@ -3,16 +3,11 @@
     "waves": [
         {
             "start_delay": 2,
-            "left": [
+            "between_delay": 5,
+            "top": [
                 {
                     "type": "blob",
-                    "count": 1
-                }
-            ],
-            "right": [
-                {
-                    "type": "blob",
-                    "count": 1
+                    "count": 2
                 }
             ]
         }

@@ -2,7 +2,5 @@
     "melee",
     "melee+",
     "ranged",
-    "ranged+",
-    "support",
-    "caster"
+    "ranged+"
 ]

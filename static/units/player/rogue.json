@@ -13,7 +13,5 @@
             "preset": "effects/dd_melee.json"
         }
     },
-    "move_ai": "Advance",
-    "target_ai": "Closest",
     "base": "melee"
 }

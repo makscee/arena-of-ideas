@@ -11,7 +11,7 @@
             "preset": "effects/projectile_dd_ranged.json"
         }
     },
-    "move_ai": "KeepClose",
+    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

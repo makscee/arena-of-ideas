@@ -15,7 +15,5 @@
     "statuses": [
         "Rogue+OnDealDamage"
     ],
-    "move_ai": "Advance",
-    "target_ai": "Closest",
     "base": "melee+"
 }

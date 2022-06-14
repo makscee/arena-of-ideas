@@ -60,7 +60,7 @@ pub struct Assets {
     pub textures: Textures,
     pub shaders: Shaders,
     pub card: Rc<ugli::Texture>,
-    #[asset(path = "rounds/round*.json", range = "1..=3")]
+    #[asset(path = "rounds/round*.json", range = "1..=5")]
     pub rounds: Vec<GameRound>,
 }
 
@@ -301,6 +301,7 @@ impl geng::LoadAsset for UnitTemplates {
                     if let Some(base) = json.get_mut("base") {
                         let base = base.take();
                         let base = base.as_str().expect("base must be a string");
+                        let base_str = base.to_string();
                         let base = &map
                             .get(base)
                             .expect(&format!("Failed to find unit's base: {}", base));
@@ -310,6 +311,19 @@ impl geng::LoadAsset for UnitTemplates {
                             .unwrap()
                             .append(&mut json.as_object_mut().unwrap());
                         json = base_json;
+                        let description = json
+                            .get("description")
+                            .unwrap()
+                            .to_string()
+                            .trim_matches('"')
+                            .to_string();
+                        json.as_object_mut().unwrap().insert(
+                            String::from("description"),
+                            geng::prelude::serde_json::Value::String(format!(
+                                "{}\n{}",
+                                base_str, description
+                            )),
+                        );
                         json.as_object_mut().unwrap().remove("base");
                     }
 

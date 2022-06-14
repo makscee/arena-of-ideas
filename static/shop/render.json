@@ -11,12 +11,12 @@
             "columns": 2
         },
         "PlagueSpreaders": {
-            "description": "(2) @Plague heals allies for 0.5 after dealing damage to them \n @Skeletons gain @Scathe: apply @Plague \n @Skeletons gain +100% @base_damage, @move_speed and @max_hp",
+            "description": "(2) @Plague heals allies for 0.5 after dealing damage to them \n (4) @Skeletons gain @Scathe: apply @Plague \n (6) @Skeletons gain +100% @base_damage, @move_speed and @max_hp",
             "rows": 2,
             "columns": 3
         },
         "Warlocks": {
-            "description": "(2) @Scathe: apply @Siphon Life if target doesn’t have it \n (4) @Siphon Life damage has 15% chance to @Stun \n @Siphon Life damage is AoE",
+            "description": "(2) @Scathe: apply @Siphon Life if target doesn’t have it \n (4) @Siphon Life damage has 15% chance to @Stun \n (6) @Siphon Life damage is AoE",
             "rows": 2,
             "columns": 3
         },

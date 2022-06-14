@@ -4,7 +4,13 @@
         {
             "start_delay": 2,
             "between_delay": 4,
-            "top": [
+            "left": [
+                {
+                    "type": "blob",
+                    "count": 3
+                }
+            ],
+            "right": [
                 {
                     "type": "blob",
                     "count": 3
