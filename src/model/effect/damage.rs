@@ -66,42 +66,10 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        // TODO: reimplement
-        // // Shield
-        // if let Some(index) = target_unit
-        //     .all_statuses
-        //     .iter()
-        //     .position(|status| status.status.r#type() == StatusType::Shield)
-        // {
-        //     for status in &target_unit.all_statuses {
-        //         if let StatusOld::OnShieldBroken(status) = status {
-        //             logic.effects.push_front(QueuedEffect {
-        //                 context: {
-        //                     let mut context = EffectContext {
-        //                         caster: None,
-        //                         from: None,
-        //                         target: Some(target_unit.id),
-        //                         vars: default(),
-        //                     };
-        //                     context.vars.insert(VarName::DamageBlocked, damage);
-        //                     context
-        //                 },
-        //                 effect: status.effect.clone(),
-        //             });
-        //         }
-        //     }
-        //     damage = Health::new(0.0);
-        //     target_unit.all_statuses.remove(index);
-        // } else if target_unit
-        //     .all_statuses
-        //     .iter()
-        //     .any(|status| status.r#type() == StatusType::Shield)
-        // {
-        //     damage = Health::new(0.0);
-        // }
-
-        if damage <= Health::new(0.0) {
-            return;
+        for status in target_unit.all_statuses.iter() {
+            if status.status.name == "Vulnerability" {
+                damage *= r32(2.0);
+            }
         }
 
         for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
