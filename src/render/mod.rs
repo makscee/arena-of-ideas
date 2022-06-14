@@ -7,7 +7,6 @@ struct Text {
     time: f32,
     text: String,
     color: Color<f32>,
-    scale: f32,
 }
 
 #[derive(Clone)]
@@ -21,21 +20,19 @@ impl RenderModel {
     }
     pub fn update(&mut self, delta_time: f32) {
         for text in &mut self.texts {
-            text.time += delta_time * 0.8;
+            text.time += delta_time;
             text.position += text.velocity * delta_time;
-            text.scale = 1.0 - text.time;
         }
         self.texts.retain(|text| text.time < 1.0);
     }
     pub fn add_text(&mut self, position: Vec2<Coord>, text: &str, color: Color<f32>) {
-        let velocity = vec2(0.7, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
+        let velocity = vec2(0.2, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
         self.texts.push(Text {
             position: position.map(|x| x.as_f32()) + velocity,
             time: 0.0,
             velocity,
             text: text.to_owned(),
             color,
-            scale: 1.0,
         });
     }
 }
@@ -93,7 +90,7 @@ impl Render {
                 framebuffer,
                 &self.camera,
                 &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, text.color)
-                    .scale_uniform(0.35 * text.scale)
+                    .scale_uniform(0.2)
                     .translate(text.position),
             );
         }
@@ -283,7 +280,7 @@ impl Render {
 
     fn draw_field(
         &self,
-        shader_render: &ShaderRender,
+        shader_render: &ShaderConfig,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
@@ -525,7 +522,7 @@ impl UnitRender {
                 let status_count = statuses.len();
                 for (
                     status_index,
-                    StatusRender {
+                    ShaderConfig {
                         shader: program,
                         parameters,
                     },
@@ -551,7 +548,6 @@ impl UnitRender {
                                     u_previous_texture: &texture,
                                     u_status_count: status_count,
                                     u_status_index: status_index,
-                                    u_time: game_time,
                                 },
                                 parameters,
                             ),
