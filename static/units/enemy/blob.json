@@ -14,9 +14,7 @@
             }
         }
     },
-    "statuses": [
-        "Freeze"
-    ],
+    "statuses": [],
     "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {

@@ -8,8 +8,8 @@
             "triggers": [
                 {
                     "type": "Repeating",
-                    "tick_time": 0.3,
-                    "next_tick": 0.3
+                    "tick_time": 0.5,
+                    "next_tick": 0.5
                 }
             ],
             "effect": {
@@ -55,8 +55,34 @@
                             }
                         },
                         "then": {
-                            "type": "RemoveStatus",
-                            "status": "Poison"
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AddVar",
+                                    "name": "PoisonTicksLeft",
+                                    "status_name": "Poison",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 2
+                                    }
+                                },
+                                {
+                                    "type": "AddVar",
+                                    "name": "StackCounter",
+                                    "status_name": "Poison",
+                                    "value": {
+                                        "type": "Sum",
+                                        "a": {
+                                            "type": "Var",
+                                            "name": "StackCounter"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": -1
+                                        }
+                                    }
+                                }
+                            ]
                         },
                         "else": {
                             "type": "Noop"
@@ -78,9 +104,15 @@
                 "status_name": "Poison",
                 "value": {
                     "type": "Const",
-                    "value": 3
+                    "value": 2
                 }
             }
         }
-    ]
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#21ff06"
+        }
+    }
 }

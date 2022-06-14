@@ -7,7 +7,7 @@
     "action": {
         "range": 8,
         "animation_delay": 0.25,
-        "cooldown": 5.5,
+        "cooldown": 3.5,
         "effect": {
             "preset": "effects/projectile_dd_ranged.json"
         }
