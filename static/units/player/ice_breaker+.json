@@ -1,5 +1,6 @@
 {
-    "tier": 1,
+    "tier": 0,
+    "description": "@Crit on @Frozen. On @Crit apply @Frozen to enemies in area",
     "action": {
         "range": 0.5,
         "animation_delay": 0.25,
@@ -57,5 +58,5 @@
         "Freezers",
         "Assassins"
     ],
-    "base": "melee"
+    "base": "melee+"
 }

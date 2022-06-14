@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "description": "@Bonus Shot on @Frozen. @Bonus Shot applies @Frozen",
     "action": {
         "range": 10,
         "animation_delay": 0.75,
