@@ -24,6 +24,7 @@ pub enum Condition {
     Equal {
         a: Box<Expr>,
         b: Box<Expr>,
+    },
     Clan {
         clan: Clan,
         count: usize,
