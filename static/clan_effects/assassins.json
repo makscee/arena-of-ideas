@@ -10,7 +10,7 @@
             {
                 "name": "OnSpawn",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
@@ -51,7 +51,7 @@
             {
                 "name": "OnDealDamage",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
@@ -62,7 +62,7 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/attach_status/bleed.json"
+                            "preset": "effects/attach_status/poison.json"
                         }
                     }
                 ]
@@ -78,14 +78,14 @@
             {
                 "name": "OnTakeDamage",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
                         "triggers": [
                             {
                                 "type": "DamageTaken",
-                                "damage_type": "Bleed"
+                                "damage_type": "Poison"
                             }
                         ],
                         "effect": {
