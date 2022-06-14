@@ -150,6 +150,8 @@ pub enum StatusTrigger {
     DamageDealt { damage_type: Option<DamageType> },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
     DamageTaken { damage_type: Option<DamageType> },
+    /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
+    DamageIncoming { damage_type: Option<DamageType> },
     /// Triggered when the owner is healed
     HealTaken,
     /// Triggered when the owner heals someone

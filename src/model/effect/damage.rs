@@ -38,6 +38,26 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
+        for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::DamageIncoming { damage_type } => match &damage_type {
+                    Some(damage_type) => effect.types.contains(damage_type),
+                    None => true,
+                },
+                _ => false,
+            })
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: Some(target_unit.id),
+                    from: context.from,
+                    target: context.target,
+                    vars,
+                },
+            })
+        }
+
         if target_unit
             .flags
             .iter()

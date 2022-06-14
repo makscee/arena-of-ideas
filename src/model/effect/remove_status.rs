@@ -9,6 +9,8 @@ pub struct RemoveStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
     pub status: StatusName,
+    #[serde(default)]
+    pub all: bool,
 }
 
 impl EffectContainer for RemoveStatusEffect {
@@ -20,11 +22,15 @@ impl EffectImpl for RemoveStatusEffect {
         let effect = *self;
         let status_name = &effect.status;
         let target = context.get(effect.who);
+        let all = effect.all;
         if let Some(target) = target {
             let target = logic.model.units.get_mut(&target).unwrap();
             for status in &mut target.all_statuses {
                 if status.status.name == *status_name {
                     status.time = Some(Time::ZERO);
+                    if !all {
+                        return;
+                    }
                 }
             }
         }

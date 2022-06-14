@@ -1,9 +1,22 @@
 {
     "name": "Shield",
     "stacking": {
-        "type": "Refresh"
+        "type": "Independent"
     },
-    "duration": 1.5,
+    "flags": ["DamageImmune"],
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageIncoming"
+                }
+            ],
+            "effect": {
+                "type": "RemoveStatus",
+                "status": "Shield"
+            }
+        }
+    ],
     "render": {
         "shader": "shaders/status/status_default.glsl",
         "parameters": {
