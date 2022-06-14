@@ -234,6 +234,8 @@ pub struct Status {
     /// Specifications of effects to apply for different subsets of triggers
     #[serde(default)]
     pub listeners: Vec<StatusListener>,
+    #[serde(default)]
+    pub vars: HashMap<VarName, R32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -256,11 +258,11 @@ impl Status {
     /// Transforms config into an attached status
     pub fn attach(self, owner: Option<Id>, caster: Option<Id>) -> AttachedStatus {
         AttachedStatus {
+            vars: self.vars.clone(),
             time: self.duration,
             status: self,
             owner,
             caster,
-            vars: default(),
         }
     }
 }

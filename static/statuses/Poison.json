@@ -90,23 +90,6 @@
                     }
                 ]
             }
-        },
-        {
-            "triggers": [
-                {
-                    "type": "SelfDetect",
-                    "status_name": "Poison"
-                }
-            ],
-            "effect": {
-                "type": "AddVar",
-                "name": "PoisonTicksLeft",
-                "status_name": "Poison",
-                "value": {
-                    "type": "Const",
-                    "value": 2
-                }
-            }
         }
     ],
     "render": {
@@ -114,5 +97,8 @@
         "parameters": {
             "u_status_color": "#21ff06"
         }
+    },
+    "vars": {
+        "PoisonTicksLeft": 2
     }
 }
