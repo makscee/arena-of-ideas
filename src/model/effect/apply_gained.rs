@@ -12,17 +12,22 @@ impl EffectImpl for ApplyGainedEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let caster = logic.model.units.get_mut(&context.caster.unwrap()).unwrap();
-        caster
-            .attached_statuses
-            .retain(|status| match &status.status {
-                Status::GainedEffect(status) => {
-                    logic.effects.push_front(QueuedEffect {
-                        effect: status.effect.clone(),
-                        context: context.clone(),
-                    });
-                    false
-                }
-                _ => true,
-            });
+        // TODO: remove these statuses immediately after application
+        for (effect, mut vars) in caster.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| matches!(trigger, StatusTrigger::GainedEffect))
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: context.caster,
+                    from: context.from,
+                    target: context.target,
+                    vars: {
+                        vars.extend(context.vars.clone());
+                        vars
+                    },
+                },
+            })
+        }
     }
 }

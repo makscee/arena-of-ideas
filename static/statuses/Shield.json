@@ -1,0 +1,26 @@
+{
+    "name": "Shield",
+    "stacking": {
+        "type": "Independent"
+    },
+    "flags": ["DamageImmune"],
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageIncoming"
+                }
+            ],
+            "effect": {
+                "type": "RemoveStatus",
+                "status": "Shield"
+            }
+        }
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#ffd700"
+        }
+    }
+}

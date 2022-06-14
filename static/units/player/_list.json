@@ -1,7 +1,24 @@
 [
     "frozen_blade",
+    "frozen_blade+",
     "ice_archer",
     "ice_archer+",
+    "ice_breaker",
+    "ice_breaker+",
     "rogue",
-    "drainer"
+    "rogue+",
+    "drainer",
+    "drainer+",
+    "ranger",
+    "ranger+",
+    "patient_zero",
+    "patient_zero+",
+    "viral_archer",
+    "viral_archer+",
+    "sniper",
+    "sniper+",
+    "dark_archer",
+    "dark_archer+",
+    "poison_arrow",
+    "poison_arrow+"
 ]

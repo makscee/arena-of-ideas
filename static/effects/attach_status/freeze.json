@@ -3,9 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "status": {
-                "type": "Freeze"
-            }
+            "status": "Freeze"
         },
         {
             "type": "Visual",

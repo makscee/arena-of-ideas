@@ -1,0 +1,14 @@
+{
+    "name": "Stun",
+    "stacking": {
+        "type": "Independent"
+    },
+    "flags": ["MoveUnable", "ActionUnable","AbilityUnable"],
+    "duration": 1.5,
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#d8bfd8"
+        }
+    }
+}

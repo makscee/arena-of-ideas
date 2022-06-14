@@ -12,7 +12,7 @@ impl Logic<'_> {
                     .expect("Caster, From, or Target not found");
                 who.all_statuses
                     .iter()
-                    .any(|status| status.r#type() == *status_type)
+                    .any(|status| status.status.name == *status_type)
             }
             Condition::UnitInjured { who } => {
                 let who = context.get(*who);
@@ -35,6 +35,7 @@ impl Logic<'_> {
             Condition::Chance { percent } => {
                 r32(global_rng().gen_range(0.0..=100.0)) < percent.calculate(&context, self)
             }
+            Condition::Equal { a, b } => a.calculate(&context, self) == b.calculate(&context, self),
             Condition::Clan { clan, count } => self.model.config.clans[clan] >= *count,
         }
     }

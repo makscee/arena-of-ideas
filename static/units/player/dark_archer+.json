@@ -1,0 +1,15 @@
+{
+    "tier": 0,
+    "description": "@Bonus Shot applies @Siphon Life. Always @Bonus Shot target that has @Siphon Life",
+    "clans": [
+        "Archers",
+        "Warlocks"
+    ],
+    "statuses": [
+        "DarkArcherOnDealDamage",
+        "DarkArcher+OnDealDamage"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "ranged+"
+}

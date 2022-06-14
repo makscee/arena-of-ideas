@@ -269,7 +269,7 @@ impl ShopState {
         if let Some(drag) = self.shop.drag.take() {
             self.drag_stop_impl(drag);
         }
-        self.shop.cards.check_triples(&self.assets.units);
+        self.shop.cards.check_triples(&self.assets);
     }
 
     fn drag_stop_impl(&mut self, drag: Drag) {
@@ -373,7 +373,13 @@ impl Shop {
                     .available
                     .iter()
                     .filter(|(_, unit)| unit.tier <= self.tier)
-                    .map(|(unit_type, unit)| Some(UnitCard::new(unit.clone(), unit_type.clone())))
+                    .map(|(unit_type, unit)| {
+                        Some(UnitCard::new(
+                            unit.clone(),
+                            unit_type.clone(),
+                            &self.assets.statuses,
+                        ))
+                    })
                     .collect::<Vec<_>>();
                 if options.is_empty() {
                     self.cards.shop = vec![];
@@ -409,7 +415,7 @@ impl Cards {
         }
     }
 
-    pub fn check_triples(&mut self, templates: &UnitTemplates) {
+    pub fn check_triples(&mut self, assets: &Rc<Assets>) {
         // Count cards
         let mut counters = HashMap::new();
         for unit_type in self
@@ -437,11 +443,12 @@ impl Cards {
                         1 => {
                             // Replace the card
                             let triple = card.template.triple.clone().unwrap();
-                            let template = templates
+                            let template = assets
+                                .units
                                 .get(&triple)
                                 .expect(&format!("Failed to find unit to upgrade to: {triple}"))
                                 .clone();
-                            *card = UnitCard::new(template, triple);
+                            *card = UnitCard::new(template, triple, &assets.statuses);
                         }
                         _ => unreachable!(),
                     }

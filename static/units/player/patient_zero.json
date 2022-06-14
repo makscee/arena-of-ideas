@@ -1,0 +1,14 @@
+{
+    "tier": 1,
+    "triple": "patient_zero+",
+    "description": "Has @Plague",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        "Plague"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee"
+}

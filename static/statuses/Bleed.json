@@ -1,0 +1,33 @@
+{
+    "name": "Bleed",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "duration": 1.5,
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "Repeating",
+                    "tick_time": 1
+                }
+            ],
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "Bleed"
+                ],
+                "value": {
+                    "type": "Const",
+                    "value": 1
+                }
+            }
+        }
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#FC0107"
+        }
+    }
+}

@@ -31,8 +31,9 @@ pub struct Unit {
     pub id: Id,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
-    pub attached_statuses: Vec<AttachedStatus>,
-    pub all_statuses: Vec<Status>,
+    pub all_statuses: Vec<AttachedStatus>,
+    /// Temporary flags that live for one frame
+    pub flags: Vec<UnitStatFlag>,
     pub faction: Faction,
     pub action_state: ActionState,
     pub health: Health,
@@ -72,22 +73,21 @@ impl Unit {
         unit_type: UnitType,
         faction: Faction,
         position: Vec2<Coord>,
+        statuses: &Statuses,
     ) -> Self {
         Self {
             id,
             unit_type,
             spawn_animation_time_left: Some(template.spawn_animation_time),
-            attached_statuses: template
+            all_statuses: template
                 .statuses
                 .iter()
-                .map(|status| AttachedStatus {
-                    status: status.clone(),
-                    caster: None,
-                    time: None,
-                    duration: None,
+                .map(|status| {
+                    let status = statuses.get_config(&status);
+                    status.status.clone().attach(Some(id), None)
                 })
                 .collect(),
-            all_statuses: Vec::new(),
+            flags: vec![],
             faction,
             action_state: ActionState::None,
             health: template.health,

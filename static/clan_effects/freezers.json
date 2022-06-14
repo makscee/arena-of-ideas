@@ -6,11 +6,23 @@
         },
         "statuses": [
             {
-                "type": "SelfDetect",
-                "detect_type": "Freeze",
-                "effect": {
-                    "preset": "effects/attach_status/vulnerability.json"
-                }
+                "name": "SelfDetect",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "SelfDetect",
+                                "status_name": "Freeze"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/attach_status/vulnerability.json"
+                        }
+                    }
+                ]
             }
         ]
     },
@@ -23,15 +35,27 @@
         },
         "statuses": [
             {
-                "type": "OnTakeDamage",
-                "effect": {
-                    "type": "AOE",
-                    "filter": "Enemies",
-                    "range": 2,
-                    "effect": {
-                        "preset": "effects/attach_status/freeze.json"
+                "name": "OnTakeDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken"
+                            }
+                        ],
+                        "effect": {
+                            "type": "AOE",
+                            "filter": "Enemies",
+                            "range": 2,
+                            "effect": {
+                                "preset": "effects/attach_status/freeze.json"
+                            }
+                        }
                     }
-                }
+                ]
             }
         ]
     },
@@ -42,11 +66,23 @@
         },
         "statuses": [
             {
-                "type": "SelfDetect",
-                "detect_type": "Freeze",
-                "effect": {
-                    "preset": "effects/attach_status/stun.json"
-                }
+                "name": "SelfDetect",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "SelfDetect",
+                                "status_name": "Freeze"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/attach_status/stun.json"
+                        }
+                    }
+                ]
             }
         ]
     }

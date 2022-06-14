@@ -1,0 +1,29 @@
+{
+    "name": "ShooterOnDeath",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "Death"
+                }
+            ],
+            "effect": {
+                "type": "Visual",
+                "duration": 1.0,
+                "parent": "Caster",
+                "follow": false,
+                "radius": 1.5,
+                "render": {
+                    "type": "Shader",
+                    "path": "shaders/vfx_explosion.glsl",
+                    "parameters": {
+                        "color": "#dc143c"
+                    }
+                }
+            }
+        }
+    ]
+}

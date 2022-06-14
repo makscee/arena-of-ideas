@@ -54,6 +54,7 @@ impl Game {
             config.clone(),
             assets.units.clone(),
             assets.clans.clone(),
+            assets.statuses.clone(),
             round,
         );
         Logic::initialize(&mut model, &config);

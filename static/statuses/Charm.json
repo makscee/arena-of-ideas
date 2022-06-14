@@ -1,0 +1,13 @@
+{
+    "name": "Charm",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "duration": 3,
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#ff1493"
+        }
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "AttachStatus",
+            "status": "MicroStun"
+        },
+        {
+            "type": "Visual",
+            "duration": 1.5,
+            "parent": "Target",
+            "follow": true,
+            "radius": 2,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_particle_spin.glsl",
+                "parameters": {
+                    "p_startColor": "#b8860b",
+                    "p_endColor": "#d8bfd8",
+                    "p_count": 25,
+                    "p_startSize": 0.05,
+                    "p_endSize": 0.01,
+                    "p_spawnShift": 0.005,
+                    "p_trailCount": 3
+                }
+            }
+        }
+    ]
+}

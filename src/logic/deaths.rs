@@ -5,46 +5,43 @@ impl Logic<'_> {
         let unit = self.model.units.get_mut(&id).unwrap();
         unit.health = Health::new(0.0);
         let unit = self.model.units.get(&id).unwrap();
-        for status in &unit.all_statuses {
-            if let Status::OnDeath(status) = status {
-                self.effects.push_front(QueuedEffect {
-                    effect: status.effect.clone(),
-                    context: EffectContext {
-                        caster: Some(unit.id),
-                        from: Some(unit.id),
-                        target: Some(unit.id),
-                        vars: default(),
-                    },
-                });
-            }
+
+        for (effect, vars) in unit
+            .all_statuses
+            .iter()
+            .flat_map(|status| (status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))))
+        {
+            self.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: Some(unit.id),
+                    from: Some(unit.id),
+                    target: Some(unit.id),
+                    vars,
+                },
+            });
         }
-        for other in &self.model.units {
-            if other.id == unit.id {
-                continue;
-            }
-            for status in &other.all_statuses {
-                if let Status::Scavenge(status) = status {
-                    if !status.who.matches(other.faction, unit.faction) {
-                        continue;
+
+        for other in self.model.units.iter().filter(|other| other.id != unit.id) {
+            for (effect, vars) in other.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::Scavenge { who, range, clan } => {
+                        who.matches(other.faction, unit.faction)
+                            && clan.map(|clan| unit.clans.contains(&clan)).unwrap_or(true)
+                            && distance_between_units(other, unit) > *range
                     }
-                    if let Some(clan) = status.clan {
-                        if !unit.clans.contains(&clan) {
-                            continue;
-                        }
-                    }
-                    if distance_between_units(other, unit) > status.range {
-                        continue;
-                    }
-                    self.effects.push_back(QueuedEffect {
-                        effect: status.effect.clone(),
-                        context: EffectContext {
-                            caster: Some(other.id),
-                            from: Some(other.id),
-                            target: Some(unit.id),
-                            vars: default(),
-                        },
-                    })
-                }
+                    _ => false,
+                })
+            }) {
+                self.effects.push_front(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: Some(other.id),
+                        from: Some(other.id),
+                        target: Some(unit.id),
+                        vars,
+                    },
+                })
             }
         }
     }

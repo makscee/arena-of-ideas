@@ -20,9 +20,11 @@ impl Logic<'_> {
                     if unit.faction != Faction::Player {
                         continue;
                     }
-                    if unit.all_statuses.iter().any(|status| {
-                        matches!(status.r#type(), StatusType::Freeze | StatusType::Stun)
-                    }) {
+                    if unit
+                        .flags
+                        .iter()
+                        .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
+                    {
                         continue;
                     }
                     if let Some(ability) = &template.ability {

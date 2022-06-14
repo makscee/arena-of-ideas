@@ -283,7 +283,7 @@ impl Render {
 
     fn draw_field(
         &self,
-        shader_render: &ShaderRender,
+        shader_render: &ShaderConfig,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
@@ -370,20 +370,21 @@ impl UnitRender {
                         unit.radius.as_f32() * attack_scale * spawn_scale,
                         {
                             let mut color = *color;
-                            if unit
-                                .all_statuses
-                                .iter()
-                                .any(|status| status.r#type() == StatusType::Freeze)
-                            {
-                                color = Color::CYAN;
-                            }
-                            if unit
-                                .all_statuses
-                                .iter()
-                                .any(|status| matches!(status, Status::Slow { .. }))
-                            {
-                                color = Color::GRAY;
-                            }
+                            // TODO: reimplement
+                            // if unit
+                            //     .all_statuses
+                            //     .iter()
+                            //     .any(|status| status.r#type() == StatusType::Freeze)
+                            // {
+                            //     color = Color::CYAN;
+                            // }
+                            // if unit
+                            //     .all_statuses
+                            //     .iter()
+                            //     .any(|status| matches!(status, StatusOld::Slow { .. }))
+                            // {
+                            //     color = Color::GRAY;
+                            // }
                             color
                         },
                     ),
@@ -445,7 +446,7 @@ impl UnitRender {
                     })
                     .map(|x| x.as_f32());
 
-                let mut is_ability_ready = 0.0; // TODO: rewrite please
+                let mut is_ability_ready: f32 = 0.0; // TODO: rewrite please
                 if let Some(ability) = &template.ability {
                     is_ability_ready = match unit.ability_cooldown {
                         Some(time) if time > Time::new(0.0) => 0.0,
@@ -510,22 +511,21 @@ impl UnitRender {
                     );
                 }
 
-                let mut statuses: std::vec::Vec<&ShaderRender> = unit
+                let mut statuses: Vec<_> = unit
                     .all_statuses
                     .iter()
                     .filter_map(|status| {
-                        let status_type = status.r#type();
-                        if let Some(program) = self.assets.statuses.get(&status_type) {
-                            Some(program)
-                        } else {
-                            None
-                        }
+                        self.assets
+                            .statuses
+                            .get(&status.status.name)
+                            .and_then(|config| config.render.as_ref())
+                            .map(|render| self.assets.get_status_render(render))
                     })
                     .collect();
                 let status_count = statuses.len();
                 for (
                     status_index,
-                    ShaderRender {
+                    ShaderConfig {
                         shader: program,
                         parameters,
                     },
@@ -542,7 +542,7 @@ impl UnitRender {
                         ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
                         ugli::draw(
                             framebuffer,
-                            program,
+                            &*program,
                             ugli::DrawMode::TriangleFan,
                             &quad,
                             (

@@ -53,20 +53,55 @@ impl EffectImpl for HealEffect {
                 );
             }
         }
-        let value = min(value, max_health - target_unit.health);
-        target_unit.health += value;
+        let value_clamped = min(value, max_health - target_unit.health);
+        target_unit.health += value_clamped;
 
-        for status in &target_unit.all_statuses {
-            if let Status::OnHeal(status) = status {
-                logic.effects.push_front(QueuedEffect {
-                    effect: status.effect.clone(),
-                    context: {
-                        let mut context = context.clone();
-                        context.vars.insert(VarName::HealthRestored, value);
-                        context
+        for (effect, mut vars) in target_unit.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| matches!(trigger, StatusTrigger::HealTaken))
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: context.caster,
+                    from: context.from,
+                    target: context.target,
+                    vars: {
+                        vars.extend(context.vars.clone());
+                        vars.insert(VarName::HealthRestored, value_clamped);
+                        vars.insert(VarName::IncomingHeal, value);
+                        vars
                     },
-                });
-            }
+                },
+            })
+        }
+
+        let caster = context
+            .caster
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get(&id)
+                    .or(logic.model.spawning_units.get(&id))
+            })
+            .expect("Caster not found");
+        for (effect, mut vars) in caster.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| matches!(trigger, StatusTrigger::HealDealt))
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: context.caster,
+                    from: context.from,
+                    target: context.target,
+                    vars: {
+                        vars.extend(context.vars.clone());
+                        vars.insert(VarName::HealthRestored, value_clamped);
+                        vars.insert(VarName::IncomingHeal, value);
+                        dbg!(vars)
+                    },
+                },
+            })
         }
     }
 }

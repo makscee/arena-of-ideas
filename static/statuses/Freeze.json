@@ -1,0 +1,22 @@
+{
+    "name": "Freeze",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "flags": ["MoveUnable", "ActionUnable"],
+    "listeners": [
+        {
+            "triggers": [{"type":"DamageTaken"}],
+            "effect": {
+                "type": "RemoveStatus",
+                "status": "Freeze"
+            }
+        }
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#1e90ff"
+        }
+    }
+}

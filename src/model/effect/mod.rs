@@ -2,6 +2,7 @@ use super::*;
 
 mod action;
 mod add_targets;
+mod add_var;
 mod aoe;
 mod apply_gained;
 mod attach_status;
@@ -21,6 +22,7 @@ mod next_action_modifier;
 mod noop;
 mod projectile;
 mod random;
+mod remove_status;
 mod repeat;
 mod revive;
 mod spawn;
@@ -28,10 +30,10 @@ mod splash;
 mod suicide;
 mod time_bomb;
 mod visual;
-mod add_var;
 
 pub use action::*;
 pub use add_targets::*;
+pub use add_var::*;
 pub use aoe::*;
 pub use apply_gained::*;
 pub use attach_status::*;
@@ -51,6 +53,7 @@ pub use next_action_modifier::*;
 pub use noop::*;
 pub use projectile::*;
 pub use random::*;
+pub use remove_status::*;
 pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
@@ -58,7 +61,6 @@ pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 pub use visual::*;
-pub use add_var::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]
@@ -92,6 +94,7 @@ pub enum Effect {
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
+    RemoveStatus(Box<RemoveStatusEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -126,6 +129,7 @@ pub enum RawEffect {
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
+    RemoveStatus(Box<RemoveStatusEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -135,11 +139,28 @@ struct EffectPreset {
     pub overrides: serde_json::Map<String, serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 #[serde(untagged)]
 enum EffectConfig {
     Effect(RawEffect),
     Preset(EffectPreset),
+}
+
+// Implement deserialize manually for better error description
+impl<'de> Deserialize<'de> for EffectConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match EffectPreset::deserialize(value.clone()) {
+            Ok(preset) => return Ok(Self::Preset(preset)),
+            Err(_) => {}
+        }
+        let effect =
+            RawEffect::deserialize(value).map_err(|error| serde::de::Error::custom(error))?;
+        Ok(Self::Effect(effect))
+    }
 }
 
 impl Default for EffectConfig {
@@ -180,6 +201,7 @@ impl std::fmt::Debug for Effect {
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
+            Self::RemoveStatus(effect) => effect.fmt(f),
         }
     }
 }
@@ -216,6 +238,7 @@ impl From<RawEffect> for Effect {
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
+            RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
         }
     }
 }
@@ -284,6 +307,7 @@ impl Effect {
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
+            Effect::RemoveStatus(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -317,6 +341,7 @@ impl Effect {
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
             Effect::AddVar(effect) => effect,
+            Effect::RemoveStatus(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

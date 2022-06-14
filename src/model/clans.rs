@@ -62,13 +62,12 @@ impl ClanEffect {
         if !self.filter.check(unit) {
             return;
         }
-        unit.attached_statuses
-            .extend(self.statuses.iter().map(|status| AttachedStatus {
-                status: status.clone(),
-                caster: None,
-                time: None,
-                duration: None,
-            }));
+        unit.all_statuses.extend(
+            self.statuses
+                .iter()
+                .cloned()
+                .map(|status| status.attach(Some(unit.id), None)),
+        );
     }
 }
 

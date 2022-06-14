@@ -1,6 +1,7 @@
 {
     "tier": 1,
     "triple": "ice_archer+",
+    "description": "@Bonus Shot on @Frozen",
     "action": {
         "range": 10,
         "animation_delay": 0.75,

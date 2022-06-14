@@ -1,5 +1,6 @@
 {
     "tier": 1,
+    "triple": "rogue+",
     "base_damage": 0.5,
     "clans": [
         "Assassins"

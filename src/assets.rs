@@ -15,25 +15,46 @@ pub struct Options {
 pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
     Lazy::new(|| Mutex::new(Effects { map: default() }));
 
-pub struct ShaderRender {
-    pub shader: ugli::Program,
+pub struct ShaderConfig {
+    pub shader: Rc<ugli::Program>,
     pub parameters: ShaderParameters,
 }
 
-#[derive(Deserialize)]
-struct ShaderConfig {
+#[derive(Deserialize, Clone)]
+pub struct ShaderRenderConfig {
     pub shader: String,
     #[serde(default)]
     pub parameters: ShaderParameters,
 }
 
+#[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct StatusConfig {
+    #[serde(flatten)]
+    pub status: Status,
+    pub render: Option<ShaderRenderConfig>,
+}
+
+#[derive(Deref, DerefMut, Clone)]
+pub struct Statuses {
+    #[deref]
+    #[deref_mut]
+    pub map: HashMap<String, StatusConfig>,
+}
+
+impl Statuses {
+    pub fn get_config(&self, status_name: &StatusName) -> &StatusConfig {
+        self.get(status_name)
+            .expect(&format!("Failed to get status {status_name}"))
+    }
+}
+
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
-    #[asset(load_with = "load_statuses(geng, &base_path)")]
-    pub statuses: HashMap<StatusType, ShaderRender>,
+    pub statuses: Statuses,
     #[asset(load_with = "load_field_render(geng, &base_path)")]
-    pub field_render: ShaderRender,
+    pub field_render: ShaderConfig,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
@@ -43,50 +64,21 @@ pub struct Assets {
     pub rounds: Vec<GameRound>,
 }
 
-async fn load_statuses(
-    geng: &Geng,
-    base_path: &std::path::Path,
-) -> anyhow::Result<HashMap<StatusType, ShaderRender>> {
-    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("statuses.json"))
-        .await
-        .context("Failed to load statuses.json")?;
-    let paths: HashMap<StatusType, ShaderConfig> =
-        serde_json::from_str(&json).context("Failed to parse statuses.json")?;
-    let result: anyhow::Result<Vec<_>> =
-        future::join_all(paths.into_iter().map(|(status_type, config)| async move {
-            let path = config.shader.as_str();
-            let program =
-                <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
-                    .await
-                    .context(format!("Failed to load {path}"))?;
-            let render = ShaderRender {
-                shader: program,
-                parameters: config.parameters,
-            };
-            Ok::<_, anyhow::Error>((status_type, render))
-        }))
-        .await
-        .into_iter()
-        .collect();
-    result.map(|list| list.into_iter().collect())
-}
-
 async fn load_field_render(
     geng: &Geng,
     base_path: &std::path::Path,
-) -> anyhow::Result<ShaderRender> {
+) -> anyhow::Result<ShaderConfig> {
     let json = <String as geng::LoadAsset>::load(geng, &base_path.join("field_render.json"))
         .await
         .context("Failed to load field_render.json")?;
-    let config: ShaderConfig =
+    let config: ShaderRenderConfig =
         serde_json::from_str(&json).context("Failed to parse field_render.json")?;
     let path = config.shader.as_str();
-    let program =
-        <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
-            .await
-            .context(format!("Failed to load {path}"))?;
-    let result = ShaderRender {
-        shader: program,
+    let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+        .await
+        .context(format!("Failed to load {path}"))?;
+    let result = ShaderConfig {
+        shader: Rc::new(program),
         parameters: config.parameters,
     };
     Ok::<_, anyhow::Error>(result)
@@ -202,6 +194,21 @@ pub struct ClanEffects {
 }
 
 impl Assets {
+    pub fn get_status_render(&self, config: &ShaderRenderConfig) -> ShaderConfig {
+        let path = &config.shader;
+        let parameters = &config.parameters;
+        ShaderConfig {
+            shader: self
+                .shaders
+                .get(path)
+                .expect(&format!(
+                    "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
+                ))
+                .clone(),
+            parameters: parameters.clone(), // TODO: avoid cloning
+        }
+    }
+
     pub fn get_render(&self, config: &RenderConfig) -> RenderMode {
         match config {
             &RenderConfig::Circle { color } => RenderMode::Circle { color },
@@ -322,6 +329,37 @@ impl geng::LoadAsset for UnitTemplates {
     }
 
     const DEFAULT_EXT: Option<&'static str> = Some("json");
+}
+
+impl geng::LoadAsset for Statuses {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let base_path = path.parent().unwrap().join("statuses");
+            let path = base_path.join("_list.json");
+            let json = <String as geng::LoadAsset>::load(&geng, &path)
+                .await
+                .context(format!("Failed to load list of statuses from {path:?}"))?;
+            let paths: Vec<std::path::PathBuf> = serde_json::from_str(&json)
+                .context(format!("Failed to parse list of statuses from {path:?}"))?;
+            let mut map = HashMap::new();
+            for path in paths {
+                let path = base_path.join(path);
+                let json = <String as geng::LoadAsset>::load(&geng, &path)
+                    .await
+                    .context(format!("Failed to load status from {path:?}"))?;
+                let config: StatusConfig = serde_json::from_str(&json)
+                    .context(format!("Failed to parse status from {path:?}"))?;
+
+                map.insert(config.status.name.clone(), config);
+            }
+            Ok(Self { map })
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = None;
 }
 
 impl geng::LoadAsset for ClanEffects {

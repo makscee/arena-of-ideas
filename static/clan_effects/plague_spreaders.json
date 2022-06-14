@@ -6,15 +6,27 @@
         },
         "statuses": [
             {
-                "type": "OnTakeDamage",
-                "damage_type": "Plague",
-                "effect": {
-                    "type": "Heal",
-                    "value": {
-                        "type": "Const",
-                        "value": 0.5
+                "name": "OnTakeDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Plague"
+                            }
+                        ],
+                        "effect": {
+                            "type": "Heal",
+                            "value": {
+                                "type": "Const",
+                                "value": 0.5
+                            }
+                        }
                     }
-                }
+                ]
             }
         ]
     },
@@ -27,11 +39,23 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "Melee",
-                "effect": {
-                    "preset": "effects/attach_status/plague.json"
-                }
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Melee"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/attach_status/plague.json"
+                        }
+                    }
+                ]
             }
         ]
     },
@@ -44,68 +68,80 @@
         },
         "statuses": [
             {
-                "type": "OnSpawn",
-                "effect": {
-                    "type": "List",
-                    "effects": [
-                        {
-                            "type": "ChangeStat",
-                            "stat": "BaseDamage",
-                            "value": {
-                                "type": "Mul",
-                                "a": {
-                                    "type": "FindStat",
+                "name": "OnSpawn",
+                "stacking": {
+                    "type": "Refresh"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Spawn"
+                            }
+                        ],
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "ChangeStat",
                                     "stat": "BaseDamage",
-                                    "who": "Target"
+                                    "value": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "FindStat",
+                                            "stat": "BaseDamage",
+                                            "who": "Target"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 2
+                                        }
+                                    }
                                 },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 2
-                                }
-                            }
-                        },
-                        {
-                            "type": "ChangeStat",
-                            "stat": "MaxHealth",
-                            "value": {
-                                "type": "Mul",
-                                "a": {
-                                    "type": "FindStat",
+                                {
+                                    "type": "ChangeStat",
                                     "stat": "MaxHealth",
-                                    "who": "Target"
+                                    "value": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "FindStat",
+                                            "stat": "MaxHealth",
+                                            "who": "Target"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 2
+                                        }
+                                    }
                                 },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 2
-                                }
-                            }
-                        },
-                        {
-                            "type": "ChangeStat",
-                            "stat": "Speed",
-                            "value": {
-                                "type": "Mul",
-                                "a": {
-                                    "type": "FindStat",
+                                {
+                                    "type": "ChangeStat",
                                     "stat": "Speed",
-                                    "who": "Target"
+                                    "value": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "FindStat",
+                                            "stat": "Speed",
+                                            "who": "Target"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 2
+                                        }
+                                    }
                                 },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 2
+                                {
+                                    "type": "Heal",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 100500
+                                    },
+                                    "no_text": true
                                 }
-                            }
-                        },
-                        {
-                            "type": "Heal",
-                            "value": {
-                                "type": "Const",
-                                "value": 100500
-                            },
-                            "no_text": true
+                            ]
                         }
-                    ]
-                }
+                    }
+                ]
             }
         ]
     }

@@ -1,0 +1,19 @@
+{
+    "name": "PatientZero+OnTakeDamage",
+    "stacking": {
+        "type": "Independent"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageTaken",
+                    "damage_type": "Plague"
+                }
+            ],
+            "effect": {
+                "preset": "effects/attach_status/shield.json"
+            }
+        }
+    ]
+}

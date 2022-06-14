@@ -1,0 +1,19 @@
+{
+    "name": "DarkArcherOnDealDamage",
+    "stacking": {
+        "type": "Independent"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "BonusShot"
+                }
+            ],
+            "effect": {
+                "preset": "effects/attach_status/siphon_life.json"
+            }
+        }
+    ]
+}

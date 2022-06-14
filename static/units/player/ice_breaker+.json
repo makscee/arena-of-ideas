@@ -1,0 +1,62 @@
+{
+    "tier": 0,
+    "description": "@Crit on @Frozen. On @Crit apply @Frozen to enemies in area",
+    "action": {
+        "range": 0.5,
+        "animation_delay": 0.25,
+        "cooldown": 0.75,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Freeze"
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "Damage",
+                                "types": [
+                                    "Melee",
+                                    "Crit"
+                                ],
+                                "value": {
+                                    "type": "Mul",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Caster",
+                                        "stat": "BaseDamage"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                }
+                            },
+                            {
+                                "preset": "effects/crit_hit_vfx.json"
+                            }
+                        ]
+                    },
+                    "else": {
+                        "preset": "effects/dd_melee.json"
+                    }
+                }
+            ]
+        }
+    },
+    "statuses": [
+        "IceBreaker+OnCrit"  
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "clans": [
+        "Freezers",
+        "Assassins"
+    ],
+    "base": "melee+"
+}

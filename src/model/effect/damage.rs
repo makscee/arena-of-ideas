@@ -38,89 +38,67 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        // Invulnerability
+        for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::DamageIncoming { damage_type } => match &damage_type {
+                    Some(damage_type) => effect.types.contains(damage_type),
+                    None => true,
+                },
+                _ => false,
+            })
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: Some(target_unit.id),
+                    from: context.from,
+                    target: context.target,
+                    vars,
+                },
+            })
+        }
+
         if target_unit
-            .all_statuses
+            .flags
             .iter()
-            .any(|status| status.r#type() == StatusType::Invulnerability)
+            .any(|flag| matches!(flag, UnitStatFlag::DamageImmune))
         {
             return;
         }
 
-        // Shield
-        if let Some(index) = target_unit
-            .attached_statuses
-            .iter()
-            .position(|status| status.status.r#type() == StatusType::Shield)
-        {
-            for status in &target_unit.all_statuses {
-                if let Status::OnShieldBroken(status) = status {
-                    logic.effects.push_front(QueuedEffect {
-                        context: {
-                            let mut context = EffectContext {
-                                caster: None,
-                                from: None,
-                                target: Some(target_unit.id),
-                                vars: default(),
-                            };
-                            context.vars.insert(VarName::DamageBlocked, damage);
-                            context
-                        },
-                        effect: status.effect.clone(),
-                    });
-                }
-            }
-            damage = Health::new(0.0);
-            target_unit.attached_statuses.remove(index);
-        } else if target_unit
-            .all_statuses
-            .iter()
-            .any(|status| status.r#type() == StatusType::Shield)
-        {
-            damage = Health::new(0.0);
-        }
-        if damage <= Health::new(0.0) {
-            return;
-        }
-
-        // Vulnerability
-        for status in &target_unit.all_statuses {
-            if let Status::Vulnerability(status) = status {
+        for status in target_unit.all_statuses.iter() {
+            if status.status.name == "Vulnerability" {
                 damage *= r32(2.0);
             }
         }
-        target_unit
-            .attached_statuses
-            .retain(|status| status.status.r#type() != StatusType::Vulnerability);
 
-        // Freeze
-        target_unit
-            .attached_statuses
-            .retain(|status| status.status.r#type() != StatusType::Freeze);
-
-        for status in &target_unit.all_statuses {
-            if let Status::OnTakeDamage(status) = status {
-                if match &status.damage_type {
+        for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::DamageTaken { damage_type } => match &damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
                     None => true,
-                } {
-                    logic.effects.push_front(QueuedEffect {
-                        effect: status.effect.clone(),
-                        context: EffectContext {
-                            caster: Some(target_unit.id),
-                            ..context.clone()
-                        },
-                    });
-                }
-            }
+                },
+                _ => false,
+            })
+        }) {
+            logic.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: Some(target_unit.id),
+                    from: context.from,
+                    target: context.target,
+                    vars,
+                },
+            })
         }
 
-        // Protection
-        for status in &target_unit.all_statuses {
-            if let Status::Protection(status) = status {
-                damage *= r32(1.0 - status.percent / 100.0);
-            }
-        }
+        // TODO: reimplement
+        // // Protection
+        // for status in &target_unit.all_statuses {
+        //     if let StatusOld::Protection(status) = status {
+        //         damage *= r32(1.0 - status.percent / 100.0);
+        //     }
+        // }
         if damage <= Health::new(0.0) {
             return;
         }
@@ -140,18 +118,27 @@ impl EffectImpl for DamageEffect {
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
-            for status in &caster_unit.all_statuses {
-                if let Status::OnDealDamage(status) = status {
-                    if match &status.damage_type {
+            for (effect, mut vars) in caster_unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::DamageDealt { damage_type } => match damage_type {
                         Some(damage_type) => effect.types.contains(damage_type),
                         None => true,
-                    } {
-                        logic.effects.push_front(QueuedEffect {
-                            effect: status.effect.clone(),
-                            context: context.clone(),
-                        })
-                    }
-                }
+                    },
+                    _ => false,
+                })
+            }) {
+                logic.effects.push_front(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: context.caster,
+                        from: context.from,
+                        target: context.target,
+                        vars: {
+                            vars.extend(context.vars.clone());
+                            vars
+                        },
+                    },
+                })
             }
         }
 
@@ -185,18 +172,27 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                for status in &caster.all_statuses {
-                    if let Status::OnKill(status) = status {
-                        if match &status.damage_type {
+                for (effect, mut vars) in caster.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::Kill { damage_type } => match damage_type {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,
-                        } {
-                            logic.effects.push_front(QueuedEffect {
-                                effect: status.effect.clone(),
-                                context: context.clone(),
-                            });
-                        }
-                    }
+                        },
+                        _ => false,
+                    })
+                }) {
+                    logic.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: context.caster,
+                            from: context.from,
+                            target: context.target,
+                            vars: {
+                                vars.extend(context.vars.clone());
+                                vars
+                            },
+                        },
+                    })
                 }
                 logic.kill(context.target.unwrap());
             }

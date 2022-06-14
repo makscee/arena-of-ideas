@@ -64,6 +64,7 @@ pub struct Model {
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
     pub clan_effects: ClanEffects,
+    pub statuses: Statuses,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
     pub transition: bool,
 }
@@ -73,6 +74,7 @@ impl Model {
         config: Config,
         unit_templates: UnitTemplates,
         clan_effects: ClanEffects,
+        statuses: Statuses,
         round: GameRound,
     ) -> Self {
         Self {
@@ -89,6 +91,7 @@ impl Model {
             free_revives: 0,
             unit_templates,
             clan_effects,
+            statuses,
             delayed_effects: default(),
             transition: false,
             round,

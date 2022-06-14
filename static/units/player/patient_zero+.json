@@ -1,0 +1,14 @@
+{
+    "tier": 0,
+    "description": "Has @Plague. On @Injured from @Plague gain @Shield",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        "Plague",
+        "PatientZero+OnTakeDamage"
+    ],
+    "move_ai": "Advance",
+    "target_ai": "Closest",
+    "base": "melee+"
+}

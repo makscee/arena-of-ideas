@@ -22,7 +22,7 @@
         {
             "type": "Detect",
             "on": "Allies",
-            "detect_type": "Freeze",
+            "status_name": "Freeze",
             "effect": {
                 "type": "Heal",
                 "value": {

@@ -1,0 +1,90 @@
+{
+    "name": "Plague",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "Repeating",
+                    "tick_time": 3
+                }
+            ],
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "Plague"
+                ],
+                "value": {
+                    "type": "Const",
+                    "value": 1
+                }
+            }
+        },
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Melee"
+                },
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Ranged"
+                }
+            ],
+            "effect": {
+                "preset": "effects/attach_status/plague.json"
+            }
+        },
+        {
+            "triggers": [
+                {
+                    "type": "Death"
+                }
+            ],
+            "effect": {
+                "type": "AddVar",
+                "name": "SpawnHealth",
+                "status_name": "Plague",
+                "value": {
+                    "type": "FindStat",
+                    "who": "From",
+                    "stat": "MaxHealth"
+                },
+                "effect": {
+                    "type": "Spawn",
+                    "unit_type": "skeleton",
+                    "switch_faction": true,
+                    "after_effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeStat",
+                                "stat": "MaxHealth",
+                                "value": {
+                                    "type": "Var",
+                                    "name": "SpawnHealth"
+                                }
+                            },
+                            {
+                                "type": "Heal",
+                                "value": {
+                                    "type": "Var",
+                                    "name": "SpawnHealth"
+                                },
+                                "no_text": true
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#408002"
+        }
+    }
+}

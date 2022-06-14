@@ -1,0 +1,19 @@
+{
+    "name": "SniperOnCrit",
+    "stacking": {
+        "type": "Independent"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Crit"
+                }
+            ],
+            "effect": {
+                "preset": "effects/bonus_shot_projectile.json"
+            }
+        }
+    ]
+}

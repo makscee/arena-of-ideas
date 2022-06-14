@@ -11,7 +11,14 @@ impl Logic<'_> {
         let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;
 
-        let mut unit = Unit::new(&template, id, unit_type.clone(), faction, position);
+        let mut unit = Unit::new(
+            &template,
+            id,
+            unit_type.clone(),
+            faction,
+            position,
+            &self.model.statuses,
+        );
         for (clan, &clan_members) in &self.model.config.clans {
             clan.apply_effects(&mut unit, &self.model.clan_effects, clan_members);
         }
@@ -32,20 +39,18 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            // Check attached_statuse instead of all_statuses
-            // because they are not set for spawning units
-            for status in &unit.attached_statuses {
-                if let Status::OnSpawn(status) = &status.status {
-                    self.effects.push_back(QueuedEffect {
-                        effect: status.effect.clone(),
-                        context: EffectContext {
-                            caster: Some(unit.id),
-                            from: Some(unit.id),
-                            target: Some(unit.id),
-                            vars: default(),
-                        },
-                    });
-                }
+            for (effect, vars) in unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn))
+            }) {
+                self.effects.push_front(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: Some(unit.id),
+                        from: Some(unit.id),
+                        target: Some(unit.id),
+                        vars,
+                    },
+                })
             }
             self.model.units.insert(unit);
         }

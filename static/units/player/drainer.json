@@ -1,7 +1,12 @@
 {
     "tier": 1,
+    "description": "On @Heal received shoot projectile to random enemy for same damage",
+    "triple": "drainer+",
     "clans": [
         "Warlocks"
+    ],
+    "statuses": [
+        "DrainerHealTaken"
     ],
     "move_ai": "Stay",
     "target_ai": "Closest",

@@ -3,36 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "time": 8,
-            "status": {
-                "type": "SiphonLife",
-                "tick_time": 2,
-                "next_tick": 2,
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "SiphonLife",
-                        "SiphonLifeAoe"
-                    ],
-                    "value": {
-                        "type": "Const",
-                        "value": 1
-                    },
-                    "on": {
-                        "Injure": {
-                            "type": "ChangeContext",
-                            "target": "Caster",
-                            "effect": {
-                                "type": "Heal",
-                                "value": {
-                                    "type": "Var",
-                                    "name": "DamageDealt"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            "status": "SiphonLife"
         },
         {
             "type": "Visual",

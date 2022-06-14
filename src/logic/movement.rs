@@ -6,9 +6,9 @@ impl Logic<'_> {
     }
     fn process_unit_movement(&mut self, unit: &mut Unit) {
         if unit
-            .all_statuses
+            .flags
             .iter()
-            .any(|status| matches!(status.r#type(), StatusType::Freeze | StatusType::Stun))
+            .any(|flag| matches!(flag, UnitStatFlag::MoveUnable))
         {
             return;
         }
@@ -62,16 +62,16 @@ impl Logic<'_> {
         let mut speed = unit.speed;
         for status in &unit.all_statuses {
             match status {
-                Status::Slow(status) => {
-                    speed *= Coord::new(1.0 - status.percent / 100.0);
-                }
+                // TODO: reimplement
+                // StatusOld::Slow(status) => {
+                //     speed *= Coord::new(1.0 - status.percent / 100.0);
+                // }
                 _ => {}
             }
         }
         unit.position += (target_position - unit.position).clamp_len(..=speed * self.delta_time);
 
-        if (target_position - unit.position).len().as_f32() > 0.0
-        {
+        if (target_position - unit.position).len().as_f32() > 0.0 {
             unit.face_dir = (target_position - unit.position).normalize_or_zero();
         }
     }

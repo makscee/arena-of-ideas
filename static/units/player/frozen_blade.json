@@ -1,5 +1,7 @@
 {
-    "tier": 0,
+    "tier": 1,
+    "triple": "frozen_blade+",
+    "description": "@Scathe: apply @Frozen",
     "action": {
         "range": 0.5,
         "animation_delay": 0.25,

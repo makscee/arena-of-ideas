@@ -10,7 +10,7 @@ pub enum Condition {
     UnitHasStatus {
         who: Who,
         #[serde(rename = "status")]
-        status_type: StatusType,
+        status_type: StatusName,
     },
     UnitInjured {
         who: Who,
@@ -20,6 +20,10 @@ pub enum Condition {
     },
     Chance {
         percent: Expr,
+    },
+    Equal {
+        a: Box<Expr>,
+        b: Box<Expr>,
     },
     Clan {
         clan: Clan,

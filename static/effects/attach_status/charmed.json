@@ -3,10 +3,7 @@
     "effects": [
         {
             "type": "AttachStatus",
-            "time": 3,
-            "status": {
-                "type": "Charmed"
-            }
+            "status": "Charm"
         },
         {
             "type": "Visual",

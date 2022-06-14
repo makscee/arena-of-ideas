@@ -5,9 +5,12 @@ pub enum VarName {
     DamageDealt,
     DamageBlocked,
     HealthRestored,
+    IncomingHeal,
     TargetCount,
     Value,
     SpawnHealth,
+    StackCounter,
+    PoisonTicksLeft,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

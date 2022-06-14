@@ -1,0 +1,28 @@
+{
+    "tier": 0,
+    "description": "On @Heal received shoot projectile to random enemy for same damage. Ability: Apply @Siphon Life to all enemies",
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        "DrainerHealTaken"
+    ],
+    "ability":
+    {
+        "cooldown": 15,
+        "effect":
+        {
+            "type": "AOE",
+            "filter": "Enemies",
+            "skip_current_target": false,
+            "range": 20,
+            "effect":
+            {
+                "preset": "effects/attach_status/siphon_life.json"
+            }
+        }
+    },
+    "move_ai": "Stay",
+    "target_ai": "Closest",
+    "base": "ranged+"
+}

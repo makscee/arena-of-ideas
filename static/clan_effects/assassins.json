@@ -8,23 +8,35 @@
         },
         "statuses": [
             {
-                "type": "OnSpawn",
-                "effect": {
-                    "type": "ChangeStat",
-                    "stat": "CritChance",
-                    "value": {
-                        "type": "Sum",
-                        "a": {
-                            "type": "FindStat",
-                            "who": "Target",
-                            "stat": "CritChance"
-                        },
-                        "b": {
-                            "type": "Const",
-                            "value": 15
+                "name": "OnSpawn",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Spawn"
+                            }
+                        ],
+                        "effect": {
+                            "type": "ChangeStat",
+                            "stat": "CritChance",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "who": "Target",
+                                    "stat": "CritChance"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 15
+                                }
+                            }
                         }
                     }
-                }
+                ]
             }
         ]
     },
@@ -37,11 +49,23 @@
         },
         "statuses": [
             {
-                "type": "OnDealDamage",
-                "damage_type": "Crit",
-                "effect": {
-                    "preset": "effects/attach_status/bleed.json"
-                }
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Crit"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/attach_status/poison.json"
+                        }
+                    }
+                ]
             }
         ]
     },
@@ -52,11 +76,23 @@
         },
         "statuses": [
             {
-                "type": "OnTakeDamage",
-                "damage_type": "Bleed",
-                "effect": {
-                    "preset": "effects/attach_status/vulnerability.json"
-                }
+                "name": "OnTakeDamage",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Poison"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/attach_status/vulnerability.json"
+                        }
+                    }
+                ]
             }
         ]
     }
