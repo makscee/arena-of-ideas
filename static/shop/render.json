@@ -1,16 +1,6 @@
 {
     "clans": {
-        "Spawners": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
         "Assassins": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Critters": {
             "description": "",
             "rows": 2,
             "columns": 3
@@ -20,42 +10,17 @@
             "rows": 3,
             "columns": 2
         },
+        "PlagueSpreaders": {
+            "description": "",
+            "rows": 2,
+            "columns": 3
+        },
+        "Warlocks": {
+            "description": "",
+            "rows": 2,
+            "columns": 3
+        },
         "Freezers": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Warriors": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Healers": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Vampires": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Exploders": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Splashers": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Chainers": {
-            "description": "",
-            "rows": 2,
-            "columns": 3
-        },
-        "Charmers": {
             "description": "",
             "rows": 2,
             "columns": 3

@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "description": "On @Heal received shoot projectile to random enemy for same damage. Ability: Apply @Siphon Life to all enemies",
     "clans": [
         "Warlocks"
     ],

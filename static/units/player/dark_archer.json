@@ -1,6 +1,7 @@
 {
     "tier": 1,
     "triple": "dark_archer+",
+    "description": "@Bonus Shot applies @Siphon Life ",
     "clans": [
         "Archers",
         "Warlocks"

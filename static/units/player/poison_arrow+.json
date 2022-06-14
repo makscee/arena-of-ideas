@@ -1,10 +1,14 @@
 {
     "tier": 0,
-    "description": "@Multishot 2",
+    "base_damage": 0.5,
+    "description": "@Scathe apply @Poison. @Multishot 2",
+    "clans": [
+        "Assassins"
+    ],
     "action": {
-        "range": 12,
-        "animation_delay": 0.75,
-        "cooldown": 0.25,
+        "range": 8,
+        "animation_delay": 0.25,
+        "cooldown": 3.5,
         "effect": {
             "type": "AddTargets",
             "condition": {
@@ -16,10 +20,10 @@
             }
         }
     },
-    "clans": [
-        "Archers"
+    "statuses": [
+        "PoisonOnDealDamage"
     ],
-    "move_ai": "KeepClose",
+    "move_ai": "Advance",
     "target_ai": "Closest",
     "base": "ranged+"
 }

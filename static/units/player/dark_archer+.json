@@ -1,6 +1,6 @@
 {
     "tier": 0,
-    "triple": "dark_archer+",
+    "description": "@Bonus Shot applies @Siphon Life. Always @Bonus Shot target that has @Siphon Life",
     "clans": [
         "Archers",
         "Warlocks"

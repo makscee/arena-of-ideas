@@ -1,8 +1,10 @@
 {
     "tier": 1,
     "base_damage": 0.2,
+    "description": "@Scathe apply @Poison",
     "clans": [
-        "Assassins"
+        "Assassins",
+        "Archers"
     ],
     "action": {
         "range": 8,
@@ -17,5 +19,5 @@
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",
-    "base": "melee"
+    "base": "ranged"
 }

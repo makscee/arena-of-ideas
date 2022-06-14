@@ -8,8 +8,8 @@
             "triggers": [
                 {
                     "type": "Repeating",
-                    "tick_time": 0.5,
-                    "next_tick": 0.5
+                    "tick_time": 1.5,
+                    "next_tick": 1.5
                 }
             ],
             "effect": {
