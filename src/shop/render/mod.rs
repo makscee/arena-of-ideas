@@ -386,18 +386,19 @@ fn draw_text_wrapped(
     let max_width = target.width();
     let font = font.borrow();
     let text = text.as_ref();
-    let mut words = text.split_whitespace();
-    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
-    let mut pos = vec2(target.center().x, target.y_max - font_size);
 
-    let mut line = String::new();
-    let mut line_width = 0.0;
-    if let Some(word) = words.next() {
-        let width = measure(word)?.width();
-        line_width += width;
-        line += word;
-    }
-    loop {
+    let mut pos = vec2(target.center().x, target.y_max - font_size);
+    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
+
+    for line in text.lines() {
+        let mut words = line.split_whitespace();
+        let mut line = String::new();
+        let mut line_width = 0.0;
+        if let Some(word) = words.next() {
+            let width = measure(word)?.width();
+            line_width += width;
+            line += word;
+        }
         while let Some(word) = words.next() {
             let width = measure(word)?.width();
             if line_width + width <= max_width {
@@ -421,16 +422,16 @@ fn draw_text_wrapped(
                 continue;
             }
         }
-        break;
+        font.draw(
+            framebuffer,
+            camera,
+            &line,
+            pos,
+            geng::TextAlign::CENTER,
+            font_size,
+            color,
+        );
+        pos.y -= font_size;
     }
-    font.draw(
-        framebuffer,
-        camera,
-        &line,
-        pos,
-        geng::TextAlign::CENTER,
-        font_size,
-        color,
-    );
     Some(())
 }
