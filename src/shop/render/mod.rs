@@ -52,6 +52,12 @@ const CLAN_INFO_BACKGROUND_COLOR: Color<f32> = Color {
     b: 0.5,
     a: 1.0,
 };
+const SHOP_FROZEN_COLOR: Color<f32> = Color {
+    r: 0.1,
+    g: 0.6,
+    b: 0.7,
+    a: 1.0,
+};
 
 pub struct RenderShop {
     pub layout: ShopLayout,
@@ -102,7 +108,12 @@ impl Render {
         let camera = &geng::PixelPerfectCamera;
         let layout = &render.layout;
 
-        draw_2d::Quad::new(layout.shop.position, TEXT_BACKGROUND_COLOR).draw_2d(
+        let shop_back_color = if shop.frozen {
+            SHOP_FROZEN_COLOR
+        } else {
+            TEXT_BACKGROUND_COLOR
+        };
+        draw_2d::Quad::new(layout.shop.position, shop_back_color).draw_2d(
             &self.geng,
             framebuffer,
             camera,
