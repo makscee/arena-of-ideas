@@ -3,7 +3,9 @@
     "stacking": {
         "type": "Independent"
     },
-    "flags": ["DamageImmune"],
+    "flags": [
+        "DamageImmune"
+    ],
     "listeners": [
         {
             "triggers": [
@@ -12,8 +14,57 @@
                 }
             ],
             "effect": {
-                "type": "RemoveStatus",
-                "status": "Shield"
+                "type": "If",
+                "condition": {
+                    "type": "HasVar",
+                    "name": "Charges"
+                },
+                "then": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "AddVar",
+                            "name": "Charges",
+                            "status_name": "Shield",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "name": "Charges"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            }
+                        },
+                        {
+                            "type": "If",
+                            "condition": {
+                                "type": "Equal",
+                                "a": {
+                                    "type": "Const",
+                                    "value": 0
+                                },
+                                "b": {
+                                    "type": "Var",
+                                    "name": "Charges"
+                                }
+                            },
+                            "then": {
+                                "type": "RemoveStatus",
+                                "status": "Shield"
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
+                        }
+                    ]
+                },
+                "else": {
+                    "type": "RemoveStatus",
+                    "status": "Shield"
+                }
             }
         }
     ],

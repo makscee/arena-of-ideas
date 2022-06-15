@@ -1,0 +1,167 @@
+[
+    {
+        "activate": 2,
+        "filter":
+        {
+            "Player":
+            [
+                "Protectors"
+            ]
+        },
+        "statuses":
+        [
+            {
+                "name": "OnDealDamage",
+                "stacking":
+                {
+                    "type": "Independent"
+                },
+                "listeners":
+                [
+                    {
+                        "triggers":
+                        [
+                            {
+                                "type": "DamageDealt"
+                            }
+                        ],
+                        "effect":
+                        {
+                            "type": "Random",
+                            "choices":
+                            [
+                                {
+                                    "weight": 75,
+                                    "effect":
+                                    {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 25,
+                                    "effect":
+                                    {
+                                        "preset": "effects/attach_status/shield.json"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter":
+        {
+            "Player":
+            [
+                "Protectors"
+            ]
+        },
+        "statuses":
+        [
+            {
+                "name": "OnTakeDamage",
+                "stacking":
+                {
+                    "type": "Independent"
+                },
+                "listeners":
+                [
+                    {
+                        "triggers":
+                        [
+                            {
+                                "type": "DamageTaken"
+                            }
+                        ],
+                        "effect":
+                        {
+                            "type": "Random",
+                            "choices":
+                            [
+                                {
+                                    "weight": 75,
+                                    "effect":
+                                    {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 25,
+                                    "effect":
+                                    {
+                                        "preset": "effects/attach_status/shield.json"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter":
+        {
+            "Player": null
+        },
+        "statuses":
+        [
+            {
+                "name": "OnSpawn",
+                "stacking":
+                {
+                    "type": "Independent"
+                },
+                "listeners":
+                [
+                    {
+                        "triggers":
+                        [
+                            {
+                                "type": "SelfDetect",
+                                "status_name": "Shield"
+                            }
+                        ],
+                        "effect":
+                        {
+                            "type": "If",
+                            "condition":
+                            {
+                                "type": "Clan",
+                                "clan": "Protectors",
+                                "count": 6
+                            },
+                            "then":
+                            {
+                                "type": "AddVar",
+                                "name": "Charges",
+                                "status_name": "Shield",
+                                "value":
+                                {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            "else":
+                            {
+                                "type": "AddVar",
+                                "name": "Charges",
+                                "status_name": "Shield",
+                                "value":
+                                {
+                                    "type": "Const",
+                                    "value": 0
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]

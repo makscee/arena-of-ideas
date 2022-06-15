@@ -37,6 +37,7 @@ impl Logic<'_> {
             }
             Condition::Equal { a, b } => a.calculate(&context, self) == b.calculate(&context, self),
             Condition::Clan { clan, count } => self.model.config.clans[clan] >= *count,
+            Condition::HasVar { name } => context.vars.contains_key(name),
         }
     }
 }

@@ -29,6 +29,9 @@ pub enum Condition {
         clan: Clan,
         count: usize,
     },
+    HasVar {
+        name: VarName,
+    },
 }
 
 impl Default for Condition {

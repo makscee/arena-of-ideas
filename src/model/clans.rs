@@ -19,6 +19,7 @@ pub enum Clan {
     PlagueSpreaders,
     Skeletons,
     Warlocks,
+    Protectors,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
