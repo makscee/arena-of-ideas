@@ -234,6 +234,7 @@ pub struct Status {
     /// Specifications of effects to apply for different subsets of triggers
     #[serde(default)]
     pub listeners: Vec<StatusListener>,
+    /// Initial variables
     #[serde(default)]
     pub vars: HashMap<VarName, R32>,
 }

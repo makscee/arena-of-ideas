@@ -32,6 +32,10 @@ pub enum Condition {
     HasVar {
         name: VarName,
     },
+    Faction {
+        who: Who,
+        faction: Faction,
+    },
 }
 
 impl Default for Condition {
