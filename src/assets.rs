@@ -313,16 +313,11 @@ impl geng::LoadAsset for UnitTemplates {
                         json = base_json;
                         let description = json
                             .get("description")
-                            .unwrap()
-                            .to_string()
-                            .trim_matches('"')
-                            .to_string();
+                            .map(|description| description.to_string().trim_matches('"').to_owned())
+                            .unwrap_or_default();
                         json.as_object_mut().unwrap().insert(
                             String::from("description"),
-                            geng::prelude::serde_json::Value::String(format!(
-                                "{}\n{}",
-                                base_str, description
-                            )),
+                            serde_json::Value::String(format!("{}\n{}", base_str, description)),
                         );
                         json.as_object_mut().unwrap().remove("base");
                     }
