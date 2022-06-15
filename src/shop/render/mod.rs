@@ -160,7 +160,7 @@ impl Render {
             ));
         }
 
-        let text = match tier_up_cost(shop.tier) {
+        let text = match tier_up_cost(shop.tier, shop.tier_rounds) {
             Some(cost) => format!("Tier Up ({})", cost),
             None => format!("Tier Up (?)"),
         };

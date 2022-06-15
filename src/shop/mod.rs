@@ -29,12 +29,15 @@ pub struct ShopState {
 impl ShopState {
     pub fn new(geng: &Geng, assets: &Rc<Assets>, config: ShopConfig, game_config: Config) -> Self {
         let shop = Shop::new(geng, assets, config);
-        Self::load(geng, assets, shop, game_config)
+        let mut state = Self::load(geng, assets, shop, game_config);
+        state.shop.tier_rounds = 0;
+        state
     }
 
     pub fn load(geng: &Geng, assets: &Rc<Assets>, mut shop: Shop, game_config: Config) -> Self {
         shop.money = 10.min(4 + shop.round as Money);
         shop.round += 1;
+        shop.tier_rounds += 1;
         if !shop.frozen {
             shop.reroll(true);
         }
@@ -170,6 +173,9 @@ pub struct Shop {
     pub assets: Rc<Assets>,
     pub round: usize,
     pub tier: Tier,
+    /// The number of rounds that the shop has not been upgraded to the next tier.
+    /// Once the shop is tiered up, that number is reset to 0.
+    pub tier_rounds: usize,
     pub money: Money,
     pub frozen: bool,
     pub available: Vec<(UnitType, UnitTemplate)>,
@@ -337,6 +343,7 @@ impl Shop {
             assets: assets.clone(),
             round: 0,
             tier: 1,
+            tier_rounds: 0,
             money: 0,
             frozen: false,
             cards: Cards::new(),
@@ -353,9 +360,10 @@ impl Shop {
     }
 
     pub fn tier_up(&mut self) {
-        if let Some(cost) = tier_up_cost(self.tier) {
+        if let Some(cost) = tier_up_cost(self.tier, self.tier_rounds) {
             if self.money >= cost {
                 self.tier += 1;
+                self.tier_rounds = 0;
                 self.money -= cost;
             }
         }
@@ -482,8 +490,10 @@ fn earn_money(round: usize) -> Money {
     (4 + round).min(10) as _
 }
 
-fn tier_up_cost(current_tier: Tier) -> Option<Money> {
-    TIER_UP_COST.get(current_tier as usize - 1).copied()
+fn tier_up_cost(current_tier: Tier, tier_rounds: usize) -> Option<Money> {
+    TIER_UP_COST
+        .get(current_tier as usize - 1)
+        .map(|&cost| cost.saturating_sub(tier_rounds as Money))
 }
 
 fn tier_units_number(current_tier: Tier) -> Option<usize> {
