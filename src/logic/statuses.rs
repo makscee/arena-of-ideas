@@ -33,7 +33,7 @@ impl Logic<'_> {
                             effect: listener.effect.clone(),
                             context: EffectContext {
                                 caster: status.caster,
-                                from: None,
+                                from: Some(unit.id),
                                 target: Some(unit.id),
                                 vars: status.vars.clone(),
                             },

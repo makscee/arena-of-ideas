@@ -12,6 +12,7 @@
     "hero/DarkArcher+OnDealDamage.json",
     "hero/IceBreaker+OnCrit.json",
     "hero/SniperOnCrit.json",
+    "hero/PlagueLeaderEmpower.json",
     "Freeze.json",
     "Shield.json",
     "Invulnerability.json",

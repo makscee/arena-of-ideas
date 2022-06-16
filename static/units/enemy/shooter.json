@@ -1,14 +1,14 @@
 {
-    "health": 1,
+    "health": 4,
     "speed": 0.3,
-    "radius": 0.5,
+    "radius": 0.7,
     "action": {
-        "range": 10,
+        "range": 8,
         "animation_delay": 1,
         "cooldown": 3,
         "effect": {
             "type": "Projectile",
-            "speed": 10,
+            "speed": 8,
             "effect": {
                 "type": "Damage",
                 "types": [
@@ -17,6 +17,22 @@
                 "value": {
                     "type": "Const",
                     "value": 1
+                }
+            },
+            "render": {
+                "type": "Shader",
+                "path": "shaders/projectile_default.glsl",
+                "parameters": {
+                    "u_padding": 5.0,
+                    "p_count": 30,
+                    "p_lifeTime": 0.6,
+                    "p_radius_start": 0.6,
+                    "p_radius_end": -0.3,
+                    "p_glow_radius": 0.6,
+                    "p_speed": 2.5,
+                    "u_clan_color_1": "#800002",
+                    "u_clan_color_2": "#fc0107",
+                    "u_clan_color_3": "#808080"
                 }
             }
         }

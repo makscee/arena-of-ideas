@@ -42,6 +42,8 @@ float getAngleAlpha(vec2 uv, vec3 col, float height)
 void main() {
     float glow = 0.35 + sin(u_time) * .1;
     vec2 uv = v_quad_pos;
+    float rotation = -vecAngle(u_face_dir);
+    uv = rotateCW(uv, rotation);
     vec3 colors[2];
     colors[0] = vec3(0.698, 0.133, 0.133);
     colors[1] = vec3(1, 0.980, 0.941);

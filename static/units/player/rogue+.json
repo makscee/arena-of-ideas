@@ -1,6 +1,7 @@
 {
     "tier": 0,
     "base_damage": 1.0,
+    "description": "@Scathe apply @MicroStun",
     "clans": [
         "Assassins"
     ],

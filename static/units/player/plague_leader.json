@@ -1,0 +1,11 @@
+{
+    "tier": 1,
+    "description": "+1 damage for each unit with @Plague",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        "PlagueLeaderEmpower"
+    ],
+    "base": "ranged"
+}

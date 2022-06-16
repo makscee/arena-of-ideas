@@ -40,6 +40,12 @@ pub enum Expr {
         value: Box<Expr>,
         result: Box<Expr>,
     },
+    UnitsInRange {
+        max_distance: Option<Coord>,
+        faction: Option<Faction>,
+        status: Option<StatusName>,
+        clan: Option<Clan>,
+    },
 }
 
 impl Expr {
@@ -69,6 +75,37 @@ impl Expr {
                     .vars
                     .insert(name.clone(), value.calculate(&context, logic));
                 result.calculate(&context, logic)
+            }
+            Self::UnitsInRange {
+                max_distance,
+                faction,
+                status,
+                clan,
+            } => {
+                let from = context
+                    .from
+                    .and_then(|id| logic.model.units.get(&id))
+                    .expect("From not found");
+                r32(logic
+                    .model
+                    .units
+                    .iter()
+                    .filter(|unit| match faction {
+                        Some(f) => unit.faction == *f,
+                        None => true,
+                    })
+                    .filter(|unit| match max_distance {
+                        Some(distance) => distance_between_units(from, unit) < *distance,
+                        None => true,
+                    })
+                    .filter(|unit| match status {
+                        Some(status_name) => unit
+                            .all_statuses
+                            .iter()
+                            .any(|unit_status| unit_status.status.name == *status_name),
+                        None => true,
+                    })
+                    .count() as f32)
             }
         }
     }
