@@ -8,8 +8,10 @@ mod apply_gained;
 mod attach_status;
 mod chain;
 mod change_context;
+mod change_context_status;
 mod change_stat;
 mod change_target;
+mod custom_trigger;
 mod damage;
 mod delayed;
 mod glave;
@@ -39,8 +41,10 @@ pub use apply_gained::*;
 pub use attach_status::*;
 pub use chain::*;
 pub use change_context::*;
+pub use change_context_status::*;
 pub use change_stat::*;
 pub use change_target::*;
+pub use custom_trigger::*;
 pub use damage::*;
 pub use delayed::*;
 pub use glave::*;
@@ -83,6 +87,7 @@ pub enum Effect {
     If(Box<IfEffect>),
     MaybeModify(Box<MaybeModifyEffect>),
     ChangeContext(Box<ChangeContextEffect>),
+    ChangeContextStatus(Box<ChangeContextStatusEffect>),
     Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
@@ -95,6 +100,7 @@ pub enum Effect {
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
+    CustomTrigger(Box<CustomTriggerEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -118,6 +124,7 @@ pub enum RawEffect {
     If(Box<IfEffect>),
     MaybeModify(Box<MaybeModifyEffect>),
     ChangeContext(Box<ChangeContextEffect>),
+    ChangeContextStatus(Box<ChangeContextStatusEffect>),
     Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
@@ -130,6 +137,7 @@ pub enum RawEffect {
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
+    CustomTrigger(Box<CustomTriggerEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -190,6 +198,7 @@ impl std::fmt::Debug for Effect {
             Self::If(effect) => effect.fmt(f),
             Self::MaybeModify(effect) => effect.fmt(f),
             Self::ChangeContext(effect) => effect.fmt(f),
+            Self::ChangeContextStatus(effect) => effect.fmt(f),
             Self::Heal(effect) => effect.fmt(f),
             Self::Revive(effect) => effect.fmt(f),
             Self::ApplyGained(effect) => effect.fmt(f),
@@ -202,6 +211,7 @@ impl std::fmt::Debug for Effect {
             Self::Visual(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
             Self::RemoveStatus(effect) => effect.fmt(f),
+            Self::CustomTrigger(effect) => effect.fmt(f),
         }
     }
 }
@@ -227,6 +237,7 @@ impl From<RawEffect> for Effect {
             RawEffect::If(effect) => Self::If(effect),
             RawEffect::MaybeModify(effect) => Self::MaybeModify(effect),
             RawEffect::ChangeContext(effect) => Self::ChangeContext(effect),
+            RawEffect::ChangeContextStatus(effect) => Self::ChangeContextStatus(effect),
             RawEffect::Heal(effect) => Self::Heal(effect),
             RawEffect::Revive(effect) => Self::Revive(effect),
             RawEffect::ApplyGained(effect) => Self::ApplyGained(effect),
@@ -239,6 +250,7 @@ impl From<RawEffect> for Effect {
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
             RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
+            RawEffect::CustomTrigger(effect) => Self::CustomTrigger(effect),
         }
     }
 }
@@ -296,6 +308,7 @@ impl Effect {
             Effect::If(effect) => &mut **effect,
             Effect::MaybeModify(effect) => &mut **effect,
             Effect::ChangeContext(effect) => &mut **effect,
+            Effect::ChangeContextStatus(effect) => &mut **effect,
             Effect::Heal(effect) => &mut **effect,
             Effect::Revive(effect) => &mut **effect,
             Effect::ApplyGained(effect) => &mut **effect,
@@ -308,6 +321,7 @@ impl Effect {
             Effect::Visual(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
             Effect::RemoveStatus(effect) => &mut **effect,
+            Effect::CustomTrigger(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -330,6 +344,7 @@ impl Effect {
             Effect::If(effect) => effect,
             Effect::MaybeModify(effect) => effect,
             Effect::ChangeContext(effect) => effect,
+            Effect::ChangeContextStatus(effect) => effect,
             Effect::Heal(effect) => effect,
             Effect::Revive(effect) => effect,
             Effect::ApplyGained(effect) => effect,
@@ -342,6 +357,7 @@ impl Effect {
             Effect::Visual(effect) => effect,
             Effect::AddVar(effect) => effect,
             Effect::RemoveStatus(effect) => effect,
+            Effect::CustomTrigger(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

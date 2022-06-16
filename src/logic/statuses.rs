@@ -36,6 +36,7 @@ impl Logic<'_> {
                                 from: Some(unit.id),
                                 target: Some(unit.id),
                                 vars: status.vars.clone(),
+                                status_id: Some(status.id),
                             },
                         });
                     }
@@ -109,7 +110,7 @@ impl Logic<'_> {
         // Detect expired statuses
         for (owner_id, status_name) in &expired {
             let owner = self.model.units.get(owner_id).unwrap();
-            for (effect, vars) in owner.all_statuses.iter().flat_map(|status| {
+            for (effect, vars, status_id) in owner.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::SelfDetect {
                         status_name,
@@ -125,12 +126,13 @@ impl Logic<'_> {
                         from: Some(owner.id),
                         target: Some(owner.id),
                         vars,
+                        status_id: Some(status_id),
                     },
                 })
             }
 
             for other in &self.model.units {
-                for (effect, vars) in other.all_statuses.iter().flat_map(|status| {
+                for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
                         StatusTrigger::Detect {
                             status_name,
@@ -151,6 +153,7 @@ impl Logic<'_> {
                             from: Some(other.id),
                             target: Some(owner.id),
                             vars,
+                            status_id: Some(status_id),
                         },
                     })
                 }

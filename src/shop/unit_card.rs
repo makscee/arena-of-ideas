@@ -18,7 +18,7 @@ impl UnitCard {
         Self {
             unit: Unit::new(
                 &template,
-                0,
+                &mut 0,
                 unit_type,
                 Faction::Player,
                 Vec2::ZERO,

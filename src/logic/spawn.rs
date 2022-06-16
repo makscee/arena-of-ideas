@@ -13,14 +13,19 @@ impl Logic<'_> {
 
         let mut unit = Unit::new(
             &template,
-            id,
+            &mut self.model.next_id,
             unit_type.clone(),
             faction,
             position,
             &self.model.statuses,
         );
         for (clan, &clan_members) in &self.model.config.clans {
-            clan.apply_effects(&mut unit, &self.model.clan_effects, clan_members);
+            clan.apply_effects(
+                &mut unit,
+                &self.model.clan_effects,
+                clan_members,
+                &mut self.model.next_id,
+            );
         }
 
         self.model.next_id += 1;
@@ -39,7 +44,7 @@ impl Logic<'_> {
             }
         }
         for mut unit in new_units {
-            for (effect, vars) in unit.all_statuses.iter().flat_map(|status| {
+            for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn))
             }) {
                 self.effects.push_front(QueuedEffect {
@@ -49,6 +54,7 @@ impl Logic<'_> {
                         from: Some(unit.id),
                         target: Some(unit.id),
                         vars,
+                        status_id: Some(status_id),
                     },
                 })
             }

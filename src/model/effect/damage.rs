@@ -38,7 +38,7 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
+        for (effect, vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
                 StatusTrigger::DamageIncoming { damage_type } => match &damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
@@ -54,6 +54,7 @@ impl EffectImpl for DamageEffect {
                     from: context.from,
                     target: context.target,
                     vars,
+                    status_id: Some(status_id),
                 },
             })
         }
@@ -80,7 +81,7 @@ impl EffectImpl for DamageEffect {
             }
         }
 
-        for (effect, vars) in target_unit.all_statuses.iter().flat_map(|status| {
+        for (effect, vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
                 StatusTrigger::DamageTaken { damage_type } => match &damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
@@ -96,6 +97,7 @@ impl EffectImpl for DamageEffect {
                     from: context.from,
                     target: context.target,
                     vars,
+                    status_id: Some(status_id),
                 },
             })
         }
@@ -126,15 +128,17 @@ impl EffectImpl for DamageEffect {
         let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
-            for (effect, mut vars) in caster_unit.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| match trigger {
-                    StatusTrigger::DamageDealt { damage_type } => match damage_type {
-                        Some(damage_type) => effect.types.contains(damage_type),
-                        None => true,
-                    },
-                    _ => false,
+            for (effect, mut vars, status_id) in
+                caster_unit.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::DamageDealt { damage_type } => match damage_type {
+                            Some(damage_type) => effect.types.contains(damage_type),
+                            None => true,
+                        },
+                        _ => false,
+                    })
                 })
-            }) {
+            {
                 logic.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
@@ -145,6 +149,7 @@ impl EffectImpl for DamageEffect {
                             vars.extend(context.vars.clone());
                             vars
                         },
+                        status_id: Some(status_id),
                     },
                 })
             }
@@ -180,7 +185,7 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                for (effect, mut vars) in caster.all_statuses.iter().flat_map(|status| {
+                for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
                         StatusTrigger::Kill { damage_type } => match damage_type {
                             Some(damage_type) => effect.types.contains(damage_type),
@@ -199,6 +204,7 @@ impl EffectImpl for DamageEffect {
                                 vars.extend(context.vars.clone());
                                 vars
                             },
+                            status_id: Some(status_id),
                         },
                     })
                 }

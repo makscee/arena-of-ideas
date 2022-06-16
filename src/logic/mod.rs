@@ -73,6 +73,7 @@ impl<'a> Logic<'a> {
                         from: None,
                         target: Some(unit.id),
                         vars: default(),
+                        status_id: None,
                     },
                 });
                 self.model.free_revives -= 1;

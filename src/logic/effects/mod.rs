@@ -15,6 +15,7 @@ pub struct EffectContext {
     pub from: Option<Id>,
     pub target: Option<Id>,
     pub vars: HashMap<VarName, R32>,
+    pub status_id: Option<Id>,
 }
 
 impl EffectContext {

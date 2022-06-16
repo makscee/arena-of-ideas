@@ -18,6 +18,7 @@ impl Logic<'_> {
                             from: Some(projectile.caster),
                             target: Some(target.id),
                             vars: projectile.vars.clone(),
+                            status_id: None,
                         },
                     });
                     delete_projectiles.push(projectile.id);

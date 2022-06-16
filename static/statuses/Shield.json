@@ -10,7 +10,8 @@
         {
             "triggers": [
                 {
-                    "type": "DamageIncoming"
+                    "type": "Custom",
+                    "name": "ShieldAbsorb"
                 }
             ],
             "effect": {
@@ -19,7 +20,6 @@
                     {
                         "type": "AddVar",
                         "name": "Charges",
-                        "status_name": "Shield",
                         "value": {
                             "type": "Sum",
                             "a": {
@@ -46,14 +46,25 @@
                             }
                         },
                         "then": {
-                            "type": "RemoveStatus",
-                            "status": "Shield"
+                            "type": "RemoveStatus"
                         },
                         "else": {
                             "type": "Noop"
                         }
                     }
                 ]
+            }
+        },
+        {
+            "triggers": [
+                {
+                    "type": "SelfDetect",
+                    "status_name": "Shield"
+                }
+            ],
+            "effect": {
+                "type": "AttachStatus",
+                "status": "ShieldDamageDetector"
             }
         }
     ],

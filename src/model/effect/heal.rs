@@ -56,7 +56,7 @@ impl EffectImpl for HealEffect {
         let value_clamped = min(value, max_health - target_unit.health);
         target_unit.health += value_clamped;
 
-        for (effect, mut vars) in target_unit.all_statuses.iter().flat_map(|status| {
+        for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| matches!(trigger, StatusTrigger::HealTaken))
         }) {
             logic.effects.push_front(QueuedEffect {
@@ -71,6 +71,7 @@ impl EffectImpl for HealEffect {
                         vars.insert(VarName::IncomingHeal, value);
                         vars
                     },
+                    status_id: Some(status_id),
                 },
             })
         }
@@ -85,7 +86,7 @@ impl EffectImpl for HealEffect {
                     .or(logic.model.spawning_units.get(&id))
             })
             .expect("Caster not found");
-        for (effect, mut vars) in caster.all_statuses.iter().flat_map(|status| {
+        for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| matches!(trigger, StatusTrigger::HealDealt))
         }) {
             logic.effects.push_front(QueuedEffect {
@@ -100,6 +101,7 @@ impl EffectImpl for HealEffect {
                         vars.insert(VarName::IncomingHeal, value);
                         dbg!(vars)
                     },
+                    status_id: Some(status_id),
                 },
             })
         }

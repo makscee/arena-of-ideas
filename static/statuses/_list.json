@@ -24,5 +24,6 @@
     "Plague.json",
     "SiphonLife.json",
     "Poison.json",
-    "PoisonOnDealDamage.json"
+    "PoisonOnDealDamage.json",
+    "ShieldDamageDetector.json"
 ]

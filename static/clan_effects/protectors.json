@@ -105,58 +105,29 @@
     },
     {
         "activate": 6,
-        "filter":
-        {
+        "filter": {
             "Player": null
         },
-        "statuses":
-        [
+        "statuses": [
             {
-                "name": "OnSpawn",
-                "stacking":
-                {
+                "name": "asdasd",
+                "stacking": {
                     "type": "Independent"
                 },
-                "listeners":
-                [
+                "listeners": [
                     {
-                        "triggers":
-                        [
+                        "triggers": [
                             {
                                 "type": "SelfDetect",
                                 "status_name": "Shield"
                             }
                         ],
-                        "effect":
-                        {
-                            "type": "If",
-                            "condition":
-                            {
-                                "type": "Clan",
-                                "clan": "Protectors",
-                                "count": 6
-                            },
-                            "then":
-                            {
-                                "type": "AddVar",
-                                "name": "Charges",
-                                "status_name": "Shield",
-                                "value":
-                                {
-                                    "type": "Const",
-                                    "value": 1
-                                }
-                            },
-                            "else":
-                            {
-                                "type": "AddVar",
-                                "name": "Charges",
-                                "status_name": "Shield",
-                                "value":
-                                {
-                                    "type": "Const",
-                                    "value": 0
-                                }
+                        "effect": {
+                            "type": "AddVar",
+                            "name": "Charges",
+                            "value": {
+                                "type": "Const",
+                                "value": 1
                             }
                         }
                     }

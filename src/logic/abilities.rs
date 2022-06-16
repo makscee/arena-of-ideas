@@ -36,6 +36,7 @@ impl Logic<'_> {
                                 from: Some(unit.id),
                                 target: Some(unit.id),
                                 vars: default(),
+                                status_id: None,
                             },
                         });
                     }

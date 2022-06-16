@@ -12,6 +12,7 @@ impl Logic<'_> {
                         from: Some(bomb.id),
                         target: Some(bomb.id),
                         vars: default(),
+                        status_id: None,
                     },
                 });
                 self.model.dead_time_bombs.insert(bomb.clone());

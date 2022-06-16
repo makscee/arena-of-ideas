@@ -6,7 +6,7 @@ impl Logic<'_> {
         unit.health = Health::new(0.0);
         let unit = self.model.units.get(&id).unwrap();
 
-        for (effect, vars) in unit
+        for (effect, vars, status_id) in unit
             .all_statuses
             .iter()
             .flat_map(|status| (status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))))
@@ -18,12 +18,13 @@ impl Logic<'_> {
                     from: Some(unit.id),
                     target: Some(unit.id),
                     vars,
+                    status_id: Some(status_id),
                 },
             });
         }
 
         for other in self.model.units.iter().filter(|other| other.id != unit.id) {
-            for (effect, vars) in other.all_statuses.iter().flat_map(|status| {
+            for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::Scavenge { who, range, clan } => {
                         who.matches(other.faction, unit.faction)
@@ -40,6 +41,7 @@ impl Logic<'_> {
                         from: Some(other.id),
                         target: Some(unit.id),
                         vars,
+                        status_id: Some(status_id),
                     },
                 })
             }

@@ -71,12 +71,14 @@ pub enum UnitStat {
 impl Unit {
     pub fn new(
         template: &UnitTemplate,
-        id: Id,
+        next_id: &mut Id,
         unit_type: UnitType,
         faction: Faction,
         position: Vec2<Coord>,
         statuses: &Statuses,
     ) -> Self {
+        let id = *next_id;
+        *next_id += 1;
         Self {
             id,
             unit_type,
@@ -86,7 +88,7 @@ impl Unit {
                 .iter()
                 .map(|status| {
                     let status = statuses.get_config(&status);
-                    status.status.clone().attach(Some(id), None)
+                    status.status.clone().attach(Some(id), None, next_id)
                 })
                 .collect(),
             flags: vec![],

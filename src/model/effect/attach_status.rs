@@ -48,18 +48,18 @@ impl EffectImpl for AttachStatusEffect {
             }
 
             let status = logic.model.statuses.get_config(status_name);
-            unit_attach_status(
-                status
-                    .status
-                    .clone()
-                    .attach(Some(target.id), context.caster),
-                &mut target.all_statuses,
+            let status = status.status.clone().attach(
+                Some(target.id),
+                context.caster,
+                &mut logic.model.next_id,
             );
+            let attached_status_id = status.id;
+            unit_attach_status(status, &mut target.all_statuses);
 
             let target = target.id;
             let target = logic.model.units.get(&target).unwrap();
 
-            for (effect, vars) in target.all_statuses.iter().flat_map(|status| {
+            for (effect, vars, status_id) in target.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::SelfDetect {
                         status_name: detect,
@@ -75,12 +75,13 @@ impl EffectImpl for AttachStatusEffect {
                         from: Some(target.id),
                         target: Some(target.id),
                         vars,
+                        status_id: Some(attached_status_id),
                     },
                 })
             }
 
             for other in &logic.model.units {
-                for (effect, vars) in other.all_statuses.iter().flat_map(|status| {
+                for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
                         StatusTrigger::Detect {
                             status_name: detect,
@@ -102,6 +103,7 @@ impl EffectImpl for AttachStatusEffect {
                             from: Some(other.id),
                             target: Some(target.id),
                             vars,
+                            status_id: Some(attached_status_id),
                         },
                     })
                 }

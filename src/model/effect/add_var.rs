@@ -7,7 +7,8 @@ use super::*;
 pub struct AddVarEffect {
     pub name: VarName,
     pub value: Expr,
-    pub status_name: StatusName,
+    #[serde(default)]
+    pub status_name: Option<StatusName>,
     pub caster: Option<Who>,
     #[serde(default)]
     pub effect: Effect,
@@ -25,14 +26,26 @@ impl EffectImpl for AddVarEffect {
             .target
             .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
-        for status in target.all_statuses.iter_mut().filter(|status| {
-            status.status.name == effect.status_name
-                && effect
-                    .caster
-                    .map(|caster| context.get(caster) == status.caster)
-                    .unwrap_or(true)
-        }) {
-            status.vars.insert(effect.name.clone(), value);
+        if let Some(status_name) = effect.status_name {
+            for status in target.all_statuses.iter_mut().filter(|status| {
+                status.status.name == status_name
+                    && effect
+                        .caster
+                        .map(|caster| context.get(caster) == status.caster)
+                        .unwrap_or(true)
+            }) {
+                status.vars.insert(effect.name.clone(), value);
+            }
+        } else if let Some(status_id) = context.status_id {
+            for status in target.all_statuses.iter_mut().filter(|status| {
+                status.id == status_id
+                    && effect
+                        .caster
+                        .map(|caster| context.get(caster) == status.caster)
+                        .unwrap_or(true)
+            }) {
+                status.vars.insert(effect.name.clone(), value);
+            }
         }
 
         logic.effects.push_front(QueuedEffect {

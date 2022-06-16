@@ -8,7 +8,7 @@ fn default_who() -> Who {
 pub struct RemoveStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
-    pub status: StatusName,
+    pub status: Option<StatusName>,
     #[serde(default)]
     pub all: bool,
 }
@@ -21,12 +21,19 @@ impl EffectImpl for RemoveStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let status_name = &effect.status;
+        let status_id = context.status_id;
         let target = context.get(effect.who);
         let all = effect.all;
         if let Some(target) = target {
             let target = logic.model.units.get_mut(&target).unwrap();
             for status in &mut target.all_statuses {
-                if status.status.name == *status_name {
+                if match status_name {
+                    Some(name) => *name == status.status.name,
+                    None => match status_id {
+                        Some(id) => id == status.id,
+                        None => false,
+                    },
+                } {
                     status.time = Some(Time::ZERO);
                     if !all {
                         return;

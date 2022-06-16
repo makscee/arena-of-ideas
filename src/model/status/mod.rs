@@ -147,11 +147,17 @@ pub enum StatusStacking {
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum StatusTrigger {
     /// Triggered when the owner deals damage of the specified type (or any type if none is specified)
-    DamageDealt { damage_type: Option<DamageType> },
+    DamageDealt {
+        damage_type: Option<DamageType>,
+    },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
-    DamageTaken { damage_type: Option<DamageType> },
+    DamageTaken {
+        damage_type: Option<DamageType>,
+    },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
-    DamageIncoming { damage_type: Option<DamageType> },
+    DamageIncoming {
+        damage_type: Option<DamageType>,
+    },
     /// Triggered when the owner is healed
     HealTaken,
     /// Triggered when the owner heals someone
@@ -163,7 +169,9 @@ pub enum StatusTrigger {
     /// Triggered when the owner dies
     Death,
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
-    Kill { damage_type: Option<DamageType> },
+    Kill {
+        damage_type: Option<DamageType>,
+    },
     /// Triggered when a unit dies in range
     Scavenge {
         who: TargetFilter,
@@ -190,6 +198,9 @@ pub enum StatusTrigger {
         tick_time: Time,
         #[serde(default = "zero")]
         next_tick: Time,
+    },
+    Custom {
+        name: String,
     },
 }
 
@@ -253,17 +264,21 @@ pub struct AttachedStatus {
     pub caster: Option<Id>,
     /// Variables that persist for the lifetime of the status
     pub vars: HashMap<VarName, R32>,
+    pub id: Id,
 }
 
 impl Status {
     /// Transforms config into an attached status
-    pub fn attach(self, owner: Option<Id>, caster: Option<Id>) -> AttachedStatus {
+    pub fn attach(self, owner: Option<Id>, caster: Option<Id>, next_id: &mut Id) -> AttachedStatus {
+        let id = *next_id;
+        *next_id += 1;
         AttachedStatus {
             vars: self.vars.clone(),
             time: self.duration,
             status: self,
             owner,
             caster,
+            id,
         }
     }
 }
@@ -274,12 +289,12 @@ impl AttachedStatus {
     pub fn trigger<'a>(
         &'a self,
         mut filter: impl FnMut(&StatusTrigger) -> bool + 'a,
-    ) -> impl Iterator<Item = (Effect, HashMap<VarName, R32>)> + 'a {
+    ) -> impl Iterator<Item = (Effect, HashMap<VarName, R32>, Id)> + 'a {
         self.status
             .listeners
             .iter()
             .filter(move |listener| listener.triggers.iter().any(|trigger| filter(trigger)))
-            .map(|listener| (listener.effect.clone(), self.vars.clone()))
+            .map(|listener| (listener.effect.clone(), self.vars.clone(), self.id))
     }
 }
 

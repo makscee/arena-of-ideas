@@ -60,7 +60,7 @@ impl Logic<'_> {
                         .iter()
                         .chain(round.waves.front().unwrap().statuses.iter())
                         .cloned()
-                        .map(|status| status.attach(Some(unit.id), None));
+                        .map(|status| status.attach(Some(unit.id), None, &mut self.model.next_id));
                     unit.all_statuses.extend(statuses);
                 }
             } else {
