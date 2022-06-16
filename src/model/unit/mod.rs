@@ -39,6 +39,7 @@ pub struct Unit {
     pub health: Health,
     pub max_hp: Health,
     pub base_damage: Health,
+    pub armor: R32,
     pub crit_chance: R32,
     pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
@@ -62,6 +63,7 @@ pub enum UnitStat {
     MaxHealth,
     Radius,
     BaseDamage,
+    Armor,
     CritChance,
     Speed,
 }
@@ -93,6 +95,7 @@ impl Unit {
             health: template.health,
             max_hp: template.health,
             base_damage: template.base_damage,
+            armor: template.armor,
             crit_chance: template.crit_chance,
             face_dir: Vec2::ZERO,
             position,
@@ -115,6 +118,7 @@ impl Unit {
             UnitStat::MaxHealth => self.max_hp,
             UnitStat::Radius => self.radius,
             UnitStat::BaseDamage => self.base_damage,
+            UnitStat::Armor => self.armor,
             UnitStat::CritChance => self.crit_chance,
             UnitStat::Speed => self.speed,
         }
@@ -124,6 +128,7 @@ impl Unit {
             UnitStat::MaxHealth => &mut self.max_hp,
             UnitStat::Radius => &mut self.radius,
             UnitStat::BaseDamage => &mut self.base_damage,
+            UnitStat::Armor => &mut self.armor,
             UnitStat::CritChance => &mut self.crit_chance,
             UnitStat::Speed => &mut self.speed,
         }

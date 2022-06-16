@@ -66,6 +66,14 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
+        // Armor stat
+        let armor = target_unit.armor.as_f32();
+        if armor > 0.0 {
+            damage *= r32(1.0 - (0.06 * armor) / (1.0 + 0.06 * armor));
+        } else if armor < 0.0 {
+            damage *= r32(2.0 - 0.94_f32.powf(-armor));
+        }
+
         for status in target_unit.all_statuses.iter() {
             if status.status.name == "Vulnerability" {
                 damage *= r32(2.0);
