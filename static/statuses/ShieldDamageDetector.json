@@ -1,0 +1,23 @@
+{
+    "name": "ShieldDamageDetector",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageIncoming"
+                }
+            ],
+            "effect": {
+                "type": "ChangeContextStatus",
+                "status": "Shield",
+                "effect": {
+                    "type": "CustomTrigger",
+                    "name": "ShieldAbsorb"
+                }
+            }
+        }
+    ]
+}
