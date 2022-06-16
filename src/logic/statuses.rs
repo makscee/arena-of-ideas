@@ -56,7 +56,7 @@ impl Logic<'_> {
             expired.extend(
                 (&mut unit.all_statuses)
                     .iter()
-                    .filter(|status| is_expired(status))
+                    .filter(|status| is_expired(status) && !status.is_aura)
                     .map(|status| (unit.id, status.status.name.clone())),
             );
 
@@ -70,41 +70,59 @@ impl Logic<'_> {
                 .collect();
         }
 
-        let mut auras: Vec<(Id, AuraStatus)> = Vec::new();
-        for unit in &self.model.units {
-            // for status in &unit.all_statuses {
-            // TODO: reimplement
-            // if let StatusOld::Aura(status) = &status.status {
-            //     auras.push((unit.id, (**status).clone()));
-            // }
-            // }
-        }
-        for (unit_id, aura) in auras {
-            let unit = self.model.units.remove(&unit_id).unwrap();
+        // Apply auras
+        let auras: Vec<(Id, Aura)> = self
+            .model
+            .units
+            .iter()
+            .flat_map(|unit| {
+                unit.all_statuses
+                    .iter()
+                    .flat_map(|status| &status.status.auras)
+                    .map(|aura| (unit.id, aura.clone()))
+            })
+            .collect();
+        for (caster_id, aura) in auras {
+            let caster = self.model.units.remove(&caster_id).unwrap();
             for other in &mut self.model.units {
-                if other.faction != unit.faction {
+                match aura.radius {
+                    Some(radius) => {
+                        if distance_between_units(&caster, other) > radius {
+                            continue;
+                        }
+                    }
+                    _ => {}
+                }
+                if !aura.filter.check(other) {
                     continue;
                 }
-                match aura.distance {
-                    Some(distance) => {
-                        if distance_between_units(&unit, other) > distance {
-                            continue;
+                let statuses: Vec<AttachedStatus> = aura
+                    .statuses
+                    .iter()
+                    .filter_map(|status| {
+                        match self.model.statuses.get(status) {
+                            None => {
+                                error!("Failed to find status: {status}");
+                                None
+                            }
+                            Some(status) => {
+                                let mut status =
+                                    status.status.clone().attach_aura(Some(other.id), caster.id);
+                                status.time = Some(R32::ZERO); // Force the status to be dropped next frame
+                                Some(status)
+                            }
                         }
-                    }
-                    _ => {}
-                }
-                match &aura.clan {
-                    Some(clan) => {
-                        if !other.clans.contains(clan) {
-                            continue;
-                        }
-                    }
-                    _ => {}
-                }
-                // TODO: reimplement
-                // other.all_statuses.push((*aura.status).clone());
+                    })
+                    .collect();
+                other.flags.extend(
+                    statuses
+                        .iter()
+                        .flat_map(|status| status.status.flags.iter())
+                        .copied(),
+                );
+                other.all_statuses.extend(statuses);
             }
-            self.model.units.insert(unit);
+            self.model.units.insert(caster);
         }
 
         // Detect expired statuses
