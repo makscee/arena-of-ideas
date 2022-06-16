@@ -216,14 +216,33 @@ pub enum UnitStatFlag {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+pub struct Aura {
+    /// If specified, the aura affects only units in that radius.
+    /// Otherwise, affects all units
+    pub radius: Option<Coord>,
+    /// Filter units by clans
+    #[serde(default)]
+    pub filter: ClanFilter,
+    /// Additional conditional filter for units
+    #[serde(default)]
+    pub condition: Condition,
+    /// The statuses that will be attached to the affected units
+    pub statuses: Vec<StatusName>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Status {
     /// The name is used when comparing two statuses for equality for a stack
     /// and for parsing in the unit config
     pub name: StatusName,
     pub stacking: StatusStacking,
-    /// While the status is active, these flags will be assigned to the owner
+    /// While the status is active, these flags are assigned to the owner
     #[serde(default)]
     pub flags: Vec<UnitStatFlag>,
+    /// These auras are active while the status is active
+    #[serde(default)]
+    pub auras: Vec<Aura>,
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
@@ -244,6 +263,8 @@ pub struct Status {
 pub struct AttachedStatus {
     /// The actual status that hold all the neccessary logic info
     pub status: Status,
+    /// Whether this status originated from an aura
+    pub is_aura: bool,
     /// Specifies how much time is left until the status is dropped.
     /// If `None`, then the status remains attached.
     pub time: Option<Time>,
@@ -261,9 +282,23 @@ impl Status {
         AttachedStatus {
             vars: self.vars.clone(),
             time: self.duration,
+            is_aura: false,
             status: self,
             owner,
             caster,
+        }
+    }
+
+    /// Transforms config into an attached status with `is_aura` set to true
+    /// and `time` set to 0
+    pub fn attach_aura(self, owner: Option<Id>, caster: Id) -> AttachedStatus {
+        AttachedStatus {
+            vars: self.vars.clone(),
+            time: Some(Time::ZERO),
+            is_aura: true,
+            status: self,
+            caster: Some(caster),
+            owner,
         }
     }
 }

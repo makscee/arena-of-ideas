@@ -22,11 +22,11 @@ pub enum Clan {
     Protectors,
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
-struct ClanEffectFilter(Option<HashMap<Faction, Option<Vec<Clan>>>>);
+pub struct ClanFilter(Option<HashMap<Faction, Option<Vec<Clan>>>>);
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ClanEffect {
     /// Number of heroes required to activate the effect
@@ -36,14 +36,14 @@ pub struct ClanEffect {
     replace: bool,
     /// Filter target units by factions and alliances
     #[serde(default)]
-    filter: ClanEffectFilter,
+    filter: ClanFilter,
     /// Statuses to apply to every target unit
     statuses: Vec<Status>,
 }
 
-impl ClanEffectFilter {
+impl ClanFilter {
     /// Checks whether the unit satisfies the filter conditions
-    fn check(&self, unit: &Unit) -> bool {
+    pub fn check(&self, unit: &Unit) -> bool {
         let filter = match &self.0 {
             None => return true,
             Some(filter) => filter,
