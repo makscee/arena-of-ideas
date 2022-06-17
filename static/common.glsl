@@ -11,6 +11,8 @@ const float c_status_radius_offset = .3;
 const float c_status_thickness = .025;
 const float c_status_dot_radius = 0.09;
 
+const float injureAnimationTime = 0.5;
+
 const float padding = 1.5;
 
 const float thicknessOuter = 0.07;

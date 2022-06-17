@@ -1,5 +1,5 @@
 {
-    "shader": "shaders/field.glsl",
+    "shader": "shaders/field_2.glsl",
     "parameters": {
         "u_status_color": "#ffd700"
     }

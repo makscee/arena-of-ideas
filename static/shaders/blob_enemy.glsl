@@ -17,7 +17,6 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
-const float injureAnimationTime = 0.5;
 
 float getRingAlpha(
     vec2 uv, float r, float thickness, float glow, float glowStartV, float innerMult, float outerMult)

@@ -82,6 +82,11 @@ void main() {
     col = alphaBlend(col, renderTriangleParticles(uv - vec2(0,e_invSquare(animationProgress)) * 1.5, triangleSize * triangleGrowMax, animationProgress, colors[0]));
     col = alphaBlend(col, renderAbilityReady(preRotUv, colors[0]));
 
+    if (u_injure_time > 0. && abs(u_injure_time - u_time) < injureAnimationTime && dist < u_unit_radius)
+    {
+        col = alphaBlend(col, vec4(vec3(1.), 1. - (u_time - u_injure_time) / injureAnimationTime));
+    }
+
     //end
 
     gl_FragColor = col;
