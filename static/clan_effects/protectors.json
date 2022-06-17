@@ -110,7 +110,7 @@
         },
         "statuses": [
             {
-                "name": "asdasd",
+                "name": "ShieldAddCharges",
                 "stacking": {
                     "type": "Independent"
                 },

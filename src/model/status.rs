@@ -34,17 +34,11 @@ pub enum StatusStacking {
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum StatusTrigger {
     /// Triggered when the owner deals damage of the specified type (or any type if none is specified)
-    DamageDealt {
-        damage_type: Option<DamageType>,
-    },
+    DamageDealt { damage_type: Option<DamageType> },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
-    DamageTaken {
-        damage_type: Option<DamageType>,
-    },
+    DamageTaken { damage_type: Option<DamageType> },
     /// Triggered when the owner is about to take damage of the specified type (or any type if none is specified)
-    DamageIncoming {
-        damage_type: Option<DamageType>,
-    },
+    DamageIncoming { damage_type: Option<DamageType> },
     /// Triggered when the owner is healed
     HealTaken,
     /// Triggered when the owner heals someone
@@ -56,9 +50,7 @@ pub enum StatusTrigger {
     /// Triggered when the owner dies
     Death,
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
-    Kill {
-        damage_type: Option<DamageType>,
-    },
+    Kill { damage_type: Option<DamageType> },
     /// Triggered when a unit dies in range
     Scavenge {
         who: TargetFilter,
@@ -86,9 +78,12 @@ pub enum StatusTrigger {
         #[serde(default = "zero")]
         next_tick: Time,
     },
-    Custom {
-        name: String,
-    },
+    /// Triggered by CustomTriggerEffect
+    Custom { name: String },
+    /// Triggered right after status was attached
+    Init,
+    /// Triggered right after status was detached
+    Break,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -163,6 +158,8 @@ pub struct AttachedStatus {
     pub status: Status,
     /// Whether this status originated from an aura
     pub is_aura: bool,
+    /// Whether trigger Init was fired
+    pub is_inited: bool,
     /// Specifies how much time is left until the status is dropped.
     /// If `None`, then the status remains attached.
     pub time: Option<Time>,
@@ -184,6 +181,7 @@ impl Status {
             vars: self.vars.clone(),
             time: self.duration,
             is_aura: false,
+            is_inited: false,
             status: self,
             owner,
             caster,
@@ -198,6 +196,7 @@ impl Status {
             vars: self.vars.clone(),
             time: Some(Time::ZERO),
             is_aura: true,
+            is_inited: false,
             status: self,
             caster: Some(caster),
             owner,

@@ -23,6 +23,7 @@
     "Vulnerability.json",
     "Plague.json",
     "SiphonLife.json",
+    "SiphonLifeAura.json",
     "Poison.json",
     "PoisonOnDealDamage.json",
     "ShieldDamageDetector.json"

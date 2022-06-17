@@ -3,8 +3,36 @@ use super::*;
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
         let mut expired: Vec<(Id, String)> = Vec::new();
+
+        fn is_expired(status: &AttachedStatus) -> bool {
+            status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
+                || status
+                    .vars
+                    .get(&VarName::StackCounter)
+                    .map(|count| *count <= R32::ZERO)
+                    .unwrap_or(false)
+        }
+
         for unit in &mut self.model.units {
             for status in &mut unit.all_statuses {
+                if !status.is_inited {
+                    for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
+                        StatusTrigger::Init => true,
+                        _ => false,
+                    }) {
+                        self.effects.push_front(QueuedEffect {
+                            effect,
+                            context: EffectContext {
+                                caster: Some(unit.id),
+                                from: Some(unit.id),
+                                target: Some(unit.id),
+                                vars,
+                                status_id: Some(status_id),
+                            },
+                        })
+                    }
+                    status.is_inited = true;
+                }
                 if let Some(time) = &mut status.time {
                     *time -= self.delta_time;
                 }
@@ -41,15 +69,23 @@ impl Logic<'_> {
                         });
                     }
                 }
-            }
-
-            fn is_expired(status: &AttachedStatus) -> bool {
-                status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
-                    || status
-                        .vars
-                        .get(&VarName::StackCounter)
-                        .map(|count| *count <= R32::ZERO)
-                        .unwrap_or(false)
+                if is_expired(status) {
+                    for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
+                        StatusTrigger::Break => true,
+                        _ => false,
+                    }) {
+                        self.effects.push_front(QueuedEffect {
+                            effect,
+                            context: EffectContext {
+                                caster: Some(unit.id),
+                                from: Some(unit.id),
+                                target: Some(unit.id),
+                                vars,
+                                status_id: Some(status_id),
+                            },
+                        })
+                    }
+                }
             }
 
             // Remember expired statuses
