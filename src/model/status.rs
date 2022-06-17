@@ -41,7 +41,7 @@ pub enum StatusTrigger {
     DamageTaken {
         damage_type: Option<DamageType>,
     },
-    /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
+    /// Triggered when the owner is about to take damage of the specified type (or any type if none is specified)
     DamageIncoming {
         damage_type: Option<DamageType>,
     },
