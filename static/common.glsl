@@ -42,6 +42,8 @@ uniform int u_clan_count;
 
 uniform int u_status_count;
 uniform int u_status_index;
+uniform float u_status_time;
+uniform float u_status_duration;
 uniform vec4 u_status_color;
 
 float alCountF;
@@ -153,10 +155,6 @@ vec3 mix2Colors(float t, vec3 colors[2])
 
 vec4 renderStatusRing(vec2 uv, vec3 col)
 {
-    const float u_status_duration = 0.;
-    // float u_status_time = 0.8 + sin(iTime) * .5;
-    const float u_status_time = 0.;
-
     float offset = 1. + c_status_radius_offset + c_status_radius_delta * u_status_index
         * (min(1., c_status_radius_delta_max / c_status_radius_delta / u_status_count));
     float rad = abs(vecAngle(uv) - pi);

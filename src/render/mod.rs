@@ -519,16 +519,26 @@ impl UnitRender {
                             .statuses
                             .get(&status.status.name)
                             .and_then(|config| config.render.as_ref())
-                            .map(|render| self.assets.get_status_render(render))
+                            .map(|render| {
+                                (
+                                    self.assets.get_status_render(render),
+                                    status.time,
+                                    status.status.duration,
+                                )
+                            })
                     })
                     .collect();
                 let status_count = statuses.len();
                 for (
                     status_index,
-                    ShaderConfig {
-                        shader: program,
-                        parameters,
-                    },
+                    (
+                        ShaderConfig {
+                            shader: program,
+                            parameters,
+                        },
+                        status_time,
+                        status_duration,
+                    ),
                 ) in statuses.into_iter().enumerate()
                 {
                     let mut new_texture =
@@ -539,6 +549,14 @@ impl UnitRender {
                             ugli::ColorAttachment::Texture(&mut new_texture),
                         );
                         let framebuffer = &mut framebuffer;
+                        let status_time = match status_time {
+                            Some(status_time) => status_time,
+                            None => r32(0.0),
+                        };
+                        let status_duration = match status_duration {
+                            Some(status_duration) => status_duration,
+                            None => r32(0.0),
+                        };
                         ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
                         ugli::draw(
                             framebuffer,
@@ -551,6 +569,8 @@ impl UnitRender {
                                     u_previous_texture: &texture,
                                     u_status_count: status_count,
                                     u_status_index: status_index,
+                                    u_status_time: status_time.as_f32(),
+                                    u_status_duration: status_duration.as_f32(),
                                     u_time: game_time,
                                 },
                                 parameters,
