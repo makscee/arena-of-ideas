@@ -35,7 +35,8 @@ impl EffectImpl for DamageEffect {
             .caster
             .and_then(|id| units.get(&id))
             .expect("Caster not found")
-            .armor_penetration.as_f32();
+            .armor_penetration
+            .as_f32();
         let target_unit = context
             .target
             .and_then(|id| units.get_mut(&id))
