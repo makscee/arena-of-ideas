@@ -1,50 +1,42 @@
 [
     {
         "activate": 2,
-        "filter":
-        {
-            "Player":
-            [
-                "Protectors"
-            ]
+        "filter": {
+            "Player": null
         },
-        "statuses":
-        [
+        "statuses": [
             {
                 "name": "OnDealDamage",
-                "stacking":
-                {
+                "stacking": {
                     "type": "Independent"
                 },
-                "listeners":
-                [
+                "listeners": [
                     {
-                        "triggers":
-                        [
+                        "triggers": [
                             {
                                 "type": "DamageDealt"
                             }
                         ],
-                        "effect":
-                        {
-                            "type": "Random",
-                            "choices":
-                            [
-                                {
-                                    "weight": 75,
-                                    "effect":
+                        "effect": {
+                            "type": "ChangeContext",
+                            "target": "Caster",
+                            "effect": {
+                                "type": "Random",
+                                "choices": [
                                     {
-                                        "type": "Noop"
-                                    }
-                                },
-                                {
-                                    "weight": 25,
-                                    "effect":
+                                        "weight": 75,
+                                        "effect": {
+                                            "type": "Noop"
+                                        }
+                                    },
                                     {
-                                        "preset": "effects/attach_status/shield.json"
+                                        "weight": 25,
+                                        "effect": {
+                                            "preset": "effects/attach_status/shield.json"
+                                        }
                                     }
-                                }
-                            ]
+                                ]
+                            }
                         }
                     }
                 ]
@@ -53,46 +45,34 @@
     },
     {
         "activate": 4,
-        "filter":
-        {
-            "Player":
-            [
-                "Protectors"
-            ]
+        "filter": {
+            "Player": null
         },
-        "statuses":
-        [
+        "statuses": [
             {
                 "name": "OnTakeDamage",
-                "stacking":
-                {
+                "stacking": {
                     "type": "Independent"
                 },
-                "listeners":
-                [
+                "listeners": [
                     {
-                        "triggers":
-                        [
+                        "triggers": [
                             {
                                 "type": "DamageTaken"
                             }
                         ],
-                        "effect":
-                        {
+                        "effect": {
                             "type": "Random",
-                            "choices":
-                            [
+                            "choices": [
                                 {
                                     "weight": 75,
-                                    "effect":
-                                    {
+                                    "effect": {
                                         "type": "Noop"
                                     }
                                 },
                                 {
                                     "weight": 25,
-                                    "effect":
-                                    {
+                                    "effect": {
                                         "preset": "effects/attach_status/shield.json"
                                     }
                                 }
