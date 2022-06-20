@@ -26,7 +26,19 @@
                         }
                     },
                     {
-                        "type": "RemoveStatus"
+                        "type": "AddVar",
+                        "name": "StackCounter",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "name": "StackCounter"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
                     }
                 ]
             }
@@ -37,5 +49,8 @@
         "parameters": {
             "u_status_color": "#e6e6e6"
         }
+    },
+    "vars": {
+        "StackCounter": 1
     }
 }
