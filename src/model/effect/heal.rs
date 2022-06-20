@@ -1,9 +1,13 @@
 use super::*;
 
+pub type HealType = String;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct HealEffect {
     pub value: Expr,
+    #[serde(default)]
+    pub types: HashSet<HealType>,
     #[serde(default)]
     pub heal_past_max: Option<Expr>,
     #[serde(default)]
@@ -57,7 +61,13 @@ impl EffectImpl for HealEffect {
         target_unit.health += value_clamped;
 
         for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
-            status.trigger(|trigger| matches!(trigger, StatusTrigger::HealTaken))
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::HealTaken { heal_type } => match &heal_type {
+                    Some(heal_type) => effect.types.contains(heal_type),
+                    None => true,
+                },
+                _ => false,
+            })
         }) {
             logic.effects.push_front(QueuedEffect {
                 effect,
@@ -87,7 +97,13 @@ impl EffectImpl for HealEffect {
             })
             .expect("Caster not found");
         for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
-            status.trigger(|trigger| matches!(trigger, StatusTrigger::HealDealt))
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::HealDealt { heal_type } => match &heal_type {
+                    Some(heal_type) => effect.types.contains(heal_type),
+                    None => true,
+                },
+                _ => false,
+            })
         }) {
             logic.effects.push_front(QueuedEffect {
                 effect,
