@@ -18,8 +18,9 @@
                             "Ranged"
                         ],
                         "value": {
-                            "type": "Const",
-                            "value": 1
+                            "type": "FindStat",
+                            "who": "Caster",
+                            "stat": "BaseDamage"
                         }
                     },
                     {

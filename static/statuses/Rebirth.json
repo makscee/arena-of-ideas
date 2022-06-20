@@ -1,0 +1,41 @@
+{
+    "name": "Rebirth",
+    "stacking": {
+        "type": "Count"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "Death"
+                }
+            ],
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Delayed",
+                        "time": 1,
+                        "effect": {
+                            "type": "Revive",
+                            "health": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            }
+                        }
+                    },
+                    {
+                        "type": "RemoveStatus"
+                    }
+                ]
+            }
+        }
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#e6e6e6"
+        }
+    }
+}
