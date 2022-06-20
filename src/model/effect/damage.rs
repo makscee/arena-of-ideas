@@ -30,10 +30,17 @@ impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let mut damage = effect.value.calculate(&context, logic);
+        let units = &mut logic.model.units;
+        let armor_penetration = context
+            .caster
+            .and_then(|id| units.get(&id))
+            .expect("Caster not found")
+            .armor_penetration.as_f32();
         let target_unit = context
             .target
-            .and_then(|id| logic.model.units.get_mut(&id))
+            .and_then(|id| units.get_mut(&id))
             .expect("Target not found");
+
         if damage <= Health::new(0.0) {
             return;
         }
@@ -68,7 +75,7 @@ impl EffectImpl for DamageEffect {
         }
 
         // Armor stat
-        let armor = target_unit.armor.as_f32();
+        let armor = target_unit.armor.as_f32() - armor_penetration;
         if armor > 0.0 {
             damage *= r32(1.0 - (0.06 * armor) / (1.0 + 0.06 * armor));
         } else if armor < 0.0 {
