@@ -1,0 +1,36 @@
+{
+    "tier": 1,
+    "description": "If enemy loses @Freeze apply @Dark Steal",
+    "clans": [
+        "Freezers",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "OnRemoveFreezeDarkSteal",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Freeze",
+                            "status_action": "Remove",
+                            "filter": "Enemies"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeContext",
+                        "caster": "From",
+                        "effect": {
+                            "preset": "effects/attach_status/dark_steal.json"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}
