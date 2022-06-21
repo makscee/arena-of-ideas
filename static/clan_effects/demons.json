@@ -1,0 +1,34 @@
+[
+    {
+        "activate": 1,
+        "filter": {
+            "Player": ["Demons"]
+        },
+        "statuses": [
+            {
+                "name": "OnDealDamage",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Melee"
+                            },
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Ranged"
+                            }
+                        ],
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "DarkSteal"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]

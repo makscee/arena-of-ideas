@@ -20,6 +20,7 @@ pub enum Clan {
     Skeletons,
     Warlocks,
     Protectors,
+    Demons,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

@@ -12,6 +12,9 @@ pub enum VarName {
     StackCounter,
     PoisonTicksLeft,
     Charges,
+    StolenDamage,
+    StolenHealth,
+    StealPercent,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,6 +27,10 @@ pub enum Expr {
         name: VarName,
     },
     Sum {
+        a: Box<Expr>,
+        b: Box<Expr>,
+    },
+    Sub {
         a: Box<Expr>,
         b: Box<Expr>,
     },
@@ -54,6 +61,7 @@ impl Expr {
             Self::Const { value } => *value,
             Self::Var { name } => context.vars[name],
             Self::Sum { a, b } => a.calculate(context, logic) + b.calculate(context, logic),
+            Self::Sub { a, b } => a.calculate(context, logic) - b.calculate(context, logic),
             Self::Mul { a, b } => a.calculate(context, logic) * b.calculate(context, logic),
             Self::FindStat { who, stat } => {
                 let target = context.get(*who).unwrap();

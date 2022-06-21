@@ -1,0 +1,124 @@
+{
+    "name": "DarkSteal",
+    "stacking": {
+        "type": "Count"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "SelfDetectAttach",
+                    "status_name": "DarkSteal"
+                }
+            ],
+            "effect": {
+                "type": "AddVar",
+                "name": "StolenHealth",
+                "value": {
+                    "type": "Mul",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "MaxHealth"
+                    },
+                    "b": {
+                        "type": "Var",
+                        "name": "StealPercent"
+                    }
+                },
+                "effect": {
+                    "type": "AddVar",
+                    "name": "StolenDamage",
+                    "value": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "FindStat",
+                            "who": "Target",
+                            "stat": "BaseDamage"
+                        },
+                        "b": {
+                            "type": "Var",
+                            "name": "StealPercent"
+                        }
+                    },
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeStat",
+                                "stat": "MaxHealth",
+                                "who": "Target",
+                                "value": {
+                                    "type": "Sub",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "MaxHealth",
+                                        "who": "Target"
+                                    },
+                                    "b": {
+                                        "type": "Var",
+                                        "name": "StolenHealth"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "MaxHealth",
+                                "who": "Caster",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "MaxHealth",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "type": "Var",
+                                        "name": "StolenHealth"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "BaseDamage",
+                                "who": "Target",
+                                "value": {
+                                    "type": "Sub",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "BaseDamage",
+                                        "who": "Target"
+                                    },
+                                    "b": {
+                                        "type": "Var",
+                                        "name": "StolenDamage"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "BaseDamage",
+                                "who": "Caster",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "BaseDamage",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "type": "Var",
+                                        "name": "StolenDamage"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "vars": {
+        "StealPercent": 0.1
+    }
+}

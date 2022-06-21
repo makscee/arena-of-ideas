@@ -53,8 +53,7 @@ impl EffectImpl for AttachStatusEffect {
                 context.caster,
                 &mut logic.model.next_id,
             );
-            let attached_status_id = status.id;
-            unit_attach_status(status, &mut target.all_statuses);
+            let attached_status_id = unit_attach_status(status, &mut target.all_statuses);
 
             let target = target.id;
             let target = logic.model.units.get(&target).unwrap();
@@ -71,7 +70,7 @@ impl EffectImpl for AttachStatusEffect {
                 logic.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
-                        caster: Some(target.id),
+                        caster: context.caster,
                         from: Some(target.id),
                         target: Some(target.id),
                         vars,
@@ -99,7 +98,7 @@ impl EffectImpl for AttachStatusEffect {
                     logic.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
-                            caster: Some(other.id),
+                            caster: context.caster,
                             from: Some(other.id),
                             target: Some(target.id),
                             vars,

@@ -2,7 +2,7 @@ use super::*;
 
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
-        let mut expired: Vec<(Id, Id, String)> = Vec::new();
+        let mut expired: Vec<(Id, Option<Id>, Id, String)> = Vec::new();
 
         fn is_expired(status: &AttachedStatus) -> bool {
             status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
@@ -93,7 +93,14 @@ impl Logic<'_> {
                 (&mut unit.all_statuses)
                     .iter()
                     .filter(|status| is_expired(status) && !status.is_aura)
-                    .map(|status| (unit.id, status.id, status.status.name.clone())),
+                    .map(|status| {
+                        (
+                            unit.id,
+                            status.caster,
+                            status.id,
+                            status.status.name.clone(),
+                        )
+                    }),
             );
 
             unit.all_statuses.retain(|status| !is_expired(status));
@@ -162,7 +169,7 @@ impl Logic<'_> {
         }
 
         // Detect expired statuses
-        for (owner_id, detect_id, detect_status) in &expired {
+        for (owner_id, caster_id, detect_id, detect_status) in &expired {
             let owner = self.model.units.get(owner_id).unwrap();
             for (effect, vars, status_id) in owner.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
@@ -176,7 +183,7 @@ impl Logic<'_> {
                 self.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
-                        caster: Some(owner.id),
+                        caster: *caster_id,
                         from: Some(owner.id),
                         target: Some(owner.id),
                         vars,
@@ -203,7 +210,7 @@ impl Logic<'_> {
                     self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
-                            caster: Some(other.id),
+                            caster: *caster_id,
                             from: Some(other.id),
                             target: Some(owner.id),
                             vars,

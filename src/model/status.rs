@@ -231,35 +231,55 @@ impl EffectContainer for Status {
 
 pub trait StatusImpl: EffectContainer {}
 
-pub fn unit_attach_status(mut status: AttachedStatus, all_statuses: &mut Vec<AttachedStatus>) {
+pub fn unit_attach_status(
+    mut status: AttachedStatus,
+    all_statuses: &mut Vec<AttachedStatus>,
+) -> Id {
     fn replace(
         status: AttachedStatus,
         all_statuses: &mut Vec<AttachedStatus>,
-        update: impl FnOnce(&mut AttachedStatus),
-    ) {
+        update: impl FnOnce(&mut AttachedStatus) -> Id,
+    ) -> Id {
         match all_statuses
             .iter_mut()
             .find(|s| s.status.name == status.status.name)
         {
-            Some(status) => update(status),
-            None => all_statuses.push(status),
+            Some(status) => {
+                return update(status);
+            }
+            None => {
+                let id = status.id;
+                all_statuses.push(status);
+                return id;
+            }
         }
     }
 
     status.vars.insert(VarName::StackCounter, r32(1.0));
     match &status.status.stacking {
         StatusStacking::Independent => {
+            let id = status.id;
             all_statuses.push(status);
+            return id;
         }
-        StatusStacking::Refresh => replace(status, all_statuses, |s| {
-            s.time = s.status.duration;
-        }),
-        StatusStacking::Count => replace(status, all_statuses, |s| {
-            *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
-        }),
-        StatusStacking::CountRefresh => replace(status, all_statuses, |s| {
-            s.time = s.status.duration;
-            *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
-        }),
+        StatusStacking::Refresh => {
+            return replace(status, all_statuses, |s| {
+                s.time = s.status.duration;
+                s.id
+            })
+        }
+        StatusStacking::Count => {
+            return replace(status, all_statuses, |s| {
+                *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
+                s.id
+            })
+        }
+        StatusStacking::CountRefresh => {
+            return replace(status, all_statuses, |s| {
+                s.time = s.status.duration;
+                *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
+                s.id
+            })
+        }
     }
 }

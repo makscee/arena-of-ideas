@@ -39,8 +39,8 @@ impl Logic<'_> {
             Condition::Clan { clan, count } => self.model.config.clans[clan] >= *count,
             Condition::HasVar { name } => context.vars.contains_key(name),
             Condition::Faction { who, faction } => {
-                let who = context.get(*who);
-                let who = who
+                let who = context
+                    .get(*who)
                     .and_then(|id| self.model.units.get(&id))
                     .expect("Caster, From, or Target not found");
                 who.faction == *faction

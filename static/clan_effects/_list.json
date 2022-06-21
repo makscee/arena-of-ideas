@@ -4,5 +4,6 @@
     "Assassins": "assassins.json",
     "PlagueSpreaders": "plague_spreaders.json",
     "Warlocks": "warlocks.json",
-    "Protectors": "protectors.json"
+    "Protectors": "protectors.json",
+    "Demons": "demons.json"
 }

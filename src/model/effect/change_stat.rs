@@ -1,9 +1,15 @@
 use super::*;
 
+fn default_who() -> Who {
+    Who::Target
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChangeStatEffect {
     pub stat: UnitStat,
     pub value: Expr,
+    #[serde(default = "default_who")]
+    pub who: Who,
 }
 
 impl EffectContainer for ChangeStatEffect {
@@ -14,15 +20,11 @@ impl EffectImpl for ChangeStatEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut Logic) {
         let effect = *self;
         let value = effect.value.calculate(&context, logic);
-        let target = context
-            .target
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get_mut(&id)
-                    .or(logic.model.spawning_units.get_mut(&id))
-            })
+        let target = context.get(effect.who).unwrap();
+        let target = logic
+            .model
+            .units
+            .get_mut(&target)
             .expect("Target not found");
         *target.stat_mut(effect.stat) = value;
     }
