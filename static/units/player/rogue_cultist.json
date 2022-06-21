@@ -1,0 +1,29 @@
+{
+    "tier": 1,
+    "clans": [
+        "Warlocks",
+        "Assassins"
+    ],
+    "statuses": [
+        {
+            "name": "OnDealDamage",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Crit"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/attach_status/siphon_life.json"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}
