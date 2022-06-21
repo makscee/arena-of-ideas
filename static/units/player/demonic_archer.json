@@ -1,0 +1,34 @@
+{
+    "tier": 1,
+    "description": "@Bonus Shot applies @Dark Steal twice",
+    "clans": [
+        "Demons",
+        "Archers"
+    ],
+    "statuses": [
+        {
+            "name": "DarkStealOnBonusShot",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "BonusShot"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": 2,
+                        "effect": {
+                            "preset": "effects/attach_status/dark_steal.json"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
