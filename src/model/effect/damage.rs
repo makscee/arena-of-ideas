@@ -46,7 +46,7 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        for (effect, vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
+        for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
                 StatusTrigger::DamageIncoming { damage_type } => match &damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
@@ -61,7 +61,10 @@ impl EffectImpl for DamageEffect {
                     caster: Some(target_unit.id),
                     from: context.from,
                     target: context.target,
-                    vars,
+                    vars: {
+                        vars.insert(VarName::DamageIncoming, damage);
+                        vars
+                    },
                     status_id: Some(status_id),
                 },
             })

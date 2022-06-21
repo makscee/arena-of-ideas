@@ -2,6 +2,7 @@ pub use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum VarName {
+    DamageIncoming,
     DamageDealt,
     DamageBlocked,
     HealthRestored,
@@ -15,6 +16,7 @@ pub enum VarName {
     StolenDamage,
     StolenHealth,
     StealPercent,
+    RemainingAbsorb,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

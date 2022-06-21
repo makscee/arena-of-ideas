@@ -25,6 +25,14 @@ pub enum Condition {
         a: Box<Expr>,
         b: Box<Expr>,
     },
+    Less {
+        a: Box<Expr>,
+        b: Box<Expr>,
+    },
+    More {
+        a: Box<Expr>,
+        b: Box<Expr>,
+    },
     Clan {
         clan: Clan,
         count: usize,

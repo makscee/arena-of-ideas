@@ -1,0 +1,67 @@
+{
+    "name": "Barrier",
+    "stacking": {
+        "type": "Independent"
+    },
+    "flags": [
+        "DamageImmune"
+    ],
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageIncoming"
+                }
+            ],
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "AddVar",
+                        "name": "RemainingAbsorb",
+                        "value": {
+                            "type": "Sub",
+                            "a": {
+                                "type": "Var",
+                                "name": "RemainingAbsorb"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "name": "DamageIncoming"
+                            }
+                        }
+                    },
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "Less",
+                            "a": {
+                                "type": "Var",
+                                "name": "RemainingAbsorb"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        },
+                        "then": {
+                            "type": "RemoveStatus"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "render": {
+        "shader": "shaders/status/status_default.glsl",
+        "parameters": {
+            "u_status_color": "#66219c"
+        }
+    },
+    "vars": {
+        "RemainingAbsorb": 2
+    }
+}
