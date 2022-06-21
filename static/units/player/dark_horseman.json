@@ -1,0 +1,38 @@
+{
+    "tier": 1,
+    "description": "@Scathe: apply @Siphon Life and @Plague",
+    "clans": [
+        "PlagueSpreaders",
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "DarkHorsemanOnDealDamage",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "preset": "effects/attach_status/siphon_life.json"
+                            },
+                            {
+                                "preset": "effects/attach_status/plague.json"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}

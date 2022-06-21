@@ -25,6 +25,7 @@ impl EffectImpl for ChangeStatEffect {
             .model
             .units
             .get_mut(&target)
+            .or(logic.model.spawning_units.get_mut(&target))
             .expect("Target not found");
         *target.stat_mut(effect.stat) = value;
     }
