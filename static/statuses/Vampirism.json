@@ -1,0 +1,26 @@
+{
+    "name": "Vampirism",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt"
+                }
+            ],
+            "effect": {
+                "type": "ChangeContext",
+                "target": "Caster",
+                "effect": {
+                    "type": "Heal",
+                    "value": {
+                        "type": "Var",
+                        "name": "DamageDealt"
+                    }
+                }
+            }
+        }
+    ]
+}

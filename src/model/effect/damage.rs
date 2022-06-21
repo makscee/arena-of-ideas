@@ -158,6 +158,7 @@ impl EffectImpl for DamageEffect {
                         target: context.target,
                         vars: {
                             vars.extend(context.vars.clone());
+                            vars.insert(VarName::DamageDealt, damage);
                             vars
                         },
                         status_id: Some(status_id),
