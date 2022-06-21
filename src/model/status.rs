@@ -60,14 +60,14 @@ pub enum StatusTrigger {
     /// Triggered when the owner gains an effect via [ApplyGainedEffect]
     GainedEffect,
     /// Triggered when some unit acquires the specified status and the filter is satisfied
-    Detect {
+    DetectAttach {
         status_name: StatusName,
         #[serde(default)]
         status_action: StatusAction,
         filter: TargetFilter,
     },
     /// Triggered when the owner acquires the specified status
-    SelfDetect {
+    SelfDetectAttach {
         status_name: StatusName,
         #[serde(default)]
         status_action: StatusAction,

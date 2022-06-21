@@ -98,7 +98,7 @@
                     {
                         "triggers": [
                             {
-                                "type": "SelfDetect",
+                                "type": "SelfDetectAttach",
                                 "status_name": "Shield"
                             }
                         ],

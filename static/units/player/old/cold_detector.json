@@ -3,7 +3,7 @@
     "statuses":
     [
         {
-            "type": "Detect",
+            "type": "DetectAttach",
             "on": "Enemies",
             "status_name": "Freeze",
             "effect":

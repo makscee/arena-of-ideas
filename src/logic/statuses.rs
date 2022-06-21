@@ -3,7 +3,6 @@ use super::*;
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
         let mut expired: Vec<(Id, Id, String)> = Vec::new();
-        let mut fresh: Vec<(Id, Id, String)> = Vec::new();
 
         fn is_expired(status: &AttachedStatus) -> bool {
             status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
@@ -32,7 +31,6 @@ impl Logic<'_> {
                             },
                         })
                     }
-                    fresh.push((unit.id, status.id, status.status.name.clone()));
                     status.is_inited = true;
                 }
                 if let Some(time) = &mut status.time {
@@ -163,65 +161,12 @@ impl Logic<'_> {
             self.model.units.insert(caster);
         }
 
-        // Detect fresh statuses
-        for (owner_id, detect_id, detect_status) in &fresh {
-            let owner = self.model.units.get(owner_id).unwrap();
-            for (effect, vars, status_id) in owner.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| match trigger {
-                    StatusTrigger::SelfDetect {
-                        status_name,
-                        status_action: StatusAction::Add,
-                    } => detect_status == status_name,
-                    _ => false,
-                })
-            }) {
-                self.effects.push_front(QueuedEffect {
-                    effect,
-                    context: EffectContext {
-                        caster: Some(owner.id),
-                        from: Some(owner.id),
-                        target: Some(owner.id),
-                        vars,
-                        status_id: Some(*detect_id),
-                    },
-                })
-            }
-
-            for other in &self.model.units {
-                for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::Detect {
-                            status_name,
-                            filter,
-                            status_action: StatusAction::Add,
-                        } => {
-                            other.id != owner.id
-                                && detect_status == status_name
-                                && filter.matches(owner.faction, other.faction)
-                        }
-                        _ => false,
-                    })
-                }) {
-                    self.effects.push_front(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: Some(other.id),
-                            from: Some(other.id),
-                            target: Some(owner.id),
-                            vars,
-                            status_id: Some(*detect_id),
-                        },
-                    })
-                }
-            }
-        }
-
         // Detect expired statuses
         for (owner_id, detect_id, detect_status) in &expired {
             let owner = self.model.units.get(owner_id).unwrap();
             for (effect, vars, status_id) in owner.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::SelfDetect {
+                    StatusTrigger::SelfDetectAttach {
                         status_name,
                         status_action: StatusAction::Remove,
                     } => detect_status == status_name,
@@ -243,7 +188,7 @@ impl Logic<'_> {
             for other in &self.model.units {
                 for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::Detect {
+                        StatusTrigger::DetectAttach {
                             status_name,
                             filter,
                             status_action: StatusAction::Remove,

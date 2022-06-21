@@ -20,7 +20,7 @@
     },
     "statuses": [
         {
-            "type": "Detect",
+            "type": "DetectAttach",
             "on": "Allies",
             "status_name": "Freeze",
             "effect": {

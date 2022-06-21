@@ -6,15 +6,15 @@
         },
         "statuses": [
             {
-                "name": "SelfDetect",
+                "name": "SelfDetectAttach",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
                         "triggers": [
                             {
-                                "type": "SelfDetect",
+                                "type": "SelfDetectAttach",
                                 "status_name": "Freeze"
                             }
                         ],
@@ -37,7 +37,7 @@
             {
                 "name": "OnTakeDamage",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
@@ -66,15 +66,15 @@
         },
         "statuses": [
             {
-                "name": "SelfDetect",
+                "name": "SelfDetectAttach",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
                         "triggers": [
                             {
-                                "type": "SelfDetect",
+                                "type": "SelfDetectAttach",
                                 "status_name": "Freeze"
                             }
                         ],

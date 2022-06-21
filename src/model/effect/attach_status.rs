@@ -55,6 +55,59 @@ impl EffectImpl for AttachStatusEffect {
             );
             let attached_status_id = status.id;
             unit_attach_status(status, &mut target.all_statuses);
+
+            let target = target.id;
+            let target = logic.model.units.get(&target).unwrap();
+
+            for (effect, vars, status_id) in target.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::SelfDetectAttach {
+                        status_name: detect,
+                        status_action,
+                    } => detect == status_name && status_action == &StatusAction::Add,
+                    _ => false,
+                })
+            }) {
+                logic.effects.push_front(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: Some(target.id),
+                        from: Some(target.id),
+                        target: Some(target.id),
+                        vars,
+                        status_id: Some(attached_status_id),
+                    },
+                })
+            }
+
+            for other in &logic.model.units {
+                for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::DetectAttach {
+                            status_name: detect,
+                            filter,
+                            status_action,
+                        } => {
+                            other.id != target.id
+                                && detect == status_name
+                                && status_action == &StatusAction::Add
+                                && filter.matches(target.faction, other.faction)
+                        }
+                        _ => false,
+                    })
+                }) {
+                    logic.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: Some(other.id),
+                            from: Some(other.id),
+                            target: Some(target.id),
+                            vars,
+                            status_id: Some(attached_status_id),
+                        },
+                    })
+                }
+            }
         }
     }
 }
