@@ -14,18 +14,85 @@
                 "type": "ChangeContext",
                 "target": "Caster",
                 "effect": {
-                    "type": "Heal",
-                    "value": {
-                        "type": "Mul",
-                        "a": {
-                            "type": "Var",
-                            "name": "DamageDealt"
+                    "type": "If",
+                    "condition": {
+                        "type": "Clan",
+                        "clan": "Vampires",
+                        "count": 4
+                    },
+                    "then": {
+                        "type": "Heal",
+                        "heal_past_max": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindStat",
+                                "stat": "MaxHealth",
+                                "who": "Caster"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0.4
+                            }
                         },
-                        "b": {
-                            "type": "Var",
-                            "name": "VampirismKoef"
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "Var",
+                                "name": "DamageDealt"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "name": "VampirismKoef"
+                            }
+                        }
+                    },
+                    "else": {
+                        "type": "Heal",
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "Var",
+                                "name": "DamageDealt"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "name": "VampirismKoef"
+                            }
                         }
                     }
+                }
+            }
+        },
+        {
+            "triggers": [
+                {
+                    "type": "Init"
+                }
+            ],
+            "effect": {
+                "type": "If",
+                "condition": {
+                    "type": "Clan",
+                    "clan": "Vampires",
+                    "count": 2
+                },
+                "then": {
+                    "type": "AddVar",
+                    "name": "VampirismKoef",
+                    "value": {
+                        "type": "Sum",
+                        "a": {
+                            "type": "Var",
+                            "name": "VampirismKoef"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 0.2
+                        }
+                    }
+                },
+                "else": {
+                    "type": "Noop"
                 }
             }
         }

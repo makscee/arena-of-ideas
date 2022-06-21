@@ -1,0 +1,42 @@
+[
+    {
+        "activate": 6,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "name": "AddMaxHPOnKill",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Kill"
+                            }
+                        ],
+                        "effect": {
+                            "type": "ChangeStat",
+                            "stat": "MaxHealth",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "stat": "MaxHealth",
+                                    "who": "Caster"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 3
+                                }
+                            },
+                            "who": "Caster"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]
