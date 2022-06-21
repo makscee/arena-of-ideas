@@ -1,5 +1,6 @@
 {
     "tier": 1,
+    "triple": "walker+",
     "description": "Every 5 seconds @Freeze random enemy",
     "clans": [
         "Freezers",
@@ -7,7 +8,7 @@
     ],
     "statuses": [
         {
-            "name": "OnDealDamage",
+            "name": "FreezeRandomEvery5",
             "stacking": {
                 "type": "Independent"
             },
@@ -17,7 +18,7 @@
                         {
                             "type": "Repeating",
                             "tick_time": 5,
-                            "next_tick": 1
+                            "next_tick": 5
                         }
                     ],
                     "effect": {
