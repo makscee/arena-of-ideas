@@ -16,11 +16,21 @@
                 "effect": {
                     "type": "Heal",
                     "value": {
-                        "type": "Var",
-                        "name": "DamageDealt"
+                        "type": "Mul",
+                        "a": {
+                            "type": "Var",
+                            "name": "DamageDealt"
+                        },
+                        "b": {
+                            "type": "Var",
+                            "name": "VampirismKoef"
+                        }
                     }
                 }
             }
         }
-    ]
+    ],
+    "vars": {
+        "VampirismKoef": 0.2
+    }
 }

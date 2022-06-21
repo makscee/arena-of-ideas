@@ -17,6 +17,7 @@ pub enum VarName {
     StolenHealth,
     StealPercent,
     RemainingAbsorb,
+    VampirismKoef,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
