@@ -11,7 +11,53 @@
         }
     },
     "statuses": [
-        "SmallBlobOnDeath"
+        {
+            "name": "SmallBlobOnDeath",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Death"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AOE",
+                                "range": 1,
+                                "filter": "Enemies",
+                                "effect": {
+                                    "type": "Damage",
+                                    "value": {
+                                        "type": "FindStat",
+                                        "who": "Caster",
+                                        "stat": "BaseDamage"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "Visual",
+                                "duration": 1.0,
+                                "parent": "Caster",
+                                "follow": false,
+                                "radius": 1.5,
+                                "render": {
+                                    "type": "Shader",
+                                    "path": "shaders/vfx_explosion.glsl",
+                                    "parameters": {
+                                        "color": "#dc143c"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
     ],
     "move_ai": "Advance",
     "target_ai": "Closest",

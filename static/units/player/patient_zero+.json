@@ -5,8 +5,43 @@
         "PlagueSpreaders"
     ],
     "statuses": [
-        "Plague",
-        "PatientZero+OnTakeDamage"
+        {
+            "name": "PatientZeroOnSpawn",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/attach_status/plague.json"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "PatientZero+OnTakeDamage",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageTaken",
+                            "damage_type": "Plague"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/attach_status/shield.json"
+                    }
+                }
+            ]
+        }
     ],
     "base": "melee+"
 }

@@ -6,7 +6,24 @@
         "PlagueSpreaders"
     ],
     "statuses": [
-        "Plague"
+        {
+            "name": "PatientZeroOnSpawn",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/attach_status/plague.json"
+                    }
+                }
+            ]
+        }
     ],
     "base": "melee"
 }

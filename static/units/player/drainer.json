@@ -6,7 +6,70 @@
         "Warlocks"
     ],
     "statuses": [
-        "DrainerHealTaken"
+        {
+            "name": "DrainerHealTaken",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "HealTaken"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "ChangeContext",
+                            "from": "Caster",
+                            "effect": {
+                                "type": "Projectile",
+                                "speed": 8,
+                                "effect": {
+                                    "type": "List",
+                                    "effects": [
+                                        {
+                                            "type": "Damage",
+                                            "types": [
+                                                "Ranged"
+                                            ],
+                                            "value": {
+                                                "type": "Var",
+                                                "name": "IncomingHeal"
+                                            }
+                                        },
+                                        {
+                                            "preset": "effects/ranged_hit_vfx.json"
+                                        }
+                                    ]
+                                },
+                                "render": {
+                                    "type": "Shader",
+                                    "path": "shaders/projectile_default.glsl",
+                                    "parameters": {
+                                        "u_padding": 5.0,
+                                        "p_count": 80,
+                                        "p_life_time": 0.6,
+                                        "p_radius_start": 0.6,
+                                        "p_radius_end": -0.3,
+                                        "p_glow_radius": 0.6,
+                                        "p_speed": 2.5,
+                                        "u_clan_color_1": "#dc143c",
+                                        "u_clan_color_2": "#8a2be2",
+                                        "u_clan_color_3": "#1e90ff"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
     ],
     "base": "ranged"
 }

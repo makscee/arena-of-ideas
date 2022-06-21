@@ -1,0 +1,58 @@
+{
+    "tier": 1,
+    "description": "Every 5 seconds @Freeze random enemy",
+    "clans": [
+        "Freezers",
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        {
+            "name": "OnDealDamage",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 5,
+                            "next_tick": 1
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Not",
+                            "condition": {
+                                "type": "UnitHasStatus",
+                                "status": "Freeze",
+                                "who": "Target"
+                            }
+                        },
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "preset": "effects/attach_status/freeze.json"
+                                },
+                                {
+                                    "type": "ChangeTarget",
+                                    "filter": "Enemies",
+                                    "condition": {
+                                        "type": "Always"
+                                    },
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}

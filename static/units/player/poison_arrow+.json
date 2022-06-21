@@ -21,7 +21,26 @@
         }
     },
     "statuses": [
-        "PoisonOnDealDamage"
+        {
+    "name": "PoisonOnDealDamage",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Ranged"
+                }
+            ],
+            "effect": {
+                "preset": "effects/attach_status/poison.json"
+            }
+        }
+    ]
+}
+
     ],
     "base": "ranged+"
 }
