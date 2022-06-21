@@ -42,6 +42,7 @@ pub struct Unit {
     pub armor: R32,
     pub armor_penetration: R32,
     pub crit_chance: R32,
+    pub action_speed: R32,
     pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
     pub speed: Coord,
@@ -68,6 +69,7 @@ pub enum UnitStat {
     ArmorPenetration,
     CritChance,
     Speed,
+    ActionSpeed,
 }
 
 impl Unit {
@@ -102,6 +104,7 @@ impl Unit {
             armor: template.armor,
             armor_penetration: template.armor_penetration,
             crit_chance: template.crit_chance,
+            action_speed: template.action_speed,
             face_dir: Vec2::ZERO,
             position,
             speed: template.speed,
@@ -126,6 +129,7 @@ impl Unit {
             UnitStat::Armor => self.armor,
             UnitStat::ArmorPenetration => self.armor_penetration,
             UnitStat::CritChance => self.crit_chance,
+            UnitStat::ActionSpeed => self.action_speed,
             UnitStat::Speed => self.speed,
         }
     }
@@ -137,6 +141,7 @@ impl Unit {
             UnitStat::Armor => &mut self.armor,
             UnitStat::ArmorPenetration => &mut self.armor_penetration,
             UnitStat::CritChance => &mut self.crit_chance,
+            UnitStat::ActionSpeed => &mut self.action_speed,
             UnitStat::Speed => &mut self.speed,
         }
     }

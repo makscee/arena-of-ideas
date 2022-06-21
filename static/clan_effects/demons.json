@@ -2,7 +2,9 @@
     {
         "activate": 1,
         "filter": {
-            "Player": ["Demons"]
+            "Player": [
+                "Demons"
+            ]
         },
         "statuses": [
             {
@@ -25,6 +27,72 @@
                         "effect": {
                             "type": "AttachStatus",
                             "status": "DarkSteal"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 2,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "name": "DarkStealVulnerability",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken"
+                            }
+                        ],
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Vulnerability"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "name": "DemonsActionSpeed",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Spawn"
+                            }
+                        ],
+                        "effect": {
+                            "type": "ChangeStat",
+                            "stat": "ActionSpeed",
+                            "value": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "FindStat",
+                                    "stat": "ActionSpeed",
+                                    "who": "Target"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0.4
+                                }
+                            }
                         }
                     }
                 ]

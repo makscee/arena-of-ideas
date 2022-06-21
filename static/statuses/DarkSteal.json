@@ -111,6 +111,35 @@
                                         "name": "StolenDamage"
                                     }
                                 }
+                            },
+                            {
+                                "type": "If",
+                                "condition": {
+                                    "type": "Clan",
+                                    "clan": "Demons",
+                                    "count": 6
+                                },
+                                "then": {
+                                    "type": "ChangeContext",
+                                    "target": "Caster",
+                                    "effect": {
+                                        "type": "Heal",
+                                        "value": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Var",
+                                                "name": "StolenDamage"
+                                            },
+                                            "b": {
+                                                "type": "Var",
+                                                "name": "StolenHealth"
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "type": "Noop"
+                                }
                             }
                         ]
                     }
