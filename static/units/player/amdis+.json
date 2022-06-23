@@ -1,0 +1,50 @@
+{
+    "tier": 0,
+    "description": "10 seconds after Spawn, gain @Rebirth and give @Rebirth to random ally",
+    "clans": [
+        "Dragons",
+        "Vampires"
+    ],
+    "statuses": [
+        {
+            "name": "OnSpawnGainDelayedRebirth",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Delayed",
+                        "time": 10,
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "Rebirth"
+                                },
+                                {
+                                    "type": "ChangeTarget",
+                                    "filter": "Allies",
+                                    "condition": {
+                                        "type": "Always"
+                                    },
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "Rebirth"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}
