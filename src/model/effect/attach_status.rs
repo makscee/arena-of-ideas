@@ -42,8 +42,8 @@ impl EffectImpl for AttachStatusEffect {
             if let Some(render) = &mut logic.render {
                 render.add_text(
                     target.position,
-                    &format!("{:?}", effect.status),
-                    Color::BLUE,
+                    &format!("{}", effect.status),
+                    Color::try_from("#8000ff").unwrap(),
                 );
             }
 
