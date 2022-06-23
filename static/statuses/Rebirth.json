@@ -17,12 +17,21 @@
                         "type": "Delayed",
                         "time": 1,
                         "effect": {
-                            "type": "Revive",
-                            "health": {
-                                "type": "FindStat",
-                                "who": "Target",
-                                "stat": "MaxHealth"
-                            }
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "Revive",
+                                    "health": {
+                                        "type": "FindStat",
+                                        "who": "Target",
+                                        "stat": "MaxHealth"
+                                    }
+                                },
+                                {
+                                    "type": "CustomTrigger",
+                                    "name": "Rebirth"
+                                }
+                            ]
                         }
                     },
                     {

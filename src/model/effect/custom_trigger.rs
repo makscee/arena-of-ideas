@@ -17,13 +17,13 @@ impl EffectImpl for CustomTriggerEffect {
         for (effect, mut vars, status_id) in target
             .all_statuses
             .iter()
-            .filter(|status| {
-                if let Some(status_id) = context.status_id {
-                    status.id == status_id
-                } else {
-                    true
-                }
-            })
+            // .filter(|status| {
+            //     if let Some(status_id) = context.status_id {
+            //         status.id == status_id
+            //     } else {
+            //         true
+            //     }
+            // })
             .flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::Custom { name } => *name == effect.name,
