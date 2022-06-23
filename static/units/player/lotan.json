@@ -1,0 +1,43 @@
+{
+    "tier": 1,
+    "description": "@Dark Steal @Burning target twice",
+    "triple": "lotan+",
+    "clans": [
+        "Dragons",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "OnDealDamageDarkSteal",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Burn"
+                        },
+                        "then": {
+                            "type": "AttachStatus",
+                            "status": "DarkSteal"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
