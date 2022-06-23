@@ -21,7 +21,7 @@
                     ],
                     "effect": {
                         "type": "Delayed",
-                        "time": 3,
+                        "time": 10,
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Rebirth"
