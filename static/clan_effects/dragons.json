@@ -1,0 +1,84 @@
+[
+    {
+        "activate": 1,
+        "filter": {
+            "Player": [
+                "Dragons"
+            ]
+        },
+        "statuses": [
+            {
+                "name": "FlamingBreath",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Melee"
+                            },
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Ranged"
+                            }
+                        ],
+                        "effect": {
+                            "type": "Damage",
+                            "types": [
+                                "Fire"
+                            ],
+                            "value": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 1,
+        "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "name": "FireDamageDetector",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Fire"
+                            }
+                        ],
+                        "effect": {
+                            "type": "Random",
+                            "choices": [
+                                {
+                                    "weight": 85,
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 15,
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "Burn"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]
