@@ -13,7 +13,8 @@
                     "preset": "effects/dd_melee.json"
                 },
                 {
-                    "preset": "effects/attach_status/freeze.json"
+                    "type": "AttachStatus",
+                    "status": "Freeze"
                 }
             ]
         }

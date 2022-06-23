@@ -25,7 +25,8 @@
                         "type": "ChangeContext",
                         "caster": "From",
                         "effect": {
-                            "preset": "effects/attach_status/dark_steal.json"
+                            "type": "AttachStatus",
+                            "status": "DarkSteal"
                         }
                     }
                 }

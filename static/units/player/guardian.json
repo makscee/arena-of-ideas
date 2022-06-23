@@ -31,7 +31,8 @@
                             }
                         },
                         "effect": {
-                            "preset": "effects/attach_status/shield.json"
+                            "type": "AttachStatus",
+                            "status": "Shield"
                         }
                     }
                 }

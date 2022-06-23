@@ -23,10 +23,12 @@
                         "type": "List",
                         "effects": [
                             {
-                                "preset": "effects/attach_status/siphon_life.json"
+                                "type": "AttachStatus",
+                                "status": "SiphonLife"
                             },
                             {
-                                "preset": "effects/attach_status/plague.json"
+                                "type": "AttachStatus",
+                                "status": "Plague"
                             }
                         ]
                     }

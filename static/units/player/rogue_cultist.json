@@ -19,7 +19,8 @@
                         }
                     ],
                     "effect": {
-                        "preset": "effects/attach_status/siphon_life.json"
+                        "type": "AttachStatus",
+                        "status": "SiphonLife"
                     }
                 }
             ]

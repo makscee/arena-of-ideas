@@ -52,7 +52,8 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/attach_status/plague.json"
+                            "type": "AttachStatus",
+                            "status": "Plague"
                         }
                     }
                 ]

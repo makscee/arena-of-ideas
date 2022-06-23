@@ -29,7 +29,8 @@
                 }
             ],
             "effect": {
-                "preset": "effects/attach_status/poison.json"
+                "type": "AttachStatus",
+                "status": "Poison"
             }
         }
     ]

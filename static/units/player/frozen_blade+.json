@@ -17,7 +17,8 @@
                     "skip_current_target": false,
                     "range": 2,
                     "effect": {
-                        "preset": "effects/attach_status/freeze.json"
+                        "type": "AttachStatus",
+                        "status": "Freeze"
                     }
                 }
             ]

@@ -28,7 +28,8 @@
                         }
                     ],
                     "effect": {
-                        "preset": "effects/attach_status/micro_stun.json"
+                        "type": "AttachStatus",
+                        "status": "MicroStun"
                     }
                 }
             ]

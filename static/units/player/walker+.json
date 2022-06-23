@@ -38,7 +38,8 @@
                                 "type": "List",
                                 "effects": [
                                     {
-                                        "preset": "effects/attach_status/freeze.json"
+                                        "type": "AttachStatus",
+                                        "status": "Freeze"
                                     },
                                     {
                                         "type": "ChangeTarget",

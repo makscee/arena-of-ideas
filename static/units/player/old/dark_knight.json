@@ -29,7 +29,8 @@
                             {
                                 "weight": 10,
                                 "effect": {
-                                    "preset": "effects/attach_status/charmed.json"
+                                    "type": "AttachStatus",
+                                    "status": "Charmed"
                                 }
                             }
                         ]

@@ -62,7 +62,8 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/attach_status/poison.json"
+                            "type": "AttachStatus",
+                            "status": "Poison"
                         }
                     }
                 ]
@@ -89,7 +90,8 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/attach_status/vulnerability.json"
+                            "type": "AttachStatus",
+                            "status": "Vulnerability"
                         }
                     }
                 ]

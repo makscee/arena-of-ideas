@@ -32,7 +32,8 @@
                                     {
                                         "weight": 25,
                                         "effect": {
-                                            "preset": "effects/attach_status/shield.json"
+                                            "type": "AttachStatus",
+                                            "status": "Shield"
                                         }
                                     }
                                 ]
@@ -73,7 +74,8 @@
                                 {
                                     "weight": 25,
                                     "effect": {
-                                        "preset": "effects/attach_status/shield.json"
+                                        "type": "AttachStatus",
+                                        "status": "Shield"
                                     }
                                 }
                             ]
