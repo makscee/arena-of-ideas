@@ -18,6 +18,8 @@ pub struct AttachStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
     pub status: StatusName,
+    #[serde(default)]
+    pub vars: HashMap<VarName, R32>,
 }
 
 impl EffectContainer for AttachStatusEffect {
@@ -48,11 +50,12 @@ impl EffectImpl for AttachStatusEffect {
             }
 
             let status = logic.model.statuses.get_config(status_name);
-            let status = status.status.clone().attach(
+            let mut status = status.status.clone().attach(
                 Some(target.id),
                 context.caster,
                 &mut logic.model.next_id,
             );
+            status.vars.extend(effect.vars.into_iter());
             let attached_status_id = unit_attach_status(status, &mut target.all_statuses);
 
             let target = target.id;

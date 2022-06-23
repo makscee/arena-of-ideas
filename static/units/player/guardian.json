@@ -37,6 +37,28 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "ShieldSpawn",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Shield",
+                        "vars": {
+                            "Charges": 2
+                        }
+                    }
+                }
+            ]
         }
     ],
     "base": "ranged"
