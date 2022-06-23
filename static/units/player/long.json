@@ -1,0 +1,36 @@
+{
+    "tier": 1,
+    "description": "All allies start with @Shield",
+    "clans": [
+        "Dragons",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnSpawnGiveShield",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AOE",
+                        "filter": "Allies",
+                        "skip_current_target": false,
+                        "range": 50,
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}

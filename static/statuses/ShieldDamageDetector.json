@@ -11,11 +11,22 @@
                 }
             ],
             "effect": {
-                "type": "ChangeContextStatus",
-                "status": "Shield",
-                "effect": {
-                    "type": "CustomTrigger",
-                    "name": "ShieldAbsorb"
+                "type": "If",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Shield"
+                },
+                "then": {
+                    "type": "ChangeContextStatus",
+                    "status": "Shield",
+                    "effect": {
+                        "type": "CustomTrigger",
+                        "name": "ShieldAbsorb"
+                    }
+                },
+                "else": {
+                    "type": "Noop"
                 }
             }
         }
