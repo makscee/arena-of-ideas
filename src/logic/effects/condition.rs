@@ -47,6 +47,9 @@ impl Logic<'_> {
                     .expect("Caster, From, or Target not found");
                 who.faction == *faction
             }
+            Condition::And { a, b } => {
+                self.check_condition(&*a, context) && self.check_condition(&*b, context)
+            }
         }
     }
 }

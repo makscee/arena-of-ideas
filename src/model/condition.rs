@@ -44,6 +44,10 @@ pub enum Condition {
         who: Who,
         faction: Faction,
     },
+    And {
+        a: Box<Condition>,
+        b: Box<Condition>,
+    }
 }
 
 impl Default for Condition {

@@ -1,6 +1,7 @@
 use super::*;
 
 mod action;
+mod add_global_var;
 mod add_targets;
 mod add_var;
 mod aoe;
@@ -34,6 +35,7 @@ mod time_bomb;
 mod visual;
 
 pub use action::*;
+pub use add_global_var::*;
 pub use add_targets::*;
 pub use add_var::*;
 pub use aoe::*;
@@ -99,6 +101,7 @@ pub enum Effect {
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
+    AddGlobalVar(Box<AddGlobalVarEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
 }
@@ -136,6 +139,7 @@ pub enum RawEffect {
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
+    AddGlobalVar(Box<AddGlobalVarEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
 }
@@ -210,6 +214,7 @@ impl std::fmt::Debug for Effect {
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
+            Self::AddGlobalVar(effect) => effect.fmt(f),
             Self::RemoveStatus(effect) => effect.fmt(f),
             Self::CustomTrigger(effect) => effect.fmt(f),
         }
@@ -249,6 +254,7 @@ impl From<RawEffect> for Effect {
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
+            RawEffect::AddGlobalVar(effect) => Self::AddGlobalVar(effect),
             RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
             RawEffect::CustomTrigger(effect) => Self::CustomTrigger(effect),
         }
@@ -320,6 +326,7 @@ impl Effect {
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
+            Effect::AddGlobalVar(effect) => &mut **effect,
             Effect::RemoveStatus(effect) => &mut **effect,
             Effect::CustomTrigger(effect) => &mut **effect,
         }
@@ -356,6 +363,7 @@ impl Effect {
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
             Effect::AddVar(effect) => effect,
+            Effect::AddGlobalVar(effect) => effect,
             Effect::RemoveStatus(effect) => effect,
             Effect::CustomTrigger(effect) => effect,
         }

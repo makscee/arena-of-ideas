@@ -64,7 +64,16 @@ impl Logic<'_> {
 
         const MAX_ITERATIONS: usize = 1000;
         let mut iterations = 0;
-        while let Some(QueuedEffect { effect, context }) = self.effects.pop_front() {
+        while let Some(QueuedEffect {
+            effect,
+            mut context,
+        }) = self.effects.pop_front()
+        {
+            self.model.vars.iter().for_each(|v| {
+                if !context.vars.contains_key(v.0) {
+                    context.vars.insert(v.0.clone(), *v.1);
+                }
+            });
             trace!("Processing {:?} on {}", effect, context.to_string(self));
             effect.as_box().process(context, self);
 

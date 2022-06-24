@@ -18,6 +18,7 @@ pub enum VarName {
     StealPercent,
     RemainingAbsorb,
     VampirismKoef,
+    GlobalVar,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

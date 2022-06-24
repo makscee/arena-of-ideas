@@ -67,6 +67,8 @@ pub struct Model {
     pub statuses: Statuses,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
     pub transition: bool,
+    /// Variables that persist for the whole game
+    pub vars: HashMap<VarName, R32>,
 }
 
 impl Model {
@@ -96,6 +98,7 @@ impl Model {
             transition: false,
             round,
             config,
+            vars: HashMap::new(),
         }
     }
 }
