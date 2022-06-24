@@ -30,13 +30,17 @@ impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let mut damage = effect.value.calculate(&context, logic);
+        let armor_penetration = 0_f32;
+        if let Some(caster) = context.caster {
+            let armor_penetration = logic
+                .model
+                .units
+                .get(&caster)
+                .or(logic.model.dead_units.get(&caster))
+                .unwrap()
+                .armor_penetration;
+        }
         let units = &mut logic.model.units;
-        let armor_penetration = context
-            .caster
-            .and_then(|id| units.get(&id))
-            .expect("Caster not found")
-            .armor_penetration
-            .as_f32();
         let target_unit = context
             .target
             .and_then(|id| units.get_mut(&id))
