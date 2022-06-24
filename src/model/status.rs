@@ -84,6 +84,8 @@ pub enum StatusTrigger {
     Init,
     /// Triggered right after status was detached
     Break,
+    /// Triggered when unit uses Action
+    Action,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

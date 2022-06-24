@@ -27,6 +27,20 @@ impl Logic<'_> {
                     //     effect.apply_modifier(&status.modifier);
                     // }
                     // }
+                    for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
+                        status.trigger(|trigger| matches!(trigger, StatusTrigger::Action))
+                    }) {
+                        self.effects.push_front(QueuedEffect {
+                            effect,
+                            context: EffectContext {
+                                caster: Some(unit.id),
+                                from: Some(unit.id),
+                                target: Some(target.id),
+                                vars,
+                                status_id: Some(status_id),
+                            },
+                        });
+                    }
                     self.effects.push_back(QueuedEffect {
                         effect,
                         context: EffectContext {
