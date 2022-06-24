@@ -1,0 +1,42 @@
+{
+    "tier": 0,
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "HenchmanEmpower",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 1,
+                            "next_tick": 1
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeStat",
+                        "stat": "BaseDamage",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "UnitsInRange",
+                                "faction": "Enemy",
+                                "status": "SiphonLife"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 2
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}
