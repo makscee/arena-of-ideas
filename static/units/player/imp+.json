@@ -1,0 +1,8 @@
+{
+    "tier": 0,
+    "action_speed": 2,
+    "clans": [
+        "Demons"
+    ],
+    "base": "ranged+"
+}
