@@ -43,7 +43,7 @@ void main() {
     vec4 col = vec4(color.rgb,0.);
     float t = 1. - u_spawn;
 
-    float radius = t * final_radius;
+    float radius = final_radius;
     float dist = distance(uv, vec2(0.));
     float alpha = 1. - t;
     col = alphaBlend(col, vec4(color.rgb, alpha * getRingAlpha(uv, radius, 0.1, .3 + radius, 1., 0.1, 1., 1.)));

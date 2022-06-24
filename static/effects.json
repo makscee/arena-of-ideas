@@ -1,10 +1,11 @@
 [
-	"effects/melee_hit_vfx.json",
-	"effects/ranged_hit_vfx.json",
-	"effects/crit_hit_vfx.json",
-	"effects/dd_ranged.json",
-	"effects/projectile_dd_ranged.json",
-	"effects/dd_melee.json",
-	"effects/dd_bonus_shot.json",
-	"effects/bonus_shot_projectile.json"
+    "effects/melee_hit_vfx.json",
+    "effects/ranged_hit_vfx.json",
+    "effects/crit_hit_vfx.json",
+    "effects/dd_ranged.json",
+    "effects/projectile_dd_ranged.json",
+    "effects/dd_melee.json",
+    "effects/dd_bonus_shot.json",
+    "effects/bonus_shot_projectile.json",
+    "effects/explosion.json"
 ]

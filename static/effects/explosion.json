@@ -1,0 +1,36 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "AOE",
+            "filter": "Enemies",
+            "skip_current_target": false,
+            "range": 3,
+            "effect": {
+                "type": "Damage",
+                "types": [
+                    "Explosion"
+                ],
+                "value": {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "BaseDamage"
+                }
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 1.0,
+            "parent": "Target",
+            "follow": false,
+            "radius": 3.0,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_explosion.glsl",
+                "parameters": {
+                    "color": "#8a2be2"
+                }
+            }
+        }
+    ]
+}
