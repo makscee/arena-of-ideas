@@ -121,7 +121,10 @@ impl Logic<'_> {
             .flat_map(|unit| {
                 unit.all_statuses
                     .iter()
-                    .flat_map(|status| &status.status.auras)
+                    .flat_map(|status| match &status.status.effect {
+                        StatusEffect::Aura(aura) => Some(aura),
+                        _ => None,
+                    })
                     .map(|aura| (unit.id, aura.clone()))
             })
             .collect();

@@ -30,6 +30,12 @@ pub enum StatusStacking {
     CountRefresh,
 }
 
+impl Default for StatusStacking {
+    fn default() -> Self {
+        Self::Independent
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum StatusTrigger {
@@ -126,18 +132,43 @@ pub struct Aura {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum ModifierTarget {
+    Stat {}, // TODO: stat types
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Modifier {
+    /// Specifies what the modifier effect will actually modify
+    pub target: ModifierTarget,
+    /// Lower priority modifiers get processed earlier
+    pub priority: usize,
+    /// The value that will be put into `target`
+    pub value: Expr,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum StatusEffect {
+    Status,
+    Aura(Aura),
+    Modifier(Modifier),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Status {
     /// The name is used when comparing two statuses for equality for a stack
     /// and for parsing in the unit config
     pub name: StatusName,
+    #[serde(flatten)]
+    pub effect: StatusEffect,
+    #[serde(default)]
     pub stacking: StatusStacking,
     /// While the status is active, these flags are assigned to the owner
     #[serde(default)]
     pub flags: Vec<UnitStatFlag>,
-    /// These auras are active while the status is active
-    #[serde(default)]
-    pub auras: Vec<Aura>,
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
