@@ -139,7 +139,7 @@ pub enum ModifierTarget {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct Modifier {
+pub struct StatusModifier {
     /// Specifies what the modifier effect will actually modify
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
@@ -153,7 +153,7 @@ pub struct Modifier {
 pub enum StatusEffect {
     Status,
     Aura(Aura),
-    Modifier(Modifier),
+    Modifier(StatusModifier),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

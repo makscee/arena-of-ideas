@@ -174,24 +174,26 @@ impl Logic<'_> {
         // Apply modifiers
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for unit_id in ids {
-            let unit = self.model.units.remove(&unit_id).unwrap();
-            let mut modifiers: Vec<(&AttachedStatus, &Modifier)> = unit
+            let mut unit = self.model.units.remove(&unit_id).unwrap();
+            let mut modifiers: Vec<(EffectContext, StatusModifier)> = unit
                 .all_statuses
                 .iter()
                 .flat_map(|status| match &status.status.effect {
-                    StatusEffect::Modifier(modifier) => Some((status, modifier)),
+                    StatusEffect::Modifier(modifier) => {
+                        let context = EffectContext {
+                            caster: status.caster,
+                            from: None,
+                            target: Some(unit.id),
+                            vars: status.vars.clone(),
+                            status_id: Some(status.id),
+                        };
+                        Some((context, modifier.clone()))
+                    }
                     _ => None,
                 })
                 .collect();
             modifiers.sort_by_key(|(_, modifier)| modifier.priority);
-            for (status, modifier) in modifiers {
-                let context = EffectContext {
-                    caster: status.caster,
-                    from: None,
-                    target: Some(unit.id),
-                    vars: status.vars.clone(),
-                    status_id: Some(status.id),
-                };
+            for (context, modifier) in modifiers {
                 let value = modifier.value.calculate(&context, self);
                 match modifier.target {
                     ModifierTarget::Stat { stat } => {
