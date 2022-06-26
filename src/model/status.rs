@@ -142,9 +142,6 @@ pub struct Status {
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
     pub duration: Option<Time>,
-    /// A list of triggers for this status
-    #[serde(default)]
-    pub triggers: Vec<StatusTrigger>,
     /// Specifications of effects to apply for different subsets of triggers
     #[serde(default)]
     pub listeners: Vec<StatusListener>,
