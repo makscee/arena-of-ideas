@@ -1,5 +1,6 @@
 {
     "name": "SiphonLife",
+    "type": "Status",
     "stacking": {
         "type": "Independent"
     },

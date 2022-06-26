@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "OnDealDamageDarkSteal",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

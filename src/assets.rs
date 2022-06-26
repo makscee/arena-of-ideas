@@ -28,7 +28,7 @@ pub struct ShaderRenderConfig {
 }
 
 #[derive(Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
+// #[serde(deny_unknown_fields)]
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,

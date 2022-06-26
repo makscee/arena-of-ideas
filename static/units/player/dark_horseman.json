@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "DarkHorsemanOnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

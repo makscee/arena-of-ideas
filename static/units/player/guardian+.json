@@ -7,6 +7,7 @@
     "statuses": [
         {
             "name": "ShieldAllyEvery5",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
@@ -40,6 +41,7 @@
         },
         {
             "name": "OnShieldBreakExplode",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

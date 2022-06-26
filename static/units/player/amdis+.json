@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "OnSpawnGainDelayedRebirth",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

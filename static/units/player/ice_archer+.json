@@ -56,6 +56,7 @@
     "statuses": [
         {
             "name": "IceArcher+OnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Refresh"
             },

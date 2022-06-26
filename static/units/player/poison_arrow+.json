@@ -22,25 +22,26 @@
     },
     "statuses": [
         {
-    "name": "PoisonOnDealDamage",
-    "stacking": {
-        "type": "Refresh"
-    },
-    "listeners": [
-        {
-            "triggers": [
+            "name": "PoisonOnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
                 {
-                    "type": "DamageDealt",
-                    "damage_type": "Ranged"
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Poison"
+                    }
                 }
-            ],
-            "effect": {
-                "type": "AttachStatus",
-                "status": "Poison"
-            }
+            ]
         }
-    ]
-}
 
     ],
     "base": "ranged+"

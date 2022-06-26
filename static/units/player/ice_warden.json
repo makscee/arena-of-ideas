@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "OnRemoveFreezeDarkSteal",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

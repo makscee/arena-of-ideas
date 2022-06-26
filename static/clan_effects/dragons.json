@@ -9,6 +9,7 @@
         "statuses": [
             {
                 "name": "FlamingBreath",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },
@@ -47,6 +48,7 @@
         "statuses": [
             {
                 "name": "FireDamageDetector",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },
@@ -101,6 +103,7 @@
         "statuses": [
             {
                 "name": "DragonsOneRebirth",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },
@@ -136,6 +139,7 @@
         "statuses": [
             {
                 "name": "FireDamageVulnerability",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },

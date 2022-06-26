@@ -13,6 +13,7 @@
     "statuses": [
         {
             "name": "SmallBlobOnDeath",
+            "type": "Status",
             "stacking": {
                 "type": "Refresh"
             },

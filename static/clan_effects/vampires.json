@@ -7,6 +7,7 @@
         "statuses": [
             {
                 "name": "AddMaxHPOnKill",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },

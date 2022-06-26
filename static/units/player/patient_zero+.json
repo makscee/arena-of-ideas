@@ -7,6 +7,7 @@
     "statuses": [
         {
             "name": "PatientZeroOnSpawn",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
@@ -26,6 +27,7 @@
         },
         {
             "name": "PatientZero+OnTakeDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

@@ -17,6 +17,7 @@
     "statuses": [
         {
             "name": "BigBlobOnDeath",
+            "type": "Status",
             "stacking": {
                 "type": "Refresh"
             },

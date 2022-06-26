@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "OnSpawnGiveShield",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
@@ -33,6 +34,7 @@
         },
         {
             "name": "OnRebirthGiveShield",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

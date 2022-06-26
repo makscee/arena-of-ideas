@@ -157,7 +157,6 @@ pub enum StatusEffect {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
 pub struct Status {
     /// The name is used when comparing two statuses for equality for a stack
     /// and for parsing in the unit config

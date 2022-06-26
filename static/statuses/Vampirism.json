@@ -1,5 +1,6 @@
 {
     "name": "Vampirism",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

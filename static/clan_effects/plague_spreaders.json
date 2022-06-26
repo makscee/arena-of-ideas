@@ -7,6 +7,7 @@
         "statuses": [
             {
                 "name": "OnTakeDamage",
+                "type": "Status",
                 "stacking": {
                     "type": "Refresh"
                 },
@@ -40,6 +41,7 @@
         "statuses": [
             {
                 "name": "OnDealDamage",
+                "type": "Status",
                 "stacking": {
                     "type": "Refresh"
                 },
@@ -70,6 +72,7 @@
         "statuses": [
             {
                 "name": "OnSpawn",
+                "type": "Status",
                 "stacking": {
                     "type": "Refresh"
                 },

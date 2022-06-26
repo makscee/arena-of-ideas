@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "ExplodeFireOnFreeze",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
@@ -38,6 +39,7 @@
         },
         {
             "name": "FreezeBeforeAttack",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

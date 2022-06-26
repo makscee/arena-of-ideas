@@ -9,6 +9,7 @@
         "statuses": [
             {
                 "name": "OnDealDamage",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },
@@ -52,6 +53,7 @@
         "statuses": [
             {
                 "name": "OnDealDamage",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },

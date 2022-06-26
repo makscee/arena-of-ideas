@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "DarkArcherOnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

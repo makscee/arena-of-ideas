@@ -52,6 +52,7 @@
     "statuses": [
         {
             "name": "IceBreaker+OnCrit",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
