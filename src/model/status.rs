@@ -134,7 +134,7 @@ pub struct Aura {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum ModifierTarget {
-    Stat {}, // TODO: stat types
+    Stat { stat: UnitStat },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -143,7 +143,7 @@ pub struct Modifier {
     /// Specifies what the modifier effect will actually modify
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
-    pub priority: usize,
+    pub priority: u64,
     /// The value that will be put into `target`
     pub value: Expr,
 }

@@ -171,6 +171,37 @@ impl Logic<'_> {
             self.model.units.insert(caster);
         }
 
+        // Apply modifiers
+        let ids: Vec<Id> = self.model.units.ids().copied().collect();
+        for unit_id in ids {
+            let unit = self.model.units.remove(&unit_id).unwrap();
+            let mut modifiers: Vec<(&AttachedStatus, &Modifier)> = unit
+                .all_statuses
+                .iter()
+                .flat_map(|status| match &status.status.effect {
+                    StatusEffect::Modifier(modifier) => Some((status, modifier)),
+                    _ => None,
+                })
+                .collect();
+            modifiers.sort_by_key(|(_, modifier)| modifier.priority);
+            for (status, modifier) in modifiers {
+                let context = EffectContext {
+                    caster: status.caster,
+                    from: None,
+                    target: Some(unit.id),
+                    vars: status.vars.clone(),
+                    status_id: Some(status.id),
+                };
+                let value = modifier.value.calculate(&context, self);
+                match modifier.target {
+                    ModifierTarget::Stat { stat } => {
+                        *unit.stat_mut(stat) = value;
+                    }
+                }
+            }
+            self.model.units.insert(unit);
+        }
+
         // Detect expired statuses
         for (owner_id, caster_id, detect_id, detect_status) in &expired {
             let owner = self.model.units.get(owner_id).unwrap();
