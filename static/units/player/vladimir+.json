@@ -1,0 +1,50 @@
+{
+    "tier": 0,
+    "clans": [
+        "Vampires",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "VampirismAura",
+            "type": "Aura",
+            "status_names": [
+                "Vampirism"
+            ],
+            "filter": {
+                "Player": null
+            }
+        },
+        {
+            "name": "ArmorAura",
+            "type": "Aura",
+            "statuses": [
+                {
+                    "name": "ArmorModifier",
+                    "type": "Modifier",
+                    "target": {
+                        "type": "Stat",
+                        "stat": "Armor"
+                    },
+                    "priority": 0,
+                    "value": {
+                        "type": "Sum",
+                        "a": {
+                            "type": "FindStat",
+                            "who": "Target",
+                            "stat": "Armor"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 10
+                        }
+                    }
+                }
+            ],
+            "filter": {
+                "Player": null
+            }
+        }
+    ],
+    "base": "melee+"
+}

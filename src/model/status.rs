@@ -128,7 +128,10 @@ pub struct Aura {
     #[serde(default)]
     pub condition: Condition,
     /// The statuses that will be attached to the affected units
-    pub statuses: Vec<StatusName>,
+    #[serde(default)]
+    pub statuses: Vec<Status>,
+    #[serde(default)]
+    pub status_names: Vec<StatusName>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

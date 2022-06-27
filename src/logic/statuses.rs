@@ -143,7 +143,7 @@ impl Logic<'_> {
                     continue;
                 }
                 let statuses: Vec<AttachedStatus> = aura
-                    .statuses
+                    .status_names
                     .iter()
                     .filter_map(|status| {
                         match self.model.statuses.get(status) {
@@ -159,6 +159,11 @@ impl Logic<'_> {
                             }
                         }
                     })
+                    .chain(aura.statuses.iter().map(|s| {
+                        let mut status = s.clone().attach_aura(Some(other.id), caster.id);
+                        status.time = Some(R32::ZERO);
+                        status
+                    }))
                     .collect();
                 other.flags.extend(
                     statuses
@@ -174,7 +179,7 @@ impl Logic<'_> {
         // Apply modifiers
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for unit_id in ids {
-            let mut unit = self.model.units.remove(&unit_id).unwrap();
+            let mut unit = self.model.units.get(&unit_id).unwrap().clone();
             let mut modifiers: Vec<(EffectContext, StatusModifier)> = unit
                 .all_statuses
                 .iter()
@@ -196,11 +201,10 @@ impl Logic<'_> {
             for (context, modifier) in modifiers {
                 let value = modifier.value.calculate(&context, self);
                 match modifier.target {
-                    ModifierTarget::Stat { stat } => {
-                        *unit.stat_mut(stat) = value;
-                    }
+                    ModifierTarget::Stat { stat } => *unit.stat_mut(stat) = value,
                 }
             }
+            self.model.units.remove(&unit.id);
             self.model.units.insert(unit);
         }
 

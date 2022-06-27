@@ -1,0 +1,21 @@
+{
+    "tier": 1,
+    "triple": "vladimir+",
+    "clans": [
+        "Vampires",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "VampirismAura",
+            "type": "Aura",
+            "status_names": [
+                "Vampirism"
+            ],
+            "filter": {
+                "Player": null
+            }
+        }
+    ],
+    "base": "melee"
+}
