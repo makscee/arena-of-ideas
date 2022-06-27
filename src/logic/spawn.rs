@@ -25,6 +25,7 @@ impl Logic<'_> {
                 &self.model.clan_effects,
                 clan_members,
                 &mut self.model.next_id,
+                &self.model.statuses,
             );
         }
 
