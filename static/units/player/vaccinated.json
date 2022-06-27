@@ -1,0 +1,32 @@
+{
+    "tier": 2,
+    "description": "After taking damage from @Plague gain @Shield",
+    "triple": "vaccinated+",
+    "clans": [
+        "PlagueSpreaders",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnPlagueDamage",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageTaken",
+                            "damage_type": "Plague"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Shield"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}

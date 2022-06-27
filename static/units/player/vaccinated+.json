@@ -1,0 +1,43 @@
+{
+    "tier": 0,
+    "description": "After taking damage from @Plague gain @Shield and @Heal for 1",
+    "clans": [
+        "PlagueSpreaders",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnPlagueDamage",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageTaken",
+                            "damage_type": "Plague"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AttachStatus",
+                                "status": "Shield"
+                            },
+                            {
+                                "type": "Heal",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee+"
+}
