@@ -36,7 +36,11 @@ pub struct Unit {
     pub flags: Vec<UnitStatFlag>,
     pub faction: Faction,
     pub action_state: ActionState,
+    /// These stats are temporary and are reset every tick.
+    /// They are modified primarily by status modifiers.
     pub stats: UnitStats,
+    /// Permanent stats remain for the whole game round
+    pub permanent_stats: UnitStats,
     pub health: Health,
     pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
@@ -106,6 +110,7 @@ impl Unit {
             faction,
             action_state: ActionState::None,
             stats: UnitStats::new(template),
+            permanent_stats: UnitStats::new(template),
             health: template.health,
             face_dir: Vec2::ZERO,
             position,

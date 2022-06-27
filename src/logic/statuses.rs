@@ -168,7 +168,8 @@ impl Logic<'_> {
         // Apply modifiers
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for unit_id in ids {
-            let unit = self.model.units.get(&unit_id).unwrap();
+            let unit = self.model.units.get_mut(&unit_id).unwrap();
+            unit.stats = unit.permanent_stats.clone();
             let mut modifiers: Vec<(EffectContext, StatusModifier)> = unit
                 .all_statuses
                 .iter()
