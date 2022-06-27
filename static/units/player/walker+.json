@@ -1,6 +1,6 @@
 {
     "tier": 0,
-    "description": "Every 5 seconds @Freeze random enemy",
+    "description": "Every 5 seconds @Freeze 2 random enemies",
     "clans": [
         "Freezers",
         "PlagueSpreaders"
