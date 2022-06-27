@@ -1,0 +1,43 @@
+{
+    "tier": 0,
+    "description": "@Scathe 25% chance to @Stun ",
+    "clans": [
+        "Vampires"
+    ],
+    "statuses": [
+        {
+            "name": "OnDealDamage",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Random",
+                        "choices": [
+                            {
+                                "weight": 75,
+                                "effect": {
+                                    "type": "Noop"
+                                }
+                            },
+                            {
+                                "weight": 25,
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "status": "Stun"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee+"
+}
