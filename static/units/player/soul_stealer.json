@@ -1,0 +1,33 @@
+{
+    "tier": 4,
+    "description": "@Dark Steal any enemy that gains @Siphon Life",
+    "triple": "soul_stealer+",
+    "clans": [
+        "Demons",
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "DarkStealOnSiphonLife",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "SiphonLife",
+                            "filter": "Enemies"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "DarkSteal"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
