@@ -59,8 +59,13 @@ impl Logic<'_> {
                         .statuses
                         .iter()
                         .chain(round.waves.front().unwrap().statuses.iter())
-                        .cloned()
-                        .map(|status| status.attach(Some(unit.id), None, &mut self.model.next_id));
+                        .map(|status| {
+                            status.get(&self.model.statuses).clone().attach(
+                                Some(unit.id),
+                                None,
+                                &mut self.model.next_id,
+                            )
+                        });
                     unit.all_statuses.extend(statuses);
                 }
             } else {
