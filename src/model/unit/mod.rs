@@ -90,7 +90,12 @@ impl Unit {
             all_statuses: template
                 .statuses
                 .iter()
-                .map(|status| status.clone().attach(Some(id), Some(id), next_id))
+                .map(|status| {
+                    status
+                        .get(statuses)
+                        .clone()
+                        .attach(Some(id), Some(id), next_id)
+                })
                 .collect(),
             flags: vec![],
             faction,
