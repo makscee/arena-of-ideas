@@ -1,9 +1,10 @@
 {
-    "tier": 1,
+    "tier": 3,
     "clans": [
         "Warlocks",
         "Assassins"
     ],
+    "description": "On @Crit apply @Siphon Life",
     "statuses": [
         {
             "name": "OnDealDamage",

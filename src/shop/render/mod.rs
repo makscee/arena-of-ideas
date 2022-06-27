@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use super::*;
 use geng::{prelude::itertools::Itertools, Draw2d};
 
@@ -321,13 +323,8 @@ impl Render {
             if let Some(config) = shop.config.render.clans.get(&clan) {
                 // Show clan info
                 let mouse_pos = self.geng.window().mouse_pos().map(|x| x as f32);
-                draw_clan_info(
-                    mouse_pos,
-                    &config.description,
-                    &self.geng,
-                    framebuffer,
-                    camera,
-                );
+                let description = format!("{:?}\n{}", clan, config.description);
+                draw_clan_info(mouse_pos, &description, &self.geng, framebuffer, camera);
             }
         }
     }

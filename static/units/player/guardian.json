@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 4,
     "description": "Every 5 seconds give @Shield to a shieldless ally",
     "clans": [
         "Protectors"

@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 2,
     "description": "On @Heal received shoot projectile to random enemy for same damage",
     "triple": "drainer+",
     "clans": [

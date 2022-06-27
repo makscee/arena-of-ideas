@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "description": "+1 @base_damage for each enemy with @Siphon Life",
     "clans": [
         "Warlocks"
     ],

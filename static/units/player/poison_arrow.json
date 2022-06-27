@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 4,
     "base_damage": 0.2,
     "description": "@Scathe apply @Poison",
     "clans": [

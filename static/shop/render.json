@@ -24,6 +24,26 @@
             "description": "(2) @Frozen enemies have @Vulnerability \n (4) @Injured: apply @Frozen to enemies in small area \n (6) On @Frozen apply @Stun for 3 sec.",
             "rows": 2,
             "columns": 3
+        },
+        "Dragons": {
+            "description": "(1) All Dragons have @Flaming Breath attack \n (2) All Dragons gain @Rebirth (4) @Flaming Breath always applies @Burn (6) @Burn damage applies @Vulnerability",
+            "rows": 2,
+            "columns": 3
+        },
+        "Protectors": {
+            "description": "(2) On attack 25% chance to gain @Shield \n (4) On @Injured 25% chance to gain @Shield (6) @Shield has 2 charges",
+            "rows": 2,
+            "columns": 3
+        },
+        "Vampires": {
+            "description": "(2) +20% @Vampirism to all allies \n (4) @Vampirism can heal 40% past @max_hp \n (6) +3 @max_hp on kill",
+            "rows": 2,
+            "columns": 3
+        },
+        "Demons": {
+            "description": "(1) All @Demons @Dark Steal on Melee or Ranged @Scathe \n (2) @Dark Steal applies @Vulnerability \n (4) @Demons gain +40 @action_speed \n (6) @Dark Steal heals for sum of stolen stats",
+            "rows": 2,
+            "columns": 3
         }
     }
 }

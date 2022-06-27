@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "description": "All allies gain +20% @Vampirism and +10 @armor",
     "clans": [
         "Vampires",
         "Protectors"

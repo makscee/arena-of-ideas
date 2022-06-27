@@ -1,5 +1,6 @@
 {
-    "tier": 1,
+    "tier": 3,
+    "base_damage": 3,
     "triple": "sniper+",
     "description": "On @Crit @Bonus Shot",
     "clans": [
