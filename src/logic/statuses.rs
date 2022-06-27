@@ -168,7 +168,7 @@ impl Logic<'_> {
         // Apply modifiers
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for unit_id in ids {
-            let mut unit = self.model.units.get(&unit_id).unwrap().clone();
+            let unit = self.model.units.get(&unit_id).unwrap();
             let mut modifiers: Vec<(EffectContext, StatusModifier)> = unit
                 .all_statuses
                 .iter()
@@ -189,12 +189,11 @@ impl Logic<'_> {
             modifiers.sort_by_key(|(_, modifier)| modifier.priority);
             for (context, modifier) in modifiers {
                 let value = modifier.value.calculate(&context, self);
+                let unit = self.model.units.get_mut(&unit_id).unwrap();
                 match modifier.target {
                     ModifierTarget::Stat { stat } => *unit.stat_mut(stat) = value,
                 }
             }
-            self.model.units.remove(&unit.id);
-            self.model.units.insert(unit);
         }
 
         // Detect expired statuses
