@@ -211,6 +211,13 @@ pub struct AttachedStatus {
 }
 
 impl StatusRef {
+    pub fn name(&self) -> &StatusName {
+        match self {
+            StatusRef::Name(name) => name,
+            StatusRef::Raw(status) => &status.name,
+        }
+    }
+
     pub fn get<'a>(&'a self, statuses: &'a Statuses) -> &'a Status {
         match self {
             StatusRef::Name(name) => {

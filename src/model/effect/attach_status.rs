@@ -17,7 +17,7 @@ fn default_who() -> Who {
 pub struct AttachStatusEffect {
     #[serde(default = "default_who")]
     pub who: Who,
-    pub status: StatusName,
+    pub status: StatusRef,
     #[serde(default)]
     pub vars: HashMap<VarName, R32>,
 }
@@ -29,7 +29,7 @@ impl EffectContainer for AttachStatusEffect {
 impl EffectImpl for AttachStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let status_name = &effect.status;
+        let status_name = effect.status.name();
         let target = context.get(effect.who);
         if let Some(target) = target.and_then(|id| logic.model.units.get_mut(&id)) {
             // Check if unit is immune to status attachment
@@ -44,13 +44,12 @@ impl EffectImpl for AttachStatusEffect {
             if let Some(render) = &mut logic.render {
                 render.add_text(
                     target.position,
-                    &format!("{}", effect.status),
+                    &format!("{}", status_name),
                     Color::try_from("#8000ff").unwrap(),
                 );
             }
 
-            let status = logic.model.statuses.get_config(status_name);
-            let mut status = status.status.clone().attach(
+            let mut status = effect.status.get(&logic.model.statuses).clone().attach(
                 Some(target.id),
                 context.caster,
                 &mut logic.model.next_id,
