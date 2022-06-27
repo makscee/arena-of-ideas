@@ -75,7 +75,7 @@ impl Expr {
                     .get(&target)
                     .or_else(|| logic.model.dead_units.get(&target))
                     .unwrap();
-                target.stat(*stat)
+                target.stats.get(*stat)
             }
             Self::WithVar {
                 name,

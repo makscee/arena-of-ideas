@@ -191,7 +191,7 @@ impl Logic<'_> {
                 let value = modifier.value.calculate(&context, self);
                 let unit = self.model.units.get_mut(&unit_id).unwrap();
                 match modifier.target {
-                    ModifierTarget::Stat { stat } => *unit.stat_mut(stat) = value,
+                    ModifierTarget::Stat { stat } => *unit.stats.get_mut(stat) = value,
                 }
             }
         }

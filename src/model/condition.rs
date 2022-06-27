@@ -47,7 +47,7 @@ pub enum Condition {
     And {
         a: Box<Condition>,
         b: Box<Condition>,
-    }
+    },
 }
 
 impl Default for Condition {

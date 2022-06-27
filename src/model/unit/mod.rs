@@ -36,18 +36,11 @@ pub struct Unit {
     pub flags: Vec<UnitStatFlag>,
     pub faction: Faction,
     pub action_state: ActionState,
+    pub stats: UnitStats,
     pub health: Health,
-    pub max_hp: Health,
-    pub base_damage: Health,
-    pub armor: R32,
-    pub armor_penetration: R32,
-    pub crit_chance: R32,
-    pub action_speed: R32,
     pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
-    pub speed: Coord,
     pub action: ActionProperties,
-    pub radius: Coord,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
@@ -58,6 +51,18 @@ pub struct Unit {
     pub last_action_time: Time,
     pub last_injure_time: Time,
     pub random_number: R32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UnitStats {
+    pub max_hp: Health,
+    pub radius: Coord,
+    pub base_damage: R32,
+    pub armor: R32,
+    pub armor_penetration: R32,
+    pub crit_chance: R32,
+    pub speed: Coord,
+    pub action_speed: R32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -100,17 +105,10 @@ impl Unit {
             flags: vec![],
             faction,
             action_state: ActionState::None,
+            stats: UnitStats::new(template),
             health: template.health,
-            max_hp: template.health,
-            base_damage: template.base_damage,
-            armor: template.armor,
-            armor_penetration: template.armor_penetration,
-            crit_chance: template.crit_chance,
-            action_speed: template.action_speed,
             face_dir: Vec2::ZERO,
             position,
-            speed: template.speed,
-            radius: template.radius,
             action: template.action.clone(),
             move_ai: template.move_ai,
             target_ai: template.target_ai,
@@ -123,7 +121,23 @@ impl Unit {
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
         }
     }
-    pub fn stat(&self, stat: UnitStat) -> R32 {
+}
+
+impl UnitStats {
+    pub fn new(template: &UnitTemplate) -> Self {
+        Self {
+            max_hp: template.health,
+            base_damage: template.base_damage,
+            armor: template.armor,
+            armor_penetration: template.armor_penetration,
+            crit_chance: template.crit_chance,
+            action_speed: template.action_speed,
+            speed: template.speed,
+            radius: template.radius,
+        }
+    }
+
+    pub fn get(&self, stat: UnitStat) -> R32 {
         match stat {
             UnitStat::MaxHealth => self.max_hp,
             UnitStat::Radius => self.radius,
@@ -135,7 +149,7 @@ impl Unit {
             UnitStat::Speed => self.speed,
         }
     }
-    pub fn stat_mut(&mut self, stat: UnitStat) -> &mut R32 {
+    pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
         match stat {
             UnitStat::MaxHealth => &mut self.max_hp,
             UnitStat::Radius => &mut self.radius,

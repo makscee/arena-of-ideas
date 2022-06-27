@@ -45,8 +45,8 @@ impl EffectImpl for HealEffect {
             })
             .expect("Target not found");
 
-        target_unit.max_hp += add_max_hp;
-        let max_health = target_unit.max_hp + heal_past_max;
+        target_unit.stats.max_hp += add_max_hp;
+        let max_health = target_unit.stats.max_hp + heal_past_max;
         if !effect.no_text {
             if let Some(render) = &mut logic.render {
                 let heal_text = (value * r32(10.0)).floor() / r32(10.0);

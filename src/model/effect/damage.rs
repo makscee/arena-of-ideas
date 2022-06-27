@@ -38,6 +38,7 @@ impl EffectImpl for DamageEffect {
                 .get(&caster)
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap()
+                .stats
                 .armor_penetration;
         }
         let units = &mut logic.model.units;
@@ -83,7 +84,7 @@ impl EffectImpl for DamageEffect {
         }
 
         // Armor stat
-        let armor = target_unit.armor.as_f32() - armor_penetration;
+        let armor = target_unit.stats.armor.as_f32() - armor_penetration;
         if armor > 0.0 {
             damage *= r32(1.0 - (0.06 * armor) / (1.0 + 0.06 * armor));
         } else if armor < 0.0 {

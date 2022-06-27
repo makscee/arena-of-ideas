@@ -367,7 +367,7 @@ impl UnitRender {
                     camera,
                     &draw_2d::Ellipse::circle(
                         unit.position.map(|x| x.as_f32()),
-                        unit.radius.as_f32() * attack_scale * spawn_scale,
+                        unit.stats.radius.as_f32() * attack_scale * spawn_scale,
                         {
                             let mut color = *color;
                             // TODO: reimplement
@@ -395,7 +395,7 @@ impl UnitRender {
                     framebuffer,
                     camera,
                     &draw_2d::TexturedQuad::unit(&**texture)
-                        .scale_uniform(unit.radius.as_f32() * attack_scale * spawn_scale)
+                        .scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale)
                         .translate(unit.position.map(|x| x.as_f32())),
                 );
             }
@@ -422,7 +422,7 @@ impl UnitRender {
                 );
                 let framebuffer_size = framebuffer.size();
                 let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
-                    * Mat3::scale_uniform(unit.radius.as_f32() * attack_scale * spawn_scale);
+                    * Mat3::scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale);
 
                 let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
                 let clan_colors: Vec<Color<f32>> = clans
@@ -456,7 +456,7 @@ impl UnitRender {
 
                 // Actual render
                 let texture_position = AABB::point(unit.position.map(|x| x.as_f32()))
-                    .extend_uniform(unit.radius.as_f32() * 2.0); // TODO: configuring?
+                    .extend_uniform(unit.stats.radius.as_f32() * 2.0); // TODO: configuring?
                 let texture_size =
                     (texture_position.height() * framebuffer.size().y as f32 / camera.fov * 2.0)
                         .max(1.0) as usize;
@@ -470,7 +470,7 @@ impl UnitRender {
                     ugli::uniforms! {
                         u_time: game_time,
                         u_unit_position: unit.position.map(|x| x.as_f32()),
-                        u_unit_radius: unit.radius.as_f32(),
+                        u_unit_radius: unit.stats.radius.as_f32(),
                         u_spawn: spawn_scale,
                         u_action: action_time,
                         u_cooldown: unit.action.cooldown.as_f32(),
@@ -484,7 +484,7 @@ impl UnitRender {
                         u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
                         u_clan_count: clan_colors.len(),
                         u_ability_ready: is_ability_ready,
-                        u_health: unit.health.as_f32() / unit.max_hp.as_f32(),
+                        u_health: unit.health.as_f32() / unit.stats.max_hp.as_f32(),
                     },
                     geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),
                     parameters,
