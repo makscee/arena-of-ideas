@@ -51,5 +51,7 @@
     "executor",
     "executor+",
     "nosferatu",
-    "nosferatu+"
+    "nosferatu+",
+    "plague_doctor",
+    "plague_doctor+"
 ]
