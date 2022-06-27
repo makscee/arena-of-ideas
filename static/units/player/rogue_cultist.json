@@ -1,5 +1,7 @@
 {
     "tier": 1,
+    "description": "On @Crit apply @Siphon Life",
+    "triple": "rogue_cultist+",
     "clans": [
         "Warlocks",
         "Assassins"
