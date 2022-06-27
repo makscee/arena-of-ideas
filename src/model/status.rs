@@ -115,6 +115,14 @@ pub enum UnitStatFlag {
     AttachStatusImmune,
 }
 
+/// Refers to a status either by name or directly
+#[derive(Debug, Serialize, Clone)]
+#[serde(untagged)]
+pub enum StatusRef {
+    Name(StatusName),
+    Raw(Status),
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Aura {
@@ -129,9 +137,7 @@ pub struct Aura {
     pub condition: Condition,
     /// The statuses that will be attached to the affected units
     #[serde(default)]
-    pub statuses: Vec<Status>,
-    #[serde(default)]
-    pub status_names: Vec<StatusName>,
+    pub statuses: Vec<StatusRef>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -202,6 +208,20 @@ pub struct AttachedStatus {
     /// Variables that persist for the lifetime of the status
     pub vars: HashMap<VarName, R32>,
     pub id: Id,
+}
+
+impl StatusRef {
+    pub fn get<'a>(&'a self, statuses: &'a Statuses) -> &'a Status {
+        match self {
+            StatusRef::Name(name) => {
+                &statuses
+                    .get(name)
+                    .expect(&format!("Failed to find status {name:?}"))
+                    .status
+            }
+            StatusRef::Raw(status) => status,
+        }
+    }
 }
 
 impl Status {
@@ -313,5 +333,21 @@ pub fn unit_attach_status(
                 s.id
             })
         }
+    }
+}
+
+// Implement deserialize manually for better error description
+impl<'de> Deserialize<'de> for StatusRef {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match StatusName::deserialize(value.clone()) {
+            Ok(preset) => return Ok(Self::Name(preset)),
+            Err(_) => {}
+        }
+        let effect = Status::deserialize(value).map_err(|error| serde::de::Error::custom(error))?;
+        Ok(Self::Raw(effect))
     }
 }

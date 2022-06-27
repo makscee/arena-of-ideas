@@ -9,7 +9,7 @@
         {
             "name": "VampirismAura",
             "type": "Aura",
-            "status_names": [
+            "statuses": [
                 "Vampirism"
             ],
             "filter": {

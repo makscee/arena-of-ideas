@@ -143,27 +143,16 @@ impl Logic<'_> {
                     continue;
                 }
                 let statuses: Vec<AttachedStatus> = aura
-                    .status_names
+                    .statuses
                     .iter()
-                    .filter_map(|status| {
-                        match self.model.statuses.get(status) {
-                            None => {
-                                error!("Failed to find status: {status}");
-                                None
-                            }
-                            Some(status) => {
-                                let mut status =
-                                    status.status.clone().attach_aura(Some(other.id), caster.id);
-                                status.time = Some(R32::ZERO); // Force the status to be dropped next frame
-                                Some(status)
-                            }
-                        }
-                    })
-                    .chain(aura.statuses.iter().map(|s| {
-                        let mut status = s.clone().attach_aura(Some(other.id), caster.id);
+                    .map(|status| {
+                        let mut status = status
+                            .get(&self.model.statuses)
+                            .clone()
+                            .attach_aura(Some(other.id), caster.id);
                         status.time = Some(R32::ZERO);
                         status
-                    }))
+                    })
                     .collect();
                 other.flags.extend(
                     statuses
