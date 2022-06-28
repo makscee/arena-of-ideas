@@ -78,21 +78,15 @@ impl EditState {
     }
 
     fn handle_notify(&mut self, event: notify::DebouncedEvent) {
-        info!("Notify event: {event:?}");
+        debug!("Notify event: {event:?}");
         match event {
             DebouncedEvent::NoticeWrite(path)
             | DebouncedEvent::Create(path)
-            | DebouncedEvent::Write(path) => {
-                if path == self.config.path {
-                    self.reload_shader();
-                } else if path == self.config_path {
-                    self.config =
-                        ShaderEditConfig::load(&self.geng, path).expect("Failed to load config");
-                } else {
-                    warn!("Watching and unregistered path (neither config nor shader): {path:?}");
-                }
+            | DebouncedEvent::Write(path) => self.reload_path(path),
+            DebouncedEvent::NoticeRemove(path) => {
+                self.switch_watch(&path, &path);
+                self.reload_path(path);
             }
-            // DebouncedEvent::NoticeRemove(_) => todo!(), // I really do not know what this means
             DebouncedEvent::Remove(_) => todo!(),
             DebouncedEvent::Error(error, path) => {
                 error!("Notify error on path {path:?}: {error}");
@@ -101,19 +95,44 @@ impl EditState {
         }
     }
 
+    fn reload_path(&mut self, path: PathBuf) {
+        if path == self.config.path {
+            self.reload_shader();
+        } else if path == self.config_path {
+            self.config = ShaderEditConfig::load(&self.geng, path).expect("Failed to load config");
+            self.reload_shader();
+        } else {
+            warn!("Tried to reload an unregistered path (neither config nor shader): {path:?}");
+        }
+    }
+
+    fn switch_watch(
+        &mut self,
+        old_path: impl AsRef<std::path::Path>,
+        new_path: impl AsRef<std::path::Path>,
+    ) {
+        if let Err(error) = self.watcher.unwatch(old_path.as_ref()) {
+            error!(
+                "Failed to unwatch old shader path ({:?}): {error}",
+                old_path.as_ref()
+            );
+        }
+        if let Err(error) = self
+            .watcher
+            .watch(new_path.as_ref(), notify::RecursiveMode::NonRecursive)
+        {
+            error!(
+                "Failed to start watching shader on {:?}: {error}",
+                new_path.as_ref()
+            );
+        }
+    }
+
     fn reload_shader(&mut self) {
         // Stop watching old shader if the path has changed
-        if let Some((path, _)) = &self.shader {
-            if *path != self.config.path {
-                if let Err(error) = self.watcher.unwatch(path) {
-                    error!("Failed to unwatch old shader path ({path:?}): {error}");
-                }
-                if let Err(error) = self
-                    .watcher
-                    .watch(&self.config.path, notify::RecursiveMode::NonRecursive)
-                {
-                    error!("Failed to start watching shader on {path:?}: {error}");
-                }
+        if let Some(path) = self.shader.as_ref().map(|(path, _)| path.clone()) {
+            if path != self.config.path {
+                self.switch_watch(path, self.config.path.clone());
             }
         }
 
