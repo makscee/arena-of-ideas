@@ -8,36 +8,25 @@
         },
         "statuses": [
             {
-                "name": "OnSpawn",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
+                "name": "Assassins15CritChance",
+                "type": "Modifier",
+                "target": {
+                    "type": "Stat",
+                    "stat": "CritChance"
                 },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "Spawn"
-                            }
-                        ],
-                        "effect": {
-                            "type": "ChangeStat",
-                            "stat": "CritChance",
-                            "value": {
-                                "type": "Sum",
-                                "a": {
-                                    "type": "FindStat",
-                                    "who": "Target",
-                                    "stat": "CritChance"
-                                },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 15
-                                }
-                            }
-                        }
+                "priority": -100,
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "CritChance"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": 15
                     }
-                ]
+                }
             }
         ]
     },
