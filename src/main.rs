@@ -9,6 +9,7 @@ mod custom;
 mod logic;
 mod model;
 mod render;
+mod shader_edit;
 mod shop;
 mod simulate;
 mod tests;
@@ -169,6 +170,7 @@ enum Commands {
     CustomGame(custom::CustomGame),
     Test,
     Simulate1x1(simulate::Simulate1x1),
+    Shader(shader_edit::ShaderEdit),
 }
 
 fn main() {
@@ -229,6 +231,9 @@ fn main() {
                             Commands::Simulate1x1(simulate) => {
                                 simulate.run(assets, config).unwrap();
                                 std::process::exit(0);
+                            }
+                            Commands::Shader(shader) => {
+                                return shader.run(&geng);
                             }
                         },
                         None => (),
