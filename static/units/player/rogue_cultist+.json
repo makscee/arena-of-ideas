@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "OnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

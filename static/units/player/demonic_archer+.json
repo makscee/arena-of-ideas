@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "DarkStealOnBonusShotTwice",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "Rogue+OnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "OnPlagueDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

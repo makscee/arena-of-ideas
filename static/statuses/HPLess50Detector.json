@@ -1,5 +1,6 @@
 {
     "name": "HPLess50Detector",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

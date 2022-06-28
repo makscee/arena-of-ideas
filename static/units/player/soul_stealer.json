@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "DarkStealOnSiphonLife",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
