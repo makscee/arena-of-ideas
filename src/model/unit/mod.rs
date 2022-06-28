@@ -41,7 +41,6 @@ pub struct Unit {
     pub stats: UnitStats,
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
-    pub health: Health,
     pub face_dir: Vec2<Coord>,
     pub position: Vec2<Coord>,
     pub action: ActionProperties,
@@ -60,6 +59,7 @@ pub struct Unit {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitStats {
     pub max_hp: Health,
+    pub health: Health,
     pub radius: Coord,
     pub base_damage: R32,
     pub armor: R32,
@@ -112,7 +112,6 @@ impl Unit {
             action_state: ActionState::None,
             stats: UnitStats::new(template),
             permanent_stats: UnitStats::new(template),
-            health: template.health,
             face_dir: Vec2::ZERO,
             position,
             action: template.action.clone(),
@@ -133,6 +132,7 @@ impl UnitStats {
     pub fn new(template: &UnitTemplate) -> Self {
         Self {
             max_hp: template.health,
+            health: template.health,
             base_damage: template.base_damage,
             armor: template.armor,
             armor_penetration: template.armor_penetration,

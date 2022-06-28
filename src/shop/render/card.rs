@@ -148,7 +148,7 @@ impl CardRender {
         // Health
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.health),
+            format!("{}", card.unit.stats.health),
             Color::WHITE,
         )
         .fit_into(health_aabb)

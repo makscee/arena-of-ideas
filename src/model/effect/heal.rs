@@ -58,8 +58,9 @@ impl EffectImpl for HealEffect {
                 );
             }
         }
-        let value_clamped = min(value, max_health - target_unit.health);
-        target_unit.health += value_clamped;
+        let value_clamped = min(value, max_health - target_unit.stats.health);
+        target_unit.stats.health += value_clamped;
+        target_unit.permanent_stats.health += value_clamped;
 
         for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {

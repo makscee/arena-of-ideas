@@ -484,7 +484,7 @@ impl UnitRender {
                         u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
                         u_clan_count: clan_colors.len(),
                         u_ability_ready: is_ability_ready,
-                        u_health: unit.health.as_f32() / unit.stats.max_hp.as_f32(),
+                        u_health: unit.stats.health.as_f32() / unit.stats.max_hp.as_f32(),
                     },
                     geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),
                     parameters,
