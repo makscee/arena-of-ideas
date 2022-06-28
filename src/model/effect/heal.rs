@@ -45,8 +45,9 @@ impl EffectImpl for HealEffect {
             })
             .expect("Target not found");
 
-        target_unit.max_hp += add_max_hp;
-        let max_health = target_unit.max_hp + heal_past_max;
+        target_unit.stats.max_hp += add_max_hp;
+        target_unit.permanent_stats.max_hp += add_max_hp;
+        let max_health = target_unit.stats.max_hp + heal_past_max;
         if !effect.no_text {
             if let Some(render) = &mut logic.render {
                 let heal_text = (value * r32(10.0)).floor() / r32(10.0);
@@ -57,8 +58,9 @@ impl EffectImpl for HealEffect {
                 );
             }
         }
-        let value_clamped = min(value, max_health - target_unit.health);
-        target_unit.health += value_clamped;
+        let value_clamped = min(value, max_health - target_unit.stats.health);
+        target_unit.stats.health += value_clamped;
+        target_unit.permanent_stats.health += value_clamped;
 
         for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {

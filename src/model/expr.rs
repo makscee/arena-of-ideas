@@ -57,6 +57,11 @@ pub enum Expr {
         status: Option<StatusName>,
         clan: Option<Clan>,
     },
+    If {
+        condition: Box<Condition>,
+        then: Box<Expr>,
+        r#else: Box<Expr>,
+    },
 }
 
 impl Expr {
@@ -75,7 +80,7 @@ impl Expr {
                     .get(&target)
                     .or_else(|| logic.model.dead_units.get(&target))
                     .unwrap();
-                target.stat(*stat)
+                target.stats.get(*stat)
             }
             Self::WithVar {
                 name,
@@ -118,6 +123,17 @@ impl Expr {
                         None => true,
                     })
                     .count() as f32)
+            }
+            Expr::If {
+                condition,
+                then,
+                r#else,
+            } => {
+                if logic.check_condition(condition, context) {
+                    then.calculate(&context, logic)
+                } else {
+                    r#else.calculate(&context, logic)
+                }
             }
         }
     }

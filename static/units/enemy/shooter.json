@@ -63,6 +63,7 @@
     "statuses": [
         {
             "name": "ShooterOnDeath",
+            "type": "Status",
             "stacking": {
                 "type": "Refresh"
             },

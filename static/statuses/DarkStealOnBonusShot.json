@@ -1,5 +1,6 @@
 {
     "name": "DarkStealOnBonusShot",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

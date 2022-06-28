@@ -1,5 +1,6 @@
 {
     "name": "DarkSteal",
+    "type": "Status",
     "stacking": {
         "type": "Count"
     },

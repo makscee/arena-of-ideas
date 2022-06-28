@@ -59,7 +59,7 @@ impl Logic<'_> {
                 target_position = unit.position;
             }
         }
-        let mut speed = unit.speed;
+        let mut speed = unit.stats.speed;
         for status in &unit.all_statuses {
             match status {
                 // TODO: reimplement

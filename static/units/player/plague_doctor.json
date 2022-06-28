@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "Every5Sec",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

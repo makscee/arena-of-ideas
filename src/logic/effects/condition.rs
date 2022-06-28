@@ -19,7 +19,7 @@ impl Logic<'_> {
                 let who = who
                     .and_then(|id| self.model.units.get(&id))
                     .expect("Caster, From, or Target not found");
-                who.health < who.max_hp
+                who.stats.health < who.stats.max_hp
             }
             Condition::InRange { max_distance } => {
                 let from = context
@@ -38,7 +38,10 @@ impl Logic<'_> {
             Condition::Equal { a, b } => a.calculate(&context, self) == b.calculate(&context, self),
             Condition::Less { a, b } => a.calculate(&context, self) < b.calculate(&context, self),
             Condition::More { a, b } => a.calculate(&context, self) > b.calculate(&context, self),
-            Condition::ClanSize { clan, count } => self.model.config.clans[clan] >= *count,
+            Condition::ClanSize { clan, count } => {
+                self.model.config.clans.contains_key(clan)
+                    && self.model.config.clans[clan] >= *count
+            }
             Condition::HasClan { who, clan } => {
                 let who = context
                     .get(*who)

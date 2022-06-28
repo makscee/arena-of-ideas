@@ -121,12 +121,15 @@ impl Logic<'_> {
             .flat_map(|unit| {
                 unit.all_statuses
                     .iter()
-                    .flat_map(|status| &status.status.auras)
+                    .flat_map(|status| match &status.status.effect {
+                        StatusEffect::Aura(aura) => Some(aura),
+                        _ => None,
+                    })
                     .map(|aura| (unit.id, aura.clone()))
             })
             .collect();
         for (caster_id, aura) in auras {
-            let caster = self.model.units.remove(&caster_id).unwrap();
+            let caster = self.model.units.get(&caster_id).unwrap().clone();
             for other in &mut self.model.units {
                 match aura.radius {
                     Some(radius) => {
@@ -142,19 +145,13 @@ impl Logic<'_> {
                 let statuses: Vec<AttachedStatus> = aura
                     .statuses
                     .iter()
-                    .filter_map(|status| {
-                        match self.model.statuses.get(status) {
-                            None => {
-                                error!("Failed to find status: {status}");
-                                None
-                            }
-                            Some(status) => {
-                                let mut status =
-                                    status.status.clone().attach_aura(Some(other.id), caster.id);
-                                status.time = Some(R32::ZERO); // Force the status to be dropped next frame
-                                Some(status)
-                            }
-                        }
+                    .map(|status| {
+                        let mut status = status
+                            .get(&self.model.statuses)
+                            .clone()
+                            .attach_aura(Some(other.id), caster.id);
+                        status.time = Some(R32::ZERO);
+                        status
                     })
                     .collect();
                 other.flags.extend(
@@ -165,7 +162,38 @@ impl Logic<'_> {
                 );
                 other.all_statuses.extend(statuses);
             }
-            self.model.units.insert(caster);
+        }
+
+        // Apply modifiers
+        let ids: Vec<Id> = self.model.units.ids().copied().collect();
+        for unit_id in ids {
+            let unit = self.model.units.get_mut(&unit_id).unwrap();
+            unit.stats = unit.permanent_stats.clone();
+            let mut modifiers: Vec<(EffectContext, StatusModifier)> = unit
+                .all_statuses
+                .iter()
+                .flat_map(|status| match &status.status.effect {
+                    StatusEffect::Modifier(modifier) => {
+                        let context = EffectContext {
+                            caster: status.caster,
+                            from: None,
+                            target: Some(unit.id),
+                            vars: status.vars.clone(),
+                            status_id: Some(status.id),
+                        };
+                        Some((context, modifier.clone()))
+                    }
+                    _ => None,
+                })
+                .collect();
+            modifiers.sort_by_key(|(_, modifier)| modifier.priority);
+            for (context, modifier) in modifiers {
+                let value = modifier.value.calculate(&context, self);
+                let unit = self.model.units.get_mut(&unit_id).unwrap();
+                match modifier.target {
+                    ModifierTarget::Stat { stat } => *unit.stats.get_mut(stat) = value,
+                }
+            }
         }
 
         // Detect expired statuses

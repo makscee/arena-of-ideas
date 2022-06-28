@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 5,
     "description": "@Scathe: apply @Siphon Life and @Plague",
     "clans": [
         "PlagueSpreaders",
@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "DarkHorsemanOnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

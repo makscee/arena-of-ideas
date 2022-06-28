@@ -1,5 +1,6 @@
 {
     "name": "Rebirth",
+    "type": "Status",
     "stacking": {
         "type": "Count"
     },

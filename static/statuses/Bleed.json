@@ -1,5 +1,6 @@
 {
     "name": "Bleed",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

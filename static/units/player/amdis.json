@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 4,
     "triple": "amdis+",
     "description": "10 seconds after Spawn, gain @Rebirth",
     "clans": [
@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "OnSpawnGainDelayedRebirth",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

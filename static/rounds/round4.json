@@ -2,18 +2,26 @@
     "statuses": [],
     "waves": [
         {
-            "start_delay": 2,
-            "between_delay": 4,
+            "between_delay": 3,
             "left": [
                 {
-                    "type": "blob",
-                    "count": 3
+                    "type": "small_blob",
+                    "count": 2
                 }
             ],
             "right": [
                 {
+                    "type": "small_blob",
+                    "count": 2
+                }
+            ]
+        },
+        {
+            "start_delay": 2,
+            "top": [
+                {
                     "type": "blob",
-                    "count": 3
+                    "count": 1
                 }
             ]
         }

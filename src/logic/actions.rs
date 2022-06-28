@@ -15,7 +15,7 @@ impl Logic<'_> {
                 return;
             }
             *time += self.delta_time;
-            if *time > unit.action.animation_delay / unit.action_speed {
+            if *time > unit.action.animation_delay / unit.stats.action_speed {
                 if let Some(target) = self.model.units.get(target) {
                     let mut effect = unit.action.effect.clone();
                     for modifier in mem::take(&mut unit.next_action_modifiers) {
@@ -79,7 +79,7 @@ impl Logic<'_> {
                 // }
             });
             *time += self.delta_time * r32(attack_speed);
-            if *time > unit.action.cooldown / unit.action_speed {
+            if *time > unit.action.cooldown / unit.stats.action_speed {
                 unit.action_state = ActionState::None;
             }
         }

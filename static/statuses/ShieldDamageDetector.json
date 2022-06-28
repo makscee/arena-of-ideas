@@ -1,5 +1,6 @@
 {
     "name": "ShieldDamageDetector",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

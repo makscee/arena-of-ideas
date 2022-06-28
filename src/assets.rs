@@ -28,7 +28,7 @@ pub struct ShaderRenderConfig {
 }
 
 #[derive(Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
+// #[serde(deny_unknown_fields)]
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
@@ -91,7 +91,7 @@ pub type SpawnPoint = String;
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
     #[serde(default)]
-    pub statuses: Vec<Status>,
+    pub statuses: Vec<StatusRef>,
     #[serde(default)]
     pub waves: VecDeque<Wave>,
 }
@@ -105,7 +105,7 @@ pub struct Wave {
     #[serde(default = "Wave::default_wait_clear")]
     pub wait_clear: bool,
     #[serde(default)]
-    pub statuses: Vec<Status>,
+    pub statuses: Vec<StatusRef>,
     #[serde(flatten)]
     pub spawns: HashMap<SpawnPoint, VecDeque<WaveSpawn>>,
 }

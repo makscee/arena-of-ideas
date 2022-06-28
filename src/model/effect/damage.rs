@@ -38,6 +38,7 @@ impl EffectImpl for DamageEffect {
                 .get(&caster)
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap()
+                .stats
                 .armor_penetration;
         }
         let units = &mut logic.model.units;
@@ -83,7 +84,7 @@ impl EffectImpl for DamageEffect {
         }
 
         // Armor stat
-        let armor = target_unit.armor.as_f32() - armor_penetration;
+        let armor = target_unit.stats.armor.as_f32() - armor_penetration;
         if armor > 0.0 {
             damage *= r32(1.0 - (0.06 * armor) / (1.0 + 0.06 * armor));
         } else if armor < 0.0 {
@@ -128,9 +129,10 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        let old_hp = target_unit.health;
+        let old_hp = target_unit.stats.health;
         target_unit.last_injure_time = logic.model.time;
-        target_unit.health -= damage;
+        target_unit.stats.health -= damage;
+        target_unit.permanent_stats.health -= damage;
         let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
         if let Some(render) = &mut logic.render {
             let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
@@ -140,7 +142,7 @@ impl EffectImpl for DamageEffect {
                 Color::RED,
             );
         }
-        let killed = old_hp > Health::new(0.0) && target_unit.health <= Health::new(0.0);
+        let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
             for (effect, mut vars, status_id) in

@@ -1,5 +1,6 @@
 {
     "tier": 0,
+    "description": "+100% @action_speed",
     "action_speed": 2,
     "clans": [
         "Demons"

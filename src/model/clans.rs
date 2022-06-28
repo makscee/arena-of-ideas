@@ -40,7 +40,7 @@ pub struct ClanEffect {
     #[serde(default)]
     filter: ClanFilter,
     /// Statuses to apply to every target unit
-    statuses: Vec<Status>,
+    statuses: Vec<StatusRef>,
 }
 
 impl ClanFilter {
@@ -61,16 +61,16 @@ impl ClanFilter {
 impl ClanEffect {
     /// Checks the filters (factions and clans) and applies the
     /// effects if the constraints are met.
-    fn apply(&self, unit: &mut Unit, next_id: &mut Id) {
+    fn apply(&self, unit: &mut Unit, next_id: &mut Id, statuses: &Statuses) {
         if !self.filter.check(unit) {
             return;
         }
-        unit.all_statuses.extend(
-            self.statuses
-                .iter()
-                .cloned()
-                .map(|status| status.attach(Some(unit.id), None, next_id)),
-        );
+        unit.all_statuses.extend(self.statuses.iter().map(|status| {
+            status
+                .get(statuses)
+                .clone()
+                .attach(Some(unit.id), None, next_id)
+        }));
     }
 }
 
@@ -106,6 +106,7 @@ impl Clan {
         effects: &ClanEffects,
         party_members: usize,
         next_id: &mut Id,
+        statuses: &Statuses,
     ) {
         let effects = match effects.get(self) {
             Some(effects) => effects,
@@ -119,7 +120,7 @@ impl Clan {
             .filter(|effect| effect.activate <= party_members)
             .sorted_by_key(|effect| effect.activate);
         for effect in effects.rev() {
-            effect.apply(unit, next_id);
+            effect.apply(unit, next_id, statuses);
             if effect.replace {
                 break;
             }

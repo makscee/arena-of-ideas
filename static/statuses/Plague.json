@@ -1,5 +1,6 @@
 {
     "name": "Plague",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

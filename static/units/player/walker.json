@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 5,
     "triple": "walker+",
     "description": "Every 5 seconds @Freeze random enemy",
     "clans": [
@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "FreezeRandomEvery5",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

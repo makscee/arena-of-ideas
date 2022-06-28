@@ -108,7 +108,7 @@ impl CardRender {
             &geng::Camera2d {
                 center: vec2(0.0, 0.35),
                 rotation: 0.0,
-                fov: card.unit.radius.as_f32() * 1.5,
+                fov: card.unit.stats.radius.as_f32() * 1.5,
             },
             &mut temp_framebuffer,
         );
@@ -139,7 +139,7 @@ impl CardRender {
         // Damage
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.base_damage),
+            format!("{}", card.unit.stats.base_damage),
             Color::WHITE,
         )
         .fit_into(damage_aabb)
@@ -148,7 +148,7 @@ impl CardRender {
         // Health
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.health),
+            format!("{}", card.unit.stats.health),
             Color::WHITE,
         )
         .fit_into(health_aabb)

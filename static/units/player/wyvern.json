@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 5,
     "triple": "wyvern+",
     "description": "@Flaming Breath attack on @Freeze creates @Explosion",
     "clans": [
@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "ExplodeFireOnFreeze",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

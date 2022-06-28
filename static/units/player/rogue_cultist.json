@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 3,
     "description": "On @Crit apply @Siphon Life",
     "triple": "rogue_cultist+",
     "clans": [
@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "OnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

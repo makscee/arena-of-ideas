@@ -2,12 +2,11 @@
     "statuses": [],
     "waves": [
         {
-            "start_delay": 2,
-            "between_delay": 5,
+            "between_delay": 1.5,
             "top": [
                 {
-                    "type": "blob",
-                    "count": 2
+                    "type": "small_blob",
+                    "count": 3
                 }
             ]
         }

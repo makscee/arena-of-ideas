@@ -3,7 +3,7 @@ use super::*;
 impl Logic<'_> {
     pub fn kill(&mut self, id: Id) {
         let unit = self.model.units.get_mut(&id).unwrap();
-        unit.health = Health::new(0.0);
+        unit.stats.health = Health::new(0.0);
         let unit = self.model.units.get(&id).unwrap();
 
         for (effect, vars, status_id) in unit
@@ -49,10 +49,12 @@ impl Logic<'_> {
     }
     pub fn process_deaths(&mut self) {
         for unit in &self.model.units {
-            if unit.health <= Health::ZERO {
+            if unit.stats.health <= Health::ZERO {
                 self.model.dead_units.insert(unit.clone());
             }
         }
-        self.model.units.retain(|unit| unit.health > Health::ZERO);
+        self.model
+            .units
+            .retain(|unit| unit.stats.health > Health::ZERO);
     }
 }

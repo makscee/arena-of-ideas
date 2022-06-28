@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 2,
     "triple": "viral_archer+",
     "description": "@Scathe 10% chance to apply @Plague",
     "clans": [
@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "ViralArcherOnDealDamage",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

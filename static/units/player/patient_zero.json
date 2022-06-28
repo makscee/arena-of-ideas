@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "PatientZeroOnSpawn",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

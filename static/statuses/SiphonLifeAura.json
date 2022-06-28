@@ -1,5 +1,12 @@
 {
     "name": "SiphonLifeAura",
+    "type": "Aura",
+    "filter": {
+        "Enemy": null
+    },
+    "statuses": [
+        "SiphonLife"
+    ],
     "stacking": {
         "type": "Independent"
     },
@@ -8,15 +15,5 @@
         "parameters": {
             "u_status_color": "#400080"
         }
-    },
-    "auras": [
-        {
-            "filter": {
-                "Enemy": null
-            },
-            "statuses": [
-                "SiphonLife"
-            ]
-        }
-    ]
+    }
 }

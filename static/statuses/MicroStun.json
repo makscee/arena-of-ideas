@@ -1,5 +1,6 @@
 {
     "name": "MicroStun",
+    "type": "Status",
     "stacking": {
         "type": "Independent"
     },

@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 2,
     "description": "@Bonus Shot applies @Dark Steal twice",
     "triple":"demonic_archer+",
     "clans": [
@@ -9,6 +9,7 @@
     "statuses": [
         {
             "name": "DarkStealOnBonusShot",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

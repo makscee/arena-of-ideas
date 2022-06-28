@@ -1,0 +1,22 @@
+{
+    "tier": 3,
+    "description": "All allies gain +10% @Vampirism",
+    "triple": "vladimir+",
+    "clans": [
+        "Vampires",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "VampirismAura",
+            "type": "Aura",
+            "statuses": [
+                "Vampirism"
+            ],
+            "filter": {
+                "Player": null
+            }
+        }
+    ],
+    "base": "melee"
+}

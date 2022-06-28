@@ -1,5 +1,6 @@
 {
     "name": "Freeze",
+    "type": "Status",
     "stacking": {
         "type": "Refresh"
     },

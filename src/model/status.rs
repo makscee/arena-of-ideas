@@ -30,6 +30,12 @@ pub enum StatusStacking {
     CountRefresh,
 }
 
+impl Default for StatusStacking {
+    fn default() -> Self {
+        Self::Independent
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum StatusTrigger {
@@ -109,6 +115,14 @@ pub enum UnitStatFlag {
     AttachStatusImmune,
 }
 
+/// Refers to a status either by name or directly
+#[derive(Debug, Serialize, Clone)]
+#[serde(untagged)]
+pub enum StatusRef {
+    Name(StatusName),
+    Raw(Status),
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Aura {
@@ -122,22 +136,47 @@ pub struct Aura {
     #[serde(default)]
     pub condition: Condition,
     /// The statuses that will be attached to the affected units
-    pub statuses: Vec<StatusName>,
+    #[serde(default)]
+    pub statuses: Vec<StatusRef>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum ModifierTarget {
+    Stat { stat: UnitStat },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+pub struct StatusModifier {
+    /// Specifies what the modifier effect will actually modify
+    pub target: ModifierTarget,
+    /// Lower priority modifiers get processed earlier
+    pub priority: i64,
+    /// The value that will be put into `target`
+    pub value: Expr,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum StatusEffect {
+    Status,
+    Aura(Aura),
+    Modifier(StatusModifier),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Status {
     /// The name is used when comparing two statuses for equality for a stack
     /// and for parsing in the unit config
     pub name: StatusName,
+    #[serde(flatten)]
+    pub effect: StatusEffect,
+    #[serde(default)]
     pub stacking: StatusStacking,
     /// While the status is active, these flags are assigned to the owner
     #[serde(default)]
     pub flags: Vec<UnitStatFlag>,
-    /// These auras are active while the status is active
-    #[serde(default)]
-    pub auras: Vec<Aura>,
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
@@ -169,6 +208,27 @@ pub struct AttachedStatus {
     /// Variables that persist for the lifetime of the status
     pub vars: HashMap<VarName, R32>,
     pub id: Id,
+}
+
+impl StatusRef {
+    pub fn name(&self) -> &StatusName {
+        match self {
+            StatusRef::Name(name) => name,
+            StatusRef::Raw(status) => &status.name,
+        }
+    }
+
+    pub fn get<'a>(&'a self, statuses: &'a Statuses) -> &'a Status {
+        match self {
+            StatusRef::Name(name) => {
+                &statuses
+                    .get(name)
+                    .expect(&format!("Failed to find status {name:?}"))
+                    .status
+            }
+            StatusRef::Raw(status) => status,
+        }
+    }
 }
 
 impl Status {
@@ -280,5 +340,21 @@ pub fn unit_attach_status(
                 s.id
             })
         }
+    }
+}
+
+// Implement deserialize manually for better error description
+impl<'de> Deserialize<'de> for StatusRef {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match StatusName::deserialize(value.clone()) {
+            Ok(preset) => return Ok(Self::Name(preset)),
+            Err(_) => {}
+        }
+        let effect = Status::deserialize(value).map_err(|error| serde::de::Error::custom(error))?;
+        Ok(Self::Raw(effect))
     }
 }

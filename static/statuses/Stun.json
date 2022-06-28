@@ -1,5 +1,6 @@
 {
     "name": "Stun",
+    "type": "Status",
     "stacking": {
         "type": "Independent"
     },

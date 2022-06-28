@@ -9,6 +9,7 @@
         "statuses": [
             {
                 "name": "DarkStealOnDealDamage",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },
@@ -41,6 +42,7 @@
         "statuses": [
             {
                 "name": "DarkStealVulnerability",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },
@@ -68,6 +70,7 @@
         "statuses": [
             {
                 "name": "DemonsActionSpeed",
+                "type": "Status",
                 "stacking": {
                     "type": "Independent"
                 },

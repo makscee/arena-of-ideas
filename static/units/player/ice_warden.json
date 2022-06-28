@@ -1,5 +1,5 @@
 {
-    "tier": 1,
+    "tier": 4,
     "description": "If enemy loses @Freeze apply @Dark Steal",
     "clans": [
         "Freezers",
@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "OnRemoveFreezeDarkSteal",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },

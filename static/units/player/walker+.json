@@ -8,6 +8,7 @@
     "statuses": [
         {
             "name": "Freeze2RandomEvery5",
+            "type": "Status",
             "stacking": {
                 "type": "Independent"
             },
