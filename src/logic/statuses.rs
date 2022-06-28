@@ -129,7 +129,7 @@ impl Logic<'_> {
             })
             .collect();
         for (caster_id, aura) in auras {
-            let caster = self.model.units.remove(&caster_id).unwrap();
+            let caster = self.model.units.get(&caster_id).unwrap().clone();
             for other in &mut self.model.units {
                 match aura.radius {
                     Some(radius) => {
@@ -162,7 +162,6 @@ impl Logic<'_> {
                 );
                 other.all_statuses.extend(statuses);
             }
-            self.model.units.insert(caster);
         }
 
         // Apply modifiers
