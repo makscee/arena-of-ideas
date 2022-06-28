@@ -37,7 +37,7 @@ pub struct Unit {
     pub faction: Faction,
     pub action_state: ActionState,
     /// These stats are temporary and are reset every tick.
-    /// They are modified primarily by status modifiers.
+    /// They are modified primarily by modifier statuses
     pub stats: UnitStats,
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
