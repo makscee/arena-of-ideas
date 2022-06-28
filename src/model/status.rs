@@ -152,7 +152,7 @@ pub struct StatusModifier {
     /// Specifies what the modifier effect will actually modify
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
-    pub priority: u64,
+    pub priority: i64,
     /// The value that will be put into `target`
     pub value: Expr,
 }
