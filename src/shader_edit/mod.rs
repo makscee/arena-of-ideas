@@ -29,8 +29,9 @@ type Time = R32;
 struct EditState {
     geng: Geng,
     time: Time,
+    config_path: PathBuf,
     config: ShaderEditConfig,
-    loaded: Option<ugli::Program>,
+    shader: Option<(PathBuf, ugli::Program)>,
     receiver: Receiver<DebouncedEvent>,
     watcher: RecommendedWatcher,
 }
@@ -68,11 +69,77 @@ impl EditState {
         Self {
             geng: geng.clone(),
             time: Time::ZERO,
-            loaded: Some(program),
+            shader: Some((config.path.clone(), program)),
+            config_path,
             config,
             watcher,
             receiver: rx,
         }
+    }
+
+    fn handle_notify(&mut self, event: notify::DebouncedEvent) {
+        info!("Notify event: {event:?}");
+        match event {
+            DebouncedEvent::NoticeWrite(path)
+            | DebouncedEvent::Create(path)
+            | DebouncedEvent::Write(path) => {
+                if path == self.config.path {
+                    self.reload_shader();
+                } else if path == self.config_path {
+                    self.config =
+                        ShaderEditConfig::load(&self.geng, path).expect("Failed to load config");
+                } else {
+                    warn!("Watching and unregistered path (neither config nor shader): {path:?}");
+                }
+            }
+            // DebouncedEvent::NoticeRemove(_) => todo!(), // I really do not know what this means
+            DebouncedEvent::Remove(_) => todo!(),
+            DebouncedEvent::Error(error, path) => {
+                error!("Notify error on path {path:?}: {error}");
+            }
+            _ => {}
+        }
+    }
+
+    fn reload_shader(&mut self) {
+        // Stop watching old shader if the path has changed
+        if let Some((path, _)) = &self.shader {
+            if *path != self.config.path {
+                if let Err(error) = self.watcher.unwatch(path) {
+                    error!("Failed to unwatch old shader path ({path:?}): {error}");
+                }
+                if let Err(error) = self
+                    .watcher
+                    .watch(&self.config.path, notify::RecursiveMode::NonRecursive)
+                {
+                    error!("Failed to start watching shader on {path:?}: {error}");
+                }
+            }
+        }
+
+        // Reload shader
+        let program = match futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
+            &self.geng,
+            &self.config.path,
+        )) {
+            Ok(program) => program,
+            Err(error) => {
+                error!("Failed to load program: {error}");
+                return;
+            }
+        };
+        self.shader = Some((self.config.path.clone(), program));
+    }
+}
+
+impl ShaderEditConfig {
+    fn load(geng: &Geng, full_path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
+        let mut config = futures::executor::block_on(<ShaderEditConfig as geng::LoadAsset>::load(
+            geng,
+            full_path.as_ref(),
+        ))?;
+        config.path = static_path().join(&config.path);
+        Ok(config)
     }
 }
 
@@ -83,7 +150,7 @@ impl geng::State for EditState {
 
         use std::sync::mpsc::TryRecvError;
         match self.receiver.try_recv() {
-            Ok(event) => debug!("{event:?}"),
+            Ok(event) => self.handle_notify(event),
             Err(TryRecvError::Empty) => {}
             Err(TryRecvError::Disconnected) => {
                 error!("Disconnected from the channel");
@@ -100,7 +167,7 @@ impl geng::State for EditState {
             fov: 22.0,
         };
 
-        if let Some(program) = &self.loaded {
+        if let Some((_, program)) = &self.shader {
             let quad = ugli::VertexBuffer::new_dynamic(
                 self.geng.ugli(),
                 vec![
