@@ -84,6 +84,8 @@ impl EditState {
             | DebouncedEvent::Create(path)
             | DebouncedEvent::Write(path) => self.reload_path(path),
             DebouncedEvent::NoticeRemove(path) => {
+                // (Neo)vim writes the file by removing and recreating it,
+                // hence this hack
                 self.switch_watch(&path, &path);
                 self.reload_path(path);
             }
