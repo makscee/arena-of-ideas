@@ -1,15 +1,14 @@
 {
-    "tier": 3,
-    "description": "On @Crit apply @Siphon Life",
-    "triple": "rogue_cultist+",
+    "tier": 4,
+    "description": "@Dark Steal any enemy that gains @Siphon Life",
+    "triple": "soul_stealer+",
     "clans": [
-        "Warlocks",
-        "Assassins"
+        "Demons",
+        "Warlocks"
     ],
     "statuses": [
         {
-            "name": "OnDealDamage",
-            "type": "Status",
+            "name": "DarkStealOnSiphonLife",
             "stacking": {
                 "type": "Independent"
             },
@@ -17,17 +16,18 @@
                 {
                     "triggers": [
                         {
-                            "type": "DamageDealt",
-                            "damage_type": "Crit"
+                            "type": "DetectAttach",
+                            "status_name": "SiphonLife",
+                            "filter": "Enemies"
                         }
                     ],
                     "effect": {
                         "type": "AttachStatus",
-                        "status": "SiphonLife"
+                        "status": "DarkSteal"
                     }
                 }
             ]
         }
     ],
-    "base": "melee"
+    "base": "ranged"
 }

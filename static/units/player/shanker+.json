@@ -1,15 +1,12 @@
 {
-    "tier": 2,
-    "description": "@Bonus Shot applies @Dark Steal twice",
-    "triple":"demonic_archer+",
+    "tier": 0,
+    "description": "@Scathe apply @MicroStun to enemies in range 3",
     "clans": [
-        "Demons",
-        "Archers"
+        "Assassins"
     ],
     "statuses": [
         {
-            "name": "DarkStealOnBonusShot",
-            "type": "Status",
+            "name": "StunOnDamage",
             "stacking": {
                 "type": "Independent"
             },
@@ -18,20 +15,22 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "BonusShot"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
-                        "type": "Repeat",
-                        "times": 2,
+                        "type": "AOE",
+                        "filter": "Enemies",
+                        "skip_current_target": false,
+                        "range": 3,
                         "effect": {
                             "type": "AttachStatus",
-                            "status": "DarkSteal"
+                            "status": "MicroStun"
                         }
                     }
                 }
             ]
         }
     ],
-    "base": "ranged"
+    "base": "melee+"
 }

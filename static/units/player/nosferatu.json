@@ -1,0 +1,54 @@
+{
+    "tier": 2,
+    "description": "Apply @Dark Steal on 3 random enemy when hp drop below 50%",
+    "triple": "nosferatu+",
+    "clans": [
+        "Vampires",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "AttachDarkSteal",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Custom",
+                            "name": "OnHPLess50"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": 3,
+                        "effect": {
+                            "type": "ChangeTarget",
+                            "filter": "Enemies",
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "effect": {
+                                "type": "AttachStatus",
+                                "status": "DarkSteal"
+                            }
+                        }
+                    }
+                },
+                {
+                    "triggers": [
+                        {
+                            "type": "Init"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "HPLess50Detector"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}

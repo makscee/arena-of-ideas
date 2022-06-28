@@ -1,15 +1,13 @@
 {
-    "tier": 3,
-    "description": "On @Crit apply @Siphon Life",
-    "triple": "rogue_cultist+",
+    "tier": 2,
+    "description": "@Scathe apply @MicroStun",
+    "triple": "shanker+",
     "clans": [
-        "Warlocks",
         "Assassins"
     ],
     "statuses": [
         {
-            "name": "OnDealDamage",
-            "type": "Status",
+            "name": "Rogue+OnDealDamage",
             "stacking": {
                 "type": "Independent"
             },
@@ -18,12 +16,12 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Crit"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
                         "type": "AttachStatus",
-                        "status": "SiphonLife"
+                        "status": "MicroStun"
                     }
                 }
             ]

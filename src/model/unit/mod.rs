@@ -71,6 +71,7 @@ pub struct UnitStats {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UnitStat {
+    Health,
     MaxHealth,
     Radius,
     BaseDamage,
@@ -144,6 +145,7 @@ impl UnitStats {
 
     pub fn get(&self, stat: UnitStat) -> R32 {
         match stat {
+            UnitStat::Health => self.health,
             UnitStat::MaxHealth => self.max_hp,
             UnitStat::Radius => self.radius,
             UnitStat::BaseDamage => self.base_damage,
@@ -156,6 +158,7 @@ impl UnitStats {
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
         match stat {
+            UnitStat::Health => &mut self.health,
             UnitStat::MaxHealth => &mut self.max_hp,
             UnitStat::Radius => &mut self.radius,
             UnitStat::BaseDamage => &mut self.base_damage,

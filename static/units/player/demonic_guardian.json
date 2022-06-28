@@ -1,15 +1,13 @@
 {
     "tier": 2,
-    "description": "@Bonus Shot applies @Dark Steal twice",
-    "triple":"demonic_archer+",
+    "description": "On @Shield gain: @Dark Steal random enemy",
     "clans": [
         "Demons",
-        "Archers"
+        "Protectors"
     ],
     "statuses": [
         {
-            "name": "DarkStealOnBonusShot",
-            "type": "Status",
+            "name": "OnShieldDarkStealRandom",
             "stacking": {
                 "type": "Independent"
             },
@@ -17,13 +15,16 @@
                 {
                     "triggers": [
                         {
-                            "type": "DamageDealt",
-                            "damage_type": "BonusShot"
+                            "type": "SelfDetectAttach",
+                            "status_name": "Shield"
                         }
                     ],
                     "effect": {
-                        "type": "Repeat",
-                        "times": 2,
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
                         "effect": {
                             "type": "AttachStatus",
                             "status": "DarkSteal"
@@ -33,5 +34,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "melee"
 }

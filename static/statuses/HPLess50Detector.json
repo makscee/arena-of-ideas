@@ -1,0 +1,58 @@
+{
+    "name": "HPLess50Detector",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageTaken"
+                }
+            ],
+            "effect": {
+                "type": "If",
+                "condition": {
+                    "type": "Less",
+                    "a": {
+                        "type": "FindStat",
+                        "stat": "Health",
+                        "who": "Caster"
+                    },
+                    "b": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "FindStat",
+                            "stat": "MaxHealth",
+                            "who": "Caster"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 0.5
+                        }
+                    }
+                },
+                "then": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeContextStatus",
+                            "status": "AttachDarkSteal",
+                            "effect": {
+                                "type": "CustomTrigger",
+                                "name": "OnHPLess50"
+                            }
+                        },
+                        {
+                            "type": "RemoveStatus",
+                            "status": "HPLess50Detector"
+                        }
+                    ]
+                },
+                "else": {
+                    "type": "Noop"
+                }
+            }
+        }
+    ]
+}

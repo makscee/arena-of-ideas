@@ -116,7 +116,7 @@
                             {
                                 "type": "If",
                                 "condition": {
-                                    "type": "Clan",
+                                    "type": "ClanSize",
                                     "clan": "Demons",
                                     "count": 6
                                 },

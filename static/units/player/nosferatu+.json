@@ -1,15 +1,13 @@
 {
-    "tier": 2,
-    "description": "@Bonus Shot applies @Dark Steal twice",
-    "triple":"demonic_archer+",
+    "tier": 0,
+    "description": "Apply @Dark Steal to a random enemy every second",
     "clans": [
-        "Demons",
-        "Archers"
+        "Vampires",
+        "Demons"
     ],
     "statuses": [
         {
-            "name": "DarkStealOnBonusShot",
-            "type": "Status",
+            "name": "AttachDarkSteal",
             "stacking": {
                 "type": "Independent"
             },
@@ -17,13 +15,17 @@
                 {
                     "triggers": [
                         {
-                            "type": "DamageDealt",
-                            "damage_type": "BonusShot"
+                            "type": "Repeating",
+                            "tick_time": 1,
+                            "next_tick": 1
                         }
                     ],
                     "effect": {
-                        "type": "Repeat",
-                        "times": 2,
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
                         "effect": {
                             "type": "AttachStatus",
                             "status": "DarkSteal"
@@ -33,5 +35,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "melee+"
 }

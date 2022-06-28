@@ -16,5 +16,7 @@
     "DarkSteal.json",
     "Barrier.json",
     "Vampirism.json",
-    "Burn.json"
+    "Burn.json",
+    "HPLess50Detector.json",
+    "DarkStealOnBonusShot.json"
 ]

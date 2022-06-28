@@ -17,7 +17,7 @@
                 "effect": {
                     "type": "If",
                     "condition": {
-                        "type": "Clan",
+                        "type": "ClanSize",
                         "clan": "Vampires",
                         "count": 4
                     },
@@ -73,7 +73,7 @@
             "effect": {
                 "type": "If",
                 "condition": {
-                    "type": "Clan",
+                    "type": "ClanSize",
                     "clan": "Vampires",
                     "count": 2
                 },

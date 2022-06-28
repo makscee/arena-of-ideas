@@ -74,6 +74,31 @@ impl ClanEffect {
     }
 }
 
+impl fmt::Display for Clan {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Clan::Spawners => write!(f, "Spawners"),
+            Clan::Assassins => write!(f, "Assassins"),
+            Clan::Archers => write!(f, "Archers"),
+            Clan::Freezers => write!(f, "Freezers"),
+            Clan::Warriors => write!(f, "Warriors"),
+            Clan::Healers => write!(f, "Healers"),
+            Clan::Vampires => write!(f, "Vampires"),
+            Clan::Critters => write!(f, "Critters"),
+            Clan::Exploders => write!(f, "Exploders"),
+            Clan::Splashers => write!(f, "Splashers"),
+            Clan::Chainers => write!(f, "Chainers"),
+            Clan::Charmers => write!(f, "Charmers"),
+            Clan::PlagueSpreaders => write!(f, "PlagueSpreaders"),
+            Clan::Skeletons => write!(f, "Skeletons"),
+            Clan::Warlocks => write!(f, "Warlocks"),
+            Clan::Protectors => write!(f, "Protectors"),
+            Clan::Demons => write!(f, "Demons"),
+            Clan::Dragons => write!(f, "Dragons"),
+        }
+    }
+}
+
 impl Clan {
     pub fn apply_effects(
         &self,

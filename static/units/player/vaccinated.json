@@ -1,15 +1,14 @@
 {
-    "tier": 3,
-    "description": "On @Crit apply @Siphon Life",
-    "triple": "rogue_cultist+",
+    "tier": 2,
+    "description": "After taking damage from @Plague gain @Shield",
+    "triple": "vaccinated+",
     "clans": [
-        "Warlocks",
-        "Assassins"
+        "PlagueSpreaders",
+        "Protectors"
     ],
     "statuses": [
         {
-            "name": "OnDealDamage",
-            "type": "Status",
+            "name": "OnPlagueDamage",
             "stacking": {
                 "type": "Independent"
             },
@@ -17,13 +16,13 @@
                 {
                     "triggers": [
                         {
-                            "type": "DamageDealt",
-                            "damage_type": "Crit"
+                            "type": "DamageTaken",
+                            "damage_type": "Plague"
                         }
                     ],
                     "effect": {
                         "type": "AttachStatus",
-                        "status": "SiphonLife"
+                        "status": "Shield"
                     }
                 }
             ]

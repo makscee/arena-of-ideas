@@ -1,0 +1,42 @@
+{
+    "tier": 3,
+    "description": "Every 5 seconds remove @Plague from 1 ally",
+    "triple": "plague_doctor+",
+    "clans": [
+        "PlagueSpreaders",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "Every5Sec",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 5,
+                            "next_tick": 5
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Allies",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Plague"
+                        },
+                        "effect": {
+                            "type": "RemoveStatus",
+                            "status": "Plague"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
