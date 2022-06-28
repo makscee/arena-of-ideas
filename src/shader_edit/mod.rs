@@ -43,8 +43,15 @@ impl EditState {
             geng,
             &config_path,
         ))
-        .unwrap();
+        .expect("Failed to load config");
         config.path = static_path().join(&config.path);
+
+        // Load shader
+        let program = futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
+            geng,
+            &config.path,
+        ))
+        .expect("Failed to load shader");
 
         // Setup watcher
         let (tx, rx) = std::sync::mpsc::channel();
@@ -61,7 +68,7 @@ impl EditState {
         Self {
             geng: geng.clone(),
             time: Time::ZERO,
-            loaded: None,
+            loaded: Some(program),
             config,
             watcher,
             receiver: rx,
@@ -114,6 +121,8 @@ impl geng::State for EditState {
             let uniforms = (
                 ugli::uniforms! {
                     u_time: self.time.as_f32(),
+                    u_unit_position: Vec2::<f32>::ZERO,
+                    u_window_size: self.geng.window().size(),
                 },
                 geng::camera2d_uniforms(&camera, framebuffer.size().map(|x| x as f32)),
                 &self.config.parameters,
