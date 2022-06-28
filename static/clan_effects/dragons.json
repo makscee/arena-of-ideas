@@ -61,7 +61,7 @@
                         "effect": {
                             "type": "If",
                             "condition": {
-                                "type": "Clan",
+                                "type": "ClanSize",
                                 "clan": "Dragons",
                                 "count": 4
                             },

@@ -33,9 +33,13 @@ pub enum Condition {
         a: Box<Expr>,
         b: Box<Expr>,
     },
-    Clan {
+    ClanSize {
         clan: Clan,
         count: usize,
+    },
+    HasClan {
+        who: Who,
+        clan: Clan,
     },
     HasVar {
         name: VarName,
@@ -47,7 +51,7 @@ pub enum Condition {
     And {
         a: Box<Condition>,
         b: Box<Condition>,
-    }
+    },
 }
 
 impl Default for Condition {

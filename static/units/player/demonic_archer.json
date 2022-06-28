@@ -1,6 +1,7 @@
 {
     "tier": 1,
     "description": "@Bonus Shot applies @Dark Steal twice",
+    "triple":"demonic_archer+",
     "clans": [
         "Demons",
         "Archers"

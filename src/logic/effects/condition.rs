@@ -38,7 +38,14 @@ impl Logic<'_> {
             Condition::Equal { a, b } => a.calculate(&context, self) == b.calculate(&context, self),
             Condition::Less { a, b } => a.calculate(&context, self) < b.calculate(&context, self),
             Condition::More { a, b } => a.calculate(&context, self) > b.calculate(&context, self),
-            Condition::Clan { clan, count } => self.model.config.clans[clan] >= *count,
+            Condition::ClanSize { clan, count } => self.model.config.clans[clan] >= *count,
+            Condition::HasClan { who, clan } => {
+                let who = context
+                    .get(*who)
+                    .and_then(|id| self.model.units.get(&id))
+                    .expect("Caster, From, or Target not found");
+                who.clans.contains(clan)
+            }
             Condition::HasVar { name } => context.vars.contains_key(name),
             Condition::Faction { who, faction } => {
                 let who = context

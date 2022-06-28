@@ -1,0 +1,20 @@
+{
+    "name": "DarkStealOnBonusShot",
+    "stacking": {
+        "type": "Refresh"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "BonusShot"
+                }
+            ],
+            "effect": {
+                "type": "AttachStatus",
+                "status": "DarkSteal"
+            }
+        }
+    ]
+}
