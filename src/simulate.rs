@@ -1,104 +1,47 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, path::PathBuf};
 
 use geng::prelude::*;
 
 use crate::{
     assets::{Assets, Config},
     logic::Logic,
-    model::{Faction, Model, UnitTemplates},
+    model::{Faction, Model, UnitTemplates, UnitType},
 };
 
 #[derive(clap::Args)]
-pub struct Simulate1x1 {
-    player: String,
-    enemy: Option<String>,
-    #[clap(short, long, default_value = "1")]
-    runs: usize,
-    #[clap(short, long, default_value = "0.02")]
-    delta_time: f32,
+pub struct Simulate {
+    config_path: PathBuf,
 }
 
-impl Simulate1x1 {
-    pub fn run(self, assets: Assets, mut config: Config) -> Result<(), SimulationError> {
-        // Load player and enemy units
-        match assets.units.contains_key(&self.player) {
-            false => return Err(SimulationError::UnknownUnit(self.player)),
-            true => config.player = vec![self.player],
-        }
-        match self.enemy {
-            Some(enemy) if !assets.units.contains_key(&enemy) => {
-                return Err(SimulationError::UnknownUnit(enemy))
-            }
-            _ => (),
-        }
+#[derive(Deserialize, geng::Assets)]
+#[asset(json)]
+#[serde(deny_unknown_fields)]
+struct SimulationConfig {
+    player: SimulationUnits,
+    opponent: SimulationUnits,
+    repeats: usize,
+}
 
-        let mut wins = 0;
-        for _ in 0..self.runs {
-            let enemy = self
-                .enemy
-                .as_ref()
-                .unwrap_or_else(|| {
-                    // Select randomly
-                    assets
-                        .units
-                        .iter()
-                        .choose(&mut rand::thread_rng())
-                        .expect("Could not find a random unit")
-                        .0
-                })
-                .clone();
+#[derive(Deserialize)]
+#[serde(tag = "type")]
+enum SimulationUnits {
+    Units { units: Vec<UnitType> },
+    Rounds { from: u32, to: u32 },
+}
 
-            let spawn_point = config
-                .spawn_points
-                .iter()
-                .next()
-                .expect("No spawn points declared")
-                .0
-                .clone();
-            let mut wave = HashMap::new();
-            wave.insert(spawn_point, vec![enemy]);
-            // config.waves = vec![wave]; // TODO: fix
-
-            let simulation = Simulation::new(
-                assets.units.clone(),
-                config.clone(),
-                R32::new(self.delta_time),
-            );
-            let result = simulation.run();
-            if result.player_won {
-                wins += 1;
-            }
-        }
-
-        println!("----- Simulation Results -----");
-        println!(
-            "Win Rate: {:.2}% ({} out of {})",
-            (wins as f32 / self.runs as f32) * 100.0,
-            wins,
-            self.runs
-        );
-
-        Ok(())
+impl Simulate {
+    pub fn run(self, geng: &Geng, assets: Assets, mut config: Config) {
+        let config_path = static_path().join(self.config_path);
+        let config = futures::executor::block_on(<SimulationConfig as geng::LoadAsset>::load(
+            geng,
+            &config_path,
+        ))
+        .unwrap();
+        todo!()
     }
 }
 
-#[derive(Debug)]
-pub enum SimulationError {
-    UnknownUnit(String),
-}
-
-impl Display for SimulationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SimulationError::UnknownUnit(name) => {
-                writeln!(f, "Unknown unit: {}", name)?;
-            }
-        }
-        Ok(())
-    }
-}
-
-struct Simulation {
+struct SimulationState {
     config: Config,
     model: Model,
     delta_time: R32,
@@ -109,7 +52,7 @@ struct SimulationResult {
     player_won: bool,
 }
 
-impl Simulation {
+impl SimulationState {
     pub fn new(units: UnitTemplates, config: Config, delta_time: R32) -> Self {
         Self {
             config: config.clone(),
