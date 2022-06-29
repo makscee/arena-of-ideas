@@ -5,7 +5,7 @@ use geng::prelude::*;
 use crate::{
     assets::{Assets, ClanEffects, Config, GameRound, Statuses, Wave, WaveSpawn},
     logic::Logic,
-    model::{Faction, Model, UnitTemplates, UnitType},
+    model::{Faction, Model, Unit, UnitTemplates, UnitType},
 };
 
 #[derive(clap::Args)]
@@ -17,9 +17,14 @@ pub struct Simulate {
 #[asset(json)]
 #[serde(deny_unknown_fields)]
 struct SimulationConfig {
-    player: SimulationUnits,
+    player: PlayerUnits,
     opponent: SimulationUnits,
     repeats: usize,
+}
+
+#[derive(Deserialize)]
+struct PlayerUnits {
+    units: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -38,25 +43,38 @@ struct BattleConfig {
 
 impl SimulationConfig {
     fn battles(self) -> impl Iterator<Item = BattleConfig> {
-        let player = match self.player {
-            SimulationUnits::Units { units } => vec![units],
-            SimulationUnits::Rounds { from, to } => todo!(),
-        };
+        let player = self.player.units;
         let opponent = match self.opponent {
             SimulationUnits::Units { units } => vec![units],
             SimulationUnits::Rounds { from, to } => todo!(),
         };
-        player.into_iter().flat_map(move |player| {
-            opponent
-                .clone()
-                .into_iter()
-                .map(move |opponent| BattleConfig {
-                    player: player.clone(),
-                    opponent,
-                    repeats: self.repeats,
-                })
+        opponent.into_iter().map(move |opponent| BattleConfig {
+            player: player.clone(),
+            opponent,
+            repeats: self.repeats,
         })
     }
+}
+
+#[derive(Debug, Serialize)]
+struct TotalResult {
+    win_rate: f64,
+    games: usize,
+    player: Vec<UnitType>,
+}
+
+#[derive(Debug, Serialize)]
+struct BattleResult {
+    win_rate: f64,
+    player: Vec<UnitType>,
+    opponent: Vec<UnitType>,
+    games: Vec<GameResult>,
+}
+
+#[derive(Debug, Serialize)]
+struct GameResult {
+    winner: String,
+    units_alive: Vec<UnitType>,
 }
 
 impl Simulate {
@@ -67,60 +85,114 @@ impl Simulate {
         )
         .unwrap();
 
-        for battle in simulation_config.battles() {
-            info!("Starting the battle: {battle:?}");
+        let mut total_games = 0;
+        let mut total_wins = 0;
 
-            let round = GameRound {
-                statuses: vec![],
-                waves: {
-                    let mut waves = VecDeque::new();
-                    waves.push_back(Wave {
-                        start_delay: R32::ZERO,
-                        between_delay: R32::ZERO,
-                        wait_clear: false,
-                        statuses: vec![],
-                        spawns: {
-                            let spawn_point = config
-                                .spawn_points
-                                .keys()
-                                .next()
-                                .expect("Expected at least one spawn point")
-                                .clone();
-                            [(
-                                spawn_point,
-                                battle
-                                    .opponent
-                                    .into_iter()
-                                    .map(|unit| WaveSpawn {
-                                        r#type: unit,
-                                        count: 1,
-                                    })
-                                    .collect(),
-                            )]
-                            .into_iter()
-                            .collect()
-                        },
-                    });
-                    waves
-                },
-            };
-            for i in 1..=battle.repeats {
-                let result = Simulation::new(
-                    config.clone(),
-                    assets.clans.clone(),
-                    assets.statuses.clone(),
-                    round.clone(),
-                    assets.units.clone(),
-                    r32(0.02),
-                )
-                .run();
+        // let simulation_config = simulation_config.match_regex(&assets.units);
+        let player_units = simulation_config.player.units.clone();
 
-                info!(
-                    "Finished battle {}/{}, result: {result:?}",
-                    i, battle.repeats
-                );
-            }
+        let battle_results = simulation_config
+            .battles()
+            .map(|battle| {
+                info!("Starting the battle: {battle:?}");
+
+                let round = GameRound {
+                    statuses: vec![],
+                    waves: {
+                        let mut waves = VecDeque::new();
+                        waves.push_back(Wave {
+                            start_delay: R32::ZERO,
+                            between_delay: R32::ZERO,
+                            wait_clear: false,
+                            statuses: vec![],
+                            spawns: {
+                                let spawn_point = config
+                                    .spawn_points
+                                    .keys()
+                                    .next()
+                                    .expect("Expected at least one spawn point")
+                                    .clone();
+                                [(
+                                    spawn_point,
+                                    battle
+                                        .opponent
+                                        .iter()
+                                        .map(|unit| WaveSpawn {
+                                            r#type: unit.clone(),
+                                            count: 1,
+                                        })
+                                        .collect(),
+                                )]
+                                .into_iter()
+                                .collect()
+                            },
+                        });
+                        waves
+                    },
+                };
+                let mut game_wins = 0;
+                let games = (1..=battle.repeats)
+                    .map(|i| {
+                        let result = Simulation::new(
+                            config.clone(),
+                            assets.clans.clone(),
+                            assets.statuses.clone(),
+                            round.clone(),
+                            assets.units.clone(),
+                            r32(0.02),
+                        )
+                        .run();
+
+                        if result.player_won {
+                            total_wins += 1;
+                            game_wins += 1;
+                        }
+
+                        let winner = if result.player_won {
+                            "player".to_string()
+                        } else {
+                            "opponent".to_string()
+                        };
+                        info!("Finished game {}/{}, winner: {winner}", i, battle.repeats);
+                        GameResult {
+                            winner,
+                            units_alive: result
+                                .units_alive
+                                .into_iter()
+                                .map(|unit| unit.unit_type)
+                                .collect(),
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                total_games += battle.repeats;
+                BattleResult {
+                    win_rate: if games.is_empty() {
+                        0.0
+                    } else {
+                        game_wins as f64 / games.len() as f64
+                    },
+                    player: battle.player,
+                    opponent: battle.opponent,
+                    games,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let result = TotalResult {
+            player: player_units,
+            games: total_games,
+            win_rate: if total_games == 0 {
+                0.0
+            } else {
+                total_wins as f64 / total_games as f64
+            },
+        };
+
+        let total_battles = battle_results.len();
+        for (i, result) in battle_results.into_iter().enumerate() {
+            info!("Battle {}/{} result: {result:#?}", i + 1, total_battles);
         }
+        info!("Total result: {result:#?}");
     }
 }
 
@@ -131,9 +203,9 @@ struct Simulation {
     // TODO: time or steps limit
 }
 
-#[derive(Debug)]
 struct SimulationResult {
     player_won: bool,
+    units_alive: Vec<Unit>,
 }
 
 impl Simulation {
@@ -157,21 +229,28 @@ impl Simulation {
 
         loop {
             self.model.update(vec![], self.delta_time, None);
-            if self
+            let finish = if self
                 .model
                 .units
                 .iter()
                 .all(|unit| !matches!(unit.faction, Faction::Player))
             {
-                return SimulationResult { player_won: false };
-            }
-            if self.model.transition {
-                let player_won = self
-                    .model
-                    .units
-                    .iter()
-                    .any(|unit| matches!(unit.faction, Faction::Player));
-                return SimulationResult { player_won };
+                Some(false)
+            } else if self.model.transition {
+                Some(
+                    self.model
+                        .units
+                        .iter()
+                        .any(|unit| matches!(unit.faction, Faction::Player)),
+                )
+            } else {
+                None
+            };
+            if let Some(player_won) = finish {
+                return SimulationResult {
+                    player_won,
+                    units_alive: self.model.units.into_iter().collect(),
+                };
             }
         }
     }
