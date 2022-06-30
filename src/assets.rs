@@ -274,13 +274,23 @@ impl geng::LoadAsset for UnitTemplates {
         let geng = geng.clone();
         let path = path.to_owned();
         async move {
-            let common_path = static_path().join("common.glsl");
-            geng.shader_lib().add(
-                "common.glsl",
-                &<String as geng::LoadAsset>::load(&geng, &common_path)
-                    .await
-                    .context(format!("Failed to load common.glsl from {:?}", common_path))?,
-            );
+            let shader_library_list = <String as geng::LoadAsset>::load(
+                &geng,
+                &static_path().join("shader_library/_list.json"),
+            )
+            .await
+            .context("Failed to load shader library list")?;
+            let shader_library_list: Vec<String> = serde_json::from_str(&shader_library_list)
+                .context("Failed to parse shader library list")?;
+            for path in shader_library_list {
+                let asset_path = static_path().join("shader_library").join(&path);
+                geng.shader_lib().add(
+                    path.as_str(),
+                    &<String as geng::LoadAsset>::load(&geng, &asset_path)
+                        .await
+                        .context(format!("Failed to load {:?}", asset_path))?,
+                );
+            }
 
             let json = <String as geng::LoadAsset>::load(&geng, &path)
                 .await
