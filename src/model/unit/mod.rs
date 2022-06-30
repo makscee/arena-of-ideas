@@ -47,7 +47,7 @@ pub struct Unit {
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
-    pub clans: HashSet<Clan>,
+    pub clans: Vec<Clan>,
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
     pub render: RenderConfig,

@@ -24,7 +24,7 @@ pub struct UnitTemplate {
     pub statuses: Vec<StatusRef>,
     pub target_ai: TargetAi,
     pub ability: Option<Ability>,
-    pub clans: HashSet<Clan>,
+    pub clans: Vec<Clan>,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
 }
