@@ -1,0 +1,47 @@
+{
+    "tier": 2,
+    "description": "When @Shield absorbs, apply @Siphon Life to attacker",
+    "triple": "dark_guardian+",
+    "clans": [
+        "Warlocks",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnShieldAbsorb",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageIncoming"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Shield"
+                        },
+                        "then": {
+                            "type": "ChangeContext",
+                            "target": "From",
+                            "effect": {
+                                "type": "AttachStatus",
+                                "status": "SiphonLife"
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}

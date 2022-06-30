@@ -49,8 +49,6 @@ pub enum StatusTrigger {
     HealTaken { heal_type: Option<HealType> },
     /// Triggered when the owner heals someone
     HealDealt { heal_type: Option<HealType> },
-    /// Triggered when the owner's shield breaks
-    ShieldBroken,
     /// Triggered when the unit spawns
     Spawn,
     /// Triggered when the owner dies
