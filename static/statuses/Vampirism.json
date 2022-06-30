@@ -8,7 +8,12 @@
         {
             "triggers": [
                 {
-                    "type": "DamageDealt"
+                    "type": "DamageDealt",
+                    "damage_type": "Ranged"
+                },
+                {
+                    "type": "DamageDealt",
+                    "damage_type": "Melee"
                 }
             ],
             "effect": {

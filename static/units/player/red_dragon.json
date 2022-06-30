@@ -50,7 +50,7 @@
                                         {
                                             "type": "Damage",
                                             "types": [
-                                                "Pure"
+                                                "Additional"
                                             ],
                                             "value": {
                                                 "type": "Sub",
