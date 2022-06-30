@@ -5,7 +5,7 @@ pub enum DamageTrigger {
     Injure,
     Kill,
 }
-
+pub const PURE_DAMAGE: &str = "Pure";
 pub type DamageType = String;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -53,7 +53,7 @@ impl EffectImpl for DamageEffect {
 
         for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
-                StatusTrigger::DamageIncoming { damage_type } => match &damage_type {
+                StatusTrigger::DamageIncoming { damage_type } => !effect.types.contains(PURE_DAMAGE) && match &damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
                     None => true,
                 },
@@ -99,7 +99,7 @@ impl EffectImpl for DamageEffect {
 
         for (effect, vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
-                StatusTrigger::DamageTaken { damage_type } => match &damage_type {
+                StatusTrigger::DamageTaken { damage_type } => !effect.types.contains(PURE_DAMAGE) && match &damage_type {
                     Some(damage_type) => effect.types.contains(damage_type),
                     None => true,
                 },
@@ -148,7 +148,7 @@ impl EffectImpl for DamageEffect {
             for (effect, mut vars, status_id) in
                 caster_unit.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::DamageDealt { damage_type } => match damage_type {
+                        StatusTrigger::DamageDealt { damage_type } => !effect.types.contains(PURE_DAMAGE) && match damage_type {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,
                         },
@@ -205,7 +205,7 @@ impl EffectImpl for DamageEffect {
             if killed {
                 for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::Kill { damage_type } => match damage_type {
+                        StatusTrigger::Kill { damage_type } => !effect.types.contains(PURE_DAMAGE) && match damage_type {
                             Some(damage_type) => effect.types.contains(damage_type),
                             None => true,
                         },

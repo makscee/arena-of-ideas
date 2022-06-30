@@ -63,39 +63,6 @@
                     }
                 }
             }
-        },
-        {
-            "triggers": [
-                {
-                    "type": "Init"
-                }
-            ],
-            "effect": {
-                "type": "If",
-                "condition": {
-                    "type": "ClanSize",
-                    "clan": "Vampires",
-                    "count": 2
-                },
-                "then": {
-                    "type": "AddVar",
-                    "name": "VampirismKoef",
-                    "value": {
-                        "type": "Sum",
-                        "a": {
-                            "type": "Var",
-                            "name": "VampirismKoef"
-                        },
-                        "b": {
-                            "type": "Const",
-                            "value": 0.2
-                        }
-                    }
-                },
-                "else": {
-                    "type": "Noop"
-                }
-            }
         }
     ],
     "vars": {

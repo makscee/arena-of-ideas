@@ -51,8 +51,8 @@
     "dracula",
     "dracula+",
     "demonic_guardian",
-    "gnoul",
-    "gnoul+",
+    "ghoul",
+    "ghoul+",
     "lilith",
     "executor",
     "executor+",
@@ -67,5 +67,6 @@
     "vaccinated",
     "vaccinated+",
     "dark_guardian",
-    "dark_guardian+"
+    "dark_guardian+",
+    "red_dragon"
 ]

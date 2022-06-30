@@ -1,5 +1,33 @@
 [
     {
+        "activate": 4,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "name": "AddVampirism",
+                "type": "Status",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Spawn"
+                            }
+                        ],
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Vampirism"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "activate": 6,
         "filter": {
             "Player": null

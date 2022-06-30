@@ -1,0 +1,101 @@
+{
+    "tier": 2,
+    "description": "Overheal launches @Projectile at random target damaging overhealed amount",
+    "triple": "red_dragon+",
+    "clans": [
+        "Vampires",
+        "Dragons"
+    ],
+    "statuses": [
+        {
+            "name": "OnOverheal",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "HealTaken"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "More",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "Health"
+                            },
+                            "b": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            }
+                        },
+                        "then": {
+                            "type": "ChangeTarget",
+                            "filter": "Enemies",
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "effect": {
+                                "type": "Projectile",
+                                "speed": 8,
+                                "effect": {
+                                    "type": "List",
+                                    "effects": [
+                                        {
+                                            "type": "Damage",
+                                            "types": [
+                                                "Pure"
+                                            ],
+                                            "value": {
+                                                "type": "Sub",
+                                                "a": {
+                                                    "type": "FindStat",
+                                                    "who": "Caster",
+                                                    "stat": "Health"
+                                                },
+                                                "b": {
+                                                    "type": "FindStat",
+                                                    "who": "Caster",
+                                                    "stat": "MaxHealth"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "preset": "effects/ranged_hit_vfx.json"
+                                        }
+                                    ]
+                                },
+                                "render": {
+                                    "type": "Shader",
+                                    "path": "shaders/projectile_default.glsl",
+                                    "parameters": {
+                                        "u_padding": 5.0,
+                                        "p_count": 80,
+                                        "p_lifeTime": 0.6,
+                                        "p_radius_start": 0.6,
+                                        "p_radius_end": -0.3,
+                                        "p_glow_radius": 0.6,
+                                        "p_speed": 2.5,
+                                        "u_clan_color_1": "#dc143c",
+                                        "u_clan_color_2": "#8a2be2",
+                                        "u_clan_color_3": "#1e90ff"
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
