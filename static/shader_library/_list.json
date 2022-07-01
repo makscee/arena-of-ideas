@@ -1,3 +1,4 @@
 [
-    "common.glsl"
+    "common.glsl",
+    "particles.glsl"
 ]
