@@ -1,3 +1,4 @@
 /target/
 /Cargo.lock
 maks_config.json
+shader_edit_config.json
