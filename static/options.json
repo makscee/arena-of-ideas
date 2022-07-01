@@ -1,17 +1,9 @@
 {
     "clan_colors": {
-        "Spawners": "#b8860b",
         "Assassins": "#ffd700",
-        "Critters": "#b8860b",
         "Archers": "#5f9ea0",
         "Freezers": "#1e90ff",
-        "Warriors": "#a0522d",
-        "Healers": "#db7093",
         "Vampires": "#dc143c",
-        "Exploders": "#ff4500",
-        "Splashers": "#eee8aa",
-        "Chainers": "#d8bfd8",
-        "Charmers": "#ff1493",
         "Skeletons": "#E6E6E6",
         "Warlocks": "#400080",
         "PlagueSpreaders": "#808003",

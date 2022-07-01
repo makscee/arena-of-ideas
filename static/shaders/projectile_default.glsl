@@ -27,6 +27,7 @@ uniform float p_glow_radius = 0.3;
 uniform float p_speed = 3;
 uniform vec2 u_velocity;
 
+#include <particles_uniforms.glsl>
 
 float p_spread(int i, int offset)
 {
@@ -56,6 +57,7 @@ vec3 p_color(int i)
     return mix3Colors(rand(i), colors);
 }
 
+#define p_radiusOverT_redef
 float p_radiusOverT(int i, float t)
 {
     return mix(p_radius_start, p_radius_end, p_lifeT(i, t));

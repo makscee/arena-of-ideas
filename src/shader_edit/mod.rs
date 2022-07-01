@@ -185,7 +185,7 @@ impl geng::State for EditState {
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
             rotation: 0.0,
-            fov: 22.0,
+            fov: 15.0,
         };
 
         if let Some((_, program)) = &self.shader {
@@ -210,7 +210,9 @@ impl geng::State for EditState {
                 ugli::uniforms! {
                     u_time: self.time.as_f32(),
                     u_unit_position: Vec2::<f32>::ZERO,
+                    u_unit_radius: 1_f32,
                     u_window_size: self.geng.window().size(),
+                    u_spawn: self.time.as_f32().fract(),
                 },
                 geng::camera2d_uniforms(&camera, framebuffer.size().map(|x| x as f32)),
                 &self.config.parameters,

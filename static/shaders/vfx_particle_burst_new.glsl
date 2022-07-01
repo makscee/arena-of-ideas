@@ -1,6 +1,5 @@
 #include <common.glsl>
 
-
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
 attribute vec2 a_pos;
@@ -17,15 +16,21 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
+#include <particles_uniforms.glsl>
+
+
+#include <particles_functions.glsl>
 
 void main() {
     vec2 uv = v_quad_pos;
-    float t = u_time;
-    vec4 col = vec4(0,0,0,0);
-    p_discardCheck(uv, t);
+    float t = 1. - u_spawn;
+
+    vec4 col = vec4(0);
+
     for (int i = 0; i < p_count; i++)
         col = alphaBlend(col, p_renderParticle(i, uv, t));
 
     gl_FragColor = col;
+    // gl_FragColor = vec4(uv.x,uv.y,0,1);
 }
 #endif

@@ -7,8 +7,8 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    v_quad_pos = a_pos * (1.0 + padding);
-    float size = u_unit_radius * u_spawn;
+    v_quad_pos = a_pos * (1.0 + u_padding);
+    float size = u_unit_radius;// * u_spawn;
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -56,12 +56,9 @@ vec4 renderAbilityReady(vec2 uv, vec3 color)
 void main() {
     commonInit();
     vec2 uv = v_quad_pos;
-    float dist = distance(uv,vec2(0.0,0.0));
-    vec4 col = vec4(0.,0.,0.,0.);
+    float dist = distance(uv,vec2(0));
+    vec4 col = vec4(0);
     float u_action_time = u_action_time - float(u_action_time == 0) * 1000;
-
-
-    //start
 
     const float triangleGrowMax = 0.7;
     float fadeAnimation = min(0.5, u_cooldown);
@@ -86,8 +83,6 @@ void main() {
     {
         col = alphaBlend(col, vec4(vec3(1.), 1. - (u_time - u_injure_time) / injureAnimationTime));
     }
-
-    //end
 
     gl_FragColor = col;
 }

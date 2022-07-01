@@ -6,8 +6,7 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    const float padding = 1.;
-    v_quad_pos = a_pos * (1.0 + padding);
+    v_quad_pos = a_pos * (1.0 + u_padding);
     float size = u_unit_radius;
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
@@ -27,16 +26,21 @@ const float p_startPosRand = 0.1;
 const float p_spawnShift = 0.02;
 const float velocity = 0.6;
 
+#include <particles_uniforms.glsl>
+
+#define p_velocityOverT_redef
 float p_velocityOverT(int i, float t)
 {
     return e_invSquare(t) * velocity * (1. - rand(i + 1) * .2);
 }
 
+#define p_startPosition_redef
 vec2 p_startPosition(int i)
 {
     return randCircle(i) * rand(i) * p_startPosRand;
 }
 
+#define p_positionOverT_redef
 vec2 p_positionOverT(int i, float t)
 {
     float spinRand = (0.5 + rand(i + 55)) * t * .7;
@@ -44,11 +48,13 @@ vec2 p_positionOverT(int i, float t)
         + vec2(sin(spinRand * 17.), cos(spinRand * 13.)) * p_spinMax;
 }
 
+#define p_radiusOverT_redef
 float p_radiusOverT(int i, float t)
 {
     return mix(p_startSize, 0., t);
 }
 
+#define p_colorOverT_redef
 vec3 p_colorOverT(int i, float t)
 {
     const int p_colorsNum = 2;
@@ -64,16 +70,19 @@ vec3 p_colorOverT(int i, float t)
     return mix(p_colors[colorInd], p_colors[colorInd + 1], fract(t * float(p_colorsNum - 1)));
 }
 
+#define p_alphaOverT_redef
 float p_alphaOverT(int i, float t)
 {
     return mix(1., 0.6, t);
 }
 
+#define p_discardCheck_redef
 void p_discardCheck(vec2 uv, float t)
 {
     if (distance(uv,vec2(0.)) > e_invSquare(t) * velocity + p_spinMax + p_startPosRand) discard;
 }
 
+#define p_renderParticle_redef
 vec4 p_renderParticle(int i, vec2 uv, float t)
 {
     if (t < 0.) return vec4(0.);
@@ -83,6 +92,8 @@ vec4 p_renderParticle(int i, vec2 uv, float t)
     float alpha = float(distance < radius) * p_alphaOverT(i,t);
     return vec4(p_colorOverT(i,t), alpha);
 }
+
+#include <particles_functions.glsl>
 
 void main() {
     vec2 uv = v_quad_pos;
