@@ -223,7 +223,10 @@ impl geng::State for EditState {
                 ugli::DrawMode::TriangleFan,
                 &quad,
                 &uniforms,
-                ugli::DrawParameters::default(),
+                ugli::DrawParameters {
+                    blend_mode: Some(default()),
+                    ..default()
+                },
             );
         }
     }
