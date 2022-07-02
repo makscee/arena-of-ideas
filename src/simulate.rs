@@ -30,8 +30,15 @@ struct PlayerUnits {
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 enum SimulationUnits {
-    Units { units: Vec<String> },
-    Rounds { from: u32, to: u32 },
+    Units {
+        /// Each entry in the list is treated as a regular expression
+        /// and will include all units, whose name satisfies it
+        units: Vec<String>,
+    },
+    Rounds {
+        from: u32,
+        to: u32,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -42,10 +49,14 @@ struct BattleConfig {
 }
 
 impl SimulationConfig {
-    fn battles(self) -> impl Iterator<Item = BattleConfig> {
-        let player = self.player.units;
+    fn battles(self, all_units: &[&UnitType]) -> impl Iterator<Item = BattleConfig> {
+        let player = match_units(&self.player.units, all_units)
+            .cloned()
+            .collect::<Vec<_>>();
         let opponent = match self.opponent {
-            SimulationUnits::Units { units } => vec![units],
+            SimulationUnits::Units { units } => {
+                vec![match_units(&units, all_units).cloned().collect()]
+            }
             SimulationUnits::Rounds { from, to } => todo!(),
         };
         opponent.into_iter().map(move |opponent| BattleConfig {
@@ -54,6 +65,19 @@ impl SimulationConfig {
             repeats: self.repeats,
         })
     }
+}
+
+fn match_units<'a>(
+    patterns: impl IntoIterator<Item = &'a String> + 'a,
+    all_units: &'a [&'a UnitType],
+) -> impl Iterator<Item = &'a UnitType> + 'a {
+    patterns.into_iter().flat_map(move |regex| {
+        let regex = regex::Regex::new(regex).expect("Failed to parse a regular expression");
+        all_units
+            .iter()
+            .filter(move |unit| regex.is_match(unit))
+            .map(|name| *name)
+    })
 }
 
 #[derive(Debug, Serialize)]
@@ -88,11 +112,11 @@ impl Simulate {
         let mut total_games = 0;
         let mut total_wins = 0;
 
-        // let simulation_config = simulation_config.match_regex(&assets.units);
         let player_units = simulation_config.player.units.clone();
 
+        let all_units = assets.units.keys().collect::<Vec<_>>();
         let battle_results = simulation_config
-            .battles()
+            .battles(&all_units[..])
             .map(|battle| {
                 info!("Starting the battle: {battle:?}");
 
