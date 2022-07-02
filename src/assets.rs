@@ -87,7 +87,7 @@ async fn load_field_render(
 pub type Key = String;
 pub type SpawnPoint = String;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
     #[serde(default)]
@@ -96,7 +96,7 @@ pub struct GameRound {
     pub waves: VecDeque<Wave>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Wave {
     #[serde(default = "Wave::default_start_delay")]
     pub start_delay: Time,
@@ -122,7 +122,7 @@ impl Wave {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct WaveSpawn {
     pub r#type: UnitType,
