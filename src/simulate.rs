@@ -174,7 +174,10 @@ impl Simulate {
                 let games = (1..=battle.repeats)
                     .map(|i| {
                         let result = Simulation::new(
-                            config.clone(),
+                            Config {
+                                player: battle.player.clone(),
+                                ..config.clone()
+                            },
                             assets.clans.clone(),
                             assets.statuses.clone(),
                             round.clone(),
