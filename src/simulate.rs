@@ -49,14 +49,28 @@ struct BattleConfig {
 }
 
 impl SimulationConfig {
+    /// Treat unit names as regular expressions and match them on `all_units`
+    fn match_regex(self, all_units: &[&UnitType]) -> Self {
+        Self {
+            player: PlayerUnits {
+                units: match_units(&self.player.units, all_units)
+                    .cloned()
+                    .collect(),
+            },
+            opponent: match self.opponent {
+                SimulationUnits::Units { units } => SimulationUnits::Units {
+                    units: match_units(&units, all_units).cloned().collect(),
+                },
+                SimulationUnits::Rounds { .. } => self.opponent,
+            },
+            repeats: self.repeats,
+        }
+    }
+
     fn battles(self, all_units: &[&UnitType]) -> impl Iterator<Item = BattleConfig> {
-        let player = match_units(&self.player.units, all_units)
-            .cloned()
-            .collect::<Vec<_>>();
+        let player = self.player.units;
         let opponent = match self.opponent {
-            SimulationUnits::Units { units } => {
-                vec![match_units(&units, all_units).cloned().collect()]
-            }
+            SimulationUnits::Units { units } => vec![units],
             SimulationUnits::Rounds { from, to } => todo!(),
         };
         opponent.into_iter().map(move |opponent| BattleConfig {
@@ -109,12 +123,14 @@ impl Simulate {
         )
         .unwrap();
 
+        let all_units = assets.units.keys().collect::<Vec<_>>();
+        let simulation_config = simulation_config.match_regex(&all_units);
+
         let mut total_games = 0;
         let mut total_wins = 0;
 
         let player_units = simulation_config.player.units.clone();
 
-        let all_units = assets.units.keys().collect::<Vec<_>>();
         let battle_results = simulation_config
             .battles(&all_units[..])
             .map(|battle| {
