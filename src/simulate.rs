@@ -229,11 +229,42 @@ impl Simulate {
         };
 
         let total_battles = battle_results.len();
-        for (i, result) in battle_results.into_iter().enumerate() {
+        for (i, result) in battle_results.iter().enumerate() {
             info!("Battle {}/{} result: {result:#?}", i + 1, total_battles);
         }
         info!("Total result: {result:#?}");
+
+        let result_path = PathBuf::new().join("simulation_result");
+        let battles_path = result_path.join("battles");
+
+        // Create directories
+        match std::fs::create_dir_all(&battles_path) {
+            Ok(()) => {}
+            Err(error) => match error.kind() {
+                std::io::ErrorKind::AlreadyExists => {}
+                _ => panic!("Failed to create a simulation_result directory: {error}"),
+            },
+        }
+
+        // Write results
+        write_to(result_path.join("total.json"), &result).expect("Failed to write results");
+        for (i, result) in battle_results.iter().enumerate() {
+            let path = battles_path.join(format!(
+                "battle_{:0<w$}.json",
+                i + 1,
+                w = battle_results.len() / 10 + 1
+            ));
+            write_to(path, result).expect("Failed to write results");
+        }
     }
+}
+
+fn write_to<T: Serialize>(path: impl AsRef<std::path::Path>, item: &T) -> std::io::Result<()> {
+    let path = path.as_ref();
+    let file = std::fs::File::create(path).expect(&format!("Failed to create {path:?}"));
+    let data = serde_json::to_string_pretty(item).expect("Failed to serialize item");
+    std::fs::write(path, data)?;
+    Ok(())
 }
 
 struct Simulation {

@@ -1,3 +1,4 @@
 /target/
 /Cargo.lock
 maks_config.json
+/simulation_result/
