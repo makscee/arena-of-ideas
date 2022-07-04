@@ -15,8 +15,6 @@ pub struct ShaderEdit {
 #[serde(deny_unknown_fields)]
 struct ShaderEditConfig {
     path: PathBuf,
-    #[serde(default)]
-    extra_watch: Vec<PathBuf>,
     parameters: ShaderParameters,
 }
 
@@ -48,10 +46,24 @@ impl EditState {
         ))
         .expect("Failed to load config");
         config.path = static_path().join(&config.path);
-        config.extra_watch = config
-            .extra_watch
+
+        let shader_library_list =
+            match futures::executor::block_on(<String as geng::LoadAsset>::load(
+                geng,
+                &static_path().join("shader_library/_list.json"),
+            )) {
+                Ok(list) => list,
+                Err(error) => {
+                    error!("Failed to load shader library list");
+                    String::new()
+                }
+            };
+        let shader_library_list: Vec<String> = serde_json::from_str(&shader_library_list)
+            .context("Failed to parse shader library list")
+            .unwrap();
+        let shader_library_list: Vec<PathBuf> = shader_library_list
             .iter()
-            .map(|path| static_path().join(&path))
+            .map(|path| static_path().join("shader_library/").join(path))
             .collect();
 
         // Load shader
@@ -72,7 +84,7 @@ impl EditState {
         watcher
             .watch(&config.path, notify::RecursiveMode::NonRecursive)
             .expect(&format!("Failed to start watching {:?}", config.path));
-        config.extra_watch.iter().for_each(|path| {
+        shader_library_list.iter().for_each(|path| {
             watcher
                 .watch(&path, notify::RecursiveMode::NonRecursive)
                 .expect(&format!("Failed to start watching {:?}", path))
@@ -110,15 +122,11 @@ impl EditState {
     }
 
     fn reload_path(&mut self, path: PathBuf) {
-        if path == self.config.path {
-            self.reload_shader();
-        } else if path == self.config_path {
+        if path == self.config_path {
             self.config = ShaderEditConfig::load(&self.geng, path).expect("Failed to load config");
             self.reload_shader();
-        } else if self.config.extra_watch.contains(&path) {
-            self.reload_shader();
         } else {
-            warn!("Tried to reload an unregistered path (neither config nor shader): {path:?}");
+            self.reload_shader();
         }
     }
 
@@ -150,6 +158,36 @@ impl EditState {
             if path != self.config.path {
                 self.switch_watch(path, self.config.path.clone());
             }
+        }
+
+        let shader_library_list =
+            match futures::executor::block_on(<String as geng::LoadAsset>::load(
+                &self.geng,
+                &static_path().join("shader_library/_list.json"),
+            )) {
+                Ok(list) => list,
+                Err(error) => {
+                    error!("Failed to load shader library list");
+                    return;
+                }
+            };
+        let shader_library_list: Vec<String> = serde_json::from_str(&shader_library_list)
+            .context("Failed to parse shader library list")
+            .unwrap();
+
+        for path in shader_library_list {
+            let asset_path = static_path().join("shader_library").join(&path);
+            let source = match futures::executor::block_on(<String as geng::LoadAsset>::load(
+                &self.geng,
+                &asset_path,
+            )) {
+                Ok(source) => source,
+                Err(error) => {
+                    format!("Failed to load {:?}", asset_path);
+                    return;
+                }
+            };
+            self.geng.shader_lib().add(path.as_str(), &source);
         }
 
         // Reload shader
