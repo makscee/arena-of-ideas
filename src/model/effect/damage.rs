@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
@@ -28,18 +30,41 @@ impl EffectContainer for DamageEffect {
 
 impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
-        let effect = *self;
+        let mut effect = *self;
         let mut damage = effect.value.calculate(&context, logic);
-        let armor_penetration = 0_f32;
+        let mut armor_penetration = 0_f32;
         if let Some(caster) = context.caster {
-            let armor_penetration = logic
+            let caster_unit = logic
                 .model
                 .units
                 .get(&caster)
                 .or(logic.model.dead_units.get(&caster))
-                .unwrap()
-                .stats
-                .armor_penetration;
+                .unwrap();
+            armor_penetration = caster_unit.stats.armor_penetration.raw();
+
+            //Add extra damage types
+            let mut modifiers: Vec<StatusModifier> = caster_unit
+                .all_statuses
+                .iter()
+                .flat_map(|status| match &status.status.effect {
+                    StatusEffect::Modifier(modifier) => Some(modifier.clone()),
+                    _ => None,
+                })
+                .collect();
+            modifiers.sort_by_key(|modifier| modifier.priority);
+            for modifier in modifiers {
+                match modifier.target {
+                    ModifierTarget::ExtraOutDamageType {
+                        source,
+                        damage_type,
+                    } => {
+                        if effect.types.contains(&source) {
+                            effect.types.insert(damage_type);
+                        }
+                    }
+                    _ => (),
+                }
+            }
         }
         let units = &mut logic.model.units;
         let target_unit = context
@@ -53,10 +78,18 @@ impl EffectImpl for DamageEffect {
 
         for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
-                StatusTrigger::DamageIncoming { damage_type } => match &damage_type {
-                    Some(damage_type) => effect.types.contains(damage_type),
-                    None => true,
-                },
+                StatusTrigger::DamageIncoming {
+                    damage_type,
+                    except,
+                } => {
+                    if let Some(damage_type) = &damage_type {
+                        effect.types.contains(damage_type)
+                    } else if let Some(except) = &except {
+                        !effect.types.contains(except)
+                    } else {
+                        true
+                    }
+                }
                 _ => false,
             })
         }) {
@@ -92,7 +125,7 @@ impl EffectImpl for DamageEffect {
                 damage *= r32(2.0 - 0.94_f32.powf(-armor));
             }
         }
-        
+
         for status in target_unit.all_statuses.iter() {
             if status.status.name == "Vulnerability" {
                 damage *= r32(2.0);
@@ -101,10 +134,18 @@ impl EffectImpl for DamageEffect {
 
         for (effect, vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
-                StatusTrigger::DamageTaken { damage_type } => match &damage_type {
-                    Some(damage_type) => effect.types.contains(damage_type),
-                    None => true,
-                },
+                StatusTrigger::DamageTaken {
+                    damage_type,
+                    except,
+                } => {
+                    if let Some(damage_type) = &damage_type {
+                        effect.types.contains(damage_type)
+                    } else if let Some(except) = &except {
+                        !effect.types.contains(except)
+                    } else {
+                        true
+                    }
+                }
                 _ => false,
             })
         }) {
@@ -150,10 +191,18 @@ impl EffectImpl for DamageEffect {
             for (effect, mut vars, status_id) in
                 caster_unit.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::DamageDealt { damage_type } => match damage_type {
-                            Some(damage_type) => effect.types.contains(damage_type),
-                            None => true,
-                        },
+                        StatusTrigger::DamageDealt {
+                            damage_type,
+                            except,
+                        } => {
+                            if let Some(damage_type) = &damage_type {
+                                effect.types.contains(damage_type)
+                            } else if let Some(except) = &except {
+                                !effect.types.contains(except)
+                            } else {
+                                true
+                            }
+                        }
                         _ => false,
                     })
                 })
@@ -207,10 +256,18 @@ impl EffectImpl for DamageEffect {
             if killed {
                 for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::Kill { damage_type } => match damage_type {
-                            Some(damage_type) => effect.types.contains(damage_type),
-                            None => true,
-                        },
+                        StatusTrigger::Kill {
+                            damage_type,
+                            except,
+                        } => {
+                            if let Some(damage_type) = &damage_type {
+                                effect.types.contains(damage_type)
+                            } else if let Some(except) = &except {
+                                !effect.types.contains(except)
+                            } else {
+                                true
+                            }
+                        }
                         _ => false,
                     })
                 }) {

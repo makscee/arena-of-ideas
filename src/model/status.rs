@@ -40,11 +40,20 @@ impl Default for StatusStacking {
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum StatusTrigger {
     /// Triggered when the owner deals damage of the specified type (or any type if none is specified)
-    DamageDealt { damage_type: Option<DamageType> },
+    DamageDealt {
+        damage_type: Option<DamageType>,
+        except: Option<DamageType>,
+    },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
-    DamageTaken { damage_type: Option<DamageType> },
+    DamageTaken {
+        damage_type: Option<DamageType>,
+        except: Option<DamageType>,
+    },
     /// Triggered when the owner is about to take damage of the specified type (or any type if none is specified)
-    DamageIncoming { damage_type: Option<DamageType> },
+    DamageIncoming {
+        damage_type: Option<DamageType>,
+        except: Option<DamageType>,
+    },
     /// Triggered when the owner is healed
     HealTaken { heal_type: Option<HealType> },
     /// Triggered when the owner heals someone
@@ -54,7 +63,10 @@ pub enum StatusTrigger {
     /// Triggered when the owner dies
     Death,
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
-    Kill { damage_type: Option<DamageType> },
+    Kill {
+        damage_type: Option<DamageType>,
+        except: Option<DamageType>,
+    },
     /// Triggered when a unit dies in range
     Scavenge {
         who: TargetFilter,
@@ -141,7 +153,13 @@ pub struct Aura {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum ModifierTarget {
-    Stat { stat: UnitStat },
+    Stat {
+        stat: UnitStat,
+    },
+    ExtraOutDamageType {
+        source: DamageType,
+        damage_type: DamageType,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

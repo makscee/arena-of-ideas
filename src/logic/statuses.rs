@@ -192,6 +192,7 @@ impl Logic<'_> {
                 let unit = self.model.units.get_mut(&unit_id).unwrap();
                 match modifier.target {
                     ModifierTarget::Stat { stat } => *unit.stats.get_mut(stat) = value,
+                    _ => (),
                 }
             }
         }

@@ -12,7 +12,9 @@
         {
             "triggers": [
                 {
-                    "type": "DamageTaken"
+                    "type": "DamageTaken",
+                    "except": "IgnoreFreeze"
+
                 }
             ],
             "effect": {
