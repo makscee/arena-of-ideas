@@ -1,6 +1,7 @@
 {
     "tier": 5,
     "description": "@Scathe: apply @Siphon Life and @Plague",
+    "triple":"dark_horseman+",
     "clans": [
         "PlagueSpreaders",
         "Warlocks"
