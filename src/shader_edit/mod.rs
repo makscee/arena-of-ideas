@@ -15,6 +15,8 @@ pub struct ShaderEdit {
 #[serde(deny_unknown_fields)]
 struct ShaderEditConfig {
     path: PathBuf,
+    #[serde(default)]
+    extra_watch: Vec<PathBuf>,
     parameters: ShaderParameters,
 }
 
@@ -46,6 +48,11 @@ impl EditState {
         ))
         .expect("Failed to load config");
         config.path = static_path().join(&config.path);
+        config.extra_watch = config
+            .extra_watch
+            .iter()
+            .map(|path| static_path().join(&path))
+            .collect();
 
         // Load shader
         let program = futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
@@ -65,6 +72,11 @@ impl EditState {
         watcher
             .watch(&config.path, notify::RecursiveMode::NonRecursive)
             .expect(&format!("Failed to start watching {:?}", config.path));
+        config.extra_watch.iter().for_each(|path| {
+            watcher
+                .watch(&path, notify::RecursiveMode::NonRecursive)
+                .expect(&format!("Failed to start watching {:?}", path))
+        });
 
         Self {
             geng: geng.clone(),
@@ -102,6 +114,8 @@ impl EditState {
             self.reload_shader();
         } else if path == self.config_path {
             self.config = ShaderEditConfig::load(&self.geng, path).expect("Failed to load config");
+            self.reload_shader();
+        } else if self.config.extra_watch.contains(&path) {
             self.reload_shader();
         } else {
             warn!("Tried to reload an unregistered path (neither config nor shader): {path:?}");
