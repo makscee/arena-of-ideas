@@ -264,7 +264,7 @@ impl geng::State for EditState {
                     u_unit_position: Vec2::<f32>::ZERO,
                     u_unit_radius: 1_f32,
                     u_window_size: self.geng.window().size(),
-                    u_spawn: self.time.as_f32().fract(),
+                    u_spawn: 1.0 - self.time.as_f32().fract(),
                 },
                 geng::camera2d_uniforms(&camera, framebuffer.size().map(|x| x as f32)),
                 &self.config.parameters,

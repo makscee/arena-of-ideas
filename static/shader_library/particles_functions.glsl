@@ -55,7 +55,7 @@ vec2 p_velocityOverT(int i, float t)
 #ifndef p_positionOverT_redef
 vec2 p_positionOverT(int i, float t)
 {
-    return p_startPosition(i) + p_velocityOverT(i, t);
+    return p_startPosition(i) + p_velocityOverT(i, t) * t;
 }
 #endif
 

@@ -18,6 +18,17 @@ void main() {
 in vec2 v_quad_pos;
 #include <particles_uniforms.glsl>
 
+#define p_startPosition_redef
+vec2 p_startPosition(int i)
+{
+    return vec2(rand(i) - 0.5, rand(i+1) - 0.5);
+}
+
+#define p_velocityOverT_redef
+vec2 p_velocityOverT(int i, float t)
+{
+    return rotateCW(randCircle(i), t * pi) + p_gravity * t;
+}
 
 #include <particles_functions.glsl>
 
@@ -31,6 +42,5 @@ void main() {
         col = alphaBlend(col, p_renderParticle(i, uv, t));
 
     gl_FragColor = col;
-    // gl_FragColor = vec4(uv.x,uv.y,0,1);
 }
 #endif
