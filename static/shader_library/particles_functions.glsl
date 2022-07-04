@@ -65,8 +65,9 @@ vec4 p_renderParticle(int i, vec2 uv, float t)
     if (t < 0.) return vec4(0.);
     vec2 position = p_positionOverT(i, t);
     float radius = p_radiusOverT(i, t);
-    float distance = distance(uv, position);
-    float alpha = float(distance < radius) * p_alphaOverT(i,t);
+    if (radius < 0) return vec4(0);
+    float distance = p_distToShape(position, uv, radius);
+    float alpha = float(distance < 0) * p_alphaOverT(i,t);
     return vec4(p_colorOverT(i,t), alpha);
 }
 #endif

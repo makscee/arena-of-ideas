@@ -1,0 +1,22 @@
+{
+    "type": "Visual",
+    "duration": 1.0,
+    "parent": "Target",
+    "follow": false,
+    "radius": 1.5,
+    "render": {
+        "type": "Shader",
+        "path": "shaders/vfx_particle_burst_new.glsl",
+        "parameters": {
+            "u_padding": 1.0,
+            "p_shape": 2,
+            "p_count": 12,
+            "p_gravity": [
+                0,
+                2
+            ],
+            "p_startColor": "#22ff00",
+            "p_endColor": "#108001"
+        }
+    }
+}

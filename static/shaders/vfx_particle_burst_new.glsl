@@ -18,6 +18,8 @@ void main() {
 in vec2 v_quad_pos;
 #include <particles_uniforms.glsl>
 
+uniform float p_spinScale = 0;
+
 #define p_startPosition_redef
 vec2 p_startPosition(int i)
 {
@@ -27,7 +29,7 @@ vec2 p_startPosition(int i)
 #define p_velocityOverT_redef
 vec2 p_velocityOverT(int i, float t)
 {
-    return rotateCW(randCircle(i), t * pi) + p_gravity * t;
+    return rotateCW(randCircle(i), t * pi * p_spinScale) + p_gravity * t;
 }
 
 #include <particles_functions.glsl>
