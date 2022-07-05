@@ -67,7 +67,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction != unit_faction)
-                    .min_by_key(|other| (other.position - unit.position).len()),
+                    .min_by_key(|other| (other.position - unit.position).abs()),
                 TargetAi::Biggest => self
                     .model
                     .units
@@ -77,7 +77,6 @@ impl Logic<'_> {
                 _ => todo!(),
             });
             if let Some(target) = target {
-                unit.face_dir = (target.position - unit.position).normalize_or_zero();
                 if distance_between_units(target, &unit) < unit.action.range {
                     assert_ne!(target.id, unit.id);
                     unit.action_state = ActionState::Start {

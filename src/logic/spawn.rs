@@ -6,7 +6,7 @@ impl Logic<'_> {
         &mut self,
         unit_type: &UnitType,
         faction: Faction,
-        position: Vec2<Coord>,
+        position: Position,
     ) -> Id {
         let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;

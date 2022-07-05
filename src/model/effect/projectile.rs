@@ -43,7 +43,7 @@ impl EffectImpl for ProjectileEffect {
             caster: context.caster.expect("Projectile caster is undefined"),
             target: target.id,
             position: from.position
-                + (target.position - from.position).normalize() * from.stats.radius,
+                + (target.position - from.position).signum() * from.stats.radius,
             speed: effect.speed,
             target_position: target.position,
             effect: effect.effect,

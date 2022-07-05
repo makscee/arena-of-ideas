@@ -46,13 +46,13 @@ impl Logic<'_> {
                 // Continue spawning wave
                 self.model.wave_delay = wave.between_delay;
                 for (point, unit_type) in next_spawns {
-                    let position = *self
-                        .model
-                        .config
-                        .spawn_points
-                        .get(&point)
-                        .expect(&format!("Failed to find spawnpoint: {point}"));
-                    let unit = self.spawn_unit(&unit_type, Faction::Enemy, position);
+                    // let position = *self
+                    //     .model
+                    //     .config
+                    //     .spawn_points
+                    //     .get(&point)
+                    //     .expect(&format!("Failed to find spawnpoint: {point}"));
+                    let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::ZERO); // TODO: reimplement
                     let unit = self.model.spawning_units.get_mut(&unit).unwrap();
                     let round = &self.model.round;
                     let statuses = round

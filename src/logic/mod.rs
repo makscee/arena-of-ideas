@@ -4,7 +4,6 @@ use super::*;
 
 mod abilities;
 mod actions;
-mod collisions;
 mod deaths;
 mod effects;
 mod movement;
@@ -47,7 +46,6 @@ impl<'a> Logic<'a> {
         self.process_spawns();
         self.process_abilities();
         self.process_movement();
-        self.process_collisions();
         self.process_targeting();
         self.process_actions();
         self.process_cooldowns();
@@ -100,9 +98,9 @@ impl<'a> Logic<'a> {
             .map(|unit| (unit, self.model.unit_templates[unit].clone()))
             .collect::<Vec<_>>();
 
-        let spawn_point = config.spawn_points["Heroes"];
+        // let spawn_point = config.spawn_points["Heroes"];
         for unit_type in &config.player {
-            self.spawn_unit(unit_type, Faction::Player, spawn_point);
+            self.spawn_unit(unit_type, Faction::Player, Position::ZERO); // TODO: reimplement
         }
     }
 }

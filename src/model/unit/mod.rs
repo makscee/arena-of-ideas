@@ -41,8 +41,8 @@ pub struct Unit {
     pub stats: UnitStats,
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
-    pub face_dir: Vec2<Coord>,
-    pub position: Vec2<Coord>,
+    pub face_dir: Vec2<Coord>, // TODO: remove
+    pub position: Position,
     pub action: ActionProperties,
     pub move_ai: MoveAi,
     pub target_ai: TargetAi,
@@ -88,7 +88,7 @@ impl Unit {
         next_id: &mut Id,
         unit_type: UnitType,
         faction: Faction,
-        position: Vec2<Coord>,
+        position: Position,
         statuses: &Statuses,
     ) -> Self {
         let id = *next_id;

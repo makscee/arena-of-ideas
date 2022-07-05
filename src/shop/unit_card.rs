@@ -21,7 +21,7 @@ impl UnitCard {
                 &mut 0,
                 unit_type,
                 Faction::Player,
-                Vec2::ZERO,
+                Position::ZERO,
                 statuses,
             ),
             template,

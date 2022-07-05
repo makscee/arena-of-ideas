@@ -29,7 +29,6 @@ mod remove_status;
 mod repeat;
 mod revive;
 mod spawn;
-mod splash;
 mod suicide;
 mod time_bomb;
 mod visual;
@@ -63,7 +62,6 @@ pub use remove_status::*;
 pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
-pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 pub use visual::*;
@@ -97,7 +95,6 @@ pub enum Effect {
     ChangeStat(Box<ChangeStatEffect>),
     Delayed(Box<DelayedEffect>),
     Action(Box<ActionEffect>),
-    Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
@@ -135,7 +132,6 @@ pub enum RawEffect {
     ChangeStat(Box<ChangeStatEffect>),
     Delayed(Box<DelayedEffect>),
     Action(Box<ActionEffect>),
-    Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     AddVar(Box<AddVarEffect>),
@@ -210,7 +206,6 @@ impl std::fmt::Debug for Effect {
             Self::ChangeStat(effect) => effect.fmt(f),
             Self::Delayed(effect) => effect.fmt(f),
             Self::Action(effect) => effect.fmt(f),
-            Self::Splash(effect) => effect.fmt(f),
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
@@ -250,7 +245,6 @@ impl From<RawEffect> for Effect {
             RawEffect::ChangeStat(effect) => Self::ChangeStat(effect),
             RawEffect::Delayed(effect) => Self::Delayed(effect),
             RawEffect::Action(effect) => Self::Action(effect),
-            RawEffect::Splash(effect) => Self::Splash(effect),
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
@@ -322,7 +316,6 @@ impl Effect {
             Effect::ChangeStat(effect) => &mut **effect,
             Effect::Delayed(effect) => &mut **effect,
             Effect::Action(effect) => &mut **effect,
-            Effect::Splash(effect) => &mut **effect,
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
@@ -359,7 +352,6 @@ impl Effect {
             Effect::ChangeStat(effect) => effect,
             Effect::Delayed(effect) => effect,
             Effect::Action(effect) => effect,
-            Effect::Splash(effect) => effect,
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
             Effect::AddVar(effect) => effect,

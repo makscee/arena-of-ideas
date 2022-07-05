@@ -23,7 +23,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction != unit.faction)
-                    .min_by_key(|other| (other.position - unit.position).len());
+                    .min_by_key(|other| (other.position - unit.position).abs());
                 if let Some(closest_enemy) = closest_enemy {
                     if distance_between_units(closest_enemy, &unit) > unit.action.range {
                         target_position = closest_enemy.position;
@@ -36,7 +36,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction != unit.faction)
-                    .min_by_key(|other| (other.position - unit.position).len());
+                    .min_by_key(|other| (other.position - unit.position).abs());
                 if let Some(closest_enemy) = closest_enemy {
                     if distance_between_units(closest_enemy, &unit) > unit.action.range {
                         target_position = unit.position + (unit.position - closest_enemy.position);
@@ -50,7 +50,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction == unit.faction)
-                    .min_by_key(|other| (other.position - unit.position).len());
+                    .min_by_key(|other| (other.position - unit.position).abs());
                 if let Some(closest_ally) = closest_ally {
                     target_position = closest_ally.position;
                 }
@@ -69,10 +69,6 @@ impl Logic<'_> {
                 _ => {}
             }
         }
-        unit.position += (target_position - unit.position).clamp_len(..=speed * self.delta_time);
-
-        if (target_position - unit.position).len().as_f32() > 0.0 {
-            unit.face_dir = (target_position - unit.position).normalize_or_zero();
-        }
+        unit.position += (target_position - unit.position).clamp_range(..=speed * self.delta_time);
     }
 }
