@@ -30,7 +30,7 @@ impl RenderModel {
     pub fn add_text(&mut self, position: Position, text: &str, color: Color<f32>) {
         let velocity = vec2(0.7, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
         self.texts.push(Text {
-            position: vec2(position.as_f32(), 0.0) + velocity,
+            position: vec2(position as f32, 0.0) + velocity,
             time: 0.0,
             velocity,
             text: text.to_owned(),
@@ -126,7 +126,7 @@ impl Render {
     ) {
         match render_mode {
             RenderMode::Circle { color } => {
-                let particle_pos = vec2(particle.position.as_f32(), 0.0);
+                let particle_pos = particle.position.map(|x| x.as_f32());
                 self.geng.draw_2d(
                     framebuffer,
                     &self.camera,
@@ -134,7 +134,7 @@ impl Render {
                 );
             }
             RenderMode::Texture { texture } => {
-                let particle_pos = vec2(particle.position.as_f32(), 0.0);
+                let particle_pos = particle.position.map(|x| x.as_f32());
                 self.geng.draw_2d(
                     framebuffer,
                     &self.camera,
@@ -165,7 +165,7 @@ impl Render {
                     ],
                 );
                 let framebuffer_size = framebuffer.size();
-                let particle_pos = vec2(particle.position.as_f32(), 0.0);
+                let particle_pos = particle.position.map(|x| x.as_f32());
                 let model_matrix =
                     Mat3::translate(particle_pos) * Mat3::scale_uniform(particle.radius.as_f32());
 
@@ -208,7 +208,7 @@ impl Render {
         const RADIUS: f32 = 0.35;
         match render_mode {
             RenderMode::Circle { color } => {
-                let projectile_pos = vec2(projectile.position.as_f32(), 0.0);
+                let projectile_pos = projectile.position.map(|x| x.as_f32());
                 self.geng.draw_2d(
                     framebuffer,
                     &self.camera,
@@ -216,7 +216,7 @@ impl Render {
                 );
             }
             RenderMode::Texture { texture } => {
-                let projectile_pos = vec2(projectile.position.as_f32(), 0.0);
+                let projectile_pos = projectile.position.map(|x| x.as_f32());
                 self.geng.draw_2d(
                     framebuffer,
                     &self.camera,
@@ -247,11 +247,12 @@ impl Render {
                     ],
                 );
                 let framebuffer_size = framebuffer.size();
-                let projectile_pos = vec2(projectile.position.as_f32(), 0.0);
+                let projectile_pos = projectile.position.map(|x| x.as_f32());
                 let model_matrix = Mat3::translate(projectile_pos) * Mat3::scale_uniform(RADIUS);
-                let velocity = ((projectile.target_position - projectile.position).signum()
+                let velocity = ((projectile.target_position - projectile.position)
+                    .normalize_or_zero()
                     * projectile.speed)
-                    .as_f32();
+                    .map(|x| x.as_f32());
 
                 ugli::draw(
                     framebuffer,
@@ -311,7 +312,7 @@ impl Render {
             (
                 ugli::uniforms! {
                     u_time: game_time,
-                    u_unit_position: vec2(Coord::ZERO, Coord::ZERO).map(|x| x.as_f32()),
+                    u_unit_position: vec2(Coord::ZERO, Coord::ZERO).map(|x| x as f32),
                     u_window_size: window_size,
                 },
                 geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
@@ -358,7 +359,7 @@ impl UnitRender {
 
         match render_mode {
             RenderMode::Circle { color } => {
-                let unit_pos = vec2(unit.position.as_f32(), 0.0);
+                let unit_pos = vec2(unit.position as f32, 0.0);
                 self.geng.draw_2d(
                     framebuffer,
                     camera,
@@ -388,7 +389,7 @@ impl UnitRender {
                 );
             }
             RenderMode::Texture { texture } => {
-                let unit_pos = vec2(unit.position.as_f32(), 0.0);
+                let unit_pos = vec2(unit.position as f32, 0.0);
                 self.geng.draw_2d(
                     framebuffer,
                     camera,
@@ -419,7 +420,7 @@ impl UnitRender {
                     ],
                 );
                 let framebuffer_size = framebuffer.size();
-                let unit_pos = vec2(unit.position.as_f32(), 0.0);
+                let unit_pos = vec2(unit.position as f32, 0.0);
                 let model_matrix = Mat3::translate(unit_pos)
                     * Mat3::scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale);
 
@@ -468,7 +469,7 @@ impl UnitRender {
                         u_action: action_time,
                         u_cooldown: unit.action.cooldown.as_f32(),
                         u_animation_delay: unit.action.animation_delay.as_f32(),
-                        u_face_dir: unit.face_dir.map(|x| x.as_f32()),
+                        u_face_dir: unit.face_dir.map(|x| x as f32),
                         u_random: unit.random_number.as_f32(),
                         u_action_time: unit.last_action_time.as_f32(),
                         u_injure_time: unit.last_injure_time.as_f32(),

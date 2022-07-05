@@ -2,7 +2,7 @@
     "tier": 0,
     "description": "@Scathe: apply @Frozen to enemies in range",
     "action": {
-        "range": 0.5,
+        "range": 1,
         "animation_delay": 0.25,
         "cooldown": 2.0,
         "effect": {

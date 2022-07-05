@@ -3,7 +3,7 @@
     "triple": "frozen_blade+",
     "description": "@Scathe: apply @Frozen",
     "action": {
-        "range": 0.5,
+        "range": 1,
         "animation_delay": 0.25,
         "cooldown": 3.0,
         "effect": {

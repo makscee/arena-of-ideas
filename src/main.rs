@@ -22,7 +22,7 @@ use shop::*;
 
 type Health = R32;
 type Time = R32;
-type Coord = R32;
+type Coord = i64;
 type Position = Coord;
 type Id = i64;
 

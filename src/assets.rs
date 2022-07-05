@@ -157,7 +157,6 @@ pub struct Config {
     pub player: Vec<UnitType>,
     #[serde(default)]
     pub clans: HashMap<Clan, usize>,
-    pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     pub fov: f32,
 }
 

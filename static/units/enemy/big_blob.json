@@ -2,7 +2,7 @@
     "health": 35,
     "radius": 1.5,
     "action": {
-        "range": 0.5,
+        "range": 1,
         "animation_delay": 0.5,
         "cooldown": 1,
         "effect": {

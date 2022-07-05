@@ -4,8 +4,8 @@ use super::*;
 pub struct Particle {
     pub id: Id,
     pub parent: Option<Id>,
-    pub position: Position,
-    pub radius: Coord,
+    pub position: Vec2<R32>,
+    pub radius: R32,
     pub duration: Time,
     pub time_left: Time,
     pub render_config: RenderConfig,

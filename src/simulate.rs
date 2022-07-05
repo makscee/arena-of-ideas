@@ -48,13 +48,7 @@ impl Simulate1x1 {
                 })
                 .clone();
 
-            let spawn_point = config
-                .spawn_points
-                .iter()
-                .next()
-                .expect("No spawn points declared")
-                .0
-                .clone();
+            let spawn_point = "todo".to_string();
             let mut wave = HashMap::new();
             wave.insert(spawn_point, vec![enemy]);
             // config.waves = vec![wave]; // TODO: fix

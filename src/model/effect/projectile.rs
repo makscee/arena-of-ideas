@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectileEffect {
-    pub speed: Coord,
+    pub speed: R32,
     pub effect: Effect,
     #[serde(rename = "render", default = "ProjectileEffect::default_render")]
     pub render_config: RenderConfig,
@@ -38,14 +38,16 @@ impl EffectImpl for ProjectileEffect {
             error!("Projectile target == from");
             return;
         }
+        let from_position = pos_to_world(from.position);
+        let target_position = pos_to_world(target.position);
         logic.model.projectiles.insert(Projectile {
             id: logic.model.next_id,
             caster: context.caster.expect("Projectile caster is undefined"),
             target: target.id,
-            position: from.position
-                + (target.position - from.position).signum() * from.stats.radius,
+            position: from_position
+                + (target_position - from_position).normalize_or_zero() * from.stats.radius,
             speed: effect.speed,
-            target_position: target.position,
+            target_position,
             effect: effect.effect,
             render_config: effect.render_config,
             vars: context.vars.clone(),

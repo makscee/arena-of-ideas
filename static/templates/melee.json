@@ -3,7 +3,7 @@
     "base_damage": 2,
     "radius": 1.0,
     "action": {
-        "range": 0.5,
+        "range": 1,
         "animation_delay": 0.25,
         "cooldown": 0.75,
         "effect": {

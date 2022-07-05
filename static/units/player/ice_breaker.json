@@ -2,7 +2,7 @@
     "tier": 3,
     "description": "@Crit on @Frozen",
     "action": {
-        "range": 0.5,
+        "range": 1,
         "animation_delay": 0.25,
         "cooldown": 0.75,
         "effect": {

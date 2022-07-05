@@ -8,7 +8,7 @@ pub struct VisualEffect {
     pub parent: Who,
     #[serde(default = "default_follow")]
     pub follow: bool,
-    pub radius: Coord,
+    pub radius: R32,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
 }
@@ -43,7 +43,7 @@ impl EffectImpl for VisualEffect {
             time_left: effect.duration,
             render_config: effect.render_config,
             parent,
-            position,
+            position: pos_to_world(position),
         });
         logic.model.next_id += 1;
     }
