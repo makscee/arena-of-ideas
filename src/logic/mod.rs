@@ -6,7 +6,6 @@ mod abilities;
 mod actions;
 mod deaths;
 mod effects;
-mod movement;
 mod particles;
 mod projectiles;
 mod spawn;
@@ -45,7 +44,6 @@ impl<'a> Logic<'a> {
         self.process_time_bombs();
         self.process_spawns();
         self.process_abilities();
-        self.process_movement();
         self.process_targeting();
         self.process_actions();
         self.process_cooldowns();

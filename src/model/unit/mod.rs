@@ -44,7 +44,6 @@ pub struct Unit {
     pub face_dir: Vec2<Coord>, // TODO: remove
     pub position: Position,
     pub action: ActionProperties,
-    pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
     pub clans: Vec<Clan>,
@@ -60,12 +59,11 @@ pub struct Unit {
 pub struct UnitStats {
     pub max_hp: Health,
     pub health: Health,
-    pub radius: Coord,
+    pub radius: R32,
     pub base_damage: R32,
     pub armor: R32,
     pub armor_penetration: R32,
     pub crit_chance: R32,
-    pub speed: Coord,
     pub action_speed: R32,
 }
 
@@ -78,7 +76,6 @@ pub enum UnitStat {
     Armor,
     ArmorPenetration,
     CritChance,
-    Speed,
     ActionSpeed,
 }
 
@@ -115,7 +112,6 @@ impl Unit {
             face_dir: Vec2::ZERO,
             position,
             action: template.action.clone(),
-            move_ai: template.move_ai,
             target_ai: template.target_ai,
             render: template.render_config.clone(),
             next_action_modifiers: Vec::new(),
@@ -138,7 +134,6 @@ impl UnitStats {
             armor_penetration: template.armor_penetration,
             crit_chance: template.crit_chance,
             action_speed: template.action_speed,
-            speed: template.speed,
             radius: template.radius,
         }
     }
@@ -153,7 +148,6 @@ impl UnitStats {
             UnitStat::ArmorPenetration => self.armor_penetration,
             UnitStat::CritChance => self.crit_chance,
             UnitStat::ActionSpeed => self.action_speed,
-            UnitStat::Speed => self.speed,
         }
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -166,7 +160,6 @@ impl UnitStats {
             UnitStat::ArmorPenetration => &mut self.armor_penetration,
             UnitStat::CritChance => &mut self.crit_chance,
             UnitStat::ActionSpeed => &mut self.action_speed,
-            UnitStat::Speed => &mut self.speed,
         }
     }
 }

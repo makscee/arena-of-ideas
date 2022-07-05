@@ -1,6 +1,5 @@
 {
     "health": 8,
-    "speed": 0.3,
     "radius": 0.7,
     "action": {
         "range": 8,
@@ -92,7 +91,6 @@
             ]
         }
     ],
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

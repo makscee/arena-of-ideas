@@ -1,8 +1,6 @@
 {
     "health": 15,
-    "speed": 0.3,
     "statuses": [],
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

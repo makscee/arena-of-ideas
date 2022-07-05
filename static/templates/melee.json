@@ -1,7 +1,6 @@
 {
     "health": 6,
     "base_damage": 2,
-    "speed": 0.8,
     "radius": 1.0,
     "action": {
         "range": 0.5,
@@ -11,7 +10,6 @@
             "preset": "effects/dd_melee.json"
         }
     },
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

@@ -1,7 +1,6 @@
 {
     "health": 0,
     "base_damage": 1,
-    "speed": 0.8,
     "radius": 0.7,
     "action": {
         "range": 0.5,
@@ -12,7 +11,6 @@
         }
     },
     "clans": ["Skeletons"],
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

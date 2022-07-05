@@ -1,6 +1,5 @@
 {
     "health": 4,
-    "speed": 0.4,
     "radius": 1.0,
     "base_damage": 1,
     "action": {
@@ -11,7 +10,6 @@
             "preset": "effects/projectile_dd_ranged.json"
         }
     },
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

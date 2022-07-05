@@ -1,6 +1,5 @@
 {
     "health": 300,
-    "speed": 1,
     "radius": 0.5,
     "action": {
         "range": 10,
@@ -21,6 +20,5 @@
             }
         }
     },
-    "move_ai": "KeepClose",
     "target_ai": "Closest"
 }
