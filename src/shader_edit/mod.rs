@@ -16,6 +16,7 @@ pub struct ShaderEdit {
 struct ShaderEditConfig {
     path: PathBuf,
     parameters: ShaderParameters,
+    vertices: usize,
 }
 
 impl ShaderEdit {
@@ -241,22 +242,40 @@ impl geng::State for EditState {
         };
 
         if let Some((_, program)) = &self.shader {
+            let mut vertices = vec![draw_2d::Vertex {
+                a_pos: vec2(0.0, -0.5),
+            }];
+
+            for i in 0..self.config.vertices {
+                vertices.push(draw_2d::Vertex {
+                    a_pos: vec2(i as f32 / self.config.vertices as f32, 0.5),
+                });
+                vertices.push(draw_2d::Vertex {
+                    a_pos: vec2((i + 1) as f32 / self.config.vertices as f32, -0.5),
+                });
+            }
+
+            vertices.push(draw_2d::Vertex {
+                a_pos: vec2(1.0, 0.5),
+            });
+
             let quad = ugli::VertexBuffer::new_dynamic(
                 self.geng.ugli(),
-                vec![
-                    draw_2d::Vertex {
-                        a_pos: vec2(-1.0, -1.0),
-                    },
-                    draw_2d::Vertex {
-                        a_pos: vec2(1.0, -1.0),
-                    },
-                    draw_2d::Vertex {
-                        a_pos: vec2(1.0, 1.0),
-                    },
-                    draw_2d::Vertex {
-                        a_pos: vec2(-1.0, 1.0),
-                    },
-                ],
+                // vec![
+                //     draw_2d::Vertex {
+                //         a_pos: vec2(-1.0, -1.0),
+                //     },
+                //     draw_2d::Vertex {
+                //         a_pos: vec2(1.0, -1.0),
+                //     },
+                //     draw_2d::Vertex {
+                //         a_pos: vec2(1.0, 1.0),
+                //     },
+                //     draw_2d::Vertex {
+                //         a_pos: vec2(-1.0, 1.0),
+                //     },
+                // ],
+                vertices,
             );
             let uniforms = (
                 ugli::uniforms! {
@@ -272,7 +291,7 @@ impl geng::State for EditState {
             ugli::draw(
                 framebuffer,
                 program,
-                ugli::DrawMode::TriangleFan,
+                ugli::DrawMode::TriangleStrip,
                 &quad,
                 &uniforms,
                 ugli::DrawParameters {
