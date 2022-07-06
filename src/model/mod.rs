@@ -15,7 +15,9 @@ mod render;
 mod status;
 mod time_bomb;
 mod unit;
+mod position;
 
+pub use position::*;
 pub use ability::*;
 pub use clans::*;
 pub use condition::*;

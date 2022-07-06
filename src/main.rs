@@ -23,7 +23,6 @@ use shop::*;
 type Health = R32;
 type Time = R32;
 type Coord = i64;
-type Position = Vec2<Coord>;
 type Id = i64;
 
 #[derive(Clone)]

@@ -43,7 +43,7 @@ impl EffectImpl for VisualEffect {
             time_left: effect.duration,
             render_config: effect.render_config,
             parent,
-            position: pos_to_world(position),
+            position: position.to_world(),
         });
         logic.model.next_id += 1;
     }

@@ -38,8 +38,8 @@ impl EffectImpl for ProjectileEffect {
             error!("Projectile target == from");
             return;
         }
-        let from_position = pos_to_world(from.position);
-        let target_position = pos_to_world(target.position);
+        let from_position = from.position.to_world();
+        let target_position = target.position.to_world();
         logic.model.projectiles.insert(Projectile {
             id: logic.model.next_id,
             caster: context.caster.expect("Projectile caster is undefined"),

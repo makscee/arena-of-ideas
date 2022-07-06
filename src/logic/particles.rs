@@ -9,7 +9,7 @@ impl Logic<'_> {
                 .and_then(|parent| self.model.units.get(&parent))
                 .map(|unit| unit.position);
             if let Some(parent) = parent {
-                particle.position = pos_to_world(parent);
+                particle.position = parent.to_world();
             }
         }
         self.model

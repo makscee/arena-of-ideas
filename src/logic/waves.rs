@@ -52,7 +52,8 @@ impl Logic<'_> {
                     //     .spawn_points
                     //     .get(&point)
                     //     .expect(&format!("Failed to find spawnpoint: {point}"));
-                    let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::ZERO); // TODO: reimplement
+                    let unit =
+                        self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy)); // TODO: reimplement
                     let unit = self.model.spawning_units.get_mut(&unit).unwrap();
                     let round = &self.model.round;
                     let statuses = round
