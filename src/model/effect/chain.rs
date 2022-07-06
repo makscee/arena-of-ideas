@@ -50,9 +50,9 @@ impl EffectImpl for ChainEffect {
                                 unit.faction == target.faction && !touched.contains(&unit.id)
                             })
                             .filter(|unit| {
-                                (unit.position - target.position).abs() < effect.jump_distance
+                                (unit.position.x - target.position.x).abs() < effect.jump_distance
                             })
-                            .min_by_key(|unit| (unit.position - target.position).abs())
+                            .min_by_key(|unit| (unit.position.x - target.position.x).abs())
                         {
                             queue.push_back((chain_len + 1, next));
                             touched.insert(next.id);

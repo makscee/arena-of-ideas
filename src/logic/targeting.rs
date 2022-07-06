@@ -67,7 +67,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction != unit_faction)
-                    .min_by_key(|other| (other.position - unit.position).abs()),
+                    .min_by_key(|other| (other.position.x - unit.position.x).abs()),
                 TargetAi::Biggest => self
                     .model
                     .units

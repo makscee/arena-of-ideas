@@ -1,13 +1,10 @@
 use super::*;
 
 impl Logic<'_> {
-    /// Spawns the unit and returns its id
-    pub fn spawn_unit(
-        &mut self,
-        unit_type: &UnitType,
-        faction: Faction,
-        position: Position,
-    ) -> Id {
+    /// Spawns the unit and returns its id. If there is a unit in that position and there is an
+    /// empty slot to the left, it and all units to the left are shifted to the left.
+    /// Otherwise, if all slots are occupied, the unit is placed on top the unit in that position.
+    pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Position) -> Id {
         let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;
 

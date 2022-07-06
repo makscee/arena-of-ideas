@@ -30,7 +30,7 @@ impl RenderModel {
     pub fn add_text(&mut self, position: Position, text: &str, color: Color<f32>) {
         let velocity = vec2(0.7, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
         self.texts.push(Text {
-            position: vec2(position as f32, 0.0) + velocity,
+            position: position.map(|x| x as f32) + velocity,
             time: 0.0,
             velocity,
             text: text.to_owned(),
@@ -359,7 +359,7 @@ impl UnitRender {
 
         match render_mode {
             RenderMode::Circle { color } => {
-                let unit_pos = vec2(unit.position as f32, 0.0);
+                let unit_pos = unit.position.map(|x| x as f32);
                 self.geng.draw_2d(
                     framebuffer,
                     camera,
@@ -389,7 +389,7 @@ impl UnitRender {
                 );
             }
             RenderMode::Texture { texture } => {
-                let unit_pos = vec2(unit.position as f32, 0.0);
+                let unit_pos = unit.position.map(|x| x as f32);
                 self.geng.draw_2d(
                     framebuffer,
                     camera,
@@ -420,7 +420,7 @@ impl UnitRender {
                     ],
                 );
                 let framebuffer_size = framebuffer.size();
-                let unit_pos = vec2(unit.position as f32, 0.0);
+                let unit_pos = unit.position.map(|x| x as f32);
                 let model_matrix = Mat3::translate(unit_pos)
                     * Mat3::scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale);
 
