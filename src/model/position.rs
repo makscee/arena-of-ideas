@@ -21,7 +21,7 @@ impl Position {
             Faction::Player => -1.0,
             Faction::Enemy => 1.0,
         };
-        vec2(self.x, self.height).map(|x| r32(x as f32 + offset))
+        vec2(self.x as f32 + offset, self.height as f32).map(|x| r32(x))
     }
 
     pub fn to_world_f32(&self) -> Vec2<f32> {
