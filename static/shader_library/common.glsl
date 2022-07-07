@@ -33,6 +33,7 @@ uniform vec2 u_face_dir;
 uniform float u_unit_radius = 1;
 uniform float u_ability_on_cooldown;
 
+uniform vec4 u_color = vec4(0.117, 0.564, 1, 1);
 uniform vec4 u_clan_color_1 = vec4(0.250, 0, 0.501, 1);
 uniform vec4 u_clan_color_2 = vec4(0.117, 0.564, 1, 1);
 uniform vec4 u_clan_color_3 = vec4(0.501, 0, 0.250, 1);

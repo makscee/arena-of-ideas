@@ -221,7 +221,7 @@ impl Assets {
                     ))
                     .clone(),
             },
-            RenderConfig::Shader { path, parameters } => RenderMode::Shader {
+            RenderConfig::Shader { path, parameters, vertices } => RenderMode::Shader {
                 program: self
                     .shaders
                     .get(path)
@@ -230,6 +230,7 @@ impl Assets {
                     ))
                     .clone(),
                 parameters: parameters.clone(), // TODO: avoid cloning
+                vertices: *vertices,
             },
         }
     }

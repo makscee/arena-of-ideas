@@ -43,8 +43,8 @@ void main() {
     // gl_FragColor = alphaBlend(previous_color, statusTint * float(dist < u_unit_radius));
     float t = u_time;
     vec4 col = vec4(0,0,0,0);
-    for (int i = 0; i < p_count; i++)
-        col = alphaBlend(col, p_renderParticle(i + u_status_index * 100 + u_status_count * 333, uv, t));
+    // for (int i = 0; i < p_count; i++)
+    //     col = alphaBlend(col, p_renderParticle(i + u_status_index * 100 + u_status_count * 333, uv, t));
     gl_FragColor = alphaBlend(previous_color, alphaBlend(col, renderStatusRing(uv, u_status_color.rgb)));
 }
 #endif

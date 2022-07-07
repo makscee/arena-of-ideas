@@ -6,11 +6,32 @@ impl Logic<'_> {
             particle.time_left -= self.delta_time;
             let parent = particle
                 .parent
-                .and_then(|parent| self.model.units.get(&parent))
-                .map(|unit| unit.position);
-            if let Some(parent) = parent {
-                particle.position = parent;
-            }
+                .and_then(|parent| self.model.units.get(&parent));
+            let partner = particle
+                .partner
+                .and_then(|partner| self.model.units.get(&partner));
+
+            match &mut particle.render_config {
+                RenderConfig::Shader { parameters, .. } => {
+                    if let Some(parent) = parent {
+                        if particle.follow {
+                            particle.position = parent.position;
+                        }
+
+                        parameters.0.extend(HashMap::from([(
+                            "u_parent_position".to_string(),
+                            ShaderParameter::Vec2(parent.position.map(|x| x.as_f32())),
+                        )]));
+                    }
+                    if let Some(partner) = partner {
+                        parameters.0.extend(HashMap::from([(
+                            "u_partner_position".to_string(),
+                            ShaderParameter::Vec2(partner.position.map(|x| x.as_f32())),
+                        )]));
+                    }
+                }
+                _ => {}
+            };
         }
         self.model
             .particles

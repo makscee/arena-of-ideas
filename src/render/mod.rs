@@ -148,32 +148,31 @@ impl Render {
             RenderMode::Shader {
                 program,
                 parameters,
+                vertices,
             } => {
-                let quad = ugli::VertexBuffer::new_dynamic(
-                    self.geng.ugli(),
-                    vec![
-                        draw_2d::Vertex {
-                            a_pos: vec2(-1.0, -1.0),
-                        },
-                        draw_2d::Vertex {
-                            a_pos: vec2(1.0, -1.0),
-                        },
-                        draw_2d::Vertex {
-                            a_pos: vec2(1.0, 1.0),
-                        },
-                        draw_2d::Vertex {
-                            a_pos: vec2(-1.0, 1.0),
-                        },
-                    ],
-                );
-                let framebuffer_size = framebuffer.size();
-                let model_matrix = Mat3::translate(particle.position.map(|x| x.as_f32()))
-                    * Mat3::scale_uniform(particle.radius.as_f32());
+                let vert_count = *vertices;
+                let mut vertices = vec![draw_2d::Vertex {
+                    a_pos: vec2(-1.0, -1.0),
+                }];
+                for i in 0..vert_count {
+                    vertices.push(draw_2d::Vertex {
+                        a_pos: vec2((i as f32 / vert_count as f32) * 2.0 - 1.0, 1.0),
+                    });
+                    vertices.push(draw_2d::Vertex {
+                        a_pos: vec2(((i + 1) as f32 / vert_count as f32) * 2.0 - 1.0, -1.0),
+                    });
+                }
 
+                vertices.push(draw_2d::Vertex {
+                    a_pos: vec2(1.0, 1.0),
+                });
+
+                let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
+                let framebuffer_size = framebuffer.size();
                 ugli::draw(
                     framebuffer,
                     program,
-                    ugli::DrawMode::TriangleFan,
+                    ugli::DrawMode::TriangleStrip,
                     &quad,
                     (
                         ugli::uniforms! {
@@ -231,6 +230,7 @@ impl Render {
             RenderMode::Shader {
                 program,
                 parameters,
+                vertices,
             } => {
                 let quad = ugli::VertexBuffer::new_dynamic(
                     self.geng.ugli(),
@@ -402,27 +402,27 @@ impl UnitRender {
             RenderMode::Shader {
                 program,
                 parameters,
+                vertices,
             } => {
-                let quad = ugli::VertexBuffer::new_dynamic(
-                    self.geng.ugli(),
-                    vec![
-                        draw_2d::Vertex {
-                            a_pos: vec2(-1.0, -1.0),
-                        },
-                        draw_2d::Vertex {
-                            a_pos: vec2(1.0, -1.0),
-                        },
-                        draw_2d::Vertex {
-                            a_pos: vec2(1.0, 1.0),
-                        },
-                        draw_2d::Vertex {
-                            a_pos: vec2(-1.0, 1.0),
-                        },
-                    ],
-                );
+                let vert_count = *vertices;
+                let mut vertices = vec![draw_2d::Vertex {
+                    a_pos: vec2(0.0, -1.0),
+                }];
+                for i in 0..vert_count {
+                    vertices.push(draw_2d::Vertex {
+                        a_pos: vec2((i as f32 / vert_count as f32) * 2.0 - 1.0, 1.0),
+                    });
+                    vertices.push(draw_2d::Vertex {
+                        a_pos: vec2(((i + 1) as f32 / vert_count as f32) * 2.0 - 1.0, -1.0),
+                    });
+                }
+
+                vertices.push(draw_2d::Vertex {
+                    a_pos: vec2(1.0, 1.0),
+                });
+
+                let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
                 let framebuffer_size = framebuffer.size();
-                let model_matrix = Mat3::translate(unit.position.map(|x| x.as_f32()))
-                    * Mat3::scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale);
 
                 let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
                 let clan_colors: Vec<Color<f32>> = clans
@@ -501,7 +501,7 @@ impl UnitRender {
                     ugli::draw(
                         framebuffer,
                         program,
-                        ugli::DrawMode::TriangleFan,
+                        ugli::DrawMode::TriangleStrip,
                         &quad,
                         &uniforms,
                         ugli::DrawParameters {
@@ -561,7 +561,7 @@ impl UnitRender {
                         ugli::draw(
                             framebuffer,
                             &*program,
-                            ugli::DrawMode::TriangleFan,
+                            ugli::DrawMode::TriangleStrip,
                             &quad,
                             (
                                 &uniforms,

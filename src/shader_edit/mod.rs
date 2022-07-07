@@ -242,41 +242,24 @@ impl geng::State for EditState {
         };
 
         if let Some((_, program)) = &self.shader {
+            let vert_count = self.config.vertices;
             let mut vertices = vec![draw_2d::Vertex {
-                a_pos: vec2(0.0, -0.5),
+                a_pos: vec2(-1.0, -1.0),
             }];
-
-            for i in 0..self.config.vertices {
+            for i in 0..vert_count {
                 vertices.push(draw_2d::Vertex {
-                    a_pos: vec2(i as f32 / self.config.vertices as f32, 0.5),
+                    a_pos: vec2((i as f32 / vert_count as f32) * 2.0 - 1.0, 1.0),
                 });
                 vertices.push(draw_2d::Vertex {
-                    a_pos: vec2((i + 1) as f32 / self.config.vertices as f32, -0.5),
+                    a_pos: vec2(((i + 1) as f32 / vert_count as f32) * 2.0 - 1.0, -1.0),
                 });
             }
 
             vertices.push(draw_2d::Vertex {
-                a_pos: vec2(1.0, 0.5),
+                a_pos: vec2(1.0, 1.0),
             });
 
-            let quad = ugli::VertexBuffer::new_dynamic(
-                self.geng.ugli(),
-                // vec![
-                //     draw_2d::Vertex {
-                //         a_pos: vec2(-1.0, -1.0),
-                //     },
-                //     draw_2d::Vertex {
-                //         a_pos: vec2(1.0, -1.0),
-                //     },
-                //     draw_2d::Vertex {
-                //         a_pos: vec2(1.0, 1.0),
-                //     },
-                //     draw_2d::Vertex {
-                //         a_pos: vec2(-1.0, 1.0),
-                //     },
-                // ],
-                vertices,
-            );
+            let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
             let uniforms = (
                 ugli::uniforms! {
                     u_time: self.time.as_f32(),

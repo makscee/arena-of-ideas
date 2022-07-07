@@ -6,6 +6,7 @@
     "shaders/vfx_particle_burst.glsl",
     "shaders/vfx_particle_burst_new.glsl",
     "shaders/vfx_particle_spin.glsl",
+    "shaders/vfx_curve.glsl",
     "shaders/projectile_default.glsl",
     "shaders/status/status_default.glsl"
 ]

@@ -6,12 +6,11 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 
-uniform vec2 u_p0;
-uniform vec2 u_p1;
-uniform vec2 u_p2;
-uniform vec2 u_p3;
+uniform vec2 u_parent_position;
+uniform vec2 u_partner_position;
 
-uniform float u_thickness;
+uniform float u_thickness = 0.3;
+uniform float u_curvature = 2;
 
 vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
 {
@@ -24,21 +23,24 @@ vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
 vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
 {
     float t2 = t * t;
-    return rotateCW(normalize(
+    vec2 tangent = normalize(
         P0 * (-3 * t2 + 6 * t - 3) +
         P1 * (9 * t2 - 12 * t + 3) +
-        P2 * (-9 * t + 6 * t) +
-        P3 * (3 * t2)), pi * .5);
+        P2 * (-9 * t2 + 6 * t) +
+        P3 * (3 * t2));
+    return vec2(tangent.y, -tangent.x);
 }
 
 void main() {
-    vec2 p0 = u_p0 + vec2(0,cos(u_time * .5));
-    vec2 p1 = u_p1 + vec2(0,sin(u_time));
-    vec2 p2 = u_p2 + vec2(0,cos(u_time));
-    vec2 p3 = u_p3 + vec2(0,sin(u_time * .3));
+    vec2 dir = normalize(u_parent_position - u_partner_position);
+    dir = -vec2(dir.y, -dir.x) * u_curvature;
+    vec2 p0 = u_parent_position;
+    vec2 p1 = u_parent_position + dir;
+    vec2 p2 = u_partner_position + dir;
+    vec2 p3 = u_partner_position;
 
-    vec2 pos = a_pos;
-    v_quad_pos = a_pos;
+    vec2 pos = a_pos * .5 + vec2(0.5);
+    v_quad_pos = pos;
     pos.y *= u_thickness;
     vec2 b_pos = toBezier(pos.x, p0, p1, p2, p3);
     b_pos += toBezierNormal(pos.x, p0, p1, p2, p3) * pos.y;
@@ -53,8 +55,8 @@ in vec2 v_quad_pos;
 void main() {
     vec2 uv = v_quad_pos;
     float t = 1. - u_spawn;
-
-    vec4 col = vec4(uv,1,1);
+    float centerDist = abs(uv.y - 0.5);
+    vec4 col = vec4(u_color) * float(centerDist < u_spawn * u_spawn * .5);
     gl_FragColor = col;
 }
 #endif
