@@ -60,5 +60,52 @@
                 }
             }
         ]
+    },
+    {
+        "activate": 0,
+        "statuses": [
+            {
+                "name": "VFXOnDamage",
+                "type": "Status",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Crit"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/crit_hit_vfx.json"
+                        }
+                    },
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Melee"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/melee_hit_vfx.json"
+                        }
+                    },
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Ranged"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/ranged_hit_vfx.json"
+                        }
+                    }
+                ]
+            }
+        ]
     }
 ]
