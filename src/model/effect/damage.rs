@@ -41,31 +41,32 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             armor_penetration = caster_unit.stats.armor_penetration.raw();
-
-            //Add extra damage types
-            let mut modifiers: Vec<StatusModifier> = caster_unit
-                .all_statuses
-                .iter()
-                .flat_map(|status| match &status.status.effect {
-                    StatusEffect::Modifier(modifier) => Some(modifier.clone()),
-                    _ => None,
-                })
-                .collect();
-            modifiers.sort_by_key(|modifier| modifier.priority);
-            for modifier in modifiers {
-                match modifier.target {
+            for (context, modifier_target) in &caster_unit.modifier_targets {
+                match modifier_target {
+                    //Add extra damage types
                     ModifierTarget::ExtraOutDamageType {
                         source,
                         damage_type,
                     } => {
-                        if effect.types.contains(&source) {
-                            effect.types.insert(damage_type);
+                        for source_type in source {
+                            if source.contains(&source_type.to_string()) {
+                                for added_type in damage_type {
+                                    effect.types.insert(added_type.to_string());
+                                }
+                            }
                         }
+                    }
+                    //Modify damage value
+                    ModifierTarget::Damage { value } => {
+                        let mut mut_context = context.clone();
+                        mut_context.vars.insert(VarName::DamageIncoming, damage);
+                        damage = value.calculate(&mut_context, logic);
                     }
                     _ => (),
                 }
             }
         }
+
         let units = &mut logic.model.units;
         let target_unit = context
             .target

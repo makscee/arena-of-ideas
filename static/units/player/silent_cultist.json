@@ -14,16 +14,19 @@
                 {
                     "name": "IgnoreFreeze",
                     "type": "Modifier",
+                    "condition": {
+                        "type": "Always"
+                    },
                     "target": {
                         "type": "ExtraOutDamageType",
-                        "source": "SiphonLife",
-                        "damage_type": "IgnoreFreeze"
+                        "source": [
+                            "SiphonLife"
+                        ],
+                        "damage_type": [
+                            "IgnoreFreeze"
+                        ]
                     },
-                    "priority": 0,
-                    "value": {
-                        "type": "Const",
-                        "value": 0
-                    }
+                    "priority": 0
                 }
             ],
             "filter": {

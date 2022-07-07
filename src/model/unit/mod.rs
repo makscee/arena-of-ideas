@@ -32,6 +32,7 @@ pub struct Unit {
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
     pub all_statuses: Vec<AttachedStatus>,
+    pub modifier_targets: Vec<(EffectContext, ModifierTarget)>,
     /// Temporary flags that live for one frame
     pub flags: Vec<UnitStatFlag>,
     pub faction: Faction,
@@ -107,6 +108,7 @@ impl Unit {
                         .attach(Some(id), Some(id), next_id)
                 })
                 .collect(),
+            modifier_targets: vec![],
             flags: vec![],
             faction,
             action_state: ActionState::None,
