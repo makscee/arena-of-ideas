@@ -41,7 +41,7 @@ pub struct Unit {
     pub stats: UnitStats,
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
-    pub face_dir: Vec2<Coord>, // TODO: remove
+    pub face_dir: Vec2<R32>,
     pub position: Position,
     pub action: ActionProperties,
     pub target_ai: TargetAi,
