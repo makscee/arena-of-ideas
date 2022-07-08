@@ -98,7 +98,8 @@ impl<'a> Logic<'a> {
 
         // let spawn_point = config.spawn_points["Heroes"];
         for unit_type in &config.player {
-            self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player)); // TODO: reimplement
+            self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
+            // TODO: reimplement
         }
     }
 }
