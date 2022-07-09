@@ -46,15 +46,48 @@ impl Logic<'_> {
                 })
             }
         }
+
+        self.update_positions(unit.id, unit.position);
     }
     pub fn process_deaths(&mut self) {
-        for unit in &self.model.units {
+        let ids = self.model.units.ids().copied().collect::<Vec<_>>();
+        for id in ids {
+            let unit = self.model.units.get(&id).unwrap();
             if unit.stats.health <= Health::ZERO {
                 self.model.dead_units.insert(unit.clone());
+                self.update_positions(unit.id, unit.position);
             }
         }
         self.model
             .units
             .retain(|unit| unit.stats.health > Health::ZERO);
+    }
+    fn update_positions(&mut self, unit_id: Id, unit_position: Position) {
+        let move_vertically = self.model.units.iter().any(|other| {
+            other.id != unit_id
+                && other.position.x == unit_position.x
+                && other.position.side == unit_position.side
+        });
+        if move_vertically {
+            // Move vertically
+            self.model
+                .units
+                .iter_mut()
+                .filter(|other| {
+                    other.position.side == unit_position.side
+                        && other.position.x == unit_position.x
+                        && other.position.height > unit_position.height
+                })
+                .for_each(|other| other.position.height -= 1);
+        } else {
+            // Move horizontally
+            self.model
+                .units
+                .iter_mut()
+                .filter(|other| {
+                    other.position.side == unit_position.side && other.position.x > unit_position.x
+                })
+                .for_each(|other| other.position.x -= 1);
+        }
     }
 }
