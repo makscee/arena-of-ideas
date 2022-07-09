@@ -32,6 +32,9 @@ pub use status::*;
 pub use time_bomb::*;
 pub use unit::*;
 
+// TODO: make configurable
+pub const SIDE_SLOTS: usize = 5;
+
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
     All,

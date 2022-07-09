@@ -8,6 +8,38 @@ impl Logic<'_> {
         let mut template = &self.model.unit_templates[unit_type];
         let id = self.model.next_id;
 
+        // Check empty slots
+        let can_shift = SIDE_SLOTS
+            .checked_sub(1)
+            .map(|max_pos| {
+                let max_pos = max_pos as Coord;
+                self.model
+                    .units
+                    .iter()
+                    .filter(|unit| unit.position.side == faction)
+                    .all(|unit| unit.position.x < max_pos)
+            })
+            .expect("Expected at least one slot for the team");
+        let height = if can_shift {
+            // Shift the units, assuming that there are no empty slots in between
+            self.model
+                .units
+                .iter_mut()
+                .filter(|unit| unit.position.side == position.side)
+                .for_each(|unit| *dbg!(&mut unit.position.x) += 1);
+            0
+        } else {
+            self.model
+                .units
+                .iter()
+                .filter(|unit| unit.position.side == faction && unit.position.x == position.x)
+                .map(|unit| unit.position.height)
+                .max()
+                .map(|y| y + 1)
+                .unwrap_or(0)
+        };
+        let position = Position { height, ..position };
+
         let mut unit = Unit::new(
             &template,
             &mut self.model.next_id,

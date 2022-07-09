@@ -17,11 +17,11 @@ impl Position {
     }
 
     pub fn to_world(&self) -> Vec2<R32> {
-        let offset = match self.side {
-            Faction::Player => -1.0,
-            Faction::Enemy => 1.0,
-        };
-        vec2(self.x as f32 + offset, self.height as f32).map(|x| r32(x))
+        let pos = vec2(self.x, self.height).map(|x| r32(x as f32));
+        match self.side {
+            Faction::Player => vec2(-pos.x - r32(1.0), pos.y),
+            Faction::Enemy => vec2(pos.x + r32(1.0), pos.y),
+        }
     }
 
     pub fn to_world_f32(&self) -> Vec2<f32> {
