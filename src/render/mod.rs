@@ -74,7 +74,7 @@ impl Render {
     ) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         self.draw_field(&self.assets.field_render, game_time, framebuffer);
-        for unit in itertools::chain![&model.units, &model.spawning_units] {
+        for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
 
             let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps

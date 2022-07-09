@@ -139,7 +139,7 @@ impl Simulation {
 
             if !player_alive
                 || !enemies_alive
-                    && self.model.spawning_units.is_empty()
+                    // && self.model.spawning_units.is_empty()
                     && self.model.time_bombs.is_empty()
             // && self.model.config.waves.is_empty() // TODO: fix
             {

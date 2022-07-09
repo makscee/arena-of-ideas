@@ -26,7 +26,7 @@ impl Logic<'_> {
                 .units
                 .iter_mut()
                 .filter(|unit| unit.position.side == position.side)
-                .for_each(|unit| *dbg!(&mut unit.position.x) += 1);
+                .for_each(|unit| unit.position.x += 1);
             0
         } else {
             self.model
@@ -58,40 +58,37 @@ impl Logic<'_> {
             );
         }
 
+        // On spawn effects
+        for (effect, vars, status_id) in unit
+            .all_statuses
+            .iter()
+            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
+        {
+            self.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: Some(unit.id),
+                    from: Some(unit.id),
+                    target: Some(unit.id),
+                    vars,
+                    status_id: Some(status_id),
+                },
+            })
+        }
+
         self.model.next_id += 1;
-        self.model.spawning_units.insert(unit);
+        self.model.units.insert(unit);
+
         id
     }
     pub fn process_spawns(&mut self) {
-        let mut new_units = Vec::new();
-        for unit in &mut self.model.spawning_units {
+        for unit in &mut self.model.units {
             if let Some(time) = &mut unit.spawn_animation_time_left {
                 *time -= self.delta_time;
                 if *time <= Time::new(0.0) {
                     unit.spawn_animation_time_left = None;
-                    new_units.push(unit.clone());
                 }
             }
         }
-        for mut unit in new_units {
-            for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn))
-            }) {
-                self.effects.push_front(QueuedEffect {
-                    effect,
-                    context: EffectContext {
-                        caster: Some(unit.id),
-                        from: Some(unit.id),
-                        target: Some(unit.id),
-                        vars,
-                        status_id: Some(status_id),
-                    },
-                })
-            }
-            self.model.units.insert(unit);
-        }
-        self.model
-            .spawning_units
-            .retain(|unit| unit.spawn_animation_time_left.is_some());
     }
 }
