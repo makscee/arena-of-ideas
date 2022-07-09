@@ -88,7 +88,12 @@ vec2 N22(vec2 p)
 
 float rand(int i)
 {
-    return N22(vec2(i)).x;
+    return N22(vec2(i * .01)).x;
+}
+
+vec2 randVec(int i)
+{
+    return N22(vec2(i * .01));
 }
 
 vec2 randCircle(int i) 

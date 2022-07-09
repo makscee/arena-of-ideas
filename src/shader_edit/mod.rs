@@ -1,6 +1,6 @@
+use geng::prelude::*;
 use std::{path::PathBuf, sync::mpsc::Receiver};
 
-use geng::prelude::*;
 use notify::{DebouncedEvent, RecommendedWatcher, Watcher};
 
 use crate::model::ShaderParameters;
@@ -17,6 +17,7 @@ struct ShaderEditConfig {
     path: PathBuf,
     parameters: ShaderParameters,
     vertices: usize,
+    instances: usize,
 }
 
 impl ShaderEdit {
@@ -217,6 +218,9 @@ impl ShaderEditConfig {
     }
 }
 
+#[derive(ugli::Vertex, Debug, Clone)]
+pub struct Instance {}
+
 impl geng::State for EditState {
     fn update(&mut self, delta_time: f64) {
         let delta_time = Time::new(delta_time as _);
@@ -259,7 +263,7 @@ impl geng::State for EditState {
                 a_pos: vec2(1.0, 1.0),
             });
 
-            let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
+            let quad = ugli::VertexBuffer::new_static(self.geng.ugli(), vertices);
             let uniforms = (
                 ugli::uniforms! {
                     u_time: self.time.as_f32(),
@@ -271,11 +275,15 @@ impl geng::State for EditState {
                 geng::camera2d_uniforms(&camera, framebuffer.size().map(|x| x as f32)),
                 &self.config.parameters,
             );
+            let mut instances: ugli::VertexBuffer<Instance> =
+                ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
+            instances.resize(self.config.instances, Instance {});
+
             ugli::draw(
                 framebuffer,
                 program,
                 ugli::DrawMode::TriangleStrip,
-                &quad,
+                ugli::instanced(&quad, &instances),
                 &uniforms,
                 ugli::DrawParameters {
                     blend_mode: Some(default()),

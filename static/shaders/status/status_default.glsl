@@ -27,14 +27,6 @@ void p_discardCheck(vec2 uv, float t)
     if (uv.y < -2.) discard;
 }
 
-vec4 p_renderParticle(int i, vec2 uv, float t)
-{
-    p_discardCheck(uv, t);
-    t = fract(float(i) / p_count + t);
-    vec2 pos = p_positionOverT(i, t);
-    return vec4(p_colorOverT(i, t),p_alphaOverT(i,t)) * float(p_distToShape(pos, uv, p_radiusOverT(i,t)) < 0.);
-}
-
 
 void main() {
     vec2 uv = v_quad_pos;
