@@ -16,7 +16,7 @@ impl Logic<'_> {
                 self.model
                     .units
                     .iter()
-                    .filter(|unit| unit.position.side == faction)
+                    .filter(|unit| unit.position.side == position.side)
                     .all(|unit| unit.position.x < max_pos)
             })
             .expect("Expected at least one slot for the team");
@@ -32,7 +32,7 @@ impl Logic<'_> {
             self.model
                 .units
                 .iter()
-                .filter(|unit| unit.position.side == faction && unit.position.x == position.x)
+                .filter(|unit| unit.position.side == position.side && unit.position.x == position.x)
                 .map(|unit| unit.position.height)
                 .max()
                 .map(|y| y + 1)
