@@ -34,6 +34,7 @@ pub use unit::*;
 
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 5;
+pub const TICK_TIME: f32 = 1.0;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
@@ -50,6 +51,12 @@ impl TargetFilter {
             Self::All => true,
         }
     }
+}
+
+#[derive(Clone)]
+pub struct TickModel {
+    pub tick_time: Time,
+    pub action_queue: VecDeque<Id>,
 }
 
 #[derive(Clone)]
@@ -73,6 +80,7 @@ pub struct Model {
     pub transition: bool,
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, R32>,
+    pub current_tick: TickModel,
 }
 
 impl Model {
@@ -102,6 +110,16 @@ impl Model {
             round,
             config,
             vars: HashMap::new(),
+            current_tick: TickModel::new(),
+        }
+    }
+}
+
+impl TickModel {
+    pub fn new() -> Self {
+        Self {
+            tick_time: Time::ZERO,
+            action_queue: VecDeque::new(),
         }
     }
 }

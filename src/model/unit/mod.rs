@@ -13,13 +13,13 @@ pub type Tier = u32;
 pub enum ActionState {
     None,
     Start { time: Time, target: Id },
-    Cooldown { time: Time },
+    Cooldown { time: Ticks },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ActionProperties {
-    pub cooldown: Time,
+    pub cooldown: Ticks,
     pub animation_delay: Time,
     pub range: Coord,
     #[serde(default)]

@@ -467,7 +467,7 @@ impl UnitRender {
                         u_unit_radius: unit.stats.radius.as_f32(),
                         u_spawn: spawn_scale,
                         u_action: action_time,
-                        u_cooldown: unit.action.cooldown.as_f32(),
+                        u_cooldown: unit.action.cooldown as f32,
                         u_animation_delay: unit.action.animation_delay.as_f32(),
                         u_face_dir: unit.face_dir.map(|x| x.as_f32()),
                         u_random: unit.random_number.as_f32(),

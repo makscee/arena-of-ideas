@@ -39,6 +39,10 @@ impl<'a> Logic<'a> {
         logic.process();
     }
     pub fn process(&mut self) {
+        while self.model.current_tick.tick_time >= Time::new(TICK_TIME) {
+            self.tick();
+        }
+
         self.process_particles();
         self.process_statuses();
         self.process_time_bombs();
@@ -46,7 +50,6 @@ impl<'a> Logic<'a> {
         self.process_abilities();
         self.process_targeting();
         self.process_actions();
-        self.process_cooldowns();
         self.process_projectiles();
         self.wave_update();
         while self.model.free_revives > 0 {
@@ -80,6 +83,12 @@ impl<'a> Logic<'a> {
         self.process_effects();
         self.process_deaths();
         self.model.time += self.delta_time;
+        self.model.current_tick.tick_time += self.delta_time;
+    }
+    fn tick(&mut self) {
+        // TODO: check if some actions did not perform in time
+        self.model.current_tick = TickModel::new();
+        self.tick_cooldowns();
     }
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.model.units.ids().copied().collect();

@@ -53,9 +53,7 @@ impl Logic<'_> {
                     });
                 }
                 unit.last_action_time = self.model.time;
-                unit.action_state = ActionState::Cooldown {
-                    time: Time::new(0.0),
-                };
+                unit.action_state = ActionState::Cooldown { time: 0 };
             } else {
                 if let Some(target) = self.model.dead_units.get(target) {
                     unit.action_state = ActionState::None;
@@ -64,22 +62,13 @@ impl Logic<'_> {
         }
     }
 
-    pub fn process_cooldowns(&mut self) {
-        self.process_units(Self::process_unit_cooldowns);
+    pub fn tick_cooldowns(&mut self) {
+        self.process_units(Self::tick_unit_cooldowns);
     }
-    fn process_unit_cooldowns(&mut self, unit: &mut Unit) {
+    fn tick_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let ActionState::Cooldown { time } = &mut unit.action_state {
-            let attack_speed = unit.all_statuses.iter().fold(1.0, |speed, status| {
-                speed
-                // TODO: reimplement
-                // + if let StatusOld::AttackSpeed(status) = status {
-                //     status.percent / 100.0
-                // } else {
-                //     0.0
-                // }
-            });
-            *time += self.delta_time * r32(attack_speed);
-            if *time > unit.action.cooldown / unit.stats.action_speed {
+            *time += 1;
+            if *time > unit.action.cooldown {
                 unit.action_state = ActionState::None;
             }
         }

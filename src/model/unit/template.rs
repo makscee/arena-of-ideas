@@ -43,7 +43,7 @@ impl Default for UnitTemplate {
             radius: R32::new(0.5),
             action: ActionProperties {
                 range: 1,
-                cooldown: Time::new(1.0),
+                cooldown: 1,
                 animation_delay: Time::new(1.0),
                 effect: default(),
             },
