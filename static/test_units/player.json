@@ -4,7 +4,7 @@
     "action": {
         "range": 10,
         "animation_delay": 0.1,
-        "cooldown": 0.1,
+        "cooldown": 1,
         "effect": {
             "type": "Projectile",
             "speed": 10,

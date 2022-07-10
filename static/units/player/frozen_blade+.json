@@ -4,7 +4,7 @@
     "action": {
         "range": 1,
         "animation_delay": 0.25,
-        "cooldown": 2.0,
+        "cooldown": 2,
         "effect": {
             "type": "List",
             "effects": [
