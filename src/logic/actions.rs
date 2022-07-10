@@ -64,6 +64,9 @@ impl Logic<'_> {
 
     pub fn tick_cooldowns(&mut self) {
         self.process_units(Self::tick_unit_cooldowns);
+        let mut units: Vec<Id> = self.model.units.ids().copied().collect();
+        units.shuffle(&mut global_rng());
+        self.model.current_tick.action_queue = units.into_iter().collect();
     }
     fn tick_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let ActionState::Cooldown { time } = &mut unit.action_state {

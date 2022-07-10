@@ -56,7 +56,10 @@ impl TargetFilter {
 #[derive(Clone)]
 pub struct TickModel {
     pub tick_time: Time,
+    /// Queue of units to perform actions.
+    /// Some units may die before the queue is reset.
     pub action_queue: VecDeque<Id>,
+    pub current_action_time_left: Time,
 }
 
 #[derive(Clone)]
@@ -120,6 +123,7 @@ impl TickModel {
         Self {
             tick_time: Time::ZERO,
             action_queue: VecDeque::new(),
+            current_action_time_left: Time::ZERO,
         }
     }
 }

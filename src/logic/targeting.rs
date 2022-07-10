@@ -2,7 +2,19 @@ use super::*;
 
 impl Logic<'_> {
     pub fn process_targeting(&mut self) {
-        self.process_units(Self::process_unit_targeting);
+        self.model.current_tick.current_action_time_left -= self.delta_time;
+        if self.model.current_tick.current_action_time_left <= Time::ZERO {
+            if let Some(unit_id) = self.model.current_tick.action_queue.pop_front() {
+                if let Some(unit) = self.model.units.get(&unit_id) {
+                    let mut unit = unit.clone();
+                    self.process_unit_targeting(&mut unit);
+                    self.model.current_tick.current_action_time_left = (Time::new(TICK_TIME)
+                        - self.model.current_tick.tick_time)
+                        / Time::new((self.model.current_tick.action_queue.len() + 1) as f32);
+                    self.model.units.insert(unit);
+                }
+            }
+        }
     }
     fn process_unit_targeting(&mut self, unit: &mut Unit) {
         if unit
