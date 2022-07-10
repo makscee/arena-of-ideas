@@ -33,13 +33,13 @@ impl Logic<'_> {
                     .model
                     .units
                     .iter()
-                    .filter(|other| other.faction != unit_faction)
+                    .filter(|other| other.faction != unit_faction && other.position.height == 0)
                     .min_by_key(|other| (other.position.x - unit.position.x).abs()),
                 TargetAi::Biggest => self
                     .model
                     .units
                     .iter()
-                    .filter(|other| other.faction != unit_faction)
+                    .filter(|other| other.faction != unit_faction && other.position.height == 0)
                     .max_by_key(|other| other.stats.health),
                 _ => todo!(),
             });
