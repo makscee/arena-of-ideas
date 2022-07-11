@@ -165,8 +165,8 @@ pub enum ModifierTarget {
         value: Expr,
     },
     List {
-        modifiers: Vec<StatusModifier>
-    }
+        modifiers: Vec<StatusModifier>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -176,7 +176,7 @@ pub struct StatusModifier {
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
     pub priority: i64,
-    ////Condition when to apply modifier
+    /// Condition when to apply modifier
     pub condition: Condition,
 }
 

@@ -65,7 +65,7 @@
         "activate": 0,
         "statuses": [
             {
-                "name": "VFXOnDamage",
+                "name": "VfxInjure",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
@@ -86,7 +86,8 @@
                         "triggers": [
                             {
                                 "type": "DamageTaken",
-                                "damage_type": "Melee"
+                                "damage_type": "Melee",
+                                "except": "Crit"
                             }
                         ],
                         "effect": {
@@ -97,7 +98,8 @@
                         "triggers": [
                             {
                                 "type": "DamageTaken",
-                                "damage_type": "Ranged"
+                                "damage_type": "Ranged",
+                                "except": "Crit"
                             }
                         ],
                         "effect": {

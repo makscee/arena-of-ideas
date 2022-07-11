@@ -48,19 +48,19 @@ impl EffectImpl for DamageEffect {
                         source,
                         damage_type,
                     } => {
-                        for source_type in source {
-                            if source.contains(&source_type.to_string()) {
-                                for added_type in damage_type {
-                                    effect.types.insert(added_type.to_string());
-                                }
-                            }
+                        if effect
+                            .types
+                            .iter()
+                            .any(|source_type| source.contains(source_type))
+                        {
+                            effect.types.extend(damage_type.clone());
                         }
                     }
                     //Modify damage value
                     ModifierTarget::Damage { value } => {
-                        let mut mut_context = context.clone();
-                        mut_context.vars.insert(VarName::DamageIncoming, damage);
-                        damage = value.calculate(&mut_context, logic);
+                        let mut context = context.clone();
+                        context.vars.insert(VarName::DamageIncoming, damage);
+                        damage = value.calculate(&context, logic);
                     }
                     _ => (),
                 }
