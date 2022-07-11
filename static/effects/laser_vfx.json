@@ -1,0 +1,46 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "Visual",
+            "duration": 2.0,
+            "parent": "Target",
+            "partner": "Caster",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_curve_particles.glsl",
+                "parameters": {
+                    "u_curvature": 2.0,
+                    "u_thickness": 0.5,
+                    "u_unit_radius": 0.04,
+                    "p_speed": -0.2,
+                    "p_disperse": 10.0,
+                    "u_color": "#1e90ff"
+                },
+                "vertices": 2,
+                "instances": 500
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 1.2,
+            "parent": "Target",
+            "partner": "Caster",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_curve.glsl",
+                "parameters": {
+                    "u_curvature": 2.0,
+                    "u_thickness": 0.4,
+                    "u_color": "#1e90ff"
+                },
+                "vertices": 30,
+                "instances": 1
+            }
+        }
+    ]
+}

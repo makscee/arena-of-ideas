@@ -1,0 +1,79 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "Damage",
+                    "types": [
+                        "BonusShot"
+                    ],
+                    "value": {
+                        "type": "FindStat",
+                        "who": "Caster",
+                        "stat": "BaseDamage"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Visual",
+            "duration": 0.5,
+            "parent": "Target",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_particle_burst.glsl",
+                "parameters": {
+                    "p_startColor": "#dc143c",
+                    "p_endColor": "#1e90ff",
+                    "p_count": 12,
+                    "p_startSize": 0.1
+                }
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 2.0,
+            "parent": "Target",
+            "partner": "Caster",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_curve_particles.glsl",
+                "parameters": {
+                    "u_curvature": 1.3,
+                    "u_thickness": 0.5,
+                    "u_unit_radius": 0.04,
+                    "p_speed": -0.2,
+                    "p_disperse": 10.0,
+                    "u_color": "#009C69"
+                },
+                "vertices": 2,
+                "instances": 500
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 1.2,
+            "parent": "Target",
+            "partner": "Caster",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "type": "Shader",
+                "path": "shaders/vfx_curve.glsl",
+                "parameters": {
+                    "u_curvature": 1.3,
+                    "u_thickness": 0.4,
+                    "u_color": "#009C69"
+                },
+                "vertices": 30,
+                "instances": 1
+            }
+        }
+    ]
+}

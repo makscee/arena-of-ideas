@@ -7,51 +7,31 @@
         "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
-            "type": "Projectile",
-            "speed": 8,
-            "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "preset": "effects/dd_ranged.json"
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Freeze"
                     },
-                    {
-                        "type": "If",
-                        "condition": {
-                            "type": "UnitHasStatus",
-                            "who": "Target",
-                            "status": "Freeze"
-                        },
-                        "then": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "preset": "effects/bonus_shot_projectile.json"
-                                }
-                            ]
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "preset": "effects/bonus_shot.json"
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
-                ]
-            },
-            "render": {
-                "type": "Shader",
-                "path": "shaders/projectile_default.glsl",
-                "parameters": {
-                    "u_padding": 5.0,
-                    "p_count": 80,
-                    "p_lifeTime": 0.6,
-                    "p_radius_start": 0.6,
-                    "p_radius_end": -0.3,
-                    "p_glow_radius": 0.6,
-                    "p_speed": 2.5,
-                    "u_clan_color_1": "#dc143c",
-                    "u_clan_color_2": "#8a2be2",
-                    "u_clan_color_3": "#1e90ff"
                 }
-            }
+            ]
         }
     },
     "clans": [

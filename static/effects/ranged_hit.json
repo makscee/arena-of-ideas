@@ -1,0 +1,24 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "Damage",
+                    "types": [
+                        "Ranged"
+                    ],
+                    "value": {
+                        "type": "FindStat",
+                        "who": "Caster",
+                        "stat": "BaseDamage"
+                    }
+                }
+            ]
+        },
+        {
+            "preset": "effects/laser_vfx.json"
+        }
+    ]
+}

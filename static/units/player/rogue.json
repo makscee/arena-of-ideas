@@ -10,7 +10,7 @@
         "animation_delay": 0.25,
         "cooldown": 0.5,
         "effect": {
-            "preset": "effects/dd_melee.json"
+            "preset": "effects/melee_hit.json"
         }
     },
     "base": "melee"

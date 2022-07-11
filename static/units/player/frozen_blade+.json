@@ -9,7 +9,7 @@
             "type": "List",
             "effects": [
                 {
-                    "preset": "effects/dd_melee.json"
+                    "preset": "effects/melee_hit.json"
                 },
                 {
                     "type": "AOE",

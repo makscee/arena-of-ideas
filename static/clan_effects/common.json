@@ -91,7 +91,7 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/melee_hit_vfx.json"
+                            "preset": "effects/melee_hit.json"
                         }
                     },
                     {
@@ -103,7 +103,7 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/ranged_hit_vfx.json"
+                            "preset": "effects/ranged_hit.json"
                         }
                     }
                 ]

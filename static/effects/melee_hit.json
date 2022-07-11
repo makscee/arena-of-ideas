@@ -1,15 +1,12 @@
 {
     "type": "List",
-    "effects":
-    [
+    "effects": [
         {
             "type": "Damage",
-            "types":
-            [
-                "BonusShot"
+            "types": [
+                "Melee"
             ],
-            "value":
-            {
+            "value": {
                 "type": "FindStat",
                 "who": "Caster",
                 "stat": "BaseDamage"
@@ -20,17 +17,15 @@
             "duration": 0.5,
             "parent": "Target",
             "follow": false,
-            "radius": 1.5,
-            "render":
-            {
+            "radius": 1.6,
+            "render": {
                 "type": "Shader",
                 "path": "shaders/vfx_particle_burst.glsl",
-                "parameters":
-                {
-                    "p_startColor": "#009C69",
-                    "p_endColor": "#66FFCC",
-                    "p_count": 12,
-                    "p_startSize": 0.1
+                "parameters": {
+                    "p_startColor": "#dc143c",
+                    "p_endColor": "#ff4500",
+                    "p_count": 7,
+                    "p_startSize": 0.08
                 }
             }
         }

@@ -22,7 +22,7 @@
                         }
                     ],
                     "effect": {
-                        "preset": "effects/bonus_shot_projectile.json"
+                        "preset": "effects/bonus_shot.json"
                     }
                 }
             ]

@@ -11,7 +11,15 @@
         "animation_delay": 0.25,
         "cooldown": 3.5,
         "effect": {
-            "preset": "effects/projectile_dd_ranged.json"
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "preset": "effects/ranged_hit.json"
+                }
+            ]
         }
     },
     "statuses": [
@@ -36,7 +44,6 @@
                 }
             ]
         }
-
     ],
     "base": "ranged"
 }

@@ -8,7 +8,15 @@
         "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
-            "preset": "effects/projectile_dd_ranged.json"
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "preset": "effects/ranged_hit.json"
+                }
+            ]
         }
     },
     "move_ai": "Advance",

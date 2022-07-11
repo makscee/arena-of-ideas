@@ -16,7 +16,15 @@
             },
             "additional_targets": 1,
             "effect": {
-                "preset": "effects/projectile_dd_ranged.json"
+                "type": "List",
+                "effects": [
+                    {
+                        "preset": "effects/ranged_hit.json"
+                    },
+                    {
+                        "preset": "effects/ranged_hit.json"
+                    }
+                ]
             }
         }
     },
@@ -42,7 +50,6 @@
                 }
             ]
         }
-
     ],
     "base": "ranged+"
 }

@@ -7,6 +7,7 @@ flat out int p_index;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
+uniform float p_disperse = 0;
 
 
 void main() {
@@ -24,7 +25,7 @@ void main() {
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
 
-    vec2 startPos = b_pos + b_normal * (r2- 0.5) * r3 * u_thickness;
+    vec2 startPos = b_pos + b_normal * (r2- 0.5) * r3 * u_thickness * (1 + p_disperse * effect_t);
     float radius = u_unit_radius * cos(effect_t * pi * .5) * sin(bezier_t * pi);
 
     vec2 pos = v_quad_pos * radius + startPos;
@@ -43,7 +44,7 @@ void main() {
     float centerDist = distance(uv, vec2(.0));
     // if (centerDist > 0.5) discard;
     vec4 col = u_color;
-    col.a = float(centerDist < 1) * .3;
+    col.a = float(centerDist < 1) * .5;
     gl_FragColor = col;
 }
 #endif

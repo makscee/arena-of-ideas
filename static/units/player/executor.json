@@ -48,7 +48,7 @@
                         ]
                     },
                     "else": {
-                        "preset": "effects/dd_melee.json"
+                        "preset": "effects/melee_hit.json"
                     }
                 }
             ]

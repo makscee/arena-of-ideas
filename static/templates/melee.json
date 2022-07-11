@@ -8,7 +8,7 @@
         "animation_delay": 0.25,
         "cooldown": 0.75,
         "effect": {
-            "preset": "effects/dd_melee.json"
+            "preset": "effects/melee_hit.json"
         }
     },
     "move_ai": "Advance",

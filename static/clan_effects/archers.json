@@ -33,7 +33,7 @@
                                 {
                                     "weight": 30,
                                     "effect": {
-                                        "preset": "effects/bonus_shot_projectile.json"
+                                        "preset": "effects/bonus_shot.json"
                                     }
                                 }
                             ]
@@ -77,7 +77,7 @@
                                 {
                                     "weight": 15,
                                     "effect": {
-                                        "preset": "effects/bonus_shot_projectile.json"
+                                        "preset": "effects/bonus_shot.json"
                                     }
                                 }
                             ]
