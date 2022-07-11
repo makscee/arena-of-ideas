@@ -1,0 +1,113 @@
+[
+    {
+        "activate": 0,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
+                "name": "CritContainer",
+                "type": "Modifier",
+                "priority": 0,
+                "condition": {
+                    "type": "Chance",
+                    "percent": {
+                        "type": "FindStat",
+                        "who": "Caster",
+                        "stat": "CritChance"
+                    }
+                },
+                "target": {
+                    "type": "List",
+                    "modifiers": [
+                        {
+                            "priority": 0,
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "target": {
+                                "type": "ExtraOutDamageType",
+                                "source": [
+                                    "Melee",
+                                    "Ranged"
+                                ],
+                                "damage_type": [
+                                    "Crit"
+                                ]
+                            }
+                        },
+                        {
+                            "priority": 0,
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "target": {
+                                "type": "Damage",
+                                "value": {
+                                    "type": "Mul",
+                                    "a": {
+                                        "type": "Var",
+                                        "name": "DamageIncoming"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "activate": 0,
+        "statuses": [
+            {
+                "name": "VfxInjure",
+                "type": "Status",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Crit"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/crit_hit_vfx.json"
+                        }
+                    },
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Melee",
+                                "except": "Crit"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/melee_hit_vfx.json"
+                        }
+                    },
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Ranged",
+                                "except": "Crit"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/ranged_hit_vfx.json"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]

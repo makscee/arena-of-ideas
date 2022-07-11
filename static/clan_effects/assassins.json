@@ -10,23 +10,26 @@
             {
                 "name": "Assassins15CritChance",
                 "type": "Modifier",
+                "condition": {
+                    "type": "Always"
+                },
                 "target": {
                     "type": "Stat",
-                    "stat": "CritChance"
-                },
-                "priority": -100,
-                "value": {
-                    "type": "Sum",
-                    "a": {
-                        "type": "FindStat",
-                        "who": "Target",
-                        "stat": "CritChance"
-                    },
-                    "b": {
-                        "type": "Const",
-                        "value": 15
+                    "stat": "CritChance",
+                    "value": {
+                        "type": "Sum",
+                        "a": {
+                            "type": "FindStat",
+                            "who": "Target",
+                            "stat": "CritChance"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 15
+                        }
                     }
-                }
+                },
+                "priority": -100
             }
         ]
     },

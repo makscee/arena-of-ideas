@@ -2,60 +2,14 @@
     "type": "List",
     "effects": [
         {
-            "type": "If",
-            "condition": {
-                "type": "Chance",
-                "percent": {
-                    "type": "FindStat",
-                    "who": "Caster",
-                    "stat": "CritChance"
-                }
-            },
-            "then": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "Damage",
-                        "types": [
-                            "Ranged",
-                            "Crit"
-                        ],
-                        "value": {
-                            "type": "Mul",
-                            "a": {
-                                "type": "FindStat",
-                                "who": "Caster",
-                                "stat": "BaseDamage"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": 3
-                            }
-                        }
-                    },
-                    {
-                        "preset": "effects/crit_hit_vfx.json"
-                    }
-                ]
-            },
-            "else": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "Damage",
-                        "types": [
-                            "Ranged"
-                        ],
-                        "value": {
-                            "type": "FindStat",
-                            "who": "Caster",
-                            "stat": "BaseDamage"
-                        }
-                    },
-                    {
-                        "preset": "effects/ranged_hit_vfx.json"
-                    }
-                ]
+            "type": "Damage",
+            "types": [
+                "Ranged"
+            ],
+            "value": {
+                "type": "FindStat",
+                "who": "Caster",
+                "stat": "BaseDamage"
             }
         }
     ]

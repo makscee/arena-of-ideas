@@ -41,31 +41,32 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             armor_penetration = caster_unit.stats.armor_penetration.raw();
-
-            //Add extra damage types
-            let mut modifiers: Vec<StatusModifier> = caster_unit
-                .all_statuses
-                .iter()
-                .flat_map(|status| match &status.status.effect {
-                    StatusEffect::Modifier(modifier) => Some(modifier.clone()),
-                    _ => None,
-                })
-                .collect();
-            modifiers.sort_by_key(|modifier| modifier.priority);
-            for modifier in modifiers {
-                match modifier.target {
+            for (context, modifier_target) in &caster_unit.modifier_targets {
+                match modifier_target {
+                    //Add extra damage types
                     ModifierTarget::ExtraOutDamageType {
                         source,
                         damage_type,
                     } => {
-                        if effect.types.contains(&source) {
-                            effect.types.insert(damage_type);
+                        if effect
+                            .types
+                            .iter()
+                            .any(|source_type| source.contains(source_type))
+                        {
+                            effect.types.extend(damage_type.clone());
                         }
+                    }
+                    //Modify damage value
+                    ModifierTarget::Damage { value } => {
+                        let mut context = context.clone();
+                        context.vars.insert(VarName::DamageIncoming, damage);
+                        damage = value.calculate(&context, logic);
                     }
                     _ => (),
                 }
             }
         }
+
         let units = &mut logic.model.units;
         let target_unit = context
             .target

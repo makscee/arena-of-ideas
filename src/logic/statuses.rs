@@ -2,205 +2,220 @@ use super::*;
 
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
-        let mut expired: Vec<(Id, Option<Id>, Id, String)> = Vec::new();
-
-        fn is_expired(status: &AttachedStatus) -> bool {
-            status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
-                || status
-                    .vars
-                    .get(&VarName::StackCounter)
-                    .map(|count| *count <= R32::ZERO)
-                    .unwrap_or(false)
-        }
-
-        for unit in &mut self.model.units {
-            for status in &mut unit.all_statuses {
-                if !status.is_inited {
-                    for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
-                        StatusTrigger::Init => true,
-                        _ => false,
-                    }) {
-                        self.effects.push_front(QueuedEffect {
-                            effect,
-                            context: EffectContext {
-                                caster: Some(unit.id),
-                                from: Some(unit.id),
-                                target: Some(unit.id),
-                                vars,
-                                status_id: Some(status_id),
-                            },
-                        })
-                    }
-                    status.is_inited = true;
-                }
-                if let Some(time) = &mut status.time {
-                    *time -= self.delta_time;
-                }
-                for listener in &mut status.status.listeners {
-                    let ticks = listener
-                        .triggers
-                        .iter_mut()
-                        .map(|trigger| match trigger {
-                            StatusTrigger::Repeating {
-                                tick_time,
-                                next_tick,
-                            } => {
-                                *next_tick -= self.delta_time;
-                                let mut ticks = 0;
-                                while *next_tick < Time::ZERO {
-                                    ticks += 1;
-                                    *next_tick += *tick_time;
-                                }
-                                ticks
-                            }
-                            _ => 0,
-                        })
-                        .sum();
-                    for _ in 0..ticks {
-                        self.effects.push_back(QueuedEffect {
-                            effect: listener.effect.clone(),
-                            context: EffectContext {
-                                caster: status.caster,
-                                from: Some(unit.id),
-                                target: Some(unit.id),
-                                vars: status.vars.clone(),
-                                status_id: Some(status.id),
-                            },
-                        });
-                    }
-                }
-                if is_expired(status) {
-                    for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
-                        StatusTrigger::Break => true,
-                        _ => false,
-                    }) {
-                        self.effects.push_front(QueuedEffect {
-                            effect,
-                            context: EffectContext {
-                                caster: Some(unit.id),
-                                from: Some(unit.id),
-                                target: Some(unit.id),
-                                vars,
-                                status_id: Some(status_id),
-                            },
-                        })
-                    }
-                }
-            }
-
-            // Remember expired statuses
-            expired.extend(
-                (&mut unit.all_statuses)
-                    .iter()
-                    .filter(|status| is_expired(status) && !status.is_aura)
-                    .map(|status| {
-                        (
-                            unit.id,
-                            status.caster,
-                            status.id,
-                            status.status.name.clone(),
-                        )
-                    }),
-            );
-
-            unit.all_statuses.retain(|status| !is_expired(status));
-
-            unit.flags = unit
-                .all_statuses
-                .iter()
-                .flat_map(|status| status.status.flags.iter())
-                .copied()
-                .collect();
-        }
-
-        // Apply auras
-        let auras: Vec<(Id, Aura)> = self
-            .model
-            .units
-            .iter()
-            .flat_map(|unit| {
-                unit.all_statuses
-                    .iter()
-                    .flat_map(|status| match &status.status.effect {
-                        StatusEffect::Aura(aura) => Some(aura),
-                        _ => None,
-                    })
-                    .map(|aura| (unit.id, aura.clone()))
-            })
-            .collect();
-        for (caster_id, aura) in auras {
-            let caster = self.model.units.get(&caster_id).unwrap().clone();
-            for other in &mut self.model.units {
-                match aura.radius {
-                    Some(radius) => {
-                        if distance_between_units(&caster, other) > radius {
-                            continue;
-                        }
-                    }
-                    _ => {}
-                }
-                if !aura.filter.check(other) {
-                    continue;
-                }
-                let statuses: Vec<AttachedStatus> = aura
-                    .statuses
-                    .iter()
-                    .map(|status| {
-                        let mut status = status
-                            .get(&self.model.statuses)
-                            .clone()
-                            .attach_aura(Some(other.id), caster.id);
-                        status.time = Some(R32::ZERO);
-                        status
-                    })
-                    .collect();
-                other.flags.extend(
-                    statuses
-                        .iter()
-                        .flat_map(|status| status.status.flags.iter())
-                        .copied(),
-                );
-                other.all_statuses.extend(statuses);
-            }
-        }
-
-        // Apply modifiers
+        self.process_units(Self::process_unit_statuses);
+        
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
-        for unit_id in ids {
-            let unit = self.model.units.get_mut(&unit_id).unwrap();
-            unit.stats = unit.permanent_stats.clone();
-            let mut modifiers: Vec<(EffectContext, StatusModifier)> = unit
-                .all_statuses
-                .iter()
-                .flat_map(|status| match &status.status.effect {
+        for id in ids {
+            let unit = self.model.units.get(&id).unwrap();
+            let modifier_targets = self.collect_modifier_targets(unit);
+            self.process_modifiers(&id, &modifier_targets);
+
+            let mut unit_mut = self.model.units.get_mut(&id).unwrap();
+            unit_mut.modifier_targets = modifier_targets;
+        }
+    }
+
+    fn is_expired(status: &AttachedStatus) -> bool {
+        !status.is_aura && status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
+            || status
+                .vars
+                .get(&VarName::StackCounter)
+                .map(|count| *count <= R32::ZERO)
+                .unwrap_or(false)
+    }
+
+    fn collect_modifier_targets(&self, unit: &Unit) -> Vec<(EffectContext, ModifierTarget)> {
+        let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = Vec::new();
+        for status in &unit.all_statuses {
+            if !Self::is_expired(status) {
+                match &status.status.effect {
+                    //Collect modifiers
                     StatusEffect::Modifier(modifier) => {
                         let context = EffectContext {
-                            caster: status.caster,
-                            from: None,
+                            caster: Some(unit.id),
+                            from: status.caster,
                             target: Some(unit.id),
                             vars: status.vars.clone(),
                             status_id: Some(status.id),
                         };
-                        Some((context, modifier.clone()))
+                        match &modifier.target {
+                            ModifierTarget::List { modifiers } => {
+                                if self.check_condition(&modifier.condition, &context) {
+                                    for inner_modifier in modifiers {
+                                        if self.check_condition(&inner_modifier.condition, &context)
+                                        {
+                                            modifier_targets.push((
+                                                context.clone(),
+                                                inner_modifier.target.clone(),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {
+                                if self.check_condition(&modifier.condition, &context) {
+                                    modifier_targets
+                                        .push((context.clone(), modifier.target.clone()));
+                                }
+                            }
+                        }
                     }
-                    _ => None,
-                })
-                .collect();
-            modifiers.sort_by_key(|(_, modifier)| modifier.priority);
-            for (context, modifier) in modifiers {
-                let value = modifier.value.calculate(&context, self);
-                let unit = self.model.units.get_mut(&unit_id).unwrap();
-                match modifier.target {
-                    ModifierTarget::Stat { stat } => *unit.stats.get_mut(stat) = value,
+                    _ => (),
+                }
+            }
+        }
+        modifier_targets
+    }
+
+    fn process_modifiers(&mut self, unit_id: &Id, modifier_targets: &Vec<(EffectContext, ModifierTarget)>) {
+        let unit_mut = self.model.units.get_mut(&unit_id).unwrap();
+        unit_mut.stats = unit_mut.permanent_stats.clone();
+
+        for (context, target) in modifier_targets {
+            match target {
+                ModifierTarget::Stat { stat, value } => {
+                    let stat_value = value.calculate(&context, self);
+                    let mut unit_mut = self.model.units.get_mut(&unit_id).unwrap();
+                    *unit_mut.stats.get_mut(*stat) = stat_value;
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn process_unit_statuses(&mut self, unit: &mut Unit) {
+        let mut expired: Vec<(Option<Id>, Id, String)> = Vec::new();
+        for status in &mut unit.all_statuses {
+            if !status.is_inited {
+                for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
+                    StatusTrigger::Init => true,
+                    _ => false,
+                }) {
+                    self.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: Some(unit.id),
+                            from: Some(unit.id),
+                            target: Some(unit.id),
+                            vars,
+                            status_id: Some(status_id),
+                        },
+                    })
+                }
+                status.is_inited = true;
+            }
+            if let Some(time) = &mut status.time {
+                *time -= self.delta_time;
+            }
+            for listener in &mut status.status.listeners {
+                let ticks = listener
+                    .triggers
+                    .iter_mut()
+                    .map(|trigger| match trigger {
+                        StatusTrigger::Repeating {
+                            tick_time,
+                            next_tick,
+                        } => {
+                            *next_tick -= self.delta_time;
+                            let mut ticks = 0;
+                            while *next_tick < Time::ZERO {
+                                ticks += 1;
+                                *next_tick += *tick_time;
+                            }
+                            ticks
+                        }
+                        _ => 0,
+                    })
+                    .sum();
+                for _ in 0..ticks {
+                    self.effects.push_back(QueuedEffect {
+                        effect: listener.effect.clone(),
+                        context: EffectContext {
+                            caster: status.caster,
+                            from: Some(unit.id),
+                            target: Some(unit.id),
+                            vars: status.vars.clone(),
+                            status_id: Some(status.id),
+                        },
+                    });
+                }
+            }
+            if Self::is_expired(status) {
+                expired.push((status.caster, status.id, status.status.name.clone()));
+                for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
+                    StatusTrigger::Break => true,
+                    _ => false,
+                }) {
+                    self.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: Some(unit.id),
+                            from: Some(unit.id),
+                            target: Some(unit.id),
+                            vars,
+                            status_id: Some(status_id),
+                        },
+                    })
+                }
+            } else {
+                match &status.status.effect {
+                    //Apply auras
+                    StatusEffect::Aura(aura) => {
+                        for other in &mut self.model.units {
+                            match aura.radius {
+                                Some(radius) => {
+                                    //TODO: Check distance by util fn
+                                    if (unit.position - other.position).len()
+                                        - unit.stats.radius
+                                        - other.stats.radius
+                                        > radius
+                                    {
+                                        continue;
+                                    }
+                                }
+                                _ => {}
+                            }
+                            if !aura.filter.check(other) {
+                                continue;
+                            }
+                            let statuses: Vec<AttachedStatus> = aura
+                                .statuses
+                                .iter()
+                                .map(|status| {
+                                    let mut status = status
+                                        .get(&self.model.statuses)
+                                        .clone()
+                                        .attach_aura(Some(other.id), unit.id);
+                                    status.time = Some(R32::ZERO);
+                                    status
+                                })
+                                .collect();
+                            other.flags.extend(
+                                statuses
+                                    .iter()
+                                    .flat_map(|status| status.status.flags.iter())
+                                    .copied(),
+                            );
+                            other.all_statuses.extend(statuses);
+                        }
+                    }
                     _ => (),
                 }
             }
         }
 
+        unit.all_statuses.retain(|status| !Self::is_expired(status));
+
+        unit.flags = unit
+            .all_statuses
+            .iter()
+            .flat_map(|status| status.status.flags.iter())
+            .copied()
+            .collect();
+
         // Detect expired statuses
-        for (owner_id, caster_id, detect_id, detect_status) in &expired {
-            let owner = self.model.units.get(owner_id).unwrap();
-            for (effect, vars, status_id) in owner.all_statuses.iter().flat_map(|status| {
+        for (caster_id, detect_id, detect_status) in &expired {
+            for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::SelfDetectAttach {
                         status_name,
@@ -213,8 +228,8 @@ impl Logic<'_> {
                     effect,
                     context: EffectContext {
                         caster: *caster_id,
-                        from: Some(owner.id),
-                        target: Some(owner.id),
+                        from: Some(unit.id),
+                        target: Some(unit.id),
                         vars,
                         status_id: Some(*detect_id),
                     },
@@ -229,9 +244,9 @@ impl Logic<'_> {
                             filter,
                             status_action: StatusAction::Remove,
                         } => {
-                            other.id != owner.id
+                            other.id != unit.id
                                 && detect_status == status_name
-                                && filter.matches(owner.faction, other.faction)
+                                && filter.matches(unit.faction, other.faction)
                         }
                         _ => false,
                     })
@@ -241,7 +256,7 @@ impl Logic<'_> {
                         context: EffectContext {
                             caster: *caster_id,
                             from: Some(other.id),
-                            target: Some(owner.id),
+                            target: Some(unit.id),
                             vars,
                             status_id: Some(*detect_id),
                         },

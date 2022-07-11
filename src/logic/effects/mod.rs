@@ -9,7 +9,7 @@ pub struct QueuedEffect<T> {
     pub context: EffectContext,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EffectContext {
     pub caster: Option<Id>,
     pub from: Option<Id>,

@@ -23,23 +23,26 @@
                 {
                     "name": "ArmorModifier",
                     "type": "Modifier",
+                    "condition": {
+                        "type": "Always"
+                    },
                     "target": {
                         "type": "Stat",
-                        "stat": "Armor"
-                    },
-                    "priority": 0,
-                    "value": {
-                        "type": "Sum",
-                        "a": {
-                            "type": "FindStat",
-                            "who": "Target",
-                            "stat": "Armor"
-                        },
-                        "b": {
-                            "type": "Const",
-                            "value": 10
+                        "stat": "Armor",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "Armor"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 10
+                            }
                         }
-                    }
+                    },
+                    "priority": 0
                 }
             ],
             "filter": {

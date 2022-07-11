@@ -155,10 +155,17 @@ pub struct Aura {
 pub enum ModifierTarget {
     Stat {
         stat: UnitStat,
+        value: Expr,
     },
     ExtraOutDamageType {
-        source: DamageType,
-        damage_type: DamageType,
+        source: HashSet<DamageType>,
+        damage_type: HashSet<DamageType>,
+    },
+    Damage {
+        value: Expr,
+    },
+    List {
+        modifiers: Vec<StatusModifier>,
     },
 }
 
@@ -169,8 +176,8 @@ pub struct StatusModifier {
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
     pub priority: i64,
-    /// The value that will be put into `target`
-    pub value: Expr,
+    /// Condition when to apply modifier
+    pub condition: Condition,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

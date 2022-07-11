@@ -22,6 +22,7 @@ pub enum Clan {
     Protectors,
     Demons,
     Dragons,
+    Common,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -95,6 +96,7 @@ impl fmt::Display for Clan {
             Clan::Protectors => write!(f, "Protectors"),
             Clan::Demons => write!(f, "Demons"),
             Clan::Dragons => write!(f, "Dragons"),
+            Clan::Common => write!(f, "Common"),
         }
     }
 }
