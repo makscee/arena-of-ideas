@@ -10,6 +10,9 @@ struct Text {
     scale: f32,
 }
 
+#[derive(ugli::Vertex, Debug, Clone)]
+pub struct Instance {}
+
 #[derive(Clone)]
 pub struct RenderModel {
     texts: Vec<Text>,
@@ -149,6 +152,7 @@ impl Render {
                 program,
                 parameters,
                 vertices,
+                instances,
             } => {
                 let vert_count = *vertices;
                 let mut vertices = vec![draw_2d::Vertex {
@@ -167,13 +171,16 @@ impl Render {
                     a_pos: vec2(1.0, 1.0),
                 });
 
+                let mut instances_arr: ugli::VertexBuffer<Instance> =
+                    ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
+                instances_arr.resize(*instances, Instance {});
                 let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
                 let framebuffer_size = framebuffer.size();
                 ugli::draw(
                     framebuffer,
                     program,
                     ugli::DrawMode::TriangleStrip,
-                    &quad,
+                    ugli::instanced(&quad, &instances_arr),
                     (
                         ugli::uniforms! {
                             u_time: game_time,
@@ -231,6 +238,7 @@ impl Render {
                 program,
                 parameters,
                 vertices,
+                ..
             } => {
                 let quad = ugli::VertexBuffer::new_dynamic(
                     self.geng.ugli(),
@@ -403,6 +411,7 @@ impl UnitRender {
                 program,
                 parameters,
                 vertices,
+                ..
             } => {
                 let vert_count = *vertices;
                 let mut vertices = vec![draw_2d::Vertex {

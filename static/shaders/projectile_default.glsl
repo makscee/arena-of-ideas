@@ -24,7 +24,6 @@ in vec2 v_quad_pos;
 uniform float p_radius_start = 0.2;
 uniform float p_radius_end = 0.00;
 uniform float p_glow_radius = 0.3;
-uniform float p_speed = 3;
 uniform vec2 u_velocity;
 
 #include <particles_uniforms.glsl>

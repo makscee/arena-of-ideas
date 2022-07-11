@@ -242,7 +242,7 @@ impl geng::State for EditState {
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
             rotation: 0.0,
-            fov: 15.0,
+            fov: 25.0,
         };
 
         if let Some((_, program)) = &self.shader {

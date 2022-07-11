@@ -9,3 +9,4 @@ uniform float p_startAlpha = 1;
 uniform float p_endAlpha = 1;
 uniform int p_shape = 1;
 uniform vec2 p_gravity = vec2(0, 0);
+uniform float p_speed = 1;

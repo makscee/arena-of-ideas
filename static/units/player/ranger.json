@@ -28,11 +28,16 @@
                     "radius": 1.5,
                     "render": {
                         "type": "Shader",
-                        "path": "shaders/vfx_curve.glsl",
+                        "path": "shaders/vfx_curve_particles.glsl",
                         "parameters": {
-                            "u_curvature": 3.0
+                            "u_curvature": 2.0,
+                            "u_thickness": 1.0,
+                            "u_unit_radius": 0.05,
+                            "p_speed": 0.3,
+                            "u_color": "#fc0107"
                         },
-                        "vertices": 50
+                        "vertices": 2,
+                        "instances": 5000
                     }
                 }
             ]

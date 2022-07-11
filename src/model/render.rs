@@ -15,11 +15,17 @@ pub enum RenderConfig {
         parameters: ShaderParameters,
         #[serde(default = "default_vertices")]
         vertices: usize,
+        #[serde(default = "default_instances")]
+        instances: usize,
     },
 }
 
 fn default_vertices() -> usize {
     4
+}
+
+fn default_instances() -> usize {
+    1
 }
 
 #[derive(Clone)]
@@ -34,6 +40,7 @@ pub enum RenderMode {
         program: Rc<ugli::Program>,
         parameters: ShaderParameters,
         vertices: usize,
+        instances: usize,
     },
 }
 
@@ -54,7 +61,7 @@ impl Default for RenderMode {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct ShaderParameters (pub HashMap<String, ShaderParameter>);
+pub struct ShaderParameters(pub HashMap<String, ShaderParameter>);
 
 impl ShaderParameters {
     pub fn new() -> Self {

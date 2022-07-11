@@ -33,6 +33,12 @@ uniform vec2 u_face_dir;
 uniform float u_unit_radius = 1;
 uniform float u_ability_on_cooldown;
 
+uniform vec2 u_parent_position;
+uniform vec2 u_partner_position;
+
+uniform float u_thickness = 0.2;
+uniform float u_curvature = 2;
+
 uniform vec4 u_color = vec4(0.117, 0.564, 1, 1);
 uniform vec4 u_clan_color_1 = vec4(0.250, 0, 0.501, 1);
 uniform vec4 u_clan_color_2 = vec4(0.117, 0.564, 1, 1);
@@ -88,12 +94,12 @@ vec2 N22(vec2 p)
 
 float rand(int i)
 {
-    return N22(vec2(i * .01)).x;
+    return N22(vec2(i * .001)).x;
 }
 
 vec2 randVec(int i)
 {
-    return N22(vec2(i * .01));
+    return N22(vec2(i * .001));
 }
 
 vec2 randCircle(int i) 
@@ -157,6 +163,34 @@ vec3 mix2Colors(float t, vec3 colors[2])
     return mix(c1, c2, t * 2 - float(colorInd));
 }
 
+vec3 hueShift(vec3 color, float hueAdjust) // hue in radians
+{
+
+    const vec3  kRGBToYPrime = vec3 (0.299, 0.587, 0.114);
+    const vec3  kRGBToI      = vec3 (0.596, -0.275, -0.321);
+    const vec3  kRGBToQ      = vec3 (0.212, -0.523, 0.311);
+
+    const vec3  kYIQToR     = vec3 (1.0, 0.956, 0.621);
+    const vec3  kYIQToG     = vec3 (1.0, -0.272, -0.647);
+    const vec3  kYIQToB     = vec3 (1.0, -1.107, 1.704);
+
+    float   YPrime  = dot (color, kRGBToYPrime);
+    float   I       = dot (color, kRGBToI);
+    float   Q       = dot (color, kRGBToQ);
+    float   hue     = atan (Q, I);
+    float   chroma  = sqrt (I * I + Q * Q);
+
+    hue += hueAdjust;
+
+    Q = chroma * sin (hue);
+    I = chroma * cos (hue);
+
+    vec3    yIQ   = vec3 (YPrime, I, Q);
+
+    return vec3( dot (yIQ, kYIQToR), dot (yIQ, kYIQToG), dot (yIQ, kYIQToB) );
+
+}
+
 vec4 renderStatusRing(vec2 uv, vec3 col)
 {
     float offset = 1. + c_status_radius_offset + c_status_radius_delta * u_status_index
@@ -169,7 +203,37 @@ vec4 renderStatusRing(vec2 uv, vec3 col)
         || dotDistance < c_status_dot_radius));
 }
 
-float smoothhump(float left, float right, float t)
+float smoothhump(float left, float right, float t) // 0 -> 1 -> 0
 {
     return min(smoothstep(0.,left,t), smoothstep(1.,right,t));
+}
+
+vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
+{
+    float t2 = t * t;
+    float one_minus_t = 1.0 - t;
+    float one_minus_t2 = one_minus_t * one_minus_t;
+    return (P0 * one_minus_t2 * one_minus_t + P1 * 3.0 * t * one_minus_t2 + P2 * 3.0 * t2 * one_minus_t + P3 * t2 * t);
+}
+
+vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
+{
+    float t2 = t * t;
+    vec2 tangent = 
+        P0 * (-3 * t2 + 6 * t - 3) +
+        P1 * (9 * t2 - 12 * t + 3) +
+        P2 * (-9 * t2 + 6 * t) +
+        P3 * (3 * t2);
+    return normalize(vec2(tangent.y, -tangent.x));
+}
+
+vec4 bezierParentPartner(float t, vec2 parent, vec2 partner)
+{
+    vec2 dir = normalize(parent - partner);
+    dir = -vec2(dir.y, -dir.x) * u_curvature;
+    vec2 p0 = parent;
+    vec2 p1 = parent + dir;
+    vec2 p2 = partner + dir;
+    vec2 p3 = partner;
+    return vec4(toBezier(t, p0, p1, p2, p3), toBezierNormal(t, p0, p1, p2, p3));
 }
