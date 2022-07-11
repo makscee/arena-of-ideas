@@ -33,6 +33,7 @@ mod splash;
 mod suicide;
 mod time_bomb;
 mod visual;
+mod visual_chain;
 
 pub use action::*;
 pub use add_global_var::*;
@@ -67,6 +68,7 @@ pub use splash::*;
 pub use suicide::*;
 pub use time_bomb::*;
 pub use visual::*;
+pub use visual_chain::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]
@@ -100,6 +102,7 @@ pub enum Effect {
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
+    VisualChain(Box<VisualChainEffect>),
     AddVar(Box<AddVarEffect>),
     AddGlobalVar(Box<AddGlobalVarEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
@@ -138,6 +141,7 @@ pub enum RawEffect {
     Splash(Box<SplashEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
+    VisualChain(Box<VisualChainEffect>),
     AddVar(Box<AddVarEffect>),
     AddGlobalVar(Box<AddGlobalVarEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
@@ -213,6 +217,7 @@ impl std::fmt::Debug for Effect {
             Self::Splash(effect) => effect.fmt(f),
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
+            Self::VisualChain(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
             Self::AddGlobalVar(effect) => effect.fmt(f),
             Self::RemoveStatus(effect) => effect.fmt(f),
@@ -253,6 +258,7 @@ impl From<RawEffect> for Effect {
             RawEffect::Splash(effect) => Self::Splash(effect),
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
+            RawEffect::VisualChain(effect) => Self::VisualChain(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
             RawEffect::AddGlobalVar(effect) => Self::AddGlobalVar(effect),
             RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
@@ -325,6 +331,7 @@ impl Effect {
             Effect::Splash(effect) => &mut **effect,
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
+            Effect::VisualChain(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
             Effect::AddGlobalVar(effect) => &mut **effect,
             Effect::RemoveStatus(effect) => &mut **effect,
@@ -362,6 +369,7 @@ impl Effect {
             Effect::Splash(effect) => effect,
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
+            Effect::VisualChain(effect) => effect,
             Effect::AddVar(effect) => effect,
             Effect::AddGlobalVar(effect) => effect,
             Effect::RemoveStatus(effect) => effect,

@@ -85,8 +85,10 @@ impl Render {
             self.draw_projectile(projectile, &render, game_time, framebuffer);
         }
         for particle in &model.particles {
-            let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps
-            self.draw_particle(particle, &render, game_time, framebuffer);
+            if particle.delay <= Time::new(0.0) {
+                let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps
+                self.draw_particle(particle, &render, game_time, framebuffer);
+            }
         }
         for text in &render_model.texts {
             self.geng.draw_2d(
