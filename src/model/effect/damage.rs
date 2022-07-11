@@ -32,7 +32,6 @@ impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let mut effect = *self;
         let mut damage = effect.value.calculate(&context, logic);
-        let mut armor_penetration = 0_f32;
         if let Some(caster) = context.caster {
             let caster_unit = logic
                 .model
@@ -40,7 +39,6 @@ impl EffectImpl for DamageEffect {
                 .get(&caster)
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
-            armor_penetration = caster_unit.stats.armor_penetration.raw();
             for (context, modifier_target) in &caster_unit.modifier_targets {
                 match modifier_target {
                     //Add extra damage types
@@ -117,13 +115,11 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        // Armor stat
+        // Block stat
         if !effect.types.contains(PURE_DAMAGE) {
-            let armor = target_unit.stats.armor.as_f32() - armor_penetration;
-            if armor > 0.0 {
-                damage *= r32(1.0 - (0.06 * armor) / (1.0 + 0.06 * armor));
-            } else if armor < 0.0 {
-                damage *= r32(2.0 - 0.94_f32.powf(-armor));
+            let block = target_unit.stats.block;
+            if block > r32(0.0) {
+                damage = max(r32(1.0), damage - block);
             }
         }
 

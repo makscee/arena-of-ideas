@@ -1,6 +1,6 @@
 {
     "tier": 0,
-    "description": "All allies gain +20% @Vampirism and +10 @armor",
+    "description": "All allies gain +20% @Vampirism and +1 @block",
     "clans": [
         "Vampires",
         "Protectors"
@@ -17,28 +17,28 @@
             }
         },
         {
-            "name": "ArmorAura",
+            "name": "BlockAura",
             "type": "Aura",
             "statuses": [
                 {
-                    "name": "ArmorModifier",
+                    "name": "BlockModifier",
                     "type": "Modifier",
                     "condition": {
                         "type": "Always"
                     },
                     "target": {
                         "type": "Stat",
-                        "stat": "Armor",
+                        "stat": "Block",
                         "value": {
                             "type": "Sum",
                             "a": {
                                 "type": "FindStat",
                                 "who": "Target",
-                                "stat": "Armor"
+                                "stat": "Block"
                             },
                             "b": {
                                 "type": "Const",
-                                "value": 10
+                                "value": 1
                             }
                         }
                     },
