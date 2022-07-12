@@ -20,6 +20,6 @@ impl EffectImpl for ReviveEffect {
             .expect("Target not found");
         unit.stats.health = health;
         unit.permanent_stats.health = health;
-        logic.model.units.insert(unit);
+        logic.model.units.insert(unit); // TODO: check validity
     }
 }

@@ -105,10 +105,8 @@ impl<'a> Logic<'a> {
             .map(|unit| (unit, self.model.unit_templates[unit].clone()))
             .collect::<Vec<_>>();
 
-        // let spawn_point = config.spawn_points["Heroes"];
         for unit_type in &config.player {
             self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
-            // TODO: reimplement
         }
     }
 }

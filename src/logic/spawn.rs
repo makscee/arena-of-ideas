@@ -25,7 +25,7 @@ impl Logic<'_> {
             self.model
                 .units
                 .iter_mut()
-                .filter(|unit| unit.position.side == position.side)
+                .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
                 .for_each(|unit| unit.position.x += 1);
             0
         } else {
