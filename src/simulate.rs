@@ -77,17 +77,13 @@ impl SimulationConfig {
                     between_delay: R32::ZERO,
                     wait_clear: false,
                     statuses: vec![],
-                    spawns: [(
-                        "Undefined".to_string(),
-                        units
-                            .into_iter()
-                            .map(|unit| WaveSpawn {
-                                r#type: unit,
-                                count: 1,
-                            })
-                            .collect(),
-                    )]
-                    .into(),
+                    spawns: units
+                        .into_iter()
+                        .map(|unit| WaveSpawn {
+                            r#type: unit,
+                            count: 1,
+                        })
+                        .collect(),
                 }]
                 .into(),
             }],

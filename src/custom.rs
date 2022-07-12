@@ -14,7 +14,6 @@ struct CustomConfig {
     player: Vec<UnitType>,
     clans: HashMap<Clan, usize>,
     round: GameRound,
-    spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     fov: f32,
 }
 

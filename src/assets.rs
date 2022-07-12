@@ -85,7 +85,6 @@ async fn load_field_render(
 }
 
 pub type Key = String;
-pub type SpawnPoint = String;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
@@ -106,8 +105,7 @@ pub struct Wave {
     pub wait_clear: bool,
     #[serde(default)]
     pub statuses: Vec<StatusRef>,
-    #[serde(flatten)]
-    pub spawns: HashMap<SpawnPoint, VecDeque<WaveSpawn>>,
+    pub spawns: VecDeque<WaveSpawn>,
 }
 
 impl Wave {
