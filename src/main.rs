@@ -170,8 +170,8 @@ struct Opts {
 enum Commands {
     CustomGame(custom::CustomGame),
     Test,
-    Simulate1x1(simulate::Simulate1x1),
     Shader(shader_edit::ShaderEdit),
+    Simulate(simulate::Simulate),
 }
 
 fn main() {
@@ -229,8 +229,8 @@ fn main() {
                                 tests::run_tests(assets);
                                 std::process::exit(0);
                             }
-                            Commands::Simulate1x1(simulate) => {
-                                simulate.run(assets, config).unwrap();
+                            Commands::Simulate(simulate) => {
+                                simulate.run(&geng, assets, config);
                                 std::process::exit(0);
                             }
                             Commands::Shader(shader) => {
