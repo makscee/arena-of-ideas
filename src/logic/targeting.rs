@@ -34,7 +34,7 @@ impl Logic<'_> {
                     .units
                     .iter()
                     .filter(|other| other.faction != unit_faction && other.position.height == 0)
-                    .min_by_key(|other| (other.position.x - unit.position.x).abs()),
+                    .min_by_key(|other| distance_between_units(unit, other)),
                 TargetAi::Biggest => self
                     .model
                     .units
@@ -44,7 +44,7 @@ impl Logic<'_> {
                 _ => todo!(),
             });
             if let Some(target) = target {
-                if distance_between_units(target, &unit) < unit.action.range {
+                if distance_between_units(target, unit) < unit.action.range {
                     assert_ne!(target.id, unit.id);
                     unit.face_dir =
                         (target.position.to_world() - unit.position.to_world()).normalize_or_zero();

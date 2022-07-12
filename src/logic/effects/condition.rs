@@ -30,7 +30,7 @@ impl Logic<'_> {
                     .target
                     .and_then(|id| self.model.units.get(&id))
                     .expect("Caster, From, or Target not found");
-                (target.position.x - from.position.x).abs() <= *max_distance
+                distance_between_units(target, from) <= *max_distance
             }
             Condition::Chance { percent } => {
                 r32(global_rng().gen_range(0.0..=100.0)) < percent.calculate(&context, self)

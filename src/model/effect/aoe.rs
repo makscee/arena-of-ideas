@@ -51,7 +51,7 @@ impl EffectImpl for AoeEffect {
             if effect.skip_current_target && Some(unit.id) == context.target {
                 continue;
             }
-            if (unit.position.x - center.x).abs() > effect.range {
+            if unit.position.distance(&center) > effect.range {
                 continue;
             }
             if !effect.filter.matches(unit.faction, caster_faction) {
