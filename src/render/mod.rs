@@ -3,47 +3,34 @@ use super::*;
 mod field;
 mod particle;
 mod projectile;
+mod text;
 mod unit;
 
+use text::*;
 pub use unit::*;
 
 #[derive(Clone)]
-struct Text {
-    position: Vec2<f32>,
-    velocity: Vec2<f32>,
-    time: f32,
-    text: String,
-    color: Color<f32>,
-    scale: f32,
-}
-
-#[derive(Clone)]
 pub struct RenderModel {
-    texts: Vec<Text>,
+    text_blocks: HashMap<Position, TextBlock>,
 }
 
 impl RenderModel {
     pub fn new() -> Self {
-        Self { texts: Vec::new() }
+        Self {
+            text_blocks: HashMap::new(),
+        }
     }
     pub fn update(&mut self, delta_time: f32) {
-        for text in &mut self.texts {
-            text.time += delta_time * 0.8;
-            text.position += text.velocity * delta_time;
-            text.scale = 1.0 - text.time;
+        for text_block in self.text_blocks.values_mut() {
+            text_block.update(delta_time);
         }
-        self.texts.retain(|text| text.time < 1.0);
     }
     pub fn add_text(&mut self, position: Position, text: &str, color: Color<f32>) {
-        let velocity = vec2(0.7, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
-        self.texts.push(Text {
-            position: position.to_world_f32() + velocity,
-            time: 0.0,
-            velocity,
-            text: text.to_owned(),
-            color,
-            scale: 1.0,
-        });
+        let text_block = self
+            .text_blocks
+            .entry(position)
+            .or_insert_with(|| TextBlock::new(position.to_world_f32()));
+        text_block.add_text_top(text, color);
     }
 }
 
@@ -97,7 +84,11 @@ impl Render {
             let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps
             self.draw_particle(particle, &render, game_time, framebuffer);
         }
-        for text in &render_model.texts {
+        for text in render_model
+            .text_blocks
+            .values()
+            .flat_map(|text_block| text_block.texts())
+        {
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
