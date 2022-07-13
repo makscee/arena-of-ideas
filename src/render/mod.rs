@@ -1,9 +1,9 @@
 use super::*;
 
+mod field;
 mod particle;
 mod projectile;
 mod unit;
-mod field;
 
 pub use unit::*;
 
