@@ -19,6 +19,37 @@ pub struct TextBlock {
     bot_texts: VecDeque<Text>,
 }
 
+impl Text {
+    pub fn update(&mut self, delta_time: f32) {
+        self.time += delta_time * 0.8;
+        self.position += self.velocity * delta_time;
+        self.scale = 1.0 - self.time;
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.time < 1.0
+    }
+}
+
+impl RenderModel {
+    pub(super) fn add_text_random(
+        &mut self,
+        position: Vec2<f32>,
+        text: impl Into<String>,
+        color: Color<f32>,
+    ) {
+        let velocity = vec2(0.7, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
+        self.texts.push(Text {
+            position,
+            time: 0.0,
+            velocity,
+            text: text.into(),
+            color,
+            scale: 1.0,
+        });
+    }
+}
+
 impl TextBlock {
     pub fn new(position: Vec2<f32>) -> Self {
         Self {
@@ -34,13 +65,10 @@ impl TextBlock {
 
     pub fn update(&mut self, delta_time: f32) {
         for text in self.top_texts.iter_mut().chain(&mut self.bot_texts) {
-            text.time += delta_time * 0.8;
-            text.position += text.velocity * delta_time;
-            text.scale = 1.0 - text.time;
+            text.update(delta_time);
         }
-        let is_alive = |text: &Text| text.time < 1.0;
-        self.top_texts.retain(is_alive);
-        self.bot_texts.retain(is_alive);
+        self.top_texts.retain(Text::is_alive);
+        self.bot_texts.retain(Text::is_alive);
     }
 
     pub fn add_text_top(&mut self, text: impl Into<String>, color: Color<f32>) {

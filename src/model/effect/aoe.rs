@@ -45,7 +45,7 @@ impl EffectImpl for AoeEffect {
             })
             .expect("Target not found");
         if let Some(render) = &mut logic.render {
-            render.add_text(center, "AOE", Color::RED);
+            render.add_text(center, "AOE", Color::RED, crate::render::TextType::Aoe);
         }
         for unit in &logic.model.units {
             if effect.skip_current_target && Some(unit.id) == context.target {

@@ -12,25 +12,50 @@ pub use unit::*;
 #[derive(Clone)]
 pub struct RenderModel {
     text_blocks: HashMap<Position, TextBlock>,
+    texts: Vec<Text>,
+}
+
+pub enum TextType {
+    Damage,
+    Heal,
+    Status,
+    Aoe,
 }
 
 impl RenderModel {
     pub fn new() -> Self {
         Self {
             text_blocks: HashMap::new(),
+            texts: Vec::new(),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
         for text_block in self.text_blocks.values_mut() {
             text_block.update(delta_time);
         }
+        for text in &mut self.texts {
+            text.update(delta_time);
+        }
+        self.texts.retain(Text::is_alive);
     }
-    pub fn add_text(&mut self, position: Position, text: &str, color: Color<f32>) {
+    pub fn add_text(
+        &mut self,
+        position: Position,
+        text: impl Into<String>,
+        color: Color<f32>,
+        text_type: TextType,
+    ) {
         let text_block = self
             .text_blocks
             .entry(position)
             .or_insert_with(|| TextBlock::new(position.to_world_f32()));
-        text_block.add_text_top(text, color);
+        match text_type {
+            TextType::Damage => text_block.add_text_top(text, color),
+            TextType::Heal => text_block.add_text_bottom(text, color),
+            TextType::Status | TextType::Aoe => {
+                self.add_text_random(position.to_world_f32(), text, color)
+            }
+        }
     }
 }
 

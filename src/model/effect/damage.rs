@@ -183,6 +183,7 @@ impl EffectImpl for DamageEffect {
                 target_unit.position,
                 &format!("{}", -damage_text),
                 Color::RED,
+                crate::render::TextType::Damage,
             );
         }
         let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);

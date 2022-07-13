@@ -49,6 +49,7 @@ impl EffectImpl for HealEffect {
                     target_unit.position,
                     &format!("{}", heal_text),
                     Color::GREEN,
+                    crate::render::TextType::Heal,
                 );
             }
         }
