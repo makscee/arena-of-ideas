@@ -95,7 +95,7 @@ impl EffectImpl for DamageEffect {
             logic.effects.push_front(QueuedEffect {
                 effect,
                 context: EffectContext {
-                    caster: Some(target_unit.id),
+                    caster: context.caster,
                     from: context.from,
                     target: context.target,
                     vars: {
@@ -149,7 +149,7 @@ impl EffectImpl for DamageEffect {
             logic.effects.push_front(QueuedEffect {
                 effect,
                 context: EffectContext {
-                    caster: Some(target_unit.id),
+                    caster: context.caster,
                     from: context.from,
                     target: context.target,
                     vars,
