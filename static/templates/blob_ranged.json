@@ -1,0 +1,17 @@
+{
+    "health": 4,
+    "base_damage": 1,
+    "radius": 0.9,
+    "action": {
+        "range": 5,
+        "cooldown": 2,
+        "effect": {
+            "preset": "effects/ranged_hit_enemy.json"
+        }
+    },
+    "target_ai": "Closest",
+    "render": {
+        "type": "Shader",
+        "path": "shaders/shooter_enemy.glsl"
+    }
+}

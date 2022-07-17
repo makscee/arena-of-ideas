@@ -1,63 +1,4 @@
 {
-    "health": 8,
-    "radius": 0.7,
-    "action": {
-        "range": 8,
-        "cooldown": 3,
-        "effect": {
-            "type": "Projectile",
-            "speed": 8,
-            "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "Damage",
-                        "types": [
-                            "Ranged"
-                        ],
-                        "value": {
-                            "type": "FindStat",
-                            "who": "Caster",
-                            "stat": "BaseDamage"
-                        }
-                    },
-                    {
-                        "type": "Visual",
-                        "duration": 0.5,
-                        "parent": "Target",
-                        "follow": false,
-                        "radius": 1.5,
-                        "render": {
-                            "type": "Shader",
-                            "path": "shaders/vfx_particle_burst.glsl",
-                            "parameters": {
-                                "p_startColor": "#800002",
-                                "p_endColor": "#fc0107",
-                                "p_count": 12,
-                                "p_startSize": 0.1
-                            }
-                        }
-                    }
-                ]
-            },
-            "render": {
-                "type": "Shader",
-                "path": "shaders/projectile_default.glsl",
-                "parameters": {
-                    "u_padding": 5.0,
-                    "p_count": 30,
-                    "p_lifeTime": 0.6,
-                    "p_radius_start": 0.6,
-                    "p_radius_end": -0.3,
-                    "p_glow_radius": 0.6,
-                    "p_speed": 2.5,
-                    "u_clan_color_1": "#800002",
-                    "u_clan_color_2": "#fc0107",
-                    "u_clan_color_3": "#808080"
-                }
-            }
-        }
-    },
     "statuses": [
         {
             "name": "ShooterOnDeath",
@@ -93,5 +34,6 @@
     "render": {
         "type": "Shader",
         "path": "shaders/shooter_enemy.glsl"
-    }
+    },
+    "base": "blob_ranged"
 }

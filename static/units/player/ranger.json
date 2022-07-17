@@ -1,18 +1,6 @@
 {
     "tier": 1,
     "triple": "ranger+",
-    "action": {
-        "range": 8,
-        "cooldown": 1,
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/ranged_hit.json"
-                }
-            ]
-        }
-    },
     "clans": [
         "Archers"
     ],
