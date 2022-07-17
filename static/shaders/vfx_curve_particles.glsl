@@ -8,6 +8,7 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 uniform float p_disperse = 0;
+uniform float u_end_cut = 0;
 
 
 void main() {
@@ -19,7 +20,7 @@ void main() {
     float effect_t = 1 - u_spawn;
     float bezier_t = r1 + effect_t * r3 * p_speed;
     bezier_t -= float(bezier_t > 1);
-    // bezier_t = 0.1 + bezier_t * .8;
+    bezier_t = u_end_cut * .5 + bezier_t * (1. - u_end_cut);
 
     vec4 bezier = bezierParentPartner(bezier_t, u_parent_position, u_partner_position);
     vec2 b_pos = bezier.xy;

@@ -5,18 +5,20 @@ out vec2 v_quad_pos;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
+uniform float u_end_cut = 0;
 
 
 void main() {
     vec2 pos = a_pos * .5 + vec2(0.5, 0.);
     v_quad_pos = pos;
-    pos.y *= u_thickness;
+    float height = pos.y * u_thickness;
+    float bezier_t = pos.x;
 
-    pos.x = .1 + pos.x * .8;
-    vec4 bezier = bezierParentPartner(pos.x, u_parent_position, u_partner_position);
+    bezier_t = u_end_cut * .5 + bezier_t * (1. - u_end_cut);
+    vec4 bezier = bezierParentPartner(bezier_t, u_parent_position, u_partner_position);
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
-    b_pos += b_normal * pos.y * u_spawn * u_spawn * (1. - pos.x * .7);
+    b_pos += b_normal * height * u_spawn * u_spawn * (1. - bezier_t * .7);
 
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(b_pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
