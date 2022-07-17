@@ -4,6 +4,8 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct VisualEffect {
     pub duration: Time,
+    #[serde(default = "default_delay")]
+    pub delay: Time,
     #[serde(default = "default_parent")]
     pub parent: Who,
     #[serde(default = "default_partner")]
@@ -13,6 +15,10 @@ pub struct VisualEffect {
     pub radius: Coord,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
+}
+
+fn default_delay() -> Time {
+    Time::new(0.0)
 }
 
 fn default_follow() -> bool {
@@ -46,6 +52,7 @@ impl EffectImpl for VisualEffect {
             id: logic.model.next_id,
             radius: effect.radius,
             duration: effect.duration,
+            delay: effect.delay,
             time_left: effect.duration,
             render_config: effect.render_config,
             parent,

@@ -3,6 +3,10 @@ use super::*;
 impl Logic<'_> {
     pub fn process_particles(&mut self) {
         for particle in &mut self.model.particles {
+            particle.delay -= self.delta_time;
+            if particle.delay > Time::new(0.0) {
+                continue;
+            }
             particle.time_left -= self.delta_time;
             let parent = particle
                 .parent
