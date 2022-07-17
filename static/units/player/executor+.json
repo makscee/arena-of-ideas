@@ -7,7 +7,6 @@
     ],
     "action": {
         "range": 1,
-        "animation_delay": 0.25,
         "cooldown": 1,
         "effect": {
             "type": "List",

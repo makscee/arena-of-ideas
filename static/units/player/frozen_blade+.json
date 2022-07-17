@@ -3,7 +3,6 @@
     "description": "@Scathe: apply @Frozen to enemies in range",
     "action": {
         "range": 1,
-        "animation_delay": 0.25,
         "cooldown": 2,
         "effect": {
             "type": "List",

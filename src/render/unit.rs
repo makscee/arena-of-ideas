@@ -29,12 +29,6 @@ impl UnitRender {
             }
             _ => 1.0,
         };
-        let attack_scale = match &unit.action_state {
-            ActionState::Start { time, .. } => {
-                1.0 - 0.25 * (*time / unit.action.animation_delay).as_f32()
-            }
-            _ => 1.0,
-        };
 
         match render_mode {
             RenderMode::Circle { color } => {
@@ -44,7 +38,7 @@ impl UnitRender {
                     camera,
                     &draw_2d::Ellipse::circle(
                         unit_pos,
-                        unit.stats.radius.as_f32() * attack_scale * spawn_scale,
+                        unit.stats.radius.as_f32() * spawn_scale,
                         {
                             let mut color = *color;
                             // TODO: reimplement
@@ -73,7 +67,7 @@ impl UnitRender {
                     framebuffer,
                     camera,
                     &draw_2d::TexturedQuad::unit(&**texture)
-                        .scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale)
+                        .scale_uniform(unit.stats.radius.as_f32() * spawn_scale)
                         .translate(unit_pos),
                 );
             }
@@ -101,7 +95,7 @@ impl UnitRender {
                 let framebuffer_size = framebuffer.size();
                 let unit_pos = unit.position.to_world_f32();
                 let model_matrix = Mat3::translate(unit_pos)
-                    * Mat3::scale_uniform(unit.stats.radius.as_f32() * attack_scale * spawn_scale);
+                    * Mat3::scale_uniform(unit.stats.radius.as_f32() * spawn_scale);
 
                 let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
                 let clan_colors: Vec<Color<f32>> = clans
@@ -109,14 +103,12 @@ impl UnitRender {
                     .map(|clan| self.assets.options.clan_colors[clan])
                     .collect();
 
-                let (action_time, target) = match &unit.action_state {
-                    ActionState::Start { time, target } => (
-                        (*time / unit.action.animation_delay).as_f32(),
-                        model
-                            .and_then(|model| model.units.get(&target))
-                            .map(|unit| unit),
-                    ),
-                    _ => (0.0, None),
+                let target = match &unit.action_state {
+                    ActionState::Start { target } => model
+                        .and_then(|model| model.units.get(&target))
+                        .map(|unit| unit),
+
+                    _ => None,
                 };
 
                 let mut is_ability_ready: f32 = 0.0; // TODO: rewrite please
@@ -145,9 +137,7 @@ impl UnitRender {
                         u_unit_position: unit_pos,
                         u_unit_radius: unit.stats.radius.as_f32(),
                         u_spawn: spawn_scale,
-                        u_action: action_time,
                         u_cooldown: unit.action.cooldown as f32,
-                        u_animation_delay: unit.action.animation_delay.as_f32(),
                         u_face_dir: unit.face_dir.map(|x| x.as_f32()),
                         u_random: unit.random_number.as_f32(),
                         u_action_time: unit.last_action_time.as_f32(),

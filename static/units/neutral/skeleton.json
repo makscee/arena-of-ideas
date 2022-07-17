@@ -4,7 +4,6 @@
     "radius": 0.7,
     "action": {
         "range": 1,
-        "animation_delay": 0.25,
         "cooldown": 1,
         "effect": {
             "preset": "effects/dd_melee.json"

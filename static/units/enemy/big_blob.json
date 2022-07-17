@@ -3,7 +3,6 @@
     "radius": 1.5,
     "action": {
         "range": 1,
-        "animation_delay": 0.5,
         "cooldown": 1,
         "effect": {
             "type": "Damage",

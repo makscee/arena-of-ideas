@@ -3,7 +3,6 @@
     "description": "@Multishot 2",
     "action": {
         "range": 12,
-        "animation_delay": 0.75,
         "cooldown": 1,
         "effect": {
             "type": "AddTargets",

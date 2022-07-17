@@ -4,7 +4,6 @@
     "description": "@Scathe: apply @Frozen",
     "action": {
         "range": 1,
-        "animation_delay": 0.25,
         "cooldown": 3,
         "effect": {
             "type": "List",

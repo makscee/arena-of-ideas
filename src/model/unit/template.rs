@@ -44,7 +44,6 @@ impl Default for UnitTemplate {
             action: ActionProperties {
                 range: 1,
                 cooldown: 1,
-                animation_delay: Time::new(1.0),
                 effect: default(),
             },
             statuses: default(),

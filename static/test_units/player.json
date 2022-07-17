@@ -3,7 +3,6 @@
     "radius": 0.5,
     "action": {
         "range": 10,
-        "animation_delay": 0.1,
         "cooldown": 1,
         "effect": {
             "type": "Projectile",

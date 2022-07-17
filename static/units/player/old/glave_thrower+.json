@@ -2,7 +2,6 @@
     "tier": 0,
     "action": {
         "range": 10,
-        "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
             "type": "Glave",

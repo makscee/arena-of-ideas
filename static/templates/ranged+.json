@@ -4,7 +4,6 @@
     "base_damage": 2,
     "action": {
         "range": 8,
-        "animation_delay": 0.75,
         "cooldown": 1,
         "effect": {
             "preset": "effects/projectile_dd_ranged.json"

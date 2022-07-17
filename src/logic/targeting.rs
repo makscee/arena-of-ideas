@@ -48,10 +48,7 @@ impl Logic<'_> {
                     assert_ne!(target.id, unit.id);
                     unit.face_dir =
                         (target.position.to_world() - unit.position.to_world()).normalize_or_zero();
-                    unit.action_state = ActionState::Start {
-                        time: Time::new(0.0),
-                        target: target.id,
-                    }
+                    unit.action_state = ActionState::Start { target: target.id }
                 }
             }
         }

@@ -1,10 +1,9 @@
 {
-    "health": 6,
+    "health": 10,
     "base_damage": 2,
     "radius": 1.0,
     "action": {
         "range": 1,
-        "animation_delay": 0.25,
         "cooldown": 1,
         "effect": {
             "preset": "effects/dd_melee.json"

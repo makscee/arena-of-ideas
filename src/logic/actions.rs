@@ -5,60 +5,46 @@ impl Logic<'_> {
         self.process_units(Self::process_unit_actions);
     }
     fn process_unit_actions(&mut self, unit: &mut Unit) {
-        if let ActionState::Start { time, target } = &mut unit.action_state {
+        if let ActionState::Start { target } = &mut unit.action_state {
             if unit
                 .flags
                 .iter()
                 .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
             {
-                *time = Time::new(0.0);
                 return;
             }
-            *time += self.delta_time;
-            if *time > unit.action.animation_delay / unit.stats.action_speed {
-                if let Some(target) = self.model.units.get(target) {
-                    let mut effect = unit.action.effect.clone();
-                    for modifier in mem::take(&mut unit.next_action_modifiers) {
-                        effect.apply_modifier(&modifier);
-                    }
-                    // for status in &unit.all_statuses {
-                    // TODO: reimplement
-                    // if let StatusOld::Modifier(status) = status {
-                    //     effect.apply_modifier(&status.modifier);
-                    // }
-                    // }
-                    for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
-                        status.trigger(|trigger| matches!(trigger, StatusTrigger::Action))
-                    }) {
-                        self.effects.push_front(QueuedEffect {
-                            effect,
-                            context: EffectContext {
-                                caster: Some(unit.id),
-                                from: Some(unit.id),
-                                target: Some(target.id),
-                                vars,
-                                status_id: Some(status_id),
-                            },
-                        });
-                    }
-                    self.effects.push_back(QueuedEffect {
+            if let Some(target) = self.model.units.get(target) {
+                let mut effect = unit.action.effect.clone();
+                for modifier in mem::take(&mut unit.next_action_modifiers) {
+                    effect.apply_modifier(&modifier);
+                }
+                for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Action))
+                }) {
+                    self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
                             caster: Some(unit.id),
                             from: Some(unit.id),
                             target: Some(target.id),
-                            vars: default(),
-                            status_id: None,
+                            vars,
+                            status_id: Some(status_id),
                         },
                     });
                 }
-                unit.last_action_time = self.model.time;
-                unit.action_state = ActionState::Cooldown { time: 0 };
-            } else {
-                if let Some(target) = self.model.dead_units.get(target) {
-                    unit.action_state = ActionState::None;
-                }
+                self.effects.push_back(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: Some(unit.id),
+                        from: Some(unit.id),
+                        target: Some(target.id),
+                        vars: default(),
+                        status_id: None,
+                    },
+                });
             }
+            unit.last_action_time = self.model.time;
+            unit.action_state = ActionState::Cooldown { time: 0 };
         }
     }
 

@@ -3,7 +3,6 @@
     "base_damage": 1,
     "action": {
         "range": 10,
-        "animation_delay": 0.75,
         "cooldown": 1.25,
         "effect": {
             "type": "Glave",

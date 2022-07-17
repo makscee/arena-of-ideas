@@ -2,7 +2,6 @@
     "tier": 0,
     "action": {
         "range": 15,
-        "animation_delay": 0.75,
         "cooldown": 5,
         "effect": {
             "type": "ChangeTarget",
