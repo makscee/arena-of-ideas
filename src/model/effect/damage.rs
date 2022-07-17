@@ -116,7 +116,7 @@ impl EffectImpl for DamageEffect {
         }
 
         // Block stat
-        if !effect.types.contains(PURE_DAMAGE) {
+        if !effect.types.contains(PURE_DAMAGE) && damage > r32(1.0) {
             let block = target_unit.stats.block;
             if block > r32(0.0) {
                 damage = max(r32(1.0), damage - block);
