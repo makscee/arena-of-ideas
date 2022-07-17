@@ -19,18 +19,18 @@ impl Logic<'_> {
                 RenderConfig::Shader { parameters, .. } => {
                     if let Some(parent) = parent {
                         if particle.follow {
-                            particle.position = parent.position;
+                            particle.position = parent.position.to_world();
                         }
 
                         parameters.0.extend(HashMap::from([(
                             "u_parent_position".to_string(),
-                            ShaderParameter::Vec2(parent.position.map(|x| x.as_f32())),
+                            ShaderParameter::Vec2(parent.position.to_world().map(|x| x.as_f32())),
                         )]));
                     }
                     if let Some(partner) = partner {
                         parameters.0.extend(HashMap::from([(
                             "u_partner_position".to_string(),
-                            ShaderParameter::Vec2(partner.position.map(|x| x.as_f32())),
+                            ShaderParameter::Vec2(partner.position.to_world().map(|x| x.as_f32())),
                         )]));
                     }
                 }

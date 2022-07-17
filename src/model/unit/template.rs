@@ -16,10 +16,8 @@ pub struct UnitTemplate {
     pub crit_chance: R32,
     pub action_speed: R32,
     pub spawn_animation_time: Time,
-    pub speed: Coord,
-    pub radius: Coord,
+    pub radius: R32,
     pub action: ActionProperties,
-    pub move_ai: MoveAi,
     pub statuses: Vec<StatusRef>,
     pub target_ai: TargetAi,
     pub ability: Option<Ability>,
@@ -27,18 +25,6 @@ pub struct UnitTemplate {
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
 }
-
-// impl UnitTemplate {
-//     pub fn walk_effects_mut(&mut self, f: &mut impl FnMut(&mut Effect)) {
-//         self.action.effect.walk_mut(f);
-//         for status in &mut self.statuses {
-//             status.walk_effects_mut(f);
-//         }
-//         for ability in &mut self.ability {
-//             ability.effect.walk_mut(f);
-//         }
-//     }
-// }
 
 impl Default for UnitTemplate {
     fn default() -> Self {
@@ -52,16 +38,13 @@ impl Default for UnitTemplate {
             crit_chance: r32(0.0),
             action_speed: r32(1.0),
             spawn_animation_time: Time::new(0.0),
-            speed: Coord::new(1.0),
-            radius: Coord::new(0.5),
+            radius: R32::new(0.5),
             action: ActionProperties {
-                range: Coord::new(1.0),
-                cooldown: Time::new(1.0),
-                animation_delay: Time::new(1.0),
+                range: 1,
+                cooldown: 1,
                 effect: default(),
             },
             statuses: default(),
-            move_ai: MoveAi::Advance,
             target_ai: TargetAi::Closest,
             ability: None,
             render_config: RenderConfig::Circle {

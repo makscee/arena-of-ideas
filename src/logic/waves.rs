@@ -26,34 +26,25 @@ impl Logic<'_> {
 
         let round = &mut self.model.round;
         if let Some(wave) = round.waves.front_mut() {
-            let mut next_spawns = wave
-                .spawns
-                .iter_mut()
-                .filter_map(|(point, spawns)| match spawns.front_mut() {
-                    Some(spawn) => {
-                        let point = point.clone();
-                        spawn.count -= 1;
-                        if spawn.count == 0 {
-                            Some((point, spawns.pop_front().unwrap().r#type))
-                        } else {
-                            Some((point, spawn.r#type.clone()))
-                        }
+            let mut next_spawns = match wave.spawns.front_mut() {
+                Some(spawn) => {
+                    spawn.count -= 1;
+                    if spawn.count == 0 {
+                        Some(wave.spawns.pop_front().unwrap().r#type)
+                    } else {
+                        Some(spawn.r#type.clone())
                     }
-                    None => None,
-                })
-                .collect::<Vec<_>>();
-            if !next_spawns.is_empty() {
+                }
+                None => None,
+            };
+
+            if let Some(next_spawns) = next_spawns {
                 // Continue spawning wave
                 self.model.wave_delay = wave.between_delay;
-                for (point, unit_type) in next_spawns {
-                    let position = *self
-                        .model
-                        .config
-                        .spawn_points
-                        .get(&point)
-                        .expect(&format!("Failed to find spawnpoint: {point}"));
-                    let unit = self.spawn_unit(&unit_type, Faction::Enemy, position);
-                    let unit = self.model.spawning_units.get_mut(&unit).unwrap();
+                for unit_type in [next_spawns] {
+                    let unit =
+                        self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
+                    let unit = self.model.units.get_mut(&unit).unwrap();
                     let round = &self.model.round;
                     let statuses = round
                         .statuses
@@ -80,7 +71,6 @@ impl Logic<'_> {
             .units
             .iter()
             .any(|unit| unit.faction != Faction::Player)
-            && self.model.spawning_units.is_empty()
             && self.model.time_bombs.is_empty()
             && self.effects.is_empty()
         {

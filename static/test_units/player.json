@@ -1,11 +1,9 @@
 {
     "health": 300,
-    "speed": 1,
     "radius": 0.5,
     "action": {
         "range": 10,
-        "animation_delay": 0.1,
-        "cooldown": 0.1,
+        "cooldown": 1,
         "effect": {
             "type": "Projectile",
             "speed": 10,
@@ -21,6 +19,5 @@
             }
         }
     },
-    "move_ai": "KeepClose",
     "target_ai": "Closest"
 }

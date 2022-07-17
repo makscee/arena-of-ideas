@@ -21,22 +21,7 @@ impl EffectImpl for ChangeTargetEffect {
             .and_then(|id| logic.model.units.get(&id))
             .expect("caster not found");
 
-        // TODO: reimplement
-        // // This solution seems error-prone in case we forget to consider `Charmed` status at any point
-        // // or use `unit.faction` instead of `unit_faction`
-        // // The same code is used in the initial targetting
-        // let caster_faction = caster
-        //     .all_statuses
-        //     .iter()
-        //     .find_map(|status| match &status.status {
-        //         StatusOld::Charmed(charm) => status
-        //             .caster
-        //             .and_then(|id| logic.model.units.get(&id).map(|unit| unit.faction)),
-        //         _ => None,
-        //     })
-        //     .unwrap_or(caster.faction);
         let caster_faction = caster.faction;
-
         let target = context.target;
         if let Some(unit) = logic
             .model

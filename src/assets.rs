@@ -85,9 +85,8 @@ async fn load_field_render(
 }
 
 pub type Key = String;
-pub type SpawnPoint = String;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
     #[serde(default)]
@@ -96,7 +95,7 @@ pub struct GameRound {
     pub waves: VecDeque<Wave>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Wave {
     #[serde(default = "Wave::default_start_delay")]
     pub start_delay: Time,
@@ -106,8 +105,7 @@ pub struct Wave {
     pub wait_clear: bool,
     #[serde(default)]
     pub statuses: Vec<StatusRef>,
-    #[serde(flatten)]
-    pub spawns: HashMap<SpawnPoint, VecDeque<WaveSpawn>>,
+    pub spawns: VecDeque<WaveSpawn>,
 }
 
 impl Wave {
@@ -122,7 +120,7 @@ impl Wave {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct WaveSpawn {
     pub r#type: UnitType,
@@ -157,7 +155,6 @@ pub struct Config {
     pub player: Vec<UnitType>,
     #[serde(default)]
     pub clans: HashMap<Clan, usize>,
-    pub spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     pub fov: f32,
 }
 
@@ -306,15 +303,16 @@ impl geng::LoadAsset for UnitTemplates {
             let mut map = HashMap::new();
             for pack in packs {
                 let base_path = path.parent().unwrap().join(pack);
-                let json =
-                    <String as geng::LoadAsset>::load(&geng, &base_path.join("_list.json")).await?;
+                let path = base_path.join("_list.json");
+                let json = <String as geng::LoadAsset>::load(&geng, &path)
+                    .await
+                    .context(format!("Failed to load {path:?}"))?;
                 let types: Vec<String> = serde_json::from_str(&json)?;
                 for typ in types {
-                    let mut json = <serde_json::Value as geng::LoadAsset>::load(
-                        &geng,
-                        &base_path.join(format!("{}.json", typ)),
-                    )
-                    .await?;
+                    let path = base_path.join(format!("{}.json", typ));
+                    let mut json = <serde_json::Value as geng::LoadAsset>::load(&geng, &path)
+                        .await
+                        .context(format!("Failed to load {path:?}"))?;
                     if let Some(base) = json.get_mut("base") {
                         let base = base.take();
                         let base = base.as_str().expect("base must be a string");
@@ -339,7 +337,8 @@ impl geng::LoadAsset for UnitTemplates {
                         json.as_object_mut().unwrap().remove("base");
                     }
 
-                    let template: UnitTemplate = serde_json::from_value(json)?;
+                    let template: UnitTemplate = serde_json::from_value(json)
+                        .context(format!("Failed to parse {path:?}"))?;
 
                     // info!(
                     //     "{:?} => {}",

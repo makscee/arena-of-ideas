@@ -4,10 +4,8 @@ use super::*;
 
 mod abilities;
 mod actions;
-mod collisions;
 mod deaths;
 mod effects;
-mod movement;
 mod particles;
 mod projectiles;
 mod spawn;
@@ -41,16 +39,17 @@ impl<'a> Logic<'a> {
         logic.process();
     }
     pub fn process(&mut self) {
+        while self.model.current_tick.tick_time >= Time::new(TICK_TIME) {
+            self.tick();
+        }
+
         self.process_particles();
         self.process_statuses();
         self.process_time_bombs();
         self.process_spawns();
         self.process_abilities();
-        self.process_movement();
-        self.process_collisions();
         self.process_targeting();
         self.process_actions();
-        self.process_cooldowns();
         self.process_projectiles();
         self.wave_update();
         while self.model.free_revives > 0 {
@@ -84,6 +83,12 @@ impl<'a> Logic<'a> {
         self.process_effects();
         self.process_deaths();
         self.model.time += self.delta_time;
+        self.model.current_tick.tick_time += self.delta_time;
+    }
+    fn tick(&mut self) {
+        // TODO: check if some actions did not perform in time
+        self.model.current_tick = TickModel::new();
+        self.tick_cooldowns();
     }
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
@@ -100,9 +105,8 @@ impl<'a> Logic<'a> {
             .map(|unit| (unit, self.model.unit_templates[unit].clone()))
             .collect::<Vec<_>>();
 
-        let spawn_point = config.spawn_points["Heroes"];
         for unit_type in &config.player {
-            self.spawn_unit(unit_type, Faction::Player, spawn_point);
+            self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
         }
     }
 }

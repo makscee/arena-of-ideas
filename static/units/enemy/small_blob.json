@@ -1,9 +1,7 @@
 {
     "health": 5,
-    "speed": 1.0,
     "radius": 0.5,
     "base_damage": 1,
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

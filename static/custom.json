@@ -1,53 +1,26 @@
 {
     "player": [
-        "sniper",
-        "experimenter",
         "ranger",
         "rogue"
     ],
     "clans": {
-        "Spawners": 6,
-        "Assassins": 6,
-        "Critters": 6,
-        "Archers": 6,
-        "Freezers": 6,
-        "Warriors": 6,
-        "Healers": 6,
-        "Vampires": 6,
-        "Exploders": 6
+        "Dragons": 0,
+        "Demons": 0,
+        "Warlocks": 0,
+        "Archers": 0
     },
     "round": {
         "statuses": [],
         "waves": [
             {
-                "start_delay": 2,
-                "between_delay": 1.5,
-                "top": [
+                "spawns": [
                     {
-                        "type": "small_blob",
+                        "type": "blob",
                         "count": 3
                     }
                 ]
             }
         ]
     },
-    "spawn_points": {
-        "left": [
-            -12,
-            0.0
-        ],
-        "right": [
-            12,
-            0.0
-        ],
-        "top": [
-            0,
-            8
-        ],
-        "Heroes": [
-            0,
-            -5
-        ]
-    },
-    "fov": 22
+    "fov": 15
 }

@@ -12,15 +12,14 @@ pub type Tier = u32;
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ActionState {
     None,
-    Start { time: Time, target: Id },
-    Cooldown { time: Time },
+    Start { target: Id },
+    Cooldown { time: Ticks },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ActionProperties {
-    pub cooldown: Time,
-    pub animation_delay: Time,
+    pub cooldown: Ticks,
     pub range: Coord,
     #[serde(default)]
     pub effect: Effect,
@@ -42,10 +41,9 @@ pub struct Unit {
     pub stats: UnitStats,
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
-    pub face_dir: Vec2<Coord>,
-    pub position: Vec2<Coord>,
+    pub face_dir: Vec2<R32>,
+    pub position: Position,
     pub action: ActionProperties,
-    pub move_ai: MoveAi,
     pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
     pub clans: Vec<Clan>,
@@ -61,11 +59,10 @@ pub struct Unit {
 pub struct UnitStats {
     pub max_hp: Health,
     pub health: Health,
-    pub radius: Coord,
+    pub radius: R32,
     pub base_damage: R32,
     pub block: R32,
     pub crit_chance: R32,
-    pub speed: Coord,
     pub action_speed: R32,
 }
 
@@ -77,7 +74,6 @@ pub enum UnitStat {
     BaseDamage,
     Block,
     CritChance,
-    Speed,
     ActionSpeed,
 }
 
@@ -87,7 +83,7 @@ impl Unit {
         next_id: &mut Id,
         unit_type: UnitType,
         faction: Faction,
-        position: Vec2<Coord>,
+        position: Position,
         statuses: &Statuses,
     ) -> Self {
         let id = *next_id;
@@ -115,7 +111,6 @@ impl Unit {
             face_dir: Vec2::ZERO,
             position,
             action: template.action.clone(),
-            move_ai: template.move_ai,
             target_ai: template.target_ai,
             render: template.render_config.clone(),
             next_action_modifiers: Vec::new(),
@@ -137,7 +132,6 @@ impl UnitStats {
             block: template.block,
             crit_chance: template.crit_chance,
             action_speed: template.action_speed,
-            speed: template.speed,
             radius: template.radius,
         }
     }
@@ -151,7 +145,6 @@ impl UnitStats {
             UnitStat::Block => self.block,
             UnitStat::CritChance => self.crit_chance,
             UnitStat::ActionSpeed => self.action_speed,
-            UnitStat::Speed => self.speed,
         }
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -163,7 +156,6 @@ impl UnitStats {
             UnitStat::Block => &mut self.block,
             UnitStat::CritChance => &mut self.crit_chance,
             UnitStat::ActionSpeed => &mut self.action_speed,
-            UnitStat::Speed => &mut self.speed,
         }
     }
 }

@@ -2,7 +2,7 @@
     "statuses": [],
     "waves": [
         {
-            "top": [
+            "spawns": [
                 {
                     "type": "small_blob",
                     "count": 1

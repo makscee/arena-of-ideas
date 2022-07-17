@@ -1,14 +1,13 @@
 {
     "tier": 1,
     "triple": "rogue+",
-    "base_damage": 0.5,
+    "base_damage": 1,
     "clans": [
         "Assassins"
     ],
     "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.5,
+        "range": 1,
+        "cooldown": 1,
         "effect": {
             "preset": "effects/melee_hit.json"
         }

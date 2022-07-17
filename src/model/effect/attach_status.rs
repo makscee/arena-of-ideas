@@ -46,6 +46,7 @@ impl EffectImpl for AttachStatusEffect {
                     target.position,
                     &format!("{}", status_name),
                     Color::try_from("#8000ff").unwrap(),
+                    crate::render::TextType::Status,
                 );
             }
 

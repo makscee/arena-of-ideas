@@ -4,8 +4,7 @@
     "description": "@Bonus Shot on @Frozen",
     "action": {
         "range": 10,
-        "animation_delay": 0.75,
-        "cooldown": 1.25,
+        "cooldown": 1,
         "effect": {
             "type": "List",
             "effects": [

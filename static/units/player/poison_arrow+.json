@@ -7,8 +7,7 @@
     ],
     "action": {
         "range": 8,
-        "animation_delay": 0.25,
-        "cooldown": 3.5,
+        "cooldown": 3,
         "effect": {
             "type": "AddTargets",
             "condition": {

@@ -119,22 +119,6 @@
                                     }
                                 },
                                 {
-                                    "type": "ChangeStat",
-                                    "stat": "Speed",
-                                    "value": {
-                                        "type": "Mul",
-                                        "a": {
-                                            "type": "FindStat",
-                                            "stat": "Speed",
-                                            "who": "Target"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        }
-                                    }
-                                },
-                                {
                                     "type": "Heal",
                                     "value": {
                                         "type": "Const",

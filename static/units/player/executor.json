@@ -7,9 +7,8 @@
         "Assassins"
     ],
     "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.75,
+        "range": 1,
+        "cooldown": 1,
         "effect": {
             "type": "List",
             "effects": [

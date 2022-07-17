@@ -10,3 +10,4 @@ resvg = "0.22"
 usvg = "0.22"
 tiny-skia = "0.6"
 notify = "4.0.17" # File watch
+regex = "1.5.6"

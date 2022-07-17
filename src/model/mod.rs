@@ -10,6 +10,7 @@ mod expr;
 mod factions;
 mod modifier;
 mod particle;
+mod position;
 mod projectile;
 mod render;
 mod status;
@@ -24,11 +25,16 @@ pub use expr::*;
 pub use factions::*;
 pub use modifier::*;
 pub use particle::*;
+pub use position::*;
 pub use projectile::*;
 pub use render::*;
 pub use status::*;
 pub use time_bomb::*;
 pub use unit::*;
+
+// TODO: make configurable
+pub const SIDE_SLOTS: usize = 5;
+pub const TICK_TIME: f32 = 1.0;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
@@ -48,11 +54,19 @@ impl TargetFilter {
 }
 
 #[derive(Clone)]
+pub struct TickModel {
+    pub tick_time: Time,
+    /// Queue of units to perform actions.
+    /// Some units may die before the queue is reset.
+    pub action_queue: VecDeque<Id>,
+    pub current_action_time_left: Time,
+}
+
+#[derive(Clone)]
 pub struct Model {
     pub next_id: Id,
     pub time: Time,
     pub units: Collection<Unit>,
-    pub spawning_units: Collection<Unit>,
     pub dead_units: Collection<Unit>,
     pub projectiles: Collection<Projectile>,
     pub time_bombs: Collection<TimeBomb>,
@@ -69,6 +83,7 @@ pub struct Model {
     pub transition: bool,
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, R32>,
+    pub current_tick: TickModel,
 }
 
 impl Model {
@@ -83,7 +98,6 @@ impl Model {
             next_id: 0,
             time: Time::ZERO,
             units: Collection::new(),
-            spawning_units: Collection::new(),
             dead_units: Collection::new(),
             projectiles: Collection::new(),
             time_bombs: Collection::new(),
@@ -99,6 +113,17 @@ impl Model {
             round,
             config,
             vars: HashMap::new(),
+            current_tick: TickModel::new(),
+        }
+    }
+}
+
+impl TickModel {
+    pub fn new() -> Self {
+        Self {
+            tick_time: Time::ZERO,
+            action_queue: VecDeque::new(),
+            current_action_time_left: Time::ZERO,
         }
     }
 }

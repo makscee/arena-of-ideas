@@ -45,13 +45,13 @@ impl EffectImpl for AoeEffect {
             })
             .expect("Target not found");
         if let Some(render) = &mut logic.render {
-            render.add_text(center, "AOE", Color::RED);
+            render.add_text(center, "AOE", Color::RED, crate::render::TextType::Aoe);
         }
         for unit in &logic.model.units {
             if effect.skip_current_target && Some(unit.id) == context.target {
                 continue;
             }
-            if (unit.position - center).len() - unit.stats.radius > effect.range {
+            if unit.position.distance(&center) > effect.range {
                 continue;
             }
             if !effect.filter.matches(unit.faction, caster_faction) {

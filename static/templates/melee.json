@@ -1,17 +1,14 @@
 {
-    "health": 6,
+    "health": 10,
     "base_damage": 2,
-    "speed": 0.8,
     "radius": 1.0,
     "action": {
-        "range": 0.5,
-        "animation_delay": 0.25,
-        "cooldown": 0.75,
+        "range": 1,
+        "cooldown": 1,
         "effect": {
             "preset": "effects/melee_hit.json"
         }
     },
-    "move_ai": "Advance",
     "target_ai": "Closest",
     "render": {
         "type": "Shader",

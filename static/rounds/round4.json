@@ -3,22 +3,16 @@
     "waves": [
         {
             "between_delay": 3,
-            "left": [
+            "spawns": [
                 {
                     "type": "small_blob",
-                    "count": 2
-                }
-            ],
-            "right": [
-                {
-                    "type": "small_blob",
-                    "count": 2
+                    "count": 4
                 }
             ]
         },
         {
             "start_delay": 2,
-            "top": [
+            "spawns": [
                 {
                     "type": "blob",
                     "count": 1

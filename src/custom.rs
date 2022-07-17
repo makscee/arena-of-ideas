@@ -14,7 +14,6 @@ struct CustomConfig {
     player: Vec<UnitType>,
     clans: HashMap<Clan, usize>,
     round: GameRound,
-    spawn_points: HashMap<SpawnPoint, Vec2<Coord>>,
     fov: f32,
 }
 
@@ -33,7 +32,6 @@ impl CustomGame {
         let config = Config {
             player: custom.player,
             clans: custom.clans,
-            spawn_points: custom.spawn_points,
             fov: custom.fov,
         };
         let shop = Shop::new(geng, assets, shop_config);

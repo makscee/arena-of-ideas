@@ -3,7 +3,7 @@
     "waves": [
         {
             "between_delay": 1.5,
-            "top": [
+            "spawns": [
                 {
                     "type": "small_blob",
                     "count": 3

@@ -3,7 +3,7 @@ use super::*;
 impl Logic<'_> {
     pub fn process_statuses(&mut self) {
         self.process_units(Self::process_unit_statuses);
-        
+
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for id in ids {
             let unit = self.model.units.get(&id).unwrap();
@@ -67,7 +67,11 @@ impl Logic<'_> {
         modifier_targets
     }
 
-    fn process_modifiers(&mut self, unit_id: &Id, modifier_targets: &Vec<(EffectContext, ModifierTarget)>) {
+    fn process_modifiers(
+        &mut self,
+        unit_id: &Id,
+        modifier_targets: &Vec<(EffectContext, ModifierTarget)>,
+    ) {
         let unit_mut = self.model.units.get_mut(&unit_id).unwrap();
         unit_mut.stats = unit_mut.permanent_stats.clone();
 
@@ -165,11 +169,7 @@ impl Logic<'_> {
                             match aura.radius {
                                 Some(radius) => {
                                     //TODO: Check distance by util fn
-                                    if (unit.position - other.position).len()
-                                        - unit.stats.radius
-                                        - other.stats.radius
-                                        > radius
-                                    {
+                                    if unit.position.distance(&other.position) > radius {
                                         continue;
                                     }
                                 }

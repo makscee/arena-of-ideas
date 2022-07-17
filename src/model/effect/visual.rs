@@ -12,7 +12,7 @@ pub struct VisualEffect {
     pub partner: Who,
     #[serde(default = "default_follow")]
     pub follow: bool,
-    pub radius: Coord,
+    pub radius: R32,
     #[serde(rename = "render")]
     pub render_config: RenderConfig,
 }
@@ -57,7 +57,7 @@ impl EffectImpl for VisualEffect {
             render_config: effect.render_config,
             parent,
             partner,
-            position,
+            position: position.to_world(),
             follow: effect.follow,
         });
         logic.model.next_id += 1;
