@@ -3,7 +3,7 @@
     "radius": 1.0,
     "base_damage": 1,
     "action": {
-        "range": 8,
+        "range": 6,
         "cooldown": 1,
         "effect": {
             "type": "List",

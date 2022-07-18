@@ -9,7 +9,6 @@
             "preset": "effects/ranged_hit_enemy.json"
         }
     },
-    "target_ai": "Closest",
     "render": {
         "type": "Shader",
         "path": "shaders/shooter_enemy.glsl"
