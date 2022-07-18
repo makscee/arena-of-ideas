@@ -15,7 +15,6 @@ mod change_target;
 mod custom_trigger;
 mod damage;
 mod delayed;
-mod glave;
 mod heal;
 mod if_effect;
 mod instant_action;
@@ -23,7 +22,6 @@ mod list;
 mod maybe_modify;
 mod next_action_modifier;
 mod noop;
-mod projectile;
 mod random;
 mod remove_status;
 mod repeat;
@@ -49,7 +47,6 @@ pub use change_target::*;
 pub use custom_trigger::*;
 pub use damage::*;
 pub use delayed::*;
-pub use glave::*;
 pub use heal::*;
 pub use if_effect::*;
 pub use instant_action::*;
@@ -57,7 +54,6 @@ pub use list::*;
 pub use maybe_modify::*;
 pub use next_action_modifier::*;
 pub use noop::*;
-pub use projectile::*;
 pub use random::*;
 pub use remove_status::*;
 pub use repeat::*;
@@ -73,7 +69,6 @@ pub use visual_chain::*;
 pub enum Effect {
     Noop(Box<NoopEffect>),
     InstantAction(Box<InstantActionEffect>),
-    Projectile(Box<ProjectileEffect>),
     Damage(Box<DamageEffect>),
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
@@ -81,7 +76,6 @@ pub enum Effect {
     TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
-    Glave(Box<GlaveEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
@@ -111,7 +105,6 @@ pub enum Effect {
 pub enum RawEffect {
     Noop(Box<NoopEffect>),
     InstantAction(Box<InstantActionEffect>),
-    Projectile(Box<ProjectileEffect>),
     Damage(Box<DamageEffect>),
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
@@ -119,7 +112,6 @@ pub enum RawEffect {
     TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
-    Glave(Box<GlaveEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
@@ -186,7 +178,6 @@ impl std::fmt::Debug for Effect {
         match self {
             Self::Noop(effect) => effect.fmt(f),
             Self::InstantAction(effect) => effect.fmt(f),
-            Self::Projectile(effect) => effect.fmt(f),
             Self::Damage(effect) => effect.fmt(f),
             Self::AttachStatus(effect) => effect.fmt(f),
             Self::Spawn(effect) => effect.fmt(f),
@@ -194,7 +185,6 @@ impl std::fmt::Debug for Effect {
             Self::TimeBomb(effect) => effect.fmt(f),
             Self::Suicide(effect) => effect.fmt(f),
             Self::Chain(effect) => effect.fmt(f),
-            Self::Glave(effect) => effect.fmt(f),
             Self::AddTargets(effect) => effect.fmt(f),
             Self::Repeat(effect) => effect.fmt(f),
             Self::Random(effect) => effect.fmt(f),
@@ -226,7 +216,6 @@ impl From<RawEffect> for Effect {
         match effect {
             RawEffect::Noop(effect) => Self::Noop(effect),
             RawEffect::InstantAction(effect) => Self::InstantAction(effect),
-            RawEffect::Projectile(effect) => Self::Projectile(effect),
             RawEffect::Damage(effect) => Self::Damage(effect),
             RawEffect::AttachStatus(effect) => Self::AttachStatus(effect),
             RawEffect::Spawn(effect) => Self::Spawn(effect),
@@ -234,7 +223,6 @@ impl From<RawEffect> for Effect {
             RawEffect::TimeBomb(effect) => Self::TimeBomb(effect),
             RawEffect::Suicide(effect) => Self::Suicide(effect),
             RawEffect::Chain(effect) => Self::Chain(effect),
-            RawEffect::Glave(effect) => Self::Glave(effect),
             RawEffect::AddTargets(effect) => Self::AddTargets(effect),
             RawEffect::Repeat(effect) => Self::Repeat(effect),
             RawEffect::Random(effect) => Self::Random(effect),
@@ -298,7 +286,6 @@ impl Effect {
         match self {
             Effect::Noop(effect) => &mut **effect,
             Effect::InstantAction(effect) => &mut **effect,
-            Effect::Projectile(effect) => &mut **effect,
             Effect::Damage(effect) => &mut **effect,
             Effect::AttachStatus(effect) => &mut **effect,
             Effect::Spawn(effect) => &mut **effect,
@@ -306,7 +293,6 @@ impl Effect {
             Effect::TimeBomb(effect) => &mut **effect,
             Effect::Suicide(effect) => &mut **effect,
             Effect::Chain(effect) => &mut **effect,
-            Effect::Glave(effect) => &mut **effect,
             Effect::AddTargets(effect) => &mut **effect,
             Effect::Repeat(effect) => &mut **effect,
             Effect::Random(effect) => &mut **effect,
@@ -335,7 +321,6 @@ impl Effect {
         match self {
             Effect::Noop(effect) => effect,
             Effect::InstantAction(effect) => effect,
-            Effect::Projectile(effect) => effect,
             Effect::Damage(effect) => effect,
             Effect::AttachStatus(effect) => effect,
             Effect::Spawn(effect) => effect,
@@ -343,7 +328,6 @@ impl Effect {
             Effect::TimeBomb(effect) => effect,
             Effect::Suicide(effect) => effect,
             Effect::Chain(effect) => effect,
-            Effect::Glave(effect) => effect,
             Effect::AddTargets(effect) => effect,
             Effect::Repeat(effect) => effect,
             Effect::Random(effect) => effect,

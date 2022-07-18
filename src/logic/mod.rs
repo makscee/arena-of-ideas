@@ -7,7 +7,6 @@ mod actions;
 mod deaths;
 mod effects;
 mod particles;
-mod projectiles;
 mod spawn;
 mod statuses;
 mod targeting;
@@ -50,7 +49,6 @@ impl<'a> Logic<'a> {
         self.process_abilities();
         self.process_targeting();
         self.process_actions();
-        self.process_projectiles();
         self.process_render_positions();
         self.wave_update();
         while self.model.free_revives > 0 {

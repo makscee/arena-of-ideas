@@ -11,7 +11,6 @@ mod factions;
 mod modifier;
 mod particle;
 mod position;
-mod projectile;
 mod render;
 mod status;
 mod time_bomb;
@@ -26,7 +25,6 @@ pub use factions::*;
 pub use modifier::*;
 pub use particle::*;
 pub use position::*;
-pub use projectile::*;
 pub use render::*;
 pub use status::*;
 pub use time_bomb::*;
@@ -68,7 +66,6 @@ pub struct Model {
     pub time: Time,
     pub units: Collection<Unit>,
     pub dead_units: Collection<Unit>,
-    pub projectiles: Collection<Projectile>,
     pub time_bombs: Collection<TimeBomb>,
     pub dead_time_bombs: Collection<TimeBomb>,
     pub particles: Collection<Particle>,
@@ -99,7 +96,6 @@ impl Model {
             time: Time::ZERO,
             units: Collection::new(),
             dead_units: Collection::new(),
-            projectiles: Collection::new(),
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
             particles: Collection::new(),

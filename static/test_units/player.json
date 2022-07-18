@@ -5,17 +5,13 @@
         "range": 10,
         "cooldown": 1,
         "effect": {
-            "type": "Projectile",
-            "speed": 10,
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "Ranged"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                }
+            "type": "Damage",
+            "types": [
+                "Ranged"
+            ],
+            "value": {
+                "type": "Const",
+                "value": 1
             }
         }
     }

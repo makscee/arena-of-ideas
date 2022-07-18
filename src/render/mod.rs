@@ -2,7 +2,6 @@ use super::*;
 
 mod field;
 mod particle;
-mod projectile;
 mod text;
 mod unit;
 
@@ -103,10 +102,6 @@ impl Render {
                 &self.camera,
                 framebuffer,
             );
-        }
-        for projectile in &model.projectiles {
-            let render = self.assets.get_render(&projectile.render_config); // TODO: move this into to an earlier phase perhaps
-            self.draw_projectile(projectile, &render, game_time, framebuffer);
         }
         for particle in &model.particles {
             if particle.delay <= Time::new(0.0) {
