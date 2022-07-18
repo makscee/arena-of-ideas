@@ -8,27 +8,10 @@ impl Render {
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let vert_count = shader_program.vertices;
-        let mut vertices = vec![draw_2d::Vertex {
-            a_pos: vec2(-1.0, -1.0),
-        }];
-        for i in 0..vert_count {
-            vertices.push(draw_2d::Vertex {
-                a_pos: vec2((i as f32 / vert_count as f32) * 2.0 - 1.0, 1.0),
-            });
-            vertices.push(draw_2d::Vertex {
-                a_pos: vec2(((i + 1) as f32 / vert_count as f32) * 2.0 - 1.0, -1.0),
-            });
-        }
-
-        vertices.push(draw_2d::Vertex {
-            a_pos: vec2(1.0, 1.0),
-        });
-
         let mut instances_arr: ugli::VertexBuffer<Instance> =
             ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
         instances_arr.resize(shader_program.instances, Instance {});
-        let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
+        let quad = shader_program.get_vertices(&self.geng);
         let framebuffer_size = framebuffer.size();
         ugli::draw(
             framebuffer,

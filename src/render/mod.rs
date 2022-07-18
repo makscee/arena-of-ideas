@@ -8,9 +8,6 @@ mod unit;
 use text::*;
 pub use unit::*;
 
-#[derive(ugli::Vertex, Debug, Clone)]
-pub struct Instance {}
-
 #[derive(Clone)]
 pub struct RenderModel {
     text_blocks: HashMap<Position, TextBlock>,

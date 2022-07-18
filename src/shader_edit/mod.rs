@@ -1,3 +1,4 @@
+use crate::Instance;
 use geng::prelude::*;
 use std::{path::PathBuf, sync::mpsc::Receiver};
 
@@ -217,9 +218,6 @@ impl ShaderEditConfig {
         Ok(config)
     }
 }
-
-#[derive(ugli::Vertex, Debug, Clone)]
-pub struct Instance {}
 
 impl geng::State for EditState {
     fn update(&mut self, delta_time: f64) {

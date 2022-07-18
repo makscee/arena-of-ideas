@@ -29,26 +29,7 @@ impl UnitRender {
             }
             _ => 1.0,
         };
-
-        let vert_count = shader_program.vertices;
-        let mut vertices = vec![draw_2d::Vertex {
-            a_pos: vec2(-1.0, -1.0),
-        }];
-        for i in 0..vert_count {
-            vertices.push(draw_2d::Vertex {
-                a_pos: vec2((i as f32 / vert_count as f32) * 2.0 - 1.0, 1.0),
-            });
-            vertices.push(draw_2d::Vertex {
-                a_pos: vec2(((i + 1) as f32 / vert_count as f32) * 2.0 - 1.0, -1.0),
-            });
-        }
-
-        vertices.push(draw_2d::Vertex {
-            a_pos: vec2(1.0, 1.0),
-        });
-
-        let quad = ugli::VertexBuffer::new_dynamic(self.geng.ugli(), vertices);
-        let framebuffer_size = framebuffer.size();
+        let quad = shader_program.get_vertices(&self.geng);
 
         let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
         let clan_colors: Vec<Color<f32>> = clans

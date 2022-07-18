@@ -1,4 +1,6 @@
 use super::*;
+use crate::ugli::VertexBuffer;
+use geng::draw_2d::Vertex;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
@@ -36,6 +38,32 @@ impl Default for ShaderConfig {
             instances: 1,
             vertices: 1,
         }
+    }
+}
+
+#[derive(ugli::Vertex, Debug, Clone)]
+pub struct Instance {}
+
+impl ShaderProgram {
+    pub fn get_vertices(&self, geng: &Geng) -> VertexBuffer<Vertex> {
+        let vert_count = self.vertices;
+        let mut vertices = vec![draw_2d::Vertex {
+            a_pos: vec2(-1.0, -1.0),
+        }];
+        for i in 0..vert_count {
+            vertices.push(draw_2d::Vertex {
+                a_pos: vec2((i as f32 / vert_count as f32) * 2.0 - 1.0, 1.0),
+            });
+            vertices.push(draw_2d::Vertex {
+                a_pos: vec2(((i + 1) as f32 / vert_count as f32) * 2.0 - 1.0, -1.0),
+            });
+        }
+
+        vertices.push(draw_2d::Vertex {
+            a_pos: vec2(1.0, 1.0),
+        });
+
+        ugli::VertexBuffer::new_dynamic(geng.ugli(), vertices)
     }
 }
 
