@@ -46,8 +46,6 @@ impl Logic<'_> {
                 })
             }
         }
-
-        self.update_positions(unit.id, unit.position);
     }
     pub fn process_deaths(&mut self) {
         let ids = self.model.units.ids().copied().collect::<Vec<_>>();
@@ -55,7 +53,8 @@ impl Logic<'_> {
             let unit = self.model.units.get(&id).unwrap();
             if unit.stats.health <= Health::ZERO {
                 self.model.dead_units.insert(unit.clone());
-                self.update_positions(unit.id, unit.position);
+                let unit_position = unit.position;
+                self.update_positions(id, unit_position);
             }
         }
         self.model
