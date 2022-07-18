@@ -34,7 +34,7 @@ impl Logic<'_> {
                 .filter(|other| {
                     other.faction != unit_faction
                         && other.position.height == 0
-                        && distance_between_units(unit, other) <= unit.action.range
+                        && distance_between_units(unit, other) < unit.action.range
                 })
                 .choose(&mut rand::thread_rng());
 
