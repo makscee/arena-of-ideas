@@ -1,9 +1,6 @@
 use super::*;
-
-mod ai;
 mod template;
 
-pub use ai::*;
 pub use template::*;
 
 pub type UnitType = String;
@@ -44,7 +41,6 @@ pub struct Unit {
     pub face_dir: Vec2<R32>,
     pub position: Position,
     pub action: ActionProperties,
-    pub target_ai: TargetAi,
     pub ability_cooldown: Option<Time>,
     pub clans: Vec<Clan>,
     pub next_action_modifiers: Vec<Modifier>,
@@ -111,7 +107,6 @@ impl Unit {
             face_dir: Vec2::ZERO,
             position,
             action: template.action.clone(),
-            target_ai: template.target_ai,
             render: template.render_config.clone(),
             next_action_modifiers: Vec::new(),
             ability_cooldown: None,

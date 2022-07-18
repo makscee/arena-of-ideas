@@ -19,7 +19,6 @@ pub struct UnitTemplate {
     pub radius: R32,
     pub action: ActionProperties,
     pub statuses: Vec<StatusRef>,
-    pub target_ai: TargetAi,
     pub ability: Option<Ability>,
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
@@ -45,7 +44,6 @@ impl Default for UnitTemplate {
                 effect: default(),
             },
             statuses: default(),
-            target_ai: TargetAi::Closest,
             ability: None,
             render_config: RenderConfig::Circle {
                 color: Color::WHITE,

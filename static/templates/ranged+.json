@@ -17,7 +17,6 @@
             ]
         }
     },
-    "target_ai": "Closest",
     "render": {
         "type": "Shader",
         "path": "shaders/caster_hero.glsl"

@@ -21,7 +21,6 @@
             ]
         }
     },
-    "target_ai": "Closest",
     "render": {
         "type": "Circle",
         "color": "red"

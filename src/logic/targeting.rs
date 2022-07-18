@@ -27,29 +27,22 @@ impl Logic<'_> {
 
         let unit_faction = unit.faction;
         if let ActionState::None = unit.action_state {
-            let target = None;
-            let target = target.or_else(|| match unit.target_ai {
-                TargetAi::Closest => self
-                    .model
-                    .units
-                    .iter()
-                    .filter(|other| other.faction != unit_faction && other.position.height == 0)
-                    .min_by_key(|other| distance_between_units(unit, other)),
-                TargetAi::Biggest => self
-                    .model
-                    .units
-                    .iter()
-                    .filter(|other| other.faction != unit_faction && other.position.height == 0)
-                    .max_by_key(|other| other.stats.health),
-                _ => todo!(),
-            });
+            let target = self
+                .model
+                .units
+                .iter()
+                .filter(|other| {
+                    other.faction != unit_faction
+                        && other.position.height == 0
+                        && distance_between_units(unit, other) <= unit.action.range
+                })
+                .choose(&mut rand::thread_rng());
+
             if let Some(target) = target {
-                if distance_between_units(target, unit) < unit.action.range {
-                    assert_ne!(target.id, unit.id);
-                    unit.face_dir =
-                        (target.position.to_world() - unit.position.to_world()).normalize_or_zero();
-                    unit.action_state = ActionState::Start { target: target.id }
-                }
+                assert_ne!(target.id, unit.id);
+                unit.face_dir =
+                    (target.position.to_world() - unit.position.to_world()).normalize_or_zero();
+                unit.action_state = ActionState::Start { target: target.id }
             }
         }
     }

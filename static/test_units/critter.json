@@ -24,7 +24,6 @@
     "clans": [
         "Critters"
     ],
-    "target_ai": "Closest",
     "render": {
         "type": "Circle",
         "color": "#ff7700"

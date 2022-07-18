@@ -1,7 +1,6 @@
 {
     "health": 15,
     "statuses": [],
-    "target_ai": "Closest",
     "render": {
         "type": "Shader",
         "path": "shaders/blob_enemy.glsl"

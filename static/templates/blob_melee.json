@@ -9,7 +9,6 @@
             "preset": "effects/melee_hit.json"
         }
     },
-    "target_ai": "Closest",
     "render": {
         "type": "Shader",
         "path": "shaders/blob_enemy.glsl"
