@@ -19,7 +19,6 @@
             "follow": false,
             "radius": 1.6,
             "render": {
-                "type": "Shader",
                 "path": "shaders/vfx_particle_burst.glsl",
                 "parameters": {
                     "p_startColor": "#dc143c",

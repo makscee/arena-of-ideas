@@ -45,7 +45,7 @@ pub struct Unit {
     pub clans: Vec<Clan>,
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
-    pub render: RenderConfig,
+    pub render: ShaderConfig,
     pub render_position: Vec2<R32>,
     pub last_action_time: Time,
     pub last_injure_time: Time,

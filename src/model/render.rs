@@ -1,23 +1,15 @@
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
-pub enum RenderConfig {
-    Circle {
-        color: Color<f32>,
-    },
-    Texture {
-        path: String,
-    },
-    Shader {
-        path: String,
-        #[serde(default)]
-        parameters: ShaderParameters,
-        #[serde(default = "default_vertices")]
-        vertices: usize,
-        #[serde(default = "default_instances")]
-        instances: usize,
-    },
+#[serde(deny_unknown_fields)]
+pub struct ShaderConfig {
+    pub path: String,
+    #[serde(default)]
+    pub parameters: ShaderParameters,
+    #[serde(default = "default_vertices")]
+    pub vertices: usize,
+    #[serde(default = "default_instances")]
+    pub instances: usize,
 }
 
 fn default_vertices() -> usize {
@@ -29,36 +21,31 @@ fn default_instances() -> usize {
 }
 
 #[derive(Clone)]
-pub enum RenderMode {
-    Circle {
-        color: Color<f32>,
-    },
-    Texture {
-        texture: Rc<ugli::Texture>,
-    },
-    Shader {
-        program: Rc<ugli::Program>,
-        parameters: ShaderParameters,
-        vertices: usize,
-        instances: usize,
-    },
+pub struct ShaderProgram {
+    pub program: Rc<ugli::Program>,
+    pub parameters: ShaderParameters,
+    pub vertices: usize,
+    pub instances: usize,
 }
 
-impl Default for RenderConfig {
+impl Default for ShaderConfig {
     fn default() -> Self {
-        Self::Circle {
-            color: Color::BLACK,
+        ShaderConfig {
+            path: "".to_string(),
+            parameters: default(),
+            instances: 1,
+            vertices: 1,
         }
     }
 }
 
-impl Default for RenderMode {
-    fn default() -> Self {
-        Self::Circle {
-            color: Color::BLACK,
-        }
-    }
-}
+// impl Default for ShaderProgram {
+//     fn default() -> Self {
+//         Self::Circle {
+//             color: Color::BLACK,
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ShaderParameters(pub HashMap<String, ShaderParameter>);

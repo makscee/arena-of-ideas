@@ -10,6 +10,6 @@ pub struct Particle {
     pub duration: Time,
     pub delay: Time,
     pub time_left: Time,
-    pub render_config: RenderConfig,
+    pub render_config: ShaderConfig,
     pub follow: bool,
 }

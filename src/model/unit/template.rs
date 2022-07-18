@@ -22,7 +22,7 @@ pub struct UnitTemplate {
     pub ability: Option<Ability>,
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
-    pub render_config: RenderConfig,
+    pub render_config: ShaderConfig,
 }
 
 impl Default for UnitTemplate {
@@ -45,8 +45,11 @@ impl Default for UnitTemplate {
             },
             statuses: default(),
             ability: None,
-            render_config: RenderConfig::Circle {
-                color: Color::WHITE,
+            render_config: ShaderConfig {
+                path: "".to_string(),
+                instances: 1,
+                vertices: 1,
+                parameters: default(),
             },
             clans: default(),
         }

@@ -11,7 +11,7 @@
     ],
     "duration": 0.15,
     "render": {
-        "shader": "shaders/status/status_default.glsl",
+        "path": "shaders/status/status_default.glsl",
         "parameters": {
             "u_status_color": "#d8bfd8"
         }
@@ -30,7 +30,6 @@
                 "follow": true,
                 "radius": 2,
                 "render": {
-                    "type": "Shader",
                     "path": "shaders/vfx_particle_spin.glsl",
                     "parameters": {
                         "p_startColor": "#b8860b",

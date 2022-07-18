@@ -14,7 +14,7 @@ pub struct VisualEffect {
     pub follow: bool,
     pub radius: R32,
     #[serde(rename = "render")]
-    pub render_config: RenderConfig,
+    pub render_config: ShaderConfig,
 }
 
 fn default_delay() -> Time {

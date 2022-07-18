@@ -9,7 +9,6 @@
             "follow": false,
             "radius": 1.5,
             "render": {
-                "type": "Shader",
                 "path": "shaders/vfx_curve_particles.glsl",
                 "parameters": {
                     "u_curvature": 1.5,
@@ -32,7 +31,6 @@
             "follow": false,
             "radius": 1.5,
             "render": {
-                "type": "Shader",
                 "path": "shaders/vfx_curve.glsl",
                 "parameters": {
                     "u_curvature": 1.5,

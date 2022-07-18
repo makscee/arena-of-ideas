@@ -160,7 +160,6 @@
                 "follow": true,
                 "radius": 2,
                 "render": {
-                    "type": "Shader",
                     "path": "shaders/vfx_particle_spin.glsl",
                     "parameters": {
                         "p_startColor": "#800040",

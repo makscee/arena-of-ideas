@@ -3,7 +3,7 @@ use super::*;
 impl Render {
     pub fn draw_field(
         &self,
-        shader_render: &ShaderConfig,
+        shader_program: &ShaderProgram,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
@@ -29,7 +29,7 @@ impl Render {
 
         ugli::draw(
             framebuffer,
-            &shader_render.shader,
+            &shader_program.program,
             ugli::DrawMode::TriangleFan,
             &quad,
             (
@@ -39,7 +39,7 @@ impl Render {
                     u_window_size: window_size,
                 },
                 geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
-                &shader_render.parameters,
+                &shader_program.parameters,
             ),
             ugli::DrawParameters {
                 blend_mode: Some(default()),

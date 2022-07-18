@@ -105,7 +105,6 @@
                 "follow": true,
                 "radius": 2,
                 "render": {
-                    "type": "Shader",
                     "path": "shaders/vfx_particle_spin.glsl",
                     "parameters": {
                         "p_startColor": "#21ff06",
@@ -121,7 +120,7 @@
         }
     ],
     "render": {
-        "shader": "shaders/status/status_default.glsl",
+        "path": "shaders/status/status_default.glsl",
         "parameters": {
             "u_status_color": "#21ff06"
         }

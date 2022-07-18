@@ -5,7 +5,6 @@
     "follow": false,
     "radius": 2.5,
     "render": {
-        "type": "Shader",
         "path": "shaders/vfx_particle_burst.glsl",
         "parameters": {
             "p_startColor": "#FFFFFF",

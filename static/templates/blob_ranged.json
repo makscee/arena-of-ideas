@@ -10,7 +10,6 @@
         }
     },
     "render": {
-        "type": "Shader",
         "path": "shaders/shooter_enemy.glsl"
     }
 }

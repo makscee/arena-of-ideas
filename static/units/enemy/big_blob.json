@@ -44,7 +44,6 @@
                                 "follow": false,
                                 "radius": 3.0,
                                 "render": {
-                                    "type": "Shader",
                                     "path": "shaders/vfx_explosion.glsl",
                                     "parameters": {
                                         "color": "#dc143c"
@@ -58,7 +57,6 @@
         }
     ],
     "render": {
-        "type": "Shader",
         "path": "shaders/blob_enemy.glsl"
     }
 }

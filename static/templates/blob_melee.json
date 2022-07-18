@@ -10,7 +10,6 @@
         }
     },
     "render": {
-        "type": "Shader",
         "path": "shaders/blob_enemy.glsl"
     }
 }

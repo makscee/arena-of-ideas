@@ -15,24 +15,12 @@ pub struct Options {
 pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
     Lazy::new(|| Mutex::new(Effects { map: default() }));
 
-pub struct ShaderConfig {
-    pub shader: Rc<ugli::Program>,
-    pub parameters: ShaderParameters,
-}
-
-#[derive(Deserialize, Clone)]
-pub struct ShaderRenderConfig {
-    pub shader: String,
-    #[serde(default)]
-    pub parameters: ShaderParameters,
-}
-
 #[derive(Deserialize, Clone)]
 // #[serde(deny_unknown_fields)]
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
-    pub render: Option<ShaderRenderConfig>,
+    pub render: Option<ShaderConfig>,
 }
 
 #[derive(Deref, DerefMut, Clone)]
@@ -54,7 +42,7 @@ pub struct Assets {
     pub units: UnitTemplates,
     pub statuses: Statuses,
     #[asset(load_with = "load_field_render(geng, &base_path)")]
-    pub field_render: ShaderConfig,
+    pub field_render: ShaderProgram,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
@@ -67,19 +55,21 @@ pub struct Assets {
 async fn load_field_render(
     geng: &Geng,
     base_path: &std::path::Path,
-) -> anyhow::Result<ShaderConfig> {
+) -> anyhow::Result<ShaderProgram> {
     let json = <String as geng::LoadAsset>::load(geng, &base_path.join("field_render.json"))
         .await
         .context("Failed to load field_render.json")?;
-    let config: ShaderRenderConfig =
+    let config: ShaderConfig =
         serde_json::from_str(&json).context("Failed to parse field_render.json")?;
-    let path = config.shader.as_str();
+    let path = config.path.as_str();
     let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
         .await
         .context(format!("Failed to load {path}"))?;
-    let result = ShaderConfig {
-        shader: Rc::new(program),
+    let result = ShaderProgram {
+        program: Rc::new(program),
         parameters: config.parameters,
+        vertices: 4,
+        instances: 1,
     };
     Ok::<_, anyhow::Error>(result)
 }
@@ -191,50 +181,19 @@ pub struct ClanEffects {
 }
 
 impl Assets {
-    pub fn get_status_render(&self, config: &ShaderRenderConfig) -> ShaderConfig {
-        let path = &config.shader;
-        let parameters = &config.parameters;
-        ShaderConfig {
-            shader: self
+    pub fn get_render(&self, config: &ShaderConfig) -> ShaderProgram {
+        ShaderProgram {
+            program: self
                 .shaders
-                .get(path)
+                .get(&config.path)
                 .expect(&format!(
-                    "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
+                    "Unknown shader: {:?}. Perhaps you need to add it in shaders.json",
+                    config.path
                 ))
                 .clone(),
-            parameters: parameters.clone(), // TODO: avoid cloning
-        }
-    }
-
-    pub fn get_render(&self, config: &RenderConfig) -> RenderMode {
-        match config {
-            &RenderConfig::Circle { color } => RenderMode::Circle { color },
-            RenderConfig::Texture { path } => RenderMode::Texture {
-                texture: self
-                    .textures
-                    .get(path)
-                    .expect(&format!(
-                        "Unknown texture: {path:?}. Perhaps you need to add it in textures.json"
-                    ))
-                    .clone(),
-            },
-            RenderConfig::Shader {
-                path,
-                parameters,
-                vertices,
-                instances,
-            } => RenderMode::Shader {
-                program: self
-                    .shaders
-                    .get(path)
-                    .expect(&format!(
-                        "Unknown shader: {path:?}. Perhaps you need to add it in shaders.json"
-                    ))
-                    .clone(),
-                parameters: parameters.clone(), // TODO: avoid cloning
-                vertices: *vertices,
-                instances: *instances,
-            },
+            parameters: config.parameters.clone(), // TODO: avoid cloning
+            vertices: config.vertices,
+            instances: config.instances,
         }
     }
 }

@@ -2,7 +2,6 @@
     "health": 15,
     "statuses": [],
     "render": {
-        "type": "Shader",
         "path": "shaders/blob_enemy.glsl"
     },
     "base": "blob_melee"

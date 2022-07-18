@@ -25,7 +25,6 @@
             "follow": false,
             "radius": 3.0,
             "render": {
-                "type": "Shader",
                 "path": "shaders/vfx_explosion.glsl",
                 "parameters": {
                     "color": "#8a2be2"
