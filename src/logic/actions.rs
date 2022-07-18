@@ -62,4 +62,12 @@ impl Logic<'_> {
             }
         }
     }
+
+    pub fn process_render_positions(&mut self) {
+        self.process_units(Self::process_unit_render_positions);
+    }
+    fn process_unit_render_positions(&mut self, unit: &mut Unit) {
+        unit.render_position +=
+            (unit.position.to_world() - unit.render_position) * self.delta_time * r32(5.0);
+    }
 }

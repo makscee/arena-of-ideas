@@ -51,6 +51,7 @@ impl<'a> Logic<'a> {
         self.process_targeting();
         self.process_actions();
         self.process_projectiles();
+        self.process_render_positions();
         self.wave_update();
         while self.model.free_revives > 0 {
             if let Some(unit) = self

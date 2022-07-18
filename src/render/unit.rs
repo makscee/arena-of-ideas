@@ -36,7 +36,7 @@ impl UnitRender {
                     framebuffer,
                     camera,
                     &draw_2d::Ellipse::circle(
-                        unit.position.to_world_f32(),
+                        unit.render_position.map(|x| x.as_f32()),
                         unit.stats.radius.as_f32() * spawn_scale,
                         {
                             let mut color = *color;
@@ -51,7 +51,7 @@ impl UnitRender {
                     camera,
                     &draw_2d::TexturedQuad::unit(&**texture)
                         .scale_uniform(unit.stats.radius.as_f32() * spawn_scale)
-                        .translate(unit.position.to_world_f32()),
+                        .translate(unit.render_position.map(|x| x.as_f32())),
                 );
             }
             RenderMode::Shader {
@@ -109,7 +109,7 @@ impl UnitRender {
                 }
 
                 // Actual render
-                let texture_position = AABB::point(unit.position.to_world_f32())
+                let texture_position = AABB::point(unit.render_position.map(|x| x.as_f32()))
                     .extend_uniform(unit.stats.radius.as_f32() * 2.0); // TODO: configuring?
                 let texture_size =
                     (texture_position.height() * framebuffer.size().y as f32 / camera.fov * 2.0)
@@ -123,7 +123,7 @@ impl UnitRender {
                 let uniforms = (
                     ugli::uniforms! {
                         u_time: game_time,
-                        u_unit_position: unit.position.to_world_f32(),
+                        u_unit_position: unit.render_position.map(|x| x.as_f32()),
                         u_unit_radius: unit.stats.radius.as_f32(),
                         u_spawn: spawn_scale,
                         u_face_dir: unit.face_dir.map(|x| x.as_f32()),

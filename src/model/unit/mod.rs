@@ -46,6 +46,7 @@ pub struct Unit {
     pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
     pub render: RenderConfig,
+    pub render_position: Vec2<R32>,
     pub last_action_time: Time,
     pub last_injure_time: Time,
     pub random_number: R32,
@@ -105,6 +106,7 @@ impl Unit {
             stats: UnitStats::new(template),
             permanent_stats: UnitStats::new(template),
             face_dir: Vec2::ZERO,
+            render_position: Vec2::ZERO,
             position,
             action: template.action.clone(),
             render: template.render_config.clone(),
