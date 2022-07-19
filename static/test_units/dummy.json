@@ -1,0 +1,14 @@
+{
+    "health": 3000,
+    "radius": 1.0,
+    "action": {
+        "range": 10,
+        "cooldown": 10,
+        "effect": {
+            "type": "Noop"
+        }
+    },
+    "render": {
+        "path": "shaders/blob_enemy.glsl"
+    }
+}

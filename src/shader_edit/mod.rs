@@ -19,6 +19,7 @@ struct ShaderEditConfig {
     parameters: ShaderParameters,
     vertices: usize,
     instances: usize,
+    fov: f32,
 }
 
 impl ShaderEdit {
@@ -240,7 +241,7 @@ impl geng::State for EditState {
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
             rotation: 0.0,
-            fov: 25.0,
+            fov: self.config.fov,
         };
 
         if let Some((_, program)) = &self.shader {

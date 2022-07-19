@@ -1,5 +1,7 @@
 const float pi = 3.14159;
 
+const float c_units_scale = .4;
+
 const float c_thickness = .1;
 const float c_glowRange = .2;
 const float c_glowStart = 0.7;
@@ -21,7 +23,6 @@ uniform float u_injure_time;
 uniform float u_spawn;
 uniform float u_action = 0; // 0 -> 1
 uniform float u_action_time;
-uniform float u_animation_delay;
 uniform float u_cooldown;
 uniform float u_ability_ready = 1;
 uniform float u_random;
@@ -57,8 +58,8 @@ vec3 colors[3];
 void commonInit()
 {
     colors[0] = u_clan_color_1.rgb;
-    colors[1] = u_clan_color_2.rgb;
-    colors[2] = u_clan_color_3.rgb;
+    colors[1] = u_clan_color_2.rgb * float(u_clan_count > 1);
+    colors[2] = u_clan_color_3.rgb * float(u_clan_count > 2);
     alCountF = float(u_clan_count);
 }
 

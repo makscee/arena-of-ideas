@@ -10,6 +10,8 @@
         }
     },
     "render": {
-        "path": "shaders/caster_hero.glsl"
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 150,
+        "instances": 1
     }
 }
