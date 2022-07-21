@@ -52,7 +52,7 @@ uniform float u_status_time;
 uniform float u_status_duration;
 uniform vec4 u_status_color;
 
-float alCountF;
+float clanCountF;
 vec3 colors[3];
 
 void commonInit()
@@ -60,7 +60,7 @@ void commonInit()
     colors[0] = u_clan_color_1.rgb;
     colors[1] = u_clan_color_2.rgb * float(u_clan_count > 1);
     colors[2] = u_clan_color_3.rgb * float(u_clan_count > 2);
-    alCountF = float(u_clan_count);
+    clanCountF = float(u_clan_count);
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)
@@ -140,10 +140,10 @@ float triangleDist(vec2 p, float radius)
 vec3 mixColors(float t)
 {
     t += float(t < 0.);
-    int colorInd = int(t * alCountF);
+    int colorInd = int(t * clanCountF);
     vec3 c1 = colors[colorInd];
     vec3 c2 = colors[(colorInd + 1) % u_clan_count];
-    return mix(c1, c2, t * alCountF - float(colorInd));
+    return mix(c1, c2, t * clanCountF - float(colorInd));
 }
 
 vec3 mix3Colors(float t, vec3 colors[3])
@@ -237,4 +237,11 @@ vec4 bezierParentPartner(float t, vec2 parent, vec2 partner)
     vec2 p2 = partner + dir;
     vec2 p3 = partner;
     return vec4(toBezier(t, p0, p1, p2, p3), toBezierNormal(t, p0, p1, p2, p3));
+}
+
+float clanColorHash() {
+    float h = colors[0].r * 1.1 + colors[0].g * 2.1 + colors[0].b * 4.3;
+    h += colors[1].r * 1.1 + colors[1].g * 2.1 + colors[1].b * 4.3;
+    h += colors[2].r * 1.1 + colors[2].g * 2.1 + colors[2].b * 4.3;
+    return fract(h);
 }

@@ -62,25 +62,31 @@ float fbm(vec2 p){
     return f;
 }
 
-vec3 stepClanColor(in float t) {
-    int ind = int(floor(fract(t + u_time * .3) * u_clan_count));
-    float shift = floor(fract(t * u_clan_count + sin(u_time * .5)) / .333 - 1.);
-    // shift = 0;
-    return hueShift(colors[ind], shift * .2) * (1. + shift * .3);
+float generateOffsetFromColor(vec3 color, float addOffset) {
+    return fract(color.r + color.g + color.b + addOffset);
 }
-
 
 void main() {
     commonInit();
     float u_padding = u_padding * c_units_scale;
-    vec2 uv = vec2(cos(v_quad_pos.x * pi * 2),sin(v_quad_pos.x * pi * 2)) * min(v_quad_pos.y,1.);
-    vec3 mixedColor = getMixedClanColor(v_quad_pos.x);
+    vec2 uv = v_quad_pos;
+    vec3 mixedColor = getMixedClanColor(uv.x);
+    if (uv.y > 1) {
+        gl_FragColor = vec4(mixedColor,0.6 * smoothstep(1.0 + u_padding * 2., 1, uv.y));
+        return;
+    }
 
-    vec4 col = vec4(0);
-    float h = clanColorHash();
-    h = (h * 2 - 1) * (h * 2 - 1);
-
-    vec2 p = h * 2. + (0.1 + h) * uv;
+    const float maxOffset = 1.5;
+    float offsetX = generateOffsetFromColor(colors[0], 0) * maxOffset;
+    float offsetY = generateOffsetFromColor(colors[0], 0);
+    if (u_clan_count > 1) {
+        offsetY = generateOffsetFromColor(colors[1], offsetY);
+    }
+    if (u_clan_count > 2) {
+        offsetY = generateOffsetFromColor(colors[2], offsetY) * maxOffset;
+    }
+    uv = vec2(cos(uv.x * pi * 2),sin(uv.x * pi * 2)) * uv.y + vec2(offsetX, offsetY);
+    vec2 p = -1. + 1. * uv;
     
     // domains
     
@@ -89,19 +95,30 @@ void main() {
            
     // distortion
     
-    a += fbm(vec2(1.9 - p.x, .3 * u_time + p.y));
-    a += fbm(3.4 * p);
-    r += fbm(-0.9 * p);
+    a += fbm(vec2(1.9 - p.x, 0.5 * u_time + p.y));
+    a += fbm(0.4 * p);
+    r += fbm(2.9 * p);
     
     // colorize
     
+    vec3 col = colors[0];
     
-    float ff = 1.0 - smoothstep(-0.4, 1.2, noise(vec2(0.5 * a, 9.3 * a)) );
-    col = vec4(stepClanColor(fract(ff + r)),1);
-    if (v_quad_pos.y > 1) {
-        col = vec4(mix(col.rgb,mixedColor,0.85),0.5 * smoothstep(1.0 + u_padding * 2., 1, v_quad_pos.y));
+    float ff = 1.0 - smoothstep(-0.4, 1.1, noise(vec2(0.5 * a, 3.3 * a)) );
+    col =  mix( col, colors[1], ff);
+       
+    ff = 1.0 - smoothstep(.0, 2.8, r );
+    col +=  mix( col, BLACK,  ff);
+    
+    ff -= 1.0 - smoothstep(0.3, 0.5, fbm(vec2(1.0, 40.0 * a)) );
+    col =  mix( col, colors[2],  ff);  
+      
+    ff = 1.0 - smoothstep(2., 2.9, a * 1.5 ); 
+    col =  mix( col, BLACK,  ff);
+    if (v_quad_pos.y > 0.9) {
+        gl_FragColor = alphaBlend(vec4(col,0.5),vec4(mixedColor,0.5));
+        return;
     }
-
-    gl_FragColor = col;
+    gl_FragColor = vec4(col,1);
 }
 #endif
+

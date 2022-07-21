@@ -24,8 +24,8 @@ vec4 renderRing(float rad, float h)
     radRotated -= floor(radRotated / pi / 2) * pi * 2;
     float t = radRotated / pi / 2.;
 
-    vec4 glowColor = vec4(mixColors(1. - t - 1. / alCountF / 2.), glowValue((h - c_thickness) / c_glowRange));
-    vec4 insideColor = vec4(colors[int((pi * 2. - radRotated) / (pi * 2. / alCountF))], 1.);
+    vec4 glowColor = vec4(mixColors(1. - t - 1. / clanCountF / 2.), glowValue((h - c_thickness) / c_glowRange));
+    vec4 insideColor = vec4(colors[int((pi * 2. - radRotated) / (pi * 2. / clanCountF))], 1.);
 
     vec4 col = float(h > c_thickness && h - c_thickness < c_glowRange) * glowColor
         + float(h < c_thickness) * insideColor * float(h > c_thickness * 1. || abs(rad - pi) < u_health * pi);
