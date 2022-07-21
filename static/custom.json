@@ -1,26 +1,22 @@
 {
     "player": [
-        "ranger",
+        "rogue",
+        "rogue",
         "rogue"
     ],
     "clans": {
-        "Dragons": 0,
-        "Demons": 0,
         "Warlocks": 0,
-        "Archers": 0
+        "Demons": 0,
+        "Vampires": 0,
+        "Common": 0
     },
     "round": {
         "statuses": [],
-        "waves": [
-            {
-                "spawns": [
-                    {
-                        "type": "blob",
-                        "count": 3
-                    }
-                ]
-            }
+        "enemies": [
+            "blob",
+            "blob",
+            "blob"
         ]
     },
-    "fov": 15
+    "fov": 10
 }
