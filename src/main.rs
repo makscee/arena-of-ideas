@@ -118,6 +118,9 @@ impl geng::State for Game {
             geng::Event::MouseDown { button, .. } => {
                 self.pressed_keys.push(format!("Mouse{:?}", button));
             }
+            geng::Event::KeyDown { key } => {
+                self.pressed_keys.push(format!("{:?}", key));
+            }
             _ => {}
         }
     }

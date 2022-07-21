@@ -42,6 +42,9 @@ impl Logic<'_> {
                     }
                 }
             }
+            if key == "Space" {
+                debug!("space pressed");
+            }
         }
     }
 }
