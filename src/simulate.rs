@@ -3,7 +3,7 @@ use std::{collections::VecDeque, path::PathBuf};
 use geng::prelude::*;
 
 use crate::{
-    assets::{Assets, ClanEffects, Config, GameRound, Statuses, Wave, WaveSpawn},
+    assets::{Assets, ClanEffects, Config, GameRound, Statuses},
     logic::Logic,
     model::{Faction, Model, Unit, UnitTemplates, UnitType},
 };
@@ -17,28 +17,18 @@ pub struct Simulate {
 #[asset(json)]
 #[serde(deny_unknown_fields)]
 struct SimulationConfig {
-    player: PlayerUnits,
+    player: Vec<RegexUnit>,
     opponent: SimulationUnits,
     repeats: usize,
 }
 
-#[derive(Deserialize)]
-struct PlayerUnits {
-    units: Vec<String>,
-}
+type RegexUnit = String;
 
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 enum SimulationUnits {
-    Units {
-        /// Each entry in the list is treated as a regular expression
-        /// and will include all units, whose name satisfies it
-        units: Vec<String>,
-    },
-    Rounds {
-        from: usize,
-        to: usize,
-    },
+    Units { units: Vec<RegexUnit> },
+    Rounds { from: usize, to: usize },
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,67 +39,88 @@ struct BattleConfig {
 }
 
 impl SimulationConfig {
-    /// Treat unit names as regular expressions and match them on `all_units`
-    fn match_regex(self, all_units: &[&UnitType]) -> Self {
-        Self {
-            player: PlayerUnits {
-                units: match_units(&self.player.units, all_units)
-                    .cloned()
-                    .collect(),
-            },
-            opponent: match self.opponent {
-                SimulationUnits::Units { units } => SimulationUnits::Units {
-                    units: match_units(&units, all_units).cloned().collect(),
-                },
-                SimulationUnits::Rounds { .. } => self.opponent,
-            },
-            repeats: self.repeats,
-        }
-    }
+    fn battles(
+        &self,
+        rounds: &[GameRound],
+        all_units: &[&UnitType],
+    ) -> impl Iterator<Item = BattleConfig> + '_ {
+        let battles: Vec<BattleConfig> = vec![];
+        let mut player_variants = vec![];
+        player_variants = self.match_units(all_units, &self.player, 0, player_variants);
 
-    fn battles(self, rounds: &[GameRound]) -> impl Iterator<Item = BattleConfig> {
-        let player = self.player.units;
-        let opponent = match self.opponent {
-            SimulationUnits::Units { units } => vec![GameRound {
-                statuses: vec![],
-                waves: [Wave {
-                    start_delay: R32::ZERO,
-                    between_delay: R32::ZERO,
-                    wait_clear: false,
-                    statuses: vec![],
-                    spawns: units
-                        .into_iter()
-                        .map(|unit| WaveSpawn {
-                            r#type: unit,
-                            count: 1,
-                        })
-                        .collect(),
-                }]
-                .into(),
-            }],
+        let battle_rounds = match &self.opponent {
+            SimulationUnits::Units { units } => {
+                let mut unit_vars = vec![];
+                unit_vars = self.match_units(all_units, &units, 0, unit_vars);
+                let mut game_rounds = vec![];
+                for variant in unit_vars {
+                    game_rounds.push(GameRound {
+                        statuses: vec![],
+                        enemies: variant.to_vec(),
+                    });
+                }
+                game_rounds
+            }
             SimulationUnits::Rounds { from, to } => {
-                rounds.iter().take(to).skip(from - 1).cloned().collect()
+                rounds.iter().take(*to).skip(from - 1).cloned().collect()
             }
         };
-        opponent.into_iter().map(move |opponent| BattleConfig {
-            player: player.clone(),
-            round: opponent,
-            repeats: self.repeats,
+
+        player_variants.into_iter().flat_map(move |player| {
+            let mut rounds = vec![];
+            for round in &battle_rounds {
+                rounds.push(BattleConfig {
+                    player: player.clone(),
+                    round: round.clone(),
+                    repeats: self.repeats,
+                });
+            }
+            rounds
         })
     }
-}
 
-fn match_units<'a>(
-    patterns: impl IntoIterator<Item = &'a String> + 'a,
-    all_units: &'a [&'a UnitType],
-) -> impl Iterator<Item = &'a UnitType> + 'a {
-    patterns.into_iter().flat_map(move |regex| {
-        let regex = regex::Regex::new(regex).expect("Failed to parse a regular expression");
+    fn match_units(
+        &self,
+        all_units: &[&UnitType],
+        units: &Vec<RegexUnit>,
+        index: usize,
+        result: Vec<Vec<UnitType>>,
+    ) -> Vec<Vec<UnitType>> {
+        let mut cloned = result.clone();
+        if index == units.len() {
+            return cloned;
+        }
+
+        if cloned.is_empty() {
+            cloned.push(vec![]);
+        }
+
+        let regex_units = self.to_units(units[index].clone(), all_units);
+        let mut regex_peek = regex_units.into_iter().peekable();
+        while let Some(unit) = regex_peek.next() {
+            let mut last_index = cloned.len() - 1;
+            cloned[last_index].push(unit);
+            cloned = self.match_units(all_units, units, index + 1, cloned);
+            last_index = cloned.len() - 1;
+            if regex_peek.peek().is_some() {
+                //copy last line and truncate unnessesary elements
+                let mut copied_line = cloned[last_index].clone();
+                copied_line.truncate(index);
+                cloned.push(copied_line);
+            }
+        }
+        cloned.clone()
+    }
+
+    fn to_units(&self, unit: RegexUnit, all_units: &[&UnitType]) -> Vec<UnitType> {
+        let regex = regex::Regex::new(&unit).expect("Failed to parse a regular expression");
         all_units
             .iter()
             .filter(move |unit| regex.is_match(unit))
             .map(|name| *name)
-    })
+            .cloned()
+            .collect()
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -142,18 +153,38 @@ impl Simulate {
         .unwrap();
 
         let all_units = assets.units.keys().collect::<Vec<_>>();
-        let simulation_config = simulation_config.match_regex(&all_units);
 
         let mut total_games = 0;
         let mut total_wins = 0;
 
-        let player_units = simulation_config.player.units.clone();
-
-        let battle_results = simulation_config
-            .battles(&assets.rounds)
+        //let player_units = simulation_config.player.clone();
+        let mut total_results = vec![];
+        let mut last_player: Option<Vec<UnitType>> = None;
+        let battles: Vec<BattleConfig> = simulation_config
+            .battles(&assets.rounds, &all_units)
+            .collect();
+        let battle_results = battles
+            .into_iter()
             .map(|battle| {
                 info!("Starting the battle: {battle:?}");
                 let mut game_wins = 0;
+                if let Some(last_player) = &last_player {
+                    if battle.player != last_player.clone() {
+                        let result = TotalResult {
+                            player: last_player.to_vec(),
+                            games: total_games,
+                            win_rate: if total_games == 0 {
+                                0.0
+                            } else {
+                                total_wins as f64 / total_games as f64
+                            },
+                        };
+                        total_results.push(result);
+                        total_games = 0;
+                        total_wins = 0;
+                    }
+                }
+                last_player = Some(battle.player.clone());
                 let games = (1..=battle.repeats)
                     .map(|i| {
                         let result = Simulation::new(
@@ -204,21 +235,24 @@ impl Simulate {
             })
             .collect::<Vec<_>>();
 
-        let result = TotalResult {
-            player: player_units,
-            games: total_games,
-            win_rate: if total_games == 0 {
-                0.0
-            } else {
-                total_wins as f64 / total_games as f64
-            },
-        };
-
+        // push last result
+        if let Some(last_player) = &last_player {
+            let result = TotalResult {
+                player: last_player.to_vec(),
+                games: total_games,
+                win_rate: if total_games == 0 {
+                    0.0
+                } else {
+                    total_wins as f64 / total_games as f64
+                },
+            };
+            total_results.push(result);
+        }
         let total_battles = battle_results.len();
         for (i, result) in battle_results.iter().enumerate() {
             info!("Battle {}/{} result: {result:#?}", i + 1, total_battles);
         }
-        info!("Total result: {result:#?}");
+        info!("Total result: {total_results:#?}");
 
         let result_path = PathBuf::new().join("simulation_result");
         let battles_path = result_path.join("battles");
@@ -233,7 +267,7 @@ impl Simulate {
         }
 
         // Write results
-        write_to(result_path.join("total.json"), &result).expect("Failed to write results");
+        write_to(result_path.join("total.json"), &total_results).expect("Failed to write results");
         for (i, result) in battle_results.iter().enumerate() {
             let path = battles_path.join(format!(
                 "battle_{:0<w$}.json",
@@ -276,7 +310,7 @@ impl Simulation {
     ) -> Self {
         Self {
             config: config.clone(),
-            model: Model::new(config, units_templates, clan_effects, statuses, round),
+            model: Model::new(config, units_templates, clan_effects, statuses, Some(round)),
             delta_time,
         }
     }

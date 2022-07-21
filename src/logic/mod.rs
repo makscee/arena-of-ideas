@@ -7,12 +7,12 @@ mod actions;
 mod deaths;
 mod effects;
 mod particles;
+mod round;
 mod spawn;
 mod statuses;
 mod targeting;
 mod time_bombs;
 mod util;
-mod waves;
 
 pub use effects::*;
 pub use util::*;
@@ -50,7 +50,7 @@ impl<'a> Logic<'a> {
         self.process_targeting();
         self.process_actions();
         self.process_render_positions();
-        self.wave_update();
+        self.process_round();
         while self.model.free_revives > 0 {
             if let Some(unit) = self
                 .model

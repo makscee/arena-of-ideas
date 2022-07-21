@@ -1,13 +1,6 @@
 {
     "statuses": [],
-    "waves": [
-        {
-            "spawns": [
-                {
-                    "type": "small_blob",
-                    "count": 1
-                }
-            ]
-        }
+    "enemies": [
+        "blob"
     ]
 }

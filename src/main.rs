@@ -57,7 +57,7 @@ impl Game {
             assets.units.clone(),
             assets.clans.clone(),
             assets.statuses.clone(),
-            round,
+            Some(round),
         );
         Logic::initialize(&mut model, &config);
         let mut game = Self {

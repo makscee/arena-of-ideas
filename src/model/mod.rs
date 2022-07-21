@@ -70,8 +70,7 @@ pub struct Model {
     pub dead_time_bombs: Collection<TimeBomb>,
     pub particles: Collection<Particle>,
     pub config: Config,
-    pub round: GameRound,
-    pub wave_delay: Time,
+    pub round: Option<GameRound>,
     pub free_revives: usize,
     pub unit_templates: UnitTemplates,
     pub clan_effects: ClanEffects,
@@ -89,7 +88,7 @@ impl Model {
         unit_templates: UnitTemplates,
         clan_effects: ClanEffects,
         statuses: Statuses,
-        round: GameRound,
+        round: Option<GameRound>,
     ) -> Self {
         Self {
             next_id: 0,
@@ -99,7 +98,6 @@ impl Model {
             time_bombs: Collection::new(),
             dead_time_bombs: Collection::new(),
             particles: Collection::new(),
-            wave_delay: Time::ZERO,
             free_revives: 0,
             unit_templates,
             clan_effects,
