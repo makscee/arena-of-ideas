@@ -119,5 +119,18 @@ impl Render {
                     .translate(text.position),
             );
         }
+        // Tick indicator
+        let tick_text = model.current_tick_num.to_string();
+        let text_scale = f32::max(
+            1.1 - (model.current_tick.tick_time.as_f32()) / TICK_TIME,
+            1.0,
+        );
+        self.geng.draw_2d(
+            framebuffer,
+            &self.camera,
+            &draw_2d::Text::unit(&**self.geng.default_font(), &tick_text, Color::WHITE)
+                .scale_uniform(0.3 * text_scale)
+                .translate(vec2(0.0, self.camera.fov * 0.35)),
+        );
     }
 }

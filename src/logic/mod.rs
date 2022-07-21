@@ -88,6 +88,7 @@ impl<'a> Logic<'a> {
         // TODO: check if some actions did not perform in time
         self.model.current_tick = TickModel::new();
         self.tick_cooldowns();
+        self.model.current_tick_num += 1;
     }
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.model.units.ids().copied().collect();

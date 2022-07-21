@@ -32,7 +32,7 @@ pub use unit::*;
 
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 5;
-pub const TICK_TIME: f32 = 1.0;
+pub const TICK_TIME: f32 = 2.0;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
@@ -81,6 +81,7 @@ pub struct Model {
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, R32>,
     pub current_tick: TickModel,
+    pub current_tick_num: usize,
 }
 
 impl Model {
@@ -110,6 +111,7 @@ impl Model {
             config,
             vars: HashMap::new(),
             current_tick: TickModel::new(),
+            current_tick_num: 0,
         }
     }
 }
