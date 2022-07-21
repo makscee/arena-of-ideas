@@ -115,7 +115,7 @@ impl Render {
                 framebuffer,
                 &self.camera,
                 &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, text.color)
-                    .scale_uniform(0.35 * text.scale)
+                    .scale_uniform(0.15 * text.scale)
                     .translate(text.position),
             );
         }

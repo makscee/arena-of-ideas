@@ -78,6 +78,7 @@ void main() {
 
     vec4 col = vec4(0);
     float h = clanColorHash();
+    uv = rotateCW(uv,h * pi * 2);
     h = (h * 2 - 1) * (h * 2 - 1);
 
     vec2 p = h * 2. + (0.1 + h) * uv;

@@ -5,7 +5,6 @@ use super::*;
 #[derive(Clone)]
 pub struct Text {
     pub position: Vec2<f32>,
-    pub velocity: Vec2<f32>,
     pub time: f32,
     pub text: String,
     pub color: Color<f32>,
@@ -21,9 +20,11 @@ pub struct TextBlock {
 
 impl Text {
     pub fn update(&mut self, delta_time: f32) {
-        self.time += delta_time * 0.8;
-        self.position += self.velocity * delta_time;
-        self.scale = 1.0 - self.time;
+        self.time += delta_time * 0.5;
+        self.scale = f32::max(1.4 - (self.time * 1.5 - 0.3) * (self.time * 1.3 - 0.3), 1.0);
+        if self.time > 0.7 {
+            self.color.a = 1.0 - (self.time - 0.7) / 0.3;
+        }
     }
 
     pub fn is_alive(&self) -> bool {
@@ -38,11 +39,9 @@ impl RenderModel {
         text: impl Into<String>,
         color: Color<f32>,
     ) {
-        let velocity = vec2(0.7, 0.0).rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
         self.texts.push(Text {
             position,
             time: 0.0,
-            velocity,
             text: text.into(),
             color,
             scale: 1.0,
@@ -108,7 +107,6 @@ impl TextBlock {
         }
         texts.push_back(Text {
             position,
-            velocity: Vec2::ZERO,
             time: 0.0,
             text,
             color,
