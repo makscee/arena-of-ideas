@@ -1,23 +1,6 @@
 {
     "statuses": [],
-    "waves": [
-        {
-            "between_delay": 3,
-            "spawns": [
-                {
-                    "type": "small_blob",
-                    "count": 4
-                }
-            ]
-        },
-        {
-            "start_delay": 2,
-            "spawns": [
-                {
-                    "type": "blob",
-                    "count": 1
-                }
-            ]
-        }
+    "enemies": [
+        "blob"
     ]
 }

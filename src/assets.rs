@@ -82,39 +82,7 @@ pub struct GameRound {
     #[serde(default)]
     pub statuses: Vec<StatusRef>,
     #[serde(default)]
-    pub waves: VecDeque<Wave>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Wave {
-    #[serde(default = "Wave::default_start_delay")]
-    pub start_delay: Time,
-    #[serde(default = "Wave::default_between_delay")]
-    pub between_delay: Time,
-    #[serde(default = "Wave::default_wait_clear")]
-    pub wait_clear: bool,
-    #[serde(default)]
-    pub statuses: Vec<StatusRef>,
-    pub spawns: VecDeque<WaveSpawn>,
-}
-
-impl Wave {
-    fn default_start_delay() -> Time {
-        Time::ZERO
-    }
-    fn default_between_delay() -> Time {
-        Time::ZERO
-    }
-    fn default_wait_clear() -> bool {
-        false
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct WaveSpawn {
-    pub r#type: UnitType,
-    pub count: usize,
+    pub enemies: Vec<UnitType>,
 }
 
 #[derive(Deref, DerefMut)]

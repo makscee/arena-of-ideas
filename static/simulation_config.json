@@ -1,0 +1,12 @@
+{
+    "player": [
+        "dark_horseman+"
+    ],
+    "opponent": {
+        "type": "Units",
+        "units": [
+            ".*"
+        ]
+    },
+    "repeats": 3
+}
