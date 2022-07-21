@@ -11,7 +11,7 @@ void main() {
     v_quad_pos = a_pos * (1.0 + u_padding);
     float size = u_unit_radius;
     p_index = gl_InstanceID;
-    float t = fract(u_time * .1) * 3;
+    float t = 0.5;
     vec2 startPos = randVec(p_index) - vec2(0.5);
     vec2 vel = randCircle(p_index + 1) * cos(t*2*pi*rand(p_index));
     vec2 velocity = rotateCW(vel, t * t * pi * .5 * (1. - length(vel))) * 6 * sin(t * .33 * pi);

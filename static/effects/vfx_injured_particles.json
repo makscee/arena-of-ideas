@@ -1,0 +1,16 @@
+{
+    "type": "Visual",
+    "duration": 0.8,
+    "parent": "Target",
+    "follow": false,
+    "radius": 1.0,
+    "render": {
+        "path": "shaders/vfx_injured_particles.glsl",
+        "parameters": {
+            "u_unit_radius": 0.3,
+            "u_color": "#ffffff"
+        },
+        "vertices": 2,
+        "instances": 150
+    }
+}

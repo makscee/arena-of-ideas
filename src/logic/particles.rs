@@ -25,6 +25,14 @@ impl Logic<'_> {
                     "u_parent_position".to_string(),
                     ShaderParameter::Vec2(parent.position.to_world().map(|x| x.as_f32())),
                 )]));
+                parameters.0.extend(HashMap::from([(
+                    "u_parent_radius".to_string(),
+                    ShaderParameter::Float(parent.stats.radius.as_f32()),
+                )]));
+                parameters.0.extend(HashMap::from([(
+                    "u_parent_random".to_string(),
+                    ShaderParameter::Float(parent.random_number.as_f32()),
+                )]));
             }
             if let Some(partner) = partner {
                 parameters.0.extend(HashMap::from([(

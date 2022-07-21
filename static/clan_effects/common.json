@@ -63,6 +63,10 @@
     },
     {
         "activate": 0,
+        "filter": {
+            "Player": null,
+            "Enemy": null
+        },
         "statuses": [
             {
                 "name": "VfxInjure",
@@ -71,6 +75,16 @@
                     "type": "Independent"
                 },
                 "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/vfx_injured_particles.json"
+                        }
+                    },
                     {
                         "triggers": [
                             {

@@ -36,6 +36,8 @@ uniform float u_ability_on_cooldown;
 
 uniform vec2 u_parent_position;
 uniform vec2 u_partner_position;
+uniform float u_parent_radius;
+uniform float u_parent_random;
 
 uniform float u_thickness = 0.2;
 uniform float u_curvature = 2;
@@ -231,7 +233,7 @@ vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
 vec4 bezierParentPartner(float t, vec2 parent, vec2 partner)
 {
     vec2 dir = normalize(parent - partner);
-    dir = -vec2(dir.y, -dir.x) * u_curvature;
+    dir = -vec2(dir.y, -dir.x) * u_curvature * (1 + (u_parent_random - 0.5) * .3);
     vec2 p0 = parent;
     vec2 p1 = parent + dir;
     vec2 p2 = partner + dir;
