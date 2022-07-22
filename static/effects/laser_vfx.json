@@ -15,12 +15,12 @@
                     "u_thickness": 0.3,
                     "u_unit_radius": 0.04,
                     "p_speed": -0.1,
-                    "p_disperse": 5.0,
+                    "p_disperse": 3.0,
                     "u_end_cut": 0.2,
                     "u_color": "#1e90ff"
                 },
                 "vertices": 2,
-                "instances": 150
+                "instances": 50
             }
         },
         {

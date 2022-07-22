@@ -16,6 +16,10 @@ impl Logic<'_> {
                 .and_then(|partner| self.model.units.get(&partner));
             let mut parameters = &mut particle.render_config.parameters;
 
+            parameters.0.extend(HashMap::from([(
+                "u_color".to_string(),
+                ShaderParameter::Color(particle.color),
+            )]));
             if let Some(parent) = parent {
                 if particle.follow {
                     particle.position = parent.position.to_world();
