@@ -41,7 +41,7 @@ uniform vec2 u_parent_position;
 uniform vec2 u_partner_position;
 uniform float u_parent_radius;
 uniform float u_parent_random;
-uniform float u_parent_faction;
+uniform float u_parent_faction = 1;
 
 uniform float u_thickness = 0.2;
 uniform float u_curvature = 2;
