@@ -74,11 +74,6 @@ void main() {
             sin(insideCircTime * 2.73)) * innerR * .8)) * float(distCenter < outerR + thicknessOuter * .5);
     col = alphaBlend(col, vec4(colors[0], v));
 
-    if (u_injure_time > 0. && abs(u_injure_time - u_time) < injureAnimationTime && distCenter < outerR)
-    {
-        col = alphaBlend(col, vec4(vec3(1.), 1. - (u_time - u_injure_time) / injureAnimationTime));
-    }
-
     gl_FragColor = col;
 }
 #endif

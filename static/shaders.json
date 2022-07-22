@@ -4,9 +4,11 @@
     "shaders/shooter_enemy.glsl",
     "shaders/vfx_explosion.glsl",
     "shaders/vfx_particle_burst_new.glsl",
+    "shaders/vfx_particle_spin.glsl",
     "shaders/vfx_curve_particles.glsl",
     "shaders/vfx_curve.glsl",
     "shaders/vfx_injured_particles.glsl",
     "shaders/status/status_default.glsl",
+    "shaders/status/status_tint.glsl",
     "shaders/default_circle_hero.glsl"
 ]

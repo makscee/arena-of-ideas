@@ -89,6 +89,8 @@ impl Logic<'_> {
 
     fn process_unit_statuses(&mut self, unit: &mut Unit) {
         let mut expired: Vec<(Option<Id>, Id, String)> = Vec::new();
+        unit.all_statuses
+            .sort_by(|a, b| a.status.order.cmp(&b.status.order));
         for status in &mut unit.all_statuses {
             if !status.is_inited {
                 for (effect, vars, status_id) in status.trigger(|trigger| match trigger {

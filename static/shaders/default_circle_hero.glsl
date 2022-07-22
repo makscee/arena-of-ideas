@@ -5,9 +5,10 @@ out vec2 v_quad_pos;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
+uniform float u_hole_radius = 0.1;
 void main() {
-    float radius = u_unit_radius * c_units_scale;
-    float height = 0.1 + radius * .5 + (radius * .5 * a_pos.y);
+    float radius = (u_unit_radius - u_hole_radius) * c_units_scale;
+    float height = u_hole_radius + radius * .5 + (radius * .5 * a_pos.y);
     float radian = a_pos.x * pi * 2.;
     float paddingHeight = float(a_pos.y > 0) * u_padding * radius;
     height += paddingHeight;
@@ -66,9 +67,11 @@ vec3 stepClanColor(in float t) {
 
 
 void main() {
+    if (v_quad_pos.y > 1) discard;
     commonInit();
     float u_padding = u_padding * c_units_scale;
-    vec2 uv = vec2(cos(v_quad_pos.x * pi * 2),sin(v_quad_pos.x * pi * 2)) * min(v_quad_pos.y,1.);
+    const float EDGE_RADIUS = 0.5;
+    vec2 uv = vec2(cos(v_quad_pos.x * pi * 2),sin(v_quad_pos.x * pi * 2)) * min(v_quad_pos.y, 1 - EDGE_RADIUS);
     vec3 mixedColor = getMixedClanColor(v_quad_pos.x);
 
     vec4 col = vec4(0);
@@ -93,8 +96,8 @@ void main() {
     
     float ff = 1.0 - smoothstep(-0.4, 1.2, noise(vec2(0.5 * a, 9.3 * a)) );
     col = vec4(stepClanColor(fract(ff + r)),1);
-    if (v_quad_pos.y > 1) {
-        col = vec4(mix(col.rgb,mixedColor,0.85),0.5 * smoothstep(1.0 + u_padding * 2., 1, v_quad_pos.y));
+    if (v_quad_pos.y > 1 - EDGE_RADIUS) {
+        col.a = smoothstep(1, 1 - EDGE_RADIUS, v_quad_pos.y);
     }
 
     gl_FragColor = col;

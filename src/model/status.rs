@@ -210,6 +210,8 @@ pub struct Status {
     /// Initial variables
     #[serde(default)]
     pub vars: HashMap<VarName, R32>,
+    #[serde(default)]
+    pub order: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

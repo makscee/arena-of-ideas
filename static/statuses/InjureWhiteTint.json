@@ -1,0 +1,25 @@
+{
+    "name": "InjureWhiteTint",
+    "type": "Status",
+    "order": 1000000,
+    "stacking": {
+        "type": "Independent"
+    },
+    "listeners": [
+        {
+            "triggers": [
+                {
+                    "type": "DamageTaken"
+                }
+            ],
+            "effect": {
+                "type": "Noop"
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/status/status_tint.glsl",
+        "parameters": {
+        }
+    }
+}
