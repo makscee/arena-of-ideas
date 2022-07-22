@@ -6,7 +6,7 @@
         "range": 5,
         "cooldown": 2,
         "effect": {
-            "preset": "effects/ranged_hit_enemy.json"
+            "preset": "effects/ranged_hit.json"
         }
     },
     "render": {

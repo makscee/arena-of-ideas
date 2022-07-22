@@ -18,6 +18,9 @@ const float injureAnimationTime = 0.5;
 const float thicknessOuter = 0.07;
 const float thicknessInner = thicknessOuter * .5;
 
+const vec3 player_faction_color = vec3(1);
+const vec3 enemy_faction_color = vec3(0.988, 0.004, 0.027);
+
 uniform float u_time;
 uniform float u_injure_time;
 uniform float u_spawn;
@@ -38,6 +41,7 @@ uniform vec2 u_parent_position;
 uniform vec2 u_partner_position;
 uniform float u_parent_radius;
 uniform float u_parent_random;
+uniform float u_parent_faction;
 
 uniform float u_thickness = 0.2;
 uniform float u_curvature = 2;
@@ -56,6 +60,7 @@ uniform vec4 u_status_color;
 
 float clanCountF;
 vec3 colors[3];
+vec3 parent_faction_color;
 
 void commonInit()
 {
@@ -63,6 +68,7 @@ void commonInit()
     colors[1] = u_clan_color_2.rgb * float(u_clan_count > 1);
     colors[2] = u_clan_color_3.rgb * float(u_clan_count > 2);
     clanCountF = float(u_clan_count);
+    parent_faction_color = mix(enemy_faction_color, player_faction_color, (u_parent_faction + 1) / 2);
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)
@@ -233,7 +239,7 @@ vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
 vec4 bezierParentPartner(float t, vec2 parent, vec2 partner)
 {
     vec2 dir = normalize(parent - partner);
-    dir = -vec2(dir.y, -dir.x) * u_curvature * (1 + (u_parent_random - 0.5) * .3);
+    dir = vec2(dir.y, -dir.x) * u_curvature * (1 + (u_parent_random - 0.5) * .3) * u_parent_faction;
     vec2 p0 = parent;
     vec2 p1 = parent + dir;
     vec2 p2 = partner + dir;
@@ -246,4 +252,8 @@ float clanColorHash() {
     h += colors[1].r * 1.1 + colors[1].g * 2.1 + colors[1].b * 4.3;
     h += colors[2].r * 1.1 + colors[2].g * 2.1 + colors[2].b * 4.3;
     return fract(h);
+}
+
+float colorHash(vec3 color) {
+    return fract(color.r * 1.1 + color.g * 2.1 + color.b * 4.3);
 }

@@ -11,6 +11,9 @@
                 "who": "Caster",
                 "stat": "BaseDamage"
             }
+        },
+        {
+            "preset": "effects/laser_vfx.json"
         }
     ]
 }

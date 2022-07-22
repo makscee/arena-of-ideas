@@ -31,11 +31,6 @@ vec3 getMixedClanColor(float t) {
     return col;
 }
 
-const vec3 ORANGE = vec3(1.0, 0.6, 0.2);
-const vec3 PINK   = vec3(0.7, 0.1, 0.4); 
-const vec3 BLUE   = vec3(0.0, 0.2, 0.9); 
-const vec3 BLACK  = vec3(0.0, 0.0, 0.2);
-
 // Noise
 float hash( float n ) {
     return fract(sin(n)*75728.5453123); 
@@ -90,12 +85,11 @@ void main() {
            
     // distortion
     
-    a += fbm(vec2(1.9 - p.x, .3 * u_time + p.y));
-    a += fbm(3.4 * p);
+    a += fbm(vec2(1.9 - p.x, .3 * u_time + p.y + u_random * 5));
+    a += fbm(3.4 * p + u_random);
     r += fbm(-0.9 * p);
     
     // colorize
-    
     
     float ff = 1.0 - smoothstep(-0.4, 1.2, noise(vec2(0.5 * a, 9.3 * a)) );
     col = vec4(stepClanColor(fract(ff + r)),1);

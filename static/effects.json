@@ -3,7 +3,6 @@
     "effects/laser_enemy_vfx.json",
     "effects/melee_hit.json",
     "effects/ranged_hit.json",
-    "effects/ranged_hit_enemy.json",
     "effects/crit_hit_vfx.json",
     "effects/bonus_shot.json",
     "effects/explosion.json",

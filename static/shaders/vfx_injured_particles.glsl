@@ -44,8 +44,9 @@ flat in float p_t;
 
 void main() {
     if (p_t <= 0.) discard;
+    commonInit();
     vec2 uv = v_quad_pos;
-    vec4 col = vec4(u_color.rgb,0.9);
+    vec4 col = vec4(parent_faction_color,0.9);
     col *= float(length(uv) < 0.5);
     gl_FragColor = col;
 }

@@ -18,7 +18,7 @@ void main() {
     vec4 bezier = bezierParentPartner(bezier_t, u_parent_position, u_partner_position);
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
-    b_pos += b_normal * height * u_spawn * u_spawn * (1. - bezier_t * .7);
+    b_pos += b_normal * height * u_spawn * u_spawn * (1.0 - bezier_t * .7);
 
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(b_pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -29,9 +29,11 @@ void main() {
 in vec2 v_quad_pos;
 
 void main() {
+    if (u_spawn > 0.95) discard;
+    commonInit();
     vec2 uv = v_quad_pos;
     float centerDist = abs(uv.y);
-    vec4 col = u_color;
+    vec4 col = vec4(parent_faction_color,1);
     col.a = (1. - centerDist) * u_spawn * u_spawn;
     gl_FragColor = col;
 }

@@ -93,31 +93,8 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/crit_hit_vfx.json"
-                        }
-                    },
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageTaken",
-                                "damage_type": "Melee",
-                                "except": "Crit"
-                            }
-                        ],
-                        "effect": {
-                            "preset": "effects/laser_vfx.json"
-                        }
-                    },
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageTaken",
-                                "damage_type": "Ranged",
-                                "except": "Crit"
-                            }
-                        ],
-                        "effect": {
-                            "preset": "effects/laser_vfx.json"
+                            "preset": "effects/vfx_injured_particles.json",
+                            "color": "#fd8008"
                         }
                     }
                 ]
