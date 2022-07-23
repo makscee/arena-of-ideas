@@ -41,14 +41,12 @@ impl EffectImpl for AttachStatusEffect {
                 return;
             }
 
-            if let Some(render) = &mut logic.render {
-                render.add_text(
-                    target.position,
-                    &format!("{}", status_name),
-                    Color::try_from("#8000ff").unwrap(),
-                    crate::render::TextType::Status,
-                );
-            }
+            logic.model.render_model.add_text(
+                target.position,
+                &format!("{}", status_name),
+                Color::try_from("#8000ff").unwrap(),
+                crate::render::TextType::Status,
+            );
 
             let mut status = effect.status.get(&logic.model.statuses).clone().attach(
                 Some(target.id),

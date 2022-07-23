@@ -1,19 +1,12 @@
 use super::*;
 
-impl Logic<'_> {
-    pub fn process_abilities(&mut self) {
-        for unit in &mut self.model.units {
-            if let Some(time) = &mut unit.ability_cooldown {
-                *time -= self.delta_time;
-                if *time < Time::new(0.0) {
-                    unit.ability_cooldown = None;
-                }
-            }
-        }
-        for key in mem::take(&mut self.pressed_keys) {
-            if key == "MouseLeft" {
-                for unit in &mut self.model.units {
-                    let template = &self.model.unit_templates[&unit.unit_type];
+impl<'a> Logic {
+    pub fn init_abilities(&mut self, events: &mut Events) {
+        events.add_listener(
+            GameEvent::Ability,
+            Box::new(|logic| {
+                for mut unit in &mut logic.model.units {
+                    let template = &logic.model.unit_templates[&unit.unit_type];
                     if unit.ability_cooldown.is_some() {
                         continue;
                     }
@@ -29,7 +22,7 @@ impl Logic<'_> {
                     }
                     if let Some(ability) = &template.ability {
                         unit.ability_cooldown = Some(ability.cooldown);
-                        self.effects.push_back(QueuedEffect {
+                        logic.effects.push_back(QueuedEffect {
                             effect: ability.effect.clone(),
                             context: EffectContext {
                                 caster: Some(unit.id),
@@ -41,9 +34,17 @@ impl Logic<'_> {
                         });
                     }
                 }
-            }
-            if key == "Space" {
-                debug!("space pressed");
+            }),
+        );
+    }
+
+    pub fn process_abilities(&mut self) {
+        for unit in &mut self.model.units {
+            if let Some(time) = &mut unit.ability_cooldown {
+                *time -= self.delta_time;
+                if *time < Time::new(0.0) {
+                    unit.ability_cooldown = None;
+                }
             }
         }
     }

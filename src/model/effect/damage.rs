@@ -174,15 +174,13 @@ impl EffectImpl for DamageEffect {
         target_unit.stats.health -= damage;
         target_unit.permanent_stats.health -= damage;
         let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
-        if let Some(render) = &mut logic.render {
-            let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
-            render.add_text(
-                target_unit.position,
-                &format!("{}", -damage_text),
-                Color::RED,
-                crate::render::TextType::Damage,
-            );
-        }
+        let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
+        logic.model.render_model.add_text(
+            target_unit.position,
+            &format!("{}", -damage_text),
+            Color::RED,
+            crate::render::TextType::Damage,
+        );
         let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {

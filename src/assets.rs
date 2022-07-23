@@ -8,6 +8,13 @@ use once_cell::sync::Lazy;
 #[asset(json)]
 pub struct Options {
     pub clan_colors: HashMap<Clan, Color<f32>>,
+    pub keys_mapping: Vec<KeyMapping>
+}
+
+#[derive(Deserialize, Clone)]
+pub struct KeyMapping {
+    pub event: GameEvent,
+    pub key: String,
 }
 
 // Used because deserializing with state is not as trivial as writing

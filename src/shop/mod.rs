@@ -145,6 +145,7 @@ impl geng::State for ShopState {
             },
             ..self.game_config.clone()
         };
+
         let round = self
             .assets
             .rounds

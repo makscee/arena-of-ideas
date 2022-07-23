@@ -66,17 +66,15 @@ pub struct Model {
     pub time: Time,
     pub units: Collection<Unit>,
     pub dead_units: Collection<Unit>,
-    pub time_bombs: Collection<TimeBomb>,
-    pub dead_time_bombs: Collection<TimeBomb>,
     pub particles: Collection<Particle>,
     pub config: Config,
     pub round: Option<GameRound>,
-    pub free_revives: usize,
     pub unit_templates: UnitTemplates,
     pub clan_effects: ClanEffects,
     pub statuses: Statuses,
     pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
     pub transition: bool,
+    pub render_model: RenderModel,
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, R32>,
     pub current_tick: TickModel,
@@ -90,16 +88,14 @@ impl Model {
         clan_effects: ClanEffects,
         statuses: Statuses,
         round: Option<GameRound>,
+        render_model: RenderModel,
     ) -> Self {
         Self {
             next_id: 0,
             time: Time::ZERO,
             units: Collection::new(),
             dead_units: Collection::new(),
-            time_bombs: Collection::new(),
-            dead_time_bombs: Collection::new(),
             particles: Collection::new(),
-            free_revives: 0,
             unit_templates,
             clan_effects,
             statuses,
@@ -110,6 +106,7 @@ impl Model {
             vars: HashMap::new(),
             current_tick: TickModel::new(),
             current_tick_num: 0,
+            render_model,
         }
     }
 }

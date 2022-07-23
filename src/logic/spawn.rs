@@ -1,6 +1,6 @@
 use super::*;
 
-impl Logic<'_> {
+impl Logic {
     /// Spawns the unit and returns its id. If there is a unit in that position and there is an
     /// empty slot to the left, it and all units to the left are shifted to the left.
     /// Otherwise, if all slots are occupied, the unit is placed on top the unit in that position.

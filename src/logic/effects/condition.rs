@@ -1,6 +1,6 @@
 use super::*;
 
-impl Logic<'_> {
+impl Logic {
     pub fn check_condition(&self, condition: &Condition, context: &EffectContext) -> bool {
         match condition {
             Condition::Always => true,

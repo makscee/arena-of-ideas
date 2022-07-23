@@ -3,9 +3,10 @@ use std::{collections::VecDeque, path::PathBuf};
 use geng::prelude::*;
 
 use crate::{
-    assets::{Assets, ClanEffects, Config, GameRound, Statuses},
-    logic::Logic,
+    assets::{self, Assets, ClanEffects, Config, GameRound, KeyMapping, Statuses},
+    logic::{Events, Logic},
     model::{Faction, Model, Unit, UnitTemplates, UnitType},
+    render::RenderModel,
 };
 
 #[derive(clap::Args)]
@@ -196,7 +197,8 @@ impl Simulate {
                             assets.statuses.clone(),
                             battle.round.clone(),
                             assets.units.clone(),
-                            r32(0.02),
+                            0.02 as f64,
+                            assets.options.keys_mapping.clone(),
                         )
                         .run();
 
@@ -289,8 +291,9 @@ fn write_to<T: Serialize>(path: impl AsRef<std::path::Path>, item: &T) -> std::i
 
 struct Simulation {
     config: Config,
+    key_mappings: Vec<KeyMapping>,
     model: Model,
-    delta_time: R32,
+    delta_time: f64,
     // TODO: time or steps limit
 }
 
@@ -306,20 +309,31 @@ impl Simulation {
         statuses: Statuses,
         round: GameRound,
         units_templates: UnitTemplates,
-        delta_time: R32,
+        delta_time: f64,
+        key_mappings: Vec<KeyMapping>,
     ) -> Self {
         Self {
             config: config.clone(),
-            model: Model::new(config, units_templates, clan_effects, statuses, Some(round)),
+            key_mappings,
+            model: Model::new(
+                config,
+                units_templates,
+                clan_effects,
+                statuses,
+                Some(round),
+                RenderModel::new(),
+            ),
             delta_time,
         }
     }
 
     pub fn run(mut self) -> SimulationResult {
-        Logic::initialize(&mut self.model, &self.config);
+        let mut logic = Logic::new(self.model.clone());
+        let mut events = Events::new(self.key_mappings);
+        logic.initialize(&mut events);
 
         loop {
-            self.model.update(vec![], self.delta_time, None);
+            logic.update(self.delta_time);
             let finish = if self
                 .model
                 .units
