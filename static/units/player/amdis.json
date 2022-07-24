@@ -1,14 +1,14 @@
 {
     "tier": 4,
     "triple": "amdis+",
-    "description": "10 seconds after Spawn, gain @Rebirth",
+    "description": "gain @Rebirth",
     "clans": [
         "Dragons",
         "Vampires"
     ],
     "statuses": [
         {
-            "name": "OnSpawnGainDelayedRebirth",
+            "name": "OnSpawnGaindRebirth",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -21,12 +21,8 @@
                         }
                     ],
                     "effect": {
-                        "type": "Delayed",
-                        "time": 10,
-                        "effect": {
-                            "type": "AttachStatus",
-                            "status": "Rebirth"
-                        }
+                        "type": "AttachStatus",
+                        "status": "Rebirth"
                     }
                 }
             ]

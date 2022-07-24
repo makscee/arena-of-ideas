@@ -14,7 +14,6 @@ mod change_stat;
 mod change_target;
 mod custom_trigger;
 mod damage;
-mod delayed;
 mod heal;
 mod if_effect;
 mod instant_action;
@@ -45,7 +44,6 @@ pub use change_stat::*;
 pub use change_target::*;
 pub use custom_trigger::*;
 pub use damage::*;
-pub use delayed::*;
 pub use heal::*;
 pub use if_effect::*;
 pub use instant_action::*;
@@ -87,7 +85,6 @@ pub enum Effect {
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
-    Delayed(Box<DelayedEffect>),
     Action(Box<ActionEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
@@ -122,7 +119,6 @@ pub enum RawEffect {
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
-    Delayed(Box<DelayedEffect>),
     Action(Box<ActionEffect>),
     NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
@@ -194,7 +190,6 @@ impl std::fmt::Debug for Effect {
             Self::ApplyGained(effect) => effect.fmt(f),
             Self::ChangeTarget(effect) => effect.fmt(f),
             Self::ChangeStat(effect) => effect.fmt(f),
-            Self::Delayed(effect) => effect.fmt(f),
             Self::Action(effect) => effect.fmt(f),
             Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
@@ -231,7 +226,6 @@ impl From<RawEffect> for Effect {
             RawEffect::ApplyGained(effect) => Self::ApplyGained(effect),
             RawEffect::ChangeTarget(effect) => Self::ChangeTarget(effect),
             RawEffect::ChangeStat(effect) => Self::ChangeStat(effect),
-            RawEffect::Delayed(effect) => Self::Delayed(effect),
             RawEffect::Action(effect) => Self::Action(effect),
             RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
@@ -300,7 +294,6 @@ impl Effect {
             Effect::ApplyGained(effect) => &mut **effect,
             Effect::ChangeTarget(effect) => &mut **effect,
             Effect::ChangeStat(effect) => &mut **effect,
-            Effect::Delayed(effect) => &mut **effect,
             Effect::Action(effect) => &mut **effect,
             Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
@@ -334,7 +327,6 @@ impl Effect {
             Effect::ApplyGained(effect) => effect,
             Effect::ChangeTarget(effect) => effect,
             Effect::ChangeStat(effect) => effect,
-            Effect::Delayed(effect) => effect,
             Effect::Action(effect) => effect,
             Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,

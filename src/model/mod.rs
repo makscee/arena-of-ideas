@@ -72,7 +72,6 @@ pub struct Model {
     pub unit_templates: UnitTemplates,
     pub clan_effects: ClanEffects,
     pub statuses: Statuses,
-    pub delayed_effects: std::collections::BinaryHeap<QueuedEffect<DelayedEffect>>,
     pub transition: bool,
     pub render_model: RenderModel,
     /// Variables that persist for the whole game
@@ -99,7 +98,6 @@ impl Model {
             unit_templates,
             clan_effects,
             statuses,
-            delayed_effects: default(),
             transition: false,
             round,
             config,
