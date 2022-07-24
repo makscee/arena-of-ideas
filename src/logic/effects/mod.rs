@@ -49,7 +49,7 @@ impl EffectContext {
     }
 }
 
-impl Logic<'_> {
+impl Logic {
     pub fn process_effects(&mut self) {
         while let Some(effect) = self.model.delayed_effects.pop() {
             if effect.effect.time > self.model.time {

@@ -11,5 +11,15 @@
         "Protectors": "#fecc66",
         "Dragons": "#333300",
         "Common": "#ffffff"
-    }
+    },
+    "keys_mapping": [
+        {
+            "event": "Pause",
+            "key": "Space"
+        },
+        {
+            "event": "Ability",
+            "key": "MouseLeft"
+        }
+    ]
 }

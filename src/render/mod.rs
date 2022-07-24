@@ -66,7 +66,7 @@ pub struct Render {
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: Config) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: &Config) -> Self {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -78,13 +78,7 @@ impl Render {
             unit_render: UnitRender::new(geng, assets),
         }
     }
-    pub fn draw(
-        &mut self,
-        game_time: f32,
-        model: &Model,
-        render_model: &RenderModel,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
+    pub fn draw(&mut self, game_time: f32, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         self.draw_field(&self.assets.field_render, game_time, framebuffer);
         for unit in &model.units {
@@ -106,7 +100,8 @@ impl Render {
                 self.draw_particle(particle, &render, game_time, framebuffer);
             }
         }
-        for text in render_model
+        for text in model
+            .render_model
             .text_blocks
             .values()
             .flat_map(|text_block| text_block.texts())

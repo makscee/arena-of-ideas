@@ -1,6 +1,6 @@
 use super::*;
 
-impl Logic<'_> {
+impl Logic {
     pub fn process_round(&mut self) {
         if let Some(round) = self.model.round.clone() {
             self.model.round = None;
@@ -23,7 +23,6 @@ impl Logic<'_> {
                 .units
                 .iter()
                 .any(|unit| unit.faction != Faction::Player)
-                && self.model.time_bombs.is_empty()
                 && self.effects.is_empty()
             {
                 // Next round

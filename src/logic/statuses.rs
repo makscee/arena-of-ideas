@@ -1,6 +1,6 @@
 use super::*;
 
-impl Logic<'_> {
+impl Logic {
     pub fn process_statuses(&mut self) {
         self.process_units(Self::process_unit_statuses);
 

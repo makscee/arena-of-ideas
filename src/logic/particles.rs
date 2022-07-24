@@ -1,6 +1,6 @@
 use super::*;
 
-impl Logic<'_> {
+impl Logic {
     pub fn process_particles(&mut self) {
         for particle in &mut self.model.particles {
             particle.delay -= self.delta_time;

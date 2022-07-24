@@ -28,7 +28,6 @@ mod repeat;
 mod revive;
 mod spawn;
 mod suicide;
-mod time_bomb;
 mod visual;
 mod visual_chain;
 
@@ -73,7 +72,6 @@ pub enum Effect {
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
-    TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
     AddTargets(Box<AddTargetsEffect>),
@@ -109,7 +107,6 @@ pub enum RawEffect {
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
-    TimeBomb(Box<TimeBombEffect>),
     Suicide(Box<SuicideEffect>),
     Chain(Box<ChainEffect>),
     AddTargets(Box<AddTargetsEffect>),
@@ -182,7 +179,6 @@ impl std::fmt::Debug for Effect {
             Self::AttachStatus(effect) => effect.fmt(f),
             Self::Spawn(effect) => effect.fmt(f),
             Self::AOE(effect) => effect.fmt(f),
-            Self::TimeBomb(effect) => effect.fmt(f),
             Self::Suicide(effect) => effect.fmt(f),
             Self::Chain(effect) => effect.fmt(f),
             Self::AddTargets(effect) => effect.fmt(f),
@@ -220,7 +216,6 @@ impl From<RawEffect> for Effect {
             RawEffect::AttachStatus(effect) => Self::AttachStatus(effect),
             RawEffect::Spawn(effect) => Self::Spawn(effect),
             RawEffect::AOE(effect) => Self::AOE(effect),
-            RawEffect::TimeBomb(effect) => Self::TimeBomb(effect),
             RawEffect::Suicide(effect) => Self::Suicide(effect),
             RawEffect::Chain(effect) => Self::Chain(effect),
             RawEffect::AddTargets(effect) => Self::AddTargets(effect),
@@ -290,7 +285,6 @@ impl Effect {
             Effect::AttachStatus(effect) => &mut **effect,
             Effect::Spawn(effect) => &mut **effect,
             Effect::AOE(effect) => &mut **effect,
-            Effect::TimeBomb(effect) => &mut **effect,
             Effect::Suicide(effect) => &mut **effect,
             Effect::Chain(effect) => &mut **effect,
             Effect::AddTargets(effect) => &mut **effect,
@@ -325,7 +319,6 @@ impl Effect {
             Effect::AttachStatus(effect) => effect,
             Effect::Spawn(effect) => effect,
             Effect::AOE(effect) => effect,
-            Effect::TimeBomb(effect) => effect,
             Effect::Suicide(effect) => effect,
             Effect::Chain(effect) => effect,
             Effect::AddTargets(effect) => effect,

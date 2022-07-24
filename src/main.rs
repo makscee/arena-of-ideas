@@ -27,10 +27,9 @@ type Id = i64;
 type Ticks = u64;
 
 #[derive(Clone)]
-struct HistoryEntry {
+struct FrameHistory {
     time: f32,
     model: Model,
-    render: RenderModel,
 }
 
 pub struct Game {
@@ -38,11 +37,15 @@ pub struct Game {
     assets: Rc<Assets>,
     time: f32,
     timeline_captured: bool,
-    history: Vec<HistoryEntry>,
-    pressed_keys: Vec<Key>,
+    history: HashMap<i64, FrameHistory>,
+    last_frame: FrameHistory,
+    logic: Logic,
+    events: Events,
     render: Render,
     shop: Shop,
 }
+
+const PRECISION: f32 = 20.0;
 
 impl Game {
     pub fn new(
@@ -58,68 +61,69 @@ impl Game {
             assets.clans.clone(),
             assets.statuses.clone(),
             Some(round),
+            RenderModel::new(),
         );
-        Logic::initialize(&mut model, &config);
+        let mut events = Events::new(assets.options.keys_mapping.clone());
+        let mut logic = Logic::new(model);
+
+        let last_frame = FrameHistory {
+            time: 0.0,
+            model: logic.model.clone(),
+        };
+        let history = hashmap! {0 => last_frame.clone()};
         let mut game = Self {
             geng: geng.clone(),
             assets: assets.clone(),
             time: 0.0,
-            history: vec![HistoryEntry {
-                time: 0.0,
-                model,
-                render: RenderModel::new(),
-            }],
-            render: Render::new(geng, assets, config),
-            pressed_keys: Vec::new(),
+            history,
+            render: Render::new(geng, assets, &config),
             timeline_captured: false,
             shop,
+            logic: logic,
+            events,
+            last_frame: last_frame,
         };
+        game.logic.initialize(&mut game.events);
         game
     }
 }
 
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
-        if self.timeline_captured {
+        if self.timeline_captured || self.logic.paused {
             return;
         }
         self.time += delta_time as f32;
-        let last_entry = self.history.last().unwrap();
-        if self.time > last_entry.time {
-            let delta_time = self.time - last_entry.time;
-            let mut new_entry = last_entry.clone();
-            new_entry.model.update(
-                mem::take(&mut self.pressed_keys),
-                Time::new(delta_time),
-                Some(&mut new_entry.render),
-            );
-            new_entry.render.update(delta_time);
-            new_entry.time = self.time;
-            self.history.push(new_entry);
+        let last_frame = &self.last_frame;
+
+        if self.time > self.last_frame.time {
+            self.logic.update(delta_time);
+
+            let new_frame = FrameHistory {
+                time: self.time,
+                model: self.logic.model.clone(),
+            };
+            self.last_frame = new_frame.clone();
+            let key = (new_frame.time * PRECISION) as i64;
+            self.history.insert(key, new_frame);
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        let index = match self
-            .history
-            .binary_search_by_key(&r32(self.time), |entry| r32(entry.time))
-        {
-            Ok(index) => index,
-            Err(index) => index,
-        };
-        let entry = self
-            .history
-            .get(index)
-            .unwrap_or(self.history.last().unwrap());
-        self.render
-            .draw(entry.time, &entry.model, &entry.render, framebuffer);
+        let key = (self.time * PRECISION) as i64;
+        if self.history.contains_key(&key) {
+            let entry = &self.history[&key];
+            self.render.draw(entry.time, &entry.model, framebuffer);
+        }
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
             geng::Event::MouseDown { button, .. } => {
-                self.pressed_keys.push(format!("Mouse{:?}", button));
+                self.events
+                    .trigger_by_key(format!("Mouse{:?}", button), &mut self.logic);
             }
             geng::Event::KeyDown { key } => {
-                self.pressed_keys.push(format!("{:?}", key));
+                self.events
+                    .trigger_by_key(format!("{:?}", key), &mut self.logic);
             }
             _ => {}
         }
@@ -129,7 +133,7 @@ impl geng::State for Game {
         let mut timeline = Slider::new(
             cx,
             self.time as f64,
-            0.0..=self.history.last().unwrap().time as f64,
+            0.0..=self.last_frame.time as f64,
             Box::new(|new_time| self.time = new_time as f32),
         );
         self.timeline_captured = timeline.sense().unwrap().is_captured();
@@ -143,21 +147,18 @@ impl geng::State for Game {
         )
     }
     fn transition(&mut self) -> Option<geng::Transition> {
-        self.history
-            .last()
-            .map(|entry| (&entry.model, entry.model.transition))
-            .and_then(|(model, transition)| match transition {
-                false => None,
-                true => {
-                    let shop_state = shop::ShopState::load(
-                        &self.geng,
-                        &self.assets,
-                        self.shop.take(),
-                        model.config.clone(),
-                    );
-                    Some(geng::Transition::Switch(Box::new(shop_state)))
-                }
-            })
+        match self.last_frame.model.transition {
+            false => None,
+            true => {
+                let shop_state = shop::ShopState::load(
+                    &self.geng,
+                    &self.assets,
+                    self.shop.take(),
+                    self.last_frame.model.config.clone(),
+                );
+                Some(geng::Transition::Switch(Box::new(shop_state)))
+            }
+        }
     }
 }
 
@@ -202,10 +203,10 @@ fn main() {
             {
                 let geng = geng.clone();
                 async move {
-                    let path = static_path().join("effects.json");
-                    Effects::load(&geng, &path)
+                    let effects_path = static_path().join("effects.json");
+                    Effects::load(&geng, &effects_path)
                         .await
-                        .expect(&format!("Failed to load effects from {path:?}"));
+                        .expect(&format!("Failed to load effects from {effects_path:?}"));
                     let assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
                         .await
                         .expect("Failed to load assets");

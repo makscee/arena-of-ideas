@@ -43,15 +43,13 @@ impl EffectImpl for HealEffect {
         target_unit.permanent_stats.max_hp += add_max_hp;
         let max_health = target_unit.stats.max_hp + heal_past_max;
         if !effect.no_text {
-            if let Some(render) = &mut logic.render {
-                let heal_text = (value * r32(10.0)).floor() / r32(10.0);
-                render.add_text(
-                    target_unit.position,
-                    &format!("{}", heal_text),
-                    Color::GREEN,
-                    crate::render::TextType::Heal,
-                );
-            }
+            let heal_text = (value * r32(10.0)).floor() / r32(10.0);
+            logic.model.render_model.add_text(
+                target_unit.position,
+                &format!("{}", heal_text),
+                Color::GREEN,
+                crate::render::TextType::Heal,
+            );
         }
         let value_clamped = min(value, max_health - target_unit.stats.health);
         target_unit.stats.health += value_clamped;

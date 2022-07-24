@@ -31,22 +31,12 @@ impl EffectImpl for AoeEffect {
         let caster_faction = caster.faction;
         let center = context
             .target
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get(&id)
-                    .map(|unit| unit.position)
-                    .or(logic
-                        .model
-                        .dead_time_bombs
-                        .get(&id)
-                        .map(|bomb| bomb.position))
-            })
+            .and_then(|id| logic.model.units.get(&id).map(|unit| unit.position))
             .expect("Target not found");
-        if let Some(render) = &mut logic.render {
-            render.add_text(center, "AOE", Color::RED, crate::render::TextType::Aoe);
-        }
+        logic
+            .model
+            .render_model
+            .add_text(center, "AOE", Color::RED, crate::render::TextType::Aoe);
         for unit in &logic.model.units {
             if effect.skip_current_target && Some(unit.id) == context.target {
                 continue;

@@ -1,6 +1,6 @@
 use super::*;
 
-impl Logic<'_> {
+impl Logic {
     pub fn process_targeting(&mut self) {
         self.model.current_tick.current_action_time_left -= self.delta_time;
         if self.model.current_tick.current_action_time_left <= Time::ZERO {

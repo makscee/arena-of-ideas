@@ -6,83 +6,59 @@ mod abilities;
 mod actions;
 mod deaths;
 mod effects;
+mod events;
 mod particles;
 mod round;
 mod spawn;
 mod statuses;
 mod targeting;
-mod time_bombs;
+mod time;
 mod util;
 
 pub use effects::*;
+pub use events::*;
 pub use util::*;
 
-pub struct Logic<'a> {
-    pub model: &'a mut Model,
+pub struct Logic {
+    pub model: Model,
     pub delta_time: Time,
     pub effects: VecDeque<QueuedEffect<Effect>>,
-    pub pressed_keys: Vec<Key>,
-    pub render: Option<&'a mut RenderModel>,
+    pub paused: bool,
 }
 
-impl<'a> Logic<'a> {
-    pub fn initialize(model: &'a mut Model, config: &Config) {
-        let mut logic = Self {
+impl Logic {
+    pub fn initialize(&mut self, events: &mut Events) {
+        self.init_player(&self.model.config.clone());
+        self.init_time(events);
+        self.init_abilities(events);
+    }
+
+    pub fn new(mut model: Model) -> Self {
+        Self {
             model,
             delta_time: Time::new(0.0),
             effects: VecDeque::new(),
-            pressed_keys: Vec::new(),
-            render: None,
-        };
-        logic.spawn_player(config);
-        logic.process();
+            paused: false,
+        }
     }
-    pub fn process(&mut self) {
+
+    pub fn update(&mut self, delta_time: f64) {
+        self.delta_time = Time::new(delta_time as f32);
         while self.model.current_tick.tick_time >= Time::new(TICK_TIME) {
             self.tick();
         }
-
         self.process_particles();
         self.process_statuses();
-        self.process_time_bombs();
         self.process_spawns();
         self.process_abilities();
         self.process_targeting();
         self.process_actions();
         self.process_render_positions();
         self.process_round();
-        while self.model.free_revives > 0 {
-            if let Some(unit) = self
-                .model
-                .dead_units
-                .iter()
-                .filter(|unit| unit.faction == Faction::Player)
-                .next()
-            {
-                self.effects.push_back(QueuedEffect {
-                    effect: Effect::Revive(Box::new(ReviveEffect {
-                        health: Expr::FindStat {
-                            who: Who::Target,
-                            stat: UnitStat::MaxHealth,
-                        },
-                    })),
-                    context: EffectContext {
-                        caster: None,
-                        from: None,
-                        target: Some(unit.id),
-                        vars: default(),
-                        status_id: None,
-                    },
-                });
-                self.model.free_revives -= 1;
-            } else {
-                break;
-            }
-        }
         self.process_effects();
         self.process_deaths();
-        self.model.time += self.delta_time;
-        self.model.current_tick.tick_time += self.delta_time;
+        self.process_time();
+        self.model.render_model.update(self.delta_time.as_f32())
     }
     fn tick(&mut self) {
         // TODO: check if some actions did not perform in time
@@ -98,7 +74,7 @@ impl<'a> Logic<'a> {
             self.model.units.insert(unit);
         }
     }
-    fn spawn_player(&mut self, config: &Config) {
+    fn init_player(&mut self, config: &Config) {
         let mut to_spawn = config
             .player
             .iter()
@@ -108,23 +84,5 @@ impl<'a> Logic<'a> {
         for unit_type in &config.player {
             self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
         }
-    }
-}
-
-impl Model {
-    pub fn update(
-        &mut self,
-        pressed_keys: Vec<Key>,
-        delta_time: Time,
-        render: Option<&mut RenderModel>,
-    ) {
-        let mut logic = Logic {
-            model: self,
-            delta_time,
-            effects: VecDeque::new(),
-            pressed_keys,
-            render,
-        };
-        logic.process();
     }
 }
