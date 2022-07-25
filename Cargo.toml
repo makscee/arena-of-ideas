@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-geng = { git = "https://github.com/kuviman/geng" }
+geng = "0.9.0"
 serde = "1"
 resvg = "0.22"
 usvg = "0.22"
