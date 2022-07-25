@@ -1,5 +1,4 @@
 /target/
 /Cargo.lock
-maks_config.json
-shader_edit_config.json
+/static/local_configs/
 /simulation_result/

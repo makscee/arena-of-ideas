@@ -21,10 +21,11 @@ in vec2 v_quad_pos;
 
 
 void main() {
+    commonInit();
     vec2 uv = v_quad_pos;
     vec4 previous_color = texture(u_previous_texture, gl_FragCoord.xy / vec2(textureSize(u_previous_texture, 0)));
     float dist = length(uv);
-    vec4 statusTint = vec4(u_status_tint.rgb, max(0.0,1 - (u_time - u_injure_time) / 1));
+    vec4 statusTint = vec4(parent_enemy_faction_color, max(0.0,1 - (u_time - u_injure_time) / 1));
     gl_FragColor = alphaBlend(previous_color, statusTint * float(dist < u_unit_radius));
 }
 #endif

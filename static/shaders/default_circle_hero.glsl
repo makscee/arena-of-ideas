@@ -59,10 +59,16 @@ float fbm(vec2 p){
 }
 
 vec3 stepClanColor(in float t) {
-    int ind = int(floor(fract(t + u_time * .3) * u_clan_count));
+    vec3[4] c;
+    for (int i = 0; i < u_clan_count; i++) {
+        c[i] = colors[i];
+    }
+    c[u_clan_count] = parent_faction_color;
+    int ind = int(floor(fract(t + u_time * .3) * (u_clan_count + 1)));
     float shift = floor(fract(t * u_clan_count + sin(u_time * .5)) / .333 - 1.);
     // shift = 0;
-    return hueShift(colors[ind], shift * .2) * (1. + shift * .3);
+    if (ind == u_clan_count) return c[u_clan_count];
+    return hueShift(c[ind], shift * .2) * (1. + shift * .3);
 }
 
 
@@ -71,8 +77,8 @@ void main() {
     commonInit();
     float u_padding = u_padding * c_units_scale;
     const float EDGE_RADIUS = 0.5;
+    const float SOLID_BORDER = 0.07;
     vec2 uv = vec2(cos(v_quad_pos.x * pi * 2),sin(v_quad_pos.x * pi * 2)) * min(v_quad_pos.y, 1 - EDGE_RADIUS);
-    vec3 mixedColor = getMixedClanColor(v_quad_pos.x);
 
     vec4 col = vec4(0);
     float h = clanColorHash();
@@ -96,7 +102,10 @@ void main() {
     
     float ff = 1.0 - smoothstep(-0.4, 1.2, noise(vec2(0.5 * a, 9.3 * a)) );
     col = vec4(stepClanColor(fract(ff + r)),1);
-    if (v_quad_pos.y > 1 - EDGE_RADIUS) {
+    if (v_quad_pos.y > 1 - SOLID_BORDER) {
+        col.rgb = parent_faction_color;
+    }
+    else if (v_quad_pos.y > 1 - EDGE_RADIUS - SOLID_BORDER) {
         col.a = smoothstep(1, 1 - EDGE_RADIUS, v_quad_pos.y);
     }
 

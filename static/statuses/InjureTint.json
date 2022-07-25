@@ -1,5 +1,5 @@
 {
-    "name": "InjureWhiteTint",
+    "name": "InjureTint",
     "type": "Status",
     "order": 1000000,
     "stacking": {

@@ -61,6 +61,7 @@ uniform vec4 u_status_color;
 float clanCountF;
 vec3 colors[3];
 vec3 parent_faction_color;
+vec3 parent_enemy_faction_color;
 
 void commonInit()
 {
@@ -69,6 +70,7 @@ void commonInit()
     colors[2] = u_clan_color_3.rgb * float(u_clan_count > 2);
     clanCountF = float(u_clan_count);
     parent_faction_color = mix(enemy_faction_color, player_faction_color, (u_parent_faction + 1) / 2);
+    parent_enemy_faction_color = mix(enemy_faction_color, player_faction_color, 1 - (u_parent_faction + 1) / 2);
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)
@@ -174,7 +176,6 @@ vec3 mix2Colors(float t, vec3 colors[2])
 
 vec3 hueShift(vec3 color, float hueAdjust) // hue in radians
 {
-
     const vec3  kRGBToYPrime = vec3 (0.299, 0.587, 0.114);
     const vec3  kRGBToI      = vec3 (0.596, -0.275, -0.321);
     const vec3  kRGBToQ      = vec3 (0.212, -0.523, 0.311);
