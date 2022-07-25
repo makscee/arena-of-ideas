@@ -30,7 +30,7 @@ pub use unit::*;
 
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 5;
-pub const TICK_VISUAL_TIME: f32 = 1.0;
+pub const UNIT_VISUAL_TIME: f32 = 0.5;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
@@ -108,7 +108,7 @@ impl TickModel {
         Self {
             tick_time: Time::ZERO,
             tick_num,
-            visual_timer: Time::new(TICK_VISUAL_TIME),
+            visual_timer: Time::new(UNIT_VISUAL_TIME),
         }
     }
 }

@@ -56,7 +56,6 @@ impl Logic {
         self.process_effects();
         self.process_deaths();
         self.process_time();
-        self.check_end();
         self.model.render_model.update(self.delta_time.as_f32())
     }
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
@@ -74,18 +73,6 @@ impl Logic {
             let mut unit = self.model.units.remove(&id).unwrap();
             f(self, &mut unit);
             self.model.units.insert(unit);
-        }
-    }
-    fn check_end(&mut self) {
-        if !self
-            .model
-            .units
-            .iter()
-            .any(|unit| unit.faction != Faction::Player)
-            && self.effects.is_empty()
-        {
-            // Next round
-            self.model.transition = true;
         }
     }
     fn init_player(&mut self, player: Vec<UnitType>) {
