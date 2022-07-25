@@ -115,9 +115,9 @@ impl Render {
             );
         }
         // Tick indicator
-        let tick_text = model.current_tick_num.to_string();
+        let tick_text = model.current_tick.tick_num.to_string();
         let text_scale = f32::max(
-            1.1 - (model.current_tick.tick_time.as_f32()) / TICK_TIME,
+            1.1 - (model.current_tick.tick_time.as_f32()) / 2.0,
             1.0,
         );
         self.geng.draw_2d(
