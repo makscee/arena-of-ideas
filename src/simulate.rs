@@ -320,7 +320,7 @@ impl Simulation {
                 units_templates,
                 clan_effects,
                 statuses,
-                Some(round),
+                round,
                 RenderModel::new(),
             ),
             delta_time,

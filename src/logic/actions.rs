@@ -2,9 +2,12 @@ use super::*;
 
 impl Logic {
     pub fn process_actions(&mut self) {
-        self.process_units(Self::process_unit_actions);
+        self.process_units_random(Self::process_unit_actions);
     }
     fn process_unit_actions(&mut self, unit: &mut Unit) {
+        if self.model.current_tick.visual_timer > Time::new(0.0) {
+            return;
+        }
         if let ActionState::Start { target } = &mut unit.action_state {
             if unit
                 .flags
@@ -45,29 +48,7 @@ impl Logic {
             }
             unit.last_action_time = self.model.time;
             unit.action_state = ActionState::Cooldown { time: 0 };
+            self.model.current_tick.visual_timer += Time::new(UNIT_VISUAL_TIME);
         }
-    }
-
-    pub fn tick_cooldowns(&mut self) {
-        self.process_units(Self::tick_unit_cooldowns);
-        let mut units: Vec<Id> = self.model.units.ids().copied().collect();
-        units.shuffle(&mut global_rng());
-        self.model.current_tick.action_queue = units.into_iter().collect();
-    }
-    fn tick_unit_cooldowns(&mut self, unit: &mut Unit) {
-        if let ActionState::Cooldown { time } = &mut unit.action_state {
-            *time += 1;
-            if *time > unit.action.cooldown {
-                unit.action_state = ActionState::None;
-            }
-        }
-    }
-
-    pub fn process_render_positions(&mut self) {
-        self.process_units(Self::process_unit_render_positions);
-    }
-    fn process_unit_render_positions(&mut self, unit: &mut Unit) {
-        unit.render_position +=
-            (unit.position.to_world() - unit.render_position) * self.delta_time * r32(5.0);
     }
 }

@@ -60,7 +60,7 @@ impl Game {
             assets.units.clone(),
             assets.clans.clone(),
             assets.statuses.clone(),
-            Some(round),
+            round,
             RenderModel::new(),
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());

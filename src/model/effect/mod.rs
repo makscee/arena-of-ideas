@@ -57,7 +57,6 @@ pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
 pub use suicide::*;
-pub use time_bomb::*;
 pub use visual::*;
 pub use visual_chain::*;
 
