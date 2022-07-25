@@ -5,6 +5,7 @@ mod particle;
 mod text;
 mod unit;
 
+use geng::Draw2d;
 use text::*;
 pub use unit::*;
 
@@ -93,6 +94,42 @@ impl Render {
                 &self.camera,
                 framebuffer,
             );
+
+            // Draw damage and health
+            let unit_aabb = AABB::point(unit.position.to_world_f32())
+                .extend_uniform(unit.stats.radius.as_f32() / 2.0);
+            let size = unit.stats.radius.as_f32() * 0.4;
+            let damage = AABB::point(unit_aabb.bottom_left())
+                .extend_right(size)
+                .extend_up(size);
+            let health = AABB::point(unit_aabb.bottom_right())
+                .extend_left(size)
+                .extend_up(size);
+
+            draw_2d::TexturedQuad::new(damage, self.assets.swords_emblem.clone()).draw_2d(
+                &self.geng,
+                framebuffer,
+                &self.camera,
+            );
+            draw_2d::TexturedQuad::new(health, self.assets.hearts.clone()).draw_2d(
+                &self.geng,
+                framebuffer,
+                &self.camera,
+            );
+            draw_2d::Text::unit(
+                self.geng.default_font().clone(),
+                format!("{:.1}", unit.stats.base_damage),
+                Color::WHITE,
+            )
+            .fit_into(damage)
+            .draw_2d(&self.geng, framebuffer, &self.camera);
+            draw_2d::Text::unit(
+                self.geng.default_font().clone(),
+                format!("{:.1}", unit.stats.health),
+                Color::WHITE,
+            )
+            .fit_into(health)
+            .draw_2d(&self.geng, framebuffer, &self.camera);
         }
         for particle in &model.particles {
             if particle.delay <= Time::new(0.0) {
@@ -116,10 +153,7 @@ impl Render {
         }
         // Tick indicator
         let tick_text = model.current_tick.tick_num.to_string();
-        let text_scale = f32::max(
-            1.1 - (model.current_tick.tick_time.as_f32()) / 2.0,
-            1.0,
-        );
+        let text_scale = f32::max(1.1 - (model.current_tick.tick_time.as_f32()) / 2.0, 1.0);
         self.geng.draw_2d(
             framebuffer,
             &self.camera,

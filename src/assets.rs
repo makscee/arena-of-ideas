@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 #[asset(json)]
 pub struct Options {
     pub clan_colors: HashMap<Clan, Color<f32>>,
-    pub keys_mapping: Vec<KeyMapping>
+    pub keys_mapping: Vec<KeyMapping>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -55,6 +55,8 @@ pub struct Assets {
     pub textures: Textures,
     pub shaders: Shaders,
     pub card: Rc<ugli::Texture>,
+    pub hearts: Rc<ugli::Texture>,
+    pub swords_emblem: Rc<ugli::Texture>,
     #[asset(path = "rounds/round*.json", range = "1..=5")]
     pub rounds: Vec<GameRound>,
 }
