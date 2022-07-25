@@ -6,7 +6,7 @@ float p_distToShape(vec2 uv)
 {
     if (p_shape == HEART)
     {
-        return (uv.x * uv.x + uv.y * uv.y - 1) * (uv.x * uv.x + uv.y * uv.y - 1) * (uv.x * uv.x + uv.y * uv.y - 1) - uv.x * uv.x * uv.y * uv.y * uv.y;
+        return (uv.x * uv.x + uv.y * uv.y - 1.) * (uv.x * uv.x + uv.y * uv.y - 1.) * (uv.x * uv.x + uv.y * uv.y - 1.) - uv.x * uv.x * uv.y * uv.y * uv.y;
     } else if (p_shape == CIRCLE)
     {
         return distance(uv,vec2(0)) - 1.;
@@ -15,7 +15,7 @@ float p_distToShape(vec2 uv)
         return max(uv.x - .5, uv.y - .5);
     } else
     {
-        return 100500;
+        return 100500.;
     }
 }
 
