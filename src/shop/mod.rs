@@ -22,7 +22,7 @@ pub struct ShopState {
     game_config: Config,
     render_shop: render::RenderShop,
     render: render::Render,
-    time: Time,
+    time: f64,
     transition: bool,
 }
 
@@ -46,7 +46,7 @@ impl ShopState {
             assets: assets.clone(),
             render_shop: render::RenderShop::new(vec2(1.0, 1.0), 0, 0, 0),
             render: render::Render::new(geng, assets),
-            time: Time::ZERO,
+            time: 0.0,
             transition: false,
             game_config,
             shop,
@@ -62,16 +62,12 @@ impl geng::State for ShopState {
             self.shop.cards.party.len(),
             self.shop.cards.inventory.len(),
         );
-        self.render.draw(
-            &self.shop,
-            &self.render_shop,
-            self.time.as_f32(),
-            framebuffer,
-        );
+        self.render
+            .draw(&self.shop, &self.render_shop, self.time, framebuffer);
     }
 
     fn update(&mut self, delta_time: f64) {
-        self.time += Time::new(delta_time as _);
+        self.time += delta_time;
     }
 
     fn handle_event(&mut self, event: geng::Event) {

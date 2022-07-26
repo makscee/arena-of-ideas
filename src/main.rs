@@ -28,24 +28,22 @@ type Ticks = u64;
 
 #[derive(Clone)]
 struct FrameHistory {
-    time: f32,
+    time: f64,
     model: Model,
 }
 
 pub struct Game {
     geng: Geng,
     assets: Rc<Assets>,
-    time: f32,
+    time: f64,
     timeline_captured: bool,
-    history: HashMap<i64, FrameHistory>,
+    history: Vec<FrameHistory>,
     last_frame: FrameHistory,
     logic: Logic,
     events: Events,
     render: Render,
     shop: Shop,
 }
-
-const PRECISION: f32 = 20.0;
 
 impl Game {
     pub fn new(
@@ -70,7 +68,7 @@ impl Game {
             time: 0.0,
             model: logic.model.clone(),
         };
-        let history = hashmap! {0 => last_frame.clone()};
+        let history = vec![last_frame.clone()];
         let mut game = Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -83,7 +81,11 @@ impl Game {
             events,
             last_frame: last_frame,
         };
-        game.logic.initialize(&mut game.events);
+        game.logic.initialize(
+            &mut game.events,
+            config.player.clone(),
+            game.logic.model.round.clone(),
+        );
         game
     }
 }
@@ -93,7 +95,7 @@ impl geng::State for Game {
         if self.timeline_captured || self.logic.paused {
             return;
         }
-        self.time += delta_time as f32;
+        self.time += delta_time;
         let last_frame = &self.last_frame;
 
         if self.time > self.last_frame.time {
@@ -104,16 +106,23 @@ impl geng::State for Game {
                 model: self.logic.model.clone(),
             };
             self.last_frame = new_frame.clone();
-            let key = (new_frame.time * PRECISION) as i64;
-            self.history.insert(key, new_frame);
+            self.history.push(new_frame);
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        let key = (self.time * PRECISION) as i64;
-        if self.history.contains_key(&key) {
-            let entry = &self.history[&key];
-            self.render.draw(entry.time, &entry.model, framebuffer);
-        }
+        let index = match self
+            .history
+            .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
+                r32(geng::prelude::Float::as_f32(entry.time))
+            }) {
+            Ok(index) => index,
+            Err(index) => index,
+        };
+        let entry = self
+            .history
+            .get(index)
+            .unwrap_or(self.history.last().unwrap());
+        self.render.draw(entry.time, &entry.model, framebuffer);
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
@@ -132,9 +141,9 @@ impl geng::State for Game {
         use geng::ui::*;
         let mut timeline = Slider::new(
             cx,
-            self.time as f64,
-            0.0..=self.last_frame.time as f64,
-            Box::new(|new_time| self.time = new_time as f32),
+            self.time,
+            0.0..=self.last_frame.time,
+            Box::new(|new_time| self.time = new_time),
         );
         self.timeline_captured = timeline.sense().unwrap().is_captured();
         Box::new(

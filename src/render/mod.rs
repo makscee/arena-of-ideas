@@ -79,7 +79,7 @@ impl Render {
             unit_render: UnitRender::new(geng, assets),
         }
     }
-    pub fn draw(&mut self, game_time: f32, model: &Model, framebuffer: &mut ugli::Framebuffer) {
+    pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         self.draw_field(&self.assets.field_render, game_time, framebuffer);
         for unit in &model.units {

@@ -5,7 +5,7 @@ impl Render {
         &self,
         particle: &Particle,
         shader_program: &ShaderProgram,
-        game_time: f32,
+        game_time: f64,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         let mut instances_arr: ugli::VertexBuffer<Instance> =

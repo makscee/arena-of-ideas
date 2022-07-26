@@ -18,7 +18,7 @@ impl UnitRender {
         unit: &Unit,
         template: &UnitTemplate,
         model: Option<&Model>,
-        game_time: f32,
+        game_time: f64,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
     ) {

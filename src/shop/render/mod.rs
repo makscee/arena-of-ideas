@@ -103,7 +103,7 @@ impl Render {
         &mut self,
         shop: &Shop,
         render: &RenderShop,
-        game_time: f32,
+        game_time: f64,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None);

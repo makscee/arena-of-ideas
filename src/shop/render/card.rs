@@ -69,7 +69,7 @@ impl CardRender {
         &mut self,
         card_aabb: AABB<f32>,
         card: Option<&UnitCard>,
-        game_time: f32,
+        game_time: f64,
         framebuffer: &mut ugli::Framebuffer,
     ) -> Option<Clan> {
         let camera = &geng::PixelPerfectCamera;

@@ -27,9 +27,14 @@ pub struct Logic {
 }
 
 impl Logic {
-    pub fn initialize(&mut self, events: &mut Events) {
-        self.init_player(self.model.config.player.clone());
-        self.init_enemies();
+    pub fn initialize(
+        &mut self,
+        events: &mut Events,
+        player: Vec<UnitType>,
+        round: GameRound,
+    ) {
+        self.init_player(player);
+        self.init_enemies(round);
         self.init_time(events);
         self.init_abilities(events);
     }
@@ -80,8 +85,7 @@ impl Logic {
             self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
         }
     }
-    fn init_enemies(&mut self) {
-        let round = self.model.round.clone();
+    fn init_enemies(&mut self, round: GameRound) {
         for unit_type in &round.enemies {
             let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
             let unit = self.model.units.get_mut(&unit).unwrap();
