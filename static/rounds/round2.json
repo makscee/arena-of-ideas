@@ -1,6 +1,7 @@
 {
     "statuses": [],
     "enemies": [
-        "blob"
+        "blob_melee",
+        "blob_ranged"
     ]
 }

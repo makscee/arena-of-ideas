@@ -1,6 +1,6 @@
 {
     "player": [
-        "dark_horseman+"
+        ".*"
     ],
     "opponent": {
         "type": "Units",
@@ -8,5 +8,5 @@
             ".*"
         ]
     },
-    "repeats": 3
+    "repeats": 5
 }

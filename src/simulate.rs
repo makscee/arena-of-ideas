@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, path::PathBuf};
+use std::{collections::VecDeque, path::PathBuf, time::Instant};
 
 use geng::prelude::*;
 
@@ -147,11 +147,13 @@ struct GameResult {
 
 impl Simulate {
     pub fn run(self, geng: &Geng, assets: Assets, mut config: Config) {
+        let start = Instant::now();
         let config_path = static_path().join(self.config_path);
         let simulation_config = futures::executor::block_on(
             <SimulationConfig as geng::LoadAsset>::load(geng, &config_path),
         )
         .unwrap();
+        info!("Starting simulation");
 
         let all_units = assets.units.keys().collect::<Vec<_>>();
 
@@ -212,7 +214,6 @@ impl Simulate {
                         } else {
                             "opponent".to_string()
                         };
-                        info!("Finished game {}/{}, winner: {winner}", i, battle.repeats);
                         GameResult {
                             winner,
                             units_alive: result
@@ -250,12 +251,9 @@ impl Simulate {
             };
             total_results.push(result);
         }
+        info!("Simulation ended: {:?}", start.elapsed());
+        info!("Gathering results");
         let total_battles = battle_results.len();
-        for (i, result) in battle_results.iter().enumerate() {
-            info!("Battle {}/{} result: {result:#?}", i + 1, total_battles);
-        }
-        info!("Total result: {total_results:#?}");
-
         let result_path = PathBuf::new().join("simulation_result");
         let battles_path = result_path.join("battles");
 
@@ -271,13 +269,10 @@ impl Simulate {
         // Write results
         write_to(result_path.join("total.json"), &total_results).expect("Failed to write results");
         for (i, result) in battle_results.iter().enumerate() {
-            let path = battles_path.join(format!(
-                "battle_{:0<w$}.json",
-                i + 1,
-                w = battle_results.len() / 10 + 1
-            ));
+            let path = battles_path.join(format!("battle_{}.json", i + 1));
             write_to(path, result).expect("Failed to write results");
         }
+        info!("Results saved: {:?}", start.elapsed());
     }
 }
 
@@ -330,31 +325,23 @@ impl Simulation {
     pub fn run(mut self) -> SimulationResult {
         let mut logic = Logic::new(self.model.clone());
         let mut events = Events::new(self.key_mappings);
-        logic.initialize(&mut events);
+        logic.initialize(
+            &mut events,
+            self.config.player.clone(),
+            self.model.round.clone(),
+        );
 
         loop {
             logic.update(self.delta_time);
-            let finish = if self
-                .model
-                .units
-                .iter()
-                .all(|unit| !matches!(unit.faction, Faction::Player))
-            {
-                Some(false)
-            } else if self.model.transition {
-                Some(
-                    self.model
-                        .units
-                        .iter()
-                        .any(|unit| matches!(unit.faction, Faction::Player)),
-                )
-            } else {
-                None
-            };
-            if let Some(player_won) = finish {
+            let model = &logic.model;
+            if model.transition || model.current_tick.tick_num > 100 {
+                let player_won = model
+                    .units
+                    .iter()
+                    .all(|unit| matches!(unit.faction, Faction::Player));
                 return SimulationResult {
                     player_won,
-                    units_alive: self.model.units.into_iter().collect(),
+                    units_alive: model.units.clone().into_iter().collect(),
                 };
             }
         }

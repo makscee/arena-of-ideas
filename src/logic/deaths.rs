@@ -6,23 +6,6 @@ impl Logic {
         unit.stats.health = Health::new(0.0);
         let unit = self.model.units.get(&id).unwrap();
 
-        for (effect, vars, status_id) in unit
-            .all_statuses
-            .iter()
-            .flat_map(|status| (status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))))
-        {
-            self.effects.push_front(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: Some(unit.id),
-                    from: Some(unit.id),
-                    target: Some(unit.id),
-                    vars,
-                    status_id: Some(status_id),
-                },
-            });
-        }
-
         for other in self.model.units.iter().filter(|other| other.id != unit.id) {
             for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
@@ -53,10 +36,25 @@ impl Logic {
             let unit = self.model.units.get(&id).unwrap();
             if unit.stats.health <= Health::ZERO {
                 self.model.dead_units.insert(unit.clone());
-                let unit_position = unit.position;
+                for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))
+                }) {
+                    self.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: Some(unit.id),
+                            from: Some(unit.id),
+                            target: Some(unit.id),
+                            vars,
+                            status_id: Some(status_id),
+                        },
+                    });
+                }
+                let unit_position = unit.clone().position;
                 self.update_positions(id, unit_position);
             }
         }
+
         self.model
             .units
             .retain(|unit| unit.stats.health > Health::ZERO);

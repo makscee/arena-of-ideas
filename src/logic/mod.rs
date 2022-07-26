@@ -27,12 +27,7 @@ pub struct Logic {
 }
 
 impl Logic {
-    pub fn initialize(
-        &mut self,
-        events: &mut Events,
-        player: Vec<UnitType>,
-        round: GameRound,
-    ) {
+    pub fn initialize(&mut self, events: &mut Events, player: Vec<UnitType>, round: GameRound) {
         self.init_player(player);
         self.init_enemies(round);
         self.init_time(events);

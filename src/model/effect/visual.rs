@@ -50,23 +50,24 @@ impl EffectImpl for VisualEffect {
         let parent = context.get(effect.parent);
         let position = parent
             .and_then(|parent| logic.model.units.get(&parent))
-            .map(|unit| unit.position)
-            .expect("Parent not found");
-        let partner = context.get(effect.partner);
+            .map(|unit| unit.position);
+        if let Some(position) = position {
+            let partner = context.get(effect.partner);
 
-        logic.model.particles.insert(Particle {
-            id: logic.model.next_id,
-            radius: effect.radius,
-            duration: effect.duration,
-            delay: effect.delay,
-            time_left: effect.duration,
-            render_config: effect.render_config,
-            parent,
-            partner,
-            position: position.to_world(),
-            follow: effect.follow,
-            color: effect.color,
-        });
-        logic.model.next_id += 1;
+            logic.model.particles.insert(Particle {
+                id: logic.model.next_id,
+                radius: effect.radius,
+                duration: effect.duration,
+                delay: effect.delay,
+                time_left: effect.duration,
+                render_config: effect.render_config,
+                parent,
+                partner,
+                position: position.to_world(),
+                follow: effect.follow,
+                color: effect.color,
+            });
+            logic.model.next_id += 1;
+        }
     }
 }
