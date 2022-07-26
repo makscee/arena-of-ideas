@@ -97,8 +97,8 @@ impl Render {
 
             // Draw damage and health
             let unit_aabb = AABB::point(unit.position.to_world_f32())
-                .extend_uniform(unit.stats.radius.as_f32() / 2.0);
-            let size = unit.stats.radius.as_f32() * 0.4;
+                .extend_uniform(unit.stats.radius.as_f32() / 2.3);
+            let size = unit.stats.radius.as_f32() * 0.3;
             let damage = AABB::point(unit_aabb.bottom_left())
                 .extend_right(size)
                 .extend_up(size);
@@ -118,14 +118,14 @@ impl Render {
             );
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
-                format!("{:.1}", unit.stats.base_damage),
+                format!("{:.0}", unit.stats.base_damage),
                 Color::WHITE,
             )
             .fit_into(damage)
             .draw_2d(&self.geng, framebuffer, &self.camera);
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
-                format!("{:.1}", unit.stats.health),
+                format!("{:.0}", unit.stats.health),
                 Color::WHITE,
             )
             .fit_into(health)
