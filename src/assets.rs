@@ -77,8 +77,8 @@ async fn load_field_render(
     let result = ShaderProgram {
         program: Rc::new(program),
         parameters: config.parameters,
-        vertices: 2,
-        instances: 1,
+        vertices: config.vertices,
+        instances: config.instances,
     };
     Ok::<_, anyhow::Error>(result)
 }

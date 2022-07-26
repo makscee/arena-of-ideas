@@ -7,23 +7,10 @@ impl Render {
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let quad = ugli::VertexBuffer::new_dynamic(
-            self.geng.ugli(),
-            vec![
-                draw_2d::Vertex {
-                    a_pos: vec2(-1.0, -1.0),
-                },
-                draw_2d::Vertex {
-                    a_pos: vec2(1.0, -1.0),
-                },
-                draw_2d::Vertex {
-                    a_pos: vec2(1.0, 1.0),
-                },
-                draw_2d::Vertex {
-                    a_pos: vec2(-1.0, 1.0),
-                },
-            ],
-        );
+        let mut instances_arr: ugli::VertexBuffer<Instance> =
+            ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
+        instances_arr.resize(shader_program.instances, Instance {});
+        let quad = shader_program.get_vertices(&self.geng);
         let framebuffer_size = framebuffer.size();
         let window_size = self.geng.window().size();
 
@@ -31,7 +18,7 @@ impl Render {
             framebuffer,
             &shader_program.program,
             ugli::DrawMode::TriangleFan,
-            &quad,
+            ugli::instanced(&quad, &instances_arr),
             (
                 ugli::uniforms! {
                     u_time: game_time,

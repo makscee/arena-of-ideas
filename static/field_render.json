@@ -1,6 +1,8 @@
 {
-    "path": "shaders/field_2.glsl",
+    "path": "shaders/field_3.glsl",
     "parameters": {
-        "u_status_color": "#ffd700"
-    }
+        "u_unit_radius": 0.01
+    },
+    "vertices": 2,
+    "instances": 1000
 }
