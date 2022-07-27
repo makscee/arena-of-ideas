@@ -1,0 +1,68 @@
+{
+  "name": "henchman+",
+  "tier": 0,
+  "description": "+1 @base_damage for each enemy with @Siphon Life",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "HenchmanEmpower",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "Repeating",
+              "tick_time": 1.0,
+              "next_tick": 1.0
+            }
+          ],
+          "effect": {
+            "type": "ChangeStat",
+            "stat": "BaseDamage",
+            "value": {
+              "type": "Sum",
+              "a": {
+                "type": "UnitsInRange",
+                "max_distance": null,
+                "faction": "Enemy",
+                "status": "SiphonLife",
+                "clan": null
+              },
+              "b": {
+                "type": "Const",
+                "value": 2.0
+              }
+            },
+            "who": "Target"
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Warlocks"
+  ],
+  "base": "ranged+"
+}

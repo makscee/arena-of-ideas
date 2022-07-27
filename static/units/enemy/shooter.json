@@ -1,4 +1,5 @@
 {
+    "name": "shooter",
     "statuses": [
         {
             "name": "ShooterOnDeath",

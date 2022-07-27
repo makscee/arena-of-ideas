@@ -1,0 +1,26 @@
+{
+  "name": "imp+",
+  "tier": 0,
+  "description": "+100% @action_speed",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 2.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [],
+  "ability": null,
+  "clans": [
+    "Demons"
+  ],
+  "base": "ranged+"
+}

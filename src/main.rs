@@ -14,12 +14,14 @@ mod shader_edit;
 mod shop;
 mod simulate;
 mod tests;
+mod utility;
 
 use assets::*;
 use logic::*;
 use model::*;
 use render::{Render, RenderModel};
 use shop::*;
+use utility::*;
 
 type Health = R32;
 type Time = R32;
@@ -299,6 +301,7 @@ enum Commands {
     Test,
     Shader(shader_edit::ShaderEdit),
     Simulate(simulate::Simulate),
+    UpdateUnits,
 }
 
 fn main() {
@@ -362,6 +365,10 @@ fn main() {
                             }
                             Commands::Shader(shader) => {
                                 return shader.run(&geng);
+                            }
+                            Commands::UpdateUnits => {
+                                utility::rename_units(&geng,&static_path(), assets);
+                                std::process::exit(0);
                             }
                         },
                         None => (),

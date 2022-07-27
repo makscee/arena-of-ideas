@@ -1,0 +1,198 @@
+{
+  "name": "poison_arrow",
+  "tier": 4,
+  "description": "@Scathe apply @Poison",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 0.2,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 3,
+    "range": 8,
+    "effect": {
+      "type": "List",
+      "effects": [
+        {
+          "type": "List",
+          "effects": [
+            {
+              "type": "List",
+              "effects": [
+                {
+                  "type": "Damage",
+                  "value": {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "BaseDamage"
+                  },
+                  "types": [
+                    "Ranged"
+                  ],
+                  "on": {}
+                }
+              ]
+            },
+            {
+              "type": "List",
+              "effects": [
+                {
+                  "type": "Visual",
+                  "duration": 1.0,
+                  "delay": 0.0,
+                  "parent": "Caster",
+                  "partner": "Target",
+                  "follow": false,
+                  "radius": 1.5,
+                  "color": "#ffffff",
+                  "render": {
+                    "path": "shaders/vfx_curve_particles.glsl",
+                    "parameters": {
+                      "u_curvature": 1.5,
+                      "u_end_cut": 0.2,
+                      "u_unit_radius": 0.04,
+                      "p_disperse": 3.0,
+                      "p_speed": -0.1,
+                      "u_thickness": 0.3
+                    },
+                    "vertices": 2,
+                    "instances": 50
+                  }
+                },
+                {
+                  "type": "Visual",
+                  "duration": 0.8,
+                  "delay": 0.0,
+                  "parent": "Caster",
+                  "partner": "Target",
+                  "follow": false,
+                  "radius": 1.5,
+                  "color": "#ffffff",
+                  "render": {
+                    "path": "shaders/vfx_curve.glsl",
+                    "parameters": {
+                      "u_end_cut": 0.2,
+                      "u_thickness": 0.3,
+                      "u_curvature": 1.5
+                    },
+                    "vertices": 30,
+                    "instances": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "List",
+          "effects": [
+            {
+              "type": "List",
+              "effects": [
+                {
+                  "type": "Damage",
+                  "value": {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "BaseDamage"
+                  },
+                  "types": [
+                    "Ranged"
+                  ],
+                  "on": {}
+                }
+              ]
+            },
+            {
+              "type": "List",
+              "effects": [
+                {
+                  "type": "Visual",
+                  "duration": 1.0,
+                  "delay": 0.0,
+                  "parent": "Caster",
+                  "partner": "Target",
+                  "follow": false,
+                  "radius": 1.5,
+                  "color": "#ffffff",
+                  "render": {
+                    "path": "shaders/vfx_curve_particles.glsl",
+                    "parameters": {
+                      "u_unit_radius": 0.04,
+                      "p_speed": -0.1,
+                      "u_thickness": 0.3,
+                      "u_curvature": 1.5,
+                      "p_disperse": 3.0,
+                      "u_end_cut": 0.2
+                    },
+                    "vertices": 2,
+                    "instances": 50
+                  }
+                },
+                {
+                  "type": "Visual",
+                  "duration": 0.8,
+                  "delay": 0.0,
+                  "parent": "Caster",
+                  "partner": "Target",
+                  "follow": false,
+                  "radius": 1.5,
+                  "color": "#ffffff",
+                  "render": {
+                    "path": "shaders/vfx_curve.glsl",
+                    "parameters": {
+                      "u_end_cut": 0.2,
+                      "u_thickness": 0.3,
+                      "u_curvature": 1.5
+                    },
+                    "vertices": 30,
+                    "instances": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "statuses": [
+    {
+      "name": "PoisonOnDealDamage",
+      "type": "Status",
+      "stacking": {
+        "type": "Refresh"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DamageDealt",
+              "damage_type": "Ranged",
+              "except": null
+            }
+          ],
+          "effect": {
+            "type": "AttachStatus",
+            "who": "Target",
+            "status": "Poison",
+            "vars": {}
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Assassins",
+    "Archers"
+  ],
+  "base": "ranged"
+}

@@ -1,0 +1,63 @@
+{
+  "name": "ice_warden",
+  "tier": 4,
+  "description": "If enemy loses @Freeze apply @Dark Steal",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "OnRemoveFreezeDarkSteal",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DetectAttach",
+              "status_name": "Freeze",
+              "status_action": "Remove",
+              "filter": "Enemies"
+            }
+          ],
+          "effect": {
+            "type": "ChangeContext",
+            "caster": "From",
+            "from": null,
+            "target": null,
+            "effect": {
+              "type": "AttachStatus",
+              "who": "Target",
+              "status": "DarkSteal",
+              "vars": {}
+            }
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Freezers",
+    "Demons"
+  ],
+  "base": "melee"
+}

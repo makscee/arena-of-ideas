@@ -1,4 +1,5 @@
 {
+    "name": "plague_leader",
     "tier": 5,
     "description": "+1 damage for each unit with @Plague",
     "clans": [

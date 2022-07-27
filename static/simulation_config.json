@@ -1,11 +1,11 @@
 {
     "player": [
-        ".*"
+        ".*1.*"
     ],
     "opponent": {
         "type": "Units",
         "units": [
-            ".*"
+            ".*1.*"
         ]
     },
     "repeats": 5

@@ -1,4 +1,5 @@
 {
+    "name": "vaccinated",
     "tier": 2,
     "description": "After taking damage from @Plague gain @Shield",
     "triple": "vaccinated+",

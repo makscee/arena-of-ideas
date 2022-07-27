@@ -1,0 +1,60 @@
+{
+  "name": "demonic_archer",
+  "tier": 2,
+  "description": "@Bonus Shot applies @Dark Steal twice",
+  "triple": "demonic_archer+",
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "DarkStealOnBonusShot",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DamageDealt",
+              "damage_type": "BonusShot",
+              "except": null
+            }
+          ],
+          "effect": {
+            "type": "Repeat",
+            "times": 2,
+            "effect": {
+              "type": "AttachStatus",
+              "who": "Target",
+              "status": "DarkSteal",
+              "vars": {}
+            }
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Demons",
+    "Archers"
+  ],
+  "base": "ranged"
+}
