@@ -249,8 +249,7 @@ impl geng::LoadAsset for UnitTemplates {
                     let mut json = <serde_json::Value as geng::LoadAsset>::load(&geng, &path)
                         .await
                         .context(format!("Failed to load {path:?}"))?;
-                    if let Some(base) = json.get_mut("base") {
-                        let base = base.take();
+                    if let Some(base) = json.get("base") {
                         let base = base.as_str().expect("base must be a string");
                         let base_str = base.to_string();
                         let base = &map
@@ -270,7 +269,6 @@ impl geng::LoadAsset for UnitTemplates {
                             String::from("description"),
                             serde_json::Value::String(format!("{}\n{}", base_str, description)),
                         );
-                        json.as_object_mut().unwrap().remove("base");
                     }
 
                     let template: UnitTemplate = serde_json::from_value(json)

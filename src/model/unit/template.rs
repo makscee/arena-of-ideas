@@ -3,6 +3,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
+    pub name: UnitType,
     /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
     /// Description displayed on the unit card
@@ -23,11 +24,13 @@ pub struct UnitTemplate {
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
+    pub base: Option<UnitType>,
 }
 
 impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
+            name: "".to_string(),
             tier: 0,
             description: String::new(),
             triple: None,
@@ -52,6 +55,7 @@ impl Default for UnitTemplate {
                 parameters: default(),
             },
             clans: default(),
+            base: None,
         }
     }
 }
