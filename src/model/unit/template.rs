@@ -4,6 +4,7 @@ use super::*;
 #[serde(default, deny_unknown_fields)]
 pub struct UnitTemplate {
     pub name: UnitType,
+    pub long_name: UnitType,
     /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
     /// Description displayed on the unit card
@@ -31,6 +32,7 @@ impl Default for UnitTemplate {
     fn default() -> Self {
         Self {
             name: "".to_string(),
+            long_name: "".to_string(),
             tier: 0,
             description: String::new(),
             triple: None,
@@ -63,10 +65,12 @@ impl Default for UnitTemplate {
 impl geng::LoadAsset for UnitTemplate {
     fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
         let geng = geng.clone();
+        let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
         let path = path.to_owned();
         async move {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let mut result: Self = serde_json::from_str(&json)?;
+            result.long_name = file_name;
             Ok(result)
         }
         .boxed_local()

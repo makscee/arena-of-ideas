@@ -271,7 +271,7 @@ impl geng::LoadAsset for UnitTemplates {
                         );
                     }
 
-                    let template: UnitTemplate = serde_json::from_value(json)
+                    let mut template: UnitTemplate = serde_json::from_value(json)
                         .context(format!("Failed to parse {path:?}"))?;
 
                     let mut name = template.name.clone();
@@ -280,6 +280,7 @@ impl geng::LoadAsset for UnitTemplates {
                         name = typ.clone();
                     }
 
+                    template.long_name = typ.clone();
                     map.insert(name, template);
                 }
             }

@@ -5,7 +5,7 @@ use geng::prelude::*;
 use crate::{
     assets::{self, Assets, ClanEffects, Config, GameRound, KeyMapping, Statuses},
     logic::{Events, Logic},
-    model::{Faction, Model, Unit, UnitTemplates, UnitType},
+    model::{Faction, Model, Unit, UnitTemplate, UnitTemplates, UnitType},
     render::RenderModel,
 };
 
@@ -43,7 +43,7 @@ impl SimulationConfig {
     fn battles(
         &self,
         rounds: &[GameRound],
-        all_units: &[&UnitType],
+        all_units: &Vec<UnitTemplate>,
     ) -> impl Iterator<Item = BattleConfig> + '_ {
         let battles: Vec<BattleConfig> = vec![];
         let mut player_variants = vec![];
@@ -82,7 +82,7 @@ impl SimulationConfig {
 
     fn match_units(
         &self,
-        all_units: &[&UnitType],
+        all_units: &Vec<UnitTemplate>,
         units: &Vec<RegexUnit>,
         index: usize,
         result: Vec<Vec<UnitType>>,
@@ -113,13 +113,12 @@ impl SimulationConfig {
         cloned.clone()
     }
 
-    fn to_units(&self, unit: RegexUnit, all_units: &[&UnitType]) -> Vec<UnitType> {
+    fn to_units(&self, unit: RegexUnit, all_units: &Vec<UnitTemplate>) -> Vec<UnitType> {
         let regex = regex::Regex::new(&unit).expect("Failed to parse a regular expression");
         all_units
             .iter()
-            .filter(move |unit| regex.is_match(unit))
-            .map(|name| *name)
-            .cloned()
+            .filter(move |unit| regex.is_match(&unit.long_name))
+            .map(|unit| unit.name.clone())
             .collect()
     }
 }
@@ -155,7 +154,8 @@ impl Simulate {
         .unwrap();
         info!("Starting simulation");
 
-        let all_units = assets.units.keys().collect::<Vec<_>>();
+        let all_units = assets
+            .units.iter().map(|entry| entry.1).cloned().collect();
 
         let mut total_games = 0;
         let mut total_wins = 0;
