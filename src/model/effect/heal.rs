@@ -83,7 +83,13 @@ impl EffectImpl for HealEffect {
 
         let caster = context
             .caster
-            .and_then(|id| logic.model.units.get(&id))
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get(&id)
+                    .or(logic.model.dead_units.get(&id))
+            })
             .expect("Caster not found");
         for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
             status.trigger(|trigger| match trigger {
