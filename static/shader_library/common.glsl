@@ -76,10 +76,12 @@ void commonInit()
 vec4 alphaBlend(vec4 c1, vec4 c2)
 {
     return vec4(
-        mix(c1.r, c2.r, c2.a),
-        mix(c1.g, c2.g, c2.a),
-        mix(c1.b, c2.b, c2.a),
+        mix(c1.rgb, c2.rgb, c2.a),
         clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
+}
+
+float luminance(vec4 color) {
+    return 0.2126*color.r + 0.7152*color.g + 0.0722*color.b;
 }
 
 float animationFunc(float x)

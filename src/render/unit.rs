@@ -51,7 +51,7 @@ impl UnitRender {
             })
             .map(|x| x.as_f32());
 
-        let mut is_ability_ready: f32 = 0.0; // TODO: rewrite please
+        let mut is_ability_ready: f32 = 0.0;
         if let Some(ability) = &template.ability {
             is_ability_ready = match unit.ability_cooldown {
                 Some(time) if time > Time::new(0.0) => 0.0,

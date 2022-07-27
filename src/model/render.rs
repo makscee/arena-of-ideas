@@ -14,6 +14,26 @@ pub struct ShaderConfig {
     pub instances: usize,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct PostfxConfig {
+    pub pipes: Vec<PostfxPipeConfig>,
+    pub blend_shader: ShaderConfig,
+    pub final_shader: ShaderConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct PostfxPipeConfig {
+    pub shaders: Vec<ShaderConfig>,
+}
+
+pub struct PostfxProgram {
+    pub pipes: Vec<Vec<ShaderProgram>>,
+    pub blend_shader: ShaderProgram,
+    pub final_shader: ShaderProgram,
+}
+
 fn default_vertices() -> usize {
     4
 }

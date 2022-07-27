@@ -61,7 +61,7 @@ impl RenderModel {
 
 pub struct Render {
     geng: Geng,
-    camera: geng::Camera2d,
+    pub camera: geng::Camera2d,
     assets: Rc<Assets>,
     unit_render: UnitRender,
 }

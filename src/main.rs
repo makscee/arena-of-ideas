@@ -3,6 +3,7 @@
 
 use clap::Parser;
 use geng::prelude::*;
+use ugli::Texture;
 
 mod assets;
 mod custom;
@@ -43,6 +44,7 @@ pub struct Game {
     events: Events,
     render: Render,
     shop: Shop,
+    frame_texture: Texture,
 }
 
 impl Game {
@@ -77,9 +79,10 @@ impl Game {
             render: Render::new(geng, assets, &config),
             timeline_captured: false,
             shop,
-            logic: logic,
+            logic,
             events,
-            last_frame: last_frame,
+            last_frame,
+            frame_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
         };
         game.logic.initialize(
             &mut game.events,
@@ -110,19 +113,130 @@ impl geng::State for Game {
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        let index = match self
-            .history
-            .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
-                r32(geng::prelude::Float::as_f32(entry.time))
-            }) {
-            Ok(index) => index,
-            Err(index) => index,
-        };
-        let entry = self
-            .history
-            .get(index)
-            .unwrap_or(self.history.last().unwrap());
-        self.render.draw(entry.time, &entry.model, framebuffer);
+        let window_size = self.geng.window().size();
+        if self.frame_texture.size() != window_size {
+            self.frame_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
+        }
+        let mut game_time = 0.0;
+        {
+            let mut framebuffer = ugli::Framebuffer::new_color(
+                self.geng.ugli(),
+                ugli::ColorAttachment::Texture(&mut self.frame_texture),
+            );
+            let framebuffer = &mut framebuffer;
+            ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+            let index = match self
+                .history
+                .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
+                    r32(geng::prelude::Float::as_f32(entry.time))
+                }) {
+                Ok(index) => index,
+                Err(index) => index,
+            };
+            let entry = self
+                .history
+                .get(index)
+                .unwrap_or(self.history.last().unwrap());
+            self.render.draw(entry.time, &entry.model, framebuffer);
+        }
+
+        let mut previous_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), window_size);
+        let mut new_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), window_size);
+
+        let blend_shader_program = &self.assets.postfx_render.blend_shader;
+        let blend_quad = blend_shader_program.get_vertices(&self.geng);
+        let framebuffer_size = framebuffer.size();
+
+        for pipe in &self.assets.postfx_render.pipes {
+            let mut it = pipe.iter().peekable();
+            while let Some(shader_program) = it.next() {
+                {
+                    let quad = shader_program.get_vertices(&self.geng);
+                    let mut framebuffer = ugli::Framebuffer::new_color(
+                        self.geng.ugli(),
+                        ugli::ColorAttachment::Texture(&mut new_texture),
+                    );
+                    let framebuffer = &mut framebuffer;
+
+                    ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                    ugli::draw(
+                        framebuffer,
+                        &shader_program.program,
+                        ugli::DrawMode::TriangleStrip,
+                        &quad,
+                        (
+                            ugli::uniforms! {
+                                u_time: game_time,
+                                u_window_size: window_size,
+                                u_previous_texture: &previous_texture,
+                                u_frame_texture: &self.frame_texture
+                            },
+                            geng::camera2d_uniforms(
+                                &self.render.camera,
+                                framebuffer_size.map(|x| x as f32),
+                            ),
+                            &shader_program.parameters,
+                        ),
+                        ugli::DrawParameters {
+                            blend_mode: Some(default()),
+                            ..default()
+                        },
+                    );
+                }
+                mem::swap(&mut previous_texture, &mut new_texture);
+                if it.peek().is_none() {
+                    let mut framebuffer = ugli::Framebuffer::new_color(
+                        self.geng.ugli(),
+                        ugli::ColorAttachment::Texture(&mut new_texture),
+                    );
+                    let framebuffer = &mut framebuffer;
+                    ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                    ugli::draw(
+                        framebuffer,
+                        &blend_shader_program.program,
+                        ugli::DrawMode::TriangleStrip,
+                        &blend_quad,
+                        (
+                            ugli::uniforms! {
+                                u_time: game_time,
+                                u_window_size: window_size,
+                                u_previous_texture: &previous_texture,
+                                u_frame_texture: &self.frame_texture,
+                            },
+                            geng::camera2d_uniforms(
+                                &self.render.camera,
+                                framebuffer_size.map(|x| x as f32),
+                            ),
+                            &blend_shader_program.parameters,
+                        ),
+                        ugli::DrawParameters {
+                            blend_mode: Some(default()),
+                            ..default()
+                        },
+                    );
+                    mem::swap(&mut self.frame_texture, &mut new_texture);
+                }
+            }
+        }
+
+        let shader_program = &self.assets.postfx_render.final_shader;
+        let quad = shader_program.get_vertices(&self.geng);
+        ugli::draw(
+            framebuffer,
+            &shader_program.program,
+            ugli::DrawMode::TriangleStrip,
+            &quad,
+            (
+                ugli::uniforms! {
+                    u_frame_texture: &self.frame_texture
+                },
+                &shader_program.parameters,
+            ),
+            ugli::DrawParameters {
+                blend_mode: Some(default()),
+                ..default()
+            },
+        );
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {

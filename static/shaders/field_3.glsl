@@ -38,6 +38,6 @@ void main() {
     if (dist > 1) discard;
     vec3 col = mix(player_faction_color, enemy_faction_color, (faction + 1) / 2);
 
-    gl_FragColor = vec4(col, .4 - dist * dist);
+    gl_FragColor = vec4(col, 1);
 }
 #endif

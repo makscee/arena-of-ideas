@@ -50,6 +50,8 @@ pub struct Assets {
     pub statuses: Statuses,
     #[asset(load_with = "load_field_render(geng, &base_path)")]
     pub field_render: ShaderProgram,
+    #[asset(load_with = "load_postfx_render(geng, &base_path)")]
+    pub postfx_render: PostfxProgram,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
@@ -80,6 +82,69 @@ async fn load_field_render(
         vertices: config.vertices,
         instances: config.instances,
     };
+    Ok::<_, anyhow::Error>(result)
+}
+
+async fn load_postfx_render(
+    geng: &Geng,
+    base_path: &std::path::Path,
+) -> anyhow::Result<PostfxProgram> {
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("postfx_render.json"))
+        .await
+        .context("Failed to load postfx_render.json")?;
+    let postfx_config: PostfxConfig =
+        serde_json::from_str(&json).context("Failed to parse postfx_render.json")?;
+    let blend_shader;
+    {
+        let path = &postfx_config.blend_shader.path;
+        let config = &postfx_config.blend_shader;
+        let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+            .await
+            .context(format!("Failed to load {path}"))?;
+        blend_shader = ShaderProgram {
+            program: Rc::new(program),
+            parameters: config.parameters.clone(),
+            vertices: config.vertices,
+            instances: config.instances,
+        };
+    }
+    let final_shader;
+    {
+        let path = &postfx_config.final_shader.path;
+        let config = &postfx_config.final_shader;
+        let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+            .await
+            .context(format!("Failed to load {path}"))?;
+        final_shader = ShaderProgram {
+            program: Rc::new(program),
+            parameters: config.parameters.clone(),
+            vertices: config.vertices,
+            instances: config.instances,
+        };
+    }
+
+    let mut result = PostfxProgram {
+        pipes: vec![],
+        blend_shader,
+        final_shader,
+    };
+    for pipe_config in postfx_config.pipes {
+        let mut pipe_programs = vec![];
+        for config in pipe_config.shaders {
+            let path = config.path.as_str();
+            let program =
+                <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+                    .await
+                    .context(format!("Failed to load {path}"))?;
+            pipe_programs.push(ShaderProgram {
+                program: Rc::new(program),
+                parameters: config.parameters,
+                vertices: config.vertices,
+                instances: config.instances,
+            });
+        }
+        result.pipes.push(pipe_programs);
+    }
     Ok::<_, anyhow::Error>(result)
 }
 

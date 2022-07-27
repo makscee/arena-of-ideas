@@ -50,7 +50,7 @@ void main() {
     if (p_t <= 0.) discard;
     commonInit();
     vec2 uv = v_quad_pos;
-    vec4 col = vec4(mix(u_color.rgb, vec3(1), p_trail_part),0.5);
+    vec4 col = vec4(mix(u_color.rgb, vec3(1), p_trail_part),1);
     col *= float(length(uv) < 0.5);
     gl_FragColor = col;
 }

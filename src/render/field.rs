@@ -17,12 +17,11 @@ impl Render {
         ugli::draw(
             framebuffer,
             &shader_program.program,
-            ugli::DrawMode::TriangleFan,
+            ugli::DrawMode::TriangleStrip,
             ugli::instanced(&quad, &instances_arr),
             (
                 ugli::uniforms! {
                     u_time: game_time,
-                    u_unit_position: vec2(0.0,0.0),
                     u_window_size: window_size,
                 },
                 geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),

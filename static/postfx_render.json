@@ -1,0 +1,31 @@
+{
+    "pipes": [
+        {
+            "shaders": [
+                {
+                    "path": "shaders/postfx/postfx_faction_mask.glsl"
+                },
+                {
+                    "path": "shaders/postfx/postfx_1.glsl",
+                    "parameters": {
+                        "u_phase": 0
+                    }
+                },
+                {
+                    "path": "shaders/postfx/postfx_1.glsl",
+                    "parameters": {
+                        "u_phase": 1
+                    }
+                }
+            ]
+        }
+    ],
+    "blend_shader": {
+        "path": "shaders/postfx/postfx_blend_render.glsl",
+        "parameters": {
+        }
+    },
+    "final_shader": {
+        "path": "shaders/postfx/postfx_final_render.glsl"
+    }
+}
