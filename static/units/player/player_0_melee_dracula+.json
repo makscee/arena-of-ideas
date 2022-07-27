@@ -1,0 +1,118 @@
+{
+  "name": "dracula+",
+  "tier": 0,
+  "description": "Triple @Crit chance with full @hp. @Crit deals 5% target’s current @hp as damage",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "DoubleCritWhenFullHp",
+      "type": "Modifier",
+      "target": {
+        "type": "Stat",
+        "stat": "CritChance",
+        "value": {
+          "type": "Mul",
+          "a": {
+            "type": "FindStat",
+            "who": "Target",
+            "stat": "CritChance"
+          },
+          "b": {
+            "type": "If",
+            "condition": {
+              "type": "UnitInjured",
+              "who": "Target"
+            },
+            "then": {
+              "type": "Const",
+              "value": 1.0
+            },
+            "else": {
+              "type": "Const",
+              "value": 3.0
+            }
+          }
+        }
+      },
+      "priority": 0,
+      "condition": {
+        "type": "Always"
+      },
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [],
+      "vars": {},
+      "order": 0
+    },
+    {
+      "name": "CritDealsPercentHp",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DamageDealt",
+              "damage_type": "Crit",
+              "except": null
+            }
+          ],
+          "effect": {
+            "type": "Damage",
+            "value": {
+              "type": "Mul",
+              "a": {
+                "type": "FindStat",
+                "who": "Target",
+                "stat": "MaxHealth"
+              },
+              "b": {
+                "type": "Const",
+                "value": 0.05
+              }
+            },
+            "types": [
+              "HpDrain"
+            ],
+            "on": {}
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Vampires",
+    "Assassins"
+  ],
+  "render": {
+    "path": "",
+    "parameters": {},
+    "vertices": 1,
+    "instances": 1
+  },
+  "base": "melee+"
+}

@@ -1,9 +1,0 @@
-{
-    "tier": 2,
-    "description": "@Flaming Breath attack",
-    "triple": "bolla+",
-    "clans": [
-        "Dragons"
-    ],
-    "base": "ranged"
-}

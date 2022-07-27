@@ -1,0 +1,103 @@
+{
+  "name": "dark_guardian+",
+  "tier": 0,
+  "description": "When @Shield absorbs, apply @Siphon Life to attacker and  to random shieldless ally",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "OnShieldAbsorb",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DamageIncoming",
+              "damage_type": null,
+              "except": null
+            }
+          ],
+          "effect": {
+            "type": "If",
+            "type": "If",
+            "condition": {
+              "type": "UnitHasStatus",
+              "who": "Target",
+              "status": "Shield"
+            },
+            "then": {
+              "type": "List",
+              "effects": [
+                {
+                  "type": "ChangeContext",
+                  "caster": null,
+                  "from": null,
+                  "target": "From",
+                  "effect": {
+                    "type": "AttachStatus",
+                    "who": "Target",
+                    "status": "SiphonLife",
+                    "vars": {}
+                  }
+                },
+                {
+                  "type": "ChangeTarget",
+                  "filter": "Allies",
+                  "condition": {
+                    "type": "Not",
+                    "condition": {
+                      "type": "UnitHasStatus",
+                      "who": "Target",
+                      "status": "Shield"
+                    }
+                  },
+                  "effect": {
+                    "type": "AttachStatus",
+                    "who": "Target",
+                    "status": "Shield",
+                    "vars": {}
+                  }
+                }
+              ]
+            },
+            "else": {
+              "type": "Noop"
+            }
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Warlocks",
+    "Protectors"
+  ],
+  "render": {
+    "path": "",
+    "parameters": {},
+    "vertices": 1,
+    "instances": 1
+  },
+  "base": "melee+"
+}

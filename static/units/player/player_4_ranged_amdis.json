@@ -1,0 +1,60 @@
+{
+  "name": "amdis",
+  "tier": 4,
+  "description": "gain @Rebirth",
+  "triple": "amdis+",
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "OnSpawnGaindRebirth",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "Spawn"
+            }
+          ],
+          "effect": {
+            "type": "AttachStatus",
+            "who": "Target",
+            "status": "Rebirth",
+            "vars": {}
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Dragons",
+    "Vampires"
+  ],
+  "render": {
+    "path": "",
+    "parameters": {},
+    "vertices": 1,
+    "instances": 1
+  },
+  "base": "ranged"
+}

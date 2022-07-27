@@ -1,0 +1,190 @@
+{
+  "name": "ice_breaker+",
+  "tier": 0,
+  "description": "@Crit on @Frozen. On @Crit apply @Frozen to enemies in area",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 0.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "List",
+      "effects": [
+        {
+          "type": "If",
+          "type": "If",
+          "condition": {
+            "type": "UnitHasStatus",
+            "who": "Target",
+            "status": "Freeze"
+          },
+          "then": {
+            "type": "List",
+            "effects": [
+              {
+                "type": "Damage",
+                "value": {
+                  "type": "Mul",
+                  "a": {
+                    "type": "FindStat",
+                    "who": "Caster",
+                    "stat": "BaseDamage"
+                  },
+                  "b": {
+                    "type": "Const",
+                    "value": 3.0
+                  }
+                },
+                "types": [
+                  "Melee",
+                  "Crit"
+                ],
+                "on": {}
+              },
+              {
+                "type": "Visual",
+                "duration": 0.5,
+                "delay": 0.0,
+                "parent": "Target",
+                "partner": "Caster",
+                "follow": false,
+                "radius": 2.5,
+                "color": "#ffffff",
+                "render": {
+                  "path": "shaders/vfx_particle_burst.glsl",
+                  "parameters": {
+                    "p_startColor": "#ffffff",
+                    "p_count": 20,
+                    "p_endColor": "#1e90ff",
+                    "p_startSize": 0.2
+                  },
+                  "vertices": 4,
+                  "instances": 1
+                }
+              }
+            ]
+          },
+          "else": {
+            "type": "List",
+            "effects": [
+              {
+                "type": "Damage",
+                "value": {
+                  "type": "FindStat",
+                  "who": "Caster",
+                  "stat": "BaseDamage"
+                },
+                "types": [
+                  "Melee"
+                ],
+                "on": {}
+              },
+              {
+                "type": "List",
+                "effects": [
+                  {
+                    "type": "Visual",
+                    "duration": 1.0,
+                    "delay": 0.0,
+                    "parent": "Caster",
+                    "partner": "Target",
+                    "follow": false,
+                    "radius": 1.5,
+                    "color": "#ffffff",
+                    "render": {
+                      "path": "shaders/vfx_curve_particles.glsl",
+                      "parameters": {
+                        "u_end_cut": 0.2,
+                        "p_disperse": 3.0,
+                        "u_unit_radius": 0.04,
+                        "u_thickness": 0.3,
+                        "u_curvature": 1.5,
+                        "p_speed": -0.1
+                      },
+                      "vertices": 2,
+                      "instances": 50
+                    }
+                  },
+                  {
+                    "type": "Visual",
+                    "duration": 0.8,
+                    "delay": 0.0,
+                    "parent": "Caster",
+                    "partner": "Target",
+                    "follow": false,
+                    "radius": 1.5,
+                    "color": "#ffffff",
+                    "render": {
+                      "path": "shaders/vfx_curve.glsl",
+                      "parameters": {
+                        "u_end_cut": 0.2,
+                        "u_curvature": 1.5,
+                        "u_thickness": 0.3
+                      },
+                      "vertices": 30,
+                      "instances": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "statuses": [
+    {
+      "name": "IceBreaker+OnCrit",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DamageDealt",
+              "damage_type": "Crit",
+              "except": null
+            }
+          ],
+          "effect": {
+            "type": "AOE",
+            "filter": "Enemies",
+            "skip_current_target": true,
+            "range": 3,
+            "effect": {
+              "type": "AttachStatus",
+              "who": "Target",
+              "status": "Freeze",
+              "vars": {}
+            }
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Freezers",
+    "Assassins"
+  ],
+  "render": {
+    "path": "",
+    "parameters": {},
+    "vertices": 1,
+    "instances": 1
+  },
+  "base": "melee+"
+}

@@ -1,0 +1,142 @@
+{
+  "name": "sniper+",
+  "tier": 0,
+  "description": "On @Crit @Bonus Shot, +30% @Crit chance",
+  "triple": null,
+  "health": 1.0,
+  "base_damage": 1.0,
+  "block": 0.0,
+  "crit_chance": 30.0,
+  "action_speed": 1.0,
+  "spawn_animation_time": 0.0,
+  "radius": 0.5,
+  "action": {
+    "cooldown": 1,
+    "range": 1,
+    "effect": {
+      "type": "Noop"
+    }
+  },
+  "statuses": [
+    {
+      "name": "SniperOnCrit",
+      "type": "Status",
+      "stacking": {
+        "type": "Independent"
+      },
+      "flags": [],
+      "duration": null,
+      "listeners": [
+        {
+          "triggers": [
+            {
+              "type": "DamageDealt",
+              "damage_type": "Crit",
+              "except": null
+            }
+          ],
+          "effect": {
+            "type": "List",
+            "effects": [
+              {
+                "type": "List",
+                "effects": [
+                  {
+                    "type": "Damage",
+                    "value": {
+                      "type": "FindStat",
+                      "who": "Caster",
+                      "stat": "BaseDamage"
+                    },
+                    "types": [
+                      "BonusShot"
+                    ],
+                    "on": {}
+                  }
+                ]
+              },
+              {
+                "type": "Visual",
+                "duration": 0.5,
+                "delay": 0.0,
+                "parent": "Target",
+                "partner": "Caster",
+                "follow": false,
+                "radius": 1.5,
+                "color": "#ffffff",
+                "render": {
+                  "path": "shaders/vfx_particle_burst.glsl",
+                  "parameters": {
+                    "p_startColor": "#dc143c",
+                    "p_endColor": "#1e90ff",
+                    "p_startSize": 0.1,
+                    "p_count": 12
+                  },
+                  "vertices": 4,
+                  "instances": 1
+                }
+              },
+              {
+                "type": "Visual",
+                "duration": 2.0,
+                "delay": 0.0,
+                "parent": "Target",
+                "partner": "Caster",
+                "follow": false,
+                "radius": 1.5,
+                "color": "#ffffff",
+                "render": {
+                  "path": "shaders/vfx_curve_particles.glsl",
+                  "parameters": {
+                    "p_speed": -0.2,
+                    "u_color": "#009c69",
+                    "p_disperse": 10.0,
+                    "u_unit_radius": 0.04,
+                    "u_thickness": 0.5,
+                    "u_curvature": 1.3
+                  },
+                  "vertices": 2,
+                  "instances": 500
+                }
+              },
+              {
+                "type": "Visual",
+                "duration": 1.2,
+                "delay": 0.0,
+                "parent": "Target",
+                "partner": "Caster",
+                "follow": false,
+                "radius": 1.5,
+                "color": "#ffffff",
+                "render": {
+                  "path": "shaders/vfx_curve.glsl",
+                  "parameters": {
+                    "u_color": "#009c69",
+                    "u_curvature": 1.3,
+                    "u_thickness": 0.4
+                  },
+                  "vertices": 30,
+                  "instances": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "vars": {},
+      "order": 0
+    }
+  ],
+  "ability": null,
+  "clans": [
+    "Archers",
+    "Assassins"
+  ],
+  "render": {
+    "path": "",
+    "parameters": {},
+    "vertices": 1,
+    "instances": 1
+  },
+  "base": "ranged+"
+}
