@@ -1,4 +1,5 @@
 {
+    "name": "walker",
     "tier": 5,
     "triple": "walker+",
     "description": "Every 5 seconds @Freeze random enemy",

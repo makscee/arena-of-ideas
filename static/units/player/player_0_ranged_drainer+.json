@@ -135,11 +135,5 @@
   "clans": [
     "Warlocks"
   ],
-  "render": {
-    "path": "",
-    "parameters": {},
-    "vertices": 1,
-    "instances": 1
-  },
   "base": "ranged+"
 }

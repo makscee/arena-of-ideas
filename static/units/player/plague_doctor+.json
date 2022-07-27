@@ -1,4 +1,5 @@
 {
+    "name": "plague_doctor+",
     "tier": 0,
     "description": "Every 5 seconds if an ally has @Plague: remove it and launch projectile for @base_damage x3 to random enemy",
     "clans": [

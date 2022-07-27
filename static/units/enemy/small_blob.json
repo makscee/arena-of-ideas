@@ -1,4 +1,5 @@
 {
+    "name": "small_blob",
     "health": 5,
     "radius": 0.5,
     "base_damage": 1,

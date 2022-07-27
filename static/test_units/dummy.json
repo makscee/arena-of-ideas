@@ -1,4 +1,5 @@
 {
+    "name": "dummy",
     "health": 3000,
     "radius": 1.0,
     "action": {

@@ -1,4 +1,5 @@
 {
+    "name": "player",
     "health": 300,
     "radius": 0.5,
     "action": {

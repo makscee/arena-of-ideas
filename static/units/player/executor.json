@@ -1,4 +1,5 @@
 {
+    "name": "executor",
     "tier": 4,
     "description": "Always @Crit on enemies with @Plague",
     "triple": "executor+",

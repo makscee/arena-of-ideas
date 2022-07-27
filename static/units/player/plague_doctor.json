@@ -1,4 +1,5 @@
 {
+    "name": "plague_doctor",
     "tier": 3,
     "description": "Every 5 seconds remove @Plague from 1 ally",
     "triple": "plague_doctor+",

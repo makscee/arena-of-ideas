@@ -1,4 +1,5 @@
 {
+    "name": "walker+",
     "tier": 0,
     "description": "Every 5 seconds @Freeze 2 random enemies",
     "clans": [

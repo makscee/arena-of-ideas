@@ -1,4 +1,5 @@
 {
+    "name": "executor+",
     "tier": 0,
     "description": "Always @Crit on enemies with @Plague. On kill apply 2 @Poison to all enemies in range 5",
     "clans": [
