@@ -18,16 +18,6 @@ void main() {
 uniform sampler2D u_previous_texture;
 in vec2 v_quad_pos;
 
-#include <particles_uniforms.glsl>
-#define p_renderParticle_redef
-#include <particles_functions.glsl>
-
-void p_discardCheck(vec2 uv, float t)
-{
-    if (uv.y < -2.) discard;
-}
-
-
 void main() {
     vec2 uv = v_quad_pos;
     vec4 previous_color = texture(u_previous_texture, gl_FragCoord.xy / vec2(textureSize(u_previous_texture, 0)));
