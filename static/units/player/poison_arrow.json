@@ -1,0 +1,49 @@
+{
+	"name": "poison_arrow",
+    "tier": 4,
+    "base_damage": 0.2,
+    "description": "@Scathe apply @Poison",
+    "clans": [
+        "Assassins",
+        "Archers"
+    ],
+    "action": {
+        "range": 8,
+        "cooldown": 3,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "preset": "effects/ranged_hit.json"
+                }
+            ]
+        }
+    },
+    "statuses": [
+        {
+            "name": "PoisonOnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Poison"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}

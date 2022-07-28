@@ -1,0 +1,42 @@
+{
+    "name": "ice_archer",
+    "tier": 1,
+    "triple": "ice_archer+",
+    "description": "@Bonus Shot on @Frozen",
+    "action": {
+        "range": 10,
+        "cooldown": 1,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Freeze"
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "preset": "effects/bonus_shot.json"
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                }
+            ]
+        }
+    },
+    "clans": [
+        "Freezers",
+        "Archers"
+    ],
+    "base": "ranged"
+}

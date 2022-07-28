@@ -1,0 +1,40 @@
+{
+    "name": "rogue+",
+    "tier": 0,
+    "base_damage": 1.0,
+    "description": "@Scathe apply @MicroStun",
+    "clans": [
+        "Assassins"
+    ],
+    "action": {
+        "range": 1,
+        "cooldown": 1,
+        "effect": {
+            "preset": "effects/melee_hit.json"
+        }
+    },
+    "statuses": [
+        {
+            "name": "Rogue+OnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "MicroStun"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee+"
+}

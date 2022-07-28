@@ -1,0 +1,48 @@
+{
+	"name": "dracula",
+    "tier": 1,
+    "triple": "dracula+",
+    "description": "Double @Crit chance with full hp",
+    "clans": [
+        "Vampires",
+        "Assassins"
+    ],
+    "statuses": [
+        {
+            "name": "DoubleCritWhenFullHp",
+            "type": "Modifier",
+            "condition": {
+                "type": "Always"
+            },
+            "target": {
+                "type": "Stat",
+                "stat": "CritChance",
+                "value": {
+                    "type": "Mul",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "CritChance"
+                    },
+                    "b": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitInjured",
+                            "who": "Target"
+                        },
+                        "then": {
+                            "type": "Const",
+                            "value": 1
+                        },
+                        "else": {
+                            "type": "Const",
+                            "value": 2
+                        }
+                    }
+                }
+            },
+            "priority": 0
+        }
+    ],
+    "base": "melee+"
+}

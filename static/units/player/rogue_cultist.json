@@ -1,0 +1,34 @@
+{
+	"name": "rogue_cultist",
+    "tier": 3,
+    "description": "On @Crit apply @Siphon Life",
+    "triple": "rogue_cultist+",
+    "clans": [
+        "Warlocks",
+        "Assassins"
+    ],
+    "statuses": [
+        {
+            "name": "OnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Crit"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "SiphonLife"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}

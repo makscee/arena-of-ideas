@@ -1,0 +1,82 @@
+{
+	"name": "red_dragon",
+    "tier": 2,
+    "description": "Overheal launches @Projectile at random target damaging overhealed amount",
+    "triple": "red_dragon+",
+    "clans": [
+        "Vampires",
+        "Dragons"
+    ],
+    "statuses": [
+        {
+            "name": "OnOverheal",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "HealTaken"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "More",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "Health"
+                            },
+                            "b": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            }
+                        },
+                        "then": {
+                            "type": "ChangeTarget",
+                            "filter": "Enemies",
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "Damage",
+                                        "types": [
+                                            "Additional"
+                                        ],
+                                        "value": {
+                                            "type": "Sub",
+                                            "a": {
+                                                "type": "FindStat",
+                                                "who": "Caster",
+                                                "stat": "Health"
+                                            },
+                                            "b": {
+                                                "type": "FindStat",
+                                                "who": "Caster",
+                                                "stat": "MaxHealth"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "preset": "effects/laser_vfx.json"
+                                    }
+                                ]
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}

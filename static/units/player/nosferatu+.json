@@ -1,0 +1,41 @@
+{
+	"name": "nosferatu+",
+    "tier": 0,
+    "description": "Apply @Dark Steal to a random enemy every second",
+    "clans": [
+        "Vampires",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "AttachDarkSteal",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 1,
+                            "next_tick": 1
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "DarkSteal"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee+"
+}

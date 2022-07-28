@@ -1,0 +1,69 @@
+{
+    "name": "drainer+",
+    "tier": 0,
+    "description": "On @Heal received shoot projectile to random enemy for same damage. Ability: Apply @Siphon Life to all enemies",
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "DrainerHealTaken",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "HealTaken"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "ChangeContext",
+                            "from": "Caster",
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "Damage",
+                                        "types": [
+                                            "Ranged"
+                                        ],
+                                        "value": {
+                                            "type": "Var",
+                                            "name": "IncomingHeal"
+                                        }
+                                    },
+                                    {
+                                        "preset": "effects/laser_vfx.json"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "ability": {
+        "cooldown": 15,
+        "effect": {
+            "type": "AOE",
+            "filter": "Enemies",
+            "skip_current_target": false,
+            "range": 20,
+            "effect": {
+                "type": "AttachStatus",
+                "status": "SiphonLife"
+            }
+        }
+    },
+    "base": "ranged+"
+}

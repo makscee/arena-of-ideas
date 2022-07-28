@@ -1,0 +1,33 @@
+{	
+	"name": "amdis",
+    "tier": 4,
+    "triple": "amdis+",
+    "description": "gain @Rebirth",
+    "clans": [
+        "Dragons",
+        "Vampires"
+    ],
+    "statuses": [
+        {
+            "name": "OnSpawnGaindRebirth",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Rebirth"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
