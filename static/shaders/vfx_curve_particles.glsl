@@ -43,10 +43,9 @@ flat in int p_index;
 void main() {
     commonInit();
     vec2 uv = v_quad_pos;
-    float centerDist = distance(uv, vec2(.0));
-    // if (centerDist > 0.5) discard;
+    float centerDist = length(uv);
+    if (centerDist > 1) discard;
     vec4 col = vec4(parent_faction_color, 1);
-    col.a = float(centerDist < 1) * .5;
     gl_FragColor = col;
 }
 #endif

@@ -29,12 +29,11 @@ void main() {
 in vec2 v_quad_pos;
 
 void main() {
-    if (u_spawn > 0.95) discard;
     commonInit();
     vec2 uv = v_quad_pos;
     float centerDist = abs(uv.y);
     vec4 col = vec4(parent_faction_color,1);
-    col.a = (1. - centerDist) * u_spawn * u_spawn;
+    col.a = float(1 - u_spawn > centerDist);
     gl_FragColor = col;
 }
 #endif
