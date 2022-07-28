@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-geng = "0.11.0"
+geng = "0.12"
 serde = "1"
 resvg = "0.22"
 usvg = "0.22"
