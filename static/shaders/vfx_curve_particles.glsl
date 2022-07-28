@@ -42,6 +42,7 @@ flat in int p_index;
 
 void main() {
     commonInit();
+    if (u_spawn > 0.95) discard;
     vec2 uv = v_quad_pos;
     float centerDist = length(uv);
     if (centerDist > 1) discard;

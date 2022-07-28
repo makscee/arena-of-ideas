@@ -36,7 +36,7 @@ fn default_partner() -> Who {
 }
 
 fn default_color() -> Color<f32> {
-    Color::WHITE
+    Color::BLACK
 }
 
 impl EffectContainer for VisualEffect {

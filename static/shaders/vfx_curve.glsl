@@ -9,7 +9,7 @@ uniform float u_end_cut = 0;
 
 
 void main() {
-    vec2 pos = a_pos * .5 + vec2(0.5, 0.);
+    vec2 pos = vec2(a_pos.x * .5 + 0.5, a_pos.y);
     v_quad_pos = pos;
     float height = pos.y * u_thickness;
     float bezier_t = pos.x;
@@ -32,8 +32,8 @@ void main() {
     commonInit();
     vec2 uv = v_quad_pos;
     float centerDist = abs(uv.y);
+    if (centerDist > u_spawn) discard;
     vec4 col = vec4(parent_faction_color,1);
-    col.a = float(1 - u_spawn > centerDist);
     gl_FragColor = col;
 }
 #endif
