@@ -1,6 +1,6 @@
 {
     "health": 10,
-    "base_damage": 2,
+    "base_damage": 1,
     "radius": 1.0,
     "action": {
         "range": 1,
