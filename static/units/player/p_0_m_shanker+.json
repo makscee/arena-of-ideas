@@ -1,14 +1,13 @@
 {
-	"name": "snaker",
-    "tier": 2,
-    "description": "@Scathe apply @MicroStun",
-    "triple": "shanker+",
+	"name": "shanker+",
+    "tier": 0,
+    "description": "@Scathe apply @MicroStun to enemies in range 3",
     "clans": [
         "Assassins"
     ],
     "statuses": [
         {
-            "name": "Rogue+OnDealDamage",
+            "name": "StunOnDamage",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -22,12 +21,18 @@
                         }
                     ],
                     "effect": {
-                        "type": "AttachStatus",
-                        "status": "MicroStun"
+                        "type": "AOE",
+                        "filter": "Enemies",
+                        "skip_current_target": false,
+                        "range": 3,
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "MicroStun"
+                        }
                     }
                 }
             ]
         }
     ],
-    "base": "melee"
+    "base": "melee+"
 }

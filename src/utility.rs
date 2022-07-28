@@ -14,7 +14,6 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
         let packs: Vec<String> = serde_json::from_str(&json).expect("Failed to parse load packs");
         debug!("Updating packs: {:?}", packs);
         for pack in packs {
-            let mut _list: Vec<String> = vec![];
             let base_path = path.join(&pack);
 
             //Skip all but player units
@@ -26,7 +25,8 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
             let list = base_path.join("_list.json");
             let json = std::fs::read_to_string(&list).expect("Failed to load pack");
             let types: Vec<String> = serde_json::from_str(&json).expect("Failed to parse pack");
-            for typ in types {
+            let mut _list = types.clone();
+            for (i, typ) in types.into_iter().enumerate() {
                 if !assets.units.map.contains_key(&typ) {
                     debug!("Unit not loaded: {:?}", &typ);
                 }
@@ -68,17 +68,18 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
                         unit.name
                     )
                 };
-                _list.push(new_name.clone());
+
                 let old_file = base_path.join(format!("{}.json", old_name));
                 let new_file = base_path.join(format!("{}.json", new_name));
                 std::fs::rename(&old_file, &new_file).expect(&format!(
                     "Cannot rename unit asset: {:?} to {:?}",
                     old_file, new_file
                 ));
+                _list[i] = new_name.clone();
+                let data = serde_json::to_string_pretty(&_list).expect("Failed to serialize item");
+                std::fs::write(&list, data).expect(&format!("Cannot save _list: {:?}", list));
                 debug!("Renaming {:?} to {:?}", old_name, new_name);
             }
-            let data = serde_json::to_string_pretty(&_list).expect("Failed to serialize item");
-            std::fs::write(&list, data).expect(&format!("Cannot save _list: {:?}", list));
             debug!("Saving pack: {:?}", base_path);
         }
     }
