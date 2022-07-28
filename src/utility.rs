@@ -1,3 +1,5 @@
+use geng::ui::Config;
+
 use crate::Assets;
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -25,6 +27,9 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
             let json = std::fs::read_to_string(&list).expect("Failed to load pack");
             let types: Vec<String> = serde_json::from_str(&json).expect("Failed to parse pack");
             for typ in types {
+                if !assets.units.map.contains_key(&typ) {
+                    debug!("Unit not loaded: {:?}", &typ);
+                }
                 let unit = &assets.units.map[&typ];
                 let old_name = &typ;
                 let new_name = if unit.base.is_some() {
@@ -34,15 +39,31 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
                     }
                     format!(
                         "{}_{}_{}_{}",
-                        base_path.file_name().unwrap().to_str().unwrap(),
+                        base_path
+                            .file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .to_owned()
+                            .chars()
+                            .next()
+                            .unwrap(),
                         unit.tier,
-                        base,
+                        base.chars().next().unwrap(),
                         unit.name
                     )
                 } else {
                     format!(
                         "{}_{}_{}",
-                        base_path.file_name().unwrap().to_str().unwrap(),
+                        base_path
+                            .file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .to_owned()
+                            .chars()
+                            .next()
+                            .unwrap(),
                         unit.tier,
                         unit.name
                     )
