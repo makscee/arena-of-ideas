@@ -1,5 +1,5 @@
 {
-	"name": "rogue",
+    "name": "rogue",
     "tier": 1,
     "triple": "rogue+",
     "base_damage": 1,
@@ -10,15 +10,7 @@
         "range": 1,
         "cooldown": 1,
         "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/melee_hit.json"
-                },{
-                    "type": "AttachStatus",
-                    "status": "Vulnerability"
-                }
-            ]
+            "preset": "effects/melee_hit.json"
         }
     },
     "base": "melee"

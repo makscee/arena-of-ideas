@@ -81,6 +81,7 @@ impl UnitRender {
                 u_random: unit.random_number.as_f32(),
                 u_action_time: unit.last_action_time.as_f32(),
                 u_injure_time: unit.last_injure_time.as_f32(),
+                u_heal_time: unit.last_heal_time.as_f32(),
                 u_parent_faction: match unit.faction {
                         Faction::Player => 1.0,
                         Faction::Enemy => -1.0,

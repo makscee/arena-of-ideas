@@ -20,9 +20,11 @@ const float thicknessInner = thicknessOuter * .5;
 
 const vec3 player_faction_color = vec3(1);
 const vec3 enemy_faction_color = vec3(0.988, 0.004, 0.027);
+const vec3 heal_color = vec3(0.129, 1, 0.024);
 
 uniform float u_time;
 uniform float u_injure_time;
+uniform float u_heal_time;
 uniform float u_spawn;
 uniform float u_action = 0; // 0 -> 1
 uniform float u_action_time;

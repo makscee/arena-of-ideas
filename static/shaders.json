@@ -9,6 +9,6 @@
     "shaders/vfx_curve.glsl",
     "shaders/vfx_injured_particles.glsl",
     "shaders/status/status_default.glsl",
-    "shaders/status/status_tint.glsl",
+    "shaders/status/status_injure_heal_tint.glsl",
     "shaders/default_circle_hero.glsl"
 ]

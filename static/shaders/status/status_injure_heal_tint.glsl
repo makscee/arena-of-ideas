@@ -25,7 +25,11 @@ void main() {
     vec2 uv = v_quad_pos;
     vec4 previous_color = texture(u_previous_texture, gl_FragCoord.xy / vec2(textureSize(u_previous_texture, 0)));
     float dist = length(uv);
-    vec4 statusTint = vec4(parent_enemy_faction_color, max(0.0,1 - (u_time - u_injure_time) / 1));
-    gl_FragColor = alphaBlend(previous_color, statusTint * float(dist < u_unit_radius));
+    if (dist > u_unit_radius) discard;
+    vec4 injureTint = vec4(parent_enemy_faction_color, max(.0,1 - u_time + u_injure_time));
+    vec4 healTint = vec4(heal_color, max(.0,1 - u_time + u_heal_time));
+    vec4 col = alphaBlend(previous_color, injureTint);
+    col = alphaBlend(col, healTint);
+    gl_FragColor = col;
 }
 #endif

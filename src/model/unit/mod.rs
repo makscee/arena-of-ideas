@@ -49,6 +49,7 @@ pub struct Unit {
     pub render_position: Vec2<R32>,
     pub last_action_time: Time,
     pub last_injure_time: Time,
+    pub last_heal_time: Time,
     pub random_number: R32,
 }
 
@@ -115,6 +116,7 @@ impl Unit {
             clans: template.clans.clone(),
             last_action_time: Time::new(0.0),
             last_injure_time: Time::new(0.0),
+            last_heal_time: Time::new(0.0),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
         }
     }

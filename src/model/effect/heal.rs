@@ -50,6 +50,7 @@ impl EffectImpl for HealEffect {
                 Color::GREEN,
                 crate::render::TextType::Heal,
             );
+            target_unit.last_heal_time = logic.model.time;
         }
         let value_clamped = min(value, max_health - target_unit.stats.health);
         target_unit.stats.health += value_clamped;
