@@ -6,8 +6,12 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 uniform float u_hole_radius = 0.1;
+
+const float c_action_animation_time = 0.5;
 void main() {
-    float radius = (u_unit_radius - u_hole_radius) * c_units_scale;
+    float action_t = smoothstep(c_action_animation_time, 0, u_time - u_action_time);
+    float u_hole_radius = u_hole_radius + action_t * 0.2;
+    float radius = (u_unit_radius - u_hole_radius) * c_units_scale * (1 + action_t * .15);
     float height = u_hole_radius + radius * .5 + (radius * .5 * a_pos.y);
     float radian = a_pos.x * pi * 2.;
     float paddingHeight = float(a_pos.y > 0) * u_padding * radius;
