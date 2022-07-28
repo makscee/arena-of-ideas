@@ -81,7 +81,7 @@ impl Render {
     }
     pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
-        self.draw_field(&self.assets.field_render, game_time, framebuffer);
+        self.draw_field(&self.assets.field_render, game_time, model, framebuffer);
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
 
@@ -116,17 +116,18 @@ impl Render {
                 framebuffer,
                 &self.camera,
             );
+            let text_color = Color::try_from("#e6e6e6").unwrap();
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
                 format!("{:.0}", unit.stats.base_damage),
-                Color::WHITE,
+                text_color,
             )
             .fit_into(damage)
             .draw_2d(&self.geng, framebuffer, &self.camera);
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
                 format!("{:.0}", unit.stats.health),
-                Color::WHITE,
+                text_color,
             )
             .fit_into(health)
             .draw_2d(&self.geng, framebuffer, &self.camera);

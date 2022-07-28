@@ -12,7 +12,6 @@ impl EffectImpl for ActionEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let caster = logic.model.units.get_mut(&context.caster.unwrap()).unwrap();
-        caster.last_action_time = logic.model.time;
         caster.action_state = ActionState::Start {
             target: context.target.unwrap(),
         };

@@ -5,6 +5,7 @@ impl Render {
         &self,
         shader_program: &ShaderProgram,
         game_time: f64,
+        model: &Model,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
@@ -23,6 +24,8 @@ impl Render {
                 ugli::uniforms! {
                     u_time: game_time,
                     u_window_size: window_size,
+                    u_last_player_action_time: model.last_player_action_time.as_f32(),
+                    u_last_enemy_action_time: model.last_enemy_action_time.as_f32(),
                 },
                 geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                 &shader_program.parameters,

@@ -73,6 +73,8 @@ pub struct Model {
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, R32>,
     pub current_tick: TickModel,
+    pub last_player_action_time: Time,
+    pub last_enemy_action_time: Time,
 }
 
 impl Model {
@@ -99,6 +101,8 @@ impl Model {
             vars: HashMap::new(),
             current_tick: TickModel::new(0),
             render_model,
+            last_player_action_time: Time::ZERO,
+            last_enemy_action_time: Time::ZERO,
         }
     }
 }
