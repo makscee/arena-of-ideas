@@ -45,6 +45,10 @@
                                 "value": -1
                             }
                         }
+                    },
+                    {
+                        "preset": "effects/vfx_attach_status.json",
+                        "color": "#e6e6e6"
                     }
                 ]
             }

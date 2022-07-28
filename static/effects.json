@@ -7,5 +7,6 @@
     "effects/bonus_shot.json",
     "effects/explosion.json",
     "effects/heal_vfx.json",
-    "effects/vfx_injured_particles.json"
+    "effects/vfx_injured_particles.json",
+    "effects/vfx_attach_status.json"
 ]

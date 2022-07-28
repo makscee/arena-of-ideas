@@ -45,23 +45,8 @@
                 }
             ],
             "effect": {
-                "type": "Visual",
-                "duration": 1.5,
-                "parent": "Target",
-                "follow": true,
-                "radius": 2,
-                "render": {
-                    "path": "shaders/vfx_particle_spin.glsl",
-                    "parameters": {
-                        "p_startColor": "#400080",
-                        "p_endColor": "#333333",
-                        "p_count": 25,
-                        "p_startSize": 0.05,
-                        "p_endSize": 0.01,
-                        "p_spawnShift": 0.005,
-                        "p_trailCount": 3
-                    }
-                }
+                "preset": "effects/vfx_attach_status.json",
+                "color": "#400080"
             }
         }
     ],

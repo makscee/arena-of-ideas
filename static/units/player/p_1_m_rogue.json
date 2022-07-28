@@ -10,7 +10,15 @@
         "range": 1,
         "cooldown": 1,
         "effect": {
-            "preset": "effects/melee_hit.json"
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/melee_hit.json"
+                },{
+                    "type": "AttachStatus",
+                    "status": "Vulnerability"
+                }
+            ]
         }
     },
     "base": "melee"

@@ -1,0 +1,16 @@
+{
+    "type": "Visual",
+    "duration": 0.8,
+    "parent": "Target",
+    "follow": true,
+    "radius": 2,
+    "color": "#ffffff",
+    "render": {
+        "path": "shaders/vfx_particle_spin.glsl",
+        "parameters": {
+            "u_unit_radius": 0.03
+        },
+        "vertices": 2,
+        "instances": 300
+    }
+}
