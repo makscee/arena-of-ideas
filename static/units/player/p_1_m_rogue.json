@@ -1,7 +1,11 @@
 {
-    "health": 10,
+	"name": "rogue",
+    "tier": 1,
+    "triple": "rogue+",
     "base_damage": 1,
-    "radius": 1.0,
+    "clans": [
+        "Assassins"
+    ],
     "action": {
         "range": 1,
         "cooldown": 1,
@@ -9,9 +13,5 @@
             "preset": "effects/melee_hit.json"
         }
     },
-    "render": {
-        "path": "shaders/default_circle_hero.glsl",
-        "vertices": 200,
-        "instances": 1
-    }
+    "base": "melee"
 }

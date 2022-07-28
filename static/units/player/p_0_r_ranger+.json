@@ -1,0 +1,33 @@
+{
+	"name": "ranger+",
+    "tier": 0,
+    "description": "On @Crit @Bonus Shot, +30% @Crit chance",
+    "crit_chance": 30,
+    "clans": [
+        "Archers",
+        "Assassins"
+    ],
+    "statuses": [
+        {
+            "name": "SniperOnCrit",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Crit"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/bonus_shot.json"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}

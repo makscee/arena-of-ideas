@@ -1,0 +1,45 @@
+{
+	"name": "guardian",
+    "tier": 4,
+    "description": "Every 5 seconds give @Shield to a shieldless ally",
+    "clans": [
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "ShieldAllyEvery5",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 5,
+                            "next_tick": 5
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Allies",
+                        "condition": {
+                            "type": "Not",
+                            "condition": {
+                                "type": "UnitHasStatus",
+                                "status": "Shield",
+                                "who": "Target"
+                            }
+                        },
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}

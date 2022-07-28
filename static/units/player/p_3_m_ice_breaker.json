@@ -1,0 +1,57 @@
+{
+	"name": "ice_breaker",
+    "tier": 3,
+    "description": "@Crit on @Frozen",
+    "action": {
+        "range": 1,
+        "cooldown": 1,
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Freeze"
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "Damage",
+                                "types": [
+                                    "Melee",
+                                    "Crit"
+                                ],
+                                "value": {
+                                    "type": "Mul",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Caster",
+                                        "stat": "BaseDamage"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                }
+                            },
+                            {
+                                "preset": "effects/crit_hit_vfx.json"
+                            }
+                        ]
+                    },
+                    "else": {
+                        "preset": "effects/melee_hit.json"
+                    }
+                }
+            ]
+        }
+    },
+    "clans": [
+        "Freezers",
+        "Assassins"
+    ],
+    "base": "melee"
+}

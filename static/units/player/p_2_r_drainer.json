@@ -1,0 +1,57 @@
+{
+	"name": "drainer",
+    "tier": 2,
+    "description": "On @Heal received shoot projectile to random enemy for same damage",
+    "triple": "drainer+",
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "DrainerHealTaken",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "HealTaken"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "ChangeContext",
+                            "from": "Caster",
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "Damage",
+                                        "types": [
+                                            "Ranged"
+                                        ],
+                                        "value": {
+                                            "type": "Var",
+                                            "name": "IncomingHeal"
+                                        }
+                                    },
+                                    {
+                                        "preset": "effects/laser_vfx.json"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}
