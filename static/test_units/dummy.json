@@ -2,9 +2,9 @@
     "name": "dummy",
     "health": 1,
     "radius": 1.0,
+    "range": 10,
+    "cooldown": 10,
     "action": {
-        "range": 10,
-        "cooldown": 10,
         "effect": {
             "type": "Noop"
         }

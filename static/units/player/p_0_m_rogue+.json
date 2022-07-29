@@ -6,9 +6,9 @@
     "clans": [
         "Assassins"
     ],
+    "range": 1,
+    "cooldown": 1,
     "action": {
-        "range": 1,
-        "cooldown": 1,
         "effect": {
             "preset": "effects/melee_hit.json"
         }

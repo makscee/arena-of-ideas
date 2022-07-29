@@ -7,9 +7,9 @@
         "PlagueSpreaders",
         "Assassins"
     ],
+    "range": 1,
+    "cooldown": 1,
     "action": {
-        "range": 1,
-        "cooldown": 1,
         "effect": {
             "type": "List",
             "effects": [

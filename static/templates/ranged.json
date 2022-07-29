@@ -2,9 +2,9 @@
     "health": 4,
     "radius": 1.0,
     "base_damage": 3,
+    "range": 6,
+    "cooldown": 1,
     "action": {
-        "range": 6,
-        "cooldown": 1,
         "effect": {
             "type": "List",
             "effects": [

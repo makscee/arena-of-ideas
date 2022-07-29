@@ -1,14 +1,14 @@
 {
-	"name": "poison_arrow+",
+    "name": "poison_arrow+",
     "tier": 0,
     "base_damage": 3,
     "description": "@Scathe apply @Poison. @Multishot 2",
     "clans": [
         "Assassins"
     ],
+    "range": 10,
+    "cooldown": 3,
     "action": {
-        "range": 8,
-        "cooldown": 3,
         "effect": {
             "type": "AddTargets",
             "condition": {

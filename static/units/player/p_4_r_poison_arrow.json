@@ -1,5 +1,5 @@
 {
-	"name": "poison_arrow",
+    "name": "poison_arrow",
     "tier": 4,
     "base_damage": 1,
     "description": "@Scathe apply @Poison",
@@ -7,9 +7,9 @@
         "Assassins",
         "Archers"
     ],
+    "range": 10,
+    "cooldown": 3,
     "action": {
-        "range": 8,
-        "cooldown": 3,
         "effect": {
             "type": "List",
             "effects": [

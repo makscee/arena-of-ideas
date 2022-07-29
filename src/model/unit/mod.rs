@@ -16,8 +16,6 @@ pub enum ActionState {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ActionProperties {
-    pub cooldown: Ticks,
-    pub range: Coord,
     #[serde(default)]
     pub effect: Effect,
 }
@@ -41,6 +39,8 @@ pub struct Unit {
     pub face_dir: Vec2<R32>,
     pub position: Position,
     pub action: ActionProperties,
+    pub cooldown: Ticks,
+    pub range: Coord,
     pub ability_cooldown: Option<Time>,
     pub clans: Vec<Clan>,
     pub next_action_modifiers: Vec<Modifier>,
@@ -102,6 +102,8 @@ impl Unit {
                 .collect(),
             modifier_targets: vec![],
             flags: vec![],
+            range: template.range,
+            cooldown: template.cooldown,
             faction,
             action_state: ActionState::Cooldown { time: 0 },
             stats: UnitStats::new(template),

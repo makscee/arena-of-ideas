@@ -20,6 +20,8 @@ pub struct UnitTemplate {
     pub spawn_animation_time: Time,
     pub radius: R32,
     pub action: ActionProperties,
+    pub cooldown: Ticks,
+    pub range: Coord,
     pub statuses: Vec<StatusRef>,
     pub ability: Option<Ability>,
     pub clans: Vec<Clan>,
@@ -43,11 +45,9 @@ impl Default for UnitTemplate {
             action_speed: r32(1.0),
             spawn_animation_time: Time::new(0.0),
             radius: R32::new(0.5),
-            action: ActionProperties {
-                range: 1,
-                cooldown: 1,
-                effect: default(),
-            },
+            action: ActionProperties { effect: default() },
+            range: 1,
+            cooldown: 1,
             statuses: default(),
             ability: None,
             render_config: ShaderConfig {

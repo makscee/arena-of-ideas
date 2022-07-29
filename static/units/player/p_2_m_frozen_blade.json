@@ -3,9 +3,9 @@
     "tier": 2,
     "triple": "frozen_blade+",
     "description": "@Scathe: apply @Frozen",
+    "range": 1,
+    "cooldown": 5,
     "action": {
-        "range": 1,
-        "cooldown": 5,
         "effect": {
             "type": "List",
             "effects": [

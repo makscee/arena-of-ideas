@@ -2,9 +2,9 @@
     "health": 15,
     "base_damage": 4,
     "radius": 1.1,
+    "range": 1,
+    "cooldown": 1,
     "action": {
-        "range": 1,
-        "cooldown": 1,
         "effect": {
             "preset": "effects/melee_hit.json"
         }

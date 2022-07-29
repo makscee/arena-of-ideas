@@ -1,14 +1,14 @@
 {
-	"name": "ice_breaker+",
+    "name": "ice_breaker+",
     "tier": 0,
     "base_damage": 1.0,
     "description": "@Scathe apply @MicroStun",
     "clans": [
         "Assassins"
     ],
+    "range": 1,
+    "cooldown": 1,
     "action": {
-        "range": 1,
-        "cooldown": 1,
         "effect": {
             "preset": "effects/melee_hit.json"
         }

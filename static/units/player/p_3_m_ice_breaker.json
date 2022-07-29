@@ -1,10 +1,10 @@
 {
-	"name": "ice_breaker",
+    "name": "ice_breaker",
     "tier": 3,
     "description": "@Crit on @Frozen",
+    "range": 1,
+    "cooldown": 1,
     "action": {
-        "range": 1,
-        "cooldown": 1,
         "effect": {
             "type": "List",
             "effects": [
