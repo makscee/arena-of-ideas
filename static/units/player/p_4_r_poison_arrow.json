@@ -1,7 +1,7 @@
 {
 	"name": "poison_arrow",
     "tier": 4,
-    "base_damage": 0.2,
+    "base_damage": 1,
     "description": "@Scathe apply @Poison",
     "clans": [
         "Assassins",

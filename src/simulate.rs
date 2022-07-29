@@ -1,6 +1,6 @@
-use std::{collections::VecDeque, path::PathBuf, time::Instant};
-
-use geng::prelude::*;
+use crate::Clan;
+use geng::prelude::itertools::Itertools;
+use std::{collections::BTreeMap, collections::VecDeque, path::PathBuf, time::Instant};
 
 use crate::{
     assets::{self, Assets, ClanEffects, Config, GameRound, KeyMapping, Statuses},
@@ -8,6 +8,7 @@ use crate::{
     model::{Faction, Model, Unit, UnitTemplate, UnitTemplates, UnitType},
     render::RenderModel,
 };
+use geng::prelude::*;
 
 #[derive(clap::Args)]
 pub struct Simulate {
@@ -20,10 +21,12 @@ pub struct Simulate {
 struct SimulationConfig {
     player: Vec<RegexUnit>,
     opponent: SimulationUnits,
+    clans: Vec<HashMap<RegexClan, usize>>,
     repeats: usize,
 }
 
 type RegexUnit = String;
+type RegexClan = String;
 
 #[derive(Deserialize)]
 #[serde(tag = "type")]
@@ -32,18 +35,20 @@ enum SimulationUnits {
     Rounds { from: usize, to: usize },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct BattleConfig {
     player: Vec<UnitType>,
     round: GameRound,
     repeats: usize,
+    clans: HashMap<Clan, usize>,
 }
 
 impl SimulationConfig {
-    fn battles(
-        &self,
+    fn battles<'a>(
+        &'a self,
         rounds: &[GameRound],
-        all_units: &Vec<UnitTemplate>,
+        all_units: &'a Vec<UnitTemplate>,
+        all_clans: &'a Vec<Clan>,
     ) -> impl Iterator<Item = BattleConfig> + '_ {
         let battles: Vec<BattleConfig> = vec![];
         let mut player_variants = vec![];
@@ -69,13 +74,31 @@ impl SimulationConfig {
 
         player_variants.into_iter().flat_map(move |player| {
             let mut rounds = vec![];
-            for round in &battle_rounds {
-                rounds.push(BattleConfig {
-                    player: player.clone(),
-                    round: round.clone(),
-                    repeats: self.repeats,
-                });
+
+            if self.clans.is_empty() {
+                for round in &battle_rounds {
+                    rounds.push(BattleConfig {
+                        player: player.clone(),
+                        round: round.clone(),
+                        repeats: self.repeats,
+                        clans: hashmap! {},
+                    });
+                }
+            } else {
+                for clans in &self.clans {
+                    for clan in self.to_clans(clans.clone(), all_clans) {
+                        for round in &battle_rounds {
+                            rounds.push(BattleConfig {
+                                player: player.clone(),
+                                round: round.clone(),
+                                repeats: self.repeats,
+                                clans: clan.clone(),
+                            });
+                        }
+                    }
+                }
             }
+
             rounds
         })
     }
@@ -121,13 +144,37 @@ impl SimulationConfig {
             .map(|unit| unit.name.clone())
             .collect()
     }
+
+    fn to_clans(
+        &self,
+        clan: HashMap<RegexClan, usize>,
+        all_clans: &Vec<Clan>,
+    ) -> Vec<HashMap<Clan, usize>> {
+        let mut result: Vec<HashMap<Clan, usize>> = vec![];
+        for (clan_regex, size) in clan {
+            let regex =
+                regex::Regex::new(&clan_regex).expect("Failed to parse a regular expression");
+            let clans: Vec<Clan> = all_clans
+                .into_iter()
+                .filter(move |clan| regex.is_match(&clan.to_string()))
+                .map(|clan| *clan)
+                .collect();
+            for clan in clans {
+                let mut map: HashMap<Clan, usize> = hashmap! {};
+                map.insert(clan, size);
+                result.push(map)
+            }
+        }
+        result
+    }
 }
 
 #[derive(Debug, Serialize)]
 struct TotalResult {
+    player: Vec<UnitType>,
+    clans: Vec<ClanResult>,
     win_rate: f64,
     games: usize,
-    player: Vec<UnitType>,
 }
 
 #[derive(Debug, Serialize)]
@@ -136,6 +183,12 @@ struct BattleResult {
     player: Vec<UnitType>,
     round: GameRound,
     games: Vec<GameResult>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct ClanResult {
+    clan: HashMap<Clan, usize>,
+    win_rate: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -154,23 +207,44 @@ impl Simulate {
         .unwrap();
         info!("Starting simulation");
 
-        let all_units = assets
-            .units.iter().map(|entry| entry.1).cloned().collect();
+        let all_units = assets.units.iter().map(|entry| entry.1).cloned().collect();
 
         let mut total_games = 0;
         let mut total_wins = 0;
-
-        //let player_units = simulation_config.player.clone();
+        let mut clan_games = 0;
+        let mut clan_wins = 0;
         let mut total_results = vec![];
         let mut last_player: Option<Vec<UnitType>> = None;
+        let mut last_clans: Option<HashMap<Clan, usize>> = None;
+        let mut all_clans = vec![];
+        for (clan, effect) in &assets.clans.map {
+            all_clans.push(clan.clone());
+        }
+        let mut clan_results: Vec<ClanResult> = vec![];
+        debug!("all clans: {:?}", &all_clans);
         let battles: Vec<BattleConfig> = simulation_config
-            .battles(&assets.rounds, &all_units)
+            .battles(&assets.rounds, &all_units, &all_clans)
             .collect();
         let battle_results = battles
             .into_iter()
             .map(|battle| {
                 info!("Starting the battle: {battle:?}");
                 let mut game_wins = 0;
+                if let Some(last_clan) = &last_clans {
+                    if battle.clans != last_clans.as_ref().unwrap().clone() {
+                        let result = ClanResult {
+                            clan: last_clan.clone(),
+                            win_rate: if clan_games == 0 {
+                                0.0
+                            } else {
+                                clan_wins as f64 / clan_games as f64
+                            },
+                        };
+                        clan_results.push(result);
+                        clan_wins = 0;
+                        clan_games = 0;
+                    }
+                }
                 if let Some(last_player) = &last_player {
                     if battle.player != last_player.clone() {
                         let result = TotalResult {
@@ -181,18 +255,22 @@ impl Simulate {
                             } else {
                                 total_wins as f64 / total_games as f64
                             },
+                            clans: clan_results.clone(),
                         };
                         total_results.push(result);
                         total_games = 0;
                         total_wins = 0;
+                        clan_results.clear();
                     }
                 }
                 last_player = Some(battle.player.clone());
+                last_clans = Some(battle.clans.clone());
                 let games = (1..=battle.repeats)
                     .map(|i| {
                         let result = Simulation::new(
                             Config {
                                 player: battle.player.clone(),
+                                clans: battle.clans.clone(),
                                 ..config.clone()
                             },
                             assets.clans.clone(),
@@ -207,6 +285,7 @@ impl Simulate {
                         if result.player_won {
                             total_wins += 1;
                             game_wins += 1;
+                            clan_wins += 1;
                         }
 
                         let winner = if result.player_won {
@@ -225,6 +304,7 @@ impl Simulate {
                     })
                     .collect::<Vec<_>>();
                 total_games += battle.repeats;
+                clan_games += battle.repeats;
                 BattleResult {
                     win_rate: if games.is_empty() {
                         0.0
@@ -248,6 +328,7 @@ impl Simulate {
                 } else {
                     total_wins as f64 / total_games as f64
                 },
+                clans: clan_results.clone(),
             };
             total_results.push(result);
         }
@@ -255,9 +336,17 @@ impl Simulate {
         info!("Gathering results");
         let total_battles = battle_results.len();
         let result_path = PathBuf::new().join("simulation_result");
-        let battles_path = result_path.join("battles");
+        let date_path = result_path.join(format!("{:?}", Instant::now()));
+        let battles_path = date_path.join("battles");
 
         // Create directories
+        match std::fs::create_dir_all(&date_path) {
+            Ok(()) => {}
+            Err(error) => match error.kind() {
+                std::io::ErrorKind::AlreadyExists => {}
+                _ => panic!("Failed to create a simulation_result directory: {error}"),
+            },
+        }
         match std::fs::create_dir_all(&battles_path) {
             Ok(()) => {}
             Err(error) => match error.kind() {
@@ -265,9 +354,16 @@ impl Simulate {
                 _ => panic!("Failed to create a simulation_result directory: {error}"),
             },
         }
+        total_results.sort_by(|a, b| b.win_rate.partial_cmp(&a.win_rate).unwrap());
 
         // Write results
-        write_to(result_path.join("total.json"), &total_results).expect("Failed to write results");
+        write_to(date_path.join("total.json"), &total_results).expect("Failed to write results");
+        let mut short: BTreeMap<String, f64> = BTreeMap::new();
+        for total in &total_results {
+            short.insert(format!("{:?}", total.player), total.win_rate);
+        }
+
+        write_to(date_path.join("total_short.json"), &short).expect("Failed to write results");
         for (i, result) in battle_results.iter().enumerate() {
             let path = battles_path.join(format!("battle_{}.json", i + 1));
             write_to(path, result).expect("Failed to write results");

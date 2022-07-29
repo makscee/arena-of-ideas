@@ -42,49 +42,6 @@
         {
             "triggers": [
                 {
-                    "type": "Death"
-                }
-            ],
-            "effect": {
-                "type": "AddVar",
-                "name": "SpawnHealth",
-                "status_name": "Plague",
-                "value": {
-                    "type": "FindStat",
-                    "who": "From",
-                    "stat": "MaxHealth"
-                },
-                "effect": {
-                    "type": "Spawn",
-                    "unit_type": "skeleton",
-                    "switch_faction": true,
-                    "after_effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "ChangeStat",
-                                "stat": "MaxHealth",
-                                "value": {
-                                    "type": "Var",
-                                    "name": "SpawnHealth"
-                                }
-                            },
-                            {
-                                "type": "Heal",
-                                "value": {
-                                    "type": "Var",
-                                    "name": "SpawnHealth"
-                                },
-                                "no_text": true
-                            }
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "triggers": [
-                {
                     "type": "Init"
                 }
             ],

@@ -48,11 +48,15 @@ impl Logic {
             position,
             &self.model.statuses,
         );
-        for (clan, &clan_members) in &self.model.config.clans {
+        for (clan, _) in &self.model.clan_effects.map {
+            let mut size = 0;
+            if let Some(members) = &self.model.config.clans.get(&clan) {
+                size = **members;
+            }
             clan.apply_effects(
                 &mut unit,
                 &self.model.clan_effects,
-                clan_members,
+                size,
                 &mut self.model.next_id,
                 &self.model.statuses,
             );

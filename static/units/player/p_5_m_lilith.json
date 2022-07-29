@@ -1,6 +1,6 @@
 {
     "name": "lilith",
-    "tier": 6,
+    "tier": 5,
     "description": "Every 10 seconds apply @Dark Steal and @Siphon Life to all enemies",
     "clans": [
         "Vampires",

@@ -36,7 +36,13 @@ impl EffectImpl for HealEffect {
 
         let target_unit = context
             .target
-            .and_then(|id| logic.model.units.get_mut(&id))
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get_mut(&id)
+                    .or(logic.model.dead_units.get_mut(&id))
+            })
             .expect("Target not found");
 
         target_unit.stats.max_hp += add_max_hp;
