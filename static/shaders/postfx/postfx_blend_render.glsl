@@ -18,9 +18,6 @@ void main() {
     vec2 textureSize = textureSize(u_frame_texture, 0);
     vec4 frame = texture(u_frame_texture, gl_FragCoord.xy / textureSize);
     vec4 prev = texture(u_previous_texture, gl_FragCoord.xy / textureSize);
-    float frameL = luminance(frame);
-    float prevL = luminance(prev);
-    gl_FragColor = mix(frame, prev, float(prevL > frameL));
-    // gl_FragColor = prev;
+    gl_FragColor = frame + prev;
 }
 #endif
