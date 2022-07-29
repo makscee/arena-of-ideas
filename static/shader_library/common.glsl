@@ -32,7 +32,7 @@ uniform float u_action_time;
 uniform float u_cooldown;
 uniform float u_ability_ready = 1;
 uniform float u_random;
-uniform float u_padding = 1;
+uniform float u_padding = 2;
 uniform float u_health = 1;
 
 uniform vec2 u_unit_position;

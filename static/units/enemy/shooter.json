@@ -31,8 +31,5 @@
             ]
         }
     ],
-    "render": {
-        "path": "shaders/shooter_enemy.glsl"
-    },
     "base": "blob_ranged"
 }

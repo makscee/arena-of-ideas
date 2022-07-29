@@ -10,6 +10,9 @@
         }
     },
     "render": {
-        "path": "shaders/shooter_enemy.glsl"
+        "path": "shaders/shooter_enemy.glsl",
+        "parameters": {
+            "u_color": "#fc0107"
+        }
     }
 }

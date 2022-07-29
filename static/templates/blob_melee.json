@@ -12,7 +12,8 @@
     "render": {
         "path": "shaders/blob_enemy.glsl",
         "parameters":{
-            "u_padding": 2.0
+            "u_padding": 2.0,
+            "u_color": "#fc0107"
         }
     }
 }
