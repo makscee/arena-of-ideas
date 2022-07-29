@@ -7,7 +7,6 @@ uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 uniform float u_hole_radius = 0.1;
 
-const float ACTION_ANIMATION_TIME = 0.5;
 void main() {
     float action_t = smoothstep(ACTION_ANIMATION_TIME, 0, u_time - u_action_time);
     action_t *= action_t;

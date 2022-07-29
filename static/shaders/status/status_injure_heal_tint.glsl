@@ -28,7 +28,7 @@ void main() {
     vec4 injureTint = vec4(parent_enemy_faction_color, max(.0,1 - u_time + u_injure_time));
     vec4 healTint = vec4(heal_color, max(.0,1 - u_time + u_heal_time));
     vec4 tint = alphaBlend(injureTint, healTint);
-    tint = previous_color * tint;
+    tint *= previous_color.a;
     // vec4 col = alphaBlend(previous_color, injureTint);
     // col = alphaBlend(col, healTint);
     // gl_FragColor = col;

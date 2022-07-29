@@ -10,6 +10,9 @@
         }
     },
     "render": {
-        "path": "shaders/blob_enemy.glsl"
+        "path": "shaders/blob_enemy.glsl",
+        "parameters":{
+            "u_padding": 2.0
+        }
     }
 }

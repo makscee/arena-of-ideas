@@ -7,8 +7,11 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
+    // float u_action_time = u_time - fract(u_time);
+    float action_t = smoothstep(ACTION_ANIMATION_TIME, 0, u_time - u_action_time);
+    action_t *= action_t;
     v_quad_pos = a_pos * (1.0 + u_padding);
-    float size = u_unit_radius * .4;
+    float size = u_unit_radius * UNITS_SCALE + action_t * .3;
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -52,10 +55,6 @@ void main() {
     innerAlpha = clamp(innerAlpha, 0., 1.);
 
     float innerAlpha2 = -1., innerR2 = -1.;
-    float anim = animationFunc(u_action) / 4.;
-    anim = 0.;
-    innerAlpha2 += float(anim != 0.) * (2. - abs(anim) * .3);
-    innerR2 += float(anim != 0.) * (abs(anim) * 1.5 + 1.);
 
     float distCenter = distance(uv,vec2(0.0,0.0));
     float distOuter = outerR - distCenter;
@@ -73,7 +72,11 @@ void main() {
         vec2(cos(insideCircTime * 1.13 + sin(insideCircTime * .5) * 2.),
             sin(insideCircTime * 2.73)) * innerR * .8)) * float(distCenter < outerR + thicknessOuter * .5);
     col = alphaBlend(col, vec4(colors[0], v));
-
+    if (length(uv) < outerR)
+    {
+        col *= col.a;
+        col.a = 1;
+    }
     gl_FragColor = col;
 }
 #endif

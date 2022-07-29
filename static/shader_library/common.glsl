@@ -1,6 +1,7 @@
 const float pi = 3.14159;
 
 const float UNITS_SCALE = .4;
+const float ACTION_ANIMATION_TIME = 0.5;
 
 const float c_thickness = .1;
 const float c_glowRange = .2;

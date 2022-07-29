@@ -2,8 +2,5 @@
     "name": "blob",
     "health": 15,
     "statuses": [],
-    "render": {
-        "path": "shaders/blob_enemy.glsl"
-    },
     "base": "blob_melee"
 }
