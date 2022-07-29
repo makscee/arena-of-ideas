@@ -6,8 +6,8 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    v_quad_pos = a_pos * (1.0 + u_padding * c_units_scale);
-    float size = u_unit_radius * c_units_scale;
+    v_quad_pos = a_pos * (1.0 + u_padding * UNITS_SCALE);
+    float size = u_unit_radius * UNITS_SCALE;
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);

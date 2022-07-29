@@ -1,6 +1,6 @@
 const float pi = 3.14159;
 
-const float c_units_scale = .4;
+const float UNITS_SCALE = .4;
 
 const float c_thickness = .1;
 const float c_glowRange = .2;

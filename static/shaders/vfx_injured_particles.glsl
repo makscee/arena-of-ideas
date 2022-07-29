@@ -30,7 +30,7 @@ void main() {
     float colorHash = fract(colorHash(u_color.rgb) * 131 + u_random * 17);
 
     float size = u_unit_radius * mix(u_start_scale, u_end_scale, t) * r[2];
-    vec2 startPos = rotateCW(vec2(0,u_parent_radius * c_units_scale), pi / 6 * (1 - float(u_parent_position.x < 0) * 2.) + r_mid[0] * 0.2);
+    vec2 startPos = rotateCW(vec2(0,u_parent_radius * UNITS_SCALE), pi / 6 * (1 - float(u_parent_position.x < 0) * 2.) + r_mid[0] * 0.2);
     vec2 velocity = rotateCW(startPos, r_mid[1] * 3.5 * colorHash) * r[2] * 6. + vec2(sin(t * r_mid[0] * 9), cos(t * r_mid[1] * 2)) * 1.1 * (1.0 - colorHash);
     velocity *= .6;
     vec2 pos = u_parent_position + v_quad_pos * size + startPos + velocity * t;

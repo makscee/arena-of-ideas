@@ -81,7 +81,12 @@ impl Render {
     }
     pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
-        self.draw_field(&self.assets.field_render, game_time, model, framebuffer);
+        self.draw_field(
+            &self.assets.renders_config.field,
+            game_time,
+            model,
+            framebuffer,
+        );
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
 
@@ -132,6 +137,51 @@ impl Render {
             .fit_into(health)
             .draw_2d(&self.geng, framebuffer, &self.camera);
         }
+
+        // Draw slots
+        let factions = vec![Faction::Player, Faction::Enemy];
+        let shader_program = &self.assets.renders_config.slot;
+        for faction in factions {
+            for i in 0..SIDE_SLOTS {
+                let quad = shader_program.get_vertices(&self.geng);
+                let framebuffer_size = framebuffer.size();
+                let position = Position {
+                    x: i as i64,
+                    side: faction,
+                    height: 0,
+                }
+                .to_world_f32();
+                let empty = model
+                    .units
+                    .iter()
+                    .any(|unit| unit.position.x == i as i64 && unit.faction == faction);
+
+                ugli::draw(
+                    framebuffer,
+                    &shader_program.program,
+                    ugli::DrawMode::TriangleStrip,
+                    &quad,
+                    (
+                        ugli::uniforms! {
+                            u_time: game_time,
+                            u_unit_position: position,
+                            u_parent_faction: match faction {
+                                Faction::Player => 1.0,
+                                Faction::Enemy => -1.0,
+                            },
+                            u_empty: if empty { 1.0 } else { 0.0 },
+                        },
+                        geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        &shader_program.parameters,
+                    ),
+                    ugli::DrawParameters {
+                        blend_mode: Some(default()),
+                        ..default()
+                    },
+                );
+            }
+        }
+
         for particle in &model.particles {
             if particle.delay <= Time::new(0.0) {
                 let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps

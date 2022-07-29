@@ -48,8 +48,8 @@ impl Statuses {
 pub struct Assets {
     pub units: UnitTemplates,
     pub statuses: Statuses,
-    #[asset(load_with = "load_field_render(geng, &base_path)")]
-    pub field_render: ShaderProgram,
+    #[asset(load_with = "load_renders_config(geng, &base_path)")]
+    pub renders_config: RendersProgram,
     #[asset(load_with = "load_postfx_render(geng, &base_path)")]
     pub postfx_render: PostfxProgram,
     pub clans: ClanEffects,
@@ -63,25 +63,51 @@ pub struct Assets {
     pub rounds: Vec<GameRound>,
 }
 
-async fn load_field_render(
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct RendersConfig {
+    pub field: ShaderConfig,
+    pub slot: ShaderConfig,
+}
+
+pub struct RendersProgram {
+    pub field: ShaderProgram,
+    pub slot: ShaderProgram,
+}
+
+async fn load_renders_config(
     geng: &Geng,
     base_path: &std::path::Path,
-) -> anyhow::Result<ShaderProgram> {
-    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("field_render.json"))
+) -> anyhow::Result<RendersProgram> {
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("renders_config.json"))
         .await
-        .context("Failed to load field_render.json")?;
-    let config: ShaderConfig =
-        serde_json::from_str(&json).context("Failed to parse field_render.json")?;
-    let path = config.path.as_str();
+        .context("Failed to load renders_config.json")?;
+    let config: RendersConfig =
+        serde_json::from_str(&json).context("Failed to parse renders_config.json")?;
+
+    let path = config.field.path.as_str();
     let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
         .await
         .context(format!("Failed to load {path}"))?;
-    let result = ShaderProgram {
+    let field = ShaderProgram {
         program: Rc::new(program),
-        parameters: config.parameters,
-        vertices: config.vertices,
-        instances: config.instances,
+        parameters: config.field.parameters,
+        vertices: config.field.vertices,
+        instances: config.field.instances,
     };
+
+    let path = config.slot.path.as_str();
+    let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+        .await
+        .context(format!("Failed to load {path}"))?;
+    let slot = ShaderProgram {
+        program: Rc::new(program),
+        parameters: config.slot.parameters,
+        vertices: config.slot.vertices,
+        instances: config.slot.instances,
+    };
+
+    let result = RendersProgram { field, slot };
     Ok::<_, anyhow::Error>(result)
 }
 

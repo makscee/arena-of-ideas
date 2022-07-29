@@ -1,8 +1,0 @@
-{
-    "path": "shaders/field_3.glsl",
-    "parameters": {
-        "u_unit_radius": 0.005
-    },
-    "vertices": 2,
-    "instances": 500
-}
