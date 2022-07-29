@@ -1,6 +1,6 @@
 {
     "name": "dummy",
-    "health": 3000,
+    "health": 1,
     "radius": 1.0,
     "action": {
         "range": 10,

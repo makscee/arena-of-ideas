@@ -101,5 +101,34 @@
             },
             "InjureHealTint"
         ]
+    },
+    {
+        "activate": 0,
+        "filter": {
+            "Player": null,
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "name": "VfxDeath",
+                "type": "Status",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "Death"
+                            }
+                        ],
+                        "effect": {
+                            "preset": "effects/vfx_death_particles.json"
+                        }
+                    }
+                ]
+            },
+            "InjureHealTint"
+        ]
     }
 ]

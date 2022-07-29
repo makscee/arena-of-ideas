@@ -1,0 +1,15 @@
+{
+    "type": "Visual",
+    "duration": 0.5,
+    "parent": "Target",
+    "follow": false,
+    "radius": 1.0,
+    "render": {
+        "path": "shaders/vfx_particle_death_burst.glsl",
+        "parameters": {
+            "u_unit_radius": 0.1
+        },
+        "vertices": 2,
+        "instances": 300
+    }
+}
