@@ -266,17 +266,21 @@ impl Render {
             .all_statuses
             .iter()
             .filter_map(|status| {
-                self.assets.statuses.get(&status.status.name).map(|config| {
-                    let lines = wrap_text(
-                        self.geng.default_font().clone(),
-                        &config.description,
-                        font_size,
-                        DESCRIPTION_WIDTH,
-                    )
-                    .expect("Failed to measure text");
-                    let height = (lines.len() as f32 + 1.5) * font_size;
-                    (status, config, lines, height)
-                })
+                self.assets
+                    .statuses
+                    .get(&status.status.name)
+                    .filter(|config| !config.hidden)
+                    .map(|config| {
+                        let lines = wrap_text(
+                            self.geng.default_font().clone(),
+                            &config.description,
+                            font_size,
+                            DESCRIPTION_WIDTH,
+                        )
+                        .expect("Failed to measure text");
+                        let height = (lines.len() as f32 + 1.5) * font_size;
+                        (status, config, lines, height)
+                    })
             })
             .collect();
         let total_height = descriptions.iter().map(|(_, _, _, h)| *h).sum::<f32>()

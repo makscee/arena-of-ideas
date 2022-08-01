@@ -27,6 +27,9 @@ pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
+    /// Whether the status will be hidden in status description render
+    #[serde(default = "StatusConfig::default_hidden")]
+    pub hidden: bool,
     #[serde(default)]
     pub description: String,
     pub color: Option<Color<f32>>,
