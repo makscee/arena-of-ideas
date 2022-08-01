@@ -266,24 +266,28 @@ impl Render {
         for status in &unit.all_statuses {
             *statuses.entry(status.status.name.clone()).or_insert(0) += 1;
         }
-        let descriptions: Vec<_> = statuses
-            .into_iter()
-            .filter_map(|(status, stacks)| {
-                self.assets
-                    .statuses
-                    .get(&status)
-                    .filter(|config| !config.hidden)
-                    .map(|config| {
-                        let lines = wrap_text(
-                            self.geng.default_font().clone(),
-                            &config.description,
-                            font_size,
-                            DESCRIPTION_WIDTH,
-                        )
-                        .expect("Failed to measure text");
-                        let height = (lines.len() as f32 + 1.5) * font_size;
-                        (status, stacks, config, lines, height)
-                    })
+        let descriptions: Vec<_> = unit
+            .all_statuses
+            .iter()
+            .filter_map(|status| {
+                let status = status.status.name.clone();
+                statuses.remove(&status).and_then(|stacks| {
+                    self.assets
+                        .statuses
+                        .get(&status)
+                        .filter(|config| !config.hidden)
+                        .map(|config| {
+                            let lines = wrap_text(
+                                self.geng.default_font().clone(),
+                                &config.description,
+                                font_size,
+                                DESCRIPTION_WIDTH,
+                            )
+                            .expect("Failed to measure text");
+                            let height = (lines.len() as f32 + 1.5) * font_size;
+                            (status, stacks, config, lines, height)
+                        })
+                })
             })
             .collect();
         if descriptions.is_empty() {
