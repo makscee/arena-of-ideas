@@ -1,5 +1,6 @@
 {
     "name": "SiphonLife",
+    "description": "Take 1 damage every turn, heal caster for same amount",
     "type": "Status",
     "stacking": {
         "type": "Independent"

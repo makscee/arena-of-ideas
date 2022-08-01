@@ -1,5 +1,6 @@
 {
     "name": "Shield",
+    "description": "Block one instance of damage",
     "type": "Status",
     "stacking": {
         "type": "Independent"
