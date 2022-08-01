@@ -283,6 +283,9 @@ impl Render {
                     })
             })
             .collect();
+        if descriptions.is_empty() {
+            return;
+        }
         let total_height = descriptions.iter().map(|(_, _, _, h)| *h).sum::<f32>()
             + (descriptions.len() + 1) as f32 * DESCRIPTION_MARGIN;
         let top_left = vec2(
