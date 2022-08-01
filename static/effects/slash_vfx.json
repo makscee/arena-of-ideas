@@ -1,0 +1,32 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "Visual",
+            "duration": 0.5,
+            "parent": "Caster",
+            "partner": "Target",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "path": "shaders/vfx_slash.glsl",
+                "vertices": 50
+            }
+        },
+        {
+            "type": "Visual",
+            "duration": 1.0,
+            "parent": "Caster",
+            "partner": "Target",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "path": "shaders/vfx_slash_particles.glsl",
+                "parameters": {
+                    "u_unit_radius": 0.03
+                },
+                "instances": 100
+            }
+        }
+    ]
+}

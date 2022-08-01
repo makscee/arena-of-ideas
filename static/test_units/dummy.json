@@ -1,6 +1,6 @@
 {
     "name": "dummy",
-    "health": 1,
+    "health": 2999,
     "radius": 1.0,
     "range": 10,
     "cooldown": 10,

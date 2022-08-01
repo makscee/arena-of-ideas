@@ -13,7 +13,7 @@
             }
         },
         {
-            "preset": "effects/laser_vfx.json"
+            "preset": "effects/slash_vfx.json"
         }
     ]
 }

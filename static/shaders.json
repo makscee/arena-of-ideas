@@ -11,5 +11,7 @@
     "shaders/status/status_default.glsl",
     "shaders/status/status_injure_heal_tint.glsl",
     "shaders/default_circle_hero.glsl",
-    "shaders/vfx_particle_death_burst.glsl"
+    "shaders/vfx_particle_death_burst.glsl",
+    "shaders/vfx_slash.glsl",
+    "shaders/vfx_slash_particles.glsl"
 ]

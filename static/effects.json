@@ -1,6 +1,7 @@
 [
     "effects/laser_vfx.json",
     "effects/laser_enemy_vfx.json",
+    "effects/slash_vfx.json",
     "effects/melee_hit.json",
     "effects/ranged_hit.json",
     "effects/crit_hit_vfx.json",
