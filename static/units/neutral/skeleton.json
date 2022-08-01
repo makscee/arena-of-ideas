@@ -2,7 +2,7 @@
     "name": "skeleton",
     "health": 0,
     "base_damage": 1,
-    "radius": 0.7,
+    "radius": 0.28,
     "range": 1,
     "cooldown": 1,
     "action": {

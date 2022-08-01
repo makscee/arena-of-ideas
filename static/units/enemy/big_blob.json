@@ -1,7 +1,7 @@
 {
     "name": "big_blob",
     "health": 35,
-    "radius": 1.5,
+    "radius": 0.6,
     "range": 1,
     "cooldown": 1,
     "action": {

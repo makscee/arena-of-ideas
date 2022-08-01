@@ -1,7 +1,7 @@
 {
     "name": "small_blob",
     "health": 5,
-    "radius": 0.5,
+    "radius": 0.2,
     "base_damage": 1,
     "render": {
         "path": "shaders/blob_enemy.glsl"
