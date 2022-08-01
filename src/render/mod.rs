@@ -293,13 +293,10 @@ impl Render {
                 + unit.stats.radius.as_f32() / 2.0
                 + DESCRIPTION_MARGIN
                 + ARROW_SIZE,
-            unit.render_position.y.as_f32() + total_height / 2.0 + DESCRIPTION_MARGIN,
+            unit.render_position.y.as_f32() + total_height / 2.0,
         );
-        let bottom_right = top_left
-            + vec2(
-                DESCRIPTION_WIDTH + DESCRIPTION_MARGIN * 2.0,
-                -total_height - DESCRIPTION_MARGIN,
-            );
+        let bottom_right =
+            top_left + vec2(DESCRIPTION_WIDTH + DESCRIPTION_MARGIN * 2.0, -total_height);
 
         draw_2d::Quad::new(
             AABB::from_corners(top_left, bottom_right),
