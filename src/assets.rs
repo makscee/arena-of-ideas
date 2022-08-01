@@ -27,7 +27,18 @@ pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
+    #[serde(default)]
+    pub description: String,
+    pub color: Option<Color<f32>>,
+    #[serde(default = "StatusConfig::default_clan_origin")]
+    pub clan_origin: Clan,
     pub render: Option<ShaderConfig>,
+}
+
+impl StatusConfig {
+    fn default_clan_origin() -> Clan {
+        Clan::Common
+    }
 }
 
 #[derive(Deref, DerefMut, Clone)]
