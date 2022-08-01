@@ -1,5 +1,6 @@
 {
     "name": "InjureHealTint",
+    "hidden": true,
     "type": "Status",
     "order": 1000000,
     "stacking": {
