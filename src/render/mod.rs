@@ -348,12 +348,20 @@ impl Render {
             if stacks > 1 {
                 status.push_str(&format!(" ({stacks})"));
             }
+            const SIZE_HACK: f32 = 1000.0;
+            let offset = font
+                .measure(&status, SIZE_HACK)
+                .expect("Failed to measure text")
+                .width()
+                / SIZE_HACK
+                * font_size
+                * 0.5;
             font.draw(
                 framebuffer,
                 &self.camera,
                 &status,
-                text_pos,
-                geng::TextAlign::CENTER,
+                text_pos - vec2(offset, 0.0),
+                geng::TextAlign::LEFT,
                 font_size,
                 color,
             );
@@ -382,11 +390,16 @@ pub fn wrap_text(
     font_size: f32,
     target_width: f32,
 ) -> Option<Vec<String>> {
-    let max_width = target_width;
     let font = font.borrow();
     let text = text.as_ref();
 
-    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
+    let measure = |text| {
+        const SIZE_HACK: f32 = 1000.0;
+        font.measure(text, SIZE_HACK)
+            .map(|aabb| aabb.width() / SIZE_HACK * font_size)
+    };
+
+    let space_width = measure("_ _")? - measure("__")?;
 
     let mut lines = Vec::new();
     for line in text.lines() {
@@ -394,21 +407,20 @@ pub fn wrap_text(
         let mut line = String::new();
         let mut line_width = 0.0;
         if let Some(word) = words.next() {
-            let width = measure(word)?.width();
+            let width = measure(word)?;
             line_width += width;
             line += word;
         }
         for word in words {
-            let width = measure(word)?.width();
-            if line_width + width <= max_width {
-                line_width += width;
+            let width = measure(word)?;
+            if line_width + space_width + width <= target_width {
+                line_width += space_width + width;
                 line += " ";
                 line += word;
             } else {
                 lines.push(line);
-                line = String::new();
+                line = word.to_owned();
                 line_width = width;
-                line += word;
                 continue;
             }
         }
@@ -429,12 +441,21 @@ pub fn draw_lines(
     let font = font.borrow();
     let mut pos = vec2(top_anchor.x, top_anchor.y - font_size);
     for line in lines {
+        const SIZE_HACK: f32 = 1000.0;
+        let line = line.as_ref();
+        let offset = font
+            .measure(line, SIZE_HACK)
+            .expect("Failed to measure text")
+            .width()
+            / SIZE_HACK
+            * font_size
+            * 0.5;
         font.draw(
             framebuffer,
             camera,
-            line.as_ref(),
-            pos,
-            geng::TextAlign::CENTER,
+            line,
+            pos - vec2(offset, 0.0),
+            geng::TextAlign::LEFT,
             font_size,
             color,
         );
