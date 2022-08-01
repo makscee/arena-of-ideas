@@ -228,11 +228,6 @@ impl Render {
             }
         }
 
-        if let Some(unit) = hovered_unit {
-            self.draw_statuses_desc(unit, framebuffer);
-            self.draw_damage_heal_desc(unit.position, framebuffer);
-        }
-
         for text in model
             .render_model
             .text_blocks
@@ -246,6 +241,11 @@ impl Render {
                     .scale_uniform(0.15 * text.scale)
                     .translate(text.position),
             );
+        }
+
+        if let Some(unit) = hovered_unit {
+            self.draw_statuses_desc(unit, framebuffer);
+            self.draw_damage_heal_desc(unit.position, framebuffer);
         }
 
         // Tick indicator
