@@ -9,6 +9,30 @@ use geng::Draw2d;
 use text::*;
 pub use unit::*;
 
+const DESCRIPTION_WIDTH: f32 = 1.0;
+const DESCRIPTION_MARGIN: f32 = 0.1;
+const FONT_SIZE: f32 = 0.2;
+const ARROW_SIZE: f32 = 0.1;
+
+const STATUS_DESC_FOREGROUND: Color<f32> = Color {
+    r: 0.5,
+    g: 0.5,
+    b: 0.5,
+    a: 1.0,
+};
+const STATUS_DESC_BACKGROUND: Color<f32> = Color {
+    r: 0.2,
+    g: 0.2,
+    b: 0.2,
+    a: 1.0,
+};
+const DAMAGE_DESC_FOREGROUND: Color<f32> = Color {
+    r: 0.3,
+    g: 0.3,
+    b: 0.3,
+    a: 1.0,
+};
+
 #[derive(Clone)]
 pub struct RenderModel {
     text_blocks: HashMap<Position, TextBlock>,
@@ -92,6 +116,8 @@ impl Render {
             framebuffer_size,
             self.geng.window().mouse_pos().map(|x| x as f32),
         );
+
+        let mut hovered_unit = None;
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
 
@@ -147,8 +173,7 @@ impl Render {
                 < unit.stats.radius.as_f32()
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
-                self.draw_statuses_desc(unit, &unit.all_statuses);
-                self.draw_damage_heal_desc(unit.position);
+                hovered_unit = Some(unit);
             }
         }
 
@@ -202,6 +227,12 @@ impl Render {
                 self.draw_particle(particle, &render, game_time, framebuffer);
             }
         }
+
+        if let Some(unit) = hovered_unit {
+            self.draw_statuses_desc(unit, framebuffer);
+            self.draw_damage_heal_desc(unit.position, framebuffer);
+        }
+
         for text in model
             .render_model
             .text_blocks
@@ -216,6 +247,7 @@ impl Render {
                     .translate(text.position),
             );
         }
+
         // Tick indicator
         let tick_text = model.current_tick.tick_num.to_string();
         let text_scale = f32::max(1.1 - (model.current_tick.tick_time.as_f32()) / 2.0, 1.0);
@@ -228,29 +260,109 @@ impl Render {
         );
     }
 
-    fn draw_statuses_desc(&self, unit: &Unit, all_statuses: &[AttachedStatus]) {}
+    fn draw_statuses_desc(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {
+        let font_size = FONT_SIZE;
+        let descriptions: Vec<_> = unit
+            .all_statuses
+            .iter()
+            .filter_map(|status| {
+                self.assets.statuses.get(&status.status.name).map(|config| {
+                    let lines = wrap_text(
+                        self.geng.default_font().clone(),
+                        &config.description,
+                        font_size,
+                        DESCRIPTION_WIDTH,
+                    )
+                    .expect("Failed to measure text");
+                    let height = (lines.len() + 1) as f32 * font_size;
+                    (status, config, lines, height)
+                })
+            })
+            .collect();
+        let total_height = descriptions.iter().map(|(_, _, _, h)| *h).sum::<f32>()
+            + (descriptions.len() + 1) as f32 * DESCRIPTION_MARGIN;
+        let top_left = vec2(
+            unit.render_position.x.as_f32()
+                + unit.stats.radius.as_f32()
+                + DESCRIPTION_MARGIN
+                + ARROW_SIZE,
+            unit.render_position.y.as_f32() + total_height / 2.0 + DESCRIPTION_MARGIN,
+        );
+        let bottom_right = top_left
+            + vec2(
+                DESCRIPTION_WIDTH + DESCRIPTION_MARGIN * 2.0,
+                -total_height - DESCRIPTION_MARGIN,
+            );
 
-    fn draw_damage_heal_desc(&self, position: Position) {
+        draw_2d::Quad::new(
+            AABB::from_corners(top_left, bottom_right),
+            STATUS_DESC_BACKGROUND,
+        )
+        .draw_2d(&self.geng, framebuffer, &self.camera);
+
+        let mut text_pos = top_left
+            + vec2(
+                DESCRIPTION_MARGIN + DESCRIPTION_WIDTH / 2.0,
+                -DESCRIPTION_MARGIN - font_size,
+            );
+        for (status, config, description, height) in descriptions {
+            draw_2d::Quad::new(
+                AABB::point(text_pos)
+                    .extend_symmetric(vec2(DESCRIPTION_WIDTH / 2.0, 0.0))
+                    .extend_up(font_size)
+                    .extend_down(height + font_size),
+                STATUS_DESC_FOREGROUND,
+            )
+            .draw_2d(&self.geng, framebuffer, &self.camera);
+
+            let color = config.color.unwrap_or_else(|| {
+                *self
+                    .assets
+                    .options
+                    .clan_colors
+                    .get(&config.clan_origin)
+                    .unwrap_or_else(|| panic!("Failed to find clan ({}) color", config.clan_origin))
+            });
+            let font = self.geng.default_font().clone();
+            font.draw(
+                framebuffer,
+                &self.camera,
+                &status.status.name,
+                text_pos,
+                geng::TextAlign::CENTER,
+                font_size,
+                color,
+            );
+            draw_lines(
+                font,
+                &description,
+                font_size,
+                top_left,
+                Color::WHITE,
+                framebuffer,
+                &self.camera,
+            );
+        }
+    }
+
+    fn draw_damage_heal_desc(&self, position: Position, framebuffer: &mut ugli::Framebuffer) {
         // TODO
     }
 }
 
-pub fn draw_text_wrapped(
+pub fn wrap_text(
     font: impl std::borrow::Borrow<geng::Font>,
     text: impl AsRef<str>,
     font_size: f32,
-    target: AABB<f32>,
-    color: Color<f32>,
-    framebuffer: &mut ugli::Framebuffer,
-    camera: &impl geng::AbstractCamera2d,
-) -> Option<()> {
-    let max_width = target.width();
+    target_width: f32,
+) -> Option<Vec<String>> {
+    let max_width = target_width;
     let font = font.borrow();
     let text = text.as_ref();
 
-    let mut pos = vec2(target.center().x, target.y_max - font_size);
     let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
 
+    let mut lines = Vec::new();
     for line in text.lines() {
         let mut words = line.split_whitespace();
         let mut line = String::new();
@@ -267,26 +379,34 @@ pub fn draw_text_wrapped(
                 line += " ";
                 line += word;
             } else {
-                font.draw(
-                    framebuffer,
-                    camera,
-                    &line,
-                    pos,
-                    geng::TextAlign::CENTER,
-                    font_size,
-                    color,
-                );
-                pos.y -= font_size;
+                lines.push(line);
                 line = String::new();
                 line_width = width;
                 line += word;
                 continue;
             }
         }
+        lines.push(line);
+    }
+    Some(lines)
+}
+
+pub fn draw_lines(
+    font: impl std::borrow::Borrow<geng::Font>,
+    lines: &[impl AsRef<str>],
+    font_size: f32,
+    top_anchor: Vec2<f32>,
+    color: Color<f32>,
+    framebuffer: &mut ugli::Framebuffer,
+    camera: &impl geng::AbstractCamera2d,
+) {
+    let font = font.borrow();
+    let mut pos = vec2(top_anchor.x, top_anchor.y - font_size);
+    for line in lines {
         font.draw(
             framebuffer,
             camera,
-            &line,
+            line.as_ref(),
             pos,
             geng::TextAlign::CENTER,
             font_size,
@@ -294,5 +414,27 @@ pub fn draw_text_wrapped(
         );
         pos.y -= font_size;
     }
+}
+
+pub fn draw_text_wrapped(
+    font: impl std::borrow::Borrow<geng::Font>,
+    text: impl AsRef<str>,
+    font_size: f32,
+    target: AABB<f32>,
+    color: Color<f32>,
+    framebuffer: &mut ugli::Framebuffer,
+    camera: &impl geng::AbstractCamera2d,
+) -> Option<()> {
+    let font = font.borrow();
+    let lines = wrap_text(font, text, font_size, target.width())?;
+    draw_lines(
+        font,
+        &lines,
+        font_size,
+        vec2(target.center().x, target.y_max),
+        color,
+        framebuffer,
+        camera,
+    );
     Some(())
 }
