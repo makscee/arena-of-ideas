@@ -217,13 +217,12 @@ impl CardRender {
 
         // Description
         let font_size = FONT_SIZE * height;
-        draw_text_wrapped(
+        crate::render::draw_text_wrapped(
             &**self.geng.default_font(),
             &card.template.description,
             font_size,
             description_aabb,
             Color::WHITE,
-            &self.geng,
             framebuffer,
             camera,
         );

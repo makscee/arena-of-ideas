@@ -87,6 +87,11 @@ impl Render {
             model,
             framebuffer,
         );
+        let framebuffer_size = framebuffer.size().map(|x| x as f32);
+        let mouse_world_pos = self.camera.screen_to_world(
+            framebuffer_size,
+            self.geng.window().mouse_pos().map(|x| x as f32),
+        );
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
 
@@ -136,6 +141,15 @@ impl Render {
             )
             .fit_into(health)
             .draw_2d(&self.geng, framebuffer, &self.camera);
+
+            // On unit hover
+            if (mouse_world_pos - unit.render_position.map(|x| x.as_f32())).len()
+                < unit.stats.radius.as_f32()
+            {
+                // Draw extra ui: statuses descriptions, damage/heal descriptions
+                self.draw_statuses_desc(unit, &unit.all_statuses);
+                self.draw_damage_heal_desc(unit.position);
+            }
         }
 
         // Draw slots
@@ -213,4 +227,72 @@ impl Render {
                 .translate(vec2(0.0, self.camera.fov * 0.35)),
         );
     }
+
+    fn draw_statuses_desc(&self, unit: &Unit, all_statuses: &[AttachedStatus]) {}
+
+    fn draw_damage_heal_desc(&self, position: Position) {
+        // TODO
+    }
+}
+
+pub fn draw_text_wrapped(
+    font: impl std::borrow::Borrow<geng::Font>,
+    text: impl AsRef<str>,
+    font_size: f32,
+    target: AABB<f32>,
+    color: Color<f32>,
+    framebuffer: &mut ugli::Framebuffer,
+    camera: &impl geng::AbstractCamera2d,
+) -> Option<()> {
+    let max_width = target.width();
+    let font = font.borrow();
+    let text = text.as_ref();
+
+    let mut pos = vec2(target.center().x, target.y_max - font_size);
+    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
+
+    for line in text.lines() {
+        let mut words = line.split_whitespace();
+        let mut line = String::new();
+        let mut line_width = 0.0;
+        if let Some(word) = words.next() {
+            let width = measure(word)?.width();
+            line_width += width;
+            line += word;
+        }
+        for word in words {
+            let width = measure(word)?.width();
+            if line_width + width <= max_width {
+                line_width += width;
+                line += " ";
+                line += word;
+            } else {
+                font.draw(
+                    framebuffer,
+                    camera,
+                    &line,
+                    pos,
+                    geng::TextAlign::CENTER,
+                    font_size,
+                    color,
+                );
+                pos.y -= font_size;
+                line = String::new();
+                line_width = width;
+                line += word;
+                continue;
+            }
+        }
+        font.draw(
+            framebuffer,
+            camera,
+            &line,
+            pos,
+            geng::TextAlign::CENTER,
+            font_size,
+            color,
+        );
+        pos.y -= font_size;
+    }
+    Some(())
 }

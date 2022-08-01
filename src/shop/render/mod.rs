@@ -270,7 +270,7 @@ impl Render {
                             let position = position
                                 + clan_size / 2.0
                                 + bar_size * vec2(x as f32, -(y as f32) - 1.0);
-                            let color = if x * config.rows + y + 1 <= clan_count {
+                            let color = if x * config.rows + y < clan_count {
                                 clan_color
                             } else {
                                 CLAN_BACKGROUND_COLOR
@@ -343,13 +343,12 @@ fn draw_clan_info(
     let dy = (info_aabb.y_max - framebuffer_size.y).max(0.0);
     let info_aabb = info_aabb.translate(-vec2(dx, dy));
     draw_2d::Quad::new(info_aabb, CLAN_INFO_BACKGROUND_COLOR).draw_2d(geng, framebuffer, camera);
-    draw_text_wrapped(
+    crate::render::draw_text_wrapped(
         &**geng.default_font(),
         description,
         FONT_SIZE * info_aabb.height(),
         info_aabb,
         TEXT_COLOR,
-        geng,
         framebuffer,
         camera,
     );
@@ -379,67 +378,4 @@ fn draw_rectangle(
             AABB::point(aabb.center()).extend_symmetric(aabb.size() * TEXT_OCCUPY_SPACE / 2.0),
         )
         .draw_2d(geng, framebuffer, camera);
-}
-
-fn draw_text_wrapped(
-    font: impl std::borrow::Borrow<geng::Font>,
-    text: impl AsRef<str>,
-    font_size: f32,
-    target: AABB<f32>,
-    color: Color<f32>,
-    geng: &Geng,
-    framebuffer: &mut ugli::Framebuffer,
-    camera: &impl geng::AbstractCamera2d,
-) -> Option<()> {
-    let max_width = target.width();
-    let font = font.borrow();
-    let text = text.as_ref();
-
-    let mut pos = vec2(target.center().x, target.y_max - font_size);
-    let measure = |text| font.measure_at(text, Vec2::ZERO, font_size);
-
-    for line in text.lines() {
-        let mut words = line.split_whitespace();
-        let mut line = String::new();
-        let mut line_width = 0.0;
-        if let Some(word) = words.next() {
-            let width = measure(word)?.width();
-            line_width += width;
-            line += word;
-        }
-        while let Some(word) = words.next() {
-            let width = measure(word)?.width();
-            if line_width + width <= max_width {
-                line_width += width;
-                line += " ";
-                line += word;
-            } else {
-                font.draw(
-                    framebuffer,
-                    camera,
-                    &line,
-                    pos,
-                    geng::TextAlign::CENTER,
-                    font_size,
-                    color,
-                );
-                pos.y -= font_size;
-                line = String::new();
-                line_width = width;
-                line += word;
-                continue;
-            }
-        }
-        font.draw(
-            framebuffer,
-            camera,
-            &line,
-            pos,
-            geng::TextAlign::CENTER,
-            font_size,
-            color,
-        );
-        pos.y -= font_size;
-    }
-    Some(())
 }
