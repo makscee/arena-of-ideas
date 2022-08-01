@@ -39,6 +39,10 @@ pub struct StatusConfig {
 }
 
 impl StatusConfig {
+    fn default_hidden() -> bool {
+        false
+    }
+
     fn default_clan_origin() -> Clan {
         Clan::Common
     }
