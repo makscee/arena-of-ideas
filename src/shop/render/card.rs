@@ -106,7 +106,7 @@ impl CardRender {
             None,
             game_time,
             &geng::Camera2d {
-                center: vec2(0.0, 0.35),
+                center: vec2(0.0, 0.35 * card.unit.stats.radius.as_f32()),
                 rotation: 0.0,
                 fov: card.unit.stats.radius.as_f32() * 1.5,
             },
