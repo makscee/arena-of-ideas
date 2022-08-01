@@ -262,13 +262,16 @@ impl Render {
 
     fn draw_statuses_desc(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {
         let font_size = FONT_SIZE;
-        let descriptions: Vec<_> = unit
-            .all_statuses
-            .iter()
-            .filter_map(|status| {
+        let mut statuses = HashMap::new();
+        for status in &unit.all_statuses {
+            *statuses.entry(status.status.name.clone()).or_insert(0) += 1;
+        }
+        let descriptions: Vec<_> = statuses
+            .into_iter()
+            .filter_map(|(status, stacks)| {
                 self.assets
                     .statuses
-                    .get(&status.status.name)
+                    .get(&status)
                     .filter(|config| !config.hidden)
                     .map(|config| {
                         let lines = wrap_text(
@@ -279,14 +282,14 @@ impl Render {
                         )
                         .expect("Failed to measure text");
                         let height = (lines.len() as f32 + 1.5) * font_size;
-                        (status, config, lines, height)
+                        (status, stacks, config, lines, height)
                     })
             })
             .collect();
         if descriptions.is_empty() {
             return;
         }
-        let total_height = descriptions.iter().map(|(_, _, _, h)| *h).sum::<f32>()
+        let total_height = descriptions.iter().map(|(_, _, _, _, h)| *h).sum::<f32>()
             + (descriptions.len() + 1) as f32 * DESCRIPTION_MARGIN;
         let top_left = vec2(
             unit.render_position.x.as_f32()
@@ -319,7 +322,7 @@ impl Render {
                 DESCRIPTION_MARGIN + DESCRIPTION_WIDTH / 2.0,
                 -DESCRIPTION_MARGIN - font_size,
             );
-        for (status, config, description, height) in descriptions {
+        for (mut status, stacks, config, description, height) in descriptions {
             draw_2d::Quad::new(
                 AABB::point(text_pos)
                     .extend_symmetric(vec2(DESCRIPTION_WIDTH / 2.0, 0.0))
@@ -338,10 +341,13 @@ impl Render {
                     .unwrap_or_else(|| panic!("Failed to find clan ({}) color", config.clan_origin))
             });
             let font = self.geng.default_font().clone();
+            if stacks > 1 {
+                status.push_str(&format!(" ({stacks})"));
+            }
             font.draw(
                 framebuffer,
                 &self.camera,
-                &status.status.name,
+                &status,
                 text_pos,
                 geng::TextAlign::CENTER,
                 font_size,
