@@ -274,7 +274,7 @@ impl Render {
                         DESCRIPTION_WIDTH,
                     )
                     .expect("Failed to measure text");
-                    let height = (lines.len() + 1) as f32 * font_size;
+                    let height = (lines.len() as f32 + 1.5) * font_size;
                     (status, config, lines, height)
                 })
             })
@@ -310,7 +310,7 @@ impl Render {
                 AABB::point(text_pos)
                     .extend_symmetric(vec2(DESCRIPTION_WIDTH / 2.0, 0.0))
                     .extend_up(font_size)
-                    .extend_down(height + font_size),
+                    .extend_down(height - font_size),
                 STATUS_DESC_FOREGROUND,
             )
             .draw_2d(&self.geng, framebuffer, &self.camera);
@@ -337,11 +337,13 @@ impl Render {
                 font,
                 &description,
                 font_size,
-                top_left,
+                text_pos,
                 Color::WHITE,
                 framebuffer,
                 &self.camera,
             );
+
+            text_pos.y -= height + DESCRIPTION_MARGIN;
         }
     }
 
