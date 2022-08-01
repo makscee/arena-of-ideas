@@ -367,7 +367,7 @@ fn main() {
                                 return shader.run(&geng);
                             }
                             Commands::UpdateUnits => {
-                                utility::rename_units(&geng,&static_path(), assets);
+                                utility::rename_units(&geng, &static_path(), assets);
                                 std::process::exit(0);
                             }
                         },
