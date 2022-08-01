@@ -12,7 +12,7 @@ pub use unit::*;
 const DESCRIPTION_WIDTH: f32 = 1.0;
 const DESCRIPTION_MARGIN: f32 = 0.1;
 const FONT_SIZE: f32 = 0.2;
-const ARROW_SIZE: f32 = 0.1;
+const ARROW_SIZE: f32 = 0.15;
 
 const STATUS_DESC_FOREGROUND: Color<f32> = Color {
     r: 0.5,
@@ -170,7 +170,7 @@ impl Render {
 
             // On unit hover
             if (mouse_world_pos - unit.render_position.map(|x| x.as_f32())).len()
-                < unit.stats.radius.as_f32()
+                < unit.stats.radius.as_f32() / 2.0
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);
@@ -283,7 +283,7 @@ impl Render {
             + (descriptions.len() + 1) as f32 * DESCRIPTION_MARGIN;
         let top_left = vec2(
             unit.render_position.x.as_f32()
-                + unit.stats.radius.as_f32()
+                + unit.stats.radius.as_f32() / 2.0
                 + DESCRIPTION_MARGIN
                 + ARROW_SIZE,
             unit.render_position.y.as_f32() + total_height / 2.0 + DESCRIPTION_MARGIN,
@@ -296,6 +296,16 @@ impl Render {
 
         draw_2d::Quad::new(
             AABB::from_corners(top_left, bottom_right),
+            STATUS_DESC_BACKGROUND,
+        )
+        .draw_2d(&self.geng, framebuffer, &self.camera);
+        let left_mid = vec2(top_left.x, unit.render_position.y.as_f32());
+        draw_2d::Polygon::new(
+            vec![
+                left_mid - vec2(ARROW_SIZE, 0.0),
+                left_mid - vec2(0.0, ARROW_SIZE),
+                left_mid + vec2(0.0, ARROW_SIZE),
+            ],
             STATUS_DESC_BACKGROUND,
         )
         .draw_2d(&self.geng, framebuffer, &self.camera);
