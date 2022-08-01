@@ -9,7 +9,7 @@ use geng::Draw2d;
 use text::*;
 pub use unit::*;
 
-const DESCRIPTION_WIDTH: f32 = 1.0;
+const DESCRIPTION_WIDTH: f32 = 2.0;
 const DESCRIPTION_MARGIN: f32 = 0.1;
 const FONT_SIZE: f32 = 0.2;
 const ARROW_SIZE: f32 = 0.15;
