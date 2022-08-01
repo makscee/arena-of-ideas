@@ -3,6 +3,8 @@
     "melee+",
     "ranged",
     "ranged+",
+    "caster",
+    "caster+",
     "blob_melee",
     "blob_melee_triple",
     "blob_ranged"

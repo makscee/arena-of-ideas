@@ -1,0 +1,17 @@
+{
+    "health": 10,
+    "radius": 1.1,
+    "base_damage": 12,
+    "range": 5,
+    "cooldown": 3,
+    "action": {
+        "effect": {
+            "preset": "effects/ranged_hit.json"
+        }
+    },
+    "render": {
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 200,
+        "instances": 1
+    }
+}
