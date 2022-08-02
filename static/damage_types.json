@@ -3,5 +3,10 @@
 		"description": "Heal caster for damage dealt",
 		"clan_origin": "Warlocks",
 		"color": "#ffffff"
+	},
+	"Fire": {
+		"description": "Deal additional fire damage",
+		"clan_origin": "Dragons",
+		"color": "#ffffff"
 	}
 }
