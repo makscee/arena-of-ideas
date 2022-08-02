@@ -426,11 +426,13 @@ impl Render {
         // Damage
         let mut descriptions = to_descriptions(&self.assets, text_block.top_texts());
         descriptions.sort_by_key(|(_, pos)| r32(pos.y));
-        let mut descriptions = descriptions.into_iter();
         let mut last_aabb: Option<AABB<f32>> = None;
 
         // Layout and render descriptions
-        for (desc, pos) in descriptions {
+        for (desc, pos) in descriptions
+            .into_iter()
+            .filter(|(desc, _)| !desc.is_empty())
+        {
             let font = self.geng.default_font().clone();
             let extra_space = last_aabb.map(|aabb| pos.y - aabb.y_max);
 
@@ -438,8 +440,18 @@ impl Render {
                 AABB::points_bounding_box(a.corners().into_iter().chain(b.corners()))
             }
 
-            let mut desc_aabb =
-                AABB::point(pos + vec2(-DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0));
+            let pos = pos + vec2(-DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0);
+            let mut desc_aabb = AABB::point(pos);
+            draw_2d::Polygon::new(
+                vec![
+                    pos + vec2(0.0, DH_DESC_ARROW_SIZE),
+                    pos + vec2(DH_DESC_ARROW_SIZE, 0.0),
+                    pos + vec2(0.0, -DH_DESC_ARROW_SIZE),
+                ],
+                DH_DESC_BACKGROUND,
+            )
+            .draw_2d(&self.geng, framebuffer, &self.camera);
+
             for (name, config) in desc {
                 let width = DESCRIPTION_WIDTH;
                 let font_size = FONT_SIZE;
@@ -450,14 +462,11 @@ impl Render {
                     None => height / 2.0,
                     Some(space) => space.min(height / 2.0),
                 };
-                let aabb = AABB::point(vec2(
-                    desc_aabb.x_min - DESCRIPTION_MARGIN,
-                    desc_aabb.center().y,
-                ))
-                .extend_up(height - space)
-                .extend_down(space)
-                .extend_left(width);
-                desc_aabb = aabb_union(&desc_aabb, &aabb);
+                let aabb = AABB::point(vec2(desc_aabb.x_min, desc_aabb.center().y))
+                    .extend_up(height - space)
+                    .extend_down(space)
+                    .extend_left(width);
+                desc_aabb = aabb_union(&desc_aabb, &aabb).extend_left(DESCRIPTION_MARGIN);
 
                 draw_2d::Quad::new(aabb, DH_DESC_BACKGROUND).draw_2d(
                     &self.geng,
