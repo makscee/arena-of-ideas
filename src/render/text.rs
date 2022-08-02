@@ -7,6 +7,7 @@ pub struct Text {
     pub position: Vec2<f32>,
     pub time: f32,
     pub text: String,
+    pub text_type: TextType,
     pub color: Color<f32>,
     pub scale: f32,
 }
@@ -37,12 +38,14 @@ impl RenderModel {
         &mut self,
         position: Vec2<f32>,
         text: impl Into<String>,
+        text_type: TextType,
         color: Color<f32>,
     ) {
         self.texts.push(Text {
             position,
             time: 0.0,
             text: text.into(),
+            text_type,
             color,
             scale: 1.0,
         });
@@ -58,8 +61,16 @@ impl TextBlock {
         }
     }
 
+    pub fn top_texts(&self) -> impl Iterator<Item = &Text> {
+        self.top_texts.iter()
+    }
+
+    pub fn bot_texts(&self) -> impl Iterator<Item = &Text> {
+        self.bot_texts.iter()
+    }
+
     pub fn texts(&self) -> impl Iterator<Item = &Text> {
-        self.top_texts.iter().chain(&self.bot_texts)
+        self.top_texts().chain(self.bot_texts())
     }
 
     pub fn update(&mut self, delta_time: f32) {
@@ -70,25 +81,37 @@ impl TextBlock {
         self.bot_texts.retain(Text::is_alive);
     }
 
-    pub fn add_text_top(&mut self, text: impl Into<String>, color: Color<f32>) {
+    pub fn add_text_top(
+        &mut self,
+        text: impl Into<String>,
+        color: Color<f32>,
+        text_type: TextType,
+    ) {
         let dir = vec2(0.0, 1.0);
         Self::add_text(
             self.position + dir * 0.5,
             dir,
             &mut self.top_texts,
             text.into(),
+            text_type,
             color,
             1.0,
         )
     }
 
-    pub fn add_text_bottom(&mut self, text: impl Into<String>, color: Color<f32>) {
+    pub fn add_text_bottom(
+        &mut self,
+        text: impl Into<String>,
+        color: Color<f32>,
+        text_type: TextType,
+    ) {
         let dir = vec2(0.0, -1.0);
         Self::add_text(
             self.position + dir * 0.5,
             dir,
             &mut self.bot_texts,
             text.into(),
+            text_type,
             color,
             1.0,
         )
@@ -99,6 +122,7 @@ impl TextBlock {
         direction: Vec2<f32>,
         texts: &mut VecDeque<Text>,
         text: String,
+        text_type: TextType,
         color: Color<f32>,
         scale: f32,
     ) {
@@ -109,6 +133,7 @@ impl TextBlock {
             position,
             time: 0.0,
             text,
+            text_type,
             color,
             scale,
         });

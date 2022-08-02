@@ -12,8 +12,16 @@ pub use unit::*;
 const DESCRIPTION_WIDTH: f32 = 2.0;
 const DESCRIPTION_MARGIN: f32 = 0.1;
 const FONT_SIZE: f32 = 0.2;
-const ARROW_SIZE: f32 = 0.15;
 
+const DH_DESC_ARROW_SIZE: f32 = 0.1;
+const DH_DESC_BACKGROUND: Color<f32> = Color {
+    r: 0.4,
+    g: 0.4,
+    b: 0.4,
+    a: 1.0,
+};
+
+const STATUS_DESC_ARROW_SIZE: f32 = 0.15;
 const STATUS_DESC_FOREGROUND: Color<f32> = Color {
     r: 0.5,
     g: 0.5,
@@ -39,9 +47,10 @@ pub struct RenderModel {
     texts: Vec<Text>,
 }
 
+#[derive(Debug, Clone)]
 pub enum TextType {
-    Damage,
-    Heal,
+    Damage(Vec<DamageType>),
+    Heal(Vec<HealType>),
     Status,
     Aoe,
 }
@@ -74,10 +83,10 @@ impl RenderModel {
             .entry(position)
             .or_insert_with(|| TextBlock::new(position.to_world_f32()));
         match text_type {
-            TextType::Damage => text_block.add_text_top(text, color),
-            TextType::Heal => text_block.add_text_bottom(text, color),
+            TextType::Damage(_) => text_block.add_text_top(text, color, text_type),
+            TextType::Heal(_) => text_block.add_text_bottom(text, color, text_type),
             TextType::Status | TextType::Aoe => {
-                self.add_text_random(position.to_world_f32(), text, color)
+                self.add_text_random(position.to_world_f32(), text, text_type, color)
             }
         }
     }
@@ -245,7 +254,9 @@ impl Render {
 
         if let Some(unit) = hovered_unit {
             self.draw_statuses_desc(unit, framebuffer);
-            self.draw_damage_heal_desc(unit.position, framebuffer);
+            if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
+                self.draw_damage_heal_desc(text_block, framebuffer);
+            }
         }
 
         // Tick indicator
@@ -299,7 +310,7 @@ impl Render {
             unit.render_position.x.as_f32()
                 + unit.stats.radius.as_f32() / 2.0
                 + DESCRIPTION_MARGIN
-                + ARROW_SIZE,
+                + STATUS_DESC_ARROW_SIZE,
             unit.render_position.y.as_f32() + total_height / 2.0,
         );
         let bottom_right =
@@ -313,9 +324,9 @@ impl Render {
         let left_mid = vec2(top_left.x, unit.render_position.y.as_f32());
         draw_2d::Polygon::new(
             vec![
-                left_mid - vec2(ARROW_SIZE, 0.0),
-                left_mid - vec2(0.0, ARROW_SIZE),
-                left_mid + vec2(0.0, ARROW_SIZE),
+                left_mid - vec2(STATUS_DESC_ARROW_SIZE, 0.0),
+                left_mid - vec2(0.0, STATUS_DESC_ARROW_SIZE),
+                left_mid + vec2(0.0, STATUS_DESC_ARROW_SIZE),
             ],
             STATUS_DESC_BACKGROUND,
         )
@@ -348,20 +359,13 @@ impl Render {
             if stacks > 1 {
                 status.push_str(&format!(" ({stacks})"));
             }
-            const SIZE_HACK: f32 = 1000.0;
-            let offset = font
-                .measure(&status, SIZE_HACK)
-                .expect("Failed to measure text")
-                .width()
-                / SIZE_HACK
-                * font_size
-                * 0.5;
-            font.draw(
+            draw_text(
+                font.clone(),
                 framebuffer,
                 &self.camera,
                 &status,
-                text_pos - vec2(offset, 0.0),
-                geng::TextAlign::LEFT,
+                text_pos,
+                geng::TextAlign::CENTER,
                 font_size,
                 color,
             );
@@ -379,8 +383,122 @@ impl Render {
         }
     }
 
-    fn draw_damage_heal_desc(&self, position: Position, framebuffer: &mut ugli::Framebuffer) {
-        // TODO
+    fn draw_damage_heal_desc(&self, text_block: &TextBlock, framebuffer: &mut ugli::Framebuffer) {
+        /// Converts texts into descriptions
+        type DHRow<'a> = Vec<(&'a String, &'a DamageHealConfig)>;
+        fn to_descriptions<'a>(
+            assets: &'a Rc<Assets>,
+            texts: impl IntoIterator<Item = &'a Text>,
+        ) -> Vec<(DHRow<'a>, Vec2<f32>)> {
+            texts
+                .into_iter()
+                .filter_map(|text| match &text.text_type {
+                    TextType::Damage(damage_types) => Some((
+                        damage_types
+                            .iter()
+                            .filter_map(|damage_type| {
+                                assets
+                                    .damage_types
+                                    .get(damage_type)
+                                    .map(|config| (damage_type, config))
+                            })
+                            .collect(),
+                        text.position,
+                    )),
+                    TextType::Heal(heal_types) => Some((
+                        heal_types
+                            .iter()
+                            .filter_map(|heal_type| {
+                                assets
+                                    .heal_types
+                                    .get(heal_type)
+                                    .map(|config| (heal_type, config))
+                            })
+                            .collect(),
+                        text.position,
+                    )),
+                    TextType::Status => None,
+                    TextType::Aoe => None,
+                })
+                .collect()
+        }
+
+        // Damage
+        let mut descriptions = to_descriptions(&self.assets, text_block.top_texts());
+        descriptions.sort_by_key(|(_, pos)| r32(pos.y));
+        let mut descriptions = descriptions.into_iter();
+        let mut last_aabb: Option<AABB<f32>> = None;
+
+        // Layout and render descriptions
+        for (desc, pos) in descriptions {
+            let font = self.geng.default_font().clone();
+            let extra_space = last_aabb.map(|aabb| pos.y - aabb.y_max);
+
+            fn aabb_union<T: UNum>(a: &AABB<T>, b: &AABB<T>) -> AABB<T> {
+                AABB::points_bounding_box(a.corners().into_iter().chain(b.corners()))
+            }
+
+            let mut desc_aabb =
+                AABB::point(pos + vec2(-DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0));
+            for (name, config) in desc {
+                let width = DESCRIPTION_WIDTH;
+                let font_size = FONT_SIZE;
+                let lines = wrap_text(font.clone(), &config.description, font_size, width)
+                    .expect("Failed to wrap text");
+                let height = (lines.len() as f32 + 1.5) * font_size;
+                let space = match extra_space {
+                    None => height / 2.0,
+                    Some(space) => space.min(height / 2.0),
+                };
+                let aabb = AABB::point(vec2(
+                    desc_aabb.x_min - DESCRIPTION_MARGIN,
+                    desc_aabb.center().y,
+                ))
+                .extend_up(height - space)
+                .extend_down(space)
+                .extend_left(width);
+                desc_aabb = aabb_union(&desc_aabb, &aabb);
+
+                draw_2d::Quad::new(aabb, DH_DESC_BACKGROUND).draw_2d(
+                    &self.geng,
+                    framebuffer,
+                    &self.camera,
+                );
+
+                let color = config.color.unwrap_or_else(|| {
+                    *self
+                        .assets
+                        .options
+                        .clan_colors
+                        .get(&config.clan_origin)
+                        .unwrap_or_else(|| {
+                            panic!("Failed to find clan ({}) color", config.clan_origin)
+                        })
+                });
+                let pos = vec2(aabb.center().x, aabb.y_max - font_size);
+                draw_text(
+                    font.clone(),
+                    framebuffer,
+                    &self.camera,
+                    name,
+                    pos,
+                    geng::TextAlign::CENTER,
+                    font_size,
+                    color,
+                );
+                draw_lines(
+                    font.clone(),
+                    &lines,
+                    font_size,
+                    pos,
+                    Color::WHITE,
+                    framebuffer,
+                    &self.camera,
+                );
+            }
+
+            last_aabb = Some(desc_aabb);
+        }
     }
 }
 
@@ -429,6 +547,40 @@ pub fn wrap_text(
     Some(lines)
 }
 
+/// Hacks the limitation in small font sizes to accurately align text
+#[allow(clippy::too_many_arguments)]
+pub fn draw_text(
+    font: impl std::borrow::Borrow<geng::Font>,
+    framebuffer: &mut ugli::Framebuffer,
+    camera: &impl geng::AbstractCamera2d,
+    text: impl AsRef<str>,
+    position: Vec2<f32>,
+    text_align: geng::TextAlign,
+    font_size: f32,
+    color: Color<f32>,
+) {
+    const SIZE_HACK: f32 = 1000.0;
+    let font = font.borrow();
+    let text = text.as_ref();
+
+    let offset = font
+        .measure(text, SIZE_HACK)
+        .expect("Failed to measure text")
+        .width()
+        / SIZE_HACK
+        * font_size
+        * text_align.0;
+    font.draw(
+        framebuffer,
+        camera,
+        text,
+        position - vec2(offset, 0.0),
+        geng::TextAlign::LEFT,
+        font_size,
+        color,
+    );
+}
+
 pub fn draw_lines(
     font: impl std::borrow::Borrow<geng::Font>,
     lines: &[impl AsRef<str>],
@@ -442,20 +594,13 @@ pub fn draw_lines(
     let mut pos = vec2(top_anchor.x, top_anchor.y - font_size);
     for line in lines {
         const SIZE_HACK: f32 = 1000.0;
-        let line = line.as_ref();
-        let offset = font
-            .measure(line, SIZE_HACK)
-            .expect("Failed to measure text")
-            .width()
-            / SIZE_HACK
-            * font_size
-            * 0.5;
-        font.draw(
+        draw_text(
+            font,
             framebuffer,
             camera,
             line,
-            pos - vec2(offset, 0.0),
-            geng::TextAlign::LEFT,
+            pos,
+            geng::TextAlign::CENTER,
             font_size,
             color,
         );

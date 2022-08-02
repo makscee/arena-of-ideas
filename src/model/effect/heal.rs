@@ -54,7 +54,7 @@ impl EffectImpl for HealEffect {
                 target_unit.position,
                 &format!("{}", heal_text),
                 Color::GREEN,
-                crate::render::TextType::Heal,
+                crate::render::TextType::Heal(effect.types.iter().cloned().collect()),
             );
             target_unit.last_heal_time = logic.model.time;
         }
