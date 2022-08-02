@@ -52,7 +52,7 @@ impl StatusConfig {
 pub struct Statuses {
     #[deref]
     #[deref_mut]
-    pub map: HashMap<String, StatusConfig>,
+    pub map: HashMap<StatusName, StatusConfig>,
 }
 
 impl Statuses {
@@ -60,6 +60,32 @@ impl Statuses {
         self.get(status_name)
             .expect(&format!("Failed to get status {status_name}"))
     }
+}
+
+#[derive(Deserialize, Clone)]
+pub struct DamageHealConfig {
+    pub description: String,
+    #[serde(default = "StatusConfig::default_clan_origin")]
+    pub clan_origin: Clan,
+    pub color: Option<Color<f32>>,
+}
+
+#[derive(Deref, DerefMut, Clone, geng::Assets, Deserialize)]
+#[asset(json)]
+pub struct DamageTypes {
+    #[deref]
+    #[deref_mut]
+    #[serde(flatten)]
+    pub map: HashMap<DamageType, DamageHealConfig>,
+}
+
+#[derive(Deref, DerefMut, Clone, geng::Assets, Deserialize)]
+#[asset(json)]
+pub struct HealTypes {
+    #[deref]
+    #[deref_mut]
+    #[serde(flatten)]
+    pub map: HashMap<HealType, DamageHealConfig>,
 }
 
 #[derive(geng::Assets)]
@@ -70,6 +96,8 @@ pub struct Assets {
     pub renders_config: RendersProgram,
     #[asset(load_with = "load_postfx_render(geng, &base_path)")]
     pub postfx_render: PostfxProgram,
+    pub damage_types: DamageTypes,
+    pub heal_types: HealTypes,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,
