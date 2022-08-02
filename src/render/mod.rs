@@ -434,13 +434,23 @@ impl Render {
             .filter(|(desc, _)| !desc.is_empty())
         {
             let font = self.geng.default_font().clone();
-            let extra_space = last_aabb.map(|aabb| pos.y - aabb.y_max);
+
+            let (offset, extra_space) = last_aabb
+                .map(|aabb| {
+                    let delta = pos.y - aabb.y_max;
+                    if delta < 0.0 {
+                        (-aabb.width(), None)
+                    } else {
+                        (0.0, Some(delta))
+                    }
+                })
+                .unwrap_or((0.0, None));
 
             fn aabb_union<T: UNum>(a: &AABB<T>, b: &AABB<T>) -> AABB<T> {
                 AABB::points_bounding_box(a.corners().into_iter().chain(b.corners()))
             }
 
-            let pos = pos + vec2(-DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0);
+            let pos = pos + vec2(offset - DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0);
             let mut desc_aabb = AABB::point(pos);
             draw_2d::Polygon::new(
                 vec![
