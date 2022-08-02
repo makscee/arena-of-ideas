@@ -32,6 +32,7 @@ impl CustomGame {
         let config = Config {
             player: custom.player,
             clans: custom.clans,
+            enemy_clans: hashmap! {},
             fov: custom.fov,
         };
         let shop = Shop::new(geng, assets, shop_config);

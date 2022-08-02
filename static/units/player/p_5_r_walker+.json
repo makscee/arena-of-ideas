@@ -1,0 +1,65 @@
+{
+    "name": "walker+",
+    "tier": 5,
+    "description": "Every 5 seconds @Freeze 2 random enemies",
+    "clans": [
+        "Freezers",
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        {
+            "name": "Freeze2RandomEvery5",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 5,
+                            "next_tick": 5
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": 2,
+                        "effect": {
+                            "type": "ChangeTarget",
+                            "filter": "Enemies",
+                            "condition": {
+                                "type": "Not",
+                                "condition": {
+                                    "type": "UnitHasStatus",
+                                    "status": "Freeze",
+                                    "who": "Target"
+                                }
+                            },
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "AttachStatus",
+                                        "status": "Freeze"
+                                    },
+                                    {
+                                        "type": "ChangeTarget",
+                                        "filter": "Enemies",
+                                        "condition": {
+                                            "type": "Always"
+                                        },
+                                        "effect": {
+                                            "type": "Noop"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}

@@ -332,7 +332,7 @@ impl Shop {
         let units = assets
             .units
             .iter()
-            .filter(|(_, unit)| unit.tier > 0)
+            .filter(|(_, unit)| unit.triple.is_some())
             .map(|(name, unit)| (name.clone(), unit.clone()))
             .collect();
         Self {

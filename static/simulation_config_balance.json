@@ -1,0 +1,7 @@
+{
+    "simulation": {
+        "type": "Balance",
+        "unit": "ranger$"
+    },
+    "repeats": 3
+}

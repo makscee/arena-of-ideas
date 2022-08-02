@@ -259,6 +259,8 @@ pub struct Config {
     pub player: Vec<UnitType>,
     #[serde(default)]
     pub clans: HashMap<Clan, usize>,
+    #[serde(default)]
+    pub enemy_clans: HashMap<Clan, usize>,
     pub fov: f32,
 }
 

@@ -1,0 +1,33 @@
+{
+    "name": "viral_archer+",
+    "tier": 2,
+    "description": "@Scathe apply @Plague",
+    "clans": [
+        "PlagueSpreaders",
+        "Archers"
+    ],
+    "statuses": [
+        {
+            "name": "ViralArcher+OnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Plague"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged"
+}

@@ -1,0 +1,38 @@
+{
+	"name": "shanker+",
+    "tier": 2,
+    "description": "@Scathe apply @MicroStun to enemies in range 3",
+    "clans": [
+        "Assassins"
+    ],
+    "statuses": [
+        {
+            "name": "StunOnDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AOE",
+                        "filter": "Enemies",
+                        "skip_current_target": false,
+                        "range": 3,
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "MicroStun"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee+"
+}

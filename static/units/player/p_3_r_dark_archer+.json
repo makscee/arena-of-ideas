@@ -1,0 +1,53 @@
+{
+    "name": "dark_archer+",
+    "tier": 3,
+    "description": "@Bonus Shot applies @Siphon Life. Always @Bonus Shot target that has @Siphon Life",
+    "clans": [
+        "Archers",
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "DarkArcherOnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "BonusShot"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "SiphonLife"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "DarkArcher+OnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/bonus_shot.json"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}

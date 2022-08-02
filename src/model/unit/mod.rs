@@ -5,6 +5,7 @@ pub use template::*;
 
 pub type UnitType = String;
 pub type Tier = u32;
+pub const MAX_TIER: u32 = 5;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ActionState {

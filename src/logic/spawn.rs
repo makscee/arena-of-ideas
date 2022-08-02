@@ -50,9 +50,19 @@ impl Logic {
         );
         for (clan, _) in &self.model.clan_effects.map {
             let mut size = 0;
-            if let Some(members) = &self.model.config.clans.get(&clan) {
-                size = **members;
+            match unit.faction {
+                Faction::Player => {
+                    if let Some(members) = self.model.config.clans.get(&clan) {
+                        size = *members;
+                    }
+                }
+                Faction::Enemy => {
+                    if let Some(members) = self.model.config.enemy_clans.get(&clan) {
+                        size = *members;
+                    }
+                }
             }
+
             clan.apply_effects(
                 &mut unit,
                 &self.model.clan_effects,

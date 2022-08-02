@@ -1,0 +1,82 @@
+{
+	"name": "dracula+",
+    "tier": 1,
+    "clans": [
+        "Vampires",
+        "Assassins"
+    ],
+    "description": "Triple @Crit chance with full @hp. @Crit deals 5% target’s current @hp as damage",
+    "statuses": [
+        {
+            "name": "DoubleCritWhenFullHp",
+            "type": "Modifier",
+            "condition": {
+                "type": "Always"
+            },
+            "target": {
+                "type": "Stat",
+                "stat": "CritChance",
+                "value": {
+                    "type": "Mul",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "CritChance"
+                    },
+                    "b": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitInjured",
+                            "who": "Target"
+                        },
+                        "then": {
+                            "type": "Const",
+                            "value": 1
+                        },
+                        "else": {
+                            "type": "Const",
+                            "value": 3
+                        }
+                    }
+                }
+            },
+            "priority": 0
+        },
+        {
+            "name": "CritDealsPercentHp",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Crit"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Damage",
+                        "types": [
+                            "HpDrain"
+                        ],
+                        "value": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0.05
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee+"
+}

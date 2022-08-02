@@ -1,0 +1,63 @@
+{
+	"name": "wyvern+",
+    "tier": 5,
+    "description": "@Flaming Breath attack on @Freeze creates @Explosion. 20% chance to @Freeze target before attack",
+    "clans": [
+        "Dragons",
+        "Freezers"
+    ],
+    "statuses": [
+        {
+            "name": "ExplodeFireOnFreeze",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Fire"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Freeze"
+                        },
+                        "then": {
+                            "preset": "effects/explosion.json"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "FreezeBeforeAttack",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Action"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Freeze"
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}

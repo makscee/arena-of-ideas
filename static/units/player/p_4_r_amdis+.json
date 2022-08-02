@@ -1,0 +1,48 @@
+{
+	"name": "amdis+",
+    "tier": 4,
+    "description": "gain @Rebirth and give @Rebirth to random ally",
+    "clans": [
+        "Dragons",
+        "Vampires"
+    ],
+    "statuses": [
+        {
+            "name": "OnSpawnGainRebirth",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AttachStatus",
+                                "status": "Rebirth"
+                            },
+                            {
+                                "type": "ChangeTarget",
+                                "filter": "Allies",
+                                "condition": {
+                                    "type": "Always"
+                                },
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "status": "Rebirth"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}

@@ -66,9 +66,10 @@ impl EffectImpl for DamageEffect {
         }
 
         let units = &mut logic.model.units;
+        let dead_units = &mut logic.model.dead_units;
         let target_unit = context
             .target
-            .and_then(|id| units.get_mut(&id))
+            .and_then(|id| units.get_mut(&id).or(dead_units.get_mut(&id)))
             .expect("Target not found");
 
         if damage <= Health::new(0.0) {
@@ -173,7 +174,12 @@ impl EffectImpl for DamageEffect {
         target_unit.last_injure_time = logic.model.time;
         target_unit.stats.health -= damage;
         target_unit.permanent_stats.health -= damage;
-        let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
+        let target_unit = logic
+            .model
+            .units
+            .get(&context.target.unwrap())
+            .or(logic.model.dead_units.get(&context.target.unwrap()))
+            .unwrap();
         let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
         logic.model.render_model.add_text(
             target_unit.position,

@@ -1,0 +1,46 @@
+{
+	"name": "soul_stealer+",
+    "tier": 4,
+    "description": "@Dark Steal and instantly attack any enemy that gains @Siphon Life",
+    "clans": [
+        "Demons",
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "DarkStealOnSiphonLife",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "SiphonLife",
+                            "filter": "Enemies"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AttachStatus",
+                                "status": "DarkSteal"
+                            },
+                            {
+                                "type": "ChangeContext",
+                                "caster": "From",
+                                "effect": {
+                                    "type": "InstantAction"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "ranged+"
+}
