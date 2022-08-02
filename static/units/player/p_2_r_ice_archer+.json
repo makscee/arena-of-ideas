@@ -1,6 +1,6 @@
 {
     "name": "ice_archer+",
-    "tier": 1,
+    "tier": 2,
     "description": "@Bonus Shot on @Frozen. @Bonus Shot applies @Frozen",
     "range": 10,
     "cooldown": 1,

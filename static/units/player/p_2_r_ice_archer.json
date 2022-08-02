@@ -1,6 +1,6 @@
 {
     "name": "ice_archer",
-    "tier": 1,
+    "tier": 2,
     "triple": "ice_archer+",
     "description": "@Bonus Shot on @Frozen",
     "range": 10,
