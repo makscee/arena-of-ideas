@@ -423,101 +423,124 @@ impl Render {
                 .collect()
         }
 
-        // Damage
-        let mut descriptions = to_descriptions(&self.assets, text_block.top_texts());
-        descriptions.sort_by_key(|(_, pos)| r32(pos.y));
-        let mut last_aabb: Option<AABB<f32>> = None;
+        /// Layout and render descriptions
+        fn draw_descriptions<'a>(
+            mut descriptions: Vec<(DHRow<'a>, Vec2<f32>)>,
+            y_scale: f32,
+            assets: &Rc<Assets>,
+            geng: &Geng,
+            framebuffer: &mut ugli::Framebuffer,
+            camera: &impl geng::AbstractCamera2d,
+        ) {
+            descriptions.sort_by_key(|(_, pos)| r32(pos.y * y_scale));
+            let mut last_aabb: Option<AABB<f32>> = None;
 
-        // Layout and render descriptions
-        for (desc, pos) in descriptions
-            .into_iter()
-            .filter(|(desc, _)| !desc.is_empty())
-        {
-            let font = self.geng.default_font().clone();
+            for (desc, pos) in descriptions
+                .into_iter()
+                .filter(|(desc, _)| !desc.is_empty())
+            {
+                let font = geng.default_font().clone();
 
-            let (offset, extra_space) = last_aabb
-                .map(|aabb| {
-                    let delta = pos.y - aabb.y_max;
-                    if delta < 0.0 {
-                        (-aabb.width(), None)
-                    } else {
-                        (0.0, Some(delta))
-                    }
-                })
-                .unwrap_or((0.0, None));
+                let (offset, extra_space) = last_aabb
+                    .map(|aabb| {
+                        let delta = if y_scale > 0.0 {
+                            pos.y - aabb.y_max
+                        } else {
+                            aabb.y_min - pos.y
+                        };
+                        if delta < 0.0 {
+                            (-aabb.width(), None)
+                        } else {
+                            (0.0, Some(delta))
+                        }
+                    })
+                    .unwrap_or((0.0, None));
 
-            fn aabb_union<T: UNum>(a: &AABB<T>, b: &AABB<T>) -> AABB<T> {
-                AABB::points_bounding_box(a.corners().into_iter().chain(b.corners()))
+                fn aabb_union<T: UNum>(a: &AABB<T>, b: &AABB<T>) -> AABB<T> {
+                    AABB::points_bounding_box(a.corners().into_iter().chain(b.corners()))
+                }
+
+                let pos = pos + vec2(offset - DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0);
+                let mut desc_aabb = AABB::point(pos);
+                draw_2d::Polygon::new(
+                    vec![
+                        pos + vec2(0.0, DH_DESC_ARROW_SIZE),
+                        pos + vec2(DH_DESC_ARROW_SIZE, 0.0),
+                        pos + vec2(0.0, -DH_DESC_ARROW_SIZE),
+                    ],
+                    DH_DESC_BACKGROUND,
+                )
+                .draw_2d(geng, framebuffer, camera);
+
+                for (name, config) in desc {
+                    let width = DESCRIPTION_WIDTH;
+                    let font_size = FONT_SIZE;
+                    let lines = wrap_text(font.clone(), &config.description, font_size, width)
+                        .expect("Failed to wrap text");
+                    let height = (lines.len() as f32 + 1.5) * font_size;
+                    let space = match extra_space {
+                        None => height / 2.0,
+                        Some(space) => space.min(height / 2.0),
+                    };
+                    let aabb = AABB::point(vec2(desc_aabb.x_min, desc_aabb.center().y))
+                        .extend_up(if y_scale > 0.0 { height - space } else { space })
+                        .extend_down(if y_scale > 0.0 { space } else { height - space })
+                        .extend_left(width);
+                    desc_aabb = aabb_union(&desc_aabb, &aabb).extend_left(DESCRIPTION_MARGIN);
+
+                    draw_2d::Quad::new(aabb, DH_DESC_BACKGROUND).draw_2d(geng, framebuffer, camera);
+
+                    let color = config.color.unwrap_or_else(|| {
+                        *assets
+                            .options
+                            .clan_colors
+                            .get(&config.clan_origin)
+                            .unwrap_or_else(|| {
+                                panic!("Failed to find clan ({}) color", config.clan_origin)
+                            })
+                    });
+                    let pos = vec2(aabb.center().x, aabb.y_max - font_size);
+                    draw_text(
+                        font.clone(),
+                        framebuffer,
+                        camera,
+                        name,
+                        pos,
+                        geng::TextAlign::CENTER,
+                        font_size,
+                        color,
+                    );
+                    draw_lines(
+                        font.clone(),
+                        &lines,
+                        font_size,
+                        pos,
+                        Color::WHITE,
+                        framebuffer,
+                        camera,
+                    );
+                }
+
+                last_aabb = Some(desc_aabb);
             }
-
-            let pos = pos + vec2(offset - DESCRIPTION_MARGIN - DH_DESC_ARROW_SIZE, 0.0);
-            let mut desc_aabb = AABB::point(pos);
-            draw_2d::Polygon::new(
-                vec![
-                    pos + vec2(0.0, DH_DESC_ARROW_SIZE),
-                    pos + vec2(DH_DESC_ARROW_SIZE, 0.0),
-                    pos + vec2(0.0, -DH_DESC_ARROW_SIZE),
-                ],
-                DH_DESC_BACKGROUND,
-            )
-            .draw_2d(&self.geng, framebuffer, &self.camera);
-
-            for (name, config) in desc {
-                let width = DESCRIPTION_WIDTH;
-                let font_size = FONT_SIZE;
-                let lines = wrap_text(font.clone(), &config.description, font_size, width)
-                    .expect("Failed to wrap text");
-                let height = (lines.len() as f32 + 1.5) * font_size;
-                let space = match extra_space {
-                    None => height / 2.0,
-                    Some(space) => space.min(height / 2.0),
-                };
-                let aabb = AABB::point(vec2(desc_aabb.x_min, desc_aabb.center().y))
-                    .extend_up(height - space)
-                    .extend_down(space)
-                    .extend_left(width);
-                desc_aabb = aabb_union(&desc_aabb, &aabb).extend_left(DESCRIPTION_MARGIN);
-
-                draw_2d::Quad::new(aabb, DH_DESC_BACKGROUND).draw_2d(
-                    &self.geng,
-                    framebuffer,
-                    &self.camera,
-                );
-
-                let color = config.color.unwrap_or_else(|| {
-                    *self
-                        .assets
-                        .options
-                        .clan_colors
-                        .get(&config.clan_origin)
-                        .unwrap_or_else(|| {
-                            panic!("Failed to find clan ({}) color", config.clan_origin)
-                        })
-                });
-                let pos = vec2(aabb.center().x, aabb.y_max - font_size);
-                draw_text(
-                    font.clone(),
-                    framebuffer,
-                    &self.camera,
-                    name,
-                    pos,
-                    geng::TextAlign::CENTER,
-                    font_size,
-                    color,
-                );
-                draw_lines(
-                    font.clone(),
-                    &lines,
-                    font_size,
-                    pos,
-                    Color::WHITE,
-                    framebuffer,
-                    &self.camera,
-                );
-            }
-
-            last_aabb = Some(desc_aabb);
         }
+
+        draw_descriptions(
+            to_descriptions(&self.assets, text_block.top_texts()),
+            1.0,
+            &self.assets,
+            &self.geng,
+            framebuffer,
+            &self.camera,
+        );
+        draw_descriptions(
+            to_descriptions(&self.assets, text_block.bot_texts()),
+            -1.0,
+            &self.assets,
+            &self.geng,
+            framebuffer,
+            &self.camera,
+        );
     }
 }
 
