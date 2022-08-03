@@ -11,7 +11,8 @@
             "triggers": [
                 {
                     "type": "Repeating",
-                    "tick_time": 3
+                    "tick_time": 3,
+                    "next_tick": 3
                 }
             ],
             "effect": {
