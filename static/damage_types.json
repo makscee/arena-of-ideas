@@ -1,12 +1,10 @@
 {
 	"SiphonLife": {
 		"description": "Heal caster for damage dealt",
-		"clan_origin": "Warlocks",
-		"color": "#ffffff"
+		"clan_origin": "Warlocks"
 	},
 	"Fire": {
 		"description": "Deal additional fire damage",
-		"clan_origin": "Dragons",
-		"color": "#ffffff"
+		"clan_origin": "Dragons"
 	}
 }
