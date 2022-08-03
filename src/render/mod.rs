@@ -179,7 +179,7 @@ impl Render {
 
             // On unit hover
             if (mouse_world_pos - unit.render_position.map(|x| x.as_f32())).len()
-                < unit.stats.radius.as_f32() / 2.0
+                < unit.stats.radius.as_f32()
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);
