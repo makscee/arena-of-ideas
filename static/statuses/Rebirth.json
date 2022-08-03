@@ -4,6 +4,8 @@
     "stacking": {
         "type": "Count"
     },
+    "clan_origin": "Dragons",
+    "color": "#cccccc",
     "listeners": [
         {
             "triggers": [

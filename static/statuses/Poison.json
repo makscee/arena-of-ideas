@@ -4,6 +4,7 @@
     "stacking": {
         "type": "Count"
     },
+    "clan_origin": "Assassins",
     "listeners": [
         {
             "triggers": [

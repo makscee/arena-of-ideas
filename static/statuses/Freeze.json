@@ -8,6 +8,7 @@
         "MoveUnable",
         "ActionUnable"
     ],
+    "clan_origin": "Freezers",
     "listeners": [
         {
             "triggers": [

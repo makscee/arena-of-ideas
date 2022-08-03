@@ -4,6 +4,7 @@
     "stacking": {
         "type": "Refresh"
     },
+    "hidden": "true",
     "listeners": [
         {
             "triggers": [

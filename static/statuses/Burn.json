@@ -4,6 +4,7 @@
     "stacking": {
         "type": "Refresh"
     },
+    "clan_origin": "Dragons",
     "duration": 10,
     "listeners": [
         {

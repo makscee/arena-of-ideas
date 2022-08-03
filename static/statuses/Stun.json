@@ -9,6 +9,7 @@
         "ActionUnable",
         "AbilityUnable"
     ],
+    "color": "#ffff0a",
     "duration": 1.5,
     "render": {
         "path": "shaders/status/status_default.glsl",

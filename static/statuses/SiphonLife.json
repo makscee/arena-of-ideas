@@ -6,6 +6,7 @@
         "type": "Independent"
     },
     "duration": 8,
+    "clan_origin": "Warlocks",
     "listeners": [
         {
             "triggers": [
