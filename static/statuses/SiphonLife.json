@@ -30,11 +30,19 @@
                         "type": "ChangeContext",
                         "target": "Caster",
                         "effect": {
-                            "type": "Heal",
-                            "value": {
-                                "type": "Var",
-                                "name": "DamageDealt"
-                            }
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "Heal",
+                                    "value": {
+                                        "type": "Var",
+                                        "name": "DamageDealt"
+                                    }
+                                },
+                                {
+                                    "preset": "effects/heal_vfx.json"
+                                }
+                            ]
                         }
                     }
                 }

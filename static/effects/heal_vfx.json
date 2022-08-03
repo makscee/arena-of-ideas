@@ -1,21 +1,22 @@
 {
     "type": "Visual",
     "duration": 1.0,
-    "parent": "Target",
+    "parent": "From",
+    "partner": "Target",
     "follow": false,
-    "radius": 1.5,
+    "radius": 0.04,
+    "color": "#80ff07",
     "render": {
-        "path": "shaders/vfx_particle_burst_new.glsl",
+        "path": "shaders/vfx_curve_particles.glsl",
         "parameters": {
-            "u_padding": 1.0,
-            "p_shape": 2,
-            "p_count": 12,
-            "p_gravity": [
-                0,
-                2
+            "u_direction": [
+                0.0,
+                -1.0
             ],
-            "p_startColor": "#22ff00",
-            "p_endColor": "#108001"
-        }
+            "p_disperse": 6.0,
+            "u_thickness": 0.1,
+            "p_speed": 0.5
+        },
+        "instances": 200
     }
 }

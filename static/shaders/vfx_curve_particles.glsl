@@ -12,13 +12,13 @@ uniform float u_end_cut = 0;
 
 
 void main() {
-    v_quad_pos = a_pos + vec2(0.0, 0.);
+    v_quad_pos = a_pos;
     p_index = gl_InstanceID;
     float r1 = rand(p_index);
     float r2 = rand(p_index + 1);
     float r3 = rand(p_index + 2);
     float effect_t = 1 - u_spawn;
-    float bezier_t = r1 + effect_t * r3 * p_speed;
+    float bezier_t = r1 + effect_t * effect_t * r3 * p_speed;
     bezier_t -= float(bezier_t > 1);
     bezier_t = u_end_cut * .5 + bezier_t * (1. - u_end_cut);
 
@@ -26,7 +26,7 @@ void main() {
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
 
-    vec2 startPos = b_pos + b_normal * (r2- 0.5) * r3 * u_thickness * (1 + p_disperse * effect_t);
+    vec2 startPos = b_pos + b_normal * (r2 - 0.5) * r3 * u_thickness * (1 + p_disperse * effect_t);
     float radius = u_unit_radius * cos(effect_t * pi * .5) * sin(bezier_t * pi);
 
     vec2 pos = v_quad_pos * radius + startPos;
@@ -45,7 +45,6 @@ void main() {
     vec2 uv = v_quad_pos;
     float centerDist = length(uv);
     if (centerDist > 1) discard;
-    vec4 col = vec4(parent_faction_color, 1);
-    gl_FragColor = col;
+    gl_FragColor = getColor();
 }
 #endif

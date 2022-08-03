@@ -47,6 +47,7 @@ uniform float u_parent_faction = 1;
 
 uniform float u_thickness = 0.2;
 uniform float u_curvature = 2;
+uniform vec2 u_direction = vec2(0,1);
 
 uniform vec4 u_color = vec4(0);
 uniform vec4 u_clan_color_1 = vec4(0.250, 0, 0.501, 1);
@@ -247,8 +248,8 @@ vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
 
 vec4 bezierParentPartner(float t, vec2 parent, vec2 partner)
 {
-    vec2 dir = normalize(parent - partner);
-    dir = vec2(dir.y, -dir.x) * u_curvature * (1 + (u_parent_random - 0.5) * .3) * u_parent_faction;
+    // vec2 dir = normalize(parent - partner);
+    vec2 dir = u_direction * u_curvature * (1 + (u_parent_random - 0.5) * .3);
     vec2 p0 = parent;
     vec2 p1 = parent + dir;
     vec2 p2 = partner + dir;
