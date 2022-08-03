@@ -3,7 +3,7 @@
     "radius": 0.4,
     "base_damage": 6,
     "range": 5,
-    "cooldown": 3,
+    "cooldown": 5,
     "action": {
         "effect": {
             "type": "List",
@@ -16,7 +16,6 @@
     },
     "render": {
         "path": "shaders/default_circle_hero.glsl",
-        "vertices": 200,
-        "instances": 1
+        "vertices": 200
     }
 }
