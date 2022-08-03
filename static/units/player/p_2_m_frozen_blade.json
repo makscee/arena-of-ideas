@@ -4,7 +4,7 @@
     "triple": "frozen_blade+",
     "description": "@Scathe: apply @Frozen",
     "range": 2,
-    "health": 6,
+    "health": 4,
     "base_damage": 2,
     "cooldown": 3,
     "action": {

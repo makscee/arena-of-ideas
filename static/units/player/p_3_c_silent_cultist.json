@@ -1,6 +1,9 @@
 {
 	"name": "silent_cultist",
     "tier": 3,
+    "health": 8,
+    "base_damage": 15,
+    "cooldown": 5,
     "description": "Allies @Siphon Life no longer breaks @Freeze",
     "triple": "silent_cultist+",
     "clans": [
@@ -35,5 +38,5 @@
             }
         }
     ],
-    "base": "ranged"
+    "base": "caster"
 }

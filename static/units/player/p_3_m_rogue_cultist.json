@@ -1,6 +1,9 @@
 {
 	"name": "rogue_cultist",
     "tier": 3,
+    "health": 7,
+    "base_damage": 3,
+    "cooldown": 3,
     "description": "On @Crit apply @Siphon Life",
     "triple": "rogue_cultist+",
     "clans": [

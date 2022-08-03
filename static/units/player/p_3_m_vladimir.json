@@ -1,6 +1,9 @@
 {
     "name": "vladimir",
     "tier": 3,
+    "health": 7,
+    "base_damage": 3,
+    "cooldown": 3,
     "description": "All allies gain +10% @Vampirism",
     "triple": "vladimir+",
     "clans": [

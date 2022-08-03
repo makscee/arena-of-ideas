@@ -59,8 +59,8 @@
   "p_4_m_executor+",
   "p_2_m_nosferatu",
   "p_2_m_nosferatu+",
-  "p_3_r_plague_doctor",
-  "p_3_r_plague_doctor+",
+  "p_3_c_plague_doctor",
+  "p_3_c_plague_doctor+",
   "p_2_m_shanker",
   "p_2_m_shanker+",
   "p_4_r_soul_stealer",
@@ -70,5 +70,5 @@
   "p_2_m_dark_guardian",
   "p_2_m_dark_guardian+",
   "p_2_r_red_dragon",
-  "p_3_r_silent_cultist"
+  "p_3_c_silent_cultist"
 ]

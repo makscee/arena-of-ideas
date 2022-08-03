@@ -1,7 +1,9 @@
 {
 	"name": "sniper",
     "tier": 3,
-    "base_damage": 3,
+    "health": 5,
+    "base_damage": 5,
+    "cooldown": 6,
     "triple": "sniper+",
     "description": "On @Crit @Bonus Shot",
     "clans": [

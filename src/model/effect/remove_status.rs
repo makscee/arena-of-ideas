@@ -25,7 +25,12 @@ impl EffectImpl for RemoveStatusEffect {
         let target = context.get(effect.who);
         let all = effect.all;
         if let Some(target) = target {
-            let target = logic.model.units.get_mut(&target).unwrap();
+            let target = logic
+                .model
+                .units
+                .get_mut(&target)
+                .or(logic.model.dead_units.get_mut(&target))
+                .unwrap();
             for status in &mut target.all_statuses {
                 if match status_name {
                     Some(name) => *name == status.status.name,

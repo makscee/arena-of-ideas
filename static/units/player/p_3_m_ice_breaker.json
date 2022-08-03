@@ -3,7 +3,9 @@
     "tier": 3,
     "description": "@Crit on @Frozen",
     "range": 1,
-    "cooldown": 1,
+    "health": 7,
+    "base_damage": 3,
+    "cooldown": 3,
     "action": {
         "effect": {
             "type": "List",

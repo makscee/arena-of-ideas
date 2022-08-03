@@ -1,6 +1,9 @@
 {
 	"name": "dracula",
     "tier": 3,
+    "health": 7,
+    "base_damage": 3,
+    "cooldown": 3,
     "triple": "dracula+",
     "description": "Double @Crit chance with full hp",
     "clans": [
