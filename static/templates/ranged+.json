@@ -3,6 +3,7 @@
     "radius": 0.44,
     "base_damage": 2,
     "range": 8,
+    "base_damage": 5,
     "cooldown": 3,
     "action": {
         "effect": {
