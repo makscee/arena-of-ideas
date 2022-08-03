@@ -1,1 +1,10 @@
-{}
+{
+    "SiphonLife": {
+        "description": "Heal caster for damage dealt",
+        "clan_origin": "Warlocks"
+    },
+    "PlagueResistance": {
+        "description": "Heal after taking damage from @Plague",
+        "clan_origin": "PlagueSpreaders"
+    }
+}

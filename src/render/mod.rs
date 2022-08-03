@@ -15,29 +15,23 @@ const FONT_SIZE: f32 = 0.2;
 
 const DH_DESC_ARROW_SIZE: f32 = 0.1;
 const DH_DESC_BACKGROUND: Color<f32> = Color {
-    r: 0.4,
-    g: 0.4,
-    b: 0.4,
-    a: 1.0,
-};
-
-const STATUS_DESC_ARROW_SIZE: f32 = 0.15;
-const STATUS_DESC_FOREGROUND: Color<f32> = Color {
-    r: 0.5,
-    g: 0.5,
-    b: 0.5,
-    a: 1.0,
-};
-const STATUS_DESC_BACKGROUND: Color<f32> = Color {
     r: 0.2,
     g: 0.2,
     b: 0.2,
     a: 1.0,
 };
-const DAMAGE_DESC_FOREGROUND: Color<f32> = Color {
-    r: 0.3,
-    g: 0.3,
-    b: 0.3,
+
+const STATUS_DESC_ARROW_SIZE: f32 = 0.15;
+const STATUS_DESC_FOREGROUND: Color<f32> = Color {
+    r: 0.2,
+    g: 0.2,
+    b: 0.2,
+    a: 1.0,
+};
+const STATUS_DESC_BACKGROUND: Color<f32> = Color {
+    r: 0.1,
+    g: 0.1,
+    b: 0.1,
     a: 1.0,
 };
 
@@ -385,7 +379,7 @@ impl Render {
                 &description,
                 font_size,
                 text_pos,
-                Color::WHITE,
+                Color::try_from("#e6e6e6").unwrap(),
                 framebuffer,
                 &self.camera,
             );
@@ -526,7 +520,7 @@ impl Render {
                         &lines,
                         font_size,
                         pos,
-                        Color::WHITE,
+                        Color::try_from("#e6e6e6").unwrap(),
                         framebuffer,
                         camera,
                     );

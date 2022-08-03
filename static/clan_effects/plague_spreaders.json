@@ -6,7 +6,7 @@
         },
         "statuses": [
             {
-                "name": "OnTakeDamage",
+                "name": "PlagueDamageHeal",
                 "type": "Status",
                 "stacking": {
                     "type": "Refresh"
@@ -20,11 +20,20 @@
                             }
                         ],
                         "effect": {
-                            "type": "Heal",
-                            "value": {
-                                "type": "Const",
-                                "value": 0.5
-                            }
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "Heal",
+                                    "types": ["PlagueResistance"],
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 0.5
+                                    }
+                                },
+                                {
+                                    "preset": "effects/heal_vfx.json"
+                                }
+                            ]
                         }
                     }
                 ]

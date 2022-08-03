@@ -4,6 +4,7 @@
     "stacking": {
         "type": "Refresh"
     },
+    "description": "Take 1 damage every 3 ticks indefinitely. On Melee or Ranged @Injure apply @Plague",
     "clan_origin": "PlagueSpreaders",
     "listeners": [
         {
@@ -47,15 +48,11 @@
                 }
             ],
             "effect": {
-                "preset": "effects/vfx_attach_status.json",
-                "color": "#408002"
+                "preset": "effects/vfx_attach_status.json"
             }
         }
     ],
     "render": {
-        "path": "shaders/status/status_default.glsl",
-        "parameters": {
-            "u_status_color": "#408002"
-        }
+        "path": "shaders/status/status_default.glsl"
     }
 }

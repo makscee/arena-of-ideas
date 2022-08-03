@@ -1,33 +1,13 @@
 {
     "name": "patient_zero",
     "tier": 1,
-    "health": 3,
     "triple": "patient_zero+",
     "description": "Has @Plague",
     "clans": [
         "PlagueSpreaders"
     ],
     "statuses": [
-        {
-            "name": "PatientZeroOnSpawn",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "Spawn"
-                        }
-                    ],
-                    "effect": {
-                        "type": "AttachStatus",
-                        "status": "Plague"
-                    }
-                }
-            ]
-        }
+        "Plague"
     ],
     "base": "melee"
 }

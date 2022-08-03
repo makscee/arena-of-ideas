@@ -7,5 +7,6 @@
     "Demons": "demons.json",
     "Vampires": "vampires.json",
     "Dragons": "dragons.json",
-    "Common": "common.json"
+    "Common": "common.json",
+    "PlagueSpreaders": "plague_spreaders.json"
 }
