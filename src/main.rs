@@ -47,6 +47,8 @@ pub struct Game {
     render: Render,
     shop: Shop,
     frame_texture: Texture,
+    previous_texture: Texture,
+    new_texture: Texture,
 }
 
 impl Game {
@@ -85,6 +87,8 @@ impl Game {
             events,
             last_frame,
             frame_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
+            new_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
+            previous_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
         };
         game.logic.initialize(
             &mut game.events,
@@ -118,6 +122,8 @@ impl geng::State for Game {
         let window_size = self.geng.window().size();
         if self.frame_texture.size() != window_size {
             self.frame_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
+            self.previous_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
+            self.new_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
         }
         let mut game_time = 0.0;
         {
@@ -142,9 +148,6 @@ impl geng::State for Game {
             self.render.draw(entry.time, &entry.model, framebuffer);
         }
 
-        let mut previous_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), window_size);
-        let mut new_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), window_size);
-
         let blend_shader_program = &self.assets.postfx_render.blend_shader;
         let blend_quad = blend_shader_program.get_vertices(&self.geng);
         let framebuffer_size = framebuffer.size();
@@ -156,7 +159,7 @@ impl geng::State for Game {
                     let quad = shader_program.get_vertices(&self.geng);
                     let mut framebuffer = ugli::Framebuffer::new_color(
                         self.geng.ugli(),
-                        ugli::ColorAttachment::Texture(&mut new_texture),
+                        ugli::ColorAttachment::Texture(&mut self.new_texture),
                     );
                     let framebuffer = &mut framebuffer;
 
@@ -170,7 +173,7 @@ impl geng::State for Game {
                             ugli::uniforms! {
                                 u_time: game_time,
                                 u_window_size: window_size,
-                                u_previous_texture: &previous_texture,
+                                u_previous_texture: &self.previous_texture,
                                 u_frame_texture: &self.frame_texture
                             },
                             geng::camera2d_uniforms(
@@ -185,11 +188,11 @@ impl geng::State for Game {
                         },
                     );
                 }
-                mem::swap(&mut previous_texture, &mut new_texture);
+                mem::swap(&mut self.previous_texture, &mut self.new_texture);
                 if it.peek().is_none() {
                     let mut framebuffer = ugli::Framebuffer::new_color(
                         self.geng.ugli(),
-                        ugli::ColorAttachment::Texture(&mut new_texture),
+                        ugli::ColorAttachment::Texture(&mut self.new_texture),
                     );
                     let framebuffer = &mut framebuffer;
                     ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
@@ -202,7 +205,7 @@ impl geng::State for Game {
                             ugli::uniforms! {
                                 u_time: game_time,
                                 u_window_size: window_size,
-                                u_previous_texture: &previous_texture,
+                                u_previous_texture: &self.previous_texture,
                                 u_frame_texture: &self.frame_texture,
                             },
                             geng::camera2d_uniforms(
@@ -216,7 +219,7 @@ impl geng::State for Game {
                             ..default()
                         },
                     );
-                    mem::swap(&mut self.frame_texture, &mut new_texture);
+                    mem::swap(&mut self.frame_texture, &mut self.new_texture);
                 }
             }
         }
