@@ -21,10 +21,10 @@ pub struct TextBlock {
 
 impl Text {
     pub fn update(&mut self, delta_time: f32) {
-        self.time += delta_time * 0.5;
-        self.scale = f32::max(1.4 - (self.time * 1.5 - 0.3) * (self.time * 1.3 - 0.3), 1.0);
-        if self.time > 0.7 {
-            self.color.a = 1.0 - (self.time - 0.7) / 0.3;
+        self.time += delta_time * 0.25;
+        self.scale = f32::max(1.4 - (self.time * 5.0 - 0.3) * (self.time * 5.0 - 0.3), 1.0);
+        if self.time > 0.85 {
+            self.color.a = 1.0 - (self.time - 0.85) / 0.15;
         }
     }
 
