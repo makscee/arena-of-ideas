@@ -57,7 +57,9 @@ impl Logic {
                     }
                 }
                 Faction::Enemy => {
-                    if let Some(members) = self.model.config.enemy_clans.get(&clan) {
+                    if let Some(members) = self.model.config.clans.get(&clan) {
+                        size = *members;
+                    } else if let Some(members) = self.model.config.enemy_clans.get(&clan) {
                         size = *members;
                     }
                 }
