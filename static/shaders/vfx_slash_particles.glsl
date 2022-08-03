@@ -14,7 +14,7 @@ void main() {
 
     v_quad_pos = a_pos;
     float effect_t = 1 - u_spawn;
-    bezier_t = rand(p_index) * 1.0 + effect_t * .3;
+    bezier_t = rand(p_index) * 1.0 + effect_t * .15;
 
     vec2 p0 = u_parent_position;
     vec2 p1 = p0 + vec2(1, 0) * u_parent_faction;
@@ -41,7 +41,7 @@ flat in float bezier_t;
 
 void main() {
     float t = 1 - u_spawn;
-    if (t < bezier_t * .1) discard;
+    if (t < bezier_t * .1 || length(v_quad_pos) > 1) discard;
     commonInit();
     vec4 col = vec4(parent_faction_color, 1);
     gl_FragColor = col;

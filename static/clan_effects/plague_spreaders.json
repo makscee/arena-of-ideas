@@ -24,7 +24,9 @@
                             "effects": [
                                 {
                                     "type": "Heal",
-                                    "types": ["PlagueResistance"],
+                                    "types": [
+                                        "PlagueResistance"
+                                    ],
                                     "value": {
                                         "type": "Const",
                                         "value": 0.5
@@ -43,28 +45,30 @@
     {
         "activate": 4,
         "filter": {
-            "Player": [
-                "Skeletons"
-            ]
+            "Enemy": null
         },
         "statuses": [
             {
-                "name": "OnDealDamage",
+                "name": "VulnerabilityOnPlague",
                 "type": "Status",
                 "stacking": {
-                    "type": "Refresh"
+                    "type": "Independent"
                 },
                 "listeners": [
                     {
                         "triggers": [
                             {
-                                "type": "DamageDealt",
-                                "damage_type": "Melee"
+                                "type": "SelfDetectAttach",
+                                "status_name": "Plague"
                             }
                         ],
                         "effect": {
-                            "type": "AttachStatus",
-                            "status": "Plague"
+                            "type": "Repeat",
+                            "times": 2,
+                            "effect": {
+                                "type": "AttachStatus",
+                                "status": "Vulnerability"
+                            }
                         }
                     }
                 ]
