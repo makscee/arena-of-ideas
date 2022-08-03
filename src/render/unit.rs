@@ -125,18 +125,20 @@ impl UnitRender {
                 self.assets
                     .statuses
                     .get(&status.status.name)
-                    .and_then(|config| config.render.as_ref())
-                    .map(|render| {
+                    .filter(|config| config.render.is_some())
+                    // .and_then(|config| config.render.as_ref())
+                    .map(|config| {
                         (
-                            self.assets.get_render(render),
+                            self.assets.get_render(&config.render.as_ref().unwrap()),
                             status.time,
                             status.status.duration,
+                            config.get_color(&self.assets.options),
                         )
                     })
             })
             .collect();
         let status_count = statuses.len();
-        for (status_index, (program, status_time, status_duration)) in
+        for (status_index, (program, status_time, status_duration, status_color)) in
             statuses.into_iter().enumerate()
         {
             let mut new_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
@@ -169,6 +171,7 @@ impl UnitRender {
                             u_status_time: status_time.as_f32(),
                             u_status_duration: status_duration.as_f32(),
                             u_time: game_time,
+                            u_color: status_color,
                         },
                         program.parameters,
                     ),

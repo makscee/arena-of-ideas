@@ -80,7 +80,7 @@ impl Game {
             assets: assets.clone(),
             time: 0.0,
             history,
-            render: Render::new(geng, assets, &config),
+            render: Render::new(geng, &assets, &config),
             timeline_captured: false,
             shop,
             logic,
@@ -336,9 +336,14 @@ fn main() {
                     Effects::load(&geng, &effects_path)
                         .await
                         .expect(&format!("Failed to load effects from {effects_path:?}"));
-                    let assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
+                    let mut assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
                         .await
                         .expect("Failed to load assets");
+
+                    for status in assets.statuses.values_mut() {
+                        let color = status.get_color(&assets.options);
+                        status.status.color = color;
+                    }
                     let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
                         .await
                         .expect("Failed to load config");

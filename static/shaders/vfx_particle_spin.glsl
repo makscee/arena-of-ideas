@@ -39,6 +39,7 @@ flat in float p_t;
 
 void main() {
     if (p_t > 1 || length(v_quad_pos) > 1) discard;
-    gl_FragColor = u_color;
+    commonInit();
+    gl_FragColor = getColor();
 }
 #endif

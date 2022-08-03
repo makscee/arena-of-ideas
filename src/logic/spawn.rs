@@ -73,7 +73,7 @@ impl Logic {
         }
 
         // On spawn effects
-        for (effect, vars, status_id) in unit
+        for (effect, vars, status_id, status_color) in unit
             .all_statuses
             .iter()
             .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
@@ -86,6 +86,7 @@ impl Logic {
                     target: Some(unit.id),
                     vars,
                     status_id: Some(status_id),
+                    color: Some(status_color),
                 },
             })
         }

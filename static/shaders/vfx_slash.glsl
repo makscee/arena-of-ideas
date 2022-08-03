@@ -39,7 +39,7 @@ void main() {
     vec2 uv = v_quad_pos;
     float v = 1 + bezier_t * .15 - t * t;
     v = max(.7 - t * .7, v);
-    vec4 col = vec4(parent_faction_color, v);
+    vec4 col = vec4(getColor().rgb, v);
     gl_FragColor = col;
 }
 #endif

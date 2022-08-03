@@ -10,7 +10,7 @@ uniform float u_offset = -0.6;
 
 void main() {
     v_quad_pos = a_pos * u_size;
-    vec2 pos = u_unit_position + vec2(0,u_offset) + v_quad_pos * UNITS_SCALE * 0.4;
+    vec2 pos = u_unit_position + vec2(0,u_offset) + v_quad_pos * 0.4;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

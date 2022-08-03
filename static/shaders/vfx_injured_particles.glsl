@@ -27,10 +27,10 @@ void main() {
     t -= trail_shift;
     t = 1 - (1 - t) * (1 - t);
     p_t = t;
-    float colorHash = fract(colorHash(u_color.rgb) * 131 + u_random * 17);
+    float colorHash = fract(colorHash(getColor().rgb) * 131 + u_random * 17);
 
     float size = u_unit_radius * mix(u_start_scale, u_end_scale, t) * r[2];
-    vec2 startPos = rotateCW(vec2(0,u_parent_radius * UNITS_SCALE), pi / 6 * (1 - float(u_parent_position.x < 0) * 2.) + r_mid[0] * 0.2);
+    vec2 startPos = rotateCW(vec2(0,u_parent_radius), pi / 6 * (1 - float(u_parent_position.x < 0) * 2.) + r_mid[0] * 0.2);
     vec2 velocity = rotateCW(startPos, r_mid[1] * 3.5 * colorHash) * r[2] * 6. + vec2(sin(t * r_mid[0] * 9), cos(t * r_mid[1] * 2)) * 1.1 * (1.0 - colorHash);
     velocity *= .6;
     vec2 pos = u_parent_position + v_quad_pos * size + startPos + velocity * t;
@@ -50,7 +50,7 @@ void main() {
     if (p_t <= 0.) discard;
     commonInit();
     vec2 uv = v_quad_pos;
-    vec3 col2 = mix(parent_faction_color, u_color.rgb, float(length(u_color.rgb) > 0));
+    vec3 col2 = getColor().rgb;
     vec4 col = vec4(mix(col2, parent_faction_color, p_trail_part),1);
     col *= float(length(uv) < 0.5);
     gl_FragColor = col;

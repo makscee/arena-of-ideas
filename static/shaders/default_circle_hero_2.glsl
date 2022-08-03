@@ -6,7 +6,7 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    float radius = u_unit_radius * UNITS_SCALE;
+    float radius = u_unit_radius;
     float height = 0.1 + radius * .5 + (radius * .5 * a_pos.y);
     float radian = a_pos.x * pi * 2.;
     float paddingHeight = float(a_pos.y > 0) * u_padding * radius;
@@ -68,7 +68,6 @@ float generateOffsetFromColor(vec3 color, float addOffset) {
 
 void main() {
     commonInit();
-    float u_padding = u_padding * UNITS_SCALE;
     vec2 uv = v_quad_pos;
     vec3 mixedColor = getMixedClanColor(uv.x);
     if (uv.y > 1) {

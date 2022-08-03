@@ -2,7 +2,7 @@
     "name": "InjureHealTint",
     "hidden": true,
     "type": "Status",
-    "order": 1000000,
+    "order": -1,
     "stacking": {
         "type": "Independent"
     },

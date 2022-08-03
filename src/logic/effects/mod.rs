@@ -16,6 +16,7 @@ pub struct EffectContext {
     pub target: Option<Id>,
     pub vars: HashMap<VarName, R32>,
     pub status_id: Option<Id>,
+    pub color: Option<Color<f32>>,
 }
 
 impl EffectContext {

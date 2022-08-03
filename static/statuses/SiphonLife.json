@@ -47,15 +47,11 @@
                 }
             ],
             "effect": {
-                "preset": "effects/vfx_attach_status.json",
-                "color": "#400080"
+                "preset": "effects/vfx_attach_status.json"
             }
         }
     ],
     "render": {
-        "path": "shaders/status/status_default.glsl",
-        "parameters": {
-            "u_status_color": "#400080"
-        }
+        "path": "shaders/status/status_default.glsl"
     }
 }

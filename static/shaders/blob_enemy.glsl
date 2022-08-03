@@ -11,7 +11,7 @@ void main() {
     float action_t = smoothstep(ACTION_ANIMATION_TIME, 0, u_time - u_action_time);
     action_t *= action_t;
     v_quad_pos = a_pos * (1.0 + u_padding);
-    float size = u_unit_radius * UNITS_SCALE + action_t * .3;
+    float size = u_unit_radius + action_t * .3;
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -37,12 +37,13 @@ float getRingAlpha(
 }
 
 void main() {
+    commonInit();
     float glow = 0.35 + sin(u_time) * .1;
 
     vec2 uv = v_quad_pos;
 
     vec3 colors[2];
-    colors[0] = u_color.rgb;
+    colors[0] = getColor().rgb;
     colors[1] = vec3(1, 0.980, 0.941);
 
     float innerTime = u_time - floor(u_time / pi * 2.) * pi * 2. + u_random * 100.;

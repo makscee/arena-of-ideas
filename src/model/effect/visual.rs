@@ -14,7 +14,7 @@ pub struct VisualEffect {
     pub follow: bool,
     pub radius: R32,
     #[serde(default = "default_color")]
-    pub color: Color<f32>,
+    pub color: Option<Color<f32>>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
 }
@@ -35,8 +35,8 @@ fn default_partner() -> Who {
     Who::Caster
 }
 
-fn default_color() -> Color<f32> {
-    Color::BLACK
+fn default_color() -> Option<Color<f32>> {
+    None
 }
 
 impl EffectContainer for VisualEffect {
@@ -57,6 +57,12 @@ impl EffectImpl for VisualEffect {
                     .or(logic.model.dead_units.get(&parent))
             })
             .map(|unit| unit.position);
+        let mut effect_color = None;
+        if let Some(color) = effect.color {
+            effect_color = Some(color);
+        } else if let Some(color) = context.color {
+            effect_color = Some(color);
+        }
         if let Some(position) = position {
             let partner = context.get(effect.partner);
 
@@ -71,7 +77,7 @@ impl EffectImpl for VisualEffect {
                 partner,
                 position: position.to_world(),
                 follow: effect.follow,
-                color: effect.color,
+                color: effect_color,
             });
             logic.model.next_id += 1;
         }

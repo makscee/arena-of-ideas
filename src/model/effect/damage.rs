@@ -76,23 +76,25 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        for (effect, mut vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
-            status.trigger(|trigger| match trigger {
-                StatusTrigger::DamageIncoming {
-                    damage_type,
-                    except,
-                } => {
-                    if let Some(damage_type) = &damage_type {
-                        effect.types.contains(damage_type)
-                    } else if let Some(except) = &except {
-                        !effect.types.contains(except)
-                    } else {
-                        true
+        for (effect, mut vars, status_id, status_color) in
+            target_unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::DamageIncoming {
+                        damage_type,
+                        except,
+                    } => {
+                        if let Some(damage_type) = &damage_type {
+                            effect.types.contains(damage_type)
+                        } else if let Some(except) = &except {
+                            !effect.types.contains(except)
+                        } else {
+                            true
+                        }
                     }
-                }
-                _ => false,
+                    _ => false,
+                })
             })
-        }) {
+        {
             logic.effects.push_front(QueuedEffect {
                 effect,
                 context: EffectContext {
@@ -104,6 +106,7 @@ impl EffectImpl for DamageEffect {
                         vars
                     },
                     status_id: Some(status_id),
+                    color: Some(status_color),
                 },
             })
         }
@@ -130,23 +133,25 @@ impl EffectImpl for DamageEffect {
             }
         }
 
-        for (effect, vars, status_id) in target_unit.all_statuses.iter().flat_map(|status| {
-            status.trigger(|trigger| match trigger {
-                StatusTrigger::DamageTaken {
-                    damage_type,
-                    except,
-                } => {
-                    if let Some(damage_type) = &damage_type {
-                        effect.types.contains(damage_type)
-                    } else if let Some(except) = &except {
-                        !effect.types.contains(except)
-                    } else {
-                        true
+        for (effect, vars, status_id, status_color) in
+            target_unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::DamageTaken {
+                        damage_type,
+                        except,
+                    } => {
+                        if let Some(damage_type) = &damage_type {
+                            effect.types.contains(damage_type)
+                        } else if let Some(except) = &except {
+                            !effect.types.contains(except)
+                        } else {
+                            true
+                        }
                     }
-                }
-                _ => false,
+                    _ => false,
+                })
             })
-        }) {
+        {
             logic.effects.push_front(QueuedEffect {
                 effect,
                 context: EffectContext {
@@ -155,6 +160,7 @@ impl EffectImpl for DamageEffect {
                     target: context.target,
                     vars,
                     status_id: Some(status_id),
+                    color: Some(status_color),
                 },
             })
         }
@@ -190,7 +196,7 @@ impl EffectImpl for DamageEffect {
         let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
-            for (effect, mut vars, status_id) in
+            for (effect, mut vars, status_id, status_color) in
                 caster_unit.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
                         StatusTrigger::DamageDealt {
@@ -221,6 +227,7 @@ impl EffectImpl for DamageEffect {
                             vars
                         },
                         status_id: Some(status_id),
+                        color: Some(status_color),
                     },
                 })
             }
@@ -256,23 +263,25 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                for (effect, mut vars, status_id) in caster.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::Kill {
-                            damage_type,
-                            except,
-                        } => {
-                            if let Some(damage_type) = &damage_type {
-                                effect.types.contains(damage_type)
-                            } else if let Some(except) = &except {
-                                !effect.types.contains(except)
-                            } else {
-                                true
+                for (effect, mut vars, status_id, status_color) in
+                    caster.all_statuses.iter().flat_map(|status| {
+                        status.trigger(|trigger| match trigger {
+                            StatusTrigger::Kill {
+                                damage_type,
+                                except,
+                            } => {
+                                if let Some(damage_type) = &damage_type {
+                                    effect.types.contains(damage_type)
+                                } else if let Some(except) = &except {
+                                    !effect.types.contains(except)
+                                } else {
+                                    true
+                                }
                             }
-                        }
-                        _ => false,
+                            _ => false,
+                        })
                     })
-                }) {
+                {
                     logic.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
@@ -284,6 +293,7 @@ impl EffectImpl for DamageEffect {
                                 vars
                             },
                             status_id: Some(status_id),
+                            color: Some(status_color),
                         },
                     })
                 }

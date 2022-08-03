@@ -1,6 +1,5 @@
 const float pi = 3.14159;
 
-const float UNITS_SCALE = 1.;
 const float ACTION_ANIMATION_TIME = 0.5;
 
 const float c_thickness = .1;
@@ -49,7 +48,7 @@ uniform float u_parent_faction = 1;
 uniform float u_thickness = 0.2;
 uniform float u_curvature = 2;
 
-uniform vec4 u_color = vec4(0.117, 0.564, 1, 1);
+uniform vec4 u_color = vec4(0);
 uniform vec4 u_clan_color_1 = vec4(0.250, 0, 0.501, 1);
 uniform vec4 u_clan_color_2 = vec4(0.117, 0.564, 1, 1);
 uniform vec4 u_clan_color_3 = vec4(0.501, 0, 0.250, 1);
@@ -74,6 +73,10 @@ void commonInit()
     clanCountF = float(u_clan_count);
     parent_faction_color = mix(enemy_faction_color, player_faction_color, (u_parent_faction + 1) / 2);
     parent_enemy_faction_color = mix(enemy_faction_color, player_faction_color, 1 - (u_parent_faction + 1) / 2);
+}
+
+vec4 getColor() {
+    return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color) > 0));
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)

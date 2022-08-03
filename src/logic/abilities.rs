@@ -30,6 +30,7 @@ impl<'a> Logic {
                                 target: Some(unit.id),
                                 vars: default(),
                                 status_id: None,
+                                color: None,
                             },
                         });
                     }

@@ -4,7 +4,6 @@
     "parent": "Target",
     "follow": true,
     "radius": 2,
-    "color": "#ffffff",
     "render": {
         "path": "shaders/vfx_particle_spin.glsl",
         "parameters": {

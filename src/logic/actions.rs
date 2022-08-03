@@ -21,9 +21,11 @@ impl Logic {
                 for modifier in mem::take(&mut unit.next_action_modifiers) {
                     effect.apply_modifier(&modifier);
                 }
-                for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Action))
-                }) {
+                for (effect, vars, status_id, status_color) in
+                    unit.all_statuses.iter().flat_map(|status| {
+                        status.trigger(|trigger| matches!(trigger, StatusTrigger::Action))
+                    })
+                {
                     self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
@@ -32,6 +34,7 @@ impl Logic {
                             target: Some(target.id),
                             vars,
                             status_id: Some(status_id),
+                            color: Some(status_color),
                         },
                     });
                 }
@@ -43,6 +46,7 @@ impl Logic {
                         target: Some(target.id),
                         vars: default(),
                         status_id: None,
+                        color: None,
                     },
                 });
             }

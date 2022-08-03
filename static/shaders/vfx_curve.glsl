@@ -33,7 +33,7 @@ void main() {
     vec2 uv = v_quad_pos;
     float centerDist = abs(uv.y);
     if (centerDist > u_spawn) discard;
-    vec4 col = vec4(parent_faction_color,1);
+    vec4 col = getColor();
     gl_FragColor = col;
 }
 #endif

@@ -46,6 +46,15 @@ impl StatusConfig {
     fn default_clan_origin() -> Clan {
         Clan::Common
     }
+
+    pub fn get_color(&self, options: &Options) -> Color<f32> {
+        self.color.unwrap_or_else(|| {
+            *options
+                .clan_colors
+                .get(&self.clan_origin)
+                .unwrap_or_else(|| panic!("Failed to find clan ({}) color", self.clan_origin))
+        })
+    }
 }
 
 #[derive(Deref, DerefMut, Clone)]

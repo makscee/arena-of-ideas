@@ -37,6 +37,7 @@ impl Logic {
                             target: Some(unit.id),
                             vars: status.vars.clone(),
                             status_id: Some(status.id),
+                            color: None,
                         };
                         match &modifier.target {
                             ModifierTarget::List { modifiers } => {
@@ -93,10 +94,12 @@ impl Logic {
             .sort_by(|a, b| a.status.order.cmp(&b.status.order));
         for status in &mut unit.all_statuses {
             if !status.is_inited {
-                for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
-                    StatusTrigger::Init => true,
-                    _ => false,
-                }) {
+                for (effect, vars, status_id, status_color) in
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::Init => true,
+                        _ => false,
+                    })
+                {
                     self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
@@ -105,6 +108,7 @@ impl Logic {
                             target: Some(unit.id),
                             vars,
                             status_id: Some(status_id),
+                            color: Some(status_color),
                         },
                     })
                 }
@@ -142,16 +146,19 @@ impl Logic {
                             target: Some(unit.id),
                             vars: status.vars.clone(),
                             status_id: Some(status.id),
+                            color: Some(status.status.color),
                         },
                     });
                 }
             }
             if Self::is_expired(status) {
                 expired.push((status.caster, status.id, status.status.name.clone()));
-                for (effect, vars, status_id) in status.trigger(|trigger| match trigger {
-                    StatusTrigger::Break => true,
-                    _ => false,
-                }) {
+                for (effect, vars, status_id, status_color) in
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::Break => true,
+                        _ => false,
+                    })
+                {
                     self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
@@ -160,6 +167,7 @@ impl Logic {
                             target: Some(unit.id),
                             vars,
                             status_id: Some(status_id),
+                            color: Some(status_color),
                         },
                     })
                 }
@@ -217,15 +225,17 @@ impl Logic {
 
         // Detect expired statuses
         for (caster_id, detect_id, detect_status) in &expired {
-            for (effect, vars, status_id) in unit.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| match trigger {
-                    StatusTrigger::SelfDetectAttach {
-                        status_name,
-                        status_action: StatusAction::Remove,
-                    } => detect_status == status_name,
-                    _ => false,
+            for (effect, vars, status_id, status_color) in
+                unit.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTrigger::SelfDetectAttach {
+                            status_name,
+                            status_action: StatusAction::Remove,
+                        } => detect_status == status_name,
+                        _ => false,
+                    })
                 })
-            }) {
+            {
                 self.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
@@ -234,25 +244,28 @@ impl Logic {
                         target: Some(unit.id),
                         vars,
                         status_id: Some(*detect_id),
+                        color: Some(status_color),
                     },
                 })
             }
 
             for other in &self.model.units {
-                for (effect, vars, status_id) in other.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::DetectAttach {
-                            status_name,
-                            filter,
-                            status_action: StatusAction::Remove,
-                        } => {
-                            other.id != unit.id
-                                && detect_status == status_name
-                                && filter.matches(unit.faction, other.faction)
-                        }
-                        _ => false,
+                for (effect, vars, status_id, status_color) in
+                    other.all_statuses.iter().flat_map(|status| {
+                        status.trigger(|trigger| match trigger {
+                            StatusTrigger::DetectAttach {
+                                status_name,
+                                filter,
+                                status_action: StatusAction::Remove,
+                            } => {
+                                other.id != unit.id
+                                    && detect_status == status_name
+                                    && filter.matches(unit.faction, other.faction)
+                            }
+                            _ => false,
+                        })
                     })
-                }) {
+                {
                     self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
@@ -261,6 +274,7 @@ impl Logic {
                             target: Some(unit.id),
                             vars,
                             status_id: Some(*detect_id),
+                            color: Some(status_color),
                         },
                     })
                 }

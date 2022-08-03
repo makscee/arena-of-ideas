@@ -11,7 +11,7 @@ void main() {
     float action_t = smoothstep(ACTION_ANIMATION_TIME, 0, u_time - u_action_time);
     action_t *= action_t;
     float u_hole_radius = u_hole_radius + action_t * 0.2;
-    float radius = (u_unit_radius - u_hole_radius) * UNITS_SCALE * (1 + action_t * .1);
+    float radius = (u_unit_radius - u_hole_radius) * (1 + action_t * .1);
     float height = u_hole_radius + radius * .5 + (radius * .5 * a_pos.y);
     float radian = a_pos.x * pi * 2.;
     float paddingHeight = float(a_pos.y > 0) * u_padding * radius;
@@ -79,7 +79,7 @@ vec3 stepClanColor(in float t) {
 void main() {
     if (v_quad_pos.y > 1) discard;
     commonInit();
-    float u_padding = u_padding * UNITS_SCALE;
+    float u_padding = u_padding;
     const float EDGE_RADIUS = 0.5;
     const float SOLID_BORDER = 0.07;
     vec2 uv = vec2(cos(v_quad_pos.x * pi * 2),sin(v_quad_pos.x * pi * 2)) * min(v_quad_pos.y, 1 - EDGE_RADIUS);

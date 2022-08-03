@@ -212,6 +212,8 @@ pub struct Status {
     pub vars: HashMap<VarName, R32>,
     #[serde(default)]
     pub order: i32,
+    #[serde(skip, default = "Status::default_color")]
+    pub color: Color<f32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -287,6 +289,10 @@ impl Status {
             id: -1,
         }
     }
+
+    fn default_color() -> Color<f32> {
+        Color::WHITE
+    }
 }
 
 impl AttachedStatus {
@@ -295,12 +301,19 @@ impl AttachedStatus {
     pub fn trigger<'a>(
         &'a self,
         mut filter: impl FnMut(&StatusTrigger) -> bool + 'a,
-    ) -> impl Iterator<Item = (Effect, HashMap<VarName, R32>, Id)> + 'a {
+    ) -> impl Iterator<Item = (Effect, HashMap<VarName, R32>, Id, Color<f32>)> + 'a {
         self.status
             .listeners
             .iter()
             .filter(move |listener| listener.triggers.iter().any(|trigger| filter(trigger)))
-            .map(|listener| (listener.effect.clone(), self.vars.clone(), self.id))
+            .map(|listener| {
+                (
+                    listener.effect.clone(),
+                    self.vars.clone(),
+                    self.id,
+                    self.status.color,
+                )
+            })
     }
 }
 

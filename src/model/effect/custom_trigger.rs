@@ -14,7 +14,7 @@ impl EffectImpl for CustomTriggerEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let target = logic.model.units.get_mut(&context.target.unwrap()).unwrap();
-        for (effect, mut vars, status_id) in target
+        for (effect, mut vars, status_id, status_color) in target
             .all_statuses
             .iter()
             // .filter(|status| {
@@ -42,6 +42,7 @@ impl EffectImpl for CustomTriggerEffect {
                         vars
                     },
                     status_id: Some(status_id),
+                    color: Some(status_color),
                 },
             })
         }
