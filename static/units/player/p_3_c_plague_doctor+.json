@@ -69,7 +69,7 @@
                                                 "preset": "effects/crit_hit_vfx.json"
                                             },
                                             {
-                                                "preset": "effects/laser_vfx.json"
+                                                "preset": "effects/vfx_laser.json"
                                             }
                                         ]
                                     }

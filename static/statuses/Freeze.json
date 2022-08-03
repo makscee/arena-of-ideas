@@ -15,7 +15,6 @@
                 {
                     "type": "DamageTaken",
                     "except": "IgnoreFreeze"
-
                 }
             ],
             "effect": {
@@ -30,8 +29,7 @@
                 }
             ],
             "effect": {
-                "preset": "effects/vfx_attach_status.json",
-                "color": "#1e90ff"
+                "preset": "effects/vfx_attach_status.json"
             }
         }
     ],

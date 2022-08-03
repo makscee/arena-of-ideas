@@ -31,7 +31,7 @@
                                     }
                                 },
                                 {
-                                    "preset": "effects/heal_vfx.json"
+                                    "preset": "effects/vfx_heal.json"
                                 }
                             ]
                         }

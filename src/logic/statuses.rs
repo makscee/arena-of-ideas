@@ -103,7 +103,7 @@ impl Logic {
                     self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
-                            caster: Some(unit.id),
+                            caster: status.caster,
                             from: Some(unit.id),
                             target: Some(unit.id),
                             vars,

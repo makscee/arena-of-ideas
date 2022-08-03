@@ -1,13 +1,12 @@
 [
-    "effects/laser_vfx.json",
-    "effects/laser_enemy_vfx.json",
-    "effects/slash_vfx.json",
+    "effects/vfx_laser.json",
+    "effects/vfx_slash.json",
     "effects/melee_hit.json",
     "effects/ranged_hit.json",
     "effects/crit_hit_vfx.json",
     "effects/bonus_shot.json",
     "effects/explosion.json",
-    "effects/heal_vfx.json",
+    "effects/vfx_heal.json",
     "effects/vfx_injured_particles.json",
     "effects/vfx_attach_status.json",
     "effects/vfx_death_particles.json"

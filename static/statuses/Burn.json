@@ -32,8 +32,7 @@
                 }
             ],
             "effect": {
-                "preset": "effects/vfx_attach_status.json",
-                "color": "#fd8008"
+                "preset": "effects/vfx_attach_status.json"
             }
         }
     ],

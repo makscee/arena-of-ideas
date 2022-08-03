@@ -26,7 +26,7 @@ void main() {
     float size = u_unit_radius * (1 - t);
 
     float rpi2 = rand(p_index) * pi * 2 + t * 3;
-    vec2 startPos = u_parent_position + vec2(cos(rpi2), sin(rpi2)) * u_parent_radius * (1 - t) * (1 + rand(p_index + 7) * 0.3);
+    vec2 startPos = u_parent_position + vec2(cos(rpi2), sin(rpi2)) * u_parent_radius * (1 - t) * (1.3 + rand(p_index + 7) * 0.3);
     vec2 pos = startPos + v_quad_pos * size;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);

@@ -52,7 +52,7 @@
                                         }
                                     },
                                     {
-                                        "preset": "effects/laser_vfx.json"
+                                        "preset": "effects/vfx_laser.json"
                                     }
                                 ]
                             }
