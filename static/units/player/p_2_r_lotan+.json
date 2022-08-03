@@ -1,9 +1,9 @@
 {
 	"name": "lotan+",
     "tier": 2,
-    "health": 20,
-    "base_damage": 8,
-    "cooldown": 3,
+    "health": 3,
+    "base_damage": 4,
+    "cooldown": 4,
     "description": "Whenever an enemy starts to @Burn, @Dark Steal them twice",
     "clans": [
         "Dragons",

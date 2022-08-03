@@ -1,9 +1,9 @@
 {
 	"name": "lotan",
     "tier": 2,
-    "health": 9,
-    "base_damage": 5,
-    "cooldown": 3,
+    "health": 3,
+    "base_damage": 4,
+    "cooldown": 4,
     "description": "@Dark Steal @Burning target twice",
     "triple": "lotan+",
     "clans": [

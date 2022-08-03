@@ -1,9 +1,9 @@
 {
     "name": "shanker+",
     "tier": 2,
-    "health": 15,
-    "base_damage": 6,
-    "cooldown": 2,
+    "health": 10,
+    "base_damage": 4,
+    "cooldown": 3,
     "description": "@Scathe have 30% chance to apply @Stun to enemies in range 3",
     "clans": [
         "Assassins"

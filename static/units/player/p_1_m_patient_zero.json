@@ -1,6 +1,7 @@
 {
     "name": "patient_zero",
     "tier": 1,
+    "health": 3,
     "triple": "patient_zero+",
     "description": "Has @Plague",
     "clans": [

@@ -3,9 +3,9 @@
     "tier": 2,
     "description": "@Scathe: apply @Frozen to enemies in range",
     "range": 2,
-    "health": 13,
-    "base_damage": 5,
-    "cooldown": 2,
+    "health": 12,
+    "base_damage": 4,
+    "cooldown": 3,
     "action": {
         "effect": {
             "type": "List",

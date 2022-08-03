@@ -16,7 +16,6 @@
     },
     "render": {
         "path": "shaders/default_circle_hero.glsl",
-        "vertices": 200,
-        "instances": 1
+        "vertices": 200
     }
 }

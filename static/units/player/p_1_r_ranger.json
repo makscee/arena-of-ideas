@@ -1,6 +1,9 @@
 {
 	"name": "ranger",
     "tier": 1,
+    "health": 2,
+    "base_damage": 2,
+    "cooldown": 4,
     "triple": "ranger+",
     "clans": [
         "Archers"

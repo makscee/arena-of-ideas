@@ -1,9 +1,9 @@
 {
     "name": "vaccinated+",
     "tier": 2,
-    "health": 13,
-    "base_damage": 5,
-    "cooldown": 2,
+    "health": 8,
+    "base_damage": 6,
+    "cooldown": 3,
     "description": "After taking damage from @Plague gain @Shield and @Heal for 1",
     "clans": [
         "PlagueSpreaders",

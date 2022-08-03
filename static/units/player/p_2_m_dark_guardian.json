@@ -1,8 +1,8 @@
 {
 	"name": "dark_guardian",
-    "health": 10,
-    "base_damage": 3,
-    "cooldown": 2,
+    "health": 5,
+    "base_damage": 2,
+    "cooldown": 3,
     "tier": 2,
     "description": "When @Shield absorbs, apply @Siphon Life to attacker",
     "triple": "dark_guardian+",

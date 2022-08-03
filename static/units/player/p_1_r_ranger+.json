@@ -1,6 +1,8 @@
 {
 	"name": "ranger+",
     "tier": 1,
+    "health": 4,
+    "base_damage": 4,
     "description": "On @Crit @Bonus Shot, +30% @Crit chance",
     "crit_chance": 30,
     "clans": [

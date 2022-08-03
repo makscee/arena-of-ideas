@@ -1,9 +1,9 @@
 {
 	"name": "shanker",
     "tier": 2,
-    "health": 10,
-    "base_damage": 3,
-    "cooldown": 2,
+    "health": 5,
+    "base_damage": 2,
+    "cooldown": 3,
     "description": "@Scathe have 30% chance to apply @Stun",
     "triple": "shanker+",
     "clans": [

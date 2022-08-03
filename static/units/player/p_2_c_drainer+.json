@@ -2,8 +2,8 @@
     "name": "drainer+",
     "tier": 2,
     "health": 10,
-    "base_damage": 13,
-    "cooldown": 3,
+    "base_damage": 18,
+    "cooldown": 5,
     "description": "On @Heal received damage random enemy for double damage",
     "clans": [
         "Warlocks"
