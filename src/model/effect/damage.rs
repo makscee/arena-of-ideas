@@ -187,10 +187,11 @@ impl EffectImpl for DamageEffect {
             .or(logic.model.dead_units.get(&context.target.unwrap()))
             .unwrap();
         let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
+        let text_color = context.color.unwrap_or(Color::RED);
         logic.model.render_model.add_text(
             target_unit.position,
             &format!("{}", -damage_text),
-            Color::RED,
+            text_color,
             crate::render::TextType::Damage(effect.types.iter().cloned().collect()),
         );
         let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);

@@ -6,5 +6,9 @@
 	"Fire": {
 		"description": "Deal additional fire damage",
 		"clan_origin": "Dragons"
+	},
+	"Plague": {
+		"description": "Damage from @Plague debuff",
+		"clan_origin": "PlagueSpreaders"
 	}
 }
