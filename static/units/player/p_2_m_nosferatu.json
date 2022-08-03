@@ -1,6 +1,9 @@
 {
 	"name": "nosferatu",
     "tier": 2,
+    "health": 6,
+    "base_damage": 3,
+    "cooldown": 1,
     "description": "Apply @Dark Steal on 3 random enemy when hp drop below 50%",
     "triple": "nosferatu+",
     "clans": [

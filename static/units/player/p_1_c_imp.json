@@ -1,6 +1,8 @@
 {
 	"name": "imp",
     "tier": 1,
+    "health": 7,
+    "base_damage": 7,
     "clans": [
         "Demons"
     ],

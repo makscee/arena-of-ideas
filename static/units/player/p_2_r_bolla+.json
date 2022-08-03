@@ -1,6 +1,9 @@
 {
 	"name": "bolla+",
     "tier": 2,
+    "health": 12,
+    "base_damage": 8,
+    "cooldown": 2,
     "description": "@Flaming Breath attack. On @Rebirth @Burn all enemies",
     "clans": [
         "Dragons"

@@ -1,7 +1,7 @@
 {
-    "health": 10,
+    "health": 6,
     "radius": 0.44,
-    "base_damage": 12,
+    "base_damage": 7,
     "range": 5,
     "cooldown": 5,
     "action": {

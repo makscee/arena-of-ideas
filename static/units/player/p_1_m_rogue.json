@@ -1,14 +1,11 @@
 {
     "name": "rogue",
     "tier": 1,
-    "health": 6,
     "triple": "rogue+",
-    "base_damage": 2,
     "clans": [
         "Assassins"
     ],
     "range": 1,
-    "cooldown": 1,
     "action": {
         "effect": {
             "preset": "effects/melee_hit.json"

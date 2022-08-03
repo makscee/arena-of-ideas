@@ -1,6 +1,6 @@
 {
-    "health": 15,
-    "base_damage": 4,
+    "health": 8,
+    "base_damage": 2,
     "radius": 0.44,
     "range": 1,
     "cooldown": 3,

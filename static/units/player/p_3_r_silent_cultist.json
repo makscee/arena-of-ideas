@@ -1,6 +1,6 @@
 {
 	"name": "silent_cultist",
-    "tier": 2,
+    "tier": 3,
     "description": "Allies @Siphon Life no longer breaks @Freeze",
     "triple": "silent_cultist+",
     "clans": [

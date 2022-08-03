@@ -7,8 +7,8 @@
   "p_3_m_ice_breaker+",
   "p_1_m_rogue",
   "p_1_m_rogue+",
-  "p_2_r_drainer",
-  "p_2_r_drainer+",
+  "p_2_c_drainer",
+  "p_2_c_drainer+",
   "p_1_r_ranger",
   "p_1_r_ranger+",
   "p_1_m_patient_zero",
@@ -49,8 +49,8 @@
   "p_5_r_wyvern+",
   "p_3_m_vladimir",
   "p_3_m_vladimir+",
-  "p_1_m_dracula",
-  "p_1_m_dracula+",
+  "p_3_m_dracula",
+  "p_3_m_dracula+",
   "p_2_m_demonic_guardian",
   "p_1_m_ghoul",
   "p_1_m_ghoul+",
@@ -70,5 +70,5 @@
   "p_2_m_dark_guardian",
   "p_2_m_dark_guardian+",
   "p_2_r_red_dragon",
-  "p_2_r_silent_cultist"
+  "p_3_r_silent_cultist"
 ]

@@ -1,7 +1,7 @@
 {
     "simulation": {
         "type": "Balance",
-        "unit": "ranger$"
+        "unit": ".*1.*[^+]$"
     },
-    "repeats": 3
+    "repeats": 5
 }

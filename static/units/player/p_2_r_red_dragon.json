@@ -1,7 +1,10 @@
 {
 	"name": "red_dragon",
     "tier": 2,
-    "description": "Overheal launches @Projectile at random target damaging overhealed amount",
+    "health": 10,
+    "base_damage": 5,
+    "cooldown": 3,
+    "description": "Overheal damages random target on overhealed amount",
     "triple": "red_dragon+",
     "clans": [
         "Vampires",

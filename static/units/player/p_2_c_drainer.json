@@ -1,7 +1,10 @@
 {
 	"name": "drainer",
     "tier": 2,
-    "description": "On @Heal received shoot projectile to random enemy for same damage",
+    "health": 7,
+    "base_damage": 8,
+    "cooldown": 3,
+    "description": "On @Heal received damage random enemy for same damage",
     "triple": "drainer+",
     "clans": [
         "Warlocks"
@@ -53,5 +56,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "caster"
 }

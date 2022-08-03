@@ -1,6 +1,9 @@
 {
 	"name": "bolla",
     "tier": 2,
+    "health": 7,
+    "base_damage": 4,
+    "cooldown": 2,
     "description": "@Flaming Breath attack",
     "triple": "bolla+",
     "clans": [

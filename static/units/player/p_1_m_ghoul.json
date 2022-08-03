@@ -1,8 +1,6 @@
 {
     "name": "ghoul",
     "tier": 1,
-    "health": 22,
-    "cooldown": 2,
     "description": "",
     "triple": "ghoul+",
     "clans": [

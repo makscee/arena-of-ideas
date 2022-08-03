@@ -1,13 +1,11 @@
 {
     "name": "rogue+",
     "tier": 1,
-    "base_damage": 1.0,
     "description": "@Scathe apply @MicroStun",
     "clans": [
         "Assassins"
     ],
     "range": 1,
-    "cooldown": 1,
     "action": {
         "effect": {
             "preset": "effects/melee_hit.json"

@@ -1,7 +1,10 @@
 {
 	"name": "dark_guardian+",
+    "health": 13,
+    "base_damage": 5,
+    "cooldown": 2,
     "tier": 2,
-    "description": "When @Shield absorbs, apply @Siphon Life to attacker and  to random shieldless ally",
+    "description": "When @Shield absorbs, apply @Siphon Life to attacker and to random shieldless ally",
     "clans": [
         "Warlocks",
         "Protectors"

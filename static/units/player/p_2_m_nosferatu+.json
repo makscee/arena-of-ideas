@@ -1,6 +1,9 @@
 {
 	"name": "nosferatu+",
     "tier": 2,
+    "health": 12,
+    "base_damage": 5,
+    "cooldown": 1,
     "description": "Apply @Dark Steal to a random enemy every second",
     "clans": [
         "Vampires",

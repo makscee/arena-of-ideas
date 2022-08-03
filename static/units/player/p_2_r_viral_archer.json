@@ -2,6 +2,9 @@
     "name": "viral_archer",
     "tier": 2,
     "triple": "viral_archer+",
+    "health": 10,
+    "base_damage": 5,
+    "cooldown": 3,
     "description": "@Scathe 10% chance to apply @Plague",
     "clans": [
         "PlagueSpreaders",

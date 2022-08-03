@@ -4,6 +4,9 @@
     "description": "@Bonus Shot on @Frozen. @Bonus Shot applies @Frozen",
     "range": 10,
     "cooldown": 1,
+    "health": 16,
+    "base_damage": 7,
+    "cooldown": 3,
     "action": {
         "effect": {
             "type": "List",

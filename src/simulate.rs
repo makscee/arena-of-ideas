@@ -98,9 +98,11 @@ impl SimulationConfig {
 
     fn same_tier(&self, unit: &UnitTemplate, all_units: &Vec<UnitTemplate>) -> Vec<BattleConfig> {
         let mut battles: Vec<BattleConfig> = vec![];
-        let same_tier = all_units
-            .into_iter()
-            .filter(|other| other.tier == unit.tier);
+        let same_tier = all_units.into_iter().filter(|other| {
+            other.tier == unit.tier
+                && (other.triple.is_some() && unit.triple.is_some()
+                    || other.triple.is_none() && unit.triple.is_none())
+        });
         for enemy in same_tier {
             let round = GameRound {
                 statuses: vec![],
@@ -132,18 +134,22 @@ impl SimulationConfig {
             return battles;
         };
 
-        let same_tier = all_units
-            .into_iter()
-            .filter(|other| other.tier == unit.tier);
-        let upper_tier = all_units
-            .into_iter()
-            .filter(|other| other.tier == unit.tier + 1);
+        let first_tier = all_units.into_iter().filter(|other| {
+            other.tier == 1
+                && (other.triple.is_some() && unit.triple.is_some()
+                    || other.triple.is_none() && unit.triple.is_none())
+        });
+        let upper_tier = all_units.into_iter().filter(|other| {
+            other.tier == unit.tier + 1
+                && (other.triple.is_some() && unit.triple.is_some()
+                    || other.triple.is_none() && unit.triple.is_none())
+        });
         for enemy in upper_tier {
             let round = GameRound {
                 statuses: vec![],
                 enemies: vec![enemy.name.clone()],
             };
-            for ally in same_tier.clone() {
+            for ally in first_tier.clone() {
                 (1..=6).for_each(|i| {
                     unit.clans.clone().into_iter().for_each(|clan| {
                         enemy.clans.clone().into_iter().for_each(|enemy_clan| {
@@ -179,21 +185,38 @@ impl SimulationConfig {
             return battles;
         };
 
-        let same_tier = all_units
-            .into_iter()
-            .filter(|other| other.tier == unit.tier);
-        let lower_tier = all_units
-            .into_iter()
-            .filter(|other| other.tier == unit.tier - 1);
+        let first_tier = all_units.into_iter().filter(|other| {
+            other.tier == 1
+                && (other.triple.is_some() && unit.triple.is_some()
+                    || other.triple.is_none() && unit.triple.is_none())
+        });
+        let lower_tier = all_units.into_iter().filter(|other| {
+            other.tier == unit.tier - 1
+                && (other.triple.is_some() && unit.triple.is_some()
+                    || other.triple.is_none() && unit.triple.is_none())
+        });
         for enemy in lower_tier.clone() {
-            for second_enemy in lower_tier.clone() {
-                let round = GameRound {
-                    statuses: vec![],
-                    enemies: vec![enemy.name.clone(), second_enemy.name.clone()],
-                };
+            for second_enemy in first_tier.clone() {
                 (1..=6).for_each(|i| {
                     unit.clans.clone().into_iter().for_each(|clan| {
                         enemy.clans.clone().into_iter().for_each(|enemy_clan| {
+                            let round = GameRound {
+                                statuses: vec![],
+                                enemies: vec![enemy.name.clone(), second_enemy.name.clone()],
+                            };
+                            battles.push(BattleConfig {
+                                unit: Some(unit.name.clone()),
+                                player: vec![unit.name.clone()],
+                                round: round.clone(),
+                                repeats: self.repeats,
+                                clans: hashmap! {clan => i},
+                                enemy_clans: hashmap! {enemy_clan => i},
+                                group: SimulationGroup::LowerTier,
+                            });
+                            let round = GameRound {
+                                statuses: vec![],
+                                enemies: vec![second_enemy.name.clone(), enemy.name.clone()],
+                            };
                             battles.push(BattleConfig {
                                 unit: Some(unit.name.clone()),
                                 player: vec![unit.name.clone()],

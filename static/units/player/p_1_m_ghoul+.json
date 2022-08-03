@@ -1,7 +1,6 @@
 {
 	"name": "ghoul+",
     "tier": 1,
-    "health": 45,
     "description": "@Scathe 25% chance to @Stun ",
     "clans": [
         "Vampires"

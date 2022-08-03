@@ -1,7 +1,10 @@
 {
-	"name": "shanker+",
+    "name": "shanker+",
     "tier": 2,
-    "description": "@Scathe apply @MicroStun to enemies in range 3",
+    "health": 15,
+    "base_damage": 6,
+    "cooldown": 2,
+    "description": "@Scathe have 30% chance to apply @Stun to enemies in range 3",
     "clans": [
         "Assassins"
     ],
@@ -21,14 +24,28 @@
                         }
                     ],
                     "effect": {
-                        "type": "AOE",
-                        "filter": "Enemies",
-                        "skip_current_target": false,
-                        "range": 3,
-                        "effect": {
-                            "type": "AttachStatus",
-                            "status": "MicroStun"
-                        }
+                        "type": "Random",
+                        "choices": [
+                            {
+                                "weight": 70,
+                                "effect": {
+                                    "type": "Noop"
+                                }
+                            },
+                            {
+                                "weight": 30,
+                                "effect": {
+                                    "type": "AOE",
+                                    "filter": "Enemies",
+                                    "skip_current_target": false,
+                                    "range": 3,
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "Stun"
+                                    }
+                                }
+                            }
+                        ]
                     }
                 }
             ]

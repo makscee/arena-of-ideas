@@ -1,6 +1,9 @@
 {
 	"name": "demonic_archer",
     "tier": 2,
+    "health": 8,
+    "base_damage": 6,
+    "cooldown": 2,
     "description": "@Bonus Shot applies @Dark Steal twice",
     "triple":"demonic_archer+",
     "clans": [

@@ -1,7 +1,10 @@
 {
     "name": "drainer+",
     "tier": 2,
-    "description": "On @Heal received shoot projectile to random enemy for same damage. Ability: Apply @Siphon Life to all enemies",
+    "health": 10,
+    "base_damage": 13,
+    "cooldown": 3,
+    "description": "On @Heal received damage random enemy for double damage",
     "clans": [
         "Warlocks"
     ],
@@ -37,8 +40,15 @@
                                             "Ranged"
                                         ],
                                         "value": {
-                                            "type": "Var",
-                                            "name": "IncomingHeal"
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "Var",
+                                                "name": "IncomingHeal"
+                                            },
+                                            "b": {
+                                                "type": "Const",
+                                                "value": 3
+                                            }
                                         }
                                     },
                                     {
@@ -65,5 +75,5 @@
             }
         }
     },
-    "base": "ranged+"
+    "base": "caster+"
 }

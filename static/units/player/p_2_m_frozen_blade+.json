@@ -2,8 +2,10 @@
     "name": "frozen_blade+",
     "tier": 2,
     "description": "@Scathe: apply @Frozen to enemies in range",
-    "range": 1,
-    "cooldown": 5,
+    "range": 2,
+    "health": 13,
+    "base_damage": 5,
+    "cooldown": 2,
     "action": {
         "effect": {
             "type": "List",

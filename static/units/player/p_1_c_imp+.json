@@ -1,6 +1,8 @@
 {
     "name": "imp+",
     "tier": 1,
+    "health": 7,
+    "base_damage": 10,
     "description": "+100% @action_speed",
     "action_speed": 2,
     "clans": [

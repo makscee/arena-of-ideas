@@ -10,7 +10,7 @@
         "AbilityUnable"
     ],
     "color": "#ffff0a",
-    "duration": 1.5,
+    "duration": 1,
     "render": {
         "path": "shaders/status/status_default.glsl",
         "parameters": {
