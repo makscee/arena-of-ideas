@@ -89,7 +89,7 @@ impl TextBlock {
     ) {
         let dir = vec2(0.0, 1.0);
         Self::add_text(
-            self.position + dir * 0.5,
+            self.position + dir * 1.5,
             dir,
             &mut self.top_texts,
             text.into(),
@@ -107,7 +107,7 @@ impl TextBlock {
     ) {
         let dir = vec2(0.0, -1.0);
         Self::add_text(
-            self.position + dir * 0.5,
+            self.position + dir * 1.5,
             dir,
             &mut self.bot_texts,
             text.into(),

@@ -37,8 +37,19 @@
                 }
             ],
             "effect": {
-                "type": "AttachStatus",
-                "status": "Plague"
+                "type": "If",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Plague"
+                },
+                "then": {
+                    "type": "Noop"
+                },
+                "else": {
+                    "type": "AttachStatus",
+                    "status": "Plague"
+                }
             }
         },
         {

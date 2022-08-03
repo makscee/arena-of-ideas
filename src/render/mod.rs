@@ -79,9 +79,7 @@ impl RenderModel {
         match text_type {
             TextType::Damage(_) => text_block.add_text_top(text, color, text_type),
             TextType::Heal(_) => text_block.add_text_bottom(text, color, text_type),
-            TextType::Status | TextType::Aoe => {
-                self.add_text_random(position.to_world_f32(), text, text_type, color)
-            }
+            TextType::Status | TextType::Aoe => text_block.add_text_top(text, color, text_type),
         }
     }
 }
