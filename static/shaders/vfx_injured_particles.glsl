@@ -14,6 +14,7 @@ flat out float p_t;
 flat out float p_trail_part; // 0 = head 1 = tail
 
 void main() {
+    commonInit();
     v_quad_pos = a_pos * (1.0 + u_padding);
     p_index = gl_InstanceID;
     int trail_index = gl_InstanceID % u_trail_count;

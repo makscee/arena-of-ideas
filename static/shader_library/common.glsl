@@ -77,7 +77,7 @@ void commonInit()
 }
 
 vec4 getColor() {
-    return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color) > 0));
+    return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color.rgb) > 0));
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2)

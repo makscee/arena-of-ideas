@@ -4,6 +4,7 @@
     "parent": "Target",
     "follow": false,
     "radius": 1.0,
+    "color": "#000000",
     "render": {
         "path": "shaders/vfx_injured_particles.glsl",
         "parameters": {
