@@ -78,13 +78,11 @@
     {
         "activate": 6,
         "filter": {
-            "Player": [
-                "Skeletons"
-            ]
+            "Enemy": null
         },
         "statuses": [
             {
-                "name": "OnSpawn",
+                "name": "DeathrattleSpreadPlague",
                 "type": "Status",
                 "stacking": {
                     "type": "Refresh"
@@ -93,53 +91,24 @@
                     {
                         "triggers": [
                             {
-                                "type": "Spawn"
+                                "type": "Death"
                             }
                         ],
                         "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "BaseDamage",
-                                    "value": {
-                                        "type": "Mul",
-                                        "a": {
-                                            "type": "FindStat",
-                                            "stat": "BaseDamage",
-                                            "who": "Target"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        }
-                                    }
-                                },
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "MaxHealth",
-                                    "value": {
-                                        "type": "Mul",
-                                        "a": {
-                                            "type": "FindStat",
-                                            "stat": "MaxHealth",
-                                            "who": "Target"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        }
-                                    }
-                                },
-                                {
-                                    "type": "Heal",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 100500
-                                    },
-                                    "no_text": true
+                            "type": "ChangeTarget",
+                            "filter": "Allies",
+                            "condition": {
+                                "type": "Not",
+                                "condition": {
+                                    "type": "UnitHasStatus",
+                                    "who": "Target",
+                                    "status": "Plague"
                                 }
-                            ]
+                            },
+                            "effect": {
+                                "type": "AttachStatus",
+                                "status": "Plague"
+                            }
                         }
                     }
                 ]
