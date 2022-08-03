@@ -141,7 +141,7 @@ impl Render {
             );
 
             // Draw damage and health
-            let unit_aabb = AABB::point(unit.position.to_world_f32())
+            let unit_aabb = AABB::point(unit.render_position.map(|x| x.as_f32()))
                 .extend_uniform(unit.stats.radius.as_f32());
             let size = unit.stats.radius.as_f32() * 0.7;
             let damage = AABB::point(unit_aabb.bottom_left())
