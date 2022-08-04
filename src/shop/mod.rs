@@ -45,7 +45,7 @@ impl ShopState {
             geng: geng.clone(),
             assets: assets.clone(),
             render_shop: render::RenderShop::new(vec2(1.0, 1.0), 0, 0, 0),
-            render: render::Render::new(geng, assets),
+            render: render::Render::new(geng, assets, &game_config),
             time: 0.0,
             transition: false,
             game_config,

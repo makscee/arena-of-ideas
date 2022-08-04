@@ -83,19 +83,21 @@ pub struct Render {
     camera: geng::Camera2d,
     assets: Rc<Assets>,
     card_render: CardRender,
+    unit_render: UnitRender,
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: &Config) -> Self {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
             camera: geng::Camera2d {
                 center: Vec2::ZERO,
                 rotation: 0.0,
-                fov: 0.5,
+                fov: config.fov,
             },
             card_render: CardRender::new(geng, assets),
+            unit_render: UnitRender::new(geng, assets),
         }
     }
 
@@ -127,12 +129,10 @@ impl Render {
                 .shop_cards
                 .get(index)
                 .expect("Invalid shop layout");
-            selected_clan = selected_clan.or(self.card_render.draw(
-                layout.position,
-                card.as_ref(),
-                game_time,
-                framebuffer,
-            ));
+            let hovered_clan =
+                self.card_render
+                    .draw(layout.position, card.as_ref(), game_time, framebuffer);
+            selected_clan = selected_clan.or(hovered_clan);
         }
 
         draw_2d::Quad::new(layout.party.position, TEXT_BACKGROUND_COLOR).draw_2d(
@@ -141,17 +141,18 @@ impl Render {
             camera,
         );
         for (index, card) in shop.cards.party.iter().enumerate() {
-            let layout = render
-                .layout
-                .party_cards
-                .get(index)
-                .expect("Invalid party layout");
-            selected_clan = selected_clan.or(self.card_render.draw(
-                layout.position,
-                card.as_ref(),
-                game_time,
-                framebuffer,
-            ));
+            if let Some(card) = card {
+                // TODO: fix position
+                let template = &self.assets.units[&card.unit.unit_type];
+                self.unit_render.draw_unit(
+                    &card.unit,
+                    &card.template,
+                    None,
+                    game_time,
+                    &self.camera,
+                    framebuffer,
+                );
+            }
         }
 
         draw_2d::Quad::new(layout.inventory.position, TEXT_BACKGROUND_COLOR).draw_2d(
@@ -165,12 +166,10 @@ impl Render {
                 .inventory_cards
                 .get(index)
                 .expect("Invalid inventory layout");
-            selected_clan = selected_clan.or(self.card_render.draw(
-                layout.position,
-                card.as_ref(),
-                game_time,
-                framebuffer,
-            ));
+            let hovered_clan =
+                self.card_render
+                    .draw(layout.position, card.as_ref(), game_time, framebuffer);
+            selected_clan = selected_clan.or(hovered_clan);
         }
 
         let text = match tier_up_cost(shop.tier, shop.tier_rounds) {
