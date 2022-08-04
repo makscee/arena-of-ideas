@@ -144,8 +144,15 @@ impl Render {
             if let Some(card) = card {
                 // TODO: fix position
                 let template = &self.assets.units[&card.unit.unit_type];
+                let mut unit = card.unit.clone();
+                unit.render_position = Position {
+                    side: Faction::Player,
+                    x: index.try_into().unwrap(),
+                    height: Coord::ZERO,
+                }
+                .to_world();
                 self.unit_render.draw_unit(
-                    &card.unit,
+                    &unit,
                     &card.template,
                     None,
                     game_time,
