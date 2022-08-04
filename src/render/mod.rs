@@ -333,7 +333,7 @@ impl Render {
                     self.assets
                         .statuses
                         .get(&status)
-                        .filter(|config| !config.hidden)
+                        .filter(|config| !config.status.hidden)
                         .map(|config| {
                             let lines = wrap_text(
                                 self.geng.default_font().clone(),

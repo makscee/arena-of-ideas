@@ -46,12 +46,14 @@ impl EffectImpl for AttachStatusEffect {
                 context.caster,
                 &mut logic.model.next_id,
             );
-            logic.model.render_model.add_text(
-                target.position,
-                &format!("+{}", status_name),
-                status.status.color,
-                crate::render::TextType::Status,
-            );
+            if !status.status.hidden {
+                logic.model.render_model.add_text(
+                    target.position,
+                    &format!("+{}", status_name),
+                    status.status.color,
+                    crate::render::TextType::Status,
+                );
+            }
 
             status.vars.extend(effect.vars.into_iter());
             let attached_status_id = unit_attach_status(status, &mut target.all_statuses);

@@ -217,6 +217,9 @@ pub struct Status {
     pub order: i32,
     #[serde(skip, default = "Status::default_color")]
     pub color: Color<f32>,
+    /// Whether the status will be hidden in status description render
+    #[serde(default = "Status::default_hidden")]
+    pub hidden: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -295,6 +298,10 @@ impl Status {
 
     fn default_color() -> Color<f32> {
         Color::WHITE
+    }
+
+    fn default_hidden() -> bool {
+        false
     }
 }
 
