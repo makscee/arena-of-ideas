@@ -1,0 +1,39 @@
+{
+    "name": "PoisonWeakness",
+    "type": "Modifier",
+    "stacking": {
+        "type": "Independent"
+    },
+    "color": "#800002",
+    "priority": 0,
+    "condition": {
+        "type": "And",
+        "a": {
+            "type": "ClanSize",
+            "clan": "Assassins",
+            "count": 4
+        },
+        "b": {
+            "type": "Faction",
+            "who": "Target",
+            "faction": "Enemy"
+        }
+    },
+    "target": {
+        "type": "Damage",
+        "value": {
+            "type": "Sub",
+            "a": {
+                "type": "Var",
+                "name": "DamageIncoming"
+            },
+            "b": {
+                "type": "Var",
+                "name": "StackCounter"
+            }
+        }
+    },
+    "render": {
+        "path": "shaders/status/status_default.glsl"
+    }
+}

@@ -56,38 +56,11 @@
                 "type": "List",
                 "effects": [
                     {
-                        "preset": "effects/vfx_attach_status.json",
-                        "color": "#21ff06"
+                        "preset": "effects/vfx_attach_status.json"
                     },
                     {
-                        "priority": 0,
-                        "condition": {
-                            "type": "And",
-                            "a": {
-                                "type": "ClanSize",
-                                "clan": "Assassins",
-                                "count": 4
-                            },
-                            "b": {
-                                "type": "Faction",
-                                "who": "Target",
-                                "faction": "Enemy"
-                            }
-                        },
-                        "target": {
-                            "type": "Damage",
-                            "value": {
-                                "type": "Sub",
-                                "a": {
-                                    "type": "Var",
-                                    "name": "DamageIncoming"
-                                },
-                                "b": {
-                                    "type": "Var",
-                                    "name": "StackCounter"
-                                }
-                            }
-                        }
+                        "type": "AttachStatus",
+                        "status": "PoisonWeakness"
                     }
                 ]
             }

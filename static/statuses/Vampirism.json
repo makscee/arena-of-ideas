@@ -2,7 +2,7 @@
     "name": "Vampirism",
     "type": "Status",
     "stacking": {
-        "type": "Refresh"
+        "type": "Independent"
     },
     "hidden": true,
     "listeners": [
