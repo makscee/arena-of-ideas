@@ -4,7 +4,7 @@
     "health": 6,
     "base_damage": 6,
     "cooldown": 6,
-    "description": "@Flaming Breath attack. On @Rebirth @Burn all enemies",
+    "description": "On @Rebirth @Burn all enemies",
     "clans": [
         "Dragons"
     ],
@@ -31,37 +31,6 @@
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Burn"
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "FlamingBreath",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Melee"
-                        },
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Ranged"
-                        }
-                    ],
-                    "effect": {
-                        "type": "Damage",
-                        "types": [
-                            "Fire"
-                        ],
-                        "value": {
-                            "type": "Const",
-                            "value": 1
                         }
                     }
                 }

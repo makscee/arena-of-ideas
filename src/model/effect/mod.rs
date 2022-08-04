@@ -13,6 +13,7 @@ mod change_stat;
 mod change_target;
 mod custom_trigger;
 mod damage;
+mod drop_context_status;
 mod heal;
 mod if_effect;
 mod instant_action;
@@ -41,6 +42,7 @@ pub use change_stat::*;
 pub use change_target::*;
 pub use custom_trigger::*;
 pub use damage::*;
+pub use drop_context_status::*;
 pub use heal::*;
 pub use if_effect::*;
 pub use instant_action::*;
@@ -73,6 +75,7 @@ pub enum Effect {
     If(Box<IfEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
+    DropContextStatus(Box<DropContextStatusEffect>),
     Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
@@ -105,6 +108,7 @@ pub enum RawEffect {
     If(Box<IfEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
+    DropContextStatus(Box<DropContextStatusEffect>),
     Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
@@ -174,6 +178,7 @@ impl std::fmt::Debug for Effect {
             Self::If(effect) => effect.fmt(f),
             Self::ChangeContext(effect) => effect.fmt(f),
             Self::ChangeContextStatus(effect) => effect.fmt(f),
+            Self::DropContextStatus(effect) => effect.fmt(f),
             Self::Heal(effect) => effect.fmt(f),
             Self::Revive(effect) => effect.fmt(f),
             Self::ApplyGained(effect) => effect.fmt(f),
@@ -208,6 +213,7 @@ impl From<RawEffect> for Effect {
             RawEffect::If(effect) => Self::If(effect),
             RawEffect::ChangeContext(effect) => Self::ChangeContext(effect),
             RawEffect::ChangeContextStatus(effect) => Self::ChangeContextStatus(effect),
+            RawEffect::DropContextStatus(effect) => Self::DropContextStatus(effect),
             RawEffect::Heal(effect) => Self::Heal(effect),
             RawEffect::Revive(effect) => Self::Revive(effect),
             RawEffect::ApplyGained(effect) => Self::ApplyGained(effect),
@@ -274,6 +280,7 @@ impl Effect {
             Effect::If(effect) => &mut **effect,
             Effect::ChangeContext(effect) => &mut **effect,
             Effect::ChangeContextStatus(effect) => &mut **effect,
+            Effect::DropContextStatus(effect) => &mut **effect,
             Effect::Heal(effect) => &mut **effect,
             Effect::Revive(effect) => &mut **effect,
             Effect::ApplyGained(effect) => &mut **effect,
@@ -305,6 +312,7 @@ impl Effect {
             Effect::If(effect) => effect,
             Effect::ChangeContext(effect) => effect,
             Effect::ChangeContextStatus(effect) => effect,
+            Effect::DropContextStatus(effect) => effect,
             Effect::Heal(effect) => effect,
             Effect::Revive(effect) => effect,
             Effect::ApplyGained(effect) => effect,
