@@ -67,10 +67,7 @@
         }
     ],
     "render": {
-        "path": "shaders/status/status_default.glsl",
-        "parameters": {
-            "u_status_color": "#21ff06"
-        }
+        "path": "shaders/status/status_default.glsl"
     },
     "vars": {
         "PoisonTicksLeft": 2
