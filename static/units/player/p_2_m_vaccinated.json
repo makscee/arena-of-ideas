@@ -26,8 +26,13 @@
                         }
                     ],
                     "effect": {
-                        "type": "AttachStatus",
-                        "status": "Shield"
+                        "type": "ChangeContext",
+                        "target": "From",
+                        "caster": "From",
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
                     }
                 }
             ]

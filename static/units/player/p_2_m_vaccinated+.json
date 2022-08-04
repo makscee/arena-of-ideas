@@ -25,20 +25,25 @@
                         }
                     ],
                     "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "AttachStatus",
-                                "status": "Shield"
-                            },
-                            {
-                                "type": "Heal",
-                                "value": {
-                                    "type": "Const",
-                                    "value": 1
+                        "type": "ChangeContext",
+                        "target": "From",
+                        "caster": "From",
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "Shield"
+                                },
+                                {
+                                    "type": "Heal",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
                                 }
-                            }
-                        ]
+                            ]
+                        }
                     }
                 }
             ]
