@@ -1,5 +1,5 @@
 {
-	"name": "soul_stealer+",
+    "name": "soul_stealer+",
     "tier": 4,
     "description": "@Dark Steal and instantly attack any enemy that gains @Siphon Life",
     "clans": [
@@ -23,24 +23,24 @@
                         }
                     ],
                     "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "AttachStatus",
-                                "status": "DarkSteal"
-                            },
-                            {
-                                "type": "ChangeContext",
-                                "caster": "From",
-                                "effect": {
+                        "type": "ChangeContext",
+                        "caster": "From",
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "DarkSteal"
+                                },
+                                {
                                     "type": "InstantAction"
                                 }
-                            }
-                        ]
+                            ]
+                        }
                     }
                 }
             ]
         }
     ],
-    "base": "ranged+"
+    "base": "caster+"
 }
