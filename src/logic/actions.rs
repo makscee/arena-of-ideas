@@ -18,9 +18,6 @@ impl Logic {
             }
             if let Some(target) = self.model.units.get(target) {
                 let mut effect = unit.action.effect.clone();
-                for modifier in mem::take(&mut unit.next_action_modifiers) {
-                    effect.apply_modifier(&modifier);
-                }
                 for (effect, vars, status_id, status_color) in
                     unit.all_statuses.iter().flat_map(|status| {
                         status.trigger(|trigger| matches!(trigger, StatusTrigger::Action))

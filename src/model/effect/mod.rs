@@ -7,7 +7,6 @@ mod add_var;
 mod aoe;
 mod apply_gained;
 mod attach_status;
-mod chain;
 mod change_context;
 mod change_context_status;
 mod change_stat;
@@ -18,7 +17,6 @@ mod heal;
 mod if_effect;
 mod instant_action;
 mod list;
-mod maybe_modify;
 mod next_action_modifier;
 mod noop;
 mod random;
@@ -37,7 +35,6 @@ pub use add_var::*;
 pub use aoe::*;
 pub use apply_gained::*;
 pub use attach_status::*;
-pub use chain::*;
 pub use change_context::*;
 pub use change_context_status::*;
 pub use change_stat::*;
@@ -48,7 +45,6 @@ pub use heal::*;
 pub use if_effect::*;
 pub use instant_action::*;
 pub use list::*;
-pub use maybe_modify::*;
 pub use next_action_modifier::*;
 pub use noop::*;
 pub use random::*;
@@ -70,13 +66,11 @@ pub enum Effect {
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
     Suicide(Box<SuicideEffect>),
-    Chain(Box<ChainEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
     List(Box<ListEffect>),
     If(Box<IfEffect>),
-    MaybeModify(Box<MaybeModifyEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     Heal(Box<HealEffect>),
@@ -104,13 +98,11 @@ pub enum RawEffect {
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
     Suicide(Box<SuicideEffect>),
-    Chain(Box<ChainEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
     List(Box<ListEffect>),
     If(Box<IfEffect>),
-    MaybeModify(Box<MaybeModifyEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     Heal(Box<HealEffect>),
@@ -175,13 +167,11 @@ impl std::fmt::Debug for Effect {
             Self::Spawn(effect) => effect.fmt(f),
             Self::AOE(effect) => effect.fmt(f),
             Self::Suicide(effect) => effect.fmt(f),
-            Self::Chain(effect) => effect.fmt(f),
             Self::AddTargets(effect) => effect.fmt(f),
             Self::Repeat(effect) => effect.fmt(f),
             Self::Random(effect) => effect.fmt(f),
             Self::List(effect) => effect.fmt(f),
             Self::If(effect) => effect.fmt(f),
-            Self::MaybeModify(effect) => effect.fmt(f),
             Self::ChangeContext(effect) => effect.fmt(f),
             Self::ChangeContextStatus(effect) => effect.fmt(f),
             Self::Heal(effect) => effect.fmt(f),
@@ -211,13 +201,11 @@ impl From<RawEffect> for Effect {
             RawEffect::Spawn(effect) => Self::Spawn(effect),
             RawEffect::AOE(effect) => Self::AOE(effect),
             RawEffect::Suicide(effect) => Self::Suicide(effect),
-            RawEffect::Chain(effect) => Self::Chain(effect),
             RawEffect::AddTargets(effect) => Self::AddTargets(effect),
             RawEffect::Repeat(effect) => Self::Repeat(effect),
             RawEffect::Random(effect) => Self::Random(effect),
             RawEffect::List(effect) => Self::List(effect),
             RawEffect::If(effect) => Self::If(effect),
-            RawEffect::MaybeModify(effect) => Self::MaybeModify(effect),
             RawEffect::ChangeContext(effect) => Self::ChangeContext(effect),
             RawEffect::ChangeContextStatus(effect) => Self::ChangeContextStatus(effect),
             RawEffect::Heal(effect) => Self::Heal(effect),
@@ -279,13 +267,11 @@ impl Effect {
             Effect::Spawn(effect) => &mut **effect,
             Effect::AOE(effect) => &mut **effect,
             Effect::Suicide(effect) => &mut **effect,
-            Effect::Chain(effect) => &mut **effect,
             Effect::AddTargets(effect) => &mut **effect,
             Effect::Repeat(effect) => &mut **effect,
             Effect::Random(effect) => &mut **effect,
             Effect::List(effect) => &mut **effect,
             Effect::If(effect) => &mut **effect,
-            Effect::MaybeModify(effect) => &mut **effect,
             Effect::ChangeContext(effect) => &mut **effect,
             Effect::ChangeContextStatus(effect) => &mut **effect,
             Effect::Heal(effect) => &mut **effect,
@@ -312,13 +298,11 @@ impl Effect {
             Effect::Spawn(effect) => effect,
             Effect::AOE(effect) => effect,
             Effect::Suicide(effect) => effect,
-            Effect::Chain(effect) => effect,
             Effect::AddTargets(effect) => effect,
             Effect::Repeat(effect) => effect,
             Effect::Random(effect) => effect,
             Effect::List(effect) => effect,
             Effect::If(effect) => effect,
-            Effect::MaybeModify(effect) => effect,
             Effect::ChangeContext(effect) => effect,
             Effect::ChangeContextStatus(effect) => effect,
             Effect::Heal(effect) => effect,
