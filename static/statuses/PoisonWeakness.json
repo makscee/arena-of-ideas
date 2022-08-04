@@ -2,8 +2,9 @@
     "name": "PoisonWeakness",
     "type": "Modifier",
     "stacking": {
-        "type": "Independent"
+        "type": "Refresh"
     },
+    "hidden": true,
     "color": "#800002",
     "priority": 0,
     "condition": {
@@ -32,8 +33,5 @@
                 "name": "StackCounter"
             }
         }
-    },
-    "render": {
-        "path": "shaders/status/status_default.glsl"
     }
 }
