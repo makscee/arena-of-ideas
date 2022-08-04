@@ -2,14 +2,14 @@
     "name": "walker",
     "tier": 5,
     "triple": "walker+",
-    "description": "Every 5 seconds @Freeze random enemy",
+    "description": "Every 6 ticks @Freeze random enemy",
     "clans": [
         "Freezers",
         "PlagueSpreaders"
     ],
     "statuses": [
         {
-            "name": "FreezeRandomEvery5",
+            "name": "FreezeRandomEvery6",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -19,8 +19,8 @@
                     "triggers": [
                         {
                             "type": "Repeating",
-                            "tick_time": 5,
-                            "next_tick": 5
+                            "tick_time": 6,
+                            "next_tick": 6
                         }
                     ],
                     "effect": {
@@ -58,5 +58,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "caster"
 }

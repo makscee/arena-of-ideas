@@ -1,7 +1,7 @@
 {
     "name": "walker+",
     "tier": 5,
-    "description": "Every 5 seconds @Freeze 2 random enemies",
+    "description": "Every 5 ticks @Freeze 2 random enemies",
     "clans": [
         "Freezers",
         "PlagueSpreaders"
@@ -61,5 +61,5 @@
             ]
         }
     ],
-    "base": "ranged+"
+    "base": "caster+"
 }
