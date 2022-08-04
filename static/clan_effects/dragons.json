@@ -8,35 +8,22 @@
         },
         "statuses": [
             {
-                "name": "FlamingBreath",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
+                "name": "FireAttack",
+                "type": "Modifier",
+                "condition": {
+                    "type": "Always"
                 },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageDealt",
-                                "damage_type": "Melee"
-                            },
-                            {
-                                "type": "DamageDealt",
-                                "damage_type": "Ranged"
-                            }
-                        ],
-                        "effect": {
-                            "type": "Damage",
-                            "types": [
-                                "Fire"
-                            ],
-                            "value": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    }
-                ]
+                "target": {
+                    "type": "ExtraOutDamageType",
+                    "source": [
+                        "Melee",
+                        "Ranged"
+                    ],
+                    "damage_type": [
+                        "Fire"
+                    ]
+                },
+                "priority": 0
             }
         ]
     },
@@ -98,6 +85,35 @@
     {
         "activate": 2,
         "filter": {
+            "Enemy": null
+        },
+        "statuses": [
+            {
+                "name": "FireDamageVulnerability",
+                "type": "Status",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Burn"
+                            }
+                        ],
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Vulnerability"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 6,
+        "filter": {
             "Player": null
         },
         "statuses": [
@@ -125,35 +141,6 @@
                                     "type": "RemoveStatus"
                                 }
                             ]
-                        }
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "activate": 6,
-        "filter": {
-            "Enemy": null
-        },
-        "statuses": [
-            {
-                "name": "FireDamageVulnerability",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
-                },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageTaken",
-                                "damage_type": "Burn"
-                            }
-                        ],
-                        "effect": {
-                            "type": "AttachStatus",
-                            "status": "Vulnerability"
                         }
                     }
                 ]

@@ -35,7 +35,7 @@
         ]
     },
     {
-        "activate": 2,
+        "activate": 3,
         "filter": {
             "Enemy": null
         },
@@ -56,46 +56,6 @@
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Vulnerability"
-                        }
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "activate": 4,
-        "filter": {
-            "Player": null
-        },
-        "statuses": [
-            {
-                "name": "DemonsActionSpeed",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
-                },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "Spawn"
-                            }
-                        ],
-                        "effect": {
-                            "type": "ChangeStat",
-                            "stat": "ActionSpeed",
-                            "value": {
-                                "type": "Sum",
-                                "a": {
-                                    "type": "FindStat",
-                                    "stat": "ActionSpeed",
-                                    "who": "Target"
-                                },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 0.4
-                                }
-                            }
                         }
                     }
                 ]
