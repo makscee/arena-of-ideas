@@ -11,7 +11,7 @@ void main() {
     float action_t = smoothstep(ACTION_ANIMATION_TIME, 0, u_time - u_action_time);
     action_t *= action_t;
     v_quad_pos = a_pos * (1.0 + u_padding);
-    float size = u_unit_radius + action_t * .3;
+    float size = u_unit_radius + action_t * .2;
     vec2 pos = v_quad_pos * size + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);

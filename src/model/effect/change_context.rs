@@ -9,6 +9,7 @@ pub struct ChangeContextEffect {
     pub from: Option<Who>,
     #[serde(default)]
     pub target: Option<Who>,
+    pub color: Option<Color<f32>>,
     pub effect: Effect,
 }
 
@@ -35,6 +36,10 @@ impl EffectImpl for ChangeContextEffect {
                 target: match effect.target {
                     Some(who) => context.get(who),
                     None => context.target,
+                },
+                color: match effect.color {
+                    Some(color) => Some(color),
+                    None => context.color,
                 },
                 ..context
             },

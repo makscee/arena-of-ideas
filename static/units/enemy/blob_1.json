@@ -1,0 +1,46 @@
+{
+    "name": "blob_1",
+    "health": 25,
+    "base_damage": 2,
+    "radius": 0.4,
+    "range": 1,
+    "cooldown": 2,
+    "statuses": [
+        {
+            "name": "SpawnBlobDeathrattle",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Death"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": 2,
+                        "effect": {
+                            "type": "Spawn",
+                            "unit_type": "blob_0"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "action": {
+        "effect": {
+            "preset": "effects/blob_melee_action.json"
+        }
+    },
+    "render": {
+        "path": "shaders/blob_enemy.glsl",
+        "parameters": {
+            "u_padding": 2.0,
+            "u_color": "#108001"
+        }
+    }
+}

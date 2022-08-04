@@ -1,35 +1,18 @@
 {
     "name": "shooter",
-    "statuses": [
-        {
-            "name": "ShooterOnDeath",
-            "type": "Status",
-            "stacking": {
-                "type": "Refresh"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "Death"
-                        }
-                    ],
-                    "effect": {
-                        "type": "Visual",
-                        "duration": 1.0,
-                        "parent": "Caster",
-                        "follow": false,
-                        "radius": 1.5,
-                        "render": {
-                            "path": "shaders/vfx_explosion.glsl",
-                            "parameters": {
-                                "color": "#dc143c"
-                            }
-                        }
-                    }
-                }
-            ]
+    "base_damage": 1,
+    "radius": 0.36,
+    "range": 5,
+    "cooldown": 2,
+    "action": {
+        "effect": {
+            "preset": "effects/ranged_hit.json"
         }
-    ],
-    "base": "blob_ranged"
+    },
+    "render": {
+        "path": "shaders/shooter_enemy.glsl",
+        "parameters": {
+            "u_color": "#fc0107"
+        }
+    }
 }

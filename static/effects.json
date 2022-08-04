@@ -1,5 +1,6 @@
 [
     "effects/vfx_laser.json",
+    "effects/vfx_laser_bonus_shot.json",
     "effects/vfx_slash.json",
     "effects/melee_hit.json",
     "effects/ranged_hit.json",
@@ -9,5 +10,6 @@
     "effects/vfx_heal.json",
     "effects/vfx_injured_particles.json",
     "effects/vfx_attach_status.json",
-    "effects/vfx_death_particles.json"
+    "effects/vfx_death_particles.json",
+    "effects/blob_melee_action.json"
 ]

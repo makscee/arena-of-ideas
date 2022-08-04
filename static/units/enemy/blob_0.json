@@ -1,17 +1,19 @@
 {
-    "health": 4,
+    "name": "blob_0",
+    "health": 15,
     "base_damage": 1,
     "radius": 0.4,
     "range": 1,
     "cooldown": 2,
+    "statuses": [],
     "action": {
         "effect": {
-            "preset": "effects/melee_hit.json"
+            "preset": "effects/blob_melee_action.json"
         }
     },
     "render": {
         "path": "shaders/blob_enemy.glsl",
-        "parameters":{
+        "parameters": {
             "u_padding": 2.0,
             "u_color": "#fc0107"
         }

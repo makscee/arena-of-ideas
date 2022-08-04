@@ -6,15 +6,7 @@
     "cooldown": 3,
     "action": {
         "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/ranged_hit.json"
-                },
-                {
-                    "preset": "effects/ranged_hit.json"
-                }
-            ]
+            "preset": "effects/ranged_hit.json"
         }
     },
     "render": {

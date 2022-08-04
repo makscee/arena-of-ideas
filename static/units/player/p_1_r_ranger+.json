@@ -1,35 +1,24 @@
 {
-	"name": "ranger+",
+    "name": "ranger+",
     "tier": 1,
     "health": 4,
     "base_damage": 4,
-    "description": "On @Crit @Bonus Shot, +30% @Crit chance",
-    "crit_chance": 30,
+    "description": "Attack twice",
     "clans": [
-        "Archers",
-        "Assassins"
+        "Archers"
     ],
-    "statuses": [
-        {
-            "name": "SniperOnCrit",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
+    "action": {
+        "effect": {
+            "type": "List",
+            "effects": [
                 {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Crit"
-                        }
-                    ],
-                    "effect": {
-                        "preset": "effects/bonus_shot.json"
-                    }
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "preset": "effects/ranged_hit.json"
                 }
             ]
         }
-    ],
+    },
     "base": "ranged+"
 }
