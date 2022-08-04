@@ -1,47 +1,58 @@
 {
     "name": "vladimir+",
     "tier": 3,
-    "description": "All allies gain +20% @Vampirism and +1 @block",
+    "description": "All allies gain +2 @base_damage and +3 @block",
     "clans": [
         "Vampires",
         "Protectors"
     ],
     "statuses": [
         {
-            "name": "VampirismAura",
-            "type": "Aura",
-            "statuses": [
-                "Vampirism"
-            ],
-            "filter": {
-                "Player": null
-            }
-        },
-        {
-            "name": "BlockAura",
+            "name": "BlockDamageAura",
             "type": "Aura",
             "statuses": [
                 {
-                    "name": "BlockModifier",
+                    "name": "BlockDamageModifier",
                     "type": "Modifier",
                     "condition": {
                         "type": "Always"
                     },
                     "target": {
-                        "type": "Stat",
-                        "stat": "Block",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "FindStat",
-                                "who": "Target",
-                                "stat": "Block"
+                        "type": "List",
+                        "targets": [
+                            {
+                                "type": "Stat",
+                                "stat": "Block",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Target",
+                                        "stat": "Block"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                }
                             },
-                            "b": {
-                                "type": "Const",
-                                "value": 1
+                            {
+                                "type": "Stat",
+                                "stat": "BaseDamage",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Target",
+                                        "stat": "BaseDamage"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 2
+                                    }
+                                }
                             }
-                        }
+                        ]
                     },
                     "priority": 0
                 }

@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 impl Logic {
@@ -40,18 +42,12 @@ impl Logic {
                             color: None,
                         };
                         match &modifier.target {
-                            ModifierTarget::List { modifiers } => {
-                                if self.check_condition(&modifier.condition, &context) {
-                                    for inner_modifier in modifiers {
-                                        if self.check_condition(&inner_modifier.condition, &context)
-                                        {
-                                            modifier_targets.push((
-                                                context.clone(),
-                                                inner_modifier.target.clone(),
-                                            ));
-                                        }
-                                    }
-                                }
+                            ModifierTarget::List { targets } => {
+                                modifier_targets.extend(
+                                    targets
+                                        .iter()
+                                        .map(|target| (context.clone(), target.clone())),
+                                );
                             }
                             _ => {
                                 if self.check_condition(&modifier.condition, &context) {

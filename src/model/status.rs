@@ -168,7 +168,7 @@ pub enum ModifierTarget {
         value: Expr,
     },
     List {
-        modifiers: Vec<StatusModifier>,
+        targets: Vec<ModifierTarget>,
     },
 }
 
