@@ -16,9 +16,15 @@ impl Logic {
     }
     fn tick_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let ActionState::Cooldown { time } = &mut unit.action_state {
-            *time += 1;
-            if *time >= unit.cooldown {
-                unit.action_state = ActionState::None;
+            if !unit
+                .flags
+                .iter()
+                .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
+            {
+                *time += 1;
+                if *time >= unit.cooldown {
+                    unit.action_state = ActionState::None;
+                }
             }
         }
     }
