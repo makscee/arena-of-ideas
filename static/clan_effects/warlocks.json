@@ -48,39 +48,30 @@
         },
         "statuses": [
             {
-                "name": "OnDealDamage",
-                "type": "Status",
-                "stacking": {
-                    "type": "Refresh"
+                "name": "SiphonLifeDoubleDamage",
+                "type": "Modifier",
+                "priority": 0,
+                "condition": {
+                    "type": "Always"
                 },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageDealt",
-                                "damage_type": "SiphonLife"
-                            }
-                        ],
-                        "effect": {
-                            "type": "Random",
-                            "choices": [
-                                {
-                                    "weight": 85,
-                                    "effect": {
-                                        "type": "Noop"
-                                    }
-                                },
-                                {
-                                    "weight": 15,
-                                    "effect": {
-                                        "type": "AttachStatus",
-                                        "status": "Stun"
-                                    }
-                                }
-                            ]
+                "target": {
+                    "type": "Damage",
+                    "source": [
+                        "SiphonLife",
+                        "SiphonLifeExtra"
+                    ],
+                    "value": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "Var",
+                            "name": "DamageIncoming"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 2
                         }
                     }
-                ]
+                }
             }
         ]
     },
@@ -105,43 +96,45 @@
                             }
                         ],
                         "effect": {
-                            "type": "If",
+                            "type": "ChangeTarget",
+                            "filter": "Enemies",
                             "condition": {
-                                "type": "UnitHasStatus",
-                                "who": "Target",
-                                "status": "SiphonLife"
+                                "type": "Always"
                             },
-                            "then": {
-                                "type": "AOE",
-                                "filter": "Enemies",
-                                "skip_current_target": true,
-                                "range": 3,
-                                "effect": {
-                                    "type": "Damage",
-                                    "types": [
-                                        "SiphonLifeAoe"
-                                    ],
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 1
-                                    },
-                                    "on": {
-                                        "Injure": {
-                                            "type": "ChangeContext",
-                                            "target": "Caster",
-                                            "effect": {
-                                                "type": "Heal",
-                                                "value": {
-                                                    "type": "Var",
-                                                    "name": "DamageDealt"
+                            "effect": {
+                                "type": "Damage",
+                                "types": [
+                                    "SiphonLifeExtra"
+                                ],
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
+                                "on": {
+                                    "Injure": {
+                                        "type": "ChangeContext",
+                                        "target": "Caster",
+                                        "from": "Target",
+                                        "effect": {
+                                            "type": "List",
+                                            "effects": [
+                                                {
+                                                    "type": "Heal",
+                                                    "types": [
+                                                        "SiphonLife"
+                                                    ],
+                                                    "value": {
+                                                        "type": "Var",
+                                                        "name": "DamageDealt"
+                                                    }
+                                                },
+                                                {
+                                                    "preset": "effects/vfx_heal.json"
                                                 }
-                                            }
+                                            ]
                                         }
                                     }
                                 }
-                            },
-                            "else": {
-                                "type": "Noop"
                             }
                         }
                     }

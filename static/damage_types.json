@@ -3,6 +3,10 @@
 		"description": "Heal caster for damage dealt",
 		"clan_origin": "Warlocks"
 	},
+	"SiphonLifeExtra": {
+		"description": "Heal caster for damage dealt",
+		"clan_origin": "Warlocks"
+	},
 	"Fire": {
 		"description": "Deal additional fire damage",
 		"clan_origin": "Dragons"
