@@ -52,38 +52,29 @@
         },
         "statuses": [
             {
-                "name": "OnDealDamage",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
+                "name": "BonusShotDoubleDamage",
+                "type": "Modifier",
+                "priority": 0,
+                "condition": {
+                    "type": "Always"
                 },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageDealt",
-                                "damage_type": "BonusShot"
-                            }
-                        ],
-                        "effect": {
-                            "type": "Random",
-                            "choices": [
-                                {
-                                    "weight": 85,
-                                    "effect": {
-                                        "type": "Noop"
-                                    }
-                                },
-                                {
-                                    "weight": 15,
-                                    "effect": {
-                                        "preset": "effects/bonus_shot.json"
-                                    }
-                                }
-                            ]
+                "target": {
+                    "type": "Damage",
+                    "source": [
+                        "BonusShot"
+                    ],
+                    "value": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "Var",
+                            "name": "DamageIncoming"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 2
                         }
                     }
-                ]
+                }
             }
         ]
     }

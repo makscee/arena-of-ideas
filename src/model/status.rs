@@ -162,6 +162,7 @@ pub enum ModifierTarget {
         damage_type: HashSet<DamageType>,
     },
     Damage {
+        source: Option<HashSet<DamageType>>,
         value: Expr,
     },
     List {

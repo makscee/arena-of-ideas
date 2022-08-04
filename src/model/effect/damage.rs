@@ -55,9 +55,18 @@ impl EffectImpl for DamageEffect {
                         }
                     }
                     //Modify damage value
-                    ModifierTarget::Damage { value } => {
+                    ModifierTarget::Damage { source, value } => {
                         let mut context = context.clone();
                         context.vars.insert(VarName::DamageIncoming, damage);
+                        if let Some(damage_types) = source {
+                            if !effect
+                                .types
+                                .iter()
+                                .any(|source_type| damage_types.contains(source_type))
+                            {
+                                break;
+                            }
+                        }
                         damage = value.calculate(&context, logic);
                     }
                     _ => (),
@@ -164,7 +173,7 @@ impl EffectImpl for DamageEffect {
                 },
             })
         }
-        
+
         if damage <= Health::new(0.0) {
             return;
         }
