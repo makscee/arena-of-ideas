@@ -253,20 +253,50 @@ impl Render {
             .values()
             .flat_map(|text_block| text_block.texts())
         {
+            let color = match &text.text_type {
+                TextType::Damage(damage_types) => damage_types
+                    .iter()
+                    .find_map(|damage_type| {
+                        self.assets.damage_types.get(damage_type).map(|config| {
+                            config.color.unwrap_or_else(|| {
+                                *self
+                                    .assets
+                                    .options
+                                    .clan_colors
+                                    .get(&config.clan_origin)
+                                    .unwrap_or_else(|| {
+                                        panic!("Failed to find clan ({}) color", config.clan_origin)
+                                    })
+                            })
+                        })
+                    })
+                    .unwrap_or(text.color),
+                TextType::Heal(heal_types) => heal_types
+                    .iter()
+                    .find_map(|damage_type| {
+                        self.assets.heal_types.get(damage_type).map(|config| {
+                            config.color.unwrap_or_else(|| {
+                                *self
+                                    .assets
+                                    .options
+                                    .clan_colors
+                                    .get(&config.clan_origin)
+                                    .unwrap_or_else(|| {
+                                        panic!("Failed to find clan ({}) color", config.clan_origin)
+                                    })
+                            })
+                        })
+                    })
+                    .unwrap_or(text.color),
+                _ => text.color,
+            };
             self.geng.draw_2d(
                 framebuffer,
                 &self.camera,
-                &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, text.color)
+                &draw_2d::Text::unit(&**self.geng.default_font(), &text.text, color)
                     .scale_uniform(0.15 * text.scale)
                     .translate(text.position),
             );
-        }
-
-        if let Some(unit) = hovered_unit {
-            self.draw_statuses_desc(unit, framebuffer);
-            if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
-                self.draw_damage_heal_desc(text_block, framebuffer);
-            }
         }
 
         // Tick indicator
@@ -279,6 +309,13 @@ impl Render {
                 .scale_uniform(0.3 * text_scale)
                 .translate(vec2(0.0, self.camera.fov * 0.35)),
         );
+
+        if let Some(unit) = hovered_unit {
+            self.draw_statuses_desc(unit, framebuffer);
+            if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
+                self.draw_damage_heal_desc(text_block, framebuffer);
+            }
+        }
     }
 
     fn draw_statuses_desc(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {

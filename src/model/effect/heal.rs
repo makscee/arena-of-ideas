@@ -52,7 +52,7 @@ impl EffectImpl for HealEffect {
             let heal_text = (value * r32(10.0)).floor() / r32(10.0);
             logic.model.render_model.add_text(
                 target_unit.position,
-                &format!("{}", heal_text),
+                &format!("+{}", heal_text),
                 Color::GREEN,
                 crate::render::TextType::Heal(effect.types.iter().cloned().collect()),
             );
