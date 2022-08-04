@@ -43,11 +43,13 @@ impl Logic {
                         };
                         match &modifier.target {
                             ModifierTarget::List { targets } => {
-                                modifier_targets.extend(
-                                    targets
-                                        .iter()
-                                        .map(|target| (context.clone(), target.clone())),
-                                );
+                                if self.check_condition(&modifier.condition, &context) {
+                                    modifier_targets.extend(
+                                        targets
+                                            .iter()
+                                            .map(|target| (context.clone(), target.clone())),
+                                    );
+                                }
                             }
                             _ => {
                                 if self.check_condition(&modifier.condition, &context) {
