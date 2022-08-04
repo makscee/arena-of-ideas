@@ -14,5 +14,9 @@
 	"BonusShot": {
 		"description": "Additional attack on Ranged damage",
 		"clan_origin": "Archers"
+	},
+	"IgnoreFreeze": {
+		"description": "Damage that doesn't break @Freeze",
+		"clan_origin": "Freezers"
 	}
 }

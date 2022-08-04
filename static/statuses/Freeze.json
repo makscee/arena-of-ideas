@@ -4,6 +4,7 @@
     "stacking": {
         "type": "Refresh"
     },
+    "description": "Unit unable use action until damage is taken",
     "flags": [
         "MoveUnable",
         "ActionUnable"

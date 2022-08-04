@@ -6,7 +6,7 @@
         },
         "statuses": [
             {
-                "name": "SelfDetectAttach",
+                "name": "VulnerabilityOnFreeze",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
@@ -37,7 +37,7 @@
         },
         "statuses": [
             {
-                "name": "OnTakeDamage",
+                "name": "FreezeOnInjured",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
@@ -46,13 +46,17 @@
                     {
                         "triggers": [
                             {
-                                "type": "DamageTaken"
+                                "type": "DamageTaken",
+                                "damage_type": "Ranged"
+                            },
+                            {
+                                "type": "DamageTaken",
+                                "damage_type": "Melee"
                             }
                         ],
                         "effect": {
-                            "type": "AOE",
-                            "filter": "Enemies",
-                            "range": 2,
+                            "type": "ChangeContext",
+                            "target": "Caster",
                             "effect": {
                                 "type": "AttachStatus",
                                 "status": "Freeze"
@@ -70,7 +74,7 @@
         },
         "statuses": [
             {
-                "name": "SelfDetectAttach",
+                "name": "DamageFrozen",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
@@ -79,13 +83,31 @@
                     {
                         "triggers": [
                             {
-                                "type": "SelfDetectAttach",
-                                "status_name": "Freeze"
+                                "type": "Repeating",
+                                "tick_time": 1,
+                                "next_tick": 1
                             }
                         ],
                         "effect": {
-                            "type": "AttachStatus",
-                            "status": "Stun"
+                            "type": "If",
+                            "condition": {
+                                "type": "UnitHasStatus",
+                                "who": "Target",
+                                "status": "Freeze"
+                            },
+                            "then": {
+                                "type": "Damage",
+                                "types": [
+                                    "IgnoreFreeze"
+                                ],
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     }
                 ]

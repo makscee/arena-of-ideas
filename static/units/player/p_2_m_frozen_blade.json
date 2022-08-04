@@ -5,8 +5,8 @@
     "description": "@Scathe: apply @Frozen",
     "range": 2,
     "health": 4,
-    "base_damage": 2,
-    "cooldown": 3,
+    "base_damage": 1,
+    "cooldown": 5,
     "action": {
         "effect": {
             "type": "List",

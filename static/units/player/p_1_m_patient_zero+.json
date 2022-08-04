@@ -7,26 +7,7 @@
         "PlagueSpreaders"
     ],
     "statuses": [
-        {
-            "name": "PatientZeroOnSpawn",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "Spawn"
-                        }
-                    ],
-                    "effect": {
-                        "type": "AttachStatus",
-                        "status": "Plague"
-                    }
-                }
-            ]
-        },
+        "Plague",
         {
             "name": "PatientZero+OnTakeDamage",
             "type": "Status",
