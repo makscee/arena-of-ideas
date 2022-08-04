@@ -1,0 +1,43 @@
+{
+	"name": "demonic_guardian",
+    "tier": 2,
+    "health": 4,
+    "base_damage": 2,
+    "cooldown": 1,
+    "description": "On @Shield gain: @Dark Steal random enemy",
+    "clans": [
+        "Demons",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnShieldDarkStealRandom",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "SelfDetectAttach",
+                            "status_name": "Shield"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "DarkSteal"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "melee"
+}

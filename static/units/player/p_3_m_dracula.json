@@ -22,7 +22,7 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Additional"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {

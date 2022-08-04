@@ -18,7 +18,7 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Additional"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
@@ -32,10 +32,36 @@
                             "type": "List",
                             "effects": [
                                 {
-                                    "preset": "effects/melee_hit.json"
+                                    "type": "List",
+                                    "effects": [
+                                        {
+                                            "type": "Damage",
+                                            "value": {
+                                                "type": "FindStat",
+                                                "who": "Caster",
+                                                "stat": "BaseDamage"
+                                            }
+                                        },
+                                        {
+                                            "preset": "effects/vfx_slash.json"
+                                        }
+                                    ]
                                 },
                                 {
-                                    "preset": "effects/melee_hit.json"
+                                    "type": "List",
+                                    "effects": [
+                                        {
+                                            "type": "Damage",
+                                            "value": {
+                                                "type": "FindStat",
+                                                "who": "Caster",
+                                                "stat": "BaseDamage"
+                                            }
+                                        },
+                                        {
+                                            "preset": "effects/vfx_slash.json"
+                                        }
+                                    ]
                                 }
                             ]
                         },

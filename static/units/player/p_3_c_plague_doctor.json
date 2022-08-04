@@ -4,7 +4,7 @@
     "health": 8,
     "base_damage": 15,
     "cooldown": 5,
-    "description": "Every 5 seconds remove @Plague from 1 ally",
+    "description": "Every 5 ticks remove @Plague from 1 ally",
     "triple": "plague_doctor+",
     "clans": [
         "PlagueSpreaders",

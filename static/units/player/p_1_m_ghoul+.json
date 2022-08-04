@@ -1,8 +1,8 @@
 {
-	"name": "ghoul+",
+    "name": "ghoul+",
     "tier": 1,
     "health": 6,
-    "description": "@Scathe 25% chance to @Stun ",
+    "description": "@Scathe deal 10% of targets @max_hp as damage",
     "clans": [
         "Vampires"
     ],
@@ -21,22 +21,15 @@
                         }
                     ],
                     "effect": {
-                        "type": "Random",
-                        "choices": [
-                            {
-                                "weight": 75,
-                                "effect": {
-                                    "type": "Noop"
-                                }
-                            },
-                            {
-                                "weight": 25,
-                                "effect": {
-                                    "type": "AttachStatus",
-                                    "status": "Stun"
-                                }
-                            }
-                        ]
+                        "type": "Damage",
+                        "types": [
+                            "Melee"
+                        ],
+                        "value": {
+                            "type": "FindStat",
+                            "who": "Target",
+                            "stat": "MaxHealth"
+                        }
                     }
                 }
             ]

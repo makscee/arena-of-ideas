@@ -3,7 +3,7 @@
     "tier": 1,
     "health": 4,
     "base_damage": 4,
-    "description": "Attack twice",
+    "description": "@Multishot 2",
     "clans": [
         "Archers"
     ],

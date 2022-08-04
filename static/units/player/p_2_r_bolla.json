@@ -4,7 +4,7 @@
     "health": 3,
     "base_damage": 3,
     "cooldown": 6,
-    "description": "@Flaming Breath attack",
+    "description": "",
     "triple": "bolla+",
     "clans": [
         "Dragons"

@@ -1,5 +1,5 @@
 {
-	"name": "bolla+",
+    "name": "bolla+",
     "tier": 2,
     "health": 6,
     "base_damage": 6,
@@ -31,6 +31,37 @@
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Burn"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "FlamingBreath",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
+                        },
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Damage",
+                        "types": [
+                            "Fire"
+                        ],
+                        "value": {
+                            "type": "Const",
+                            "value": 1
                         }
                     }
                 }

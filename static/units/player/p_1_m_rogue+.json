@@ -1,38 +1,42 @@
 {
     "name": "rogue+",
     "tier": 1,
-    "description": "@Scathe apply @MStun",
+    "description": "Double damage to target with @Poison",
     "clans": [
         "Assassins"
     ],
     "range": 1,
     "action": {
         "effect": {
-            "preset": "effects/melee_hit.json"
-        }
-    },
-    "statuses": [
-        {
-            "name": "Rogue+OnDealDamage",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
+            "type": "List",
+            "effects": [
                 {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Melee"
+                    "preset": "effects/melee_hit.json"
+                },
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Poison"
+                    },
+                    "then": {
+                        "type": "Damage",
+                        "types": [
+                            "Melee"
+                        ],
+                        "value": {
+                            "type": "FindStat",
+                            "who": "Caster",
+                            "stat": "BaseDamage"
                         }
-                    ],
-                    "effect": {
-                        "type": "AttachStatus",
-                        "status": "Stun"
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
                 }
             ]
         }
-    ],
+    },
     "base": "melee+"
 }

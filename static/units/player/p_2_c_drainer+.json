@@ -4,7 +4,7 @@
     "health": 10,
     "base_damage": 18,
     "cooldown": 5,
-    "description": "On @Heal received damage random enemy for double damage",
+    "description": "Every 10 ticks apply @Siphon Life to all enemies",
     "clans": [
         "Warlocks"
     ],
@@ -19,61 +19,29 @@
                 {
                     "triggers": [
                         {
-                            "type": "HealTaken"
+                            "type": "Repeating",
+                            "tick_time": 10,
+                            "next_tick": 10
                         }
                     ],
                     "effect": {
-                        "type": "ChangeTarget",
+                        "type": "AOE",
                         "filter": "Enemies",
-                        "condition": {
-                            "type": "Always"
-                        },
+                        "skip_current_target": false,
+                        "range": 100500,
                         "effect": {
-                            "type": "ChangeContext",
-                            "from": "Caster",
-                            "effect": {
-                                "type": "List",
-                                "effects": [
-                                    {
-                                        "type": "Damage",
-                                        "types": [
-                                            "Ranged"
-                                        ],
-                                        "value": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "Var",
-                                                "name": "IncomingHeal"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": 3
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "preset": "effects/vfx_laser.json"
-                                    }
-                                ]
-                            }
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "SiphonLife"
+                                }
+                            ]
                         }
                     }
                 }
             ]
         }
     ],
-    "ability": {
-        "cooldown": 15,
-        "effect": {
-            "type": "AOE",
-            "filter": "Enemies",
-            "skip_current_target": false,
-            "range": 20,
-            "effect": {
-                "type": "AttachStatus",
-                "status": "SiphonLife"
-            }
-        }
-    },
     "base": "caster+"
 }
