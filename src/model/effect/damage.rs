@@ -164,14 +164,7 @@ impl EffectImpl for DamageEffect {
                 },
             })
         }
-
-        // TODO: reimplement
-        // // Protection
-        // for status in &target_unit.all_statuses {
-        //     if let StatusOld::Protection(status) = status {
-        //         damage *= r32(1.0 - status.percent / 100.0);
-        //     }
-        // }
+        
         if damage <= Health::new(0.0) {
             return;
         }

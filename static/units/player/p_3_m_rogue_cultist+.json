@@ -1,7 +1,7 @@
 {
 	"name": "rogue_cultist+",
     "tier": 3,
-    "description": "On @Crit apply @Siphon Life to target and random enemy",
+    "description": "On @Poison apply @Siphon Life to target and random enemy",
     "clans": [
         "Warlocks",
         "Assassins"
@@ -18,7 +18,7 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Crit"
+                            "damage_type": "Poison"
                         }
                     ],
                     "effect": {

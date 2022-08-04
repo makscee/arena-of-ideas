@@ -2,23 +2,19 @@
     "name": "ice_breaker+",
     "tier": 3,
     "base_damage": 1.0,
-    "description": "@Scathe apply @MicroStun",
+    "description": "@Poison and @Stun on @Freeze",
     "clans": [
+        "Freezers",
         "Assassins"
     ],
     "range": 1,
     "cooldown": 1,
-    "action": {
-        "effect": {
-            "preset": "effects/melee_hit.json"
-        }
-    },
     "statuses": [
         {
-            "name": "Rogue+OnDealDamage",
+            "name": "PoisonOnDealDamage",
             "type": "Status",
             "stacking": {
-                "type": "Independent"
+                "type": "Refresh"
             },
             "listeners": [
                 {
@@ -29,8 +25,28 @@
                         }
                     ],
                     "effect": {
-                        "type": "AttachStatus",
-                        "status": "MicroStun"
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Freeze"
+                        },
+                        "then": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "Poison"
+                                },
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "Stun"
+                                }
+                            ]
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
                 }
             ]

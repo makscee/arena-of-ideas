@@ -1,77 +1,46 @@
 {
-	"name": "dracula+",
+    "name": "dracula+",
     "tier": 3,
     "clans": [
         "Vampires",
         "Assassins"
     ],
-    "description": "Triple @Crit chance with full @hp. @Crit deals 5% target’s current @hp as damage",
+    "description": "Triple action on @Poison",
     "statuses": [
         {
-            "name": "DoubleCritWhenFullHp",
-            "type": "Modifier",
-            "condition": {
-                "type": "Always"
-            },
-            "target": {
-                "type": "Stat",
-                "stat": "CritChance",
-                "value": {
-                    "type": "Mul",
-                    "a": {
-                        "type": "FindStat",
-                        "who": "Target",
-                        "stat": "CritChance"
-                    },
-                    "b": {
-                        "type": "If",
-                        "condition": {
-                            "type": "UnitInjured",
-                            "who": "Target"
-                        },
-                        "then": {
-                            "type": "Const",
-                            "value": 1
-                        },
-                        "else": {
-                            "type": "Const",
-                            "value": 3
-                        }
-                    }
-                }
-            },
-            "priority": 0
-        },
-        {
-            "name": "CritDealsPercentHp",
+            "name": "DoubleDamageOnPoison",
             "type": "Status",
             "stacking": {
-                "type": "Independent"
+                "type": "Refresh"
             },
             "listeners": [
                 {
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Crit"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
-                        "type": "Damage",
-                        "types": [
-                            "HpDrain"
-                        ],
-                        "value": {
-                            "type": "Mul",
-                            "a": {
-                                "type": "FindStat",
-                                "who": "Target",
-                                "stat": "MaxHealth"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": 0.05
-                            }
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Poison"
+                        },
+                        "then": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "preset": "effects/melee_hit.json"
+                                },
+                                {
+                                    "preset": "effects/melee_hit.json"
+                                }
+                            ]
+                        },
+                        "else": {
+                            "type": "Noop"
                         }
                     }
                 }

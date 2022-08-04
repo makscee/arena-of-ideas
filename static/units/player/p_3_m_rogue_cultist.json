@@ -4,7 +4,7 @@
     "health": 7,
     "base_damage": 3,
     "cooldown": 3,
-    "description": "On @Crit apply @Siphon Life",
+    "description": "On @Poison  apply @Siphon Life",
     "triple": "rogue_cultist+",
     "clans": [
         "Warlocks",
@@ -22,7 +22,7 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Crit"
+                            "damage_type": "Poison"
                         }
                     ],
                     "effect": {

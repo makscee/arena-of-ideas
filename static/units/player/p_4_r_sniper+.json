@@ -1,11 +1,8 @@
 {
-	"name": "sniper",
-    "tier": 3,
-    "health": 5,
-    "base_damage": 5,
-    "cooldown": 6,
-    "triple": "sniper+",
-    "description": "On @Crit @Bonus Shot",
+    "name": "sniper+",
+    "tier": 4,
+    "description": "On @Crit @Bonus Shot, +30% @Crit chance",
+    "crit_chance": 30,
     "clans": [
         "Archers",
         "Assassins"
@@ -32,5 +29,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "ranged+"
 }

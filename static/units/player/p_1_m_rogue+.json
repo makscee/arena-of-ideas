@@ -1,7 +1,7 @@
 {
     "name": "rogue+",
     "tier": 1,
-    "description": "@Scathe apply @MicroStun",
+    "description": "@Scathe apply @MStun",
     "clans": [
         "Assassins"
     ],
@@ -28,7 +28,7 @@
                     ],
                     "effect": {
                         "type": "AttachStatus",
-                        "status": "MicroStun"
+                        "status": "Stun"
                     }
                 }
             ]

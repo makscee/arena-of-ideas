@@ -1,56 +1,45 @@
 {
     "name": "ice_breaker",
     "tier": 3,
-    "description": "@Crit on @Frozen",
+    "description": "@Poison on @Freeze",
     "range": 1,
     "health": 7,
     "base_damage": 3,
     "cooldown": 3,
-    "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
+    "statuses": [
+        {
+            "name": "PoisonOnDealDamage",
+            "type": "Status",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "listeners": [
                 {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "Freeze"
-                    },
-                    "then": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "Damage",
-                                "types": [
-                                    "Melee",
-                                    "Crit"
-                                ],
-                                "value": {
-                                    "type": "Mul",
-                                    "a": {
-                                        "type": "FindStat",
-                                        "who": "Caster",
-                                        "stat": "BaseDamage"
-                                    },
-                                    "b": {
-                                        "type": "Const",
-                                        "value": 3
-                                    }
-                                }
-                            },
-                            {
-                                "preset": "effects/crit_hit_vfx.json"
-                            }
-                        ]
-                    },
-                    "else": {
-                        "preset": "effects/melee_hit.json"
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Freeze"
+                        },
+                        "then": {
+                            "type": "AttachStatus",
+                            "status": "Poison"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
                 }
             ]
         }
-    },
+    ],
     "clans": [
         "Freezers",
         "Assassins"

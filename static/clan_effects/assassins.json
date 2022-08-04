@@ -8,41 +8,7 @@
         },
         "statuses": [
             {
-                "name": "Assassins15CritChance",
-                "type": "Modifier",
-                "condition": {
-                    "type": "Always"
-                },
-                "target": {
-                    "type": "Stat",
-                    "stat": "CritChance",
-                    "value": {
-                        "type": "Sum",
-                        "a": {
-                            "type": "FindStat",
-                            "who": "Target",
-                            "stat": "CritChance"
-                        },
-                        "b": {
-                            "type": "Const",
-                            "value": 15
-                        }
-                    }
-                },
-                "priority": -100
-            }
-        ]
-    },
-    {
-        "activate": 4,
-        "filter": {
-            "Player": [
-                "Assassins"
-            ]
-        },
-        "statuses": [
-            {
-                "name": "OnDealDamage",
+                "name": "PoisonOnDealDamage",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
@@ -52,12 +18,30 @@
                         "triggers": [
                             {
                                 "type": "DamageDealt",
-                                "damage_type": "Crit"
+                                "damage_type": "Melee"
+                            },
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Ranged"
                             }
                         ],
                         "effect": {
-                            "type": "AttachStatus",
-                            "status": "Poison"
+                            "type": "Random",
+                            "choices": [
+                                {
+                                    "weight": 50,
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 50,
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "Poison"
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]

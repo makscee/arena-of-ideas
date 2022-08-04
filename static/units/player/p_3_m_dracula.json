@@ -1,50 +1,46 @@
 {
-	"name": "dracula",
+    "name": "dracula",
     "tier": 3,
     "health": 7,
     "base_damage": 3,
     "cooldown": 3,
     "triple": "dracula+",
-    "description": "Double @Crit chance with full hp",
+    "description": "Additional action on @Poison",
     "clans": [
         "Vampires",
         "Assassins"
     ],
     "statuses": [
         {
-            "name": "DoubleCritWhenFullHp",
-            "type": "Modifier",
-            "condition": {
-                "type": "Always"
+            "name": "DoubleDamageOnPoison",
+            "type": "Status",
+            "stacking": {
+                "type": "Refresh"
             },
-            "target": {
-                "type": "Stat",
-                "stat": "CritChance",
-                "value": {
-                    "type": "Mul",
-                    "a": {
-                        "type": "FindStat",
-                        "who": "Target",
-                        "stat": "CritChance"
-                    },
-                    "b": {
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
+                        }
+                    ],
+                    "effect": {
                         "type": "If",
                         "condition": {
-                            "type": "UnitInjured",
-                            "who": "Target"
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Poison"
                         },
                         "then": {
-                            "type": "Const",
-                            "value": 1
+                            "preset": "effects/melee_hit.json"
                         },
                         "else": {
-                            "type": "Const",
-                            "value": 2
+                            "type": "Noop"
                         }
                     }
                 }
-            },
-            "priority": 0
+            ]
         }
     ],
     "base": "melee"
