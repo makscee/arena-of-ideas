@@ -1,11 +1,7 @@
 {
-    "name": "red_dragon",
+    "name": "red_dragon+",
     "tier": 2,
-    "health": 3,
-    "base_damage": 3,
-    "cooldown": 4,
-    "description": "Overheal damages random target for overhealed amount",
-    "triple": "red_dragon+",
+    "description": "Overheal damages all enemies for overhealed amount",
     "clans": [
         "Vampires",
         "Dragons"
@@ -38,11 +34,10 @@
                             }
                         },
                         "then": {
-                            "type": "ChangeTarget",
+                            "type": "AOE",
                             "filter": "Enemies",
-                            "condition": {
-                                "type": "Always"
-                            },
+                            "skip_current_target": false,
+                            "range": 8,
                             "effect": {
                                 "type": "List",
                                 "effects": [
@@ -74,5 +69,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "ranged+"
 }
