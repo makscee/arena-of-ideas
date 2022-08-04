@@ -121,8 +121,6 @@ impl Render {
         let mut hovered_unit = None;
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
-
-            let render = self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
             self.unit_render.draw_unit(
                 unit,
                 template,
