@@ -8,7 +8,7 @@
         },
         "statuses": [
             {
-                "name": "PoisonOnDealDamage",
+                "name": "PoisonOnInjure",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
@@ -55,7 +55,7 @@
         },
         "statuses": [
             {
-                "name": "OnTakeDamage",
+                "name": "PoisonVulnerability",
                 "type": "Status",
                 "stacking": {
                     "type": "Independent"
