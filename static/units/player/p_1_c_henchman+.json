@@ -12,6 +12,7 @@
             "stacking": {
                 "type": "Refresh"
             },
+            "priority": 0,
             "condition": {
                 "type": "Always"
             },
