@@ -123,13 +123,20 @@ impl Logic {
                         StatusTrigger::Repeating {
                             tick_time,
                             next_tick,
+                            last_tick,
                         } => {
-                            *next_tick -= self.delta_time;
+                            let cur_tick = r32(self.model.current_tick.tick_num as f32);
                             let mut ticks = 0;
-                            while *next_tick < Time::ZERO {
+                            if *last_tick == r32(0.0) {
+                                if *next_tick == r32(0.0) {
+                                    ticks += 1;
+                                }
+                                *next_tick = cur_tick + *tick_time;
+                            } else if *next_tick == cur_tick {
                                 ticks += 1;
-                                *next_tick += *tick_time;
+                                *next_tick = cur_tick + *tick_time;
                             }
+                            *last_tick = cur_tick;
                             ticks
                         }
                         _ => 0,

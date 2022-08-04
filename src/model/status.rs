@@ -92,9 +92,12 @@ pub enum StatusTrigger {
     },
     /// Triggered periodically
     Repeating {
-        tick_time: Time,
+        tick_time: RealImpl<f32>,
         #[serde(default = "zero")]
-        next_tick: Time,
+        next_tick: RealImpl<f32>,
+        //Utility field
+        #[serde(default = "zero")]
+        last_tick: RealImpl<f32>,
     },
     /// Triggered by CustomTriggerEffect
     Custom { name: String },
