@@ -47,7 +47,6 @@ impl Logic {
         self.delta_time = Time::new(delta_time as f32);
         self.process_tick();
         self.process_particles();
-        self.process_statuses();
         self.process_spawns();
         self.process_abilities();
         self.process_targeting();

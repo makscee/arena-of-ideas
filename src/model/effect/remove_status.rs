@@ -39,7 +39,7 @@ impl EffectImpl for RemoveStatusEffect {
                         None => false,
                     },
                 } {
-                    status.time = Some(Time::ZERO);
+                    status.time = Some(0);
                     if !all {
                         return;
                     }

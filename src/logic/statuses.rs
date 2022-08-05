@@ -3,7 +3,7 @@ use geng::prelude::itertools::Itertools;
 use super::*;
 
 impl Logic {
-    pub fn process_statuses(&mut self) {
+    pub fn tick_statuses(&mut self) {
         self.process_units(Self::process_unit_statuses);
 
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
@@ -22,7 +22,7 @@ impl Logic {
     }
 
     fn should_remove_status(status: &AttachedStatus) -> bool {
-        status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
+        status.time.map(|time| time == 0).unwrap_or(false)
             || status
                 .vars
                 .get(&VarName::StackCounter)
@@ -101,7 +101,7 @@ impl Logic {
                 status.is_inited = true;
             }
             if let Some(time) = &mut status.time {
-                *time -= self.delta_time;
+                *time = time.saturating_sub(1);
             }
             for listener in &mut status.status.listeners {
                 let ticks = listener
@@ -180,12 +180,10 @@ impl Logic {
                         .statuses
                         .iter()
                         .map(|status| {
-                            let mut status = status
+                            status
                                 .get(&self.model.statuses)
                                 .clone()
-                                .attach_aura(Some(other.id), unit.id);
-                            status.time = Some(R32::ZERO);
-                            status
+                                .attach_aura(Some(other.id), unit.id)
                         })
                         .collect();
                     other.flags.extend(

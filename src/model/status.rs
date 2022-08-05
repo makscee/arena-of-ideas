@@ -211,7 +211,7 @@ pub struct Status {
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
-    pub duration: Option<Time>,
+    pub duration: Option<Ticks>,
     /// Specifications of effects to apply for different subsets of triggers
     #[serde(default)]
     pub listeners: Vec<StatusListener>,
@@ -236,9 +236,9 @@ pub struct AttachedStatus {
     pub is_aura: bool,
     /// Whether trigger Init was fired
     pub is_inited: bool,
-    /// Specifies how much time is left until the status is dropped.
+    /// Specifies how many ticks are left until the status is dropped.
     /// If `None`, then the status remains attached.
-    pub time: Option<Time>,
+    pub time: Option<Ticks>,
     /// Specifies the owner of the status
     pub owner: Option<Id>,
     /// Specifies the caster that applied the status
@@ -291,7 +291,7 @@ impl Status {
     pub fn attach_aura(self, owner: Option<Id>, caster: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
-            time: Some(Time::ZERO),
+            time: Some(0),
             is_aura: true,
             is_inited: false,
             status: self,

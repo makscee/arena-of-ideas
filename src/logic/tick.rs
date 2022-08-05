@@ -10,9 +10,13 @@ impl Logic {
         {
             let last_tick = &self.model.current_tick;
             self.model.current_tick = TickModel::new(last_tick.tick_num + 1);
-            self.process_units(Self::tick_unit_cooldowns);
+            self.tick();
         }
         self.model.current_tick.visual_timer -= self.delta_time;
+    }
+    fn tick(&mut self) {
+        self.process_units(Self::tick_unit_cooldowns);
+        self.tick_statuses();
     }
     fn tick_unit_cooldowns(&mut self, unit: &mut Unit) {
         if let ActionState::Cooldown { time } = &mut unit.action_state {

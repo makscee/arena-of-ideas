@@ -148,14 +148,8 @@ impl UnitRender {
                     ugli::ColorAttachment::Texture(&mut new_texture),
                 );
                 let framebuffer = &mut framebuffer;
-                let status_time = match status_time {
-                    Some(status_time) => status_time,
-                    None => r32(0.0),
-                };
-                let status_duration = match status_duration {
-                    Some(status_duration) => status_duration,
-                    None => r32(0.0),
-                };
+                let status_time = status_time.unwrap_or(0);
+                let status_duration = status_duration.unwrap_or(0);
                 ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
                 ugli::draw(
                     framebuffer,
@@ -168,8 +162,8 @@ impl UnitRender {
                             u_previous_texture: &texture,
                             u_status_count: status_count,
                             u_status_index: status_index,
-                            u_status_time: status_time.as_f32(),
-                            u_status_duration: status_duration.as_f32(),
+                            u_status_time: status_time as f32,
+                            u_status_duration: status_duration as f32,
                             u_time: game_time,
                             u_color: status_color,
                         },
