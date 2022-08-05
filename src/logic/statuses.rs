@@ -113,13 +113,13 @@ impl Logic {
                             next_tick,
                             last_tick,
                         } => {
-                            let cur_tick = r32(self.model.current_tick.tick_num as f32);
+                            let cur_tick = self.model.current_tick.tick_num;
                             if cur_tick == *last_tick {
                                 return 0;
                             };
                             let mut ticks = 0;
-                            if *last_tick == r32(0.0) {
-                                if *next_tick == r32(0.0) {
+                            if *last_tick == 0 {
+                                if *next_tick == 0 {
                                     ticks += 1;
                                 }
                                 *next_tick += cur_tick;

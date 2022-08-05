@@ -52,7 +52,7 @@ impl TargetFilter {
 #[derive(Clone)]
 pub struct TickModel {
     pub tick_time: Time,
-    pub tick_num: usize,
+    pub tick_num: Ticks,
     pub visual_timer: Time,
 }
 
@@ -108,7 +108,7 @@ impl Model {
 }
 
 impl TickModel {
-    pub fn new(tick_num: usize) -> Self {
+    pub fn new(tick_num: Ticks) -> Self {
         Self {
             tick_time: Time::ZERO,
             tick_num,

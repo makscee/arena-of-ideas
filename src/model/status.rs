@@ -1,7 +1,7 @@
 use super::*;
 
-fn zero() -> R32 {
-    R32::ZERO
+fn zero() -> Ticks {
+    0
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
@@ -93,12 +93,12 @@ pub enum StatusTrigger {
     /// Triggered periodically
     Repeating {
         #[serde(default = "zero")]
-        tick_time: RealImpl<f32>,
+        tick_time: Ticks,
         #[serde(default = "zero")]
-        next_tick: RealImpl<f32>,
-        //Utility field
+        next_tick: Ticks,
+        // Utility field
         #[serde(default = "zero")]
-        last_tick: RealImpl<f32>,
+        last_tick: Ticks,
     },
     /// Triggered by CustomTriggerEffect
     Custom { name: String },
