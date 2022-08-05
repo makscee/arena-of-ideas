@@ -31,17 +31,14 @@ impl UnitRender {
         };
         let quad = shader_program.get_vertices(&self.geng);
 
-        let mut clans: Vec<Clan> = unit.clans.iter().copied().collect();
-        let clan_colors: Vec<Color<f32>> = clans
+        let clan_colors: Vec<Color<f32>> = unit
+            .clans
             .iter()
             .map(|clan| self.assets.options.clan_colors[clan])
             .collect();
 
         let target = match &unit.action_state {
-            ActionState::Start { target } => model
-                .and_then(|model| model.units.get(&target))
-                .map(|unit| unit),
-
+            ActionState::Start { target } => model.and_then(|model| model.units.get(target)),
             _ => None,
         };
 
@@ -129,7 +126,7 @@ impl UnitRender {
                     // .and_then(|config| config.render.as_ref())
                     .map(|config| {
                         (
-                            self.assets.get_render(&config.render.as_ref().unwrap()),
+                            self.assets.get_render(config.render.as_ref().unwrap()),
                             status.time,
                             status.status.duration,
                             config.get_color(&self.assets.options),
@@ -149,7 +146,7 @@ impl UnitRender {
                 );
                 let framebuffer = &mut framebuffer;
                 let status_time = status_time.unwrap_or(0);
-                let status_duration = status_duration.unwrap_or(0);
+                let status_duration = status_duration.unwrap_or_else(|| 1.try_into().unwrap());
                 ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
                 ugli::draw(
                     framebuffer,
@@ -163,7 +160,7 @@ impl UnitRender {
                             u_status_count: status_count,
                             u_status_index: status_index,
                             u_status_time: status_time as f32,
-                            u_status_duration: status_duration as f32,
+                            u_status_duration: u64::from(status_duration) as f32,
                             u_time: game_time,
                             u_color: status_color,
                         },

@@ -211,7 +211,7 @@ pub struct Status {
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
-    pub duration: Option<Ticks>,
+    pub duration: Option<std::num::NonZeroU64>,
     /// Specifications of effects to apply for different subsets of triggers
     #[serde(default)]
     pub listeners: Vec<StatusListener>,
@@ -261,7 +261,7 @@ impl StatusRef {
             StatusRef::Name(name) => {
                 &statuses
                     .get(name)
-                    .expect(&format!("Failed to find status {name:?}"))
+                    .unwrap_or_else(|| panic!("Failed to find status {name:?}"))
                     .status
             }
             StatusRef::Raw(status) => status,
@@ -276,7 +276,7 @@ impl Status {
         *next_id += 1;
         AttachedStatus {
             vars: self.vars.clone(),
-            time: self.duration,
+            time: self.duration.map(Into::into),
             is_aura: false,
             is_inited: false,
             status: self,
@@ -376,7 +376,7 @@ pub fn unit_attach_status(
         }
         StatusStacking::Refresh => {
             return replace(status, all_statuses, |s| {
-                s.time = s.status.duration;
+                s.time = s.status.duration.map(Into::into);
                 s.id
             })
         }
@@ -388,7 +388,7 @@ pub fn unit_attach_status(
         }
         StatusStacking::CountRefresh => {
             return replace(status, all_statuses, |s| {
-                s.time = s.status.duration;
+                s.time = s.status.duration.map(Into::into);
                 *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
                 s.id
             })
