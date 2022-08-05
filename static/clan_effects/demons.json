@@ -26,8 +26,22 @@
                             }
                         ],
                         "effect": {
-                            "type": "AttachStatus",
-                            "status": "DarkSteal"
+                            "type": "Random",
+                            "choices": [
+                                {
+                                    "weight": 75,
+                                    "effect": {
+                                        "type": "Noop"
+                                    }
+                                },
+                                {
+                                    "weight": 25,
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "DarkSteal"
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]
