@@ -5,11 +5,5 @@
     "clans": [
         "Assassins"
     ],
-    "range": 1,
-    "action": {
-        "effect": {
-            "preset": "effects/melee_hit.json"
-        }
-    },
     "base": "melee"
 }

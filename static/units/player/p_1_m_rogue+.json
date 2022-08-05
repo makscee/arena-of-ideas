@@ -5,38 +5,35 @@
     "clans": [
         "Assassins"
     ],
-    "range": 1,
-    "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/melee_hit.json"
+    "range": 5,
+    "statuses": [
+        {
+            "name": "DoubleDamageOnPoison",
+            "type": "Modifier",
+            "priority": 0,
+            "condition": {
+                "type": "Always"
+            },
+            "target": {
+                "type": "Damage",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Poison"
                 },
-                {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "Poison"
+                "value": {
+                    "type": "Mul",
+                    "a": {
+                        "type": "Var",
+                        "name": "DamageIncoming"
                     },
-                    "then": {
-                        "type": "Damage",
-                        "types": [
-                            "Melee"
-                        ],
-                        "value": {
-                            "type": "FindStat",
-                            "who": "Caster",
-                            "stat": "BaseDamage"
-                        }
-                    },
-                    "else": {
-                        "type": "Noop"
+                    "b": {
+                        "type": "Const",
+                        "value": 2
                     }
                 }
-            ]
+            }
         }
-    },
+    ],
     "base": "melee+"
 }

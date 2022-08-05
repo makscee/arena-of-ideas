@@ -1,0 +1,25 @@
+{
+    "name": "imp+",
+    "tier": 1,
+    "health": 4,
+    "base_damage": 8,
+    "cooldown": 2,
+    "description": "@Multishot 2",
+    "clans": [
+        "Demons"
+    ],
+    "action": {
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                },
+                {
+                    "preset": "effects/ranged_hit.json"
+                }
+            ]
+        }
+    },
+    "base": "ranged+"
+}

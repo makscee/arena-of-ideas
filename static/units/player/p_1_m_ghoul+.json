@@ -17,18 +17,23 @@
                 {
                     "triggers": [
                         {
-                            "type": "DamageDealt"
+                            "type": "DamageDealt",
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
                         "type": "Damage",
-                        "types": [
-                            "Melee"
-                        ],
                         "value": {
-                            "type": "FindStat",
-                            "who": "Target",
-                            "stat": "MaxHealth"
+                            "type": "Mul",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0.1
+                            }
                         }
                     }
                 }
