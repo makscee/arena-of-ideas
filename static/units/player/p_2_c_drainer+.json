@@ -28,7 +28,7 @@
                         "type": "AOE",
                         "filter": "Enemies",
                         "skip_current_target": false,
-                        "range": 100500,
+                        "range": 20,
                         "effect": {
                             "type": "List",
                             "effects": [

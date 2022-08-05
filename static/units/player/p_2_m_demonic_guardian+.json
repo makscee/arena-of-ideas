@@ -1,10 +1,10 @@
 {
-	"name": "demonic_guardian",
+    "name": "demonic_guardian+",
     "tier": 2,
-    "health": 4,
-    "base_damage": 2,
+    "health": 8,
+    "base_damage": 4,
     "cooldown": 1,
-    "description": "On @Shield gain: @Dark Steal random enemy",
+    "description": "On @Shield gain: @Dark Steal all enemies",
     "clans": [
         "Demons",
         "Protectors"
@@ -25,19 +25,23 @@
                         }
                     ],
                     "effect": {
-                        "type": "ChangeTarget",
+                        "type": "AOE",
                         "filter": "Enemies",
-                        "condition": {
-                            "type": "Always"
-                        },
+                        "skip_current_target": false,
+                        "range": 20,
                         "effect": {
-                            "type": "AttachStatus",
-                            "status": "DarkSteal"
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "DarkSteal"
+                                }
+                            ]
                         }
                     }
                 }
             ]
         }
     ],
-    "base": "melee"
+    "base": "melee+"
 }
