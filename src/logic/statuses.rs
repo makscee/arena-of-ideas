@@ -30,36 +30,26 @@ impl Logic {
         let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = Vec::new();
         for status in &unit.all_statuses {
             if !Self::is_expired(status) {
-                match &status.status.effect {
-                    //Collect modifiers
-                    StatusEffect::Modifier(modifier) => {
-                        let context = EffectContext {
-                            caster: Some(unit.id),
-                            from: status.caster,
-                            target: Some(unit.id),
-                            vars: status.vars.clone(),
-                            status_id: Some(status.id),
-                            color: None,
-                        };
-                        match &modifier.target {
-                            ModifierTarget::List { targets } => {
-                                if self.check_condition(&modifier.condition, &context) {
-                                    modifier_targets.extend(
-                                        targets
-                                            .iter()
-                                            .map(|target| (context.clone(), target.clone())),
-                                    );
-                                }
-                            }
-                            _ => {
-                                if self.check_condition(&modifier.condition, &context) {
-                                    modifier_targets
-                                        .push((context.clone(), modifier.target.clone()));
-                                }
-                            }
+                if let StatusEffect::Modifier(modifier) = &status.status.effect {
+                    let context = EffectContext {
+                        caster: Some(unit.id),
+                        from: status.caster,
+                        target: Some(unit.id),
+                        vars: status.vars.clone(),
+                        status_id: Some(status.id),
+                        color: None,
+                    };
+                    if let ModifierTarget::List { targets } = &modifier.target {
+                        if self.check_condition(&modifier.condition, &context) {
+                            modifier_targets.extend(
+                                targets
+                                    .iter()
+                                    .map(|target| (context.clone(), target.clone())),
+                            );
                         }
+                    } else if self.check_condition(&modifier.condition, &context) {
+                        modifier_targets.push((context.clone(), modifier.target.clone()));
                     }
-                    _ => (),
                 }
             }
         }
@@ -71,17 +61,14 @@ impl Logic {
         unit_id: &Id,
         modifier_targets: &Vec<(EffectContext, ModifierTarget)>,
     ) {
-        let unit_mut = self.model.units.get_mut(&unit_id).unwrap();
+        let unit_mut = self.model.units.get_mut(unit_id).unwrap();
         unit_mut.stats = unit_mut.permanent_stats.clone();
 
         for (context, target) in modifier_targets {
-            match target {
-                ModifierTarget::Stat { stat, value } => {
-                    let stat_value = value.calculate(&context, self);
-                    let mut unit_mut = self.model.units.get_mut(&unit_id).unwrap();
-                    *unit_mut.stats.get_mut(*stat) = stat_value;
-                }
-                _ => (),
+            if let ModifierTarget::Stat { stat, value } = target {
+                let stat_value = value.calculate(context, self);
+                let mut unit_mut = self.model.units.get_mut(unit_id).unwrap();
+                *unit_mut.stats.get_mut(*stat) = stat_value;
             }
         }
     }
@@ -93,10 +80,7 @@ impl Logic {
         for status in &mut unit.all_statuses {
             if !status.is_inited {
                 for (effect, vars, status_id, status_color) in
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::Init => true,
-                        _ => false,
-                    })
+                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
                 {
                     self.effects.push_front(QueuedEffect {
                         effect,
@@ -159,10 +143,7 @@ impl Logic {
             if Self::is_expired(status) {
                 expired.push((status.caster, status.id, status.status.name.clone()));
                 for (effect, vars, status_id, status_color) in
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::Break => true,
-                        _ => false,
-                    })
+                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Break))
                 {
                     self.effects.push_front(QueuedEffect {
                         effect,
@@ -176,45 +157,37 @@ impl Logic {
                         },
                     })
                 }
-            } else {
-                match &status.status.effect {
-                    //Apply auras
-                    StatusEffect::Aura(aura) => {
-                        for other in &mut self.model.units {
-                            match aura.radius {
-                                Some(radius) => {
-                                    //TODO: Check distance by util fn
-                                    if unit.position.distance(&other.position) > radius {
-                                        continue;
-                                    }
-                                }
-                                _ => {}
-                            }
-                            if !aura.filter.check(other) {
-                                continue;
-                            }
-                            let statuses: Vec<AttachedStatus> = aura
-                                .statuses
-                                .iter()
-                                .map(|status| {
-                                    let mut status = status
-                                        .get(&self.model.statuses)
-                                        .clone()
-                                        .attach_aura(Some(other.id), unit.id);
-                                    status.time = Some(R32::ZERO);
-                                    status
-                                })
-                                .collect();
-                            other.flags.extend(
-                                statuses
-                                    .iter()
-                                    .flat_map(|status| status.status.flags.iter())
-                                    .copied(),
-                            );
-                            other.all_statuses.extend(statuses);
+            } else if let StatusEffect::Aura(aura) = &status.status.effect {
+                // Apply auras
+                for other in &mut self.model.units {
+                    if let Some(radius) = aura.radius {
+                        // TODO: Check distance by util fn
+                        if unit.position.distance(&other.position) > radius {
+                            continue;
                         }
                     }
-                    _ => (),
+                    if !aura.filter.check(other) {
+                        continue;
+                    }
+                    let statuses: Vec<AttachedStatus> = aura
+                        .statuses
+                        .iter()
+                        .map(|status| {
+                            let mut status = status
+                                .get(&self.model.statuses)
+                                .clone()
+                                .attach_aura(Some(other.id), unit.id);
+                            status.time = Some(R32::ZERO);
+                            status
+                        })
+                        .collect();
+                    other.flags.extend(
+                        statuses
+                            .iter()
+                            .flat_map(|status| status.status.flags.iter())
+                            .copied(),
+                    );
+                    other.all_statuses.extend(statuses);
                 }
             }
         }
