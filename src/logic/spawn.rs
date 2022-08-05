@@ -5,7 +5,11 @@ impl Logic {
     /// empty slot to the left, it and all units to the left are shifted to the left.
     /// Otherwise, if all slots are occupied, the unit is placed on top the unit in that position.
     pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Position) -> Id {
-        let mut template = &self.model.unit_templates[unit_type];
+        let mut template = &self
+            .model
+            .unit_templates
+            .get(unit_type)
+            .unwrap_or_else(|| panic!("Failed to find unit template for {unit_type}"));
         let id = self.model.next_id;
 
         // Check empty slots
