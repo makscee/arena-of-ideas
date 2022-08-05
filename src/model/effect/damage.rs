@@ -39,7 +39,7 @@ impl EffectImpl for DamageEffect {
                 .get(&caster)
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
-            for (context, modifier_target) in &caster_unit.modifier_targets {
+            for (modifier_context, modifier_target) in &caster_unit.modifier_targets {
                 match modifier_target {
                     //Add extra damage types
                     ModifierTarget::ExtraOutDamageType {
@@ -55,15 +55,25 @@ impl EffectImpl for DamageEffect {
                         }
                     }
                     //Modify damage value
-                    ModifierTarget::Damage { source, value } => {
+                    ModifierTarget::Damage {
+                        source,
+                        condition,
+                        value,
+                    } => {
                         let mut context = context.clone();
                         context.vars.insert(VarName::DamageIncoming, damage);
+                        context.vars.extend(modifier_context.vars.clone());
                         if let Some(damage_types) = source {
                             if !effect
                                 .types
                                 .iter()
                                 .any(|source_type| damage_types.contains(source_type))
                             {
+                                break;
+                            }
+                        }
+                        if let Some(condition) = condition {
+                            if !logic.check_condition(condition, &context) {
                                 break;
                             }
                         }

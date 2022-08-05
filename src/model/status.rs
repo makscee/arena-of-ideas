@@ -168,6 +168,7 @@ pub enum ModifierTarget {
     },
     Damage {
         source: Option<HashSet<DamageType>>,
+        condition: Option<Condition>,
         value: Expr,
     },
     List {
