@@ -1,17 +1,18 @@
 {
-	"name": "lotan+",
+	"name": "lotan",
     "tier": 2,
     "health": 3,
     "base_damage": 4,
     "cooldown": 4,
-    "description": "Whenever an enemy starts to @Burn, @Dark Steal them twice",
+    "description": "@Dark Steal @Burning target on attack",
+    "triple": "lotan+",
     "clans": [
         "Dragons",
         "Demons"
     ],
     "statuses": [
         {
-            "name": "DetectBurnToDarkSteal",
+            "name": "DarkStealBurning",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -20,22 +21,28 @@
                 {
                     "triggers": [
                         {
-                            "type": "DetectAttach",
-                            "status_name": "Burn",
-                            "filter": "Enemies"
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
                         }
                     ],
                     "effect": {
-                        "type": "Repeat",
-                        "times": 2,
-                        "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Burn"
+                        },
+                        "then": {
                             "type": "AttachStatus",
                             "status": "DarkSteal"
+                        },
+                        "else": {
+                            "type": "Noop"
                         }
                     }
                 }
             ]
         }
     ],
-    "base": "ranged+"
+    "base": "caster"
 }
