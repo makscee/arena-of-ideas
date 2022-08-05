@@ -17,8 +17,12 @@ impl Logic {
         }
     }
 
-    fn is_expired(status: &AttachedStatus) -> bool {
-        !status.is_aura && status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
+    fn is_status_expired(status: &AttachedStatus) -> bool {
+        !status.is_aura && Self::should_remove_status(status)
+    }
+
+    fn should_remove_status(status: &AttachedStatus) -> bool {
+        status.time.map(|time| time <= Time::ZERO).unwrap_or(false)
             || status
                 .vars
                 .get(&VarName::StackCounter)
@@ -29,7 +33,7 @@ impl Logic {
     fn collect_modifier_targets(&self, unit: &Unit) -> Vec<(EffectContext, ModifierTarget)> {
         let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = Vec::new();
         for status in &unit.all_statuses {
-            if !Self::is_expired(status) {
+            if !Self::is_status_expired(status) {
                 if let StatusEffect::Modifier(modifier) = &status.status.effect {
                     let context = EffectContext {
                         caster: Some(unit.id),
@@ -140,7 +144,7 @@ impl Logic {
                     });
                 }
             }
-            if Self::is_expired(status) {
+            if Self::is_status_expired(status) {
                 expired.push((status.caster, status.id, status.status.name.clone()));
                 for (effect, vars, status_id, status_color) in
                     status.trigger(|trigger| matches!(trigger, StatusTrigger::Break))
@@ -192,7 +196,8 @@ impl Logic {
             }
         }
 
-        unit.all_statuses.retain(|status| !Self::is_expired(status));
+        unit.all_statuses
+            .retain(|status| !Self::should_remove_status(status));
 
         unit.flags = unit
             .all_statuses
