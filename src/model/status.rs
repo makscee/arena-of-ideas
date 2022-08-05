@@ -92,6 +92,7 @@ pub enum StatusTrigger {
     },
     /// Triggered periodically
     Repeating {
+        #[serde(default = "zero")]
         tick_time: RealImpl<f32>,
         #[serde(default = "zero")]
         next_tick: RealImpl<f32>,
