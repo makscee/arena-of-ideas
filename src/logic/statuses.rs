@@ -143,7 +143,7 @@ impl Logic {
                     self.effects.push_back(QueuedEffect {
                         effect: listener.effect.clone(),
                         context: EffectContext {
-                            caster: status.caster,
+                            caster: status.caster.or(Some(unit.id)),
                             from: Some(unit.id),
                             target: Some(unit.id),
                             vars: status.vars.clone(),
