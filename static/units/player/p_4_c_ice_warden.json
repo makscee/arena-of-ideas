@@ -1,5 +1,5 @@
 {
-	"name": "ice_warden",
+    "name": "ice_warden",
     "tier": 4,
     "description": "If enemy loses @Freeze apply @Dark Steal",
     "clans": [
@@ -35,5 +35,5 @@
             ]
         }
     ],
-    "base": "melee"
+    "base": "caster"
 }
