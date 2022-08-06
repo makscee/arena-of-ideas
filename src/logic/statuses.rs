@@ -44,14 +44,20 @@ impl Logic {
                         color: None,
                     };
                     if let ModifierTarget::List { targets } = &modifier.target {
-                        if self.check_condition(&modifier.condition, &context) {
+                        if match &modifier.condition {
+                            Some(condition) => self.check_condition(condition, &context),
+                            None => true,
+                        } {
                             modifier_targets.extend(
                                 targets
                                     .iter()
                                     .map(|target| (context.clone(), target.clone())),
                             );
                         }
-                    } else if self.check_condition(&modifier.condition, &context) {
+                    } else if match &modifier.condition {
+                        Some(condition) => self.check_condition(condition, &context),
+                        None => true,
+                    } {
                         modifier_targets.push((context.clone(), modifier.target.clone()));
                     }
                 }

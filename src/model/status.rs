@@ -186,7 +186,7 @@ pub struct StatusModifier {
     #[serde(default)]
     pub priority: i64,
     /// Condition when to apply modifier
-    pub condition: Condition,
+    pub condition: Option<Condition>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
