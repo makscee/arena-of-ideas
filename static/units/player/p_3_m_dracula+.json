@@ -5,10 +5,9 @@
         "Vampires",
         "Assassins"
     ],
-    "health": 7,
-    "base_damage": 3,
+    "health": 14,
+    "base_damage": 6,
     "cooldown": 3,
-    "range": 3,
     "description": "Attack @Poisoned target 3 times",
     "action": {
         "effect": {
