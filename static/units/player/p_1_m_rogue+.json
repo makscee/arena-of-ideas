@@ -1,6 +1,9 @@
 {
     "name": "rogue+",
     "tier": 1,
+    "health": 2,
+    "base_damage": 1,
+    "cooldown": 4,
     "description": "Double damage to target with @Poison",
     "clans": [
         "Assassins"

@@ -1,9 +1,9 @@
 {
     "name": "imp+",
     "tier": 1,
-    "health": 4,
-    "base_damage": 8,
-    "cooldown": 2,
+    "health": 3,
+    "base_damage": 4,
+    "cooldown": 4,
     "description": "@Multishot 2",
     "clans": [
         "Demons"
