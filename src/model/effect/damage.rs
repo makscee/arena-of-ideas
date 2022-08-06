@@ -102,13 +102,9 @@ impl EffectImpl for DamageEffect {
                         damage_type,
                         except,
                     } => {
-                        if let Some(damage_type) = &damage_type {
-                            effect.types.contains(damage_type)
-                        } else if let Some(except) = &except {
-                            !effect.types.contains(except)
-                        } else {
-                            true
-                        }
+                        !effect.types.contains(&except.clone().unwrap_or_default())
+                            && (damage_type.is_none()
+                                || effect.types.contains(&damage_type.clone().unwrap()))
                     }
                     _ => false,
                 })
@@ -159,13 +155,9 @@ impl EffectImpl for DamageEffect {
                         damage_type,
                         except,
                     } => {
-                        if let Some(damage_type) = &damage_type {
-                            effect.types.contains(damage_type)
-                        } else if let Some(except) = &except {
-                            !effect.types.contains(except)
-                        } else {
-                            true
-                        }
+                        !effect.types.contains(&except.clone().unwrap_or_default())
+                            && (damage_type.is_none()
+                                || effect.types.contains(&damage_type.clone().unwrap()))
                     }
                     _ => false,
                 })
@@ -216,13 +208,9 @@ impl EffectImpl for DamageEffect {
                             damage_type,
                             except,
                         } => {
-                            if let Some(damage_type) = &damage_type {
-                                effect.types.contains(damage_type)
-                            } else if let Some(except) = &except {
-                                !effect.types.contains(except)
-                            } else {
-                                true
-                            }
+                            !effect.types.contains(&except.clone().unwrap_or_default())
+                                && (damage_type.is_none()
+                                    || effect.types.contains(&damage_type.clone().unwrap()))
                         }
                         _ => false,
                     })
@@ -283,13 +271,9 @@ impl EffectImpl for DamageEffect {
                                 damage_type,
                                 except,
                             } => {
-                                if let Some(damage_type) = &damage_type {
-                                    effect.types.contains(damage_type)
-                                } else if let Some(except) = &except {
-                                    !effect.types.contains(except)
-                                } else {
-                                    true
-                                }
+                                !effect.types.contains(&except.clone().unwrap_or_default())
+                                    && (damage_type.is_none()
+                                        || effect.types.contains(&damage_type.clone().unwrap()))
                             }
                             _ => false,
                         })
