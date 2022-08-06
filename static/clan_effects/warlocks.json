@@ -57,8 +57,7 @@
                 "target": {
                     "type": "Damage",
                     "source": [
-                        "SiphonLife",
-                        "SiphonLifeExtra"
+                        "SiphonLife"
                     ],
                     "value": {
                         "type": "Mul",
