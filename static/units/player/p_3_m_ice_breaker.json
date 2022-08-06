@@ -1,43 +1,37 @@
 {
     "name": "ice_breaker",
     "tier": 3,
-    "description": "@Poison on @Freeze",
-    "range": 1,
+    "description": "Double damage on @Freeze target",
     "health": 7,
     "base_damage": 3,
     "cooldown": 3,
     "statuses": [
         {
-            "name": "PoisonOnDealDamage",
-            "type": "Status",
-            "stacking": {
-                "type": "Refresh"
+            "name": "DoubleDamageOnPoison",
+            "type": "Modifier",
+            "priority": 0,
+            "condition": {
+                "type": "Always"
             },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Melee"
-                        }
-                    ],
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "UnitHasStatus",
-                            "who": "Target",
-                            "status": "Freeze"
-                        },
-                        "then": {
-                            "type": "AttachStatus",
-                            "status": "Poison"
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
+            "target": {
+                "type": "Damage",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Freeze"
+                },
+                "value": {
+                    "type": "Mul",
+                    "a": {
+                        "type": "Var",
+                        "name": "DamageIncoming"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": 2
                     }
                 }
-            ]
+            }
         }
     ],
     "clans": [

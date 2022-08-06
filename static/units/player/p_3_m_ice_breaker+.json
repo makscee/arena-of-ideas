@@ -1,56 +1,63 @@
 {
     "name": "ice_breaker+",
     "tier": 3,
-    "base_damage": 1.0,
-    "description": "@Poison and @Stun on @Freeze",
+    "base_damage": 6,
+    "description": "Double damage on @Freeze target, also damage enemy behind",
     "clans": [
         "Freezers",
         "Assassins"
     ],
-    "range": 1,
-    "cooldown": 1,
-    "statuses": [
-        {
-            "name": "PoisonOnDealDamage",
-            "type": "Status",
-            "stacking": {
-                "type": "Refresh"
-            },
-            "listeners": [
+    "health": 14,
+    "cooldown": 3,
+    "action": {
+        "effect": {
+            "type": "List",
+            "effects": [
                 {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Melee"
-                        }
-                    ],
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "UnitHasStatus",
-                            "who": "Target",
-                            "status": "Freeze"
-                        },
-                        "then": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "AttachStatus",
-                                    "status": "Poison"
-                                },
-                                {
-                                    "type": "AttachStatus",
-                                    "status": "Stun"
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Freeze"
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AOE",
+                                "filter": "Enemies",
+                                "skip_current_target": false,
+                                "range": 1,
+                                "effect": {
+                                    "type": "Damage",
+                                    "types": [
+                                        "Melee"
+                                    ],
+                                    "value": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "FindStat",
+                                            "who": "Caster",
+                                            "stat": "BaseDamage"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 2
+                                        }
+                                    }
                                 }
-                            ]
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
+                            },
+                            {
+                                "preset": "effects/vfx_slash.json"
+                            }
+                        ]
+                    },
+                    "else": {
+                        "preset": "effects/melee_hit.json"
                     }
                 }
             ]
         }
-    ],
+    },
     "base": "melee+"
 }
