@@ -70,6 +70,9 @@ pub struct DamageHealConfig {
     #[serde(default = "StatusConfig::default_clan_origin")]
     pub clan_origin: Clan,
     pub color: Option<Color<f32>>,
+    // For rendering: lower order = more important
+    #[serde(default)]
+    pub order: i64,
 }
 
 #[derive(Deref, DerefMut, Clone, geng::Assets, Deserialize)]
