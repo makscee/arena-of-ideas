@@ -25,16 +25,7 @@
                         "type": "AttachStatus",
                         "status": "SiphonLife"
                     }
-                }
-            ]
-        },
-        {
-            "name": "DarkArcher+OnDealDamage",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
+                },
                 {
                     "triggers": [
                         {
@@ -43,7 +34,18 @@
                         }
                     ],
                     "effect": {
-                        "preset": "effects/bonus_shot.json"
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "SiphonLife"
+                        },
+                        "then": {
+                            "preset": "effects/bonus_shot.json"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
                 }
             ]

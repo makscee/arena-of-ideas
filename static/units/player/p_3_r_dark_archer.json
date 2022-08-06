@@ -5,7 +5,7 @@
     "base_damage": 5,
     "cooldown": 6,
     "triple": "dark_archer+",
-    "description": "@Bonus Shot applies @Siphon Life ",
+    "description": "@Bonus Shot applies @Siphon Life",
     "clans": [
         "Archers",
         "Warlocks"
