@@ -92,7 +92,8 @@
                         "triggers": [
                             {
                                 "type": "DamageDealt",
-                                "damage_type": "SiphonLife"
+                                "damage_type": "SiphonLife",
+                                "except": "SiphonLifeExtra"
                             }
                         ],
                         "effect": {
@@ -104,6 +105,7 @@
                             "effect": {
                                 "type": "Damage",
                                 "types": [
+                                    "SiphonLife",
                                     "SiphonLifeExtra"
                                 ],
                                 "value": {
