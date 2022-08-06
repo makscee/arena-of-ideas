@@ -588,6 +588,7 @@ impl Simulation {
                 statuses,
                 round,
                 RenderModel::new(),
+                1.0,
             ),
             delta_time,
         }

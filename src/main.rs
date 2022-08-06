@@ -66,6 +66,7 @@ impl Game {
             assets.statuses.clone(),
             round,
             RenderModel::new(),
+            1.0,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model);
@@ -117,7 +118,8 @@ impl geng::State for Game {
             .history
             .get(index)
             .unwrap_or(self.history.last().unwrap());
-        self.time += delta_time * entry.model.current_tick.time_scale as f64;
+        let delta_time = delta_time * entry.model.time_scale as f64;
+        self.time += delta_time;
         let last_frame = &self.last_frame;
 
         if self.time > self.last_frame.time {
