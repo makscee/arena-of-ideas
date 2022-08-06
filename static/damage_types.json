@@ -22,5 +22,9 @@
 	"IgnoreFreeze": {
 		"description": "Damage that doesn't break @Freeze",
 		"clan_origin": "Freezers"
+	},
+	"Poison": {
+		"description": "Damages every tick for every Poison stack",
+		"clan_origin": "Assassins"
 	}
 }
