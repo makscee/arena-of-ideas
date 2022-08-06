@@ -313,5 +313,16 @@ impl EffectImpl for DamageEffect {
                 logic.kill(context.target.unwrap());
             }
         }
+
+        let mut damage_instances = &mut logic.model.damage_instances;
+        let avg_damage: f32 = damage_instances.iter().sum::<f32>() / damage_instances.len() as f32;
+        if damage.as_f32() > avg_damage * 2.0 {
+            logic.model.current_tick.time_scale = 0.35;
+        }
+        damage_instances.pop_front();
+        damage_instances.push_back(damage.as_f32());
+
+        logic.model.damage_instances.pop_front();
+        logic.model.damage_instances.push_back(damage.as_f32());
     }
 }

@@ -54,6 +54,7 @@ pub struct TickModel {
     pub tick_time: Time,
     pub tick_num: Ticks,
     pub visual_timer: Time,
+    pub time_scale: f32,
 }
 
 #[derive(Clone)]
@@ -75,6 +76,7 @@ pub struct Model {
     pub current_tick: TickModel,
     pub last_player_action_time: Time,
     pub last_enemy_action_time: Time,
+    pub damage_instances: VecDeque<f32>,
 }
 
 impl Model {
@@ -103,6 +105,7 @@ impl Model {
             render_model,
             last_player_action_time: Time::ZERO,
             last_enemy_action_time: Time::ZERO,
+            damage_instances: VecDeque::from(vec![1.0; 3]),
         }
     }
 }
@@ -113,6 +116,7 @@ impl TickModel {
             tick_time: Time::ZERO,
             tick_num,
             visual_timer: Time::new(UNIT_VISUAL_TIME),
+            time_scale: 1.0,
         }
     }
 }
