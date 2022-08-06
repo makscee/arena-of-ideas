@@ -27,7 +27,6 @@
                         "type": "AOE",
                         "filter": "Allies",
                         "skip_current_target": false,
-                        "range": 10,
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Shield"
@@ -54,7 +53,6 @@
                         "type": "AOE",
                         "filter": "Allies",
                         "skip_current_target": false,
-                        "range": 10,
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Shield"

@@ -39,7 +39,6 @@
                         "type": "AOE",
                         "filter": "Allies",
                         "skip_current_target": true,
-                        "range": 20,
                         "effect": {
                             "type": "If",
                             "condition": {
