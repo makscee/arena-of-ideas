@@ -1,5 +1,5 @@
 {
-	"name": "rogue_cultist+",
+    "name": "rogue_cultist+",
     "tier": 3,
     "description": "On @Poison apply @Siphon Life to target and random enemy",
     "clans": [
@@ -8,7 +8,7 @@
     ],
     "statuses": [
         {
-            "name": "OnDealDamage",
+            "name": "OnScatheSLPoison",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -18,28 +18,27 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Poison"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "SiphonLife"
+                        },
+                        "then": {
+                            "type": "Repeat",
+                            "times": 3,
+                            "effect": {
                                 "type": "AttachStatus",
-                                "status": "SiphonLife"
-                            },
-                            {
-                                "type": "ChangeTarget",
-                                "filter": "Enemies",
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "AttachStatus",
-                                    "status": "SiphonLife"
-                                }
+                                "status": "Poison"
                             }
-                        ]
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
                 }
             ]

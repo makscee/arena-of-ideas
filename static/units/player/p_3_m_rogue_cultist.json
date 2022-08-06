@@ -1,10 +1,10 @@
 {
-	"name": "rogue_cultist",
+    "name": "rogue_cultist",
     "tier": 3,
     "health": 7,
     "base_damage": 3,
     "cooldown": 3,
-    "description": "On @Poison  apply @Siphon Life",
+    "description": "@Scathe target with @Siphon Life: apply @Poison",
     "triple": "rogue_cultist+",
     "clans": [
         "Warlocks",
@@ -12,7 +12,7 @@
     ],
     "statuses": [
         {
-            "name": "OnDealDamage",
+            "name": "OnScatheSLPoison",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -22,12 +22,23 @@
                     "triggers": [
                         {
                             "type": "DamageDealt",
-                            "damage_type": "Poison"
+                            "damage_type": "Melee"
                         }
                     ],
                     "effect": {
-                        "type": "AttachStatus",
-                        "status": "SiphonLife"
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "SiphonLife"
+                        },
+                        "then": {
+                            "type": "AttachStatus",
+                            "status": "Poison"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
                 }
             ]
