@@ -27,7 +27,7 @@
                         "type": "AOE",
                         "filter": "Allies",
                         "skip_current_target": false,
-                        "range": 50,
+                        "range": 10,
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Shield"
@@ -37,5 +37,5 @@
             ]
         }
     ],
-    "base": "ranged"
+    "base": "caster"
 }
