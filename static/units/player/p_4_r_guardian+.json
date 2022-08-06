@@ -1,13 +1,13 @@
 {
-	"name": "guardian+",
+    "name": "guardian+",
     "tier": 4,
-    "description": "Every 5 seconds give @Shield to a shieldless ally. Whenever @Shield @Breaks create @Explosion",
+    "description": "Every 4 ticks give @Shield to a shieldless ally and @Heal them for 2",
     "clans": [
         "Protectors"
     ],
     "statuses": [
         {
-            "name": "ShieldAllyEvery5",
+            "name": "ShieldAllyEvery4",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -17,8 +17,8 @@
                     "triggers": [
                         {
                             "type": "Repeating",
-                            "tick_time": 5,
-                            "next_tick": 5
+                            "tick_time": 4,
+                            "next_tick": 4
                         }
                     ],
                     "effect": {
@@ -33,39 +33,20 @@
                             }
                         },
                         "effect": {
-                            "type": "AttachStatus",
-                            "status": "Shield"
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "OnShieldBreakExplode",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "DetectAttach",
-                            "status_name": "Shield",
-                            "status_action": "Remove",
-                            "filter": "All"
-                        },
-                        {
-                            "type": "SelfDetectAttach",
-                            "status_name": "Shield",
-                            "status_action": "Remove"
-                        }
-                    ],
-                    "effect": {
-                        "type": "ChangeContext",
-                        "caster": "From",
-                        "effect": {
-                            "preset": "effects/explosion.json"
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "Shield"
+                                },
+                                {
+                                    "type": "Heal",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 2
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
