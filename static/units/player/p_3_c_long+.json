@@ -1,8 +1,8 @@
 {
 	"name": "long+",
 	"tier": 3,
-    "health": 10,
-    "base_damage": 10,
+    "health": 5,
+    "base_damage": 15,
     "cooldown": 6,
     "description": "All allies start with @Shield. On @Rebirth apply @Shield to all allies",
     "clans": [

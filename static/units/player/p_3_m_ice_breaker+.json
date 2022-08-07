@@ -1,14 +1,14 @@
 {
     "name": "ice_breaker+",
     "tier": 3,
-    "base_damage": 6,
+    "health": 15,
+    "base_damage": 5,
+    "cooldown": 3,
     "description": "Double damage on @Freeze target, also damage enemy behind",
     "clans": [
         "Freezers",
         "Assassins"
     ],
-    "health": 14,
-    "cooldown": 3,
     "action": {
         "effect": {
             "type": "List",

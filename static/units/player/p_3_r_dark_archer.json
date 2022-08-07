@@ -1,8 +1,8 @@
 {
     "name": "dark_archer",
     "tier": 3,
-    "health": 5,
-    "base_damage": 5,
+    "health": 8,
+    "base_damage": 15,
     "cooldown": 6,
     "triple": "dark_archer+",
     "description": "@Bonus Shot applies @Siphon Life",

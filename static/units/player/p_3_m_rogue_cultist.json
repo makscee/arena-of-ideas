@@ -1,7 +1,7 @@
 {
     "name": "rogue_cultist",
     "tier": 3,
-    "health": 7,
+    "health": 6,
     "base_damage": 3,
     "cooldown": 3,
     "description": "@Scathe target with @Siphon Life: apply @Poison",

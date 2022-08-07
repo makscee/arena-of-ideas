@@ -1,8 +1,8 @@
 {
     "name": "silent_cultist+",
     "tier": 3,
-    "health": 8,
-    "base_damage": 15,
+    "health": 6,
+    "base_damage": 8,
     "cooldown": 5,
     "description": "Allies @Siphon Life doesn’t break @Freeze and deals double damage to frozen targets",
     "triple": "silent_cultist+",
