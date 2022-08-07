@@ -1,6 +1,6 @@
 {
 	"name": "dark_guardian",
-    "health": 5,
+    "health": 3,
     "base_damage": 2,
     "cooldown": 3,
     "tier": 2,

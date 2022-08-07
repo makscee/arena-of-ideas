@@ -2,7 +2,7 @@
 	"name": "lotan",
     "tier": 2,
     "health": 3,
-    "base_damage": 4,
+    "base_damage": 6,
     "cooldown": 4,
     "description": "@Dark Steal @Burning target on attack",
     "triple": "lotan+",

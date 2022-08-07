@@ -1,7 +1,7 @@
 {
     "name": "vaccinated+",
     "tier": 2,
-    "health": 8,
+    "health": 6,
     "base_damage": 6,
     "cooldown": 3,
     "description": "After taking damage from @Plague gain @Shield and @Heal for 1",

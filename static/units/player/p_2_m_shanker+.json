@@ -1,9 +1,9 @@
 {
     "name": "shanker+",
     "tier": 2,
-    "health": 10,
+    "health": 12,
     "base_damage": 4,
-    "cooldown": 3,
+    "cooldown": 4,
     "description": "@Scathe have 30% chance to apply @Poison (3)",
     "clans": [
         "Assassins"
