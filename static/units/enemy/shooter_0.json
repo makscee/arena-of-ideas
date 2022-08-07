@@ -1,9 +1,10 @@
 {
-    "name": "shooter",
+    "name": "shooter_0",
     "base_damage": 1,
     "radius": 0.36,
     "range": 5,
     "cooldown": 2,
+    "health": 5,
     "action": {
         "effect": {
             "preset": "effects/ranged_hit.json"
@@ -12,6 +13,7 @@
     "render": {
         "path": "shaders/shooter_enemy.glsl",
         "parameters": {
+            "u_padding": 2.0,
             "u_color": "#fc0107"
         }
     }
