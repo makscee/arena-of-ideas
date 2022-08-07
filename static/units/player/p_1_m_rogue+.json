@@ -8,7 +8,6 @@
     "clans": [
         "Assassins"
     ],
-    "range": 5,
     "statuses": [
         {
             "name": "DoubleDamageOnPoison",

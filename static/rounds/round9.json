@@ -1,7 +1,9 @@
 {
     "statuses": [],
     "enemies": [
-        "blob_0",
+        "blob_1",
+        "shooter_0",
+        "shooter_0",
         "shooter_0"
     ]
 }

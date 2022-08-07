@@ -81,7 +81,7 @@ impl Logic {
         }
     }
     fn init_enemies(&mut self, round: GameRound) {
-        for unit_type in &round.enemies {
+        for unit_type in round.enemies.iter().rev() {
             let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
             let unit = self.model.units.get_mut(&unit).unwrap();
             let statuses = round.statuses.iter().map(|status| {
