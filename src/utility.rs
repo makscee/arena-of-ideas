@@ -86,6 +86,9 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
                 std::fs::write(&list, data).expect(&format!("Cannot save _list: {:?}", list));
                 debug!("Renaming {:?} to {:?}", old_name, new_name);
             }
+            _list.sort();
+            let data = serde_json::to_string_pretty(&_list).expect("Failed to serialize item");
+            std::fs::write(&list, data).expect(&format!("Cannot save _list: {:?}", list));
             debug!("Saving pack: {:?}", base_path);
         }
     }
