@@ -8,6 +8,9 @@ impl Render {
         game_time: f64,
         framebuffer: &mut ugli::Framebuffer,
     ) {
+        if !particle.visible {
+            return;
+        }
         let mut instances_arr: ugli::VertexBuffer<Instance> =
             ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
         instances_arr.resize(shader_program.instances, Instance {});
