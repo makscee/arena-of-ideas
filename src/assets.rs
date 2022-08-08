@@ -70,6 +70,9 @@ pub struct DamageHealConfig {
     #[serde(default = "StatusConfig::default_clan_origin")]
     pub clan_origin: Clan,
     pub color: Option<Color<f32>>,
+    // For rendering: lower order = more important
+    #[serde(default)]
+    pub order: i64,
 }
 
 #[derive(Deref, DerefMut, Clone, geng::Assets, Deserialize)]
@@ -107,7 +110,7 @@ pub struct Assets {
     pub card: Rc<ugli::Texture>,
     pub hearts: Rc<ugli::Texture>,
     pub swords_emblem: Rc<ugli::Texture>,
-    #[asset(path = "rounds/round*.json", range = "1..=5")]
+    #[asset(path = "rounds/round*.json", range = "1..=10")]
     pub rounds: Vec<GameRound>,
 }
 

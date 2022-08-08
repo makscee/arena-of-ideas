@@ -70,7 +70,7 @@ impl ClanEffect {
             status
                 .get(statuses)
                 .clone()
-                .attach(Some(unit.id), None, next_id)
+                .attach(Some(unit.id), Some(unit.id), next_id)
         }));
     }
 }

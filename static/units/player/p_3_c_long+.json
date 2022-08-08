@@ -1,6 +1,9 @@
 {
 	"name": "long+",
 	"tier": 3,
+    "health": 5,
+    "base_damage": 15,
+    "cooldown": 6,
     "description": "All allies start with @Shield. On @Rebirth apply @Shield to all allies",
     "clans": [
         "Dragons",
@@ -24,7 +27,6 @@
                         "type": "AOE",
                         "filter": "Allies",
                         "skip_current_target": false,
-                        "range": 50,
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Shield"
@@ -51,7 +53,6 @@
                         "type": "AOE",
                         "filter": "Allies",
                         "skip_current_target": false,
-                        "range": 50,
                         "effect": {
                             "type": "AttachStatus",
                             "status": "Shield"
@@ -61,5 +62,5 @@
             ]
         }
     ],
-    "base": "ranged+"
+    "base": "caster+"
 }

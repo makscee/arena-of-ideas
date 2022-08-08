@@ -41,6 +41,7 @@ float getAngleAlpha(vec2 uv, vec3 col, float height)
 }
 
 void main() {
+    commonInit();
     float glow = 0.35 + sin(u_time) * .1;
     vec2 uv = v_quad_pos;
     float rotation = -vecAngle(u_face_dir);

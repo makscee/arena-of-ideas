@@ -1,16 +1,16 @@
 {
     "name": "shanker+",
     "tier": 2,
-    "health": 10,
+    "health": 12,
     "base_damage": 4,
-    "cooldown": 3,
-    "description": "@Scathe have 30% chance to apply @Stun to enemies in range 3",
+    "cooldown": 4,
+    "description": "@Scathe have 30% chance to apply @Poison (3)",
     "clans": [
         "Assassins"
     ],
     "statuses": [
         {
-            "name": "StunOnDamage",
+            "name": "Rogue+OnDealDamage",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -35,13 +35,11 @@
                             {
                                 "weight": 30,
                                 "effect": {
-                                    "type": "AOE",
-                                    "filter": "Enemies",
-                                    "skip_current_target": false,
-                                    "range": 3,
+                                    "type": "Repeat",
+                                    "times": 3,
                                     "effect": {
                                         "type": "AttachStatus",
-                                        "status": "Stun"
+                                        "status": "Poison"
                                     }
                                 }
                             }

@@ -1,6 +1,9 @@
 {
     "name": "rogue",
     "tier": 1,
+    "health": 2,
+    "base_damage": 1,
+    "cooldown": 3,
     "triple": "rogue+",
     "clans": [
         "Assassins"

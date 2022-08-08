@@ -5,73 +5,41 @@
         "Vampires",
         "Assassins"
     ],
-    "description": "Triple action on @Poison",
-    "statuses": [
-        {
-            "name": "DoubleDamageOnPoison",
-            "type": "Status",
-            "stacking": {
-                "type": "Refresh"
-            },
-            "listeners": [
+    "health": 15,
+    "base_damage": 5,
+    "cooldown": 3,
+    "description": "Attack @Poisoned target 3 times",
+    "action": {
+        "effect": {
+            "type": "List",
+            "effects": [
                 {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Melee"
-                        }
-                    ],
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "UnitHasStatus",
-                            "who": "Target",
-                            "status": "Poison"
-                        },
-                        "then": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "List",
-                                    "effects": [
-                                        {
-                                            "type": "Damage",
-                                            "value": {
-                                                "type": "FindStat",
-                                                "who": "Caster",
-                                                "stat": "BaseDamage"
-                                            }
-                                        },
-                                        {
-                                            "preset": "effects/vfx_slash.json"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "List",
-                                    "effects": [
-                                        {
-                                            "type": "Damage",
-                                            "value": {
-                                                "type": "FindStat",
-                                                "who": "Caster",
-                                                "stat": "BaseDamage"
-                                            }
-                                        },
-                                        {
-                                            "preset": "effects/vfx_slash.json"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Poison"
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "preset": "effects/melee_hit.json"
+                            },
+                            {
+                                "preset": "effects/melee_hit.json"
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
+                },
+                {
+                    "preset": "effects/melee_hit.json"
                 }
             ]
         }
-    ],
+    },
     "base": "melee+"
 }

@@ -7,6 +7,7 @@ impl Logic {
             if particle.delay > Time::new(0.0) {
                 continue;
             }
+            particle.visible = true;
             particle.time_left -= self.delta_time;
             let parent = particle.parent.and_then(|parent| {
                 self.model

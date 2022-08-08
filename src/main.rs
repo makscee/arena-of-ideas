@@ -66,6 +66,7 @@ impl Game {
             assets.statuses.clone(),
             round,
             RenderModel::new(),
+            1.0,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model);
@@ -104,6 +105,20 @@ impl geng::State for Game {
         if self.timeline_captured || self.logic.paused {
             return;
         }
+
+        let index = match self
+            .history
+            .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
+                r32(geng::prelude::Float::as_f32(entry.time))
+            }) {
+            Ok(index) => index,
+            Err(index) => index,
+        };
+        let entry = self
+            .history
+            .get(index)
+            .unwrap_or(self.history.last().unwrap());
+        let delta_time = delta_time * entry.model.time_scale as f64;
         self.time += delta_time;
         let last_frame = &self.last_frame;
 
@@ -125,7 +140,7 @@ impl geng::State for Game {
             self.previous_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
             self.new_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
         }
-        let mut game_time = 0.0;
+        let mut game_time;
         {
             let mut framebuffer = ugli::Framebuffer::new_color(
                 self.geng.ugli(),
@@ -145,7 +160,8 @@ impl geng::State for Game {
                 .history
                 .get(index)
                 .unwrap_or(self.history.last().unwrap());
-            self.render.draw(entry.time, &entry.model, framebuffer);
+            game_time = entry.time;
+            self.render.draw(game_time, &entry.model, framebuffer);
         }
 
         let blend_shader_program = &self.assets.postfx_render.blend_shader;

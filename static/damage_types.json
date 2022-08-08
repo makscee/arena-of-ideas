@@ -3,10 +3,6 @@
 		"description": "Heal caster for damage dealt",
 		"clan_origin": "Warlocks"
 	},
-	"SiphonLifeExtra": {
-		"description": "Heal caster for damage dealt",
-		"clan_origin": "Warlocks"
-	},
 	"Fire": {
 		"description": "Deal additional fire damage",
 		"clan_origin": "Dragons"
@@ -21,6 +17,11 @@
 	},
 	"IgnoreFreeze": {
 		"description": "Damage that doesn't break @Freeze",
-		"clan_origin": "Freezers"
+		"clan_origin": "Freezers",
+		"order": 10
+	},
+	"Poison": {
+		"description": "Damages every tick for every Poison stack",
+		"clan_origin": "Assassins"
 	}
 }

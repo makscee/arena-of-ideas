@@ -9,15 +9,14 @@
     ],
     "action": {
         "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/ranged_hit.json"
-                },
-                {
-                    "preset": "effects/ranged_hit.json"
-                }
-            ]
+            "type": "AddTargets",
+            "condition": {
+                "type": "Always"
+            },
+            "additional_targets": 1,
+            "effect": {
+                "preset": "effects/ranged_hit.json"
+            }
         }
     },
     "base": "ranged+"

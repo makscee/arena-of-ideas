@@ -1,7 +1,7 @@
 {
     "name": "viral_archer+",
     "tier": 2,
-    "health": 6,
+    "health": 5,
     "base_damage": 8,
     "cooldown": 3,
     "description": "@Scathe apply @Plague",

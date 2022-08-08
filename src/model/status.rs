@@ -183,9 +183,10 @@ pub struct StatusModifier {
     /// Specifies what the modifier effect will actually modify
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
+    #[serde(default)]
     pub priority: i64,
     /// Condition when to apply modifier
-    pub condition: Condition,
+    pub condition: Option<Condition>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

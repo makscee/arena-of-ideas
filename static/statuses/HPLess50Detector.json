@@ -19,14 +19,14 @@
                     "a": {
                         "type": "FindStat",
                         "stat": "Health",
-                        "who": "Caster"
+                        "who": "From"
                     },
                     "b": {
                         "type": "Mul",
                         "a": {
                             "type": "FindStat",
                             "stat": "MaxHealth",
-                            "who": "Caster"
+                            "who": "From"
                         },
                         "b": {
                             "type": "Const",

@@ -8,17 +8,22 @@
         },
         "statuses": [
             {
-                "name": "OnDealDamage",
+                "name": "OnDealDamageSL",
                 "type": "Status",
                 "stacking": {
                     "type": "Refresh"
                 },
+                "order": -10,
                 "listeners": [
                     {
                         "triggers": [
                             {
                                 "type": "DamageDealt",
                                 "damage_type": "Ranged"
+                            },
+                            {
+                                "type": "DamageDealt",
+                                "damage_type": "Melee"
                             }
                         ],
                         "effect": {
@@ -57,8 +62,7 @@
                 "target": {
                     "type": "Damage",
                     "source": [
-                        "SiphonLife",
-                        "SiphonLifeExtra"
+                        "SiphonLife"
                     ],
                     "value": {
                         "type": "Mul",
@@ -92,7 +96,8 @@
                         "triggers": [
                             {
                                 "type": "DamageDealt",
-                                "damage_type": "SiphonLife"
+                                "damage_type": "SiphonLife",
+                                "except": "SiphonLifeExtra"
                             }
                         ],
                         "effect": {
@@ -104,6 +109,7 @@
                             "effect": {
                                 "type": "Damage",
                                 "types": [
+                                    "SiphonLife",
                                     "SiphonLifeExtra"
                                 ],
                                 "value": {

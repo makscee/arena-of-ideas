@@ -8,6 +8,7 @@ impl Logic {
             self.model.transition = true;
         } else if self.effects.is_empty() && self.model.current_tick.visual_timer <= Time::new(0.0)
         {
+            self.model.time_scale = 1.0;
             let last_tick = &self.model.current_tick;
             self.model.current_tick = TickModel::new(last_tick.tick_num + 1);
             self.tick();

@@ -1,7 +1,9 @@
 {
     "name": "patient_zero+",
     "tier": 1,
-    "health": 6,
+    "health": 2,
+    "base_damage": 3,
+    "cooldown": 3,
     "description": "Has @Plague. On @Injured from @Plague gain @Shield",
     "clans": [
         "PlagueSpreaders"

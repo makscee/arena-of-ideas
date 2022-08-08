@@ -1,0 +1,51 @@
+{
+    "name": "lilith",
+    "tier": 5,
+    "description": "Every 5 ticks apply @Dark Steal and @Siphon Life to random enemy",
+    "clans": [
+        "Vampires",
+        "Warlocks",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "Every10Sec",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Repeating",
+                            "tick_time": 5,
+                            "next_tick": 5
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "DarkSteal"
+                                },
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "SiphonLife"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "caster"
+}

@@ -1,9 +1,9 @@
 {
 	"name": "demonic_guardian",
     "tier": 2,
-    "health": 4,
+    "health": 15,
     "base_damage": 2,
-    "cooldown": 1,
+    "cooldown": 3,
     "description": "On @Shield gain: @Dark Steal random enemy",
     "clans": [
         "Demons",

@@ -1,0 +1,65 @@
+{
+    "name": "plague_leader+",
+    "tier": 5,
+    "description": "+1 @base_damage and +1 @block for each unit with @Plague",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        {
+            "name": "DamageForPlague",
+            "type": "Modifier",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "priority": 0,
+            "condition": {
+                "type": "Always"
+            },
+            "target": {
+                "type": "Stat",
+                "stat": "BaseDamage",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "UnitsInRange",
+                        "status": "Plague"
+                    },
+                    "b": {
+                        "type": "FindStat",
+                        "who": "From",
+                        "stat": "BaseDamage"
+                    }
+                }
+            }
+        },
+        {
+            "name": "BlockForPlague",
+            "type": "Modifier",
+            "stacking": {
+                "type": "Refresh"
+            },
+            "priority": 0,
+            "condition": {
+                "type": "Always"
+            },
+            "target": {
+                "type": "Stat",
+                "stat": "Block",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "UnitsInRange",
+                        "status": "Plague"
+                    },
+                    "b": {
+                        "type": "FindStat",
+                        "who": "From",
+                        "stat": "BaseDamage"
+                    }
+                }
+            }
+        }
+    ],
+    "base": "caster+"
+}

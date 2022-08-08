@@ -1,7 +1,7 @@
 {
-    "name": "lilith",
+    "name": "lilith+",
     "tier": 5,
-    "description": "Every 10 seconds apply @Dark Steal and @Siphon Life to all enemies",
+    "description": "Every 5 ticks apply @Dark Steal and @Siphon Life to all enemies",
     "clans": [
         "Vampires",
         "Warlocks",
@@ -19,15 +19,14 @@
                     "triggers": [
                         {
                             "type": "Repeating",
-                            "tick_time": 10,
-                            "next_tick": 10
+                            "tick_time": 5,
+                            "next_tick": 5
                         }
                     ],
                     "effect": {
                         "type": "AOE",
                         "filter": "Enemies",
                         "skip_current_target": false,
-                        "range": 100500,
                         "effect": {
                             "type": "List",
                             "effects": [
@@ -46,5 +45,5 @@
             ]
         }
     ],
-    "base": "melee"
+    "base": "caster+"
 }

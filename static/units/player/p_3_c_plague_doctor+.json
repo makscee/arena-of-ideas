@@ -1,7 +1,10 @@
 {
     "name": "plague_doctor+",
     "tier": 3,
-    "description": "Every 5 ticks if an ally has @Plague: remove it and launch projectile for @base_damage x3 to random enemy",
+    "health": 10,
+    "base_damage": 20,
+    "cooldown": 5,
+    "description": "Every 5 ticks remove @Plague and @Heal 3 all allies",
     "clans": [
         "PlagueSpreaders",
         "Protectors"
@@ -18,18 +21,14 @@
                     "triggers": [
                         {
                             "type": "Repeating",
-                            "tick_time": 2,
-                            "next_tick": 2
+                            "tick_time": 5,
+                            "next_tick": 5
                         }
                     ],
                     "effect": {
-                        "type": "ChangeTarget",
+                        "type": "AOE",
                         "filter": "Allies",
-                        "condition": {
-                            "type": "UnitHasStatus",
-                            "who": "Target",
-                            "status": "Plague"
-                        },
+                        "skip_current_target": false,
                         "effect": {
                             "type": "List",
                             "effects": [
@@ -38,40 +37,10 @@
                                     "status": "Plague"
                                 },
                                 {
-                                    "type": "ChangeTarget",
-                                    "filter": "Enemies",
-                                    "condition": {
-                                        "type": "Always"
-                                    },
-                                    "effect": {
-                                        "type": "List",
-                                        "effects": [
-                                            {
-                                                "type": "Damage",
-                                                "types": [
-                                                    "Ranged",
-                                                    "Crit"
-                                                ],
-                                                "value": {
-                                                    "type": "Mul",
-                                                    "a": {
-                                                        "type": "FindStat",
-                                                        "who": "Caster",
-                                                        "stat": "BaseDamage"
-                                                    },
-                                                    "b": {
-                                                        "type": "Const",
-                                                        "value": 3
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "preset": "effects/crit_hit_vfx.json"
-                                            },
-                                            {
-                                                "preset": "effects/vfx_laser.json"
-                                            }
-                                        ]
+                                    "type": "Heal",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 3
                                     }
                                 }
                             ]

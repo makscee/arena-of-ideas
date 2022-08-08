@@ -5,7 +5,10 @@ mod particle;
 mod text;
 mod unit;
 
-use geng::Draw2d;
+use geng::{
+    prelude::{bincode::config, itertools::Itertools},
+    Draw2d,
+};
 use text::*;
 pub use unit::*;
 
@@ -256,36 +259,36 @@ impl Render {
             let color = match &text.text_type {
                 TextType::Damage(damage_types) => damage_types
                     .iter()
-                    .find_map(|damage_type| {
-                        self.assets.damage_types.get(damage_type).map(|config| {
-                            config.color.unwrap_or_else(|| {
-                                *self
-                                    .assets
-                                    .options
-                                    .clan_colors
-                                    .get(&config.clan_origin)
-                                    .unwrap_or_else(|| {
-                                        panic!("Failed to find clan ({}) color", config.clan_origin)
-                                    })
-                            })
-                        })
+                    .filter_map(|damage_type| self.assets.damage_types.get(damage_type))
+                    .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
+                    .find_map(|config| {
+                        Some(config.color.unwrap_or_else(|| {
+                            *self
+                                .assets
+                                .options
+                                .clan_colors
+                                .get(&config.clan_origin)
+                                .unwrap_or_else(|| {
+                                    panic!("Failed to find clan ({}) color", config.clan_origin)
+                                })
+                        }))
                     })
                     .unwrap_or(text.color),
                 TextType::Heal(heal_types) => heal_types
                     .iter()
-                    .find_map(|damage_type| {
-                        self.assets.heal_types.get(damage_type).map(|config| {
-                            config.color.unwrap_or_else(|| {
-                                *self
-                                    .assets
-                                    .options
-                                    .clan_colors
-                                    .get(&config.clan_origin)
-                                    .unwrap_or_else(|| {
-                                        panic!("Failed to find clan ({}) color", config.clan_origin)
-                                    })
-                            })
-                        })
+                    .filter_map(|heal_type| self.assets.heal_types.get(heal_type))
+                    .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
+                    .find_map(|config| {
+                        Some(config.color.unwrap_or_else(|| {
+                            *self
+                                .assets
+                                .options
+                                .clan_colors
+                                .get(&config.clan_origin)
+                                .unwrap_or_else(|| {
+                                    panic!("Failed to find clan ({}) color", config.clan_origin)
+                                })
+                        }))
                     })
                     .unwrap_or(text.color),
                 _ => text.color,
@@ -442,6 +445,7 @@ impl Render {
                                     .get(damage_type)
                                     .map(|config| (damage_type, config))
                             })
+                            .sorted_by(|a, b| a.1.order.partial_cmp(&b.1.order).unwrap())
                             .collect(),
                         text.position,
                     )),
@@ -454,6 +458,7 @@ impl Render {
                                     .get(heal_type)
                                     .map(|config| (heal_type, config))
                             })
+                            .sorted_by(|a, b| a.1.order.partial_cmp(&b.1.order).unwrap())
                             .collect(),
                         text.position,
                     )),
