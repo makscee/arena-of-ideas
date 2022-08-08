@@ -17,7 +17,8 @@
                 "type": "Always"
             },
             "target": {
-                "type": "Damage",
+                "type": "Stat",
+                "stat": "BaseDamage",
                 "value": {
                     "type": "Sum",
                     "a": {
