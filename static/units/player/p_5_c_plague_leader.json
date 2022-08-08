@@ -22,21 +22,12 @@
                     "type": "Sum",
                     "a": {
                         "type": "UnitsInRange",
-                        "faction": "Enemy",
                         "status": "Plague"
                     },
                     "b": {
-                        "type": "Sum",
-                        "a": {
-                            "type": "UnitsInRange",
-                            "faction": "Player",
-                            "status": "Plague"
-                        },
-                        "b": {
-                            "type": "FindStat",
-                            "who": "Caster",
-                            "stat": "BaseDamage"
-                        }
+                        "type": "FindStat",
+                        "who": "From",
+                        "stat": "BaseDamage"
                     }
                 }
             }
