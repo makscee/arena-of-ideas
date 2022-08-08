@@ -18,10 +18,6 @@ impl Logic {
     }
 
     fn is_status_expired(status: &AttachedStatus) -> bool {
-        !status.is_aura && Self::should_remove_status(status)
-    }
-
-    fn should_remove_status(status: &AttachedStatus) -> bool {
         status.time.map(|time| time == 0).unwrap_or(false)
             || status
                 .vars
@@ -147,6 +143,15 @@ impl Logic {
                     });
                 }
             }
+            // Update aura info
+            if let Some(aura_id) = &status.is_aura {
+                if unit.active_auras.contains(aura_id) {
+                    // Since auras cannot have statuses with duration,
+                    // it is safe to assume that the status will not need
+                    // to be updated in the future
+                    // TODO
+                }
+            }
             if Self::is_status_expired(status) {
                 expired.push((status.caster, status.id, status.status.name.clone()));
                 for (effect, vars, status_id, status_color) in
@@ -164,41 +169,11 @@ impl Logic {
                         },
                     })
                 }
-            } else if let StatusEffect::Aura(aura) = &status.status.effect {
-                // Apply auras
-                for other in &mut self.model.units {
-                    if let Some(radius) = aura.radius {
-                        // TODO: Check distance by util fn
-                        if unit.position.distance(&other.position) > radius {
-                            continue;
-                        }
-                    }
-                    if !aura.filter.check(other) {
-                        continue;
-                    }
-                    let statuses: Vec<AttachedStatus> = aura
-                        .statuses
-                        .iter()
-                        .map(|status| {
-                            status
-                                .get(&self.model.statuses)
-                                .clone()
-                                .attach_aura(Some(other.id), unit.id)
-                        })
-                        .collect();
-                    other.flags.extend(
-                        statuses
-                            .iter()
-                            .flat_map(|status| status.status.flags.iter())
-                            .copied(),
-                    );
-                    other.all_statuses.extend(statuses);
-                }
             }
         }
 
         unit.all_statuses
-            .retain(|status| !Self::should_remove_status(status));
+            .retain(|status| !Self::is_status_expired(status));
 
         unit.flags = unit
             .all_statuses
@@ -208,14 +183,57 @@ impl Logic {
             .collect();
 
         // Detect expired statuses
-        for (caster_id, detect_id, detect_status) in &expired {
+        for (caster_id, status_id, detect_status) in expired {
+            self.trigger_status_drop(UnitRef::Ref(unit), caster_id, status_id, &detect_status)
+        }
+    }
+
+    pub(super) fn trigger_status_drop(
+        &mut self,
+        unit: UnitRef<'_>,
+        caster_id: Option<Id>,
+        status_id: Id,
+        status_name: &StatusName,
+    ) {
+        let unit = match unit {
+            UnitRef::Id(id) => self.model.units.get(&id).expect("Failed to find unit by id"),
+            UnitRef::Ref(unit) => unit,
+        };
+        for (effect, vars, status_id, status_color) in unit.all_statuses.iter().flat_map(|status| {
+            status.trigger(|trigger| match trigger {
+                StatusTrigger::SelfDetectAttach {
+                    status_name: name,
+                    status_action: StatusAction::Remove,
+                } => status_name == name,
+                _ => false,
+            })
+        }) {
+            self.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster: caster_id,
+                    from: Some(unit.id),
+                    target: Some(unit.id),
+                    vars,
+                    status_id: Some(status_id),
+                    color: Some(status_color),
+                },
+            })
+        }
+
+        for other in &self.model.units {
             for (effect, vars, status_id, status_color) in
-                unit.all_statuses.iter().flat_map(|status| {
+                other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::SelfDetectAttach {
-                            status_name,
+                        StatusTrigger::DetectAttach {
+                            status_name: name,
+                            filter,
                             status_action: StatusAction::Remove,
-                        } => detect_status == status_name,
+                        } => {
+                            other.id != unit.id
+                                && status_name == name
+                                && filter.matches(unit.faction, other.faction)
+                        }
                         _ => false,
                     })
                 })
@@ -223,45 +241,14 @@ impl Logic {
                 self.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
-                        caster: *caster_id,
-                        from: Some(unit.id),
+                        caster: caster_id,
+                        from: Some(other.id),
                         target: Some(unit.id),
                         vars,
-                        status_id: Some(*detect_id),
+                        status_id: Some(status_id),
                         color: Some(status_color),
                     },
                 })
-            }
-
-            for other in &self.model.units {
-                for (effect, vars, status_id, status_color) in
-                    other.all_statuses.iter().flat_map(|status| {
-                        status.trigger(|trigger| match trigger {
-                            StatusTrigger::DetectAttach {
-                                status_name,
-                                filter,
-                                status_action: StatusAction::Remove,
-                            } => {
-                                other.id != unit.id
-                                    && detect_status == status_name
-                                    && filter.matches(unit.faction, other.faction)
-                            }
-                            _ => false,
-                        })
-                    })
-                {
-                    self.effects.push_front(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: *caster_id,
-                            from: Some(other.id),
-                            target: Some(unit.id),
-                            vars,
-                            status_id: Some(*detect_id),
-                            color: Some(status_color),
-                        },
-                    })
-                }
             }
         }
     }

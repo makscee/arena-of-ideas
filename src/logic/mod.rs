@@ -4,6 +4,7 @@ use super::*;
 
 mod abilities;
 mod actions;
+mod auras;
 mod deaths;
 mod effects;
 mod events;
@@ -18,6 +19,11 @@ mod util;
 pub use effects::*;
 pub use events::*;
 pub use util::*;
+
+enum UnitRef<'a> {
+    Id(Id),
+    Ref(&'a Unit),
+}
 
 pub struct Logic {
     pub model: Model,
@@ -51,6 +57,7 @@ impl Logic {
         self.process_abilities();
         self.process_targeting();
         self.process_actions();
+        self.process_auras();
         self.process_render_positions();
         self.process_effects();
         self.process_deaths();

@@ -27,6 +27,7 @@ pub struct Unit {
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
     pub all_statuses: Vec<AttachedStatus>,
+    pub active_auras: HashSet<Id>,
     pub modifier_targets: Vec<(EffectContext, ModifierTarget)>,
     /// Temporary flags that live for one frame
     pub flags: Vec<UnitStatFlag>,
@@ -101,6 +102,7 @@ impl Unit {
                         .attach(Some(id), Some(id), next_id)
                 })
                 .collect(),
+            active_auras: default(),
             modifier_targets: vec![],
             flags: vec![],
             range: template.range,

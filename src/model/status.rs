@@ -232,8 +232,9 @@ pub struct Status {
 pub struct AttachedStatus {
     /// The actual status that hold all the neccessary logic info
     pub status: Status,
-    /// Whether this status originated from an aura
-    pub is_aura: bool,
+    /// Whether this status originated from an aura.
+    /// If it did, the aura's Id is given
+    pub is_aura: Option<Id>,
     /// Whether trigger Init was fired
     pub is_inited: bool,
     /// Specifies how many ticks are left until the status is dropped.
@@ -277,7 +278,7 @@ impl Status {
         AttachedStatus {
             vars: self.vars.clone(),
             time: self.duration.map(Into::into),
-            is_aura: false,
+            is_aura: None,
             is_inited: false,
             status: self,
             owner,
@@ -288,11 +289,11 @@ impl Status {
 
     /// Transforms config into an attached status with `is_aura` set to true
     /// and `time` set to 0
-    pub fn attach_aura(self, owner: Option<Id>, caster: Id) -> AttachedStatus {
+    pub fn attach_aura(self, aura_id: Id, owner: Option<Id>, caster: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
             time: Some(0),
-            is_aura: true,
+            is_aura: Some(aura_id),
             is_inited: false,
             status: self,
             caster: Some(caster),
