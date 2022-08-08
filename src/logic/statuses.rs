@@ -83,9 +83,7 @@ impl Logic {
         let mut expired: Vec<(Option<Id>, Id, String)> = Vec::new();
         unit.all_statuses
             .sort_by(|a, b| a.status.order.cmp(&b.status.order));
-        let statuses_len = unit.all_statuses.len();
-        for i in 0..statuses_len {
-            let status = unit.all_statuses.get_mut(i).unwrap();
+        for status in &mut unit.all_statuses {
             if !status.is_inited {
                 for (effect, vars, status_id, status_color) in
                     status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
@@ -151,32 +149,6 @@ impl Logic {
                     });
                 }
             }
-            // Update aura info
-            if let Some(aura_id) = status.is_aura {
-                let caster = status.caster;
-                let keep = (|| {
-                    let caster = self.model.units.get(&caster?)?;
-                    let aura = caster
-                        .all_statuses
-                        .iter()
-                        .find(|status| status.id == aura_id)?;
-                    let aura = match &aura.status.effect {
-                        StatusEffect::Aura(aura) => aura,
-                        _ => return None,
-                    };
-                    aura.is_applicable(caster, unit).then_some(())
-                })()
-                .is_some();
-                let status = unit.all_statuses.get_mut(i).unwrap();
-                if keep {
-                    status.time = None;
-                } else {
-                    // The aura became inactive -> drop the status
-                    status.time = Some(0);
-                    unit.active_auras.remove(&aura_id);
-                }
-            }
-            let status = unit.all_statuses.get_mut(i).unwrap();
             if Self::is_status_expired(status) {
                 expired.push((status.caster, status.id, status.status.name.clone()));
                 for (effect, vars, status_id, status_color) in

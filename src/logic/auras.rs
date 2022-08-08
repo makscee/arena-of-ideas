@@ -2,10 +2,11 @@ use super::*;
 
 impl Logic {
     pub fn process_auras(&mut self) {
-        self.process_units(Self::process_unit_auras);
+        self.process_units(Self::process_unit_own_auras);
+        self.process_units(Self::process_unit_received_auras);
     }
-    fn process_unit_auras(&mut self, unit: &mut Unit) {
-        let mut dropped_statuses = Vec::new();
+
+    fn process_unit_own_auras(&mut self, unit: &mut Unit) {
         let mut new_statuses = Vec::new();
         for aura_status in &unit.all_statuses {
             if let StatusEffect::Aura(aura) = &aura_status.status.effect {
@@ -49,8 +50,42 @@ impl Logic {
         for (target, caster, status, name) in new_statuses {
             self.trigger_status_attach(target, caster, status, &name);
         }
-        for (unit_id, caster, status, name) in dropped_statuses {
-            self.trigger_status_drop(UnitRef::Id(unit_id), caster, status, &name);
+    }
+
+    fn process_unit_received_auras(&mut self, unit: &mut Unit) {
+        let mut dropped_statuses = Vec::new();
+        for i in 0..unit.all_statuses.len() {
+            let status = unit.all_statuses.get(i).unwrap();
+            if let Some(aura_id) = status.is_aura {
+                let caster = status.caster;
+                let keep = (|| {
+                    let caster = self.model.units.get(&caster?)?;
+                    let aura = caster
+                        .all_statuses
+                        .iter()
+                        .find(|status| status.id == aura_id)?;
+                    let aura = match &aura.status.effect {
+                        StatusEffect::Aura(aura) => aura,
+                        _ => return None,
+                    };
+                    aura.is_applicable(caster, unit).then_some(())
+                })()
+                .is_some();
+                let status = unit.all_statuses.get_mut(i).unwrap();
+                if keep {
+                    status.time = None;
+                } else {
+                    // The aura became inactive -> drop the status
+                    status.time = Some(0);
+                    unit.active_auras.remove(&aura_id);
+                    dropped_statuses.push((status.caster, status.id, status.status.name.clone()));
+                }
+            }
+        }
+        unit.all_statuses
+            .retain(|status| status.is_aura.is_none() || status.time.is_none());
+        for (caster, status, name) in dropped_statuses {
+            self.trigger_status_drop(UnitRef::Ref(unit), caster, status, &name);
         }
     }
 }

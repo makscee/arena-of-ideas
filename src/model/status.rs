@@ -289,11 +289,11 @@ impl Status {
     }
 
     /// Transforms config into an attached status with `is_aura` set to `true`
-    /// and `time` set to `0`, which means that it needs to be prolonged manually
+    /// and `time` set to `None`, which means that it needs to be removed manually
     pub fn attach_aura(self, aura_id: Id, owner: Option<Id>, caster: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
-            time: Some(0),
+            time: None,
             is_aura: Some(aura_id),
             is_inited: false,
             status: self,
