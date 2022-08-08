@@ -17,7 +17,7 @@ pub struct Simulate {
     config_path: PathBuf,
 }
 
-#[derive(Deserialize, geng::Assets)]
+#[derive(Deserialize, Clone, geng::Assets)]
 #[asset(json)]
 #[serde(deny_unknown_fields)]
 struct SimulationConfig {
@@ -41,7 +41,6 @@ enum SimulationType {
     Custom {
         player: Vec<RegexUnit>,
         opponent: SimulationUnits,
-        clans: Vec<HashMap<RegexClan, usize>>,
     },
     Balance {
         unit: RegexUnit,
@@ -64,8 +63,20 @@ enum SimulationGroup {
     SameTier,
     UpperTier,
     LowerTier,
-    Custom,
-    Total,
+    Round,
+    Enemies,
+}
+
+impl fmt::Display for SimulationGroup {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            SimulationGroup::SameTier => write!(f, "SameTier"),
+            SimulationGroup::UpperTier => write!(f, "UpperTier"),
+            SimulationGroup::LowerTier => write!(f, "LowerTier"),
+            SimulationGroup::Round => write!(f, "Round"),
+            SimulationGroup::Enemies => write!(f, "Enemies"),
+        }
+    }
 }
 
 impl SimulationConfig {
@@ -77,11 +88,9 @@ impl SimulationConfig {
     ) -> Vec<BattleConfig> {
         match self.simulation.clone() {
             SimulationType::Balance { unit } => self.balance_battles(unit, all_units),
-            SimulationType::Custom {
-                player,
-                opponent,
-                clans,
-            } => self.custom_battles(player, opponent, clans, rounds, all_units, all_clans),
+            SimulationType::Custom { player, opponent } => {
+                self.custom_battles(player, opponent, rounds, all_units, all_clans)
+            }
         }
     }
 
@@ -105,6 +114,7 @@ impl SimulationConfig {
         });
         for enemy in same_tier {
             let round = GameRound {
+                name: "".to_string(),
                 statuses: vec![],
                 enemies: vec![enemy.name.clone()],
             };
@@ -146,6 +156,7 @@ impl SimulationConfig {
         });
         for enemy in upper_tier {
             let round = GameRound {
+                name: "".to_string(),
                 statuses: vec![],
                 enemies: vec![enemy.name.clone()],
             };
@@ -201,6 +212,7 @@ impl SimulationConfig {
                     unit.clans.clone().into_iter().for_each(|clan| {
                         enemy.clans.clone().into_iter().for_each(|enemy_clan| {
                             let round = GameRound {
+                                name: "".to_string(),
                                 statuses: vec![],
                                 enemies: vec![enemy.name.clone(), second_enemy.name.clone()],
                             };
@@ -214,6 +226,7 @@ impl SimulationConfig {
                                 group: SimulationGroup::LowerTier,
                             });
                             let round = GameRound {
+                                name: "".to_string(),
                                 statuses: vec![],
                                 enemies: vec![second_enemy.name.clone(), enemy.name.clone()],
                             };
@@ -238,66 +251,60 @@ impl SimulationConfig {
         self,
         player: Vec<RegexUnit>,
         opponent: SimulationUnits,
-        clans: Vec<HashMap<RegexClan, usize>>,
         rounds: &[GameRound],
         all_units: &Vec<UnitTemplate>,
         all_clans: &Vec<Clan>,
     ) -> Vec<BattleConfig> {
-        let battles: Vec<BattleConfig> = vec![];
         let mut player_variants = vec![];
         player_variants = self.match_units(&all_units, &player, 0, player_variants);
 
-        let battle_rounds = match &opponent {
+        let battle_rounds: (SimulationGroup, Vec<GameRound>) = match &opponent {
             SimulationUnits::Units { units } => {
                 let mut unit_vars = vec![];
                 unit_vars = self.match_units(&all_units, &units, 0, unit_vars);
                 let mut game_rounds = vec![];
                 for variant in unit_vars {
                     game_rounds.push(GameRound {
+                        name: "".to_string(),
                         statuses: vec![],
-                        enemies: variant.to_vec(),
+                        enemies: variant
+                            .into_iter()
+                            .map(|template| template.name.clone())
+                            .collect(),
                     });
                 }
-                game_rounds
+                (SimulationGroup::Enemies, game_rounds)
             }
-            SimulationUnits::Rounds { from, to } => {
-                rounds.iter().take(*to).skip(from - 1).cloned().collect()
-            }
+            SimulationUnits::Rounds { from, to } => (
+                SimulationGroup::Round,
+                rounds.iter().take(*to).skip(from - 1).cloned().collect(),
+            ),
         };
 
         player_variants
             .into_iter()
-            .flat_map(move |player| {
+            .flat_map(|player| {
                 let mut rounds = vec![];
-
-                if clans.is_empty() {
-                    for round in &battle_rounds {
-                        rounds.push(BattleConfig {
-                            unit: None,
-                            player: player.clone(),
-                            round: round.clone(),
-                            repeats: self.repeats,
-                            clans: hashmap! {},
-                            enemy_clans: hashmap! {},
-                            group: SimulationGroup::Custom,
-                        });
-                    }
-                } else {
-                    for clans in &clans {
-                        for clan in self.to_clans(clans.clone(), &all_clans) {
-                            for round in &battle_rounds {
+                for round in &battle_rounds.1 {
+                    player.clone().into_iter().for_each(|unit| {
+                        (1..=6).for_each(|i| {
+                            unit.clans.clone().into_iter().for_each(|clan| {
                                 rounds.push(BattleConfig {
                                     unit: None,
-                                    player: player.clone(),
+                                    player: player
+                                        .clone()
+                                        .into_iter()
+                                        .map(|template| template.name)
+                                        .collect(),
                                     round: round.clone(),
                                     repeats: self.repeats,
-                                    clans: clan.clone(),
+                                    clans: hashmap! {clan => i},
                                     enemy_clans: hashmap! {},
-                                    group: SimulationGroup::Custom,
-                                });
-                            }
-                        }
-                    }
+                                    group: battle_rounds.0.clone(),
+                                })
+                            });
+                        });
+                    });
                 }
 
                 rounds
@@ -310,8 +317,8 @@ impl SimulationConfig {
         all_units: &Vec<UnitTemplate>,
         units: &Vec<RegexUnit>,
         index: usize,
-        result: Vec<Vec<UnitType>>,
-    ) -> Vec<Vec<UnitType>> {
+        result: Vec<Vec<UnitTemplate>>,
+    ) -> Vec<Vec<UnitTemplate>> {
         let mut cloned = result.clone();
         if index == units.len() {
             return cloned;
@@ -321,7 +328,7 @@ impl SimulationConfig {
             cloned.push(vec![]);
         }
 
-        let regex_units = self.to_units(units[index].clone(), all_units);
+        let regex_units = self.to_templates(units[index].clone(), all_units);
         let mut regex_peek = regex_units.into_iter().peekable();
         while let Some(unit) = regex_peek.next() {
             let mut last_index = cloned.len() - 1;
@@ -384,7 +391,7 @@ impl SimulationConfig {
 struct BattleResult {
     unit: Option<UnitType>,
     team: Vec<UnitType>,
-    enemy: Vec<UnitType>,
+    round: GameRound,
     clans: HashMap<Clan, usize>,
     enemy_clans: HashMap<Clan, usize>,
     group: SimulationGroup,
@@ -392,15 +399,18 @@ struct BattleResult {
     units_alive: Vec<UnitType>,
 }
 
+type Group = String;
+type TeamView = String;
+
 #[derive(Debug, Serialize, Clone)]
-struct BalanceView {
-    unit: UnitType,
+struct SimulationView {
+    player: TeamView,
     koef: f64,
-    groups: BTreeMap<SimulationGroup, TierKoefView>,
+    groups: BTreeMap<Group, ClansGroupView>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-struct TierKoefView {
+struct ClansGroupView {
     koef: f64,
     clans: BTreeMap<String, f64>,
 }
@@ -434,7 +444,9 @@ impl Simulate {
         for (clan, effect) in &assets.clans.map {
             all_clans.push(clan.clone());
         }
-        let battles = simulation_config.battles(&assets.rounds, &all_units, &all_clans);
+        let battles = simulation_config
+            .clone()
+            .battles(&assets.rounds, &all_units, &all_clans);
         let battle_results: Vec<BattleResult> = battles
             .into_iter()
             .flat_map(|battle| {
@@ -459,7 +471,7 @@ impl Simulate {
                         BattleResult {
                             unit: battle.unit.clone(),
                             team: battle.player.clone(),
-                            enemy: battle.round.enemies.clone(),
+                            round: battle.round.clone(),
                             clans: battle.clans.clone(),
                             enemy_clans: battle.enemy_clans.clone(),
                             group: battle.group.clone(),
@@ -480,7 +492,7 @@ impl Simulate {
         let total_battles = battle_results.len();
         let result_path = PathBuf::new().join("simulation_result");
         let date_path = result_path.join(format!("{:?}", chrono::offset::Utc::now()));
-        let battles_path = date_path.join("battles");
+        //let battles_path = date_path.join("battles");
 
         // Create directories
         match std::fs::create_dir_all(&date_path) {
@@ -490,61 +502,114 @@ impl Simulate {
                 _ => panic!("Failed to create a simulation_result directory: {error}"),
             },
         }
-        match std::fs::create_dir_all(&battles_path) {
-            Ok(()) => {}
-            Err(error) => match error.kind() {
-                std::io::ErrorKind::AlreadyExists => {}
-                _ => panic!("Failed to create a simulation_result directory: {error}"),
-            },
-        }
-        let mut balance: Vec<BalanceView> = vec![];
-        let mut counters: HashMap<String, HashMap<SimulationGroup, HashMap<String, AvgCounter>>> =
-            hashmap! {};
 
-        battle_results.clone().into_iter().for_each(|battle| {
-            let units = counters.entry(battle.unit.unwrap()).or_insert(hashmap! {});
-            let group = units.entry(battle.group).or_insert(hashmap! {});
-            let clans = group
-                .entry(format!("{:?} VS {:?}", battle.clans, battle.enemy_clans))
-                .or_insert(AvgCounter::new());
-            if battle.win {
-                clans.sum += 1.0;
-            };
-            clans.count += 1;
-        });
+        let mut result: Vec<SimulationView> = match simulation_config.simulation {
+            SimulationType::Balance { unit } => result_balance(battle_results),
+            SimulationType::Custom { player, opponent } => result_custom(battle_results),
+        };
 
-        for (unit, counters) in counters {
-            let groups: BTreeMap<SimulationGroup, TierKoefView> = counters
-                .iter()
-                .map(|(key, value)| {
-                    let clans: BTreeMap<String, f64> = value
-                        .iter()
-                        .map(|(key, value)| (key.clone(), value.avg()))
-                        .collect();
-                    (
-                        key.clone(),
-                        TierKoefView {
-                            koef: clans.values().sum::<f64>() / value.values().len() as f64,
-                            clans,
-                        },
-                    )
-                })
-                .collect();
-            let koef =
-                groups.values().map(|value| value.koef).sum::<f64>() / groups.values().len() as f64;
-            balance.push(BalanceView { unit, koef, groups });
-        }
-
-        balance.sort_by(|a, b| b.koef.partial_cmp(&a.koef).unwrap());
+        result.sort_by(|a, b| b.koef.partial_cmp(&a.koef).unwrap());
 
         // Write results
-        write_to(date_path.join("balance.json"), &balance).expect("Failed to write results");
-        for (i, result) in battle_results.into_iter().enumerate() {
-            let path = battles_path.join(format!("battle_{}.json", i + 1));
-            write_to(path, &result).expect("Failed to write results");
-        }
+        write_to(date_path.join("result.json"), &result).expect("Failed to write results");
+
         info!("Results saved: {:?}", start.elapsed());
     }
+}
+
+fn result_custom(battle_results: Vec<BattleResult>) -> Vec<SimulationView> {
+    let mut balance: Vec<SimulationView> = vec![];
+    let mut counters: HashMap<TeamView, HashMap<Group, HashMap<String, AvgCounter>>> = hashmap! {};
+    let mut i = 0;
+    battle_results.into_iter().for_each(|battle| {
+        let group = if battle.group == SimulationGroup::Round {
+            format!("{}: {:?}", battle.round.name, battle.round.enemies)
+        } else {
+            format!("{:?}", battle.round.enemies)
+        };
+        let units = counters
+            .entry(format!("{:?}", battle.team))
+            .or_insert(hashmap! {});
+        let group = units.entry(group).or_insert(hashmap! {});
+        let clans = group
+            .entry(format!("{:?}", battle.clans))
+            .or_insert(AvgCounter::new());
+        if battle.win {
+            clans.sum += 1.0;
+        };
+        clans.count += 1;
+    });
+
+    for (team, counters) in counters {
+        let groups: BTreeMap<Group, ClansGroupView> = counters
+            .iter()
+            .map(|(key, value)| {
+                let clans: BTreeMap<String, f64> = value
+                    .iter()
+                    .map(|(key, value)| (key.clone(), value.avg()))
+                    .collect();
+                (
+                    key.to_string(),
+                    ClansGroupView {
+                        koef: clans.values().sum::<f64>() / value.values().len() as f64,
+                        clans,
+                    },
+                )
+            })
+            .collect();
+        let koef =
+            groups.values().map(|value| value.koef).sum::<f64>() / groups.values().len() as f64;
+        balance.push(SimulationView {
+            player: team,
+            koef,
+            groups,
+        });
+    }
+    balance
+}
+
+fn result_balance(battle_results: Vec<BattleResult>) -> Vec<SimulationView> {
+    let mut balance: Vec<SimulationView> = vec![];
+    let mut counters: HashMap<TeamView, HashMap<Group, HashMap<String, AvgCounter>>> = hashmap! {};
+
+    battle_results.into_iter().for_each(|battle| {
+        let units = counters.entry(battle.unit.unwrap()).or_insert(hashmap! {});
+        let group = units.entry(battle.group.to_string()).or_insert(hashmap! {});
+        let clans = group
+            .entry(format!("{:?} VS {:?}", battle.clans, battle.enemy_clans))
+            .or_insert(AvgCounter::new());
+        if battle.win {
+            clans.sum += 1.0;
+        };
+        clans.count += 1;
+    });
+
+    for (unit, counters) in counters {
+        let groups: BTreeMap<Group, ClansGroupView> = counters
+            .iter()
+            .map(|(key, value)| {
+                let clans: BTreeMap<String, f64> = value
+                    .iter()
+                    .map(|(key, value)| (key.clone(), value.avg()))
+                    .collect();
+                (
+                    key.clone(),
+                    ClansGroupView {
+                        koef: clans.values().sum::<f64>() / value.values().len() as f64,
+                        clans,
+                    },
+                )
+            })
+            .collect();
+        let koef =
+            groups.values().map(|value| value.koef).sum::<f64>() / groups.values().len() as f64;
+        balance.push(SimulationView {
+            player: unit,
+            koef,
+            groups,
+        });
+    }
+    balance
 }
 
 fn write_to<T: Serialize>(path: impl AsRef<std::path::Path>, item: &T) -> std::io::Result<()> {

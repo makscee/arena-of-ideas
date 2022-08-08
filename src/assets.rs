@@ -231,6 +231,8 @@ pub type Key = String;
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
     #[serde(default)]
+    pub name: String,
+    #[serde(default)]
     pub statuses: Vec<StatusRef>,
     #[serde(default)]
     pub enemies: Vec<UnitType>,

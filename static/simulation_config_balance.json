@@ -1,7 +1,7 @@
 {
     "simulation": {
         "type": "Balance",
-        "unit": ".*1.*[^+]$"
+        "unit": ".*3.*[^+]$"
     },
     "repeats": 5
 }
