@@ -287,8 +287,8 @@ impl Status {
         }
     }
 
-    /// Transforms config into an attached status with `is_aura` set to true
-    /// and `time` set to 0
+    /// Transforms config into an attached status with `is_aura` set to `true`
+    /// and `time` set to `0`, which means that it needs to be prolonged manually
     pub fn attach_aura(self, aura_id: Id, owner: Option<Id>, caster: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
@@ -330,6 +330,18 @@ impl AttachedStatus {
                     self.status.color,
                 )
             })
+    }
+}
+
+impl Aura {
+    /// Whether aura is applicable to the target
+    pub fn is_applicable(&self, unit: &Unit, target: &Unit) -> bool {
+        if let Some(radius) = self.radius {
+            if unit.position.distance(&target.position) > radius {
+                return false;
+            }
+        }
+        self.filter.check(target)
     }
 }
 
