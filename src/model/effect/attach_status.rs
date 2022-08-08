@@ -58,63 +58,78 @@ impl EffectImpl for AttachStatusEffect {
             status.vars.extend(effect.vars.into_iter());
             let attached_status_id = unit_attach_status(status, &mut target.all_statuses);
 
-            let target = target.id;
-            let target = logic.model.units.get(&target).unwrap();
+            let target_id = target.id;
+            logic.trigger_status_attach(target_id, context.caster, attached_status_id, status_name);
+        }
+    }
+}
 
+impl Logic {
+    pub fn trigger_status_attach(
+        &mut self,
+        target: Id,
+        caster: Option<Id>,
+        attached_status_id: Id,
+        status_name: &StatusName,
+    ) {
+        let target = self
+            .model
+            .units
+            .get(&target)
+            .expect("Failed to find unit by id");
+        for (effect, vars, status_id, status_color) in
+            target.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::SelfDetectAttach {
+                        status_name: detect,
+                        status_action,
+                    } => detect == status_name && status_action == &StatusAction::Add,
+                    _ => false,
+                })
+            })
+        {
+            self.effects.push_front(QueuedEffect {
+                effect,
+                context: EffectContext {
+                    caster,
+                    from: Some(target.id),
+                    target: Some(target.id),
+                    vars,
+                    status_id: Some(attached_status_id),
+                    color: Some(status_color),
+                },
+            })
+        }
+
+        for other in &self.model.units {
             for (effect, vars, status_id, status_color) in
-                target.all_statuses.iter().flat_map(|status| {
+                other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::SelfDetectAttach {
+                        StatusTrigger::DetectAttach {
                             status_name: detect,
+                            filter,
                             status_action,
-                        } => detect == status_name && status_action == &StatusAction::Add,
+                        } => {
+                            other.id != target.id
+                                && detect == status_name
+                                && status_action == &StatusAction::Add
+                                && filter.matches(target.faction, other.faction)
+                        }
                         _ => false,
                     })
                 })
             {
-                logic.effects.push_front(QueuedEffect {
+                self.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
-                        caster: context.caster,
-                        from: Some(target.id),
+                        caster,
+                        from: Some(other.id),
                         target: Some(target.id),
                         vars,
                         status_id: Some(attached_status_id),
                         color: Some(status_color),
                     },
                 })
-            }
-
-            for other in &logic.model.units {
-                for (effect, vars, status_id, status_color) in
-                    other.all_statuses.iter().flat_map(|status| {
-                        status.trigger(|trigger| match trigger {
-                            StatusTrigger::DetectAttach {
-                                status_name: detect,
-                                filter,
-                                status_action,
-                            } => {
-                                other.id != target.id
-                                    && detect == status_name
-                                    && status_action == &StatusAction::Add
-                                    && filter.matches(target.faction, other.faction)
-                            }
-                            _ => false,
-                        })
-                    })
-                {
-                    logic.effects.push_front(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: context.caster,
-                            from: Some(other.id),
-                            target: Some(target.id),
-                            vars,
-                            status_id: Some(attached_status_id),
-                            color: Some(status_color),
-                        },
-                    })
-                }
             }
         }
     }

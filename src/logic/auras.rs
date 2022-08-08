@@ -6,6 +6,7 @@ impl Logic {
     }
     fn process_unit_auras(&mut self, unit: &mut Unit) {
         let mut dropped_statuses = Vec::new();
+        let mut new_statuses = Vec::new();
         for aura_status in &unit.all_statuses {
             if let StatusEffect::Aura(aura) = &aura_status.status.effect {
                 // Apply auras
@@ -49,6 +50,14 @@ impl Logic {
                                 )
                             })
                             .collect();
+                        new_statuses.extend(statuses.iter().map(|status| {
+                            (
+                                other.id,
+                                Some(unit.id),
+                                status.id,
+                                status.status.name.clone(),
+                            )
+                        }));
                         other.flags.extend(
                             statuses
                                 .iter()
@@ -59,6 +68,9 @@ impl Logic {
                     }
                 }
             }
+        }
+        for (target, caster, status, name) in new_statuses {
+            self.trigger_status_attach(target, caster, status, &name);
         }
         for (unit_id, caster, status, name) in dropped_statuses {
             self.trigger_status_drop(UnitRef::Id(unit_id), caster, status, &name);
