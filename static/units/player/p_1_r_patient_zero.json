@@ -1,8 +1,8 @@
 {
     "name": "patient_zero",
     "tier": 1,
-    "health": 1,
-    "base_damage": 2,
+    "health": 3,
+    "base_damage": 1,
     "cooldown": 3,
     "triple": "patient_zero+",
     "description": "Has @Plague",

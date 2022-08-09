@@ -1,7 +1,7 @@
 {
     "name": "blob_1",
     "health": 20,
-    "base_damage": 2,
+    "base_damage": 3,
     "radius": 0.4,
     "range": 1,
     "cooldown": 3,
