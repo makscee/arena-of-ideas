@@ -11,6 +11,10 @@
 		"description": "Damage from @Plague debuff",
 		"clan_origin": "PlagueSpreaders"
 	},
+	"PlagueBurst": {
+		"description": "Damage from @Plague reapply",
+		"clan_origin": "PlagueSpreaders"
+	},
 	"BonusShot": {
 		"description": "Additional attack on Ranged damage",
 		"clan_origin": "Archers"
