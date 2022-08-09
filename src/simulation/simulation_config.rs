@@ -21,6 +21,7 @@ pub enum SimulationType {
     },
     Rounds {
         squad: Vec<RegexUnit>,
+        clan_bonuses: Vec<usize>,
         from: usize,
         to: usize,
         repeats: usize,

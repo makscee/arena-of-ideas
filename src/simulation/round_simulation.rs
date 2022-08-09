@@ -4,6 +4,7 @@ use crate::simulation::simulation_config::RegexUnit;
 pub struct RoundSimulation {
     squad: Vec<UnitType>,
     rounds: Vec<GameRound>,
+    clan_bonuses: Vec<usize>,
     repeats: usize,
     all_units: Vec<UnitTemplate>,
     all_clans: Vec<Clan>,
@@ -13,6 +14,7 @@ pub struct RoundSimulation {
 impl RoundSimulation {
     pub fn new(
         squad: Vec<UnitType>,
+        clan_bonuses: Vec<usize>,
         rounds: Vec<GameRound>,
         repeats: usize,
         all_units: Vec<UnitTemplate>,
@@ -22,6 +24,7 @@ impl RoundSimulation {
         Self {
             squad,
             rounds,
+            clan_bonuses,
             repeats,
             all_units,
             all_clans,
@@ -83,7 +86,7 @@ impl SimulationVariant for RoundSimulation {
                 let mut rounds = vec![];
                 for round in &self.rounds {
                     player.clone().into_iter().for_each(|unit| {
-                        (1..=6).for_each(|i| {
+                        self.clan_bonuses.for_each(|i| {
                             unit.clans.clone().into_iter().for_each(|clan| {
                                 rounds.push(BattleConfig {
                                     unit: None,
