@@ -220,19 +220,15 @@ impl ShopState {
             .render
             .camera
             .screen_to_world(self.render.framebuffer_size, position);
-        const MAGIC_MAX_POS: Coord = 100;
-        for x in 0..MAGIC_MAX_POS {
+        for x in 0..MAX_PARTY {
             let pos = Position {
                 side: Faction::Player,
-                x,
+                x: x as Coord,
                 height: 0,
             };
             let delta = pos.to_world_f32() - world_pos;
             if delta.len() < 0.5 {
-                return Some((
-                    Interaction::Card(CardState::Party { index: x as usize }),
-                    None,
-                ));
+                return Some((Interaction::Card(CardState::Party { index: x }), None));
             }
         }
 
