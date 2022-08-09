@@ -38,9 +38,7 @@ impl ShopState {
         shop.money = 10.min(4 + shop.round as Money);
         shop.round += 1;
         shop.tier_rounds += 1;
-        if !shop.frozen {
-            shop.reroll(true);
-        }
+        shop.reroll(true);
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -83,7 +81,6 @@ impl geng::State for ShopState {
                         match interaction {
                             Interaction::TierUp => self.shop.tier_up(),
                             Interaction::Reroll => self.shop.reroll(false),
-                            Interaction::Freeze => self.shop.freeze(),
                             Interaction::Go => self.transition = true,
                             Interaction::Card(card) => {
                                 self.drag_card(card, position);
@@ -158,7 +155,6 @@ impl geng::State for ShopState {
 pub enum Interaction {
     TierUp,
     Reroll,
-    Freeze,
     Go,
     Card(CardState),
 }
@@ -176,7 +172,6 @@ pub struct Shop {
     /// Once the shop is tiered up, that number is reset to 0.
     pub tier_rounds: usize,
     pub money: Money,
-    pub frozen: bool,
     pub available: Vec<(UnitType, UnitTemplate)>,
     pub cards: Cards,
     pub drag: Option<Drag>,
@@ -256,9 +251,6 @@ impl ShopState {
         }
         if layout.reroll.position.contains(position) {
             return Some((Interaction::Reroll, Some(&mut layout.reroll)));
-        }
-        if layout.freeze.position.contains(position) {
-            return Some((Interaction::Freeze, Some(&mut layout.freeze)));
         }
         if layout.go.position.contains(position) {
             return Some((Interaction::Go, Some(&mut layout.go)));
@@ -360,7 +352,6 @@ impl Shop {
             tier: 1,
             tier_rounds: 0,
             money: 0,
-            frozen: false,
             cards: Cards::new(),
             drag: None,
             available: units,
@@ -414,10 +405,6 @@ impl Shop {
                     .collect();
             }
         }
-    }
-
-    pub fn freeze(&mut self) {
-        self.frozen = !self.frozen;
     }
 }
 

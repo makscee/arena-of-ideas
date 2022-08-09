@@ -60,7 +60,6 @@ pub struct ShopLayout {
     pub current_tier: LayoutWidget,
     pub currency: LayoutWidget,
     pub reroll: LayoutWidget,
-    pub freeze: LayoutWidget,
     pub shop: LayoutWidget,
     pub shop_cards: Vec<LayoutWidget>,
     pub clans: LayoutWidget,
@@ -77,7 +76,6 @@ impl Default for ShopLayout {
             current_tier: default(),
             currency: default(),
             reroll: default(),
-            freeze: default(),
             shop: default(),
             shop_cards: default(),
             go: default(),
@@ -214,14 +212,10 @@ impl ShopLayout {
         .extend_symmetric(vec2(button_width, 0.0) / 2.0)
         .extend_down(button_height);
 
-        // Freeze button
-        let freeze = reroll.translate(vec2(0.0, -button_height - button_spacing));
-
         self.tier_up.update(tier_up);
         self.current_tier.update(current_tier);
         self.currency.update(currency);
         self.reroll.update(reroll);
-        self.freeze.update(freeze);
         self.shop.update(shop);
         self.clans.update(clans);
         self.go.update(go);
@@ -236,7 +230,6 @@ impl ShopLayout {
         f(&mut self.current_tier);
         f(&mut self.currency);
         f(&mut self.reroll);
-        f(&mut self.freeze);
         f(&mut self.shop);
         f(&mut self.clans);
         f(&mut self.go);
@@ -244,7 +237,7 @@ impl ShopLayout {
         self.shop_cards
             .iter_mut()
             .chain(&mut self.inventory_cards)
-            .for_each(|widget| f(widget));
+            .for_each(f);
     }
 }
 
@@ -267,7 +260,7 @@ fn vec_update(vec: &mut Vec<LayoutWidget>, updates: &[AABB<f32>]) {
             }
             (None, Some(update)) => {
                 vec.push(LayoutWidget::new(update));
-                vec.extend(updates.map(|position| LayoutWidget::new(position)));
+                vec.extend(updates.map(LayoutWidget::new));
                 break;
             }
             (None, None) => break,
