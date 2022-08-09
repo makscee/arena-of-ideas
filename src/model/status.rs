@@ -96,9 +96,6 @@ pub enum StatusTrigger {
         tick_time: Ticks,
         #[serde(default = "zero")]
         next_tick: Ticks,
-        // Utility field
-        #[serde(default = "zero")]
-        last_tick: Ticks,
     },
     /// Triggered by CustomTriggerEffect
     Custom { name: String },

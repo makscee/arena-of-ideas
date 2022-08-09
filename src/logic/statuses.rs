@@ -113,23 +113,15 @@ impl Logic {
                         StatusTrigger::Repeating {
                             tick_time,
                             next_tick,
-                            last_tick,
                         } => {
                             let cur_tick = self.model.current_tick.tick_num;
-                            if cur_tick == *last_tick {
-                                return 0;
-                            };
                             let mut ticks = 0;
-                            if *last_tick == 0 {
-                                if *next_tick == 0 {
-                                    ticks += 1;
-                                }
-                                *next_tick += cur_tick;
-                            } else if *next_tick == cur_tick {
+                            if *next_tick <= 0 {
+                                *next_tick += *tick_time;
                                 ticks += 1;
-                                *next_tick = cur_tick + *tick_time;
                             }
-                            *last_tick = cur_tick;
+                            *next_tick -= 1;
+
                             ticks
                         }
                         _ => 0,
