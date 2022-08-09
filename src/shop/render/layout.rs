@@ -9,8 +9,18 @@ const CLANS_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
 const GO_SIZE: f32 = 0.1;
+
 const CURRENCY_BUTTON_WIDTH: f32 = 0.3;
 const CURRENCY_BUTTON_HEIGHT: f32 = 0.1;
+
+const CURRENT_TIER_WIDTH: f32 = 0.2;
+const CURRENT_TIER_HEIGHT: f32 = 0.1;
+
+const TIER_UP_BUTTON_WIDTH: f32 = 0.25;
+const TIER_UP_BUTTON_HEIGHT: f32 = 0.075;
+
+const REROLL_BUTTON_WIDTH: f32 = 0.25;
+const REROLL_BUTTON_HEIGHT: f32 = 0.075;
 
 /// Height divided by width
 pub const CARD_SIZE_RATIO: f32 = 1.3269;
@@ -173,33 +183,36 @@ impl ShopLayout {
             .extend_left(go_size)
             .extend_up(go_size);
 
-        // Top left buttons
-        let top_left_buttons = AABB::point(screen.top_left())
-            .extend_right(button_width)
-            .extend_down(row_height);
-
-        // Top right buttons
-        let top_right_buttons = AABB::point(screen.top_right())
-            .extend_left(button_width)
-            .extend_down(row_height);
-
-        // Tier up
-        let tier_up = AABB::point(top_left_buttons.top_left())
-            .extend_right(button_width)
-            .extend_down(button_height);
-
-        // Current tier
-        let current_tier = tier_up.translate(vec2(0.0, -button_height - button_spacing));
-
         // Available currency
         let currency = AABB::point(vec2(screen.center().x, screen.y_max))
             .extend_symmetric(vec2(CURRENCY_BUTTON_WIDTH * screen.height(), 0.0) / 2.0)
             .extend_down(CURRENCY_BUTTON_HEIGHT * screen.height()); // current_tier.translate(vec2(0.0, -button_height - button_spacing));
 
+        // Current tier
+        let current_tier =
+            AABB::point(currency.bottom_right() + vec2(button_spacing, -button_spacing))
+                .extend_right(CURRENT_TIER_WIDTH * screen.height())
+                .extend_down(CURRENT_TIER_HEIGHT * screen.height());
+
+        // Tier up
+        let tier_up = AABB::point(vec2(
+            current_tier.x_max + button_spacing,
+            current_tier.center().y,
+        ))
+        .extend_right(TIER_UP_BUTTON_WIDTH * screen.height())
+        .extend_symmetric(vec2(0.0, TIER_UP_BUTTON_HEIGHT * screen.height()) / 2.0);
+
         // Reroll button
-        let reroll = AABB::point(top_right_buttons.top_left())
-            .extend_right(button_width)
-            .extend_down(button_height);
+        let reroll = AABB::point(vec2(
+            (current_tier.x_max + tier_up.x_min) / 2.0,
+            shop_cards
+                .first()
+                .map(|aabb| aabb.y_min)
+                .unwrap_or(current_tier.y_min)
+                - button_spacing,
+        ))
+        .extend_symmetric(vec2(button_width, 0.0) / 2.0)
+        .extend_down(button_height);
 
         // Freeze button
         let freeze = reroll.translate(vec2(0.0, -button_height - button_spacing));
