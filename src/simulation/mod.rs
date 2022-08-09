@@ -98,6 +98,29 @@ struct AvgCounter {
     sum: f64,
 }
 
+pub struct ProgressTracker {
+    pub simulations_remains: (usize, usize),
+    pub battles_remains: (usize, usize),
+}
+
+impl ProgressTracker {
+    pub fn new() -> Self {
+        Self {
+            simulations_remains: (0, 0),
+            battles_remains: (0, 0),
+        }
+    }
+    pub fn log_progress(&self) {
+        info!(
+            "Simulations: {}/{} Battles: {}/{}",
+            self.simulations_remains.0,
+            self.simulations_remains.1,
+            self.battles_remains.0,
+            self.battles_remains.1
+        );
+    }
+}
+
 impl AvgCounter {
     pub fn new() -> Self {
         Self { count: 0, sum: 0.0 }
@@ -120,12 +143,14 @@ impl Simulate {
         let all_units: Vec<UnitTemplate> =
             assets.units.iter().map(|entry| entry.1).cloned().collect();
         let all_clans: Vec<Clan> = assets.clans.map.iter().map(|(k, v)| k.clone()).collect();
-
+        let mut progress = ProgressTracker::new();
+        progress.simulations_remains.1 = simulation_config.simulations.len();
         let simulation_results: Vec<SimulationResult> = simulation_config
             .simulations
             .into_iter()
             .map(|simulation_type| {
                 let simulation = Simulation::new(
+                    &mut progress,
                     config.clone(),
                     assets.clans.clone(),
                     assets.statuses.clone(),
@@ -158,9 +183,15 @@ impl Simulate {
                 _ => panic!("Failed to create a simulation_result directory: {error}"),
             },
         }
+        let koef = simulation_results
+            .clone()
+            .into_iter()
+            .map(|value| value.koef)
+            .sum::<f64>()
+            / simulation_results.len() as f64;
 
         // Write results
-        write_to(date_path.join("result.json"), &simulation_results)
+        write_to(date_path.join("result.json"), &(koef, &simulation_results))
             .expect("Failed to write results");
 
         info!("Results saved: {:?}", start.elapsed());

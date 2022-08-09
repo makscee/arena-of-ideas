@@ -4,8 +4,8 @@ use crate::simulation::round_simulation::RoundSimulation;
 use crate::simulation::simulation_config::SimulationType;
 use crate::simulation::units_simulation::UnitsSimulation;
 use crate::simulation::Battle;
-use crate::simulation::BattleView;
 use crate::simulation::BattleConfig;
+use crate::simulation::BattleView;
 use crate::simulation::SimulationVariant;
 use crate::Assets;
 use crate::Clan;
@@ -14,7 +14,8 @@ use crate::GameRound;
 
 use super::*;
 
-pub struct Simulation {
+pub struct Simulation<'a> {
+    progress: &'a mut ProgressTracker,
     variant: Box<dyn SimulationVariant>,
     config: Config,
     clan_effects: ClanEffects,
@@ -22,8 +23,9 @@ pub struct Simulation {
     units: UnitTemplates,
 }
 
-impl Simulation {
+impl<'a> Simulation<'a> {
     pub fn new(
+        progress: &'a mut ProgressTracker,
         config: Config,
         clan_effects: ClanEffects,
         statuses: Statuses,
@@ -35,22 +37,33 @@ impl Simulation {
     ) -> Self {
         let variant: Box<dyn SimulationVariant> = match simulation_type {
             SimulationType::Balance { unit, repeats } => Box::new(BalanceSimulation::new(
-                unit, repeats, all_units, all_clans, config.clone(),
+                unit,
+                repeats,
+                all_units,
+                all_clans,
+                config.clone(),
             )),
             SimulationType::Units {
                 squad,
                 enemies,
                 repeats,
             } => Box::new(UnitsSimulation::new(
-                squad, enemies, repeats, all_units, all_clans, config.clone(),
+                squad,
+                enemies,
+                repeats,
+                all_units,
+                all_clans,
+                config.clone(),
             )),
             SimulationType::Rounds {
                 squad,
                 from,
                 to,
                 repeats,
+                clan_bonuses,
             } => Box::new(RoundSimulation::new(
                 squad,
+                clan_bonuses,
                 rounds.iter().take(to).skip(from - 1).cloned().collect(),
                 repeats,
                 all_units,
@@ -59,6 +72,7 @@ impl Simulation {
             )),
         };
         Simulation {
+            progress,
             variant,
             config,
             clan_effects,
@@ -67,8 +81,10 @@ impl Simulation {
         }
     }
 
-    pub fn run(self) -> SimulationResult {
+    pub fn run(mut self) -> SimulationResult {
         let battles = self.variant.battles();
+        self.progress.battles_remains.1 = battles.len();
+        self.progress.battles_remains.0 = 0;
         let battle_views: Vec<BattleView> = battles
             .into_iter()
             .flat_map(|battle| {
@@ -104,13 +120,23 @@ impl Simulation {
                         }
                     })
                     .collect();
+
+                self.progress.battles_remains.0 += 1;
+                self.progress.log_progress();
                 results
             })
             .collect();
+        self.progress.simulations_remains.0 += 1;
+        self.progress.log_progress();
         let mut simulations = self.variant.result(battle_views);
         simulations.sort_by(|a, b| b.koef.partial_cmp(&a.koef).unwrap());
         let len = simulations.len() as f64;
-        let koef = simulations.clone().into_iter().map(|value| value.koef).sum::<f64>() / len;
+        let koef = simulations
+            .clone()
+            .into_iter()
+            .map(|value| value.koef)
+            .sum::<f64>()
+            / len;
         SimulationResult {
             koef,
             results: simulations.clone(),
@@ -118,7 +144,7 @@ impl Simulation {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct SimulationResult {
     pub koef: f64,
     pub results: Vec<SimulationView>,

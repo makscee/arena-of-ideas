@@ -86,7 +86,7 @@ impl SimulationVariant for RoundSimulation {
                 let mut rounds = vec![];
                 for round in &self.rounds {
                     player.clone().into_iter().for_each(|unit| {
-                        self.clan_bonuses.for_each(|i| {
+                        self.clan_bonuses.clone().into_iter().for_each(|i| {
                             unit.clans.clone().into_iter().for_each(|clan| {
                                 rounds.push(BattleConfig {
                                     unit: None,
