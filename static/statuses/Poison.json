@@ -10,8 +10,8 @@
             "triggers": [
                 {
                     "type": "Repeating",
-                    "tick_time": 1,
-                    "next_tick": 1
+                    "tick_time": 3,
+                    "next_tick": 3
                 }
             ],
             "effect": {
