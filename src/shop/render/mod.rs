@@ -214,7 +214,7 @@ impl Render {
 
         let text = match tier_up_cost(shop.tier, shop.tier_rounds) {
             Some(cost) => format!("Tier Up ({})", cost),
-            None => format!("Tier Up (?)"),
+            None => "Tier Up (?)".to_string(),
         };
         draw_rectangle(
             &text,
@@ -242,7 +242,7 @@ impl Render {
         );
 
         draw_rectangle(
-            &format!("Reroll"),
+            "Reroll",
             layout.reroll.position,
             button_color(&layout.reroll),
             &self.geng,
@@ -328,7 +328,7 @@ impl Render {
         }
 
         draw_rectangle(
-            &format!("Go"),
+            "Go",
             layout.go.position,
             button_color(&layout.go),
             &self.geng,
@@ -340,12 +340,10 @@ impl Render {
                 DragTarget::Card { card, .. } => {
                     let aabb =
                         AABB::point(drag.position).extend_symmetric(layout.drag_card_size / 2.0);
-                    selected_clan = selected_clan.or(self.card_render.draw(
-                        aabb,
-                        Some(card),
-                        game_time,
-                        framebuffer,
-                    ));
+                    let clan = self
+                        .card_render
+                        .draw(aabb, Some(card), game_time, framebuffer);
+                    selected_clan = selected_clan.or(clan);
                 }
             }
         }

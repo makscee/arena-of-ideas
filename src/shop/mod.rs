@@ -70,32 +70,34 @@ impl geng::State for ShopState {
 
     fn handle_event(&mut self, event: geng::Event) {
         match event {
-            geng::Event::MouseDown { position, button } => {
-                if let MouseButton::Left = button {
-                    let position = position.map(|x| x as f32);
-                    if let Some((interaction, layout)) = self.get_under_pos_mut(position) {
-                        if let Some(layout) = layout {
-                            layout.hovered = true;
-                            layout.pressed = true;
-                        }
-                        match interaction {
-                            Interaction::TierUp => self.shop.tier_up(),
-                            Interaction::Reroll => self.shop.reroll(false),
-                            Interaction::Go => self.transition = true,
-                            Interaction::Card(card) => {
-                                self.drag_card(card, position);
-                            }
+            geng::Event::MouseDown {
+                position,
+                button: MouseButton::Left,
+            } => {
+                let position = position.map(|x| x as f32);
+                if let Some((interaction, layout)) = self.get_under_pos_mut(position) {
+                    if let Some(layout) = layout {
+                        layout.hovered = true;
+                        layout.pressed = true;
+                    }
+                    match interaction {
+                        Interaction::TierUp => self.shop.tier_up(),
+                        Interaction::Reroll => self.shop.reroll(false),
+                        Interaction::Go => self.transition = true,
+                        Interaction::Card(card) => {
+                            self.drag_card(card, position);
                         }
                     }
                 }
             }
-            geng::Event::MouseUp { position, button } => {
-                if let MouseButton::Left = button {
-                    self.render_shop
-                        .layout
-                        .walk_widgets_mut(&mut |widget| widget.pressed = false);
-                    self.drag_stop();
-                }
+            geng::Event::MouseUp {
+                position,
+                button: MouseButton::Left,
+            } => {
+                self.render_shop
+                    .layout
+                    .walk_widgets_mut(&mut |widget| widget.pressed = false);
+                self.drag_stop();
             }
             geng::Event::MouseMove { position, .. } => {
                 self.render_shop
@@ -145,7 +147,7 @@ impl geng::State for ShopState {
             .assets
             .rounds
             .get(self.shop.round - 1)
-            .expect(&format!("Failed to find round number: {}", self.shop.round))
+            .unwrap_or_else(|| panic!("Failed to find round number: {}", self.shop.round))
             .clone();
         let game_state = Game::new(&self.geng, &self.assets, config, self.shop.take(), round);
         Some(geng::Transition::Switch(Box::new(game_state)))
@@ -288,35 +290,27 @@ impl ShopState {
     fn drag_stop_impl(&mut self, drag: Drag) {
         match drag.target {
             DragTarget::Card { card, old_state } => {
-                if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
-                    match interaction {
-                        Interaction::Card(state) => {
-                            let from_shop = matches!(old_state, CardState::Shop { .. });
-                            let to_shop = matches!(state, CardState::Shop { .. });
-                            if !from_shop && to_shop {
-                                // Moved to shop -> sell
-                                self.shop.money += UNIT_SELL_COST;
+                if let Some((Interaction::Card(state), _)) = self.get_under_pos_mut(drag.position) {
+                    let from_shop = matches!(old_state, CardState::Shop { .. });
+                    let to_shop = matches!(state, CardState::Shop { .. });
+                    if !from_shop && to_shop {
+                        // Moved to shop -> sell
+                        self.shop.money += UNIT_SELL_COST;
+                        return;
+                    }
+                    if let Some(target @ None) = self.shop.cards.get_card_mut(&state) {
+                        if from_shop && !to_shop {
+                            // Moved from the shop -> check payment
+                            if self.shop.money >= UNIT_COST {
+                                self.shop.money -= UNIT_COST;
+                                *target = Some(card);
                                 return;
                             }
-                            match self.shop.cards.get_card_mut(&state) {
-                                Some(target @ None) => {
-                                    if from_shop && !to_shop {
-                                        // Moved from the shop -> check payment
-                                        if self.shop.money >= UNIT_COST {
-                                            self.shop.money -= UNIT_COST;
-                                            *target = Some(card);
-                                            return;
-                                        }
-                                    } else {
-                                        // Change placement
-                                        *target = Some(card);
-                                        return;
-                                    }
-                                }
-                                _ => {}
-                            }
+                        } else {
+                            // Change placement
+                            *target = Some(card);
+                            return;
                         }
-                        _ => {}
                     }
                 }
 
@@ -418,10 +412,10 @@ impl Cards {
     }
 
     pub fn get_card_mut(&mut self, state: &CardState) -> Option<&mut Option<UnitCard>> {
-        match state {
-            &CardState::Shop { index } => self.shop.get_mut(index),
-            &CardState::Party { index } => self.party.get_mut(index),
-            &CardState::Inventory { index } => self.inventory.get_mut(index),
+        match *state {
+            CardState::Shop { index } => self.shop.get_mut(index),
+            CardState::Party { index } => self.party.get_mut(index),
+            CardState::Inventory { index } => self.inventory.get_mut(index),
         }
     }
 
@@ -456,7 +450,9 @@ impl Cards {
                             let template = assets
                                 .units
                                 .get(&triple)
-                                .expect(&format!("Failed to find unit to upgrade to: {triple}"))
+                                .unwrap_or_else(|| {
+                                    panic!("Failed to find unit to upgrade to: {triple}")
+                                })
                                 .clone();
                             *card = UnitCard::new(template, triple, &assets.statuses);
                         }
@@ -468,6 +464,12 @@ impl Cards {
     }
 }
 
+impl Default for Cards {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn calc_clan_members<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<Clan, usize> {
     let unique_units = units
         .into_iter()
@@ -475,7 +477,7 @@ fn calc_clan_members<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<C
         .collect::<HashMap<_, _>>();
     let mut clans = HashMap::new();
     for clan in unique_units.into_values().flatten() {
-        *clans.entry(clan.clone()).or_insert(0) += 1;
+        *clans.entry(*clan).or_insert(0) += 1;
     }
     clans
 }
@@ -484,7 +486,7 @@ fn roll(choices: &[UnitTemplate], tier: Tier, units: usize) -> Vec<UnitTemplate>
     choices
         .iter()
         .filter(|unit| unit.tier <= tier)
-        .map(|unit| unit.clone()) // TODO: optimize
+        .cloned() // TODO: optimize
         .choose_multiple(&mut global_rng(), units)
 }
 
