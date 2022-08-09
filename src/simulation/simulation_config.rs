@@ -1,0 +1,30 @@
+use super::*;
+
+#[derive(Deserialize, Clone, geng::Assets)]
+#[asset(json)]
+#[serde(deny_unknown_fields)]
+pub struct SimulationConfig {
+    pub simulations: Vec<SimulationType>,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum SimulationType {
+    Balance {
+        unit: RegexUnit,
+        repeats: usize,
+    },
+    Units {
+        squad: Vec<RegexUnit>,
+        enemies: Vec<RegexUnit>,
+        repeats: usize,
+    },
+    Rounds {
+        squad: Vec<RegexUnit>,
+        from: usize,
+        to: usize,
+        repeats: usize,
+    },
+}
+
+pub type RegexUnit = String;

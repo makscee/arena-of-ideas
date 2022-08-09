@@ -12,7 +12,7 @@ mod model;
 mod render;
 mod shader_edit;
 mod shop;
-mod simulate;
+mod simulation;
 mod tests;
 mod utility;
 
@@ -319,7 +319,7 @@ enum Commands {
     CustomGame(custom::CustomGame),
     Test,
     Shader(shader_edit::ShaderEdit),
-    Simulate(simulate::Simulate),
+    Simulate(simulation::Simulate),
     UpdateUnits,
 }
 
