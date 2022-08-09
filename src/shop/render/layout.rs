@@ -9,6 +9,8 @@ const CLANS_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
 const GO_SIZE: f32 = 0.1;
+const CURRENCY_BUTTON_WIDTH: f32 = 0.3;
+const CURRENCY_BUTTON_HEIGHT: f32 = 0.1;
 
 /// Height divided by width
 pub const CARD_SIZE_RATIO: f32 = 1.3269;
@@ -154,8 +156,7 @@ impl ShopLayout {
         let mid_width = column_spacing + clans_width + column_spacing + go_size;
 
         // Shop
-        let (shop, shop_card) =
-            layout_cards_aabb(middle_row.extend_right(-mid_width), shop_cards);
+        let (shop, shop_card) = layout_cards_aabb(middle_row.extend_right(-mid_width), shop_cards);
         let mid_width = mid_width + shop.width();
         let bot_left = middle_row.center() - vec2(mid_width, shop.height()) / 2.0;
         let shop_cards = layout_cards(bot_left, shop_cards, shop_card);
@@ -168,7 +169,9 @@ impl ShopLayout {
         bot_left.x += clans_width + column_spacing;
 
         // Go button
-        let go = AABB::point(screen.bottom_right()).extend_left(go_size).extend_up(go_size);
+        let go = AABB::point(screen.bottom_right())
+            .extend_left(go_size)
+            .extend_up(go_size);
 
         // Top left buttons
         let top_left_buttons = AABB::point(screen.top_left())
@@ -189,7 +192,9 @@ impl ShopLayout {
         let current_tier = tier_up.translate(vec2(0.0, -button_height - button_spacing));
 
         // Available currency
-        let currency = current_tier.translate(vec2(0.0, -button_height - button_spacing));
+        let currency = AABB::point(vec2(screen.center().x, screen.y_max))
+            .extend_symmetric(vec2(CURRENCY_BUTTON_WIDTH * screen.height(), 0.0) / 2.0)
+            .extend_down(CURRENCY_BUTTON_HEIGHT * screen.height()); // current_tier.translate(vec2(0.0, -button_height - button_spacing));
 
         // Reroll button
         let reroll = AABB::point(top_right_buttons.top_left())
