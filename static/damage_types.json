@@ -27,5 +27,9 @@
 	"Poison": {
 		"description": "Damages every tick for every Poison stack",
 		"clan_origin": "Assassins"
+	},
+	"RedDragonOverheal": {
+		"description": "Damage from Red Dragon overheal",
+		"clan_origin": "Vampires"
 	}
 }
