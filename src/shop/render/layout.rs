@@ -158,28 +158,18 @@ impl ShopLayout {
         let shop = shop.translate(vec2(x_min - shop.x_min, 0.0));
         let shop_cards = layout_cards(shop.bottom_left(), shop_cards, shop_card);
 
-        // Clans
-        let clans_width = CLANS_WIDTH * screen.width();
-        let clans = AABB::point(screen.top_left())
-            .extend_right(clans_width)
-            .extend_down(clans_width);
-
-        // Go button
-        let go_size = GO_SIZE * screen.height();
-        let go = AABB::point(screen.bottom_right())
-            .extend_left(go_size)
-            .extend_up(go_size);
-
         // Available currency
         let currency = AABB::point(vec2(screen.center().x, screen.y_max))
             .extend_symmetric(vec2(CURRENCY_BUTTON_WIDTH * screen.height(), 0.0) / 2.0)
             .extend_down(CURRENCY_BUTTON_HEIGHT * screen.height());
 
         // Current tier
-        let current_tier =
-            AABB::point(currency.bottom_right() + vec2(button_spacing, -button_spacing))
-                .extend_right(CURRENT_TIER_WIDTH * screen.height())
-                .extend_down(CURRENT_TIER_HEIGHT * screen.height());
+        let current_tier = AABB::point(vec2(
+            currency.x_max + button_spacing,
+            shop.y_max + button_spacing,
+        ))
+        .extend_right(CURRENT_TIER_WIDTH * screen.height())
+        .extend_up(CURRENT_TIER_HEIGHT * screen.height());
 
         // Tier up
         let tier_up = AABB::point(vec2(
@@ -200,6 +190,18 @@ impl ShopLayout {
         ))
         .extend_symmetric(vec2(REROLL_BUTTON_WIDTH * screen.height(), 0.0) / 2.0)
         .extend_down(REROLL_BUTTON_HEIGHT * screen.height());
+
+        // Clans
+        let clans_width = CLANS_WIDTH * screen.width();
+        let clans = AABB::point(screen.top_left())
+            .extend_right(clans_width)
+            .extend_down(clans_width);
+
+        // Go button
+        let go_size = GO_SIZE * screen.height();
+        let go = AABB::point(screen.bottom_right())
+            .extend_left(go_size)
+            .extend_up(go_size);
 
         self.tier_up.update(tier_up);
         self.current_tier.update(current_tier);
