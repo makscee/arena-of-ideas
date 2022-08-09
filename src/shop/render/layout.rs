@@ -8,7 +8,7 @@ const CARD_EXTRA_SPACE: f32 = 0.05;
 const CLANS_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
-const GO_WIDTH: f32 = 0.1;
+const GO_SIZE: f32 = 0.1;
 
 /// Height divided by width
 pub const CARD_SIZE_RATIO: f32 = 1.3269;
@@ -150,8 +150,8 @@ impl ShopLayout {
             layout_cards(inventory.bottom_left(), inventory_cards, inventory_card);
 
         let clans_width = CLANS_WIDTH * screen.width();
-        let go_width = GO_WIDTH * screen.width();
-        let mid_width = column_spacing + clans_width + column_spacing + go_width;
+        let go_size = GO_SIZE * screen.height();
+        let mid_width = column_spacing + clans_width + column_spacing + go_size;
 
         // Shop
         let (shop, shop_card) =
@@ -168,7 +168,7 @@ impl ShopLayout {
         bot_left.x += clans_width + column_spacing;
 
         // Go button
-        let go = AABB::point(bot_left).extend_positive(vec2(go_width, row_height));
+        let go = AABB::point(screen.bottom_right()).extend_left(go_size).extend_up(go_size);
 
         // Top left buttons
         let top_left_buttons = AABB::point(screen.top_left())
