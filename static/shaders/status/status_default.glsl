@@ -18,6 +18,25 @@ void main() {
 uniform sampler2D u_previous_texture;
 in vec2 v_quad_pos;
 
+const float c_status_radius_delta = .2;
+const float c_status_radius_delta_max = .75;
+const float c_status_radius_offset = .3;
+const float c_status_thickness = .025;
+const float c_status_dot_radius = 0.09;
+
+vec4 renderStatusRing(vec2 uv, vec3 col)
+{
+    // return vec4(col, float(length(uv) > 1) * 1);
+    float offset = 1. + c_status_radius_offset + c_status_radius_delta * u_status_index
+        * (min(1., c_status_radius_delta_max / c_status_radius_delta / u_status_count));
+    float rad = abs(vecAngle(uv) - pi);
+    float h = abs(distance(uv,vec2(0.)) - offset);
+    float dotDistance = distance(uv, vec2(0,-1) * offset);
+    return vec4(col, 
+        float(h < c_status_thickness && (u_status_duration == 1. || rad < u_status_time / u_status_duration * pi)
+        || dotDistance < c_status_dot_radius));
+}
+
 void main() {
     commonInit();
     vec2 uv = v_quad_pos;
