@@ -76,8 +76,10 @@ impl geng::State for ShopState {
                 if let MouseButton::Left = button {
                     let position = position.map(|x| x as f32);
                     if let Some((interaction, layout)) = self.get_under_pos_mut(position) {
-                        layout.hovered = true;
-                        layout.pressed = true;
+                        if let Some(layout) = layout {
+                            layout.hovered = true;
+                            layout.pressed = true;
+                        }
                         match interaction {
                             Interaction::TierUp => self.shop.tier_up(),
                             Interaction::Reroll => self.shop.reroll(false),
@@ -102,7 +104,7 @@ impl geng::State for ShopState {
                 self.render_shop
                     .layout
                     .walk_widgets_mut(&mut |widget| widget.hovered = false);
-                if let Some((_, layout)) =
+                if let Some((_, Some(layout))) =
                     self.get_under_pos_mut(self.geng.window().mouse_pos().map(|x| x as _))
                 {
                     layout.hovered = true;
@@ -206,7 +208,7 @@ impl ShopState {
     pub fn get_under_pos_mut(
         &mut self,
         position: Vec2<f32>,
-    ) -> Option<(Interaction, &mut render::LayoutWidget)> {
+    ) -> Option<(Interaction, Option<&mut render::LayoutWidget>)> {
         let layout = &mut self.render_shop.layout;
         if let Some((index, layout)) = layout
             .shop_cards
@@ -214,36 +216,52 @@ impl ShopState {
             .enumerate()
             .find(|(_, layout)| layout.position.contains(position))
         {
-            return Some((Interaction::Card(CardState::Shop { index }), layout));
+            return Some((Interaction::Card(CardState::Shop { index }), Some(layout)));
         }
-        if let Some((index, layout)) = layout
-            .party_cards
-            .iter_mut()
-            .enumerate()
-            .find(|(_, layout)| layout.position.contains(position))
-        {
-            return Some((Interaction::Card(CardState::Party { index }), layout));
+
+        let world_pos = self
+            .render
+            .camera
+            .screen_to_world(self.render.framebuffer_size, position);
+        const MAGIC_MAX_POS: Coord = 100;
+        for x in 0..MAGIC_MAX_POS {
+            let pos = Position {
+                side: Faction::Player,
+                x,
+                height: 0,
+            };
+            let delta = pos.to_world_f32() - world_pos;
+            if delta.len() < 0.5 {
+                return Some((
+                    Interaction::Card(CardState::Party { index: x as usize }),
+                    None,
+                ));
+            }
         }
+
         if let Some((index, layout)) = layout
             .inventory_cards
             .iter_mut()
             .enumerate()
             .find(|(_, layout)| layout.position.contains(position))
         {
-            return Some((Interaction::Card(CardState::Inventory { index }), layout));
+            return Some((
+                Interaction::Card(CardState::Inventory { index }),
+                Some(layout),
+            ));
         }
 
         if layout.tier_up.position.contains(position) {
-            return Some((Interaction::TierUp, &mut layout.tier_up));
+            return Some((Interaction::TierUp, Some(&mut layout.tier_up)));
         }
         if layout.reroll.position.contains(position) {
-            return Some((Interaction::Reroll, &mut layout.reroll));
+            return Some((Interaction::Reroll, Some(&mut layout.reroll)));
         }
         if layout.freeze.position.contains(position) {
-            return Some((Interaction::Freeze, &mut layout.freeze));
+            return Some((Interaction::Freeze, Some(&mut layout.freeze)));
         }
         if layout.go.position.contains(position) {
-            return Some((Interaction::Go, &mut layout.go));
+            return Some((Interaction::Go, Some(&mut layout.go)));
         }
 
         None

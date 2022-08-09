@@ -80,7 +80,8 @@ impl RenderShop {
 
 pub struct Render {
     geng: Geng,
-    camera: geng::Camera2d,
+    pub camera: geng::Camera2d,
+    pub framebuffer_size: Vec2<f32>,
     assets: Rc<Assets>,
     card_render: CardRender,
     unit_render: UnitRender,
@@ -96,6 +97,7 @@ impl Render {
                 rotation: 0.0,
                 fov: config.fov,
             },
+            framebuffer_size: vec2(1.0, 1.0),
             card_render: CardRender::new(geng, assets),
             unit_render: UnitRender::new(geng, assets),
         }
@@ -108,6 +110,7 @@ impl Render {
         game_time: f64,
         framebuffer: &mut ugli::Framebuffer,
     ) {
+        self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None);
         let camera = &geng::PixelPerfectCamera;
         let layout = &render.layout;
@@ -135,11 +138,6 @@ impl Render {
             selected_clan = selected_clan.or(hovered_clan);
         }
 
-        draw_2d::Quad::new(layout.party.position, TEXT_BACKGROUND_COLOR).draw_2d(
-            &self.geng,
-            framebuffer,
-            camera,
-        );
         for (index, card) in shop.cards.party.iter().enumerate() {
             if let Some(card) = card {
                 // TODO: fix position
@@ -158,6 +156,52 @@ impl Render {
                     game_time,
                     &self.camera,
                     framebuffer,
+                );
+            }
+        }
+
+        // Draw slots
+        let factions = [Faction::Player];
+        let shader_program = &self.assets.renders_config.slot;
+        for faction in factions {
+            for i in 0..SIDE_SLOTS {
+                let quad = shader_program.get_vertices(&self.geng);
+                let framebuffer_size = framebuffer.size();
+                let position = Position {
+                    x: i as i64,
+                    side: faction,
+                    height: 0,
+                }
+                .to_world_f32();
+                let empty = shop
+                    .cards
+                    .party
+                    .get(i)
+                    .and_then(|card| card.as_ref())
+                    .is_some();
+
+                ugli::draw(
+                    framebuffer,
+                    &shader_program.program,
+                    ugli::DrawMode::TriangleStrip,
+                    &quad,
+                    (
+                        ugli::uniforms! {
+                            u_time: game_time,
+                            u_unit_position: position,
+                            u_parent_faction: match faction {
+                                Faction::Player => 1.0,
+                                Faction::Enemy => -1.0,
+                            },
+                            u_empty: if empty { 1.0 } else { 0.0 },
+                        },
+                        geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        &shader_program.parameters,
+                    ),
+                    ugli::DrawParameters {
+                        blend_mode: Some(default()),
+                        ..default()
+                    },
                 );
             }
         }

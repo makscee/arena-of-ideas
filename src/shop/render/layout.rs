@@ -51,8 +51,6 @@ pub struct ShopLayout {
     pub freeze: LayoutWidget,
     pub shop: LayoutWidget,
     pub shop_cards: Vec<LayoutWidget>,
-    pub party: LayoutWidget,
-    pub party_cards: Vec<LayoutWidget>,
     pub clans: LayoutWidget,
     pub go: LayoutWidget,
     pub inventory: LayoutWidget,
@@ -70,8 +68,6 @@ impl Default for ShopLayout {
             freeze: default(),
             shop: default(),
             shop_cards: default(),
-            party: default(),
-            party_cards: default(),
             go: default(),
             clans: default(),
             inventory: default(),
@@ -195,13 +191,11 @@ impl ShopLayout {
         self.reroll.update(reroll);
         self.freeze.update(freeze);
         self.shop.update(shop);
-        self.party.update(party);
         self.clans.update(clans);
         self.go.update(go);
         self.inventory.update(inventory);
         self.drag_card_size = card_size;
         vec_update(&mut self.shop_cards, &shop_cards);
-        vec_update(&mut self.party_cards, &party_cards);
         vec_update(&mut self.inventory_cards, &inventory_cards);
     }
 
@@ -212,13 +206,11 @@ impl ShopLayout {
         f(&mut self.reroll);
         f(&mut self.freeze);
         f(&mut self.shop);
-        f(&mut self.party);
         f(&mut self.clans);
         f(&mut self.go);
         f(&mut self.inventory);
         self.shop_cards
             .iter_mut()
-            .chain(&mut self.party_cards)
             .chain(&mut self.inventory_cards)
             .for_each(|widget| f(widget));
     }
