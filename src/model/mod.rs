@@ -77,6 +77,7 @@ pub struct Model {
     pub last_enemy_action_time: Time,
     pub damage_instances: VecDeque<f32>,
     pub time_scale: f32,
+    pub deaths: usize,
 }
 
 impl Model {
@@ -88,6 +89,7 @@ impl Model {
         round: GameRound,
         render_model: RenderModel,
         time_scale: f32,
+        deaths: usize,
     ) -> Self {
         Self {
             next_id: 0,
@@ -108,6 +110,7 @@ impl Model {
             last_enemy_action_time: Time::ZERO,
             damage_instances: VecDeque::from(vec![1.0; 3]),
             time_scale,
+            deaths,
         }
     }
 }

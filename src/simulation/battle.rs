@@ -30,6 +30,7 @@ impl Battle {
                 round,
                 RenderModel::new(),
                 1.0,
+                0,
             ),
             delta_time,
         }

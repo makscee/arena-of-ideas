@@ -6,6 +6,14 @@ impl Logic {
     pub fn process_tick(&mut self) {
         if self.check_end() {
             self.model.transition = true;
+            if self
+                .model
+                .units
+                .iter()
+                .any(|unit| unit.faction == Faction::Enemy)
+            {
+                self.model.deaths += 1;
+            }
         } else if self.effects.is_empty() && self.model.current_tick.visual_timer <= Time::new(0.0)
         {
             self.model.time_scale = 1.0;

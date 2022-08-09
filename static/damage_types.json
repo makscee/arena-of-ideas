@@ -4,7 +4,11 @@
 		"clan_origin": "Warlocks"
 	},
 	"Fire": {
-		"description": "Deal additional fire damage",
+		"description": "Chance to apply @Burn",
+		"clan_origin": "Dragons"
+	},
+	"Burn": {
+		"description": "Damage every tick",
 		"clan_origin": "Dragons"
 	},
 	"Plague": {

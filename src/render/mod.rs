@@ -7,7 +7,7 @@ mod unit;
 
 use geng::{
     prelude::{bincode::config, itertools::Itertools},
-    Draw2d,
+    Draw2d, PixelPerfectCamera,
 };
 use text::*;
 pub use unit::*;
@@ -318,6 +318,31 @@ impl Render {
             if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
                 self.draw_damage_heal_desc(text_block, framebuffer);
             }
+        }
+
+        // Info panel
+
+        let line_height = 44.0;
+        let text_size = 55.0;
+        let left_margin = 20.0;
+        let framebuffer_size = framebuffer.size();
+        let lines: Vec<String> = vec![
+            format!("--- {} ---", model.round.name),
+            format!("Deaths: {}", model.deaths),
+        ];
+        for (i, line) in lines.into_iter().enumerate() {
+            self.geng.default_font().draw(
+                framebuffer,
+                &PixelPerfectCamera,
+                &line,
+                vec2(
+                    left_margin,
+                    framebuffer_size[1] as f32 - line_height * (i as f32 + 1.0),
+                ),
+                geng::TextAlign::LEFT,
+                text_size,
+                Color::try_from("#e6e6e6").unwrap(),
+            );
         }
     }
 
