@@ -106,8 +106,8 @@ pub struct ProgressTracker {
 impl ProgressTracker {
     pub fn new() -> Self {
         Self {
-            simulations_remains: (0, 0),
-            battles_remains: (0, 0),
+            simulations_remains: (1, 0),
+            battles_remains: (1, 0),
         }
     }
     pub fn log_progress(&self) {

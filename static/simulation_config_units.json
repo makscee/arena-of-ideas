@@ -1,0 +1,18 @@
+{
+    "simulations": [
+        {
+            "type": "Units",
+            "squad": [
+                ".*1.*[^+]$"
+            ],
+            "enemies": [
+                "shooter_0"
+            ],
+            "to": 1,
+            "clan_bonuses": [
+                1
+            ],
+            "repeats": 10
+        }
+    ]
+}

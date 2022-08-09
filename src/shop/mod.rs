@@ -35,7 +35,7 @@ impl ShopState {
     }
 
     pub fn load(geng: &Geng, assets: &Rc<Assets>, mut shop: Shop, game_config: Config) -> Self {
-        shop.money = 10.min(4 + shop.round as Money);
+        shop.money = 10.min(3 + shop.round as Money);
         shop.round += 1;
         shop.tier_rounds += 1;
         if !shop.frozen {

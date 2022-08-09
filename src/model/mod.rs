@@ -29,7 +29,7 @@ pub use status::*;
 pub use unit::*;
 
 // TODO: make configurable
-pub const SIDE_SLOTS: usize = 5;
+pub const SIDE_SLOTS: usize = 6;
 pub const UNIT_VISUAL_TIME: f32 = 0.5;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
