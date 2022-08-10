@@ -128,8 +128,6 @@ impl<'a> Simulation<'a> {
                 results
             })
             .collect();
-        self.progress.simulations_remains.0 += 1;
-        self.progress.log_progress();
         let mut simulations = self.variant.result(battle_views);
         simulations.sort_by(|a, b| b.koef.partial_cmp(&a.koef).unwrap());
         let len = simulations.len() as f64;

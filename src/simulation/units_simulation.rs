@@ -96,38 +96,47 @@ impl SimulationVariant for UnitsSimulation {
             })
             .collect();
 
-        let mut enemy_clans: HashSet<Clan> = hashset! {};
-        unit_vars.into_iter().for_each(|variant| {
-            variant.into_iter().for_each(|enemy| {
-                enemy.clans.into_iter().for_each(|clan| {
-                    enemy_clans.insert(clan.clone());
-                })
-            })
-        });
         player_variants
             .into_iter()
             .flat_map(|player| {
                 let mut rounds = vec![];
                 for round in &game_rounds {
-                    player.clone().into_iter().for_each(|unit| {
-                        self.clan_size.clone().into_iter().for_each(|i| {
-                            unit.clans.clone().into_iter().for_each(|clan| {
-                                enemy_clans.clone().into_iter().for_each(|enemy_clan| {
-                                    rounds.push(BattleConfig {
-                                        unit: None,
-                                        player: player
-                                            .clone()
-                                            .into_iter()
-                                            .map(|template| template.name)
-                                            .collect(),
-                                        round: round.clone(),
-                                        repeats: self.repeats,
-                                        clans: hashmap! {clan => i},
-                                        enemy_clans: hashmap! {enemy_clan=>i},
-                                        group: SimulationGroup::Enemies,
-                                    })
+                    self.clan_size.clone().into_iter().for_each(|i| {
+                        let unit_clans: HashSet<Clan> = player
+                            .clone()
+                            .into_iter()
+                            .flat_map(|unit| unit.clans)
+                            .collect();
+                        unit_clans.clone().into_iter().for_each(|clan| {
+                            let enemy_clans: HashSet<Clan> = round
+                                .enemies
+                                .clone()
+                                .into_iter()
+                                .flat_map(|enemy| {
+                                    let enemy = &self
+                                        .all_units
+                                        .clone()
+                                        .into_iter()
+                                        .find(|unit| unit.name == enemy)
+                                        .unwrap();
+                                    enemy.clans.clone()
                                 })
-                            });
+                                .collect();
+                            enemy_clans.clone().into_iter().for_each(|enemy_clan| {
+                                rounds.push(BattleConfig {
+                                    unit: None,
+                                    player: player
+                                        .clone()
+                                        .into_iter()
+                                        .map(|template| template.name)
+                                        .collect(),
+                                    round: round.clone(),
+                                    repeats: self.repeats,
+                                    clans: hashmap! {clan => i},
+                                    enemy_clans: hashmap! {enemy_clan=>i},
+                                    group: SimulationGroup::Enemies,
+                                })
+                            })
                         });
                     });
                 }
