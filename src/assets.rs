@@ -98,7 +98,7 @@ pub struct Assets {
     pub units: UnitTemplates,
     pub statuses: Statuses,
     #[asset(load_with = "load_renders_config(geng, &base_path)")]
-    pub renders_config: RendersProgram,
+    pub custom_renders: RendersProgram,
     #[asset(load_with = "load_postfx_render(geng, &base_path)")]
     pub postfx_render: PostfxProgram,
     pub damage_types: DamageTypes,
@@ -119,18 +119,20 @@ pub struct Assets {
 pub struct RendersConfig {
     pub field: ShaderConfig,
     pub slot: ShaderConfig,
+    pub action_indicator: ShaderConfig,
 }
 
 pub struct RendersProgram {
     pub field: ShaderProgram,
     pub slot: ShaderProgram,
+    pub action_indicator: ShaderProgram,
 }
 
 async fn load_renders_config(
     geng: &Geng,
     base_path: &std::path::Path,
 ) -> anyhow::Result<RendersProgram> {
-    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("renders_config.json"))
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("custom_renders.json"))
         .await
         .context("Failed to load renders_config.json")?;
     let config: RendersConfig =
@@ -158,7 +160,22 @@ async fn load_renders_config(
         instances: config.slot.instances,
     };
 
-    let result = RendersProgram { field, slot };
+    let path = config.action_indicator.path.as_str();
+    let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+        .await
+        .context(format!("Failed to load {path}"))?;
+    let action_indicator = ShaderProgram {
+        program: Rc::new(program),
+        parameters: config.action_indicator.parameters,
+        vertices: config.action_indicator.vertices,
+        instances: config.action_indicator.instances,
+    };
+
+    let result = RendersProgram {
+        field,
+        slot,
+        action_indicator,
+    };
     Ok::<_, anyhow::Error>(result)
 }
 

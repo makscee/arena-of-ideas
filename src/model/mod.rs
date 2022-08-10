@@ -32,6 +32,7 @@ pub use unit::*;
 pub const SIDE_SLOTS: usize = 6;
 pub const MAX_LIVES: usize = 10;
 pub const UNIT_VISUAL_TIME: f32 = 0.5;
+pub const UNIT_PRE_ACTION_TIME: f32 = 0.1;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
@@ -79,6 +80,7 @@ pub struct Model {
     pub damage_instances: VecDeque<f32>,
     pub time_scale: f32,
     pub lives: usize,
+    pub acting_unit: Option<Id>,
 }
 
 impl Model {
@@ -112,6 +114,7 @@ impl Model {
             damage_instances: VecDeque::from(vec![1.0; 3]),
             time_scale,
             lives,
+            acting_unit: None,
         }
     }
 }

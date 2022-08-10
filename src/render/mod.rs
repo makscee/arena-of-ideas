@@ -110,7 +110,7 @@ impl Render {
     pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         self.draw_field(
-            &self.assets.renders_config.field,
+            &self.assets.custom_renders.field,
             game_time,
             model,
             framebuffer,
@@ -201,7 +201,7 @@ impl Render {
 
         // Draw slots
         let factions = vec![Faction::Player, Faction::Enemy];
-        let shader_program = &self.assets.renders_config.slot;
+        let shader_program = &self.assets.custom_renders.slot;
         for faction in factions {
             for i in 0..SIDE_SLOTS {
                 let quad = shader_program.get_vertices(&self.geng);
@@ -245,6 +245,39 @@ impl Render {
                     },
                 );
             }
+        }
+
+        // Draw acting unit indicator
+        let actor = model
+            .acting_unit
+            .and_then(|actor| model.units.get(&actor).or(model.dead_units.get(&actor)));
+        if let Some(actor) = actor {
+            let shader_program = &self.assets.custom_renders.action_indicator;
+            let quad = shader_program.get_vertices(&self.geng);
+            let position = actor.position.to_world_f32();
+            let faction = match actor.faction {
+                Faction::Player => 1.0,
+                Faction::Enemy => -1.0,
+            };
+            ugli::draw(
+                framebuffer,
+                &shader_program.program,
+                ugli::DrawMode::TriangleStrip,
+                &quad,
+                (
+                    ugli::uniforms! {
+                        u_time: game_time,
+                        u_unit_position: position,
+                        u_parent_faction: faction,
+                    },
+                    geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                    &shader_program.parameters,
+                ),
+                ugli::DrawParameters {
+                    blend_mode: Some(default()),
+                    ..default()
+                },
+            );
         }
 
         for particle in &model.particles {
@@ -325,7 +358,6 @@ impl Render {
         }
 
         // Info panel
-
         let line_height = 44.0;
         let text_size = 55.0;
         let left_margin = 20.0;

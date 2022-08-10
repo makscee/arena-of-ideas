@@ -55,6 +55,7 @@ impl Logic {
             unit.action_state = ActionState::Cooldown { time: 0 };
             self.model.current_tick.visual_timer += Time::new(UNIT_VISUAL_TIME);
             self.model.time_scale = 1.0;
+            self.model.acting_unit = Some(unit.id);
         }
     }
 }

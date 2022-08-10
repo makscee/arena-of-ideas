@@ -1,6 +1,6 @@
 {
     "field": {
-        "path": "shaders/field_3.glsl",
+        "path": "shaders/custom/field_3.glsl",
         "parameters": {
             "u_unit_radius": 0.005
         },
@@ -8,9 +8,12 @@
         "instances": 500
     },
     "slot": {
-        "path": "shaders/slot.glsl",
+        "path": "shaders/custom/slot.glsl",
         "parameters": {
             "u_thickness": 0.06
         }
+    },
+    "action_indicator": {
+        "path": "shaders/custom/action_indicator.glsl"
     }
 }
