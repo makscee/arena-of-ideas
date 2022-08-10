@@ -8,6 +8,7 @@ const CLANS_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
 const GO_SIZE: f32 = 0.1;
+const SELL_SIZE: f32 = 0.25;
 
 const CURRENCY_BUTTON_WIDTH: f32 = 0.3;
 const CURRENCY_BUTTON_HEIGHT: f32 = 0.1;
@@ -63,6 +64,7 @@ pub struct ShopLayout {
     pub shop_cards: Vec<LayoutWidget>,
     pub clans: LayoutWidget,
     pub go: LayoutWidget,
+    pub sell: LayoutWidget,
     pub inventory: LayoutWidget,
     pub inventory_cards: Vec<LayoutWidget>,
     pub drag_card_size: Vec2<f32>,
@@ -78,6 +80,7 @@ impl Default for ShopLayout {
             shop: default(),
             shop_cards: default(),
             go: default(),
+            sell: default(),
             clans: default(),
             inventory: default(),
             inventory_cards: default(),
@@ -203,6 +206,12 @@ impl ShopLayout {
             .extend_left(go_size)
             .extend_up(go_size);
 
+        // Sell button
+        let sell_size = SELL_SIZE * screen.height();
+        let sell = AABB::point(screen.bottom_left())
+            .extend_right(sell_size)
+            .extend_up(sell_size);
+
         self.tier_up.update(tier_up);
         self.current_tier.update(current_tier);
         self.currency.update(currency);
@@ -210,6 +219,7 @@ impl ShopLayout {
         self.shop.update(shop);
         self.clans.update(clans);
         self.go.update(go);
+        self.sell.update(sell);
         self.inventory.update(inventory);
         self.drag_card_size = card_size;
         vec_update(&mut self.shop_cards, &shop_cards);
@@ -224,6 +234,7 @@ impl ShopLayout {
         f(&mut self.shop);
         f(&mut self.clans);
         f(&mut self.go);
+        f(&mut self.sell);
         f(&mut self.inventory);
         self.shop_cards
             .iter_mut()

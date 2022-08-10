@@ -84,6 +84,7 @@ impl geng::State for ShopState {
                         Interaction::TierUp => self.shop.tier_up(),
                         Interaction::Reroll => self.shop.reroll(false),
                         Interaction::Go => self.transition = true,
+                        Interaction::SellCard => {}
                         Interaction::Card(card) => {
                             self.drag_card(card, position);
                         }
@@ -158,6 +159,7 @@ pub enum Interaction {
     TierUp,
     Reroll,
     Go,
+    SellCard,
     Card(CardState),
 }
 
@@ -253,6 +255,9 @@ impl ShopState {
         if layout.go.position.contains(position) {
             return Some((Interaction::Go, Some(&mut layout.go)));
         }
+        if layout.sell.position.contains(position) {
+            return Some((Interaction::SellCard, Some(&mut layout.sell)));
+        }
 
         None
     }
@@ -286,27 +291,34 @@ impl ShopState {
     fn drag_stop_impl(&mut self, drag: Drag) {
         match drag.target {
             DragTarget::Card { card, old_state } => {
-                if let Some((Interaction::Card(state), _)) = self.get_under_pos_mut(drag.position) {
-                    let from_shop = matches!(old_state, CardState::Shop { .. });
-                    let to_shop = matches!(state, CardState::Shop { .. });
-                    if !from_shop && to_shop {
-                        // Moved to shop -> sell
-                        self.shop.money += UNIT_SELL_COST;
-                        return;
-                    }
-                    if let Some(target @ None) = self.shop.cards.get_card_mut(&state) {
-                        if from_shop && !to_shop {
-                            // Moved from the shop -> check payment
-                            if self.shop.money >= UNIT_COST {
-                                self.shop.money -= UNIT_COST;
-                                *target = Some(card);
+                if let Some((interaction, _)) = self.get_under_pos_mut(drag.position) {
+                    match interaction {
+                        Interaction::Card(state) => {
+                            let from_shop = matches!(old_state, CardState::Shop { .. });
+                            let to_shop = matches!(state, CardState::Shop { .. });
+                            if let Some(target @ None) = self.shop.cards.get_card_mut(&state) {
+                                if from_shop && !to_shop {
+                                    // Moved from the shop -> check payment
+                                    if self.shop.money >= UNIT_COST {
+                                        self.shop.money -= UNIT_COST;
+                                        *target = Some(card);
+                                        return;
+                                    }
+                                } else {
+                                    // Change placement
+                                    *target = Some(card);
+                                    return;
+                                }
+                            }
+                        }
+                        Interaction::SellCard => {
+                            if !matches!(old_state, CardState::Shop { .. }) {
+                                // Sell the card
+                                self.shop.money += UNIT_SELL_COST;
                                 return;
                             }
-                        } else {
-                            // Change placement
-                            *target = Some(card);
-                            return;
                         }
+                        _ => {}
                     }
                 }
 

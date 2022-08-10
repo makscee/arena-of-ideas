@@ -17,6 +17,13 @@ const TEXT_BACKGROUND_COLOR: Color<f32> = Color {
     b: 0.2,
     a: 1.0,
 };
+const SELL_BUTTON_FRAME_WIDTH: f32 = 0.01;
+const SELL_BUTTON_COLOR: Color<f32> = Color {
+    r: 0.3,
+    g: 0.3,
+    b: 0.3,
+    a: 1.0,
+};
 const BUTTON_COLOR: Color<f32> = Color {
     r: 0.0,
     g: 0.7,
@@ -335,6 +342,15 @@ impl Render {
             framebuffer,
         );
 
+        draw_rectangle_frame(
+            "Sell 1",
+            layout.sell.position,
+            SELL_BUTTON_FRAME_WIDTH * layout.sell.position.width(),
+            SELL_BUTTON_COLOR,
+            &self.geng,
+            framebuffer,
+        );
+
         if let Some(drag) = &shop.drag {
             match &drag.target {
                 DragTarget::Card { card, .. } => {
@@ -402,6 +418,37 @@ fn draw_rectangle(
 ) {
     let camera = &geng::PixelPerfectCamera;
     draw_2d::Quad::new(aabb, color).draw_2d(geng, framebuffer, camera);
+    draw_2d::Text::unit(&**geng.default_font(), text, TEXT_COLOR)
+        .fit_into(
+            AABB::point(aabb.center()).extend_symmetric(aabb.size() * TEXT_OCCUPY_SPACE / 2.0),
+        )
+        .draw_2d(geng, framebuffer, camera);
+}
+
+fn draw_rectangle_frame(
+    text: impl AsRef<str>,
+    aabb: AABB<f32>,
+    width: f32,
+    color: Color<f32>,
+    geng: &Geng,
+    framebuffer: &mut ugli::Framebuffer,
+) {
+    let camera = &geng::PixelPerfectCamera;
+    let left_mid = vec2(aabb.x_min, aabb.center().y);
+    draw_2d::Chain::new(
+        Chain::new(vec![
+            left_mid,
+            aabb.top_left(),
+            aabb.top_right(),
+            aabb.bottom_right(),
+            aabb.bottom_left(),
+            left_mid,
+        ]),
+        width,
+        color,
+        0,
+    )
+    .draw_2d(geng, framebuffer, camera);
     draw_2d::Text::unit(&**geng.default_font(), text, TEXT_COLOR)
         .fit_into(
             AABB::point(aabb.center()).extend_symmetric(aabb.size() * TEXT_OCCUPY_SPACE / 2.0),
