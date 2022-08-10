@@ -32,7 +32,7 @@ pub use unit::*;
 pub const SIDE_SLOTS: usize = 6;
 pub const MAX_LIVES: usize = 10;
 pub const UNIT_VISUAL_TIME: f32 = 0.5;
-pub const UNIT_PRE_ACTION_TIME: f32 = 0.1;
+pub const UNIT_PRE_ACTION_TIME: f32 = 0.25;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {

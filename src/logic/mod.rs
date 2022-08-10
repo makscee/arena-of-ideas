@@ -84,11 +84,15 @@ impl Logic {
     }
     fn process_units_sorted(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let mut units = self.model.units.iter().collect::<Vec<&Unit>>();
-        units.shuffle(&mut global_rng());
 
         let mut ids: Vec<Id> = units
             .into_iter()
-            .sorted_by(|a, b| Ord::cmp(&a.position.x.abs(), &b.position.x.abs()))
+            .sorted_by(|a, b| {
+                Ord::cmp(
+                    &(a.position.x.abs() - if a.faction == Faction::Player { 1 } else { 0 }),
+                    &b.position.x.abs(),
+                )
+            })
             .map(|unit| unit.id)
             .collect();
         for id in ids {
