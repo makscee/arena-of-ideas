@@ -13,9 +13,6 @@
                 "type": "Refresh"
             },
             "priority": 0,
-            "condition": {
-                "type": "Always"
-            },
             "target": {
                 "type": "Stat",
                 "stat": "BaseDamage",
@@ -40,9 +37,6 @@
                 "type": "Refresh"
             },
             "priority": 0,
-            "condition": {
-                "type": "Always"
-            },
             "target": {
                 "type": "Stat",
                 "stat": "Block",

@@ -3,20 +3,6 @@ use geng::prelude::itertools::Itertools;
 use super::*;
 
 impl Logic {
-    pub fn tick_statuses(&mut self) {
-        self.process_units(Self::process_unit_statuses);
-
-        let ids: Vec<Id> = self.model.units.ids().copied().collect();
-        for id in ids {
-            let unit = self.model.units.get(&id).unwrap();
-            let modifier_targets = self.collect_modifier_targets(unit);
-            self.process_modifiers(&id, &modifier_targets);
-
-            let mut unit_mut = self.model.units.get_mut(&id).unwrap();
-            unit_mut.modifier_targets = modifier_targets;
-        }
-    }
-
     fn is_status_expired(status: &AttachedStatus) -> bool {
         status.time.map(|time| time == 0).unwrap_or(false)
             || status
@@ -26,7 +12,7 @@ impl Logic {
                 .unwrap_or(false)
     }
 
-    fn collect_modifier_targets(&self, unit: &Unit) -> Vec<(EffectContext, ModifierTarget)> {
+    pub fn collect_modifier_targets(&self, unit: &Unit) -> Vec<(EffectContext, ModifierTarget)> {
         let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = Vec::new();
         for status in &unit.all_statuses {
             if !Self::is_status_expired(status) {
@@ -62,24 +48,22 @@ impl Logic {
         modifier_targets
     }
 
-    fn process_modifiers(
+    pub fn process_modifiers(
         &mut self,
-        unit_id: &Id,
+        unit: &mut Unit,
         modifier_targets: &Vec<(EffectContext, ModifierTarget)>,
     ) {
-        let unit_mut = self.model.units.get_mut(unit_id).unwrap();
-        unit_mut.stats = unit_mut.permanent_stats.clone();
+        unit.stats = unit.permanent_stats.clone();
 
         for (context, target) in modifier_targets {
             if let ModifierTarget::Stat { stat, value } = target {
                 let stat_value = value.calculate(context, self);
-                let mut unit_mut = self.model.units.get_mut(unit_id).unwrap();
-                *unit_mut.stats.get_mut(*stat) = stat_value;
+                *unit.stats.get_mut(*stat) = stat_value;
             }
         }
     }
 
-    fn process_unit_statuses(&mut self, unit: &mut Unit) {
+    pub fn process_unit_statuses(&mut self, unit: &mut Unit) {
         let mut expired: Vec<(Option<Id>, Id, String)> = Vec::new();
         unit.all_statuses
             .sort_by(|a, b| a.status.order.cmp(&b.status.order));

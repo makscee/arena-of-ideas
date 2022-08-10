@@ -14,6 +14,7 @@ mod statuses;
 mod targeting;
 mod tick;
 mod time;
+mod turn_queue;
 mod util;
 
 pub use effects::*;
@@ -55,9 +56,7 @@ impl Logic {
         self.process_tick();
         self.process_particles();
         self.process_spawns();
-        self.process_abilities();
-        self.process_targeting();
-        self.process_actions();
+        self.process_turn_queue();
         self.process_auras();
         self.process_render_positions();
         self.process_effects();

@@ -14,6 +14,13 @@ pub enum ActionState {
     Cooldown { time: Ticks },
 }
 
+#[derive(Clone)]
+pub enum TurnState {
+    None,
+    PreTurn,
+    Turn,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ActionProperties {

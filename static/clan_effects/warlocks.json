@@ -56,9 +56,6 @@
                 "name": "SiphonLifeDoubleDamage",
                 "type": "Modifier",
                 "priority": 0,
-                "condition": {
-                    "type": "Always"
-                },
                 "target": {
                     "type": "Damage",
                     "source": [

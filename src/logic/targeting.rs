@@ -5,7 +5,7 @@ impl Logic {
         self.process_units(Self::process_unit_targeting);
     }
 
-    fn process_unit_targeting(&mut self, unit: &mut Unit) {
+    pub fn process_unit_targeting(&mut self, unit: &mut Unit) {
         if unit
             .flags
             .iter()

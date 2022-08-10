@@ -31,7 +31,7 @@ pub use unit::*;
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 6;
 pub const MAX_LIVES: usize = 10;
-pub const UNIT_VISUAL_TIME: f32 = 0.5;
+pub const UNIT_ACTION_TIME: f32 = 0.5;
 pub const UNIT_PRE_ACTION_TIME: f32 = 0.25;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
@@ -82,6 +82,7 @@ pub struct Model {
     pub lives: usize,
     pub acting_unit: Option<Id>,
     pub action_indicator_render_position: Vec2<f32>,
+    pub turn_queue: VecDeque<(Id, TurnState)>,
 }
 
 impl Model {
@@ -117,6 +118,7 @@ impl Model {
             lives,
             acting_unit: None,
             action_indicator_render_position: Vec2::ZERO,
+            turn_queue: VecDeque::new(),
         }
     }
 }
@@ -126,7 +128,7 @@ impl TickModel {
         Self {
             tick_time: Time::ZERO,
             tick_num,
-            visual_timer: Time::new(UNIT_VISUAL_TIME),
+            visual_timer: Time::new(UNIT_ACTION_TIME),
         }
     }
 }

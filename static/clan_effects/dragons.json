@@ -10,9 +10,6 @@
             {
                 "name": "FireAttack",
                 "type": "Modifier",
-                "condition": {
-                    "type": "Always"
-                },
                 "target": {
                     "type": "ExtraOutDamageType",
                     "source": [
