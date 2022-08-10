@@ -108,7 +108,7 @@ impl Unit {
             range: template.range,
             cooldown: template.cooldown,
             faction,
-            action_state: ActionState::Cooldown { time: 0 },
+            action_state: ActionState::None,
             stats: UnitStats::new(template),
             permanent_stats: UnitStats::new(template),
             face_dir: Vec2::ZERO,
