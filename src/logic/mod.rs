@@ -122,6 +122,20 @@ impl Logic {
     }
     fn process_render_positions(&mut self) {
         self.process_units(Self::process_unit_render_positions);
+
+        // Process action indicator render position
+        let actor = self.model.acting_unit.and_then(|actor| {
+            self.model
+                .units
+                .get(&actor)
+                .or(self.model.dead_units.get(&actor))
+        });
+        if let Some(actor) = actor {
+            self.model.action_indicator_render_position += (actor.position.to_world_f32()
+                - self.model.action_indicator_render_position)
+                * self.delta_time.as_f32()
+                * 20.0;
+        }
     }
     fn process_unit_render_positions(&mut self, unit: &mut Unit) {
         unit.render_position +=

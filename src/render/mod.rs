@@ -254,7 +254,7 @@ impl Render {
         if let Some(actor) = actor {
             let shader_program = &self.assets.custom_renders.action_indicator;
             let quad = shader_program.get_vertices(&self.geng);
-            let position = actor.position.to_world_f32();
+            let position = model.action_indicator_render_position;
             let faction = match actor.faction {
                 Faction::Player => 1.0,
                 Faction::Enemy => -1.0,

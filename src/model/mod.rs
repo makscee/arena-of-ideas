@@ -81,6 +81,7 @@ pub struct Model {
     pub time_scale: f32,
     pub lives: usize,
     pub acting_unit: Option<Id>,
+    pub action_indicator_render_position: Vec2<f32>,
 }
 
 impl Model {
@@ -115,6 +116,7 @@ impl Model {
             time_scale,
             lives,
             acting_unit: None,
+            action_indicator_render_position: Vec2::ZERO,
         }
     }
 }
