@@ -57,7 +57,9 @@ impl Logic {
 
         for (context, target) in modifier_targets {
             if let ModifierTarget::Stat { stat, value } = target {
+                self.model.units.insert(unit.clone());
                 let stat_value = value.calculate(context, self);
+                self.model.units.remove(&unit.id);
                 *unit.stats.get_mut(*stat) = stat_value;
             }
         }
