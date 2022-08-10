@@ -18,12 +18,16 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
-uniform float u_empty = 1;
 
 void main() {
     commonInit();
-    vec4 col = vec4(parent_faction_color, 1);
-    col.a = max(u_empty, float(abs(v_quad_pos.x) > u_size.x - u_thickness || abs(v_quad_pos.y) > u_size.y - u_thickness));
+    vec4 col = vec4(vec3(0), 1);
+    vec2 i_uv = v_quad_pos / u_size * .5 + vec2(.5);
+    vec4 hp = vec4(parent_faction_color, float(i_uv.x < u_health));
+    col = alphaBlend(col, hp);
+    vec4 border = vec4(parent_faction_color * .8,
+        float(abs(v_quad_pos.x) > u_size.x - u_thickness || abs(v_quad_pos.y) > u_size.y - u_thickness));
+    col = alphaBlend(col, border);
     gl_FragColor = col;
 }
 #endif

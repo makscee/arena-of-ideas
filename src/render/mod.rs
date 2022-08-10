@@ -212,10 +212,14 @@ impl Render {
                     height: 0,
                 }
                 .to_world_f32();
-                let empty = model
+                let unit = model
                     .units
                     .iter()
-                    .any(|unit| unit.position.x == i as i64 && unit.faction == faction);
+                    .find(|unit| unit.position.x == i as i64 && unit.faction == faction);
+                let health = match unit {
+                    Some(unit) => (unit.stats.health / unit.stats.max_hp).as_f32(),
+                    None => 0.0,
+                };
 
                 ugli::draw(
                     framebuffer,
@@ -230,7 +234,7 @@ impl Render {
                                 Faction::Player => 1.0,
                                 Faction::Enemy => -1.0,
                             },
-                            u_empty: if empty { 1.0 } else { 0.0 },
+                            u_health: health,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                         &shader_program.parameters,
