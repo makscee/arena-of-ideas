@@ -18,6 +18,7 @@ mod util;
 
 pub use effects::*;
 pub use events::*;
+use geng::prelude::itertools::Itertools;
 pub use util::*;
 
 enum UnitRef<'a> {
@@ -75,6 +76,21 @@ impl Logic {
     fn process_units_random(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let mut ids: Vec<Id> = self.model.units.ids().copied().collect();
         ids.shuffle(&mut global_rng());
+        for id in ids {
+            let mut unit = self.model.units.remove(&id).unwrap();
+            f(self, &mut unit);
+            self.model.units.insert(unit);
+        }
+    }
+    fn process_units_sorted(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
+        let mut units = self.model.units.iter().collect::<Vec<&Unit>>();
+        units.shuffle(&mut global_rng());
+
+        let mut ids: Vec<Id> = units
+            .into_iter()
+            .sorted_by(|a, b| Ord::cmp(&a.position.x.abs(), &b.position.x.abs()))
+            .map(|unit| unit.id)
+            .collect();
         for id in ids {
             let mut unit = self.model.units.remove(&id).unwrap();
             f(self, &mut unit);

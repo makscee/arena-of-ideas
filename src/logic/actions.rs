@@ -2,7 +2,7 @@ use super::*;
 
 impl Logic {
     pub fn process_actions(&mut self) {
-        self.process_units_random(Self::process_unit_actions);
+        self.process_units_sorted(Self::process_unit_actions);
     }
     fn process_unit_actions(&mut self, unit: &mut Unit) {
         if self.model.current_tick.visual_timer > Time::new(0.0) {
