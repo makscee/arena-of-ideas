@@ -47,10 +47,12 @@ impl<'a> Simulation<'a> {
                 squad,
                 enemies,
                 repeats,
+                clan_bonuses,
             } => Box::new(UnitsSimulation::new(
                 squad,
                 enemies,
                 repeats,
+                clan_bonuses,
                 all_units,
                 all_clans,
                 config.clone(),
