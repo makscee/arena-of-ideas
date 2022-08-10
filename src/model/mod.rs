@@ -30,6 +30,7 @@ pub use unit::*;
 
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 6;
+pub const MAX_LIVES: usize = 10;
 pub const UNIT_VISUAL_TIME: f32 = 0.5;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
@@ -77,7 +78,7 @@ pub struct Model {
     pub last_enemy_action_time: Time,
     pub damage_instances: VecDeque<f32>,
     pub time_scale: f32,
-    pub deaths: usize,
+    pub lives: usize,
 }
 
 impl Model {
@@ -89,7 +90,7 @@ impl Model {
         round: GameRound,
         render_model: RenderModel,
         time_scale: f32,
-        deaths: usize,
+        lives: usize,
     ) -> Self {
         Self {
             next_id: 0,
@@ -110,7 +111,7 @@ impl Model {
             last_enemy_action_time: Time::ZERO,
             damage_instances: VecDeque::from(vec![1.0; 3]),
             time_scale,
-            deaths,
+            lives,
         }
     }
 }

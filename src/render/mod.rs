@@ -332,7 +332,7 @@ impl Render {
         let framebuffer_size = framebuffer.size();
         let lines: Vec<String> = vec![
             format!("--- {} ---", model.round.name),
-            format!("Deaths: {}", model.deaths),
+            format!("Lives: {}", model.lives),
         ];
         for (i, line) in lines.into_iter().enumerate() {
             self.geng.default_font().draw(

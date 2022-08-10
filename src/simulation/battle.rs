@@ -1,3 +1,5 @@
+use crate::model::{MAX_LIVES};
+
 use super::*;
 pub struct Battle {
     config: Config,
@@ -30,7 +32,7 @@ impl Battle {
                 round,
                 RenderModel::new(),
                 1.0,
-                0,
+                MAX_LIVES,
             ),
             delta_time,
         }

@@ -178,7 +178,7 @@ pub struct Shop {
     pub available: Vec<(UnitType, UnitTemplate)>,
     pub cards: Cards,
     pub drag: Option<Drag>,
-    pub deaths: usize,
+    pub lives: usize,
 }
 
 #[derive(Clone)]
@@ -348,7 +348,7 @@ impl Shop {
             drag: None,
             available: units,
             config,
-            deaths: 0,
+            lives: MAX_LIVES,
         }
     }
 

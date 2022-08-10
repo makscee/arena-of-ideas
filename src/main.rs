@@ -67,7 +67,7 @@ impl Game {
             round,
             RenderModel::new(),
             1.0,
-            shop.deaths,
+            shop.lives,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model);
@@ -301,7 +301,7 @@ impl geng::State for Game {
                     self.shop.take(),
                     self.last_frame.model.config.clone(),
                 );
-                shop_state.shop.deaths = self.last_frame.model.deaths;
+                shop_state.shop.lives = self.last_frame.model.lives;
                 Some(geng::Transition::Switch(Box::new(shop_state)))
             }
         }
