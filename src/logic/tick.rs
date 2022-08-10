@@ -6,12 +6,12 @@ impl Logic {
     pub fn process_tick(&mut self) {
         self.model.current_tick.visual_timer -= self.delta_time;
         if self.check_end() {
-            let wounds: usize = self
+            let wounds: i32 = self
                 .model
                 .units
                 .iter()
                 .filter(|unit| unit.faction == Faction::Enemy)
-                .map(|unit| unit.stats.base_damage.ceil().as_f32() as usize)
+                .map(|unit| unit.stats.base_damage.ceil().as_f32() as i32)
                 .sum();
             if self.model.lives <= 0 {
                 return;

@@ -133,7 +133,7 @@ impl Logic {
             self.model.action_indicator_render_position += (actor.position.to_world_f32()
                 - self.model.action_indicator_render_position)
                 * self.delta_time.as_f32()
-                * 20.0;
+                * 30.0;
         }
     }
     fn process_unit_render_positions(&mut self, unit: &mut Unit) {

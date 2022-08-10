@@ -30,9 +30,10 @@ pub use unit::*;
 
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 6;
-pub const MAX_LIVES: usize = 10;
-pub const UNIT_ACTION_TIME: f32 = 0.5;
-pub const UNIT_PRE_ACTION_TIME: f32 = 0.25;
+pub const MAX_LIVES: i32 = 10;
+pub const UNIT_TURN_TIME: f32 = 0.5;
+pub const UNIT_PRE_TURN_TIME: f32 = 0.3;
+pub const UNIT_SWITCH_TIME: f32 = 0.3;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TargetFilter {
@@ -79,7 +80,7 @@ pub struct Model {
     pub last_enemy_action_time: Time,
     pub damage_instances: VecDeque<f32>,
     pub time_scale: f32,
-    pub lives: usize,
+    pub lives: i32,
     pub acting_unit: Option<Id>,
     pub action_indicator_render_position: Vec2<f32>,
     pub turn_queue: VecDeque<(Id, TurnState)>,
@@ -94,7 +95,7 @@ impl Model {
         round: GameRound,
         render_model: RenderModel,
         time_scale: f32,
-        lives: usize,
+        lives: i32,
     ) -> Self {
         Self {
             next_id: 0,
@@ -128,7 +129,7 @@ impl TickModel {
         Self {
             tick_time: Time::ZERO,
             tick_num,
-            visual_timer: Time::new(UNIT_ACTION_TIME),
+            visual_timer: Time::new(UNIT_TURN_TIME),
         }
     }
 }

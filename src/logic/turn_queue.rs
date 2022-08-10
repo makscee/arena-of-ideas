@@ -22,15 +22,17 @@ impl Logic {
         let mut unit = unit.unwrap();
 
         match state {
-            TurnState::None => *state = TurnState::PreTurn,
+            TurnState::None => {
+                *state = TurnState::PreTurn;
+                self.model.current_tick.visual_timer += Time::new(UNIT_SWITCH_TIME);
+            }
             TurnState::PreTurn => {
                 self.model.acting_unit = Some(unit.id);
                 *state = TurnState::Turn;
-                self.model.current_tick.visual_timer += Time::new(UNIT_PRE_ACTION_TIME);
+                self.model.current_tick.visual_timer += Time::new(UNIT_PRE_TURN_TIME);
+                self.process_unit_statuses(&mut unit);
             }
             TurnState::Turn => {
-                self.tick_unit_cooldowns(&mut unit);
-                self.process_unit_statuses(&mut unit);
                 self.model.units.insert(unit.clone());
                 let modifier_targets = self.collect_modifier_targets(&unit);
                 self.model.units.remove(&unit.id);
@@ -85,11 +87,12 @@ impl Logic {
                             Faction::Enemy => self.model.last_enemy_action_time = self.model.time,
                         }
                         unit.action_state = ActionState::Cooldown { time: 0 };
-                        self.model.current_tick.visual_timer += Time::new(UNIT_ACTION_TIME);
+                        self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);
                     }
                     ActionState::Cooldown { time } => {}
                     _ => {}
                 }
+                self.tick_unit_cooldowns(&mut unit);
 
                 self.model.time_scale = 1.0;
                 self.model.turn_queue.pop_front();

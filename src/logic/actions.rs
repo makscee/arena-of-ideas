@@ -62,12 +62,12 @@ impl Logic {
                     Faction::Enemy => self.model.last_enemy_action_time = self.model.time,
                 }
                 unit.action_state = ActionState::Cooldown { time: 0 };
-                self.model.current_tick.visual_timer += Time::new(UNIT_ACTION_TIME);
+                self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);
                 self.model.time_scale = 1.0;
                 self.model.acting_unit = Some(unit.id);
             }
             ActionState::Cooldown { time } => {
-                self.model.current_tick.visual_timer += Time::new(UNIT_PRE_ACTION_TIME);
+                self.model.current_tick.visual_timer += Time::new(UNIT_PRE_TURN_TIME);
                 self.model.acting_unit = Some(unit.id);
             }
             _ => {}
