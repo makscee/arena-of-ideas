@@ -1,0 +1,17 @@
+build:
+  stage: build
+  image: kuviman/geng
+  before_script:
+    - mkdir -p .artifacts
+  script:
+    - cargo test --release
+    # Linux
+    - cargo geng build --release
+    - tar -zcvf .artifacts/ArenaOfIdeas-linux.tar.gz -C target/geng .
+    # Windows
+    - cargo geng build --release --target x86_64-pc-windows-gnu
+    - (cd target/geng && zip -r - .) > .artifacts/ArenaOfIdeas-windows.zip
+  artifacts:
+    paths:
+      - .artifacts
+    expire_in: 7 days
