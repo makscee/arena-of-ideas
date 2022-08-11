@@ -1,5 +1,6 @@
 use super::*;
 use crate::simulation::simulation_config::RegexUnit;
+use crate::simulation::simulation::match_units;
 
 pub struct UnitsSimulation {
     squad: Vec<UnitType>,
@@ -31,57 +32,15 @@ impl UnitsSimulation {
             config,
         }
     }
-
-    fn to_templates(&self, unit: RegexUnit, all_units: &Vec<UnitTemplate>) -> Vec<UnitTemplate> {
-        let regex = regex::Regex::new(&unit).expect("Failed to parse a regular expression");
-        all_units
-            .iter()
-            .filter(move |unit| regex.is_match(&unit.long_name))
-            .cloned()
-            .collect()
-    }
-
-    fn match_units(
-        &self,
-        all_units: &Vec<UnitTemplate>,
-        units: &Vec<RegexUnit>,
-        index: usize,
-        result: Vec<Vec<UnitTemplate>>,
-    ) -> Vec<Vec<UnitTemplate>> {
-        let mut cloned = result.clone();
-        if index == units.len() {
-            return cloned;
-        }
-
-        if cloned.is_empty() {
-            cloned.push(vec![]);
-        }
-
-        let regex_units = self.to_templates(units[index].clone(), all_units);
-        let mut regex_peek = regex_units.into_iter().peekable();
-        while let Some(unit) = regex_peek.next() {
-            let mut last_index = cloned.len() - 1;
-            cloned[last_index].push(unit);
-            cloned = self.match_units(all_units, units, index + 1, cloned);
-            last_index = cloned.len() - 1;
-            if regex_peek.peek().is_some() {
-                //copy last line and truncate unnessesary elements
-                let mut copied_line = cloned[last_index].clone();
-                copied_line.truncate(index);
-                cloned.push(copied_line);
-            }
-        }
-        cloned.clone()
-    }
 }
 
 impl SimulationVariant for UnitsSimulation {
     fn battles(&self) -> Vec<BattleConfig> {
         let mut player_variants = vec![];
-        player_variants = self.match_units(&self.all_units, &self.squad, 0, player_variants);
+        player_variants = match_units(&self.all_units, &self.squad, 0, player_variants);
 
         let mut unit_vars = vec![];
-        unit_vars = self.match_units(&self.all_units, &self.enemies, 0, unit_vars);
+        unit_vars = match_units(&self.all_units, &self.enemies, 0, unit_vars);
 
         let game_rounds: Vec<GameRound> = unit_vars
             .clone()

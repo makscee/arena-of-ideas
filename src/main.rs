@@ -23,6 +23,8 @@ use render::{Render, RenderModel};
 use shop::*;
 use utility::*;
 
+use crate::simulation::walkthrough;
+
 type Health = R32;
 type Time = R32;
 type Coord = i64;
@@ -322,6 +324,7 @@ enum Commands {
     Test,
     Shader(shader_edit::ShaderEdit),
     Simulate(simulation::Simulate),
+    Walkthrough(simulation::Walkthrough),
     UpdateUnits,
 }
 
@@ -395,6 +398,10 @@ fn main() {
                                 }
                                 Commands::Simulate(simulate) => {
                                     simulate.run(&geng, assets, config);
+                                    std::process::exit(0);
+                                }
+                                Commands::Walkthrough(walkthrough) => {
+                                    walkthrough.run(&geng, assets, config);
                                     std::process::exit(0);
                                 }
                                 Commands::Shader(shader) => {
