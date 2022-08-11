@@ -1,0 +1,41 @@
+{
+    "name": "cult_follower",
+    "tier": 1,
+    "triple": "cult_follower+",
+    "description": "@Warlocks get +6 @max_hp",
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        {
+            "name": "MaxHpAura",
+            "type": "Aura",
+            "statuses": [
+                {
+                    "name": "MaxHpModifier",
+                    "type": "Modifier",
+                    "target": {
+                        "type": "Stat",
+                        "stat": "MaxHealth",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 6
+                            }
+                        }
+                    }
+                }
+            ],
+            "filter": {
+                "Player": null
+            }
+        }
+    ],
+    "base": "support"
+}

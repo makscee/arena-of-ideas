@@ -48,7 +48,6 @@ pub struct Unit {
     pub face_dir: Vec2<R32>,
     pub position: Position,
     pub action: ActionProperties,
-    pub cooldown: Ticks,
     pub range: Coord,
     pub ability_cooldown: Option<Time>,
     pub clans: Vec<Clan>,
@@ -71,6 +70,7 @@ pub struct UnitStats {
     pub block: R32,
     pub crit_chance: R32,
     pub action_speed: R32,
+    pub cooldown: R32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -81,7 +81,7 @@ pub enum UnitStat {
     BaseDamage,
     Block,
     CritChance,
-    ActionSpeed,
+    Cooldown,
 }
 
 impl Unit {
@@ -113,7 +113,6 @@ impl Unit {
             modifier_targets: vec![],
             flags: vec![],
             range: template.range,
-            cooldown: template.cooldown,
             faction,
             action_state: ActionState::None,
             stats: UnitStats::new(template),
@@ -144,6 +143,7 @@ impl UnitStats {
             crit_chance: template.crit_chance,
             action_speed: template.action_speed,
             radius: template.radius,
+            cooldown: r32(template.cooldown as f32),
         }
     }
 
@@ -155,7 +155,7 @@ impl UnitStats {
             UnitStat::BaseDamage => self.base_damage,
             UnitStat::Block => self.block,
             UnitStat::CritChance => self.crit_chance,
-            UnitStat::ActionSpeed => self.action_speed,
+            UnitStat::Cooldown => self.cooldown,
         }
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -166,7 +166,7 @@ impl UnitStats {
             UnitStat::BaseDamage => &mut self.base_damage,
             UnitStat::Block => &mut self.block,
             UnitStat::CritChance => &mut self.crit_chance,
-            UnitStat::ActionSpeed => &mut self.action_speed,
+            UnitStat::Cooldown => &mut self.cooldown,
         }
     }
 }

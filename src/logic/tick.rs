@@ -51,7 +51,7 @@ impl Logic {
                 .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
             {
                 *time += 1;
-                if *time >= unit.cooldown {
+                if *time >= unit.stats.cooldown.floor().as_f32() as Ticks {
                     unit.action_state = ActionState::None;
                 }
             }
