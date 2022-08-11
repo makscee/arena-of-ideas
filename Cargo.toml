@@ -12,3 +12,8 @@ tiny-skia = "0.6"
 notify = "4.0.17" # File watch
 regex = "1.5.6"
 chrono = "0.4"
+
+[patch.crates-io]
+# Temp workaround until update in geng, as this issue is already fixed upstream
+# https://github.com/jdm/tinyfiledialogs-rs/issues/36
+tinyfiledialogs = { git = "https://github.com/kuviman/tinyfiledialogs-rs", branch = "fix-cross" }
