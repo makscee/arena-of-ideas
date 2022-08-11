@@ -12,7 +12,7 @@ const MAX_INVENTORY: usize = 10;
 const UNIT_COST: Money = 3;
 const UNIT_SELL_COST: Money = 1;
 const REROLL_COST: Money = 1;
-const TIER_UP_COST: [Money; 5] = [5, 6, 7, 8, 9];
+const TIER_UP_COST: [Money; 5] = [5, 7, 8, 9, 10];
 const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
 
 pub struct ShopState {
