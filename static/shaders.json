@@ -13,5 +13,6 @@
     "shaders/default_circle_hero.glsl",
     "shaders/vfx_particle_death_burst.glsl",
     "shaders/vfx_slash.glsl",
-    "shaders/vfx_slash_particles.glsl"
+    "shaders/vfx_slash_particles.glsl",
+    "shaders/vfx_particle_cooldown_burst.glsl"
 ]

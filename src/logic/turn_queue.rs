@@ -89,7 +89,27 @@ impl Logic {
                         unit.action_state = ActionState::Cooldown { time: 0 };
                         self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);
                     }
-                    ActionState::Cooldown { time } => {}
+                    ActionState::Cooldown { time } => {
+                        for (effect, vars, status_id, status_color) in
+                            unit.all_statuses.iter().flat_map(|status| {
+                                status.trigger(|trigger| {
+                                    matches!(trigger, StatusTrigger::CooldownTick)
+                                })
+                            })
+                        {
+                            self.effects.push_front(QueuedEffect {
+                                effect,
+                                context: EffectContext {
+                                    caster: Some(unit.id),
+                                    from: Some(unit.id),
+                                    target: Some(unit.id),
+                                    vars,
+                                    status_id: Some(status_id),
+                                    color: Some(status_color),
+                                },
+                            });
+                        }
+                    }
                     _ => {}
                 }
                 self.tick_unit_cooldowns(&mut unit);

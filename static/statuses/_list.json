@@ -19,5 +19,6 @@
     "HPLess50Detector.json",
     "DarkStealOnBonusShot.json",
     "InjureHealTint.json",
-    "PoisonWeakness.json"
+    "PoisonWeakness.json",
+    "vfx/VfxCooldownTick.json"
 ]

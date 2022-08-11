@@ -1,0 +1,16 @@
+{
+    "type": "Visual",
+    "duration": 0.5,
+    "parent": "Target",
+    "follow": false,
+    "radius": 1.0,
+    "color": "#b3b3b3",
+    "render": {
+        "path": "shaders/vfx_particle_cooldown_burst.glsl",
+        "parameters": {
+            "u_unit_radius": 0.01
+        },
+        "vertices": 2,
+        "instances": 1500
+    }
+}

@@ -115,7 +115,8 @@
                     }
                 ]
             },
-            "InjureHealTint"
+            "InjureHealTint",
+            "VfxCooldownTick"
         ]
     }
 ]

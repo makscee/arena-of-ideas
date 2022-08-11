@@ -105,6 +105,8 @@ pub enum StatusTrigger {
     Break,
     /// Triggered when unit uses Action
     Action,
+    /// Triggered the moment unit's cooldown decreases
+    CooldownTick,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
