@@ -1,0 +1,16 @@
+{
+    "health": 10,
+    "radius": 0.4,
+    "base_damage": 0,
+    "range": 0,
+    "cooldown": 1,
+    "action": {
+        "effect": {
+            "type": "Noop"
+        }
+    },
+    "render": {
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 200
+    }
+}

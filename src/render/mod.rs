@@ -176,7 +176,9 @@ impl Render {
             let cooldown = match unit.action_state {
                 ActionState::None => "o".to_string(),
                 ActionState::Start { target } => "o".to_string(),
-                ActionState::Cooldown { time } => (unit.cooldown - time).to_string(),
+                ActionState::Cooldown { time } => {
+                    format!("{:.0}", (unit.stats.cooldown.as_f32() - time as f32))
+                }
             };
             let text_color = if cooldown == "o" {
                 Color::WHITE
