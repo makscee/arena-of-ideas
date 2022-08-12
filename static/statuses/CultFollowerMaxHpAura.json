@@ -1,0 +1,36 @@
+{
+    "name": "CultFollowerMaxHpAura",
+    "type": "Aura",
+    "stacking": {
+        "type": "Count"
+    },
+    "color": "#fd6666",
+    "render": {
+        "path": "shaders/status/aura_default.glsl"
+    },
+    "statuses": [
+        {
+            "name": "MaxHpModifier",
+            "type": "Modifier",
+            "target": {
+                "type": "Stat",
+                "stat": "MaxHealth",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "MaxHealth"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": 6
+                    }
+                }
+            }
+        }
+    ],
+    "filter": {
+        "Player": null
+    }
+}

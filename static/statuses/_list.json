@@ -20,5 +20,7 @@
     "DarkStealOnBonusShot.json",
     "InjureHealTint.json",
     "PoisonWeakness.json",
-    "vfx/VfxCooldownTick.json"
+    "vfx/VfxCooldownTick.json",
+    "CultFollowerMaxHpAura.json",
+    "CultFollower+MaxHpCooldownAura.json"
 ]
