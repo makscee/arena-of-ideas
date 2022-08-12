@@ -1,0 +1,57 @@
+{
+    "name": "ButlerBlockCooldownAura",
+    "type": "Aura",
+    "stacking": {
+        "type": "Count"
+    },
+    "color": "#e6e6e6",
+    "render": {
+        "path": "shaders/status/aura_default.glsl"
+    },
+    "statuses": [
+        {
+            "name": "ButlerBlockCooldownModifier",
+            "type": "Modifier",
+            "target": {
+                "type": "List",
+                "targets": [
+                    {
+                        "type": "Stat",
+                        "stat": "Block",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "Block"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 3
+                            }
+                        }
+                    },
+                    {
+                        "type": "Stat",
+                        "stat": "Cooldown",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "Cooldown"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "filter": {
+        "Player": null
+    }
+}

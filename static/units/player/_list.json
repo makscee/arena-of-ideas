@@ -1,7 +1,5 @@
 [
   "p_1_c_henchman",
-  "p_1_s_cult_follower",
-  "p_1_s_cult_follower+",
   "p_1_c_henchman+",
   "p_1_m_ghoul",
   "p_1_m_ghoul+",
@@ -13,6 +11,10 @@
   "p_1_r_patient_zero+",
   "p_1_r_ranger",
   "p_1_r_ranger+",
+  "p_1_s_butler",
+  "p_1_s_butler+",
+  "p_1_s_cult_follower",
+  "p_1_s_cult_follower+",
   "p_2_c_dark_guardian",
   "p_2_c_dark_guardian+",
   "p_2_c_drainer",

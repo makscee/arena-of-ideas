@@ -1,0 +1,12 @@
+{
+    "name": "butler+",
+    "tier": 1,
+    "description": "@Vampires get +3 @block and -1 @cooldown",
+    "clans": [
+        "Vampires"
+    ],
+    "statuses": [
+        "ButlerBlockCooldownAura"
+    ],
+    "base": "support+"
+}

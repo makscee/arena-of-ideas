@@ -22,5 +22,7 @@
     "PoisonWeakness.json",
     "vfx/VfxCooldownTick.json",
     "CultFollowerMaxHpAura.json",
-    "CultFollower+MaxHpCooldownAura.json"
+    "CultFollower+MaxHpCooldownAura.json",
+    "ButlerBlockAura.json",
+    "ButlerBlockCooldownAura.json"
 ]

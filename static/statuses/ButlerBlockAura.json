@@ -1,0 +1,36 @@
+{
+    "name": "ButlerBlockAura",
+    "type": "Aura",
+    "stacking": {
+        "type": "Count"
+    },
+    "color": "#b3b3b3",
+    "render": {
+        "path": "shaders/status/aura_default.glsl"
+    },
+    "statuses": [
+        {
+            "name": "ButlerBlockModifier",
+            "type": "Modifier",
+            "target": {
+                "type": "Stat",
+                "stat": "Block",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "Block"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                }
+            }
+        }
+    ],
+    "filter": {
+        "Player": null
+    }
+}
