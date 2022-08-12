@@ -114,7 +114,7 @@ impl Logic {
                 }
                 self.tick_unit_cooldowns(&mut unit);
 
-                self.model.time_scale = 1.0;
+                self.model.time_scale = self.model.default_time_scale;
                 self.model.turn_queue.pop_front();
             }
         }

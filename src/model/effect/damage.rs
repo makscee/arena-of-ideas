@@ -301,9 +301,9 @@ impl EffectImpl for DamageEffect {
         let mut damage_instances = &mut logic.model.damage_instances;
         let avg_damage: f32 = damage_instances.iter().sum::<f32>() / damage_instances.len() as f32;
         if damage.as_f32() > avg_damage * 8.0 {
-            logic.model.time_scale = 0.3;
+            logic.model.time_scale = 0.3 * logic.model.default_time_scale;
         } else if damage.as_f32() > avg_damage * 3.0 {
-            logic.model.time_scale = 0.5;
+            logic.model.time_scale = 0.5 * logic.model.default_time_scale;
         }
         damage_instances.pop_front();
         damage_instances.push_back(damage.as_f32());
