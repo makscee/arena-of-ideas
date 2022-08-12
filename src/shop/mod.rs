@@ -7,7 +7,7 @@ use crate::render::UnitRender;
 use geng::MouseButton;
 use unit_card::*;
 
-const MAX_PARTY: usize = 7;
+const MAX_PARTY: usize = 6;
 const MAX_INVENTORY: usize = 10;
 const UNIT_COST: Money = 3;
 const UNIT_SELL_COST: Money = 1;
