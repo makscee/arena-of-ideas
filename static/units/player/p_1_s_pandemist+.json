@@ -1,0 +1,91 @@
+{
+    "name": "pandemist+",
+    "tier": 1,
+    "description": "Heal all @Plague Spreaders and deal damage to all enemies by amount of units with @Plague every tick",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "cooldown": 1,
+    "range": 5,
+    "action": {
+        "effect": {
+            "type": "If",
+            "condition": {
+                "type": "More",
+                "a": {
+                    "type": "UnitsInRange",
+                    "status": "Plague"
+                },
+                "b": {
+                    "type": "Const",
+                    "value": 0
+                }
+            },
+            "then": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "ChangeTarget",
+                        "filter": "Allies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "AddTargets",
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "Heal",
+                                        "value": {
+                                            "type": "UnitsInRange",
+                                            "status": "Plague"
+                                        }
+                                    },
+                                    {
+                                        "preset": "effects/vfx_heal.json"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "type": "ChangeTarget",
+                        "filter": "Enemies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "AddTargets",
+                            "condition": {
+                                "type": "Always"
+                            },
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "Damage",
+                                        "value": {
+                                            "type": "UnitsInRange",
+                                            "status": "Plague"
+                                        }
+                                    },
+                                    {
+                                        "preset": "effects/vfx_laser.json"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "else": {
+                "type": "Noop"
+            }
+        }
+    },
+    "base": "support+"
+}

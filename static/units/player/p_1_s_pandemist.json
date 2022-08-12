@@ -1,10 +1,10 @@
 {
-    "name": "redirector+",
+    "name": "pandemist",
     "tier": 1,
-    "triple": "redirector+",
-    "description": "Heal all allies by how many @Shields there are",
+    "triple": "pandemist+",
+    "description": "Heal all @Plague Spreaders by 2 every tick",
     "clans": [
-        "Protectors"
+        "PlagueSpreaders"
     ],
     "cooldown": 1,
     "range": 5,
@@ -13,37 +13,21 @@
             "type": "ChangeTarget",
             "filter": "Allies",
             "condition": {
-                "type": "And",
-                "a": {
-                    "type": "UnitInjured",
-                    "who": "Target"
-                },
-                "b": {
-                    "type": "More",
-                    "a": {
-                        "type": "UnitsInRange",
-                        "status": "Shield"
-                    },
-                    "b": {
-                        "type": "Const",
-                        "value": 0
-                    }
-                }
+                "type": "Always"
             },
             "effect": {
                 "type": "AddTargets",
                 "condition": {
                     "type": "Always"
                 },
-                "additional_targets": 10,
                 "effect": {
                     "type": "List",
                     "effects": [
                         {
                             "type": "Heal",
                             "value": {
-                                "type": "UnitsInRange",
-                                "status": "Shield"
+                                "type": "Const",
+                                "value": 2
                             }
                         },
                         {
@@ -54,5 +38,5 @@
             }
         }
     },
-    "base": "support+"
+    "base": "support"
 }
