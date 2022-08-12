@@ -135,10 +135,12 @@ impl Render {
                 framebuffer,
             );
 
+            let radius = unit.stats.radius.as_f32();
+
             // Draw damage and health
-            let unit_aabb = AABB::point(unit.render_position.map(|x| x.as_f32()))
-                .extend_uniform(unit.stats.radius.as_f32());
-            let size = unit.stats.radius.as_f32() * 0.7;
+            let unit_aabb =
+                AABB::point(unit.render_position.map(|x| x.as_f32())).extend_uniform(radius);
+            let size = radius * 0.7;
             let damage = AABB::point(unit_aabb.bottom_left())
                 .extend_right(size)
                 .extend_up(size);
@@ -170,6 +172,21 @@ impl Render {
                 text_color,
             )
             .fit_into(health)
+            .draw_2d(&self.geng, framebuffer, &self.camera);
+
+            // Draw name
+            let name_aabb = AABB::point(unit_aabb.bottom_left())
+                .translate(vec2(0.0, -0.3))
+                .extend_right(radius * 2.0)
+                .extend_down(radius * 0.7);
+            let text_color = Color::try_from("#e6e6e6").unwrap();
+
+            draw_2d::Text::unit(
+                self.geng.default_font().clone(),
+                &unit.unit_type,
+                text_color,
+            )
+            .fit_into(name_aabb)
             .draw_2d(&self.geng, framebuffer, &self.camera);
 
             // Draw cooldown indicator
@@ -256,7 +273,7 @@ impl Render {
         if let Some(actor) = actor {
             let shader_program = &self.assets.custom_renders.action_indicator;
             let quad = shader_program.get_vertices(&self.geng);
-            let position = model.action_indicator_render_position;
+            let position = model.action_indicator_render_position - vec2(0.0, -0.5);
             let faction = match actor.faction {
                 Faction::Player => 1.0,
                 Faction::Enemy => -1.0,
