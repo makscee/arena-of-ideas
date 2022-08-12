@@ -24,5 +24,7 @@
     "CultFollowerMaxHpAura.json",
     "CultFollower+MaxHpCooldownAura.json",
     "ButlerBlockAura.json",
-    "ButlerBlockCooldownAura.json"
+    "ButlerBlockCooldownAura.json",
+    "RitualistCooldownAura.json",
+    "Ritualist+CooldownAura.json"
 ]

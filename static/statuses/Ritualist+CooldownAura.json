@@ -1,10 +1,10 @@
 {
-    "name": "ButlerBlockAura",
+    "name": "Ritualist+CooldownAura",
     "type": "Aura",
     "stacking": {
         "type": "Count"
     },
-    "color": "#b3b3b3",
+    "color": "#cccccc",
     "render": {
         "path": "shaders/status/aura_default.glsl"
     },
@@ -14,17 +14,17 @@
             "type": "Modifier",
             "target": {
                 "type": "Stat",
-                "stat": "Block",
+                "stat": "Cooldown",
                 "value": {
                     "type": "Sum",
                     "a": {
                         "type": "FindStat",
                         "who": "Target",
-                        "stat": "Block"
+                        "stat": "Cooldown"
                     },
                     "b": {
                         "type": "Const",
-                        "value": 1
+                        "value": -2
                     }
                 }
             }
@@ -32,7 +32,7 @@
     ],
     "filter": {
         "Player": [
-            "Vampires"
+            "Demons"
         ]
     }
 }

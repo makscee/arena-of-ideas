@@ -52,6 +52,8 @@
         }
     ],
     "filter": {
-        "Player": null
+        "Player": [
+            "Vampires"
+        ]
     }
 }
