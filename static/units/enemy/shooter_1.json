@@ -2,9 +2,9 @@
     "name": "shooter_1",
     "base_damage": 2,
     "radius": 0.36,
-    "range": 5,
+    "range": 7,
     "cooldown": 2,
-    "health": 15,
+    "health": 20,
     "action": {
         "effect": {
             "preset": "effects/ranged_hit.json"

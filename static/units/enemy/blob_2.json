@@ -1,9 +1,9 @@
 {
     "name": "blob_2",
-    "health": 35,
-    "base_damage": 3,
+    "health": 50,
+    "base_damage": 5,
     "radius": 0.4,
-    "range": 1,
+    "range": 2,
     "cooldown": 2,
     "statuses": [
         {

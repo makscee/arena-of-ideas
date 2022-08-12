@@ -39,6 +39,7 @@ impl Walkthrough {
         let mut hero_picks_last:HashMap<UnitType, usize> = hashmap! {};
         let mut hero_picks:HashMap<UnitType, usize> = hashmap! {};
         let mut end_rounds:HashMap<String, usize> = hashmap! {};
+        let mut round_damages:HashMap<String, (i32, i32)> = hashmap! {};
 
         for index in 0..walkthrough_config.repeats {
             let mut tier = 1;
@@ -165,6 +166,9 @@ impl Walkthrough {
                     )
                     .as_str(),
                 );
+                let round_damage = round_damages.entry(result.round).or_insert((0,0));
+                round_damage.0 += result.damage_sum;
+                round_damage.1 += result.health_sum;
                 if result.damage_sum < 0{
                     lives += result.damage_sum;
                 }
@@ -203,6 +207,14 @@ impl Walkthrough {
             },
         }
 
+        let mut round_damage_string = "".to_owned(); 
+        round_damages.clone()
+        .into_iter()
+        .sorted_by(|a,b| b.1.1.cmp(&a.1.1))
+        .for_each(|(k, v)| {
+            round_damage_string.push_str(format!("{}: {}:{}\n", k, v.0, v.1).as_str());
+        });
+
         // Write results
         write_to(date_path.join("result.json"), &walkthrough_results)
             .expect("Failed to write results");
@@ -213,6 +225,8 @@ impl Walkthrough {
         write_to_file(date_path.join("hero_picks_last.txt"),&Self::to_file (&hero_picks_last))
             .expect("Failed to write results");
         write_to_file(date_path.join("end_rounds.txt"), &Self::to_file(&end_rounds))
+            .expect("Failed to write results");
+        write_to_file(date_path.join("round_damages.txt"), &round_damage_string)
             .expect("Failed to write results");
 
         info!("Results saved: {:?}", start.elapsed());
