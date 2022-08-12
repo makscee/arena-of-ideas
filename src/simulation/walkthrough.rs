@@ -165,7 +165,7 @@ impl Walkthrough {
             last_result.player.clone()
                 .into_iter()
                 .for_each(|unit| *hero_picks_last.entry(unit).or_insert(0)+=1);
-            *end_rounds.entry(result.round.clone()).or_insert(0)+=1;
+            *end_rounds.entry(last_result.round.clone()).or_insert(0)+=1;
             walkthrough_results.insert(
                 format!("{:?}", last_result.player),
                 format!(
@@ -200,9 +200,9 @@ impl Walkthrough {
             .expect("Failed to write results");
         write_to(date_path.join("hero_picks.json"), &hero_picks)
             .expect("Failed to write results");
-            write_to(date_path.join("hero_picks_last.json"), &hero_picks_last)
+        write_to(date_path.join("hero_picks_last.json"), &hero_picks_last)
             .expect("Failed to write results");
-            write_to(date_path.join("end_rounds.json"), &end_rounds)
+        write_to(date_path.join("end_rounds.json"), &end_rounds)
             .expect("Failed to write results");
 
         info!("Results saved: {:?}", start.elapsed());
