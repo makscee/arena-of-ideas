@@ -12,7 +12,8 @@ pub struct Battle {
 pub struct BattleResult {
     pub player: Vec<UnitType>,
     pub player_won: bool,
-    pub lives: i32,
+    pub damage_sum: i32,
+    pub health_sum: i32,
     pub units_alive: Vec<UnitType>,
     pub round: String,
 }
@@ -60,17 +61,37 @@ impl Battle {
                     .units
                     .iter()
                     .all(|unit| matches!(unit.faction, Faction::Player));
+                let units_alive = model
+                    .units
+                    .clone()
+                    .into_iter()
+                    .map(|unit| unit.unit_type)
+                    .collect();
+
+                let mut health_sum = model
+                    .units
+                    .clone()
+                    .into_iter()
+                    .map(|unit| unit.stats.health.as_f32())
+                    .sum::<f32>();
+
+                let mut damage_sum = model
+                    .units
+                    .clone()
+                    .into_iter()
+                    .map(|unit| unit.stats.base_damage.as_f32())
+                    .sum::<f32>();
+                if !player_won {
+                    health_sum = -health_sum;
+                    damage_sum = -damage_sum;
+                }
                 return BattleResult {
                     player: self.model.config.player.clone(),
-                    lives: model.lives,
+                    damage_sum: damage_sum as i32,
+                    health_sum: health_sum as i32,
                     player_won,
                     round: self.model.round.name,
-                    units_alive: model
-                        .units
-                        .clone()
-                        .into_iter()
-                        .map(|unit| unit.unit_type)
-                        .collect(),
+                    units_alive,
                 };
             }
         }

@@ -34,6 +34,11 @@ impl Walkthrough {
         let all_units: Vec<UnitTemplate> =
             assets.units.iter().map(|entry| entry.1).cloned().collect();
         let mut walkthrough_results: HashMap<String, String> = hashmap! {};
+
+        let mut hero_picks:HashMap<UnitType, usize> = hashmap! {};
+        let mut hero_picks_last:HashMap<UnitType, usize> = hashmap! {};
+        let mut end_rounds:HashMap<String, usize> = hashmap! {};
+
         for index in 0..walkthrough_config.repeats {
             let mut tier = 1;
             let mut round_index = 0;
@@ -104,7 +109,10 @@ impl Walkthrough {
                     }
                 });
                 let battle_result = best_win.unwrap_or_else(|| best_lose.unwrap());
-                lives = battle_result.lives;
+                if battle_result.damage_sum < 0 {
+                    lives += battle_result.damage_sum;
+                }
+                
                 if lives <= 0 {
                     results.push(battle_result);
                     break;
@@ -126,14 +134,44 @@ impl Walkthrough {
                     .collect();
                 info!(
                 "\nLives: {} \nPlayer team:{:?} \nUnits alive:{:?} \nInventory:{:?} \nRound: {} \nTier: {}",
-                lives, player, alives, inventory, round_index, tier
+                lives, player, alives, inventory, round_index, tier - 1 
             );
                 results.push(battle_result);
             }
-            let run_result = results.into_iter().last().unwrap();
+            let mut lost_lives = "".to_owned();
+            let mut last_result = None;
+            let mut lives = walkthrough_config.lives;
+
+            results.clone().into_iter().for_each(|result| {
+                result.player.clone()
+                .into_iter()
+                .for_each(|unit| *hero_picks.entry(unit).or_insert(0)+=1);
+                
+                last_result = Some(result.clone());
+                lost_lives.push_str(
+                    format!(
+                        "({}:{}:{}) ",
+                        result.round,
+                        result.damage_sum,
+                        result.health_sum
+                    )
+                    .as_str(),
+                );
+                if result.damage_sum < 0{
+                    lives += result.damage_sum;
+                }
+            });
+            let last_result = last_result.unwrap().clone();
+            last_result.player.clone()
+                .into_iter()
+                .for_each(|unit| *hero_picks_last.entry(unit).or_insert(0)+=1);
+            *end_rounds.entry(result.round.clone()).or_insert(0)+=1;
             walkthrough_results.insert(
-                format!("{:?}", run_result.player),
-                format!("Round:{}, Lives: {}", run_result.round, run_result.lives),
+                format!("{:?}", last_result.player),
+                format!(
+                    "{}, Lives: {} {}",
+                    last_result.round, lives, lost_lives
+                ),
             );
         }
 
@@ -159,6 +197,12 @@ impl Walkthrough {
 
         // Write results
         write_to(date_path.join("result.json"), &walkthrough_results)
+            .expect("Failed to write results");
+        write_to(date_path.join("hero_picks.json"), &hero_picks)
+            .expect("Failed to write results");
+            write_to(date_path.join("hero_picks_last.json"), &hero_picks_last)
+            .expect("Failed to write results");
+            write_to(date_path.join("end_rounds.json"), &end_rounds)
             .expect("Failed to write results");
 
         info!("Results saved: {:?}", start.elapsed());
