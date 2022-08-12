@@ -359,6 +359,39 @@ impl Render {
             }
         }
 
+        // Speed indicators
+        let tick_text = vec!["x1", "x2", "x4"];
+        let box_size = 0.15;
+
+        for (i, text) in tick_text.into_iter().enumerate() {
+            let is_active = model.default_time_scale == 2.0 && i == 1
+                || model.default_time_scale == 4.0 && i == 2
+                || model.default_time_scale < 2.0 && i == 0;
+            let mut text_scale = 1.0;
+            let mut text_color = Color::try_from("#cccccc").unwrap();
+            if is_active {
+                text_scale = 1.3;
+                text_color = Color::WHITE;
+            }
+            self.geng.draw_2d(
+                framebuffer,
+                &self.camera,
+                &draw_2d::Text::unit(&**self.geng.default_font(), &text, text_color)
+                    .scale_uniform(box_size * text_scale)
+                    .translate(vec2(
+                        (i as f32 - 1.0) * box_size * 4.0,
+                        -self.camera.fov * 0.45,
+                    )),
+            );
+        }
+
+        if let Some(unit) = hovered_unit {
+            self.draw_statuses_desc(unit, framebuffer);
+            if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
+                self.draw_damage_heal_desc(text_block, framebuffer);
+            }
+        }
+
         // Info panel
         let line_height = 44.0;
         let text_size = 55.0;
