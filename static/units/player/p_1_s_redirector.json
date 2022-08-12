@@ -1,0 +1,51 @@
+{
+    "name": "redirector",
+    "tier": 1,
+    "triple": "redirector+",
+    "description": "Heal ally by how many @Shields there are",
+    "clans": [
+        "Protectors"
+    ],
+    "cooldown": 1,
+    "range": 5,
+    "action": {
+        "effect": {
+            "type": "ChangeTarget",
+            "filter": "Allies",
+            "condition": {
+                "type": "And",
+                "a": {
+                    "type": "UnitInjured",
+                    "who": "Target"
+                },
+                "b": {
+                    "type": "More",
+                    "a": {
+                        "type": "UnitsInRange",
+                        "status": "Shield"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": 0
+                    }
+                }
+            },
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Heal",
+                        "value": {
+                            "type": "UnitsInRange",
+                            "status": "Shield"
+                        }
+                    },
+                    {
+                        "preset": "effects/vfx_heal.json"
+                    }
+                ]
+            }
+        }
+    },
+    "base": "support"
+}
