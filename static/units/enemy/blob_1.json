@@ -1,6 +1,6 @@
 {
     "name": "blob_1",
-    "health": 20,
+    "health": 30,
     "base_damage": 3,
     "radius": 0.4,
     "range": 1,

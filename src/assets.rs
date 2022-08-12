@@ -110,7 +110,7 @@ pub struct Assets {
     pub card: Rc<ugli::Texture>,
     pub hearts: Rc<ugli::Texture>,
     pub swords_emblem: Rc<ugli::Texture>,
-    #[asset(path = "rounds/round*.json", range = "1..=10")]
+    #[asset(path = "rounds/round*.json", range = "1..=15")]
     pub rounds: Vec<GameRound>,
 }
 
