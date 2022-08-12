@@ -121,7 +121,8 @@ impl geng::State for Game {
             .history
             .get(index)
             .unwrap_or(self.history.last().unwrap());
-        let delta_time = delta_time * entry.model.time_scale as f64;
+        let delta_time =
+            delta_time * entry.model.time_scale as f64 * entry.model.time_modifier as f64;
         self.time += delta_time;
         let last_frame = &self.last_frame;
 

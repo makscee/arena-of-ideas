@@ -22,7 +22,7 @@ impl Logic {
             && self.model.current_tick.visual_timer <= Time::new(0.0)
             && self.model.turn_queue.is_empty()
         {
-            self.model.time_scale = self.model.default_time_scale;
+            self.model.time_scale = 1.0;
             let last_tick = &self.model.current_tick;
             self.model.current_tick = TickModel::new(last_tick.tick_num + 1);
             self.tick();

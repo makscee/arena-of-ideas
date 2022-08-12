@@ -11,24 +11,15 @@ impl Logic {
         );
         events.add_listener(
             GameEvent::Speed1,
-            Box::new(|logic| {
-                logic.model.time_scale = SPEED_1;
-                logic.model.default_time_scale = SPEED_1;
-            }),
+            Box::new(|logic| logic.model.time_modifier = SPEED_1),
         );
         events.add_listener(
             GameEvent::Speed2,
-            Box::new(|logic| {
-                logic.model.time_scale = SPEED_2;
-                logic.model.default_time_scale = SPEED_2;
-            }),
+            Box::new(|logic| logic.model.time_modifier = SPEED_2),
         );
         events.add_listener(
             GameEvent::Speed3,
-            Box::new(|logic| {
-                logic.model.time_scale = SPEED_3;
-                logic.model.default_time_scale = SPEED_3;
-            }),
+            Box::new(|logic| logic.model.time_modifier = SPEED_3),
         );
     }
     pub fn process_time(&mut self) {

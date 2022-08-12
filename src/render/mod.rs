@@ -381,9 +381,9 @@ impl Render {
         let box_size = 0.15;
 
         for (i, text) in tick_text.into_iter().enumerate() {
-            let is_active = model.default_time_scale == 2.0 && i == 1
-                || model.default_time_scale == 4.0 && i == 2
-                || model.default_time_scale < 2.0 && i == 0;
+            let is_active = model.time_modifier == 2.0 && i == 1
+                || model.time_modifier == 4.0 && i == 2
+                || model.time_modifier < 2.0 && i == 0;
             let mut text_scale = 1.0;
             let mut text_color = Color::try_from("#cccccc").unwrap();
             if is_active {
