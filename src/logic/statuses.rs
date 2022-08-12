@@ -105,8 +105,9 @@ impl Logic {
                             if *next_tick <= 0 {
                                 *next_tick += *tick_time;
                                 ticks += 1;
+                            } else {
+                                *next_tick -= 1;
                             }
-                            *next_tick -= 1;
 
                             ticks
                         }
