@@ -35,8 +35,9 @@ impl Walkthrough {
             assets.units.iter().map(|entry| entry.1).cloned().collect();
         let mut walkthrough_results: HashMap<String, String> = hashmap! {};
 
-        let mut hero_picks:HashMap<UnitType, usize> = hashmap! {};
+        let mut hero_rounds:HashMap<UnitType, usize> = hashmap! {};
         let mut hero_picks_last:HashMap<UnitType, usize> = hashmap! {};
+        let mut hero_picks:HashMap<UnitType, usize> = hashmap! {};
         let mut end_rounds:HashMap<String, usize> = hashmap! {};
 
         for index in 0..walkthrough_config.repeats {
@@ -125,6 +126,13 @@ impl Walkthrough {
                         next_update_round = shop_updates.pop_front();
                     }
                 }
+                let s1: HashSet<UnitType> = battle_result.player.iter().cloned().collect();
+                let s2: HashSet<UnitType> = player.iter().cloned().collect();
+                (&s1 - &s2).iter()
+                .cloned()
+                .for_each(|unit|{
+                    *hero_picks.entry(unit).or_insert(0) += 1;
+                });
                 player = battle_result.player.clone();
                 let alives: Vec<UnitType> = battle_result.units_alive.clone();
                 let inventory: Vec<UnitType> = inventory_units
@@ -145,12 +153,12 @@ impl Walkthrough {
             results.clone().into_iter().for_each(|result| {
                 result.player.clone()
                 .into_iter()
-                .for_each(|unit| *hero_picks.entry(unit).or_insert(0)+=1);
+                .for_each(|unit| *hero_rounds.entry(unit).or_insert(0) += 1);
                 
                 last_result = Some(result.clone());
                 lost_lives.push_str(
                     format!(
-                        "({}:{}:{}) ",
+                        "({} D:{} H:{})",
                         result.round,
                         result.damage_sum,
                         result.health_sum
@@ -164,8 +172,8 @@ impl Walkthrough {
             let last_result = last_result.unwrap().clone();
             last_result.player.clone()
                 .into_iter()
-                .for_each(|unit| *hero_picks_last.entry(unit).or_insert(0)+=1);
-            *end_rounds.entry(last_result.round.clone()).or_insert(0)+=1;
+                .for_each(|unit| *hero_picks_last.entry(unit).or_insert(0) += 1);
+            *end_rounds.entry(last_result.round.clone()).or_insert(0) += 1;
             walkthrough_results.insert(
                 format!("{:?}", last_result.player),
                 format!(
@@ -198,14 +206,27 @@ impl Walkthrough {
         // Write results
         write_to(date_path.join("result.json"), &walkthrough_results)
             .expect("Failed to write results");
-        write_to(date_path.join("hero_picks.json"), &hero_picks)
+        write_to_file(date_path.join("hero_rounds.txt"), &Self::to_file(&hero_rounds))
             .expect("Failed to write results");
-        write_to(date_path.join("hero_picks_last.json"), &hero_picks_last)
+        write_to_file(date_path.join("hero_picks.txt"), &Self::to_file(&hero_picks))
             .expect("Failed to write results");
-        write_to(date_path.join("end_rounds.json"), &end_rounds)
+        write_to_file(date_path.join("hero_picks_last.txt"),&Self::to_file (&hero_picks_last))
+            .expect("Failed to write results");
+        write_to_file(date_path.join("end_rounds.txt"), &Self::to_file(&end_rounds))
             .expect("Failed to write results");
 
         info!("Results saved: {:?}", start.elapsed());
+    }
+
+    fn to_file(map: &HashMap<String, usize>) -> String {
+        let mut result = "".to_owned();
+        map.clone()
+        .into_iter()
+        .sorted_by(|a,b| b.1.cmp(&a.1))
+        .for_each(|(k, v)| {
+            result.push_str(format!("{}: {}\n", k, v).as_str());
+        });
+        result
     }
 
     fn shop_variants(

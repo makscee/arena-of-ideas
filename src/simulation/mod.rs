@@ -136,3 +136,10 @@ fn write_to<T: Serialize>(path: impl AsRef<std::path::Path>, item: &T) -> std::i
     std::fs::write(path, data)?;
     Ok(())
 }
+
+fn write_to_file(path: impl AsRef<std::path::Path>, data: &String) -> std::io::Result<()> {
+    let path = path.as_ref();
+    let file = std::fs::File::create(path).expect(&format!("Failed to create {path:?}"));
+    std::fs::write(path, data)?;
+    Ok(())
+}
