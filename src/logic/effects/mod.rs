@@ -35,16 +35,12 @@ impl EffectContext {
         )
     }
     pub fn unit_to_string(&self, unit: Option<Id>, logic: &Logic) -> String {
-        match unit {
-            Some(id) => {
-                if let Some(unit) = logic.model.units.get(&id) {
-                    format!("{}#{}", unit.unit_type, id)
-                } else {
-                    let unit = logic.model.dead_units.get(&id).unwrap();
-                    format!("{}#{}(dead)", unit.unit_type, id)
-                }
-            }
-            None => "None".to_owned(),
+        if let Some(id) = unit {
+            let unit = logic.model.units.get(&id).expect("Can't find unit");
+            let dead = if unit.is_dead { "(dead)" } else { "" };
+            format!("{}#{}{}", unit.unit_type, id, dead)
+        } else {
+            "None".to_owned()
         }
     }
 }

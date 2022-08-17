@@ -265,9 +265,7 @@ impl Render {
         }
 
         // Draw acting unit indicator
-        let actor = model
-            .acting_unit
-            .and_then(|actor| model.units.get(&actor).or(model.dead_units.get(&actor)));
+        let actor = model.acting_unit.and_then(|actor| model.units.get(&actor));
         if let Some(actor) = actor {
             let shader_program = &self.assets.custom_renders.action_indicator;
             let quad = shader_program.get_vertices(&self.geng);

@@ -29,6 +29,7 @@ impl Logic {
         }
     }
     fn tick(&mut self) {
+        self.model.units.retain(|unit| !unit.is_dead);
         let mut units = self.model.units.iter().collect::<Vec<&Unit>>();
 
         let turn_queue: Vec<(Id, TurnState)> = units

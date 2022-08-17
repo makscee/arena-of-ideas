@@ -13,13 +13,11 @@ impl Logic {
                 self.model
                     .units
                     .get(&parent)
-                    .or(self.model.dead_units.get(&parent))
             });
             let partner = particle.partner.and_then(|partner| {
                 self.model
                     .units
                     .get(&partner)
-                    .or(self.model.dead_units.get(&partner))
             });
             let mut parameters = &mut particle.render_config.parameters;
 

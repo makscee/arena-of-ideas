@@ -126,7 +126,6 @@ impl Logic {
             self.model
                 .units
                 .get(&actor)
-                .or(self.model.dead_units.get(&actor))
         });
         if let Some(actor) = actor {
             self.model.action_indicator_render_position += (actor.position.to_world_f32()

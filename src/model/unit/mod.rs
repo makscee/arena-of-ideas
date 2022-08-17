@@ -59,6 +59,7 @@ pub struct Unit {
     pub last_injure_time: Time,
     pub last_heal_time: Time,
     pub random_number: R32,
+    pub is_dead: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -129,6 +130,7 @@ impl Unit {
             last_injure_time: Time::new(0.0),
             last_heal_time: Time::new(0.0),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
+            is_dead: false,
         }
     }
 }

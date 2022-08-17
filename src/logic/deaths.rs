@@ -3,7 +3,7 @@ use super::*;
 impl Logic {
     pub fn kill(&mut self, id: Id) {
         let unit = self.model.units.get_mut(&id).unwrap();
-        unit.stats.health = Health::new(0.0);
+        unit.is_dead = true;
         let unit = self.model.units.get(&id).unwrap();
 
         for other in self.model.units.iter().filter(|other| other.id != unit.id) {
@@ -36,9 +36,9 @@ impl Logic {
     pub fn process_deaths(&mut self) {
         let ids = self.model.units.ids().copied().collect::<Vec<_>>();
         for id in ids {
-            let unit = self.model.units.get(&id).unwrap();
+            let unit = self.model.units.get_mut(&id).unwrap();
             if unit.stats.health <= Health::ZERO {
-                self.model.dead_units.insert(unit.clone());
+                unit.is_dead = true;
                 for (effect, vars, status_id, status_color) in
                     unit.all_statuses.iter().flat_map(|status| {
                         status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))
@@ -56,14 +56,10 @@ impl Logic {
                         },
                     });
                 }
-                let unit_position = unit.clone().position;
+                let unit_position = unit.position;
                 self.update_positions(id, unit_position);
             }
         }
-
-        self.model
-            .units
-            .retain(|unit| unit.stats.health > Health::ZERO);
     }
     fn update_positions(&mut self, unit_id: Id, unit_position: Position) {
         let mut move_vertically = false;

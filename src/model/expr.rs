@@ -78,7 +78,6 @@ impl Expr {
                     .model
                     .units
                     .get(&target)
-                    .or_else(|| logic.model.dead_units.get(&target))
                     .unwrap();
                 target.stats.get(*stat)
             }

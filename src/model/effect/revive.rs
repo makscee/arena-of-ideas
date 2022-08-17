@@ -16,10 +16,10 @@ impl EffectImpl for ReviveEffect {
         let health = effect.health.calculate(&context, logic);
         let mut unit = context
             .target
-            .and_then(|id| logic.model.dead_units.remove(&id))
+            .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
         unit.stats.health = health;
         unit.permanent_stats.health = health;
-        logic.model.units.insert(unit); // TODO: check validity
+        unit.is_dead = false;
     }
 }

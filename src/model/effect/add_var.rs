@@ -24,13 +24,7 @@ impl EffectImpl for AddVarEffect {
         let value = effect.value.calculate(&context, logic);
         let target = context
             .target
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get_mut(&id)
-                    .or(logic.model.dead_units.get_mut(&id))
-            })
+            .and_then(|id| logic.model.units.get_mut(&id))
             .expect("Target not found");
         if let Some(status_name) = effect.status_name {
             for status in target.all_statuses.iter_mut().filter(|status| {
