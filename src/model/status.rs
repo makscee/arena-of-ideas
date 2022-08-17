@@ -1,7 +1,7 @@
 use super::*;
 
-fn zero() -> R32 {
-    R32::ZERO
+fn zero() -> Ticks {
+    0
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
@@ -92,9 +92,10 @@ pub enum StatusTrigger {
     },
     /// Triggered periodically
     Repeating {
-        tick_time: Time,
         #[serde(default = "zero")]
-        next_tick: Time,
+        tick_time: Ticks,
+        #[serde(default = "zero")]
+        next_tick: Ticks,
     },
     /// Triggered by CustomTriggerEffect
     Custom { name: String },
@@ -104,6 +105,8 @@ pub enum StatusTrigger {
     Break,
     /// Triggered when unit uses Action
     Action,
+    /// Triggered the moment unit's cooldown decreases
+    CooldownTick,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -165,10 +168,11 @@ pub enum ModifierTarget {
     },
     Damage {
         source: Option<HashSet<DamageType>>,
+        condition: Option<Condition>,
         value: Expr,
     },
     List {
-        modifiers: Vec<StatusModifier>,
+        targets: Vec<ModifierTarget>,
     },
 }
 
@@ -178,9 +182,10 @@ pub struct StatusModifier {
     /// Specifies what the modifier effect will actually modify
     pub target: ModifierTarget,
     /// Lower priority modifiers get processed earlier
+    #[serde(default)]
     pub priority: i64,
     /// Condition when to apply modifier
-    pub condition: Condition,
+    pub condition: Option<Condition>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -206,7 +211,7 @@ pub struct Status {
     /// If specified, the status will drop after that time,
     /// otherwise the status will be attached indefinitely
     /// or until it gets removed manually
-    pub duration: Option<Time>,
+    pub duration: Option<std::num::NonZeroU64>,
     /// Specifications of effects to apply for different subsets of triggers
     #[serde(default)]
     pub listeners: Vec<StatusListener>,
@@ -217,6 +222,9 @@ pub struct Status {
     pub order: i32,
     #[serde(skip, default = "Status::default_color")]
     pub color: Color<f32>,
+    /// Whether the status will be hidden in status description render
+    #[serde(default = "Status::default_hidden")]
+    pub hidden: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -224,13 +232,14 @@ pub struct Status {
 pub struct AttachedStatus {
     /// The actual status that hold all the neccessary logic info
     pub status: Status,
-    /// Whether this status originated from an aura
-    pub is_aura: bool,
+    /// Whether this status originated from an aura.
+    /// If it did, the aura's Id is given
+    pub is_aura: Option<Id>,
     /// Whether trigger Init was fired
     pub is_inited: bool,
-    /// Specifies how much time is left until the status is dropped.
+    /// Specifies how many ticks are left until the status is dropped.
     /// If `None`, then the status remains attached.
-    pub time: Option<Time>,
+    pub time: Option<Ticks>,
     /// Specifies the owner of the status
     pub owner: Option<Id>,
     /// Specifies the caster that applied the status
@@ -253,7 +262,7 @@ impl StatusRef {
             StatusRef::Name(name) => {
                 &statuses
                     .get(name)
-                    .expect(&format!("Failed to find status {name:?}"))
+                    .unwrap_or_else(|| panic!("Failed to find status {name:?}"))
                     .status
             }
             StatusRef::Raw(status) => status,
@@ -268,8 +277,8 @@ impl Status {
         *next_id += 1;
         AttachedStatus {
             vars: self.vars.clone(),
-            time: self.duration,
-            is_aura: false,
+            time: self.duration.map(Into::into),
+            is_aura: None,
             is_inited: false,
             status: self,
             owner,
@@ -278,13 +287,13 @@ impl Status {
         }
     }
 
-    /// Transforms config into an attached status with `is_aura` set to true
-    /// and `time` set to 0
-    pub fn attach_aura(self, owner: Option<Id>, caster: Id) -> AttachedStatus {
+    /// Transforms config into an attached status with `is_aura` set to `true`
+    /// and `time` set to `None`, which means that it needs to be removed manually
+    pub fn attach_aura(self, aura_id: Id, owner: Option<Id>, caster: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
-            time: Some(Time::ZERO),
-            is_aura: true,
+            time: None,
+            is_aura: Some(aura_id),
             is_inited: false,
             status: self,
             caster: Some(caster),
@@ -295,6 +304,10 @@ impl Status {
 
     fn default_color() -> Color<f32> {
         Color::WHITE
+    }
+
+    fn default_hidden() -> bool {
+        false
     }
 }
 
@@ -317,6 +330,18 @@ impl AttachedStatus {
                     self.status.color,
                 )
             })
+    }
+}
+
+impl Aura {
+    /// Whether aura is applicable to the target
+    pub fn is_applicable(&self, unit: &Unit, target: &Unit) -> bool {
+        if let Some(radius) = self.radius {
+            if unit.position.distance(&target.position) > radius {
+                return false;
+            }
+        }
+        self.filter.check(target)
     }
 }
 
@@ -364,7 +389,7 @@ pub fn unit_attach_status(
         }
         StatusStacking::Refresh => {
             return replace(status, all_statuses, |s| {
-                s.time = s.status.duration;
+                s.time = s.status.duration.map(Into::into);
                 s.id
             })
         }
@@ -376,7 +401,7 @@ pub fn unit_attach_status(
         }
         StatusStacking::CountRefresh => {
             return replace(status, all_statuses, |s| {
-                s.time = s.status.duration;
+                s.time = s.status.duration.map(Into::into);
                 *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
                 s.id
             })

@@ -40,7 +40,13 @@ impl EffectImpl for AddTargetsEffect {
                 .filter(|unit| !targets.contains(&unit.id))
                 .filter(|unit| distance_between_units(unit, from) < from.range)
                 .filter(|unit| {
-                    logic.check_condition(&effect.condition, &EffectContext { ..context.clone() })
+                    logic.check_condition(
+                        &effect.condition,
+                        &EffectContext {
+                            target: Some(unit.id),
+                            ..context.clone()
+                        },
+                    )
                 })
                 .choose(&mut global_rng())
             {

@@ -9,8 +9,7 @@
         {
             "triggers": [
                 {
-                    "type": "SelfDetectAttach",
-                    "status_name": "DarkSteal"
+                    "type": "Init"
                 }
             ],
             "effect": {

@@ -1,0 +1,57 @@
+{
+    "name": "CultFollower+MaxHpCooldownAura",
+    "type": "Aura",
+    "stacking": {
+        "type": "Count"
+    },
+    "color": "#fc0107",
+    "render": {
+        "path": "shaders/status/aura_default.glsl"
+    },
+    "statuses": [
+        {
+            "name": "IgnoreFreeze",
+            "type": "Modifier",
+            "target": {
+                "type": "List",
+                "targets": [
+                    {
+                        "type": "Stat",
+                        "stat": "MaxHealth",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "MaxHealth"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 10
+                            }
+                        }
+                    },
+                    {
+                        "type": "Stat",
+                        "stat": "Cooldown",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "FindStat",
+                                "who": "Target",
+                                "stat": "Cooldown"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "filter": {
+        "Player": null
+    }
+}

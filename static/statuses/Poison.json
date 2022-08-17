@@ -10,8 +10,8 @@
             "triggers": [
                 {
                     "type": "Repeating",
-                    "tick_time": 1,
-                    "next_tick": 1
+                    "tick_time": 3,
+                    "next_tick": 3
                 }
             ],
             "effect": {
@@ -67,10 +67,7 @@
         }
     ],
     "render": {
-        "path": "shaders/status/status_default.glsl",
-        "parameters": {
-            "u_status_color": "#21ff06"
-        }
+        "path": "shaders/status/status_default.glsl"
     },
     "vars": {
         "PoisonTicksLeft": 2

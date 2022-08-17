@@ -1,0 +1,71 @@
+{
+	"name": "dark_guardian+",
+    "health": 8,
+    "base_damage": 4,
+    "cooldown": 3,
+    "tier": 2,
+    "description": "When @Shield absorbs, apply @Siphon Life to attacker and to random shieldless ally",
+    "clans": [
+        "Warlocks",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnShieldAbsorb",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageIncoming"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Shield"
+                        },
+                        "then": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "ChangeContext",
+                                    "target": "From",
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "SiphonLife"
+                                    }
+                                },
+                                {
+                                    "type": "ChangeTarget",
+                                    "filter": "Allies",
+                                    "condition": {
+                                        "type": "Not",
+                                        "condition": {
+                                            "type": "UnitHasStatus",
+                                            "status": "Shield",
+                                            "who": "Target"
+                                        }
+                                    },
+                                    "effect": {
+                                        "type": "AttachStatus",
+                                        "status": "Shield"
+                                    }
+                                }
+                            ]
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "caster+"
+}

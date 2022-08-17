@@ -2,7 +2,7 @@
     "health": 8,
     "base_damage": 2,
     "radius": 0.44,
-    "range": 1,
+    "range": 2,
     "cooldown": 3,
     "action": {
         "effect": {

@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use super::*;
 
 mod abilities;
-mod actions;
+mod auras;
 mod deaths;
 mod effects;
 mod events;
@@ -13,11 +13,18 @@ mod statuses;
 mod targeting;
 mod tick;
 mod time;
+mod turn_queue;
 mod util;
 
 pub use effects::*;
 pub use events::*;
+use geng::prelude::itertools::Itertools;
 pub use util::*;
+
+enum UnitRef<'a> {
+    Id(Id),
+    Ref(&'a Unit),
+}
 
 pub struct Logic {
     pub model: Model,
@@ -47,11 +54,9 @@ impl Logic {
         self.delta_time = Time::new(delta_time as f32);
         self.process_tick();
         self.process_particles();
-        self.process_statuses();
         self.process_spawns();
-        self.process_abilities();
-        self.process_targeting();
-        self.process_actions();
+        self.process_turn_queue();
+        self.process_auras();
         self.process_render_positions();
         self.process_effects();
         self.process_deaths();
@@ -75,13 +80,32 @@ impl Logic {
             self.model.units.insert(unit);
         }
     }
+    fn process_units_sorted(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
+        let mut units = self.model.units.iter().collect::<Vec<&Unit>>();
+
+        let mut ids: Vec<Id> = units
+            .into_iter()
+            .sorted_by(|a, b| {
+                Ord::cmp(
+                    &(a.position.x.abs() - if a.faction == Faction::Player { 1 } else { 0 }),
+                    &b.position.x.abs(),
+                )
+            })
+            .map(|unit| unit.id)
+            .collect();
+        for id in ids {
+            let mut unit = self.model.units.remove(&id).unwrap();
+            f(self, &mut unit);
+            self.model.units.insert(unit);
+        }
+    }
     fn init_player(&mut self, player: Vec<UnitType>) {
         for unit_type in &player {
             self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
         }
     }
     fn init_enemies(&mut self, round: GameRound) {
-        for unit_type in &round.enemies {
+        for unit_type in round.enemies.iter().rev() {
             let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
             let unit = self.model.units.get_mut(&unit).unwrap();
             let statuses = round.statuses.iter().map(|status| {
@@ -96,6 +120,20 @@ impl Logic {
     }
     fn process_render_positions(&mut self) {
         self.process_units(Self::process_unit_render_positions);
+
+        // Process action indicator render position
+        let actor = self.model.acting_unit.and_then(|actor| {
+            self.model
+                .units
+                .get(&actor)
+                .or(self.model.dead_units.get(&actor))
+        });
+        if let Some(actor) = actor {
+            self.model.action_indicator_render_position += (actor.position.to_world_f32()
+                - self.model.action_indicator_render_position)
+                * self.delta_time.as_f32()
+                * 30.0;
+        }
     }
     fn process_unit_render_positions(&mut self, unit: &mut Unit) {
         unit.render_position +=

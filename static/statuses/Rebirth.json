@@ -28,8 +28,11 @@
                                 }
                             },
                             {
-                                "type": "CustomTrigger",
-                                "name": "Rebirth"
+                                "type": "DropContextStatus",
+                                "effect": {
+                                    "type": "CustomTrigger",
+                                    "name": "Rebirth"
+                                }
                             }
                         ]
                     },

@@ -3,7 +3,7 @@
     "tier": 2,
     "health": 4,
     "base_damage": 3,
-    "cooldown": 3,
+    "cooldown": 4,
     "description": "After taking damage from @Plague gain @Shield",
     "triple": "vaccinated+",
     "clans": [
@@ -26,8 +26,13 @@
                         }
                     ],
                     "effect": {
-                        "type": "AttachStatus",
-                        "status": "Shield"
+                        "type": "ChangeContext",
+                        "target": "From",
+                        "caster": "From",
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
                     }
                 }
             ]

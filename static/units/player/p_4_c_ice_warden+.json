@@ -1,0 +1,55 @@
+{
+    "name": "ice_warden+",
+    "tier": 4,
+    "description": "If enemy loses @Freeze apply @Dark Steal and @Freeze random enemy",
+    "clans": [
+        "Freezers",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "OnRemoveFreezeDarkSteal",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Freeze",
+                            "status_action": "Remove",
+                            "filter": "Enemies"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeTarget",
+                                "filter": "Allies",
+                                "condition": {
+                                    "type": "Always"
+                                },
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "status": "Freeze"
+                                }
+                            },
+                            {
+                                "type": "ChangeContext",
+                                "caster": "From",
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "status": "DarkSteal"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "caster+"
+}

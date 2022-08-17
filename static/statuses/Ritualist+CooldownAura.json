@@ -1,0 +1,38 @@
+{
+    "name": "Ritualist+CooldownAura",
+    "type": "Aura",
+    "stacking": {
+        "type": "Count"
+    },
+    "color": "#cccccc",
+    "render": {
+        "path": "shaders/status/aura_default.glsl"
+    },
+    "statuses": [
+        {
+            "name": "ButlerBlockModifier",
+            "type": "Modifier",
+            "target": {
+                "type": "Stat",
+                "stat": "Cooldown",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "FindStat",
+                        "who": "Target",
+                        "stat": "Cooldown"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": -2
+                    }
+                }
+            }
+        }
+    ],
+    "filter": {
+        "Player": [
+            "Demons"
+        ]
+    }
+}

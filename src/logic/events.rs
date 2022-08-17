@@ -47,6 +47,9 @@ impl Events {
 pub enum GameEvent {
     Ability,
     Pause,
+    Speed1,
+    Speed2,
+    Speed3,
     TickBack,
     TickForw,
 }

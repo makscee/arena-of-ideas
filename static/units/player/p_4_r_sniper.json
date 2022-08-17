@@ -1,36 +1,16 @@
 {
-	"name": "sniper",
+    "name": "sniper",
     "tier": 4,
     "health": 5,
     "base_damage": 5,
     "cooldown": 6,
+    "range": 10,
     "triple": "sniper+",
-    "description": "On @Crit @Bonus Shot",
+    "description": "Increased attack range and damage",
     "clans": [
         "Archers",
         "Assassins"
     ],
-    "statuses": [
-        {
-            "name": "SniperOnCrit",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Crit"
-                        }
-                    ],
-                    "effect": {
-                        "preset": "effects/bonus_shot.json"
-                    }
-                }
-            ]
-        }
-    ],
+    "statuses": [],
     "base": "ranged"
 }

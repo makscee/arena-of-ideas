@@ -13,4 +13,5 @@ pub struct Particle {
     pub render_config: ShaderConfig,
     pub follow: bool,
     pub color: Option<Color<f32>>,
+    pub visible: bool,
 }

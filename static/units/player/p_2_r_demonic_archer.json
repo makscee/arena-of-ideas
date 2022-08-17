@@ -1,11 +1,11 @@
 {
-	"name": "demonic_archer",
+    "name": "demonic_archer",
     "tier": 2,
     "health": 3,
     "base_damage": 4,
-    "cooldown": 3,
-    "description": "@Bonus Shot applies @Dark Steal twice",
-    "triple":"demonic_archer+",
+    "cooldown": 4,
+    "description": "@Bonus Shot applies @Dark Steal",
+    "triple": "demonic_archer+",
     "clans": [
         "Demons",
         "Archers"
@@ -26,12 +26,8 @@
                         }
                     ],
                     "effect": {
-                        "type": "Repeat",
-                        "times": 2,
-                        "effect": {
-                            "type": "AttachStatus",
-                            "status": "DarkSteal"
-                        }
+                        "type": "AttachStatus",
+                        "status": "DarkSteal"
                     }
                 }
             ]

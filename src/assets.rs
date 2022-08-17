@@ -27,9 +27,6 @@ pub static EFFECT_PRESETS: Lazy<Mutex<Effects>> =
 pub struct StatusConfig {
     #[serde(flatten)]
     pub status: Status,
-    /// Whether the status will be hidden in status description render
-    #[serde(default = "StatusConfig::default_hidden")]
-    pub hidden: bool,
     #[serde(default)]
     pub description: String,
     pub color: Option<Color<f32>>,
@@ -39,10 +36,6 @@ pub struct StatusConfig {
 }
 
 impl StatusConfig {
-    fn default_hidden() -> bool {
-        false
-    }
-
     fn default_clan_origin() -> Clan {
         Clan::Common
     }
@@ -77,6 +70,9 @@ pub struct DamageHealConfig {
     #[serde(default = "StatusConfig::default_clan_origin")]
     pub clan_origin: Clan,
     pub color: Option<Color<f32>>,
+    // For rendering: lower order = more important
+    #[serde(default)]
+    pub order: i64,
 }
 
 #[derive(Deref, DerefMut, Clone, geng::Assets, Deserialize)]
@@ -102,7 +98,7 @@ pub struct Assets {
     pub units: UnitTemplates,
     pub statuses: Statuses,
     #[asset(load_with = "load_renders_config(geng, &base_path)")]
-    pub renders_config: RendersProgram,
+    pub custom_renders: RendersProgram,
     #[asset(load_with = "load_postfx_render(geng, &base_path)")]
     pub postfx_render: PostfxProgram,
     pub damage_types: DamageTypes,
@@ -114,7 +110,7 @@ pub struct Assets {
     pub card: Rc<ugli::Texture>,
     pub hearts: Rc<ugli::Texture>,
     pub swords_emblem: Rc<ugli::Texture>,
-    #[asset(path = "rounds/round*.json", range = "1..=5")]
+    #[asset(path = "rounds/round*.json", range = "1..=15")]
     pub rounds: Vec<GameRound>,
 }
 
@@ -123,18 +119,20 @@ pub struct Assets {
 pub struct RendersConfig {
     pub field: ShaderConfig,
     pub slot: ShaderConfig,
+    pub action_indicator: ShaderConfig,
 }
 
 pub struct RendersProgram {
     pub field: ShaderProgram,
     pub slot: ShaderProgram,
+    pub action_indicator: ShaderProgram,
 }
 
 async fn load_renders_config(
     geng: &Geng,
     base_path: &std::path::Path,
 ) -> anyhow::Result<RendersProgram> {
-    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("renders_config.json"))
+    let json = <String as geng::LoadAsset>::load(geng, &base_path.join("custom_renders.json"))
         .await
         .context("Failed to load renders_config.json")?;
     let config: RendersConfig =
@@ -162,7 +160,22 @@ async fn load_renders_config(
         instances: config.slot.instances,
     };
 
-    let result = RendersProgram { field, slot };
+    let path = config.action_indicator.path.as_str();
+    let program = <ugli::Program as geng::LoadAsset>::load(&geng, &static_path().join(path))
+        .await
+        .context(format!("Failed to load {path}"))?;
+    let action_indicator = ShaderProgram {
+        program: Rc::new(program),
+        parameters: config.action_indicator.parameters,
+        vertices: config.action_indicator.vertices,
+        instances: config.action_indicator.instances,
+    };
+
+    let result = RendersProgram {
+        field,
+        slot,
+        action_indicator,
+    };
     Ok::<_, anyhow::Error>(result)
 }
 
@@ -234,6 +247,8 @@ pub type Key = String;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct GameRound {
+    #[serde(default)]
+    pub name: String,
     #[serde(default)]
     pub statuses: Vec<StatusRef>,
     #[serde(default)]

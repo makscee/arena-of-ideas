@@ -1,0 +1,13 @@
+{
+    "name": "butler",
+    "tier": 1,
+    "triple": "butler+",
+    "description": "@Vampires get +1 @block",
+    "clans": [
+        "Vampires"
+    ],
+    "statuses": [
+        "ButlerBlockAura"
+    ],
+    "base": "support"
+}

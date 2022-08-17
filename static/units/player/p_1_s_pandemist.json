@@ -1,0 +1,42 @@
+{
+    "name": "pandemist",
+    "tier": 1,
+    "triple": "pandemist+",
+    "description": "Heal all @Plague Spreaders by 2 every tick",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "cooldown": 1,
+    "range": 5,
+    "action": {
+        "effect": {
+            "type": "ChangeTarget",
+            "filter": "Allies",
+            "condition": {
+                "type": "Always"
+            },
+            "effect": {
+                "type": "AddTargets",
+                "condition": {
+                    "type": "Always"
+                },
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "Heal",
+                            "value": {
+                                "type": "Const",
+                                "value": 2
+                            }
+                        },
+                        {
+                            "preset": "effects/vfx_heal.json"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "base": "support"
+}

@@ -79,7 +79,6 @@ vec3 stepClanColor(in float t) {
 void main() {
     if (v_quad_pos.y > 1) discard;
     commonInit();
-    float u_padding = u_padding;
     const float EDGE_RADIUS = 0.5;
     const float SOLID_BORDER = 0.07;
     vec2 uv = vec2(cos(v_quad_pos.x * pi * 2),sin(v_quad_pos.x * pi * 2)) * min(v_quad_pos.y, 1 - EDGE_RADIUS);

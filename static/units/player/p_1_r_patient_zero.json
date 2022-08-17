@@ -1,0 +1,16 @@
+{
+    "name": "patient_zero",
+    "tier": 1,
+    "health": 6,
+    "base_damage": 0.5,
+    "cooldown": 3,
+    "triple": "patient_zero+",
+    "description": "Has @Plague",
+    "clans": [
+        "PlagueSpreaders"
+    ],
+    "statuses": [
+        "Plague"
+    ],
+    "base": "ranged"
+}

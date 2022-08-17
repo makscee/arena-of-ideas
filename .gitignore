@@ -2,3 +2,7 @@
 /Cargo.lock
 /static/local_configs/
 /simulation_result/
+.DS_Store
+static/.DS_Store
+static/one_unit_custom.json
+ArenaOfIdeas.*

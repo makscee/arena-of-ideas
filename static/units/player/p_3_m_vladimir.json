@@ -4,7 +4,7 @@
     "health": 7,
     "base_damage": 3,
     "cooldown": 3,
-    "description": "All allies gain +10% @Vampirism",
+    "description": "All allies gain +1 @base_damage and +1 @block",
     "triple": "vladimir+",
     "clans": [
         "Vampires",
@@ -12,10 +12,50 @@
     ],
     "statuses": [
         {
-            "name": "VampirismAura",
+            "name": "BlockDamageAura",
             "type": "Aura",
             "statuses": [
-                "Vampirism"
+                {
+                    "name": "BlockDamageModifier",
+                    "type": "Modifier",
+                    "target": {
+                        "type": "List",
+                        "targets": [
+                            {
+                                "type": "Stat",
+                                "stat": "Block",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Target",
+                                        "stat": "Block"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
+                            },
+                            {
+                                "type": "Stat",
+                                "stat": "BaseDamage",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Target",
+                                        "stat": "BaseDamage"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
             ],
             "filter": {
                 "Player": null

@@ -19,40 +19,28 @@
                 },
                 "target": {
                     "type": "List",
-                    "modifiers": [
+                    "targets": [
                         {
-                            "priority": 0,
-                            "condition": {
-                                "type": "Always"
-                            },
-                            "target": {
-                                "type": "ExtraOutDamageType",
-                                "source": [
-                                    "Melee",
-                                    "Ranged"
-                                ],
-                                "damage_type": [
-                                    "Crit"
-                                ]
-                            }
+                            "type": "ExtraOutDamageType",
+                            "source": [
+                                "Melee",
+                                "Ranged"
+                            ],
+                            "damage_type": [
+                                "Crit"
+                            ]
                         },
                         {
-                            "priority": 0,
-                            "condition": {
-                                "type": "Always"
-                            },
-                            "target": {
-                                "type": "Damage",
-                                "value": {
-                                    "type": "Mul",
-                                    "a": {
-                                        "type": "Var",
-                                        "name": "DamageIncoming"
-                                    },
-                                    "b": {
-                                        "type": "Const",
-                                        "value": 3
-                                    }
+                            "type": "Damage",
+                            "value": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Var",
+                                    "name": "DamageIncoming"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 3
                                 }
                             }
                         }
@@ -127,7 +115,8 @@
                     }
                 ]
             },
-            "InjureHealTint"
+            "InjureHealTint",
+            "VfxCooldownTick"
         ]
     }
 ]

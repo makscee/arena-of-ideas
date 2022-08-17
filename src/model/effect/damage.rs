@@ -39,7 +39,7 @@ impl EffectImpl for DamageEffect {
                 .get(&caster)
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
-            for (context, modifier_target) in &caster_unit.modifier_targets {
+            for (modifier_context, modifier_target) in &caster_unit.modifier_targets {
                 match modifier_target {
                     //Add extra damage types
                     ModifierTarget::ExtraOutDamageType {
@@ -55,15 +55,25 @@ impl EffectImpl for DamageEffect {
                         }
                     }
                     //Modify damage value
-                    ModifierTarget::Damage { source, value } => {
+                    ModifierTarget::Damage {
+                        source,
+                        condition,
+                        value,
+                    } => {
                         let mut context = context.clone();
                         context.vars.insert(VarName::DamageIncoming, damage);
+                        context.vars.extend(modifier_context.vars.clone());
                         if let Some(damage_types) = source {
                             if !effect
                                 .types
                                 .iter()
                                 .any(|source_type| damage_types.contains(source_type))
                             {
+                                break;
+                            }
+                        }
+                        if let Some(condition) = condition {
+                            if !logic.check_condition(condition, &context) {
                                 break;
                             }
                         }
@@ -92,13 +102,9 @@ impl EffectImpl for DamageEffect {
                         damage_type,
                         except,
                     } => {
-                        if let Some(damage_type) = &damage_type {
-                            effect.types.contains(damage_type)
-                        } else if let Some(except) = &except {
-                            !effect.types.contains(except)
-                        } else {
-                            true
-                        }
+                        !effect.types.contains(&except.clone().unwrap_or_default())
+                            && (damage_type.is_none()
+                                || effect.types.contains(&damage_type.clone().unwrap()))
                     }
                     _ => false,
                 })
@@ -149,13 +155,9 @@ impl EffectImpl for DamageEffect {
                         damage_type,
                         except,
                     } => {
-                        if let Some(damage_type) = &damage_type {
-                            effect.types.contains(damage_type)
-                        } else if let Some(except) = &except {
-                            !effect.types.contains(except)
-                        } else {
-                            true
-                        }
+                        !effect.types.contains(&except.clone().unwrap_or_default())
+                            && (damage_type.is_none()
+                                || effect.types.contains(&damage_type.clone().unwrap()))
                     }
                     _ => false,
                 })
@@ -206,13 +208,9 @@ impl EffectImpl for DamageEffect {
                             damage_type,
                             except,
                         } => {
-                            if let Some(damage_type) = &damage_type {
-                                effect.types.contains(damage_type)
-                            } else if let Some(except) = &except {
-                                !effect.types.contains(except)
-                            } else {
-                                true
-                            }
+                            !effect.types.contains(&except.clone().unwrap_or_default())
+                                && (damage_type.is_none()
+                                    || effect.types.contains(&damage_type.clone().unwrap()))
                         }
                         _ => false,
                     })
@@ -273,13 +271,9 @@ impl EffectImpl for DamageEffect {
                                 damage_type,
                                 except,
                             } => {
-                                if let Some(damage_type) = &damage_type {
-                                    effect.types.contains(damage_type)
-                                } else if let Some(except) = &except {
-                                    !effect.types.contains(except)
-                                } else {
-                                    true
-                                }
+                                !effect.types.contains(&except.clone().unwrap_or_default())
+                                    && (damage_type.is_none()
+                                        || effect.types.contains(&damage_type.clone().unwrap()))
                             }
                             _ => false,
                         })
@@ -303,5 +297,18 @@ impl EffectImpl for DamageEffect {
                 logic.kill(context.target.unwrap());
             }
         }
+
+        let mut damage_instances = &mut logic.model.damage_instances;
+        let avg_damage: f32 = damage_instances.iter().sum::<f32>() / damage_instances.len() as f32;
+        if damage.as_f32() > avg_damage * 8.0 {
+            logic.model.time_scale = 0.3;
+        } else if damage.as_f32() > avg_damage * 3.0 {
+            logic.model.time_scale = 0.5;
+        }
+        damage_instances.pop_front();
+        damage_instances.push_back(damage.as_f32());
+
+        logic.model.damage_instances.pop_front();
+        logic.model.damage_instances.push_back(damage.as_f32());
     }
 }

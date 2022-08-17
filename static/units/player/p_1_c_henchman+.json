@@ -1,5 +1,5 @@
 {
-	"name": "henchman+",
+    "name": "henchman+",
     "tier": 1,
     "description": "+1 @base_damage for each enemy with @Siphon Life",
     "clans": [
@@ -8,37 +8,27 @@
     "statuses": [
         {
             "name": "HenchmanEmpower",
-            "type": "Status",
+            "type": "Modifier",
             "stacking": {
-                "type": "Independent"
+                "type": "Refresh"
             },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "Repeating",
-                            "tick_time": 1,
-                            "next_tick": 1
-                        }
-                    ],
-                    "effect": {
-                        "type": "ChangeStat",
-                        "stat": "BaseDamage",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "UnitsInRange",
-                                "faction": "Enemy",
-                                "status": "SiphonLife"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
+            "priority": 0,
+            "target": {
+                "type": "Damage",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "UnitsInRange",
+                        "faction": "Enemy",
+                        "status": "SiphonLife"
+                    },
+                    "b": {
+                        "type": "FindStat",
+                        "who": "Caster",
+                        "stat": "BaseDamage"
                     }
                 }
-            ]
+            }
         }
     ],
     "base": "caster+"

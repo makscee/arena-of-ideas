@@ -1,7 +1,7 @@
 {
     "name": "dark_horseman+",
     "tier": 5,
-    "description": "@Scathe: apply @Siphon Life and @Plague. @Skeletons gain : @Scathe: apply @Siphon Life",
+    "description": "@Scathe: apply @Siphon Life and @Plague to target and enemy behind",
     "clans": [
         "PlagueSpreaders",
         "Warlocks"
@@ -22,51 +22,26 @@
                         }
                     ],
                     "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "AttachStatus",
-                                "status": "SiphonLife"
-                            },
-                            {
-                                "type": "AttachStatus",
-                                "status": "Plague"
-                            }
-                        ]
+                        "type": "AOE",
+                        "filter": "Enemies",
+                        "skip_current_target": false,
+                        "range": 1,
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "SiphonLife"
+                                },
+                                {
+                                    "type": "AttachStatus",
+                                    "status": "Plague"
+                                }
+                            ]
+                        }
                     }
                 }
             ]
-        },
-        {
-            "name": "SkeletonsGainSiphonLife",
-            "type": "Aura",
-            "statuses": [
-                {
-                    "name": "AddSiphonLifeOnAttack",
-                    "type": "Status",
-                    "stacking": {
-                        "type": "Independent"
-                    },
-                    "listeners": [
-                        {
-                            "triggers": [
-                                {
-                                    "type": "DamageDealt"
-                                }
-                            ],
-                            "effect": {
-                                "type": "AttachStatus",
-                                "status": "SiphonLife"
-                            }
-                        }
-                    ]
-                }
-            ],
-            "filter": {
-                "Player": [
-                    "Skeletons"
-                ]
-            }
         }
     ],
     "base": "melee+"

@@ -27,10 +27,12 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
             let types: Vec<String> = serde_json::from_str(&json).expect("Failed to parse pack");
             let mut _list = types.clone();
             for (i, typ) in types.into_iter().enumerate() {
-                if !assets.units.map.contains_key(&typ) {
-                    debug!("Unit not loaded: {:?}", &typ);
-                }
-                let unit = &assets.units.map[&typ];
+                let unit = assets
+                    .units
+                    .map
+                    .values()
+                    .find(|template| template.long_name == typ)
+                    .unwrap();
                 let old_name = &typ;
                 let new_name = if unit.base.is_some() {
                     let mut base = unit.clone().base.unwrap();
@@ -69,6 +71,10 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
                     )
                 };
 
+                if *old_name == *new_name {
+                    continue;
+                };
+
                 let old_file = base_path.join(format!("{}.json", old_name));
                 let new_file = base_path.join(format!("{}.json", new_name));
                 std::fs::rename(&old_file, &new_file).expect(&format!(
@@ -80,6 +86,9 @@ pub fn rename_units(geng: &Geng, path: &std::path::Path, assets: Assets) {
                 std::fs::write(&list, data).expect(&format!("Cannot save _list: {:?}", list));
                 debug!("Renaming {:?} to {:?}", old_name, new_name);
             }
+            _list.sort();
+            let data = serde_json::to_string_pretty(&_list).expect("Failed to serialize item");
+            std::fs::write(&list, data).expect(&format!("Cannot save _list: {:?}", list));
             debug!("Saving pack: {:?}", base_path);
         }
     }

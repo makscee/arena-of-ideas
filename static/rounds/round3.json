@@ -1,9 +1,8 @@
 {
+    "name": "Round_03",
     "statuses": [],
     "enemies": [
         "blob_0",
-        "blob_0",
-        "blob_1",
-        "blob_1"
+        "shooter_0"
     ]
 }

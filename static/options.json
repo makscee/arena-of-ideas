@@ -1,6 +1,6 @@
 {
     "clan_colors": {
-        "Assassins": "#ffd700",
+        "Assassins": "#2a6700",
         "Archers": "#5f9ea0",
         "Freezers": "#1e90ff",
         "Vampires": "#dc143c",
@@ -16,6 +16,18 @@
         {
             "event": "Pause",
             "key": "Space"
+        },
+        {
+            "event": "Speed1",
+            "key": "Num1"
+        },
+        {
+            "event": "Speed2",
+            "key": "Num2"
+        },
+        {
+            "event": "Speed3",
+            "key": "Num3"
         },
         {
             "event": "Ability",

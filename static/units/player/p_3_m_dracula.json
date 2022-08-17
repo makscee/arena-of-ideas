@@ -5,43 +5,34 @@
     "base_damage": 3,
     "cooldown": 3,
     "triple": "dracula+",
-    "description": "Additional action on @Poison",
+    "description": "Attack @Poisoned target twice",
     "clans": [
         "Vampires",
         "Assassins"
     ],
-    "statuses": [
-        {
-            "name": "DoubleDamageOnPoison",
-            "type": "Status",
-            "stacking": {
-                "type": "Refresh"
-            },
-            "listeners": [
+    "action": {
+        "effect": {
+            "type": "List",
+            "effects": [
                 {
-                    "triggers": [
-                        {
-                            "type": "DamageDealt",
-                            "damage_type": "Additional"
-                        }
-                    ],
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "UnitHasStatus",
-                            "who": "Target",
-                            "status": "Poison"
-                        },
-                        "then": {
-                            "preset": "effects/melee_hit.json"
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
+                    "type": "If",
+                    "condition": {
+                        "type": "UnitHasStatus",
+                        "who": "Target",
+                        "status": "Poison"
+                    },
+                    "then": {
+                        "preset": "effects/melee_hit.json"
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
+                },
+                {
+                    "preset": "effects/melee_hit.json"
                 }
             ]
         }
-    ],
+    },
     "base": "melee"
 }

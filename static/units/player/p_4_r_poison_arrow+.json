@@ -20,9 +20,6 @@
                 "effects": [
                     {
                         "preset": "effects/ranged_hit.json"
-                    },
-                    {
-                        "preset": "effects/ranged_hit.json"
                     }
                 ]
             }

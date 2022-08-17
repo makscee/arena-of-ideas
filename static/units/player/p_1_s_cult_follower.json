@@ -1,0 +1,13 @@
+{
+    "name": "cult_follower",
+    "tier": 1,
+    "triple": "cult_follower+",
+    "description": "@Warlocks get +6 @max_hp",
+    "clans": [
+        "Warlocks"
+    ],
+    "statuses": [
+        "CultFollowerMaxHpAura"
+    ],
+    "base": "support"
+}

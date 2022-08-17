@@ -5,7 +5,10 @@ mod particle;
 mod text;
 mod unit;
 
-use geng::Draw2d;
+use geng::{
+    prelude::{bincode::config, itertools::Itertools},
+    Draw2d, PixelPerfectCamera,
+};
 use text::*;
 pub use unit::*;
 
@@ -107,7 +110,7 @@ impl Render {
     pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         self.draw_field(
-            &self.assets.renders_config.field,
+            &self.assets.custom_renders.field,
             game_time,
             model,
             framebuffer,
@@ -130,10 +133,12 @@ impl Render {
                 framebuffer,
             );
 
+            let radius = unit.stats.radius.as_f32();
+
             // Draw damage and health
-            let unit_aabb = AABB::point(unit.render_position.map(|x| x.as_f32()))
-                .extend_uniform(unit.stats.radius.as_f32());
-            let size = unit.stats.radius.as_f32() * 0.7;
+            let unit_aabb =
+                AABB::point(unit.render_position.map(|x| x.as_f32())).extend_uniform(radius);
+            let size = radius * 0.7;
             let damage = AABB::point(unit_aabb.bottom_left())
                 .extend_right(size)
                 .extend_up(size);
@@ -167,11 +172,28 @@ impl Render {
             .fit_into(health)
             .draw_2d(&self.geng, framebuffer, &self.camera);
 
+            // Draw name
+            let name_aabb = AABB::point(unit_aabb.bottom_left())
+                .translate(vec2(0.0, -0.3))
+                .extend_right(radius * 2.0)
+                .extend_down(radius * 0.7);
+            let text_color = Color::try_from("#e6e6e6").unwrap();
+
+            draw_2d::Text::unit(
+                self.geng.default_font().clone(),
+                &unit.unit_type,
+                text_color,
+            )
+            .fit_into(name_aabb)
+            .draw_2d(&self.geng, framebuffer, &self.camera);
+
             // Draw cooldown indicator
             let cooldown = match unit.action_state {
                 ActionState::None => "o".to_string(),
                 ActionState::Start { target } => "o".to_string(),
-                ActionState::Cooldown { time } => (unit.cooldown - time).to_string(),
+                ActionState::Cooldown { time } => {
+                    format!("{:.0}", (unit.stats.cooldown.as_f32() - time as f32))
+                }
             };
             let text_color = if cooldown == "o" {
                 Color::WHITE
@@ -196,7 +218,7 @@ impl Render {
 
         // Draw slots
         let factions = vec![Faction::Player, Faction::Enemy];
-        let shader_program = &self.assets.renders_config.slot;
+        let shader_program = &self.assets.custom_renders.slot;
         for faction in factions {
             for i in 0..SIDE_SLOTS {
                 let quad = shader_program.get_vertices(&self.geng);
@@ -207,10 +229,14 @@ impl Render {
                     height: 0,
                 }
                 .to_world_f32();
-                let empty = model
+                let unit = model
                     .units
                     .iter()
-                    .any(|unit| unit.position.x == i as i64 && unit.faction == faction);
+                    .find(|unit| unit.position.x == i as i64 && unit.faction == faction);
+                let health = match unit {
+                    Some(unit) => (unit.stats.health / unit.stats.max_hp).as_f32(),
+                    None => 0.0,
+                };
 
                 ugli::draw(
                     framebuffer,
@@ -225,7 +251,7 @@ impl Render {
                                 Faction::Player => 1.0,
                                 Faction::Enemy => -1.0,
                             },
-                            u_empty: if empty { 1.0 } else { 0.0 },
+                            u_health: health,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                         &shader_program.parameters,
@@ -236,6 +262,39 @@ impl Render {
                     },
                 );
             }
+        }
+
+        // Draw acting unit indicator
+        let actor = model
+            .acting_unit
+            .and_then(|actor| model.units.get(&actor).or(model.dead_units.get(&actor)));
+        if let Some(actor) = actor {
+            let shader_program = &self.assets.custom_renders.action_indicator;
+            let quad = shader_program.get_vertices(&self.geng);
+            let position = model.action_indicator_render_position - vec2(0.0, -0.5);
+            let faction = match actor.faction {
+                Faction::Player => 1.0,
+                Faction::Enemy => -1.0,
+            };
+            ugli::draw(
+                framebuffer,
+                &shader_program.program,
+                ugli::DrawMode::TriangleStrip,
+                &quad,
+                (
+                    ugli::uniforms! {
+                        u_time: game_time,
+                        u_unit_position: position,
+                        u_parent_faction: faction,
+                    },
+                    geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                    &shader_program.parameters,
+                ),
+                ugli::DrawParameters {
+                    blend_mode: Some(default()),
+                    ..default()
+                },
+            );
         }
 
         for particle in &model.particles {
@@ -254,36 +313,36 @@ impl Render {
             let color = match &text.text_type {
                 TextType::Damage(damage_types) => damage_types
                     .iter()
-                    .find_map(|damage_type| {
-                        self.assets.damage_types.get(damage_type).map(|config| {
-                            config.color.unwrap_or_else(|| {
-                                *self
-                                    .assets
-                                    .options
-                                    .clan_colors
-                                    .get(&config.clan_origin)
-                                    .unwrap_or_else(|| {
-                                        panic!("Failed to find clan ({}) color", config.clan_origin)
-                                    })
-                            })
-                        })
+                    .filter_map(|damage_type| self.assets.damage_types.get(damage_type))
+                    .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
+                    .find_map(|config| {
+                        Some(config.color.unwrap_or_else(|| {
+                            *self
+                                .assets
+                                .options
+                                .clan_colors
+                                .get(&config.clan_origin)
+                                .unwrap_or_else(|| {
+                                    panic!("Failed to find clan ({}) color", config.clan_origin)
+                                })
+                        }))
                     })
                     .unwrap_or(text.color),
                 TextType::Heal(heal_types) => heal_types
                     .iter()
-                    .find_map(|damage_type| {
-                        self.assets.heal_types.get(damage_type).map(|config| {
-                            config.color.unwrap_or_else(|| {
-                                *self
-                                    .assets
-                                    .options
-                                    .clan_colors
-                                    .get(&config.clan_origin)
-                                    .unwrap_or_else(|| {
-                                        panic!("Failed to find clan ({}) color", config.clan_origin)
-                                    })
-                            })
-                        })
+                    .filter_map(|heal_type| self.assets.heal_types.get(heal_type))
+                    .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
+                    .find_map(|config| {
+                        Some(config.color.unwrap_or_else(|| {
+                            *self
+                                .assets
+                                .options
+                                .clan_colors
+                                .get(&config.clan_origin)
+                                .unwrap_or_else(|| {
+                                    panic!("Failed to find clan ({}) color", config.clan_origin)
+                                })
+                        }))
                     })
                     .unwrap_or(text.color),
                 _ => text.color,
@@ -314,6 +373,63 @@ impl Render {
                 self.draw_damage_heal_desc(text_block, framebuffer);
             }
         }
+
+        // Speed indicators
+        let tick_text = vec!["x1", "x2", "x4"];
+        let box_size = 0.15;
+
+        for (i, text) in tick_text.into_iter().enumerate() {
+            let is_active = model.time_modifier == 2.0 && i == 1
+                || model.time_modifier == 4.0 && i == 2
+                || model.time_modifier < 2.0 && i == 0;
+            let mut text_scale = 1.0;
+            let mut text_color = Color::try_from("#cccccc").unwrap();
+            if is_active {
+                text_scale = 1.3;
+                text_color = Color::WHITE;
+            }
+            self.geng.draw_2d(
+                framebuffer,
+                &self.camera,
+                &draw_2d::Text::unit(&**self.geng.default_font(), &text, text_color)
+                    .scale_uniform(box_size * text_scale)
+                    .translate(vec2(
+                        (i as f32 - 1.0) * box_size * 4.0,
+                        -self.camera.fov * 0.45,
+                    )),
+            );
+        }
+
+        if let Some(unit) = hovered_unit {
+            self.draw_statuses_desc(unit, framebuffer);
+            if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
+                self.draw_damage_heal_desc(text_block, framebuffer);
+            }
+        }
+
+        // Info panel
+        let line_height = 44.0;
+        let text_size = 55.0;
+        let left_margin = 20.0;
+        let framebuffer_size = framebuffer.size();
+        let lines: Vec<String> = vec![
+            format!("--- {} ---", model.round.name),
+            format!("Lives: {}", model.lives),
+        ];
+        for (i, line) in lines.into_iter().enumerate() {
+            self.geng.default_font().draw(
+                framebuffer,
+                &PixelPerfectCamera,
+                &line,
+                vec2(
+                    left_margin,
+                    framebuffer_size[1] as f32 - line_height * (i as f32 + 1.0),
+                ),
+                geng::TextAlign::LEFT,
+                text_size,
+                Color::try_from("#e6e6e6").unwrap(),
+            );
+        }
     }
 
     fn draw_statuses_desc(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {
@@ -331,7 +447,7 @@ impl Render {
                     self.assets
                         .statuses
                         .get(&status)
-                        .filter(|config| !config.hidden)
+                        .filter(|config| !config.status.hidden)
                         .map(|config| {
                             let lines = wrap_text(
                                 self.geng.default_font().clone(),
@@ -440,6 +556,7 @@ impl Render {
                                     .get(damage_type)
                                     .map(|config| (damage_type, config))
                             })
+                            .sorted_by(|a, b| a.1.order.partial_cmp(&b.1.order).unwrap())
                             .collect(),
                         text.position,
                     )),
@@ -452,6 +569,7 @@ impl Render {
                                     .get(heal_type)
                                     .map(|config| (heal_type, config))
                             })
+                            .sorted_by(|a, b| a.1.order.partial_cmp(&b.1.order).unwrap())
                             .collect(),
                         text.position,
                     )),

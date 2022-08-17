@@ -1,0 +1,51 @@
+{
+    "name": "cryonic_healer+",
+    "tier": 1,
+    "description": "Heal ally by amount of enemies in @Freeze ",
+    "clans": [
+        "Freezers"
+    ],
+    "cooldown": 1,
+    "range": 5,
+    "action": {
+        "effect": {
+            "type": "ChangeTarget",
+            "filter": "Allies",
+            "condition": {
+                "type": "More",
+                "a": {
+                    "type": "UnitsInRange",
+                    "faction": "Enemy",
+                    "status": "Freeze"
+                },
+                "b": {
+                    "type": "Const",
+                    "value": 0
+                }
+            },
+            "effect": {
+                "type": "AddTargets",
+                "condition": {
+                    "type": "Always"
+                },
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "Heal",
+                            "value": {
+                                "type": "UnitsInRange",
+                                "faction": "Enemy",
+                                "status": "Freeze"
+                            }
+                        },
+                        {
+                            "preset": "effects/vfx_heal.json"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "base": "support+"
+}

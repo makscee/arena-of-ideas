@@ -2,7 +2,7 @@
     "name": "red_dragon",
     "tier": 2,
     "health": 3,
-    "base_damage": 3,
+    "base_damage": 4,
     "cooldown": 4,
     "description": "Overheal damages random target for overhealed amount",
     "triple": "red_dragon+",
@@ -48,6 +48,7 @@
                                 "effects": [
                                     {
                                         "type": "Damage",
+                                        "types": ["RedDragonOverheal"],
                                         "value": {
                                             "type": "Sub",
                                             "a": {

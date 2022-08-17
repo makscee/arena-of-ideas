@@ -1,0 +1,48 @@
+{
+	"name": "lotan",
+    "tier": 2,
+    "health": 3,
+    "base_damage": 6,
+    "cooldown": 4,
+    "description": "@Dark Steal @Burning target on attack",
+    "triple": "lotan+",
+    "clans": [
+        "Dragons",
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "DarkStealBurning",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageDealt",
+                            "damage_type": "Ranged"
+                        }
+                    ],
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "UnitHasStatus",
+                            "who": "Target",
+                            "status": "Burn"
+                        },
+                        "then": {
+                            "type": "AttachStatus",
+                            "status": "DarkSteal"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "caster"
+}

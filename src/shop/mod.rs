@@ -7,12 +7,12 @@ use crate::render::UnitRender;
 use geng::MouseButton;
 use unit_card::*;
 
-const MAX_PARTY: usize = 7;
-const MAX_INVENTORY: usize = 5;
+const MAX_PARTY: usize = 6;
+const MAX_INVENTORY: usize = 7;
 const UNIT_COST: Money = 3;
 const UNIT_SELL_COST: Money = 1;
 const REROLL_COST: Money = 1;
-const TIER_UP_COST: [Money; 5] = [5, 6, 7, 8, 9];
+const TIER_UP_COST: [Money; 5] = [5, 7, 8, 9, 10];
 const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
 
 pub struct ShopState {
@@ -179,6 +179,7 @@ pub struct Shop {
     pub available: Vec<(UnitType, UnitTemplate)>,
     pub cards: Cards,
     pub drag: Option<Drag>,
+    pub lives: i32,
 }
 
 #[derive(Clone)]
@@ -358,6 +359,7 @@ impl Shop {
             drag: None,
             available: units,
             config,
+            lives: MAX_LIVES,
         }
     }
 

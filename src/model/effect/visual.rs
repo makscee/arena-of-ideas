@@ -78,6 +78,7 @@ impl EffectImpl for VisualEffect {
                 position: position.to_world(),
                 follow: effect.follow,
                 color: effect_color,
+                visible: false,
             });
             logic.model.next_id += 1;
         }

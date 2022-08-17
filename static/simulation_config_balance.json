@@ -1,7 +1,9 @@
 {
-    "simulation": {
-        "type": "Balance",
-        "unit": ".*1.*[^+]$"
-    },
-    "repeats": 5
+    "simulations": [
+        {
+            "type": "Balance",
+            "unit": ".*3.*[^+]$",
+            "repeats": 5
+        }
+    ]
 }

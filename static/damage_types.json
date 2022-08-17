@@ -3,16 +3,20 @@
 		"description": "Heal caster for damage dealt",
 		"clan_origin": "Warlocks"
 	},
-	"SiphonLifeExtra": {
-		"description": "Heal caster for damage dealt",
-		"clan_origin": "Warlocks"
-	},
 	"Fire": {
-		"description": "Deal additional fire damage",
+		"description": "Chance to apply @Burn",
+		"clan_origin": "Dragons"
+	},
+	"Burn": {
+		"description": "Damage every tick",
 		"clan_origin": "Dragons"
 	},
 	"Plague": {
 		"description": "Damage from @Plague debuff",
+		"clan_origin": "PlagueSpreaders"
+	},
+	"PlagueBurst": {
+		"description": "Damage from @Plague reapply",
 		"clan_origin": "PlagueSpreaders"
 	},
 	"BonusShot": {
@@ -21,6 +25,15 @@
 	},
 	"IgnoreFreeze": {
 		"description": "Damage that doesn't break @Freeze",
-		"clan_origin": "Freezers"
+		"clan_origin": "Freezers",
+		"order": 10
+	},
+	"Poison": {
+		"description": "Damages every tick for every Poison stack",
+		"clan_origin": "Assassins"
+	},
+	"RedDragonOverheal": {
+		"description": "Damage from Red Dragon overheal",
+		"clan_origin": "Vampires"
 	}
 }

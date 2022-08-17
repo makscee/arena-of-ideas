@@ -2,6 +2,7 @@
     "effects/vfx_laser.json",
     "effects/vfx_laser_bonus_shot.json",
     "effects/vfx_slash.json",
+    "effects/vfx_cooldown_tick.json",
     "effects/melee_hit.json",
     "effects/ranged_hit.json",
     "effects/crit_hit_vfx.json",

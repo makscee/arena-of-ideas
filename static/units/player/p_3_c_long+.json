@@ -1,0 +1,66 @@
+{
+	"name": "long+",
+	"tier": 3,
+    "health": 5,
+    "base_damage": 15,
+    "cooldown": 6,
+    "description": "All allies start with @Shield. On @Rebirth apply @Shield to all allies",
+    "clans": [
+        "Dragons",
+        "Protectors"
+    ],
+    "statuses": [
+        {
+            "name": "OnSpawnGiveShield",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AOE",
+                        "filter": "Allies",
+                        "skip_current_target": false,
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "OnRebirthGiveShield",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Custom",
+                            "name": "Rebirth"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AOE",
+                        "filter": "Allies",
+                        "skip_current_target": false,
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "base": "caster+"
+}

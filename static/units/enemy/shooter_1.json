@@ -1,0 +1,46 @@
+{
+    "name": "shooter_1",
+    "base_damage": 2,
+    "radius": 0.36,
+    "range": 7,
+    "cooldown": 2,
+    "health": 20,
+    "action": {
+        "effect": {
+            "preset": "effects/ranged_hit.json"
+        }
+    },
+    "statuses": [
+        {
+            "name": "SpawnShooterDeathrattle",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Death"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": 2,
+                        "effect": {
+                            "type": "Spawn",
+                            "unit_type": "shooter_0"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/shooter_enemy.glsl",
+        "parameters": {
+            "u_padding": 2.0,
+            "u_color": "#108001"
+        }
+    }
+}

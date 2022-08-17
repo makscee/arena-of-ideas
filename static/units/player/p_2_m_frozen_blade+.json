@@ -1,11 +1,10 @@
 {
     "name": "frozen_blade+",
     "tier": 2,
-    "description": "@Scathe: apply @Frozen to enemies in range",
-    "range": 2,
-    "health": 12,
-    "base_damage": 4,
-    "cooldown": 3,
+    "description": "@Scathe: apply @Freeze to target and enemy behind it",
+    "health": 8,
+    "base_damage": 2,
+    "cooldown": 5,
     "action": {
         "effect": {
             "type": "List",
@@ -17,7 +16,7 @@
                     "type": "AOE",
                     "filter": "Enemies",
                     "skip_current_target": false,
-                    "range": 2,
+                    "range": 1,
                     "effect": {
                         "type": "AttachStatus",
                         "status": "Freeze"

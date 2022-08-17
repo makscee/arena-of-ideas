@@ -12,7 +12,7 @@ mod model;
 mod render;
 mod shader_edit;
 mod shop;
-mod simulate;
+mod simulation;
 mod tests;
 mod utility;
 
@@ -22,6 +22,8 @@ use model::*;
 use render::{Render, RenderModel};
 use shop::*;
 use utility::*;
+
+use crate::simulation::walkthrough;
 
 type Health = R32;
 type Time = R32;
@@ -66,6 +68,8 @@ impl Game {
             assets.statuses.clone(),
             round,
             RenderModel::new(),
+            1.0,
+            shop.lives,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model);
@@ -104,6 +108,21 @@ impl geng::State for Game {
         if self.timeline_captured || self.logic.paused {
             return;
         }
+
+        let index = match self
+            .history
+            .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
+                r32(geng::prelude::Float::as_f32(entry.time))
+            }) {
+            Ok(index) => index,
+            Err(index) => index,
+        };
+        let entry = self
+            .history
+            .get(index)
+            .unwrap_or(self.history.last().unwrap());
+        let delta_time =
+            delta_time * entry.model.time_scale as f64 * entry.model.time_modifier as f64;
         self.time += delta_time;
         let last_frame = &self.last_frame;
 
@@ -125,7 +144,7 @@ impl geng::State for Game {
             self.previous_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
             self.new_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
         }
-        let mut game_time = 0.0;
+        let mut game_time;
         {
             let mut framebuffer = ugli::Framebuffer::new_color(
                 self.geng.ugli(),
@@ -145,7 +164,8 @@ impl geng::State for Game {
                 .history
                 .get(index)
                 .unwrap_or(self.history.last().unwrap());
-            self.render.draw(entry.time, &entry.model, framebuffer);
+            game_time = entry.time;
+            self.render.draw(game_time, &entry.model, framebuffer);
         }
 
         let blend_shader_program = &self.assets.postfx_render.blend_shader;
@@ -278,12 +298,13 @@ impl geng::State for Game {
         match self.last_frame.model.transition {
             false => None,
             true => {
-                let shop_state = shop::ShopState::load(
+                let mut shop_state = shop::ShopState::load(
                     &self.geng,
                     &self.assets,
                     self.shop.take(),
                     self.last_frame.model.config.clone(),
                 );
+                shop_state.shop.lives = self.last_frame.model.lives;
                 Some(geng::Transition::Switch(Box::new(shop_state)))
             }
         }
@@ -303,13 +324,12 @@ enum Commands {
     CustomGame(custom::CustomGame),
     Test,
     Shader(shader_edit::ShaderEdit),
-    Simulate(simulate::Simulate),
+    Simulate(simulation::Simulate),
+    Walkthrough(simulation::Walkthrough),
     UpdateUnits,
 }
 
 fn main() {
-    let opts = Opts::parse();
-
     logger::init().unwrap();
     geng::setup_panic_handler();
     let geng = Geng::new_with(geng::ContextOptions {
@@ -320,72 +340,123 @@ fn main() {
         )),
         ..default()
     });
-    let config_path = opts
-        .config
-        .clone()
-        .unwrap_or(static_path().join("config.json"));
-    geng::run(
-        &geng,
-        geng::LoadingScreen::new(
-            &geng,
-            geng::EmptyLoadingScreen,
-            {
-                let geng = geng.clone();
-                async move {
-                    let effects_path = static_path().join("effects.json");
-                    Effects::load(&geng, &effects_path)
-                        .await
-                        .expect(&format!("Failed to load effects from {effects_path:?}"));
-                    let mut assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
-                        .await
-                        .expect("Failed to load assets");
 
-                    for status in assets.statuses.values_mut() {
-                        let color = status.get_color(&assets.options);
-                        status.status.color = color;
-                    }
-                    let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
-                        .await
-                        .expect("Failed to load config");
-                    let shop_config =
-                        <ShopConfig as geng::LoadAsset>::load(&geng, &static_path().join("shop"))
+    // Adds restarting on R
+    struct AppWrapper {
+        geng: Geng,
+        state_manager: geng::StateManager,
+    }
+
+    impl AppWrapper {
+        fn new(geng: &Geng) -> Self {
+            let opts = Opts::parse();
+            let config_path = opts
+                .config
+                .clone()
+                .unwrap_or(static_path().join("config.json"));
+            let loading_screen = geng::LoadingScreen::new(
+                &geng,
+                geng::EmptyLoadingScreen, // TODO: change into better loading screen
+                {
+                    let geng = geng.clone();
+                    async move {
+                        let effects_path = static_path().join("effects.json");
+                        Effects::load(&geng, &effects_path)
                             .await
-                            .expect("Failed to load shop config");
-                    (assets, config, shop_config)
-                }
-            },
-            {
-                let geng = geng.clone();
-                move |(assets, config, shop_config)| {
-                    match opts.command {
-                        Some(command) => match command {
-                            Commands::CustomGame(custom) => {
-                                let assets = Rc::new(assets);
-                                return custom.run(&geng, &assets, shop_config);
-                            }
-                            Commands::Test => {
-                                tests::run_tests(assets);
-                                std::process::exit(0);
-                            }
-                            Commands::Simulate(simulate) => {
-                                simulate.run(&geng, assets, config);
-                                std::process::exit(0);
-                            }
-                            Commands::Shader(shader) => {
-                                return shader.run(&geng);
-                            }
-                            Commands::UpdateUnits => {
-                                utility::rename_units(&geng, &static_path(), assets);
-                                std::process::exit(0);
-                            }
-                        },
-                        None => (),
-                    }
+                            .expect(&format!("Failed to load effects from {effects_path:?}"));
+                        let mut assets = <Assets as geng::LoadAsset>::load(&geng, &static_path())
+                            .await
+                            .expect("Failed to load assets");
 
-                    let assets = Rc::new(assets);
-                    Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
-                }
-            },
-        ),
-    );
+                        for status in assets.statuses.values_mut() {
+                            let color = status.get_color(&assets.options);
+                            status.status.color = color;
+                        }
+                        let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
+                            .await
+                            .expect("Failed to load config");
+                        let shop_config = <ShopConfig as geng::LoadAsset>::load(
+                            &geng,
+                            &static_path().join("shop"),
+                        )
+                        .await
+                        .expect("Failed to load shop config");
+                        (assets, config, shop_config)
+                    }
+                },
+                {
+                    let geng = geng.clone();
+                    move |(assets, config, shop_config)| {
+                        match opts.command {
+                            Some(command) => match command {
+                                Commands::CustomGame(custom) => {
+                                    let assets = Rc::new(assets);
+                                    return custom.run(&geng, &assets, shop_config);
+                                }
+                                Commands::Test => {
+                                    tests::run_tests(assets);
+                                    std::process::exit(0);
+                                }
+                                Commands::Simulate(simulate) => {
+                                    simulate.run(&geng, assets, config);
+                                    std::process::exit(0);
+                                }
+                                Commands::Walkthrough(walkthrough) => {
+                                    walkthrough.run(&geng, assets, config);
+                                    std::process::exit(0);
+                                }
+                                Commands::Shader(shader) => {
+                                    return shader.run(&geng);
+                                }
+                                Commands::UpdateUnits => {
+                                    utility::rename_units(&geng, &static_path(), assets);
+                                    std::process::exit(0);
+                                }
+                            },
+                            None => (),
+                        }
+
+                        let assets = Rc::new(assets);
+                        Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
+                    }
+                },
+            );
+            let mut state_manager = geng::StateManager::new(); // Needed because we don't want to transition from wrapper
+            state_manager.push(Box::new(loading_screen));
+            Self {
+                geng: geng.clone(),
+                state_manager,
+            }
+        }
+    }
+
+    impl geng::State for AppWrapper {
+        fn update(&mut self, delta_time: f64) {
+            self.state_manager.update(delta_time);
+        }
+        fn fixed_update(&mut self, delta_time: f64) {
+            self.state_manager.fixed_update(delta_time);
+        }
+
+        fn handle_event(&mut self, event: geng::Event) {
+            if let geng::Event::KeyDown { key: geng::Key::R } = event {
+                *self = Self::new(&self.geng);
+            }
+            self.state_manager.handle_event(event);
+        }
+
+        fn transition(&mut self) -> Option<geng::Transition> {
+            None // Transitions handled by inner state manager
+        }
+
+        fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
+            self.state_manager.ui(cx)
+        }
+
+        fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+            self.state_manager.draw(framebuffer);
+        }
+    }
+
+    geng::run(&geng, AppWrapper::new(&geng));
 }
