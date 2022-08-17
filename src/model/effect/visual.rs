@@ -60,7 +60,7 @@ impl EffectImpl for VisualEffect {
         if let Some(position) = position {
             let partner = context.get(effect.partner);
 
-            logic.model.particles.insert(Particle {
+            logic.model.render_model.particles.insert(Particle {
                 id: logic.model.next_id,
                 radius: effect.radius,
                 duration: effect.duration,

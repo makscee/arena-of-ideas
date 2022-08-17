@@ -83,8 +83,12 @@ impl Logic {
                         }
                         unit.last_action_time = self.model.time;
                         match unit.faction {
-                            Faction::Player => self.model.last_player_action_time = self.model.time,
-                            Faction::Enemy => self.model.last_enemy_action_time = self.model.time,
+                            Faction::Player => {
+                                self.model.render_model.last_player_action_time = self.model.time
+                            }
+                            Faction::Enemy => {
+                                self.model.render_model.last_enemy_action_time = self.model.time
+                            }
                         }
                         unit.action_state = ActionState::Cooldown { time: 0 };
                         self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);

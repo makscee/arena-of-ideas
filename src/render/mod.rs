@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use super::*;
 
 mod field;
@@ -40,6 +41,10 @@ const STATUS_DESC_BACKGROUND: Color<f32> = Color {
 
 #[derive(Clone)]
 pub struct RenderModel {
+    pub particles: Collection<Particle>,
+    pub last_player_action_time: Time,
+    pub last_enemy_action_time: Time,
+    pub damage_instances: VecDeque<f32>,
     text_blocks: HashMap<Position, TextBlock>,
     texts: Vec<Text>,
 }
@@ -57,6 +62,10 @@ impl RenderModel {
         Self {
             text_blocks: HashMap::new(),
             texts: Vec::new(),
+            particles: Collection::new(),
+            last_player_action_time: Time::ZERO,
+            last_enemy_action_time: Time::ZERO,
+            damage_instances: VecDeque::from(vec![1.0; 3]),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
@@ -298,7 +307,7 @@ impl Render {
             );
         }
 
-        for particle in &model.particles {
+        for particle in &model.render_model.particles {
             if particle.delay <= Time::new(0.0) {
                 let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps
                 self.draw_particle(particle, &render, game_time, framebuffer);

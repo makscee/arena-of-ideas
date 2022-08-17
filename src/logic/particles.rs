@@ -2,23 +2,19 @@ use super::*;
 
 impl Logic {
     pub fn process_particles(&mut self) {
-        for particle in &mut self.model.particles {
+        for particle in &mut self.model.render_model.particles {
             particle.delay -= self.delta_time;
             if particle.delay > Time::new(0.0) {
                 continue;
             }
             particle.visible = true;
             particle.time_left -= self.delta_time;
-            let parent = particle.parent.and_then(|parent| {
-                self.model
-                    .units
-                    .get(&parent)
-            });
-            let partner = particle.partner.and_then(|partner| {
-                self.model
-                    .units
-                    .get(&partner)
-            });
+            let parent = particle
+                .parent
+                .and_then(|parent| self.model.units.get(&parent));
+            let partner = particle
+                .partner
+                .and_then(|partner| self.model.units.get(&partner));
             let mut parameters = &mut particle.render_config.parameters;
 
             if let Some(color) = particle.color {
@@ -60,6 +56,7 @@ impl Logic {
             }
         }
         self.model
+            .render_model
             .particles
             .retain(|particle| particle.time_left > Time::new(0.0))
     }
