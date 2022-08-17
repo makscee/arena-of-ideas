@@ -276,37 +276,6 @@ impl Render {
             }
         }
 
-        // Draw acting unit indicator
-        let actor = model.acting_unit.and_then(|actor| model.units.get(&actor));
-        if let Some(actor) = actor {
-            let shader_program = &self.assets.custom_renders.action_indicator;
-            let quad = shader_program.get_vertices(&self.geng);
-            let position = model.action_indicator_render_position - vec2(0.0, -0.5);
-            let faction = match actor.faction {
-                Faction::Player => 1.0,
-                Faction::Enemy => -1.0,
-            };
-            ugli::draw(
-                framebuffer,
-                &shader_program.program,
-                ugli::DrawMode::TriangleStrip,
-                &quad,
-                (
-                    ugli::uniforms! {
-                        u_time: game_time,
-                        u_unit_position: position,
-                        u_parent_faction: faction,
-                    },
-                    geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
-                    &shader_program.parameters,
-                ),
-                ugli::DrawParameters {
-                    blend_mode: Some(default()),
-                    ..default()
-                },
-            );
-        }
-
         for particle in &model.render_model.particles {
             if particle.delay <= Time::new(0.0) {
                 let render = self.assets.get_render(&particle.render_config); // TODO: move this into to an earlier phase perhaps

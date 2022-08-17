@@ -77,8 +77,6 @@ pub struct Model {
     pub time_scale: f32,
     pub time_modifier: f32,
     pub lives: i32,
-    pub acting_unit: Option<Id>,
-    pub action_indicator_render_position: Vec2<f32>,
     pub turn_queue: VecDeque<(Id, TurnState)>,
 }
 
@@ -109,8 +107,6 @@ impl Model {
             time_scale,
             time_modifier: time_scale,
             lives,
-            acting_unit: None,
-            action_indicator_render_position: Vec2::ZERO,
             turn_queue: VecDeque::new(),
         }
     }

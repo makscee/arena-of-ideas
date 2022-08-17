@@ -16,7 +16,6 @@ impl Logic {
         let unit = self.model.units.remove(unit);
         if unit.is_none() {
             self.model.turn_queue.pop_front();
-            self.model.acting_unit = None;
             return;
         }
         let mut unit = unit.unwrap();
@@ -27,7 +26,6 @@ impl Logic {
                 self.model.current_tick.visual_timer += Time::new(UNIT_SWITCH_TIME);
             }
             TurnState::PreTurn => {
-                self.model.acting_unit = Some(unit.id);
                 *state = TurnState::Turn;
                 self.model.current_tick.visual_timer += Time::new(UNIT_PRE_TURN_TIME);
                 self.process_unit_statuses(&mut unit);
