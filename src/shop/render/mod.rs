@@ -158,7 +158,7 @@ impl Render {
 
         // Draw slots
         let factions = [Faction::Player];
-        let shader_program = &self.assets.renders_config.slot;
+        let shader_program = &self.assets.custom_renders.slot;
         for faction in factions {
             for i in 0..SIDE_SLOTS {
                 let quad = shader_program.get_vertices(&self.geng);
