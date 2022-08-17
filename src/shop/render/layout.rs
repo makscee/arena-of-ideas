@@ -1,14 +1,26 @@
 use super::*;
 
 // All relative
-const COLUMN_SPACING: f32 = 0.04;
-const ROW_SPACING: f32 = 0.125;
+const CARD_HEIGHT: f32 = 0.2;
 const BORDER_SPACING: f32 = 0.03;
 const CARD_EXTRA_SPACE: f32 = 0.05;
 const CLANS_WIDTH: f32 = 0.1;
 const BUTTON_WIDTH: f32 = 0.15;
 const BUTTON_SPACING: f32 = 0.03;
-const GO_WIDTH: f32 = 0.1;
+const GO_SIZE: f32 = 0.1;
+const SELL_SIZE: f32 = 0.25;
+
+const CURRENCY_BUTTON_WIDTH: f32 = 0.3;
+const CURRENCY_BUTTON_HEIGHT: f32 = 0.1;
+
+const CURRENT_TIER_WIDTH: f32 = 0.2;
+const CURRENT_TIER_HEIGHT: f32 = 0.1;
+
+const TIER_UP_BUTTON_WIDTH: f32 = 0.25;
+const TIER_UP_BUTTON_HEIGHT: f32 = 0.075;
+
+const REROLL_BUTTON_WIDTH: f32 = 0.25;
+const REROLL_BUTTON_HEIGHT: f32 = 0.075;
 
 /// Height divided by width
 pub const CARD_SIZE_RATIO: f32 = 1.3269;
@@ -48,13 +60,11 @@ pub struct ShopLayout {
     pub current_tier: LayoutWidget,
     pub currency: LayoutWidget,
     pub reroll: LayoutWidget,
-    pub freeze: LayoutWidget,
     pub shop: LayoutWidget,
     pub shop_cards: Vec<LayoutWidget>,
-    pub party: LayoutWidget,
-    pub party_cards: Vec<LayoutWidget>,
     pub clans: LayoutWidget,
     pub go: LayoutWidget,
+    pub sell: LayoutWidget,
     pub inventory: LayoutWidget,
     pub inventory_cards: Vec<LayoutWidget>,
     pub drag_card_size: Vec2<f32>,
@@ -67,12 +77,10 @@ impl Default for ShopLayout {
             current_tier: default(),
             currency: default(),
             reroll: default(),
-            freeze: default(),
             shop: default(),
             shop_cards: default(),
-            party: default(),
-            party_cards: default(),
             go: default(),
+            sell: default(),
             clans: default(),
             inventory: default(),
             inventory_cards: default(),
@@ -103,28 +111,17 @@ impl ShopLayout {
         let screen = AABB::point(screen_size * BORDER_SPACING);
         let screen = screen.extend_positive(screen_size * (1.0 - BORDER_SPACING * 2.0));
 
-        let column_spacing = COLUMN_SPACING * screen.width();
-        let row_spacing = ROW_SPACING * screen.height();
-
-        let row_height = (screen.height() - row_spacing * 2.0) / 3.0;
-        let card_extra_space = row_height * CARD_EXTRA_SPACE;
-        let card_height = row_height - card_extra_space * 2.0;
+        let card_height = CARD_HEIGHT * screen.height();
+        let card_extra_space = card_height * CARD_EXTRA_SPACE;
         let card_width = card_height / CARD_SIZE_RATIO;
         let card_size = vec2(card_width, card_height);
 
         let button_spacing = BUTTON_SPACING * screen.height();
-        let button_width = BUTTON_WIDTH * screen.width();
-        let button_height = (row_height - button_spacing * 2.0) / 3.0;
-
-        let bottom_row =
-            AABB::point(screen.bottom_left()).extend_positive(vec2(screen.width(), row_height));
-        let middle_row = bottom_row.translate(vec2(0.0, row_height + row_spacing));
-        let top_row = middle_row.translate(vec2(0.0, row_height + row_spacing));
 
         let layout_cards_aabb = |max_space: AABB<f32>, count| {
             let mut card_size = card_size;
             let mut width = card_size.x * count as f32 + card_extra_space * (count + 1) as f32;
-            let mut height = row_height;
+            let mut height = card_size.y + card_extra_space * 2.0;
             if width > max_space.width() {
                 let scale = max_space.width() / width;
                 width *= scale;
@@ -148,60 +145,84 @@ impl ShopLayout {
                 .collect::<Vec<_>>()
         };
 
-        let (inventory, inventory_card) = layout_cards_aabb(bottom_row, inventory_cards);
+        // Inventory
+        let inventory =
+            AABB::point(screen.bottom_left()).extend_positive(vec2(screen.width(), card_height));
+        let (inventory, inventory_card) = layout_cards_aabb(inventory, inventory_cards);
         let inventory_cards =
             layout_cards(inventory.bottom_left(), inventory_cards, inventory_card);
 
-        let clans_width = CLANS_WIDTH * screen.width();
-        let go_width = GO_WIDTH * screen.width();
-        let mid_width = column_spacing + clans_width + column_spacing + go_width;
-        let (party, party_card) =
-            layout_cards_aabb(middle_row.extend_right(-mid_width), party_cards);
-        let mid_width = mid_width + party.width();
-        let bot_left = middle_row.center() - vec2(mid_width, party.height()) / 2.0;
-        let party_cards = layout_cards(bot_left, party_cards, party_card);
-        let mut bot_left = middle_row.center() - vec2(mid_width, row_height) / 2.0;
-        bot_left.x += party.width() + column_spacing;
-        let clans = AABB::point(bot_left).extend_positive(vec2(clans_width, row_height));
-        bot_left.x += clans_width + column_spacing;
-        let go = AABB::point(bot_left).extend_positive(vec2(go_width, row_height));
-
-        let top_left_buttons = AABB::point(screen.top_left())
-            .extend_right(button_width)
-            .extend_down(row_height);
-        let top_right_buttons = AABB::point(screen.top_right())
-            .extend_left(button_width)
-            .extend_down(row_height);
-        let shop = top_row
-            .extend_right(-top_right_buttons.width() - column_spacing)
-            .extend_left(-top_left_buttons.width() - column_spacing);
+        // Shop
+        let x_min = screen.center().x + card_extra_space;
+        let shop = AABB::point(vec2(x_min, screen.center().y))
+            .extend_right(screen.width() - x_min + screen.x_min)
+            .extend_symmetric(vec2(0.0, card_height) / 2.0);
         let (shop, shop_card) = layout_cards_aabb(shop, shop_cards);
+        let shop = shop.translate(vec2(x_min - shop.x_min, 0.0));
         let shop_cards = layout_cards(shop.bottom_left(), shop_cards, shop_card);
 
-        let tier_up = AABB::point(top_left_buttons.top_left())
-            .extend_right(button_width)
-            .extend_down(button_height);
-        let current_tier = tier_up.translate(vec2(0.0, -button_height - button_spacing));
-        let currency = current_tier.translate(vec2(0.0, -button_height - button_spacing));
+        // Available currency
+        let currency = AABB::point(vec2(screen.center().x, screen.y_max))
+            .extend_symmetric(vec2(CURRENCY_BUTTON_WIDTH * screen.height(), 0.0) / 2.0)
+            .extend_down(CURRENCY_BUTTON_HEIGHT * screen.height());
 
-        let reroll = AABB::point(top_right_buttons.top_left())
-            .extend_right(button_width)
-            .extend_down(button_height);
-        let freeze = reroll.translate(vec2(0.0, -button_height - button_spacing));
+        // Current tier
+        let current_tier = AABB::point(vec2(
+            currency.x_max + button_spacing,
+            shop.y_max + button_spacing,
+        ))
+        .extend_right(CURRENT_TIER_WIDTH * screen.height())
+        .extend_up(CURRENT_TIER_HEIGHT * screen.height());
+
+        // Tier up
+        let tier_up = AABB::point(vec2(
+            current_tier.x_max + button_spacing,
+            current_tier.center().y,
+        ))
+        .extend_right(TIER_UP_BUTTON_WIDTH * screen.height())
+        .extend_symmetric(vec2(0.0, TIER_UP_BUTTON_HEIGHT * screen.height()) / 2.0);
+
+        // Reroll button
+        let reroll = AABB::point(vec2(
+            (current_tier.x_max + tier_up.x_min) / 2.0,
+            shop_cards
+                .first()
+                .map(|aabb| aabb.y_min)
+                .unwrap_or(current_tier.y_min)
+                - button_spacing,
+        ))
+        .extend_symmetric(vec2(REROLL_BUTTON_WIDTH * screen.height(), 0.0) / 2.0)
+        .extend_down(REROLL_BUTTON_HEIGHT * screen.height());
+
+        // Clans
+        let clans_width = CLANS_WIDTH * screen.width();
+        let clans = AABB::point(screen.top_left())
+            .extend_right(clans_width)
+            .extend_down(clans_width);
+
+        // Go button
+        let go_size = GO_SIZE * screen.height();
+        let go = AABB::point(screen.bottom_right())
+            .extend_left(go_size)
+            .extend_up(go_size);
+
+        // Sell button
+        let sell_size = SELL_SIZE * screen.height();
+        let sell = AABB::point(screen.bottom_left())
+            .extend_right(sell_size)
+            .extend_up(sell_size);
 
         self.tier_up.update(tier_up);
         self.current_tier.update(current_tier);
         self.currency.update(currency);
         self.reroll.update(reroll);
-        self.freeze.update(freeze);
         self.shop.update(shop);
-        self.party.update(party);
         self.clans.update(clans);
         self.go.update(go);
+        self.sell.update(sell);
         self.inventory.update(inventory);
         self.drag_card_size = card_size;
         vec_update(&mut self.shop_cards, &shop_cards);
-        vec_update(&mut self.party_cards, &party_cards);
         vec_update(&mut self.inventory_cards, &inventory_cards);
     }
 
@@ -210,17 +231,15 @@ impl ShopLayout {
         f(&mut self.current_tier);
         f(&mut self.currency);
         f(&mut self.reroll);
-        f(&mut self.freeze);
         f(&mut self.shop);
-        f(&mut self.party);
         f(&mut self.clans);
         f(&mut self.go);
+        f(&mut self.sell);
         f(&mut self.inventory);
         self.shop_cards
             .iter_mut()
-            .chain(&mut self.party_cards)
             .chain(&mut self.inventory_cards)
-            .for_each(|widget| f(widget));
+            .for_each(f);
     }
 }
 
@@ -243,7 +262,7 @@ fn vec_update(vec: &mut Vec<LayoutWidget>, updates: &[AABB<f32>]) {
             }
             (None, Some(update)) => {
                 vec.push(LayoutWidget::new(update));
-                vec.extend(updates.map(|position| LayoutWidget::new(position)));
+                vec.extend(updates.map(LayoutWidget::new));
                 break;
             }
             (None, None) => break,

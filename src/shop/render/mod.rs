@@ -17,6 +17,13 @@ const TEXT_BACKGROUND_COLOR: Color<f32> = Color {
     b: 0.2,
     a: 1.0,
 };
+const SELL_BUTTON_FRAME_WIDTH: f32 = 0.01;
+const SELL_BUTTON_COLOR: Color<f32> = Color {
+    r: 0.3,
+    g: 0.3,
+    b: 0.3,
+    a: 1.0,
+};
 const BUTTON_COLOR: Color<f32> = Color {
     r: 0.0,
     g: 0.7,
@@ -54,12 +61,6 @@ const CLAN_INFO_BACKGROUND_COLOR: Color<f32> = Color {
     b: 0.5,
     a: 1.0,
 };
-const SHOP_FROZEN_COLOR: Color<f32> = Color {
-    r: 0.1,
-    g: 0.6,
-    b: 0.7,
-    a: 1.0,
-};
 
 pub struct RenderShop {
     pub layout: ShopLayout,
@@ -80,22 +81,26 @@ impl RenderShop {
 
 pub struct Render {
     geng: Geng,
-    camera: geng::Camera2d,
+    pub camera: geng::Camera2d,
+    pub framebuffer_size: Vec2<f32>,
     assets: Rc<Assets>,
     card_render: CardRender,
+    unit_render: UnitRender,
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: &Config) -> Self {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
             camera: geng::Camera2d {
                 center: Vec2::ZERO,
                 rotation: 0.0,
-                fov: 0.5,
+                fov: config.fov,
             },
+            framebuffer_size: vec2(1.0, 1.0),
             card_render: CardRender::new(geng, assets),
+            unit_render: UnitRender::new(geng, assets),
         }
     }
 
@@ -106,16 +111,12 @@ impl Render {
         game_time: f64,
         framebuffer: &mut ugli::Framebuffer,
     ) {
+        self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None);
         let camera = &geng::PixelPerfectCamera;
         let layout = &render.layout;
 
-        let shop_back_color = if shop.frozen {
-            SHOP_FROZEN_COLOR
-        } else {
-            TEXT_BACKGROUND_COLOR
-        };
-        draw_2d::Quad::new(layout.shop.position, shop_back_color).draw_2d(
+        draw_2d::Quad::new(layout.shop.position, TEXT_BACKGROUND_COLOR).draw_2d(
             &self.geng,
             framebuffer,
             camera,
@@ -127,31 +128,78 @@ impl Render {
                 .shop_cards
                 .get(index)
                 .expect("Invalid shop layout");
-            selected_clan = selected_clan.or(self.card_render.draw(
-                layout.position,
-                card.as_ref(),
-                game_time,
-                framebuffer,
-            ));
+            let hovered_clan =
+                self.card_render
+                    .draw(layout.position, card.as_ref(), game_time, framebuffer);
+            selected_clan = selected_clan.or(hovered_clan);
         }
 
-        draw_2d::Quad::new(layout.party.position, TEXT_BACKGROUND_COLOR).draw_2d(
-            &self.geng,
-            framebuffer,
-            camera,
-        );
         for (index, card) in shop.cards.party.iter().enumerate() {
-            let layout = render
-                .layout
-                .party_cards
-                .get(index)
-                .expect("Invalid party layout");
-            selected_clan = selected_clan.or(self.card_render.draw(
-                layout.position,
-                card.as_ref(),
-                game_time,
-                framebuffer,
-            ));
+            if let Some(card) = card {
+                // TODO: fix position
+                let template = &self.assets.units[&card.unit.unit_type];
+                let mut unit = card.unit.clone();
+                unit.render_position = Position {
+                    side: Faction::Player,
+                    x: index.try_into().unwrap(),
+                    height: Coord::ZERO,
+                }
+                .to_world();
+                self.unit_render.draw_unit(
+                    &unit,
+                    &card.template,
+                    None,
+                    game_time,
+                    &self.camera,
+                    framebuffer,
+                );
+            }
+        }
+
+        // Draw slots
+        let factions = [Faction::Player];
+        let shader_program = &self.assets.custom_renders.slot;
+        for faction in factions {
+            for i in 0..SIDE_SLOTS {
+                let quad = shader_program.get_vertices(&self.geng);
+                let framebuffer_size = framebuffer.size();
+                let position = Position {
+                    x: i as i64,
+                    side: faction,
+                    height: 0,
+                }
+                .to_world_f32();
+                let empty = shop
+                    .cards
+                    .party
+                    .get(i)
+                    .and_then(|card| card.as_ref())
+                    .is_some();
+
+                ugli::draw(
+                    framebuffer,
+                    &shader_program.program,
+                    ugli::DrawMode::TriangleStrip,
+                    &quad,
+                    (
+                        ugli::uniforms! {
+                            u_time: game_time,
+                            u_unit_position: position,
+                            u_parent_faction: match faction {
+                                Faction::Player => 1.0,
+                                Faction::Enemy => -1.0,
+                            },
+                            u_empty: if empty { 1.0 } else { 0.0 },
+                        },
+                        geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                        &shader_program.parameters,
+                    ),
+                    ugli::DrawParameters {
+                        blend_mode: Some(default()),
+                        ..default()
+                    },
+                );
+            }
         }
 
         draw_2d::Quad::new(layout.inventory.position, TEXT_BACKGROUND_COLOR).draw_2d(
@@ -165,17 +213,15 @@ impl Render {
                 .inventory_cards
                 .get(index)
                 .expect("Invalid inventory layout");
-            selected_clan = selected_clan.or(self.card_render.draw(
-                layout.position,
-                card.as_ref(),
-                game_time,
-                framebuffer,
-            ));
+            let hovered_clan =
+                self.card_render
+                    .draw(layout.position, card.as_ref(), game_time, framebuffer);
+            selected_clan = selected_clan.or(hovered_clan);
         }
 
         let text = match tier_up_cost(shop.tier, shop.tier_rounds) {
             Some(cost) => format!("Tier Up ({})", cost),
-            None => format!("Tier Up (?)"),
+            None => "Tier Up (?)".to_string(),
         };
         draw_rectangle(
             &text,
@@ -203,17 +249,9 @@ impl Render {
         );
 
         draw_rectangle(
-            &format!("Reroll"),
+            "Reroll",
             layout.reroll.position,
             button_color(&layout.reroll),
-            &self.geng,
-            framebuffer,
-        );
-
-        draw_rectangle(
-            &format!("Freeze"),
-            layout.freeze.position,
-            button_color(&layout.freeze),
             &self.geng,
             framebuffer,
         );
@@ -297,9 +335,18 @@ impl Render {
         }
 
         draw_rectangle(
-            &format!("Go"),
+            "Go",
             layout.go.position,
             button_color(&layout.go),
+            &self.geng,
+            framebuffer,
+        );
+
+        draw_rectangle_frame(
+            "Sell 1",
+            layout.sell.position,
+            SELL_BUTTON_FRAME_WIDTH * layout.sell.position.width(),
+            SELL_BUTTON_COLOR,
             &self.geng,
             framebuffer,
         );
@@ -309,12 +356,10 @@ impl Render {
                 DragTarget::Card { card, .. } => {
                     let aabb =
                         AABB::point(drag.position).extend_symmetric(layout.drag_card_size / 2.0);
-                    selected_clan = selected_clan.or(self.card_render.draw(
-                        aabb,
-                        Some(card),
-                        game_time,
-                        framebuffer,
-                    ));
+                    let clan = self
+                        .card_render
+                        .draw(aabb, Some(card), game_time, framebuffer);
+                    selected_clan = selected_clan.or(clan);
                 }
             }
         }
@@ -373,6 +418,37 @@ fn draw_rectangle(
 ) {
     let camera = &geng::PixelPerfectCamera;
     draw_2d::Quad::new(aabb, color).draw_2d(geng, framebuffer, camera);
+    draw_2d::Text::unit(&**geng.default_font(), text, TEXT_COLOR)
+        .fit_into(
+            AABB::point(aabb.center()).extend_symmetric(aabb.size() * TEXT_OCCUPY_SPACE / 2.0),
+        )
+        .draw_2d(geng, framebuffer, camera);
+}
+
+fn draw_rectangle_frame(
+    text: impl AsRef<str>,
+    aabb: AABB<f32>,
+    width: f32,
+    color: Color<f32>,
+    geng: &Geng,
+    framebuffer: &mut ugli::Framebuffer,
+) {
+    let camera = &geng::PixelPerfectCamera;
+    let left_mid = vec2(aabb.x_min, aabb.center().y);
+    draw_2d::Chain::new(
+        Chain::new(vec![
+            left_mid,
+            aabb.top_left(),
+            aabb.top_right(),
+            aabb.bottom_right(),
+            aabb.bottom_left(),
+            left_mid,
+        ]),
+        width,
+        color,
+        0,
+    )
+    .draw_2d(geng, framebuffer, camera);
     draw_2d::Text::unit(&**geng.default_font(), text, TEXT_COLOR)
         .fit_into(
             AABB::point(aabb.center()).extend_symmetric(aabb.size() * TEXT_OCCUPY_SPACE / 2.0),
