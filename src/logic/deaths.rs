@@ -19,7 +19,7 @@ impl Logic {
                     })
                 })
             {
-                self.effects.push_front(QueuedEffect {
+                self.effects.push_back(QueuedEffect {
                     effect,
                     context: EffectContext {
                         caster: Some(other.id),
@@ -44,7 +44,7 @@ impl Logic {
                         status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))
                     })
                 {
-                    self.effects.push_front(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect,
                         context: EffectContext {
                             caster: Some(unit.id),

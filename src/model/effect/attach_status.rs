@@ -88,7 +88,7 @@ impl Logic {
                 })
             })
         {
-            self.effects.push_front(QueuedEffect {
+            self.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
                     caster,
@@ -119,7 +119,7 @@ impl Logic {
                     })
                 })
             {
-                self.effects.push_front(QueuedEffect {
+                self.effects.push_back(QueuedEffect {
                     effect,
                     context: EffectContext {
                         caster,

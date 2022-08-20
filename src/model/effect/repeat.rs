@@ -17,7 +17,7 @@ impl EffectImpl for RepeatEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         for _ in 0..effect.times {
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: context.clone(),
             });

@@ -110,7 +110,7 @@ impl EffectImpl for DamageEffect {
                 })
             })
         {
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
                     caster: context.caster,
@@ -148,7 +148,11 @@ impl EffectImpl for DamageEffect {
             }
         }
 
-        for (effect, vars, status_id, status_color) in
+        if damage <= Health::new(0.0) {
+            return;
+        }
+
+        for (effect, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
                     StatusTrigger::DamageTaken {
@@ -163,21 +167,27 @@ impl EffectImpl for DamageEffect {
                 })
             })
         {
-            logic.effects.push_front(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: context.caster,
-                    from: context.from,
-                    target: context.target,
-                    vars,
-                    status_id: Some(status_id),
-                    color: Some(status_color),
+            let context = EffectContext {
+                caster: context.caster,
+                from: context.from,
+                target: context.target,
+                vars: {
+                    vars.insert(VarName::DamageTaken, damage);
+                    vars
                 },
-            })
-        }
-
-        if damage <= Health::new(0.0) {
-            return;
+                status_id: Some(status_id),
+                color: Some(status_color),
+            };
+            logic.effects.push_back(QueuedEffect {
+                effect,
+                context: context.clone(),
+            });
+            logic.effects.push_back(QueuedEffect {
+                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
+                    value: UNIT_TURN_TIME,
+                })),
+                context: context.clone(),
+            });
         }
 
         let old_hp = target_unit.stats.health;
@@ -216,7 +226,7 @@ impl EffectImpl for DamageEffect {
                     })
                 })
             {
-                logic.effects.push_front(QueuedEffect {
+                logic.effects.push_back(QueuedEffect {
                     effect,
                     context: EffectContext {
                         caster: context.caster,
@@ -235,7 +245,7 @@ impl EffectImpl for DamageEffect {
         }
 
         if let Some(effect) = effect.on.get(&DamageTrigger::Injure) {
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect: effect.clone(),
                 context: {
                     let mut context = context.clone();
@@ -248,7 +258,7 @@ impl EffectImpl for DamageEffect {
         if killed {
             // logic.render.add_text(target.position, "KILL", Color::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
-                logic.effects.push_front(QueuedEffect {
+                logic.effects.push_back(QueuedEffect {
                     effect: effect.clone(),
                     context: context.clone(),
                 });
@@ -279,7 +289,7 @@ impl EffectImpl for DamageEffect {
                         })
                     })
                 {
-                    logic.effects.push_front(QueuedEffect {
+                    logic.effects.push_back(QueuedEffect {
                         effect,
                         context: EffectContext {
                             caster: context.caster,
@@ -301,9 +311,9 @@ impl EffectImpl for DamageEffect {
         let mut damage_instances = &mut logic.model.damage_instances;
         let avg_damage: f32 = damage_instances.iter().sum::<f32>() / damage_instances.len() as f32;
         if damage.as_f32() > avg_damage * 8.0 {
-            logic.model.time_scale = 0.3;
+            logic.model.time_scale = 0.7;
         } else if damage.as_f32() > avg_damage * 3.0 {
-            logic.model.time_scale = 0.5;
+            logic.model.time_scale = 0.9;
         }
         damage_instances.pop_front();
         damage_instances.push_back(damage.as_f32());

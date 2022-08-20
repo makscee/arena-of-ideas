@@ -18,7 +18,7 @@ impl EffectImpl for ApplyGainedEffect {
                 status.trigger(|trigger| matches!(trigger, StatusTrigger::GainedEffect))
             })
         {
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
                     caster: context.caster,

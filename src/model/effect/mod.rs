@@ -16,6 +16,7 @@ mod damage;
 mod drop_context_status;
 mod heal;
 mod if_effect;
+mod incr_visual_timer;
 mod instant_action;
 mod list;
 mod next_action_modifier;
@@ -45,6 +46,7 @@ pub use damage::*;
 pub use drop_context_status::*;
 pub use heal::*;
 pub use if_effect::*;
+pub use incr_visual_timer::*;
 pub use instant_action::*;
 pub use list::*;
 pub use next_action_modifier::*;
@@ -73,6 +75,7 @@ pub enum Effect {
     Random(Box<RandomEffect>),
     List(Box<ListEffect>),
     If(Box<IfEffect>),
+    IncrVisualTimer(Box<IncrVisualTimerEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     DropContextStatus(Box<DropContextStatusEffect>),
@@ -106,6 +109,7 @@ pub enum RawEffect {
     Random(Box<RandomEffect>),
     List(Box<ListEffect>),
     If(Box<IfEffect>),
+    IncrVisualTimer(Box<IncrVisualTimerEffect>),
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     DropContextStatus(Box<DropContextStatusEffect>),
@@ -176,6 +180,7 @@ impl std::fmt::Debug for Effect {
             Self::Random(effect) => effect.fmt(f),
             Self::List(effect) => effect.fmt(f),
             Self::If(effect) => effect.fmt(f),
+            Self::IncrVisualTimer(effect) => effect.fmt(f),
             Self::ChangeContext(effect) => effect.fmt(f),
             Self::ChangeContextStatus(effect) => effect.fmt(f),
             Self::DropContextStatus(effect) => effect.fmt(f),
@@ -211,6 +216,7 @@ impl From<RawEffect> for Effect {
             RawEffect::Random(effect) => Self::Random(effect),
             RawEffect::List(effect) => Self::List(effect),
             RawEffect::If(effect) => Self::If(effect),
+            RawEffect::IncrVisualTimer(effect) => Self::IncrVisualTimer(effect),
             RawEffect::ChangeContext(effect) => Self::ChangeContext(effect),
             RawEffect::ChangeContextStatus(effect) => Self::ChangeContextStatus(effect),
             RawEffect::DropContextStatus(effect) => Self::DropContextStatus(effect),
@@ -278,6 +284,7 @@ impl Effect {
             Effect::Random(effect) => &mut **effect,
             Effect::List(effect) => &mut **effect,
             Effect::If(effect) => &mut **effect,
+            Effect::IncrVisualTimer(effect) => &mut **effect,
             Effect::ChangeContext(effect) => &mut **effect,
             Effect::ChangeContextStatus(effect) => &mut **effect,
             Effect::DropContextStatus(effect) => &mut **effect,
@@ -310,6 +317,7 @@ impl Effect {
             Effect::Random(effect) => effect,
             Effect::List(effect) => effect,
             Effect::If(effect) => effect,
+            Effect::IncrVisualTimer(effect) => effect,
             Effect::ChangeContext(effect) => effect,
             Effect::ChangeContextStatus(effect) => effect,
             Effect::DropContextStatus(effect) => effect,

@@ -73,22 +73,29 @@ impl EffectImpl for HealEffect {
                 })
             })
         {
-            logic.effects.push_front(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: context.caster,
-                    from: context.from,
-                    target: context.target,
-                    vars: {
-                        vars.extend(context.vars.clone());
-                        vars.insert(VarName::HealthRestored, value_clamped);
-                        vars.insert(VarName::IncomingHeal, value);
-                        vars
-                    },
-                    status_id: Some(status_id),
-                    color: Some(status_color),
+            let context = EffectContext {
+                caster: context.caster,
+                from: context.from,
+                target: context.target,
+                vars: {
+                    vars.extend(context.vars.clone());
+                    vars.insert(VarName::HealthRestored, value_clamped);
+                    vars.insert(VarName::IncomingHeal, value);
+                    vars
                 },
-            })
+                status_id: Some(status_id),
+                color: Some(status_color),
+            };
+            logic.effects.push_back(QueuedEffect {
+                effect,
+                context: context.clone(),
+            });
+            logic.effects.push_back(QueuedEffect {
+                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
+                    value: UNIT_TURN_TIME,
+                })),
+                context: context.clone(),
+            });
         }
 
         let caster = context
@@ -112,7 +119,7 @@ impl EffectImpl for HealEffect {
                 })
             })
         {
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
                     caster: context.caster,

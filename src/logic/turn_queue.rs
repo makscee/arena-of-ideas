@@ -5,6 +5,7 @@ impl Logic {
         if self.model.current_tick.visual_timer > Time::new(0.0)
             || self.model.lives <= 0
             || self.model.transition
+            || !self.effects.is_empty()
         {
             return;
         }
@@ -57,7 +58,7 @@ impl Logic {
                                         .trigger(|trigger| matches!(trigger, StatusTrigger::Action))
                                 })
                             {
-                                self.effects.push_front(QueuedEffect {
+                                self.effects.push_back(QueuedEffect {
                                     effect,
                                     context: EffectContext {
                                         caster: Some(unit.id),
@@ -87,7 +88,7 @@ impl Logic {
                             Faction::Enemy => self.model.last_enemy_action_time = self.model.time,
                         }
                         unit.action_state = ActionState::Cooldown { time: 0 };
-                        self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);
+                        // self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);
                     }
                     ActionState::Cooldown { time } => {
                         for (effect, vars, status_id, status_color) in
@@ -97,7 +98,7 @@ impl Logic {
                                 })
                             })
                         {
-                            self.effects.push_front(QueuedEffect {
+                            self.effects.push_back(QueuedEffect {
                                 effect,
                                 context: EffectContext {
                                     caster: Some(unit.id),

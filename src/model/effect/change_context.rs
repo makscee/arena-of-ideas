@@ -22,7 +22,7 @@ impl EffectContainer for ChangeContextEffect {
 impl EffectImpl for ChangeContextEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        logic.effects.push_front(QueuedEffect {
+        logic.effects.push_back(QueuedEffect {
             effect: effect.effect,
             context: EffectContext {
                 caster: match effect.caster {

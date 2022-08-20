@@ -2,7 +2,7 @@
     "name": "rogue",
     "tier": 1,
     "health": 2,
-    "base_damage": 1,
+    "base_damage": 4,
     "cooldown": 3,
     "triple": "rogue+",
     "clans": [
