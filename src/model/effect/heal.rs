@@ -36,7 +36,13 @@ impl EffectImpl for HealEffect {
 
         let target_unit = context
             .target
-            .and_then(|id| logic.model.units.get_mut(&id))
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get_mut(&id)
+                    .or(logic.model.dead_units.get_mut(&id))
+            })
             .expect("Target not found");
 
         target_unit.stats.max_hp += add_max_hp;
@@ -87,7 +93,13 @@ impl EffectImpl for HealEffect {
 
         let caster = context
             .caster
-            .and_then(|id| logic.model.units.get(&id))
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get(&id)
+                    .or(logic.model.dead_units.get(&id))
+            })
             .expect("Caster not found");
         for (effect, mut vars, status_id, status_color) in
             caster.all_statuses.iter().flat_map(|status| {

@@ -49,7 +49,13 @@ impl EffectImpl for VisualEffect {
 
         let parent = context.get(effect.parent);
         let position = parent
-            .and_then(|parent| logic.model.units.get(&parent))
+            .and_then(|parent| {
+                logic
+                    .model
+                    .units
+                    .get(&parent)
+                    .or(logic.model.dead_units.get(&parent))
+            })
             .map(|unit| unit.position);
         let mut effect_color = None;
         if let Some(color) = effect.color {

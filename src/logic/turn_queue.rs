@@ -27,7 +27,7 @@ impl Logic {
                     .id;
                 self.model.current_tick.turn_state = TurnState::PreTurn;
                 self.model.current_tick.visual_timer += Time::new(UNIT_SWITCH_TIME);
-            }
+            } 
             TurnState::PreTurn => {
                 self.model.current_tick.turn_state = TurnState::Turn;
                 self.model.current_tick.visual_timer += Time::new(UNIT_PRE_TURN_TIME);

@@ -9,12 +9,18 @@ impl Logic {
             }
             particle.visible = true;
             particle.time_left -= self.delta_time;
-            let parent = particle
-                .parent
-                .and_then(|parent| self.model.units.get(&parent));
-            let partner = particle
-                .partner
-                .and_then(|partner| self.model.units.get(&partner));
+            let parent = particle.parent.and_then(|parent| {
+                self.model
+                    .units
+                    .get(&parent)
+                    .or(self.model.dead_units.get(&parent))
+            });
+            let partner = particle.partner.and_then(|partner| {
+                self.model
+                    .units
+                    .get(&partner)
+                    .or(self.model.dead_units.get(&partner))
+            });
             let mut parameters = &mut particle.render_config.parameters;
 
             if let Some(color) = particle.color {

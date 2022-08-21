@@ -33,7 +33,12 @@ impl EffectImpl for DamageEffect {
         let mut effect = *self;
         let mut damage = effect.value.calculate(&context, logic);
         if let Some(caster) = context.caster {
-            let caster_unit = logic.model.units.get(&caster).unwrap();
+            let caster_unit = logic
+                .model
+                .units
+                .get(&caster)
+                .or(logic.model.dead_units.get(&caster))
+                .unwrap();
             for (modifier_context, modifier_target) in &caster_unit.modifier_targets {
                 match modifier_target {
                     //Add extra damage types
@@ -80,9 +85,10 @@ impl EffectImpl for DamageEffect {
         }
 
         let units = &mut logic.model.units;
+        let dead_units = &mut logic.model.dead_units;
         let target_unit = context
             .target
-            .and_then(|id| units.get_mut(&id))
+            .and_then(|id| units.get_mut(&id).or(dead_units.get_mut(&id)))
             .expect("Target not found");
 
         if damage <= Health::new(0.0) {
@@ -178,7 +184,12 @@ impl EffectImpl for DamageEffect {
         target_unit.last_injure_time = logic.model.time;
         target_unit.stats.health -= damage;
         target_unit.permanent_stats.health -= damage;
-        let target_unit = logic.model.units.get(&context.target.unwrap()).unwrap();
+        let target_unit = logic
+            .model
+            .units
+            .get(&context.target.unwrap())
+            .or(logic.model.dead_units.get(&context.target.unwrap()))
+            .unwrap();
         let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
         let text_color = context.color.unwrap_or(Color::RED);
         logic.model.render_model.add_text(
@@ -246,7 +257,12 @@ impl EffectImpl for DamageEffect {
 
         // Kill trigger
         if let Some(caster) = context.caster {
-            let caster = logic.model.units.get(&caster).unwrap();
+            let caster = logic
+                .model
+                .units
+                .get(&caster)
+                .or(logic.model.dead_units.get(&caster))
+                .unwrap();
             if killed {
                 for (effect, mut vars, status_id, status_color) in
                     caster.all_statuses.iter().flat_map(|status| {

@@ -20,7 +20,13 @@ impl EffectImpl for AoeEffect {
         let effect = *self;
         let caster = context
             .caster
-            .and_then(|id| logic.model.units.get(&id))
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get(&id)
+                    .or(logic.model.dead_units.get(&id))
+            })
             .expect("Caster not found");
         let caster_faction = caster.faction;
         let center = context

@@ -8,7 +8,7 @@ impl Logic {
             Condition::UnitHasStatus { who, status_type } => {
                 let who = context.get(*who);
                 let who = who
-                    .and_then(|id| self.model.units.get(&id))
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
                     .expect("Caster, From, or Target not found");
                 who.all_statuses
                     .iter()
@@ -17,18 +17,18 @@ impl Logic {
             Condition::UnitInjured { who } => {
                 let who = context.get(*who);
                 let who = who
-                    .and_then(|id| self.model.units.get(&id))
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
                     .expect("Caster, From, or Target not found");
                 who.stats.health < who.stats.max_hp
             }
             Condition::InRange { max_distance } => {
                 let from = context
                     .from
-                    .and_then(|id| self.model.units.get(&id))
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
                     .expect("Caster, From, or Target not found");
                 let target = context
                     .target
-                    .and_then(|id| self.model.units.get(&id))
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
                     .expect("Caster, From, or Target not found");
                 distance_between_units(target, from) <= *max_distance
             }
@@ -45,7 +45,7 @@ impl Logic {
             Condition::HasClan { who, clan } => {
                 let who = context
                     .get(*who)
-                    .and_then(|id| self.model.units.get(&id))
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
                     .expect("Caster, From, or Target not found");
                 who.clans.contains(clan)
             }
@@ -53,7 +53,7 @@ impl Logic {
             Condition::Faction { who, faction } => {
                 let who = context
                     .get(*who)
-                    .and_then(|id| self.model.units.get(&id))
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
                     .expect("Caster, From, or Target not found");
                 who.faction == *faction
             }
