@@ -5,8 +5,6 @@
     "clans": [
         "PlagueSpreaders"
     ],
-    "cooldown": 1,
-    "range": 5,
     "action": {
         "effect": {
             "type": "If",

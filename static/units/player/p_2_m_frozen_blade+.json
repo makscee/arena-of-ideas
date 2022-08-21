@@ -4,7 +4,6 @@
     "description": "@Scathe: apply @Freeze to target and enemy behind it",
     "health": 8,
     "base_damage": 2,
-    "cooldown": 5,
     "action": {
         "effect": {
             "type": "List",

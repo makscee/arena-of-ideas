@@ -3,7 +3,6 @@
     "tier": 2,
     "health": 8,
     "base_damage": 4,
-    "cooldown": 1,
     "description": "On @Shield gain: @Dark Steal all enemies",
     "clans": [
         "Demons",

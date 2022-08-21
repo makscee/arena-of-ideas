@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
 
 use super::*;
-
-mod abilities;
 mod auras;
 mod deaths;
 mod effects;
@@ -10,7 +8,6 @@ mod events;
 mod particles;
 mod spawn;
 mod statuses;
-mod targeting;
 mod tick;
 mod time;
 mod turn_queue;
@@ -38,7 +35,6 @@ impl Logic {
         self.init_player(player);
         self.init_enemies(round);
         self.init_time(events);
-        self.init_abilities(events);
     }
 
     pub fn new(mut model: Model) -> Self {
@@ -55,7 +51,7 @@ impl Logic {
         self.process_tick();
         self.process_particles();
         self.process_spawns();
-        self.process_turn_queue();
+        self.process_turn();
         self.process_auras();
         self.process_render_positions();
         self.process_effects();
@@ -63,6 +59,7 @@ impl Logic {
         self.process_time();
         self.model.render_model.update(self.delta_time.as_f32())
     }
+
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let ids: Vec<Id> = self.model.units.ids().copied().collect();
         for id in ids {
@@ -71,6 +68,7 @@ impl Logic {
             self.model.units.insert(unit);
         }
     }
+
     fn process_units_random(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let mut ids: Vec<Id> = self.model.units.ids().copied().collect();
         ids.shuffle(&mut global_rng());
@@ -80,6 +78,7 @@ impl Logic {
             self.model.units.insert(unit);
         }
     }
+
     fn process_units_sorted(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
         let mut units = self.model.units.iter().collect::<Vec<&Unit>>();
 
@@ -99,11 +98,13 @@ impl Logic {
             self.model.units.insert(unit);
         }
     }
+
     fn init_player(&mut self, player: Vec<UnitType>) {
         for unit_type in &player {
             self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
         }
     }
+
     fn init_enemies(&mut self, round: GameRound) {
         for unit_type in round.enemies.iter().rev() {
             let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
@@ -118,9 +119,11 @@ impl Logic {
             unit.all_statuses.extend(statuses);
         }
     }
+
     fn process_render_positions(&mut self) {
         self.process_units(Self::process_unit_render_positions);
     }
+
     fn process_unit_render_positions(&mut self, unit: &mut Unit) {
         unit.render_position +=
             (unit.position.to_world() - unit.render_position) * self.delta_time * r32(5.0);

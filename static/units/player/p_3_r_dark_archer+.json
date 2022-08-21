@@ -3,7 +3,6 @@
     "tier": 3,
     "health": 16,
     "base_damage": 25,
-    "cooldown": 6,
     "description": "@Bonus Shot applies @Siphon Life. Always @Bonus Shot target that has @Siphon Life",
     "clans": [
         "Archers",

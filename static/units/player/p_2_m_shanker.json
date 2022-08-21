@@ -3,9 +3,7 @@
     "tier": 2,
     "health": 5,
     "base_damage": 2,
-    "cooldown": 4,
     "description": "@Scathe have 30% chance to apply @Poison",
-    "triple": "shanker+",
     "clans": [
         "Assassins"
     ],

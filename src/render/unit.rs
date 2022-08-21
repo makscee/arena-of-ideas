@@ -37,25 +37,6 @@ impl UnitRender {
             .map(|clan| self.assets.options.clan_colors[clan])
             .collect();
 
-        let target = match &unit.action_state {
-            ActionState::Start { target } => model.and_then(|model| model.units.get(target)),
-            _ => None,
-        };
-
-        let target_dir = target
-            .map_or(Vec2::ZERO, |target| {
-                (target.position.to_world() - unit.position.to_world()).normalize_or_zero()
-            })
-            .map(|x| x.as_f32());
-
-        let mut is_ability_ready: f32 = 0.0;
-        if let Some(ability) = &template.ability {
-            is_ability_ready = match unit.ability_cooldown {
-                Some(time) if time > Time::new(0.0) => 0.0,
-                _ => 1.0,
-            };
-        }
-
         // Actual render
         let texture_position = AABB::point(unit.render_position.map(|x| x.as_f32()))
             .extend_uniform(unit.stats.radius.as_f32() * 2.0); // TODO: configuring?
@@ -74,7 +55,7 @@ impl UnitRender {
                 u_unit_position: unit.render_position.map(|x| x.as_f32()),
                 u_unit_radius: unit.stats.radius.as_f32(),
                 u_spawn: spawn_scale,
-                u_face_dir: unit.face_dir.map(|x| x.as_f32()),
+                u_face_dir: vec2(0.0, 0.0),
                 u_random: unit.random_number.as_f32(),
                 u_action_time: unit.last_action_time.as_f32(),
                 u_injure_time: unit.last_injure_time.as_f32(),
@@ -87,7 +68,7 @@ impl UnitRender {
                 u_clan_color_2: clan_colors.get(1).copied().unwrap_or(Color::WHITE),
                 u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
                 u_clan_count: clan_colors.len(),
-                u_ability_ready: is_ability_ready,
+                u_ability_ready: 1.0,
                 u_health: unit.stats.health.as_f32() / unit.stats.max_hp.as_f32(),
             },
             geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),

@@ -3,9 +3,7 @@
     "tier": 3,
     "health": 6,
     "base_damage": 8,
-    "cooldown": 5,
     "description": "Allies @Siphon Life no longer breaks @Freeze",
-    "triple": "silent_cultist+",
     "clans": [
         "Freezers",
         "Warlocks"

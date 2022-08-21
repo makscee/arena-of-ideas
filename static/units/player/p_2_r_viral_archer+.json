@@ -3,7 +3,6 @@
     "tier": 2,
     "health": 5,
     "base_damage": 8,
-    "cooldown": 3,
     "description": "@Scathe apply @Plague",
     "clans": [
         "PlagueSpreaders",

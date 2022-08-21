@@ -3,9 +3,7 @@
     "tier": 2,
     "health": 4,
     "base_damage": 9,
-    "cooldown": 5,
     "description": "@Injured: 35% chance to apply @Siphon Life to attacker",
-    "triple": "drainer+",
     "clans": [
         "Warlocks"
     ],

@@ -2,10 +2,8 @@
     "name": "ice_archer+",
     "tier": 2,
     "description": "@Bonus Shot on @Frozen. @Bonus Shot applies @Frozen",
-    "range": 10,
     "health": 4,
     "base_damage": 10,
-    "cooldown": 3,
     "action": {
         "effect": {
             "type": "List",

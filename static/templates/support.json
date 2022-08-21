@@ -2,8 +2,6 @@
     "health": 5,
     "radius": 0.4,
     "base_damage": 0,
-    "range": 0,
-    "cooldown": 1,
     "action": {
         "effect": {
             "type": "Noop"

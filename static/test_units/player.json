@@ -2,8 +2,6 @@
     "name": "player",
     "health": 300,
     "radius": 0.5,
-    "range": 10,
-    "cooldown": 1,
     "action": {
         "effect": {
             "type": "Damage",

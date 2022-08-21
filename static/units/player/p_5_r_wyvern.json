@@ -1,7 +1,6 @@
 {
     "name": "wyvern",
     "tier": 5,
-    "triple": "wyvern+",
     "description": "@Fire damage on @Freeze deals 2 @Fire damage in range 1",
     "clans": [
         "Dragons",

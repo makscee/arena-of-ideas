@@ -10,10 +10,6 @@ impl EffectContainer for ActionEffect {
 
 impl EffectImpl for ActionEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
-        let effect = *self;
-        let caster = logic.model.units.get_mut(&context.caster.unwrap()).unwrap();
-        caster.action_state = ActionState::Start {
-            target: context.target.unwrap(),
-        };
+        logic.process_turn();
     }
 }

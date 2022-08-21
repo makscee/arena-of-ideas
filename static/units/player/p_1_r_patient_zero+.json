@@ -3,7 +3,6 @@
     "tier": 1,
     "health": 6,
     "base_damage": 2,
-    "cooldown": 3,
     "description": "Has @Plague. On @Injured from @Plague gain @Shield",
     "clans": [
         "PlagueSpreaders"

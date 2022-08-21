@@ -2,8 +2,6 @@
     "name": "shooter_0",
     "base_damage": 1,
     "radius": 0.36,
-    "range": 5,
-    "cooldown": 5,
     "health": 5,
     "action": {
         "effect": {

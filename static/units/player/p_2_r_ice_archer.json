@@ -3,10 +3,7 @@
     "tier": 2,
     "health": 2,
     "base_damage": 5,
-    "cooldown": 3,
-    "triple": "ice_archer+",
     "description": "@Bonus Shot on @Frozen",
-    "range": 10,
     "action": {
         "effect": {
             "type": "List",

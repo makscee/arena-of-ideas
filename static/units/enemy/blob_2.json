@@ -3,8 +3,6 @@
     "health": 50,
     "base_damage": 5,
     "radius": 0.4,
-    "range": 2,
-    "cooldown": 2,
     "statuses": [
         {
             "name": "SpawnBlobDeathrattle",

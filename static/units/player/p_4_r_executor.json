@@ -2,7 +2,6 @@
     "name": "executor",
     "tier": 4,
     "description": "Double damage on enemies with @Plague",
-    "triple": "executor+",
     "clans": [
         "PlagueSpreaders",
         "Assassins"

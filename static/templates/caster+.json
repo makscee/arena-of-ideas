@@ -2,8 +2,6 @@
     "health": 4,
     "radius": 0.44,
     "base_damage": 12,
-    "range": 3,
-    "cooldown": 5,
     "action": {
         "effect": {
             "preset": "effects/ranged_hit.json"

@@ -12,7 +12,10 @@ impl Logic {
                 .unwrap_or(false)
     }
 
-    pub fn collect_modifier_targets(&self, unit: &Unit) -> Vec<(EffectContext, ModifierTarget)> {
+    pub fn collect_modifier_targets(
+        &mut self,
+        unit: &Unit,
+    ) -> Vec<(EffectContext, ModifierTarget)> {
         let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = Vec::new();
         for status in &unit.all_statuses {
             if !Self::is_status_expired(status) {
@@ -27,7 +30,12 @@ impl Logic {
                     };
                     if let ModifierTarget::List { targets } = &modifier.target {
                         if match &modifier.condition {
-                            Some(condition) => self.check_condition(condition, &context),
+                            Some(condition) => {
+                                self.model.units.insert(unit.clone());
+                                let result = self.check_condition(condition, &context);
+                                self.model.units.remove(&unit.id);
+                                result
+                            }
                             None => true,
                         } {
                             modifier_targets.extend(
@@ -37,7 +45,12 @@ impl Logic {
                             );
                         }
                     } else if match &modifier.condition {
-                        Some(condition) => self.check_condition(condition, &context),
+                        Some(condition) => {
+                            self.model.units.insert(unit.clone());
+                            let result = self.check_condition(condition, &context);
+                            self.model.units.remove(&unit.id);
+                            result
+                        }
                         None => true,
                     } {
                         modifier_targets.push((context.clone(), modifier.target.clone()));
@@ -48,21 +61,19 @@ impl Logic {
         modifier_targets
     }
 
-    pub fn process_modifiers(
-        &mut self,
-        unit: &mut Unit,
-        modifier_targets: &Vec<(EffectContext, ModifierTarget)>,
-    ) {
+    pub fn process_modifiers(&mut self, unit: &mut Unit) {
+        let modifier_targets = self.collect_modifier_targets(&unit);
         unit.stats = unit.permanent_stats.clone();
 
-        for (context, target) in modifier_targets {
+        for (context, target) in &modifier_targets {
             if let ModifierTarget::Stat { stat, value } = target {
                 self.model.units.insert(unit.clone());
-                let stat_value = value.calculate(context, self);
+                let stat_value = value.calculate(&context, self);
                 self.model.units.remove(&unit.id);
                 *unit.stats.get_mut(*stat) = stat_value;
             }
         }
+        unit.modifier_targets = modifier_targets;
     }
 
     pub fn process_unit_statuses(&mut self, unit: &mut Unit) {

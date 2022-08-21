@@ -271,12 +271,11 @@ impl Walkthrough {
         let mut shop_units = all_units
             .clone()
             .into_iter()
-            .filter(|unit| unit.tier <= tier as u32 && unit.triple.is_some())
+            .filter(|unit| unit.tier <= tier as u32)
             .choose_multiple(&mut global_rng(), units_count);
 
         if shop_units.len() <= count {
             shop_units.append(&mut player.clone());
-            shop_units.sort_by(|a, b| Ord::cmp(&b.range, &a.range));
             result.push(shop_units);
         } else {
             shop_units
@@ -288,7 +287,6 @@ impl Walkthrough {
                     inventory_units.clear();
                     variant = Self::check_triple(variant, all_units.clone());
                     variant = Self::check_max_slots(variant, inventory_units);
-                    variant.sort_by(|a, b| Ord::cmp(&b.range, &a.range));
                     result.push(variant);
                 })
         }
@@ -305,7 +303,7 @@ impl Walkthrough {
             let mut sorted = team.clone();
             sorted.sort_by(|a, b| {
                 b.tier
-                    .cmp(&(a.tier + if a.triple.is_none() { 1 } else { 0 }))
+                    .cmp(&a.tier)
             });
             (0..delete_count).into_iter().for_each(|i| {
                 if inventory_units.len() == MAX_INVENTORY {
@@ -326,15 +324,15 @@ impl Walkthrough {
             .for_each(|unit| counts.entry(unit.name.clone()).or_insert((0, unit)).0 += 1);
         counts.into_values().for_each(|(count, unit)| {
             let mut count = count;
-            while unit.triple.is_some() && count >= 3 {
-                count -= 3;
-                let triple = all_units
-                    .clone()
-                    .into_iter()
-                    .find(|template| *template.name == unit.triple.as_ref().unwrap().clone())
-                    .unwrap();
-                result.push(triple);
-            }
+            // while unit.triple.is_some() && count >= 3 {
+            //     count -= 3;
+            //     let triple = all_units
+            //         .clone()
+            //         .into_iter()
+            //         .find(|template| *template.name == unit.triple.as_ref().unwrap().clone())
+            //         .unwrap();
+            //     result.push(triple);
+            // }
             (0..count).for_each(|i| result.push(unit.clone()));
         });
         result

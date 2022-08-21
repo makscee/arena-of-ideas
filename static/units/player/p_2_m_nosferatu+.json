@@ -3,7 +3,6 @@
     "tier": 2,
     "health": 6,
     "base_damage": 6,
-    "cooldown": 3,
     "description": "@Dark Steal a random enemy every tick",
     "clans": [
         "Vampires",

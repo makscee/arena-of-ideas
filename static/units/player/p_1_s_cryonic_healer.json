@@ -1,13 +1,10 @@
 {
     "name": "cryonic_healer",
     "tier": 1,
-    "triple": "cryonic_healer+",
     "description": "Heal ally by amount of enemies in @Freeze ",
     "clans": [
         "Freezers"
     ],
-    "cooldown": 1,
-    "range": 5,
     "action": {
         "effect": {
             "type": "ChangeTarget",

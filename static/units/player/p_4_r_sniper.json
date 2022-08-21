@@ -3,9 +3,6 @@
     "tier": 4,
     "health": 5,
     "base_damage": 5,
-    "cooldown": 6,
-    "range": 10,
-    "triple": "sniper+",
     "description": "Increased attack range and damage",
     "clans": [
         "Archers",

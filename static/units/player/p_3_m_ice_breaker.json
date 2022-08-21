@@ -4,7 +4,6 @@
     "description": "Double damage on @Freeze target",
     "health": 10,
     "base_damage": 3,
-    "cooldown": 3,
     "statuses": [
         {
             "name": "DoubleDamageOnPoison",

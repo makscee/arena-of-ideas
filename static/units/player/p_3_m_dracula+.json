@@ -7,7 +7,6 @@
     ],
     "health": 15,
     "base_damage": 5,
-    "cooldown": 3,
     "description": "Attack @Poisoned target 3 times",
     "action": {
         "effect": {

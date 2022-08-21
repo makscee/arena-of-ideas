@@ -54,6 +54,9 @@ impl TargetFilter {
 
 #[derive(Clone)]
 pub struct TickModel {
+    pub turn_state: TurnState,
+    pub enemy: Id,
+    pub player: Id,
     pub tick_time: Time,
     pub tick_num: Ticks,
     pub visual_timer: Time,
@@ -64,6 +67,8 @@ pub struct Model {
     pub next_id: Id,
     pub time: Time,
     pub units: Collection<Unit>,
+    pub player_queue: VecDeque<Unit>,
+    pub enemy_queue: VecDeque<Unit>,
     pub config: Config,
     pub round: GameRound,
     pub unit_templates: UnitTemplates,
@@ -71,13 +76,12 @@ pub struct Model {
     pub statuses: Statuses,
     pub transition: bool,
     pub render_model: RenderModel,
-    /// Variables that persist for the whole game
-    pub vars: HashMap<VarName, R32>,
     pub current_tick: TickModel,
     pub time_scale: f32,
     pub time_modifier: f32,
     pub lives: i32,
-    pub turn_queue: VecDeque<(Id, TurnState)>,
+    /// Variables that persist for the whole game
+    pub vars: HashMap<VarName, R32>,
 }
 
 impl Model {
@@ -107,7 +111,8 @@ impl Model {
             time_scale,
             time_modifier: time_scale,
             lives,
-            turn_queue: VecDeque::new(),
+            player_queue: VecDeque::new(),
+            enemy_queue: VecDeque::new(),
         }
     }
 }
@@ -115,6 +120,9 @@ impl Model {
 impl TickModel {
     pub fn new(tick_num: Ticks) -> Self {
         Self {
+            turn_state: TurnState::None,
+            enemy: 0,
+            player: 0,
             tick_time: Time::ZERO,
             tick_num,
             visual_timer: Time::new(UNIT_TURN_TIME),

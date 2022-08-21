@@ -1,7 +1,6 @@
 {
     "name": "amdis",
     "tier": 4,
-    "triple": "amdis+",
     "description": "10 ticks after Spawn, gain @Rebirth",
     "clans": [
         "Dragons",

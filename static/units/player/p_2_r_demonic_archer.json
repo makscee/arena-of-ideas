@@ -3,9 +3,7 @@
     "tier": 2,
     "health": 3,
     "base_damage": 4,
-    "cooldown": 4,
     "description": "@Bonus Shot applies @Dark Steal",
-    "triple": "demonic_archer+",
     "clans": [
         "Demons",
         "Archers"

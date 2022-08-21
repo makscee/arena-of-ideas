@@ -3,7 +3,6 @@
     "tier": 2,
     "health": 10,
     "base_damage": 18,
-    "cooldown": 5,
     "description": "Every 10 ticks apply @Siphon Life to all enemies",
     "clans": [
         "Warlocks"

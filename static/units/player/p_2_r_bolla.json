@@ -2,10 +2,8 @@
     "name": "bolla",
     "tier": 2,
     "health": 4,
-    "base_damage": 16,
-    "cooldown": 6,
+    "base_damage": 4,
     "description": "",
-    "triple": "bolla+",
     "clans": [
         "Dragons"
     ],

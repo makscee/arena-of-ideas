@@ -3,7 +3,6 @@
     "tier": 3,
     "health": 15,
     "base_damage": 5,
-    "cooldown": 3,
     "description": "Double damage on @Freeze target, also damage enemy behind",
     "clans": [
         "Freezers",

@@ -7,13 +7,6 @@ pub type UnitType = String;
 pub type Tier = u32;
 pub const MAX_TIER: u32 = 5;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub enum ActionState {
-    None,
-    Start { target: Id },
-    Cooldown { time: Ticks },
-}
-
 #[derive(Clone)]
 pub enum TurnState {
     None,
@@ -39,19 +32,14 @@ pub struct Unit {
     /// Temporary flags that live for one frame
     pub flags: Vec<UnitStatFlag>,
     pub faction: Faction,
-    pub action_state: ActionState,
     /// These stats are temporary and are reset every tick.
     /// They are modified primarily by modifier statuses
     pub stats: UnitStats,
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
-    pub face_dir: Vec2<R32>,
     pub position: Position,
     pub action: ActionProperties,
-    pub range: Coord,
-    pub ability_cooldown: Option<Time>,
     pub clans: Vec<Clan>,
-    pub next_action_modifiers: Vec<Modifier>,
     #[serde(skip)]
     pub render: ShaderConfig,
     pub render_position: Vec2<R32>,
@@ -70,8 +58,6 @@ pub struct UnitStats {
     pub base_damage: R32,
     pub block: R32,
     pub crit_chance: R32,
-    pub action_speed: R32,
-    pub cooldown: R32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -81,8 +67,7 @@ pub enum UnitStat {
     Radius,
     BaseDamage,
     Block,
-    CritChance,
-    Cooldown,
+    CritChance
 }
 
 impl Unit {
@@ -113,18 +98,13 @@ impl Unit {
             active_auras: default(),
             modifier_targets: vec![],
             flags: vec![],
-            range: template.range,
             faction,
-            action_state: ActionState::None,
             stats: UnitStats::new(template),
             permanent_stats: UnitStats::new(template),
-            face_dir: Vec2::ZERO,
             render_position: Vec2::ZERO,
             position,
             action: template.action.clone(),
             render: template.render_config.clone(),
-            next_action_modifiers: Vec::new(),
-            ability_cooldown: None,
             clans: template.clans.clone(),
             last_action_time: Time::new(0.0),
             last_injure_time: Time::new(0.0),
@@ -143,9 +123,7 @@ impl UnitStats {
             base_damage: template.base_damage,
             block: template.block,
             crit_chance: template.crit_chance,
-            action_speed: template.action_speed,
             radius: template.radius,
-            cooldown: r32(template.cooldown as f32),
         }
     }
 
@@ -157,7 +135,6 @@ impl UnitStats {
             UnitStat::BaseDamage => self.base_damage,
             UnitStat::Block => self.block,
             UnitStat::CritChance => self.crit_chance,
-            UnitStat::Cooldown => self.cooldown,
         }
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -168,7 +145,6 @@ impl UnitStats {
             UnitStat::BaseDamage => &mut self.base_damage,
             UnitStat::Block => &mut self.block,
             UnitStat::CritChance => &mut self.crit_chance,
-            UnitStat::Cooldown => &mut self.cooldown,
         }
     }
 }

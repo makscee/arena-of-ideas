@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
 use super::*;
+use std::collections::VecDeque;
 
 mod field;
 mod particle;
@@ -198,26 +198,6 @@ impl Render {
             )
             .fit_into(name_aabb)
             .draw_2d(&self.geng, framebuffer, &self.camera);
-
-            // Draw cooldown indicator
-            let cooldown = match unit.action_state {
-                ActionState::None => "o".to_string(),
-                ActionState::Start { target } => "o".to_string(),
-                ActionState::Cooldown { time } => {
-                    format!("{:.0}", (unit.stats.cooldown.as_f32() - time as f32))
-                }
-            };
-            let text_color = if cooldown == "o" {
-                Color::WHITE
-            } else {
-                Color::try_from("#e6e6e6").unwrap()
-            };
-            let size = unit.stats.radius.as_f32() * 0.2;
-            let cooldown_aabb =
-                AABB::point(unit.render_position.map(|x| x.as_f32())).extend_uniform(size);
-            draw_2d::Text::unit(self.geng.default_font().clone(), cooldown, text_color)
-                .fit_into(cooldown_aabb)
-                .draw_2d(&self.geng, framebuffer, &self.camera);
 
             // On unit hover
             if (mouse_world_pos - unit.render_position.map(|x| x.as_f32())).len()

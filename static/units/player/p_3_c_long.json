@@ -3,7 +3,6 @@
     "tier": 3,
     "health": 5,
     "base_damage": 15,
-    "cooldown": 6,
     "description": "All allies start with @Shield",
     "clans": [
         "Dragons",

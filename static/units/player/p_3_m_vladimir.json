@@ -3,9 +3,7 @@
     "tier": 3,
     "health": 7,
     "base_damage": 3,
-    "cooldown": 3,
     "description": "All allies gain +1 @base_damage and +1 @block",
-    "triple": "vladimir+",
     "clans": [
         "Vampires",
         "Protectors"

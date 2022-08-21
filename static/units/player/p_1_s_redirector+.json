@@ -1,13 +1,10 @@
 {
     "name": "redirector+",
     "tier": 1,
-    "triple": "redirector+",
     "description": "Heal all allies by how many @Shields there are",
     "clans": [
         "Protectors"
     ],
-    "cooldown": 1,
-    "range": 5,
     "action": {
         "effect": {
             "type": "ChangeTarget",

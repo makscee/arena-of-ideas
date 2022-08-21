@@ -2,7 +2,6 @@
     "name": "soul_stealer",
     "tier": 4,
     "description": "@Dark Steal any enemy that gains @Siphon Life",
-    "triple": "soul_stealer+",
     "clans": [
         "Demons",
         "Warlocks"

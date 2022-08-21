@@ -30,22 +30,6 @@
                                 "value": 10
                             }
                         }
-                    },
-                    {
-                        "type": "Stat",
-                        "stat": "Cooldown",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "FindStat",
-                                "who": "Target",
-                                "stat": "Cooldown"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": -1
-                            }
-                        }
                     }
                 ]
             }

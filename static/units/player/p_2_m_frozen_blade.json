@@ -1,11 +1,9 @@
 {
     "name": "frozen_blade",
     "tier": 2,
-    "triple": "frozen_blade+",
     "description": "@Scathe: apply @Frozen",
     "health": 4,
     "base_damage": 1,
-    "cooldown": 5,
     "action": {
         "effect": {
             "type": "List",

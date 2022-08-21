@@ -3,7 +3,6 @@
     "tier": 3,
     "health": 12,
     "base_damage": 8,
-    "cooldown": 3,
     "description": "All allies gain +2 @base_damage and +3 @block",
     "clans": [
         "Vampires",

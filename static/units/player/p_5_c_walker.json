@@ -1,7 +1,6 @@
 {
     "name": "walker",
     "tier": 5,
-    "triple": "walker+",
     "description": "Every 6 ticks @Freeze random enemy",
     "clans": [
         "Freezers",

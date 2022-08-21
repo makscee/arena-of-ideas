@@ -3,9 +3,7 @@
     "tier": 2,
     "health": 3,
     "base_damage": 3,
-    "cooldown": 3,
     "description": "Apply @Dark Steal on 3 random enemies when hp drop below 50%",
-    "triple": "nosferatu+",
     "clans": [
         "Vampires",
         "Demons"

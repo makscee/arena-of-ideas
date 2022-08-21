@@ -1,13 +1,10 @@
 {
     "name": "worshiper",
     "tier": 1,
-    "triple": "worshiper+",
     "description": "Heal 2 @Dragons by 2 every tick",
     "clans": [
         "Dragons"
     ],
-    "cooldown": 1,
-    "range": 5,
     "action": {
         "effect": {
             "type": "ChangeTarget",

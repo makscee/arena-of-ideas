@@ -3,7 +3,6 @@
     "tier": 3,
     "health": 12,
     "base_damage": 7,
-    "cooldown": 3,
     "description": "On @Poison apply @Siphon Life to target and random enemy",
     "clans": [
         "Warlocks",

@@ -18,7 +18,6 @@ mod heal;
 mod if_effect;
 mod instant_action;
 mod list;
-mod next_action_modifier;
 mod noop;
 mod random;
 mod remove_status;
@@ -47,7 +46,6 @@ pub use heal::*;
 pub use if_effect::*;
 pub use instant_action::*;
 pub use list::*;
-pub use next_action_modifier::*;
 pub use noop::*;
 pub use random::*;
 pub use remove_status::*;
@@ -82,7 +80,6 @@ pub enum Effect {
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
     Action(Box<ActionEffect>),
-    NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     VisualChain(Box<VisualChainEffect>),
     AddVar(Box<AddVarEffect>),
@@ -115,7 +112,6 @@ pub enum RawEffect {
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
     Action(Box<ActionEffect>),
-    NextActionModifier(Box<NextActionModifierEffect>),
     Visual(Box<VisualEffect>),
     VisualChain(Box<VisualChainEffect>),
     AddVar(Box<AddVarEffect>),
@@ -185,7 +181,6 @@ impl std::fmt::Debug for Effect {
             Self::ChangeTarget(effect) => effect.fmt(f),
             Self::ChangeStat(effect) => effect.fmt(f),
             Self::Action(effect) => effect.fmt(f),
-            Self::NextActionModifier(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
             Self::VisualChain(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
@@ -220,7 +215,6 @@ impl From<RawEffect> for Effect {
             RawEffect::ChangeTarget(effect) => Self::ChangeTarget(effect),
             RawEffect::ChangeStat(effect) => Self::ChangeStat(effect),
             RawEffect::Action(effect) => Self::Action(effect),
-            RawEffect::NextActionModifier(effect) => Self::NextActionModifier(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::VisualChain(effect) => Self::VisualChain(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
@@ -287,7 +281,6 @@ impl Effect {
             Effect::ChangeTarget(effect) => &mut **effect,
             Effect::ChangeStat(effect) => &mut **effect,
             Effect::Action(effect) => &mut **effect,
-            Effect::NextActionModifier(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
             Effect::VisualChain(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
@@ -319,7 +312,6 @@ impl Effect {
             Effect::ChangeTarget(effect) => effect,
             Effect::ChangeStat(effect) => effect,
             Effect::Action(effect) => effect,
-            Effect::NextActionModifier(effect) => effect,
             Effect::Visual(effect) => effect,
             Effect::VisualChain(effect) => effect,
             Effect::AddVar(effect) => effect,

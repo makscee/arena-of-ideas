@@ -1,7 +1,6 @@
 {
     "name": "ritualist",
     "tier": 1,
-    "triple": "ritualist+",
     "description": "@Demons gain -1 @cooldown ",
     "clans": [
         "Demons"

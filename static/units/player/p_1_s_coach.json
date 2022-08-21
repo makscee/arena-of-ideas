@@ -1,7 +1,6 @@
 {
     "name": "coach",
     "tier": 1,
-    "triple": "coach+",
     "description": "@Assassins gain +3 @max_hp",
     "clans": [
         "Assassins"

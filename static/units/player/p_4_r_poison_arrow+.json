@@ -6,8 +6,6 @@
     "clans": [
         "Assassins"
     ],
-    "range": 10,
-    "cooldown": 3,
     "action": {
         "effect": {
             "type": "AddTargets",

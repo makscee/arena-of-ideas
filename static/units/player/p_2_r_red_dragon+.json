@@ -3,7 +3,6 @@
     "tier": 2,
     "health": 8,
     "base_damage": 9,
-    "cooldown": 4,
     "description": "Overheal damages all enemies for overhealed amount",
     "clans": [
         "Vampires",

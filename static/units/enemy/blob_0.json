@@ -3,8 +3,6 @@
     "health": 4,
     "base_damage": 2,
     "radius": 0.4,
-    "range": 2,
-    "cooldown": 2,
     "statuses": [],
     "action": {
         "effect": {
