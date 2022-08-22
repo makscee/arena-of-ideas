@@ -12,7 +12,7 @@ impl EffectImpl for InstantActionEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let caster = logic.model.units.get(&context.caster.unwrap()).unwrap();
-        logic.effects.push_front(QueuedEffect {
+        logic.effects.push_back(QueuedEffect {
             effect: caster.action.effect.clone(),
             context,
         });

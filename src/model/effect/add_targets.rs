@@ -55,7 +55,7 @@ impl EffectImpl for AddTargetsEffect {
             }
         }
         for target in targets {
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
                     target: Some(target),

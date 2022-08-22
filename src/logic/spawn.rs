@@ -84,7 +84,7 @@ impl Logic {
             .iter()
             .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
         {
-            self.effects.push_front(QueuedEffect {
+            self.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
                     caster: Some(unit.id),

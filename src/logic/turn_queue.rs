@@ -5,6 +5,7 @@ impl Logic {
         if self.model.current_tick.visual_timer > Time::new(0.0)
             || self.model.lives <= 0
             || self.model.transition
+            || !self.effects.is_empty()
         {
             return;
         }

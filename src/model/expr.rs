@@ -4,6 +4,7 @@ pub use super::*;
 pub enum VarName {
     DamageIncoming,
     DamageDealt,
+    DamageTaken,
     DamageBlocked,
     HealthRestored,
     IncomingHeal,
@@ -19,6 +20,7 @@ pub enum VarName {
     RemainingAbsorb,
     VampirismKoef,
     GlobalVar,
+    HealLeft,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -42,7 +42,7 @@ impl EffectImpl for ChangeTargetEffect {
             .choose(&mut global_rng())
         {
             context.target = Some(unit.id);
-            logic.effects.push_front(QueuedEffect {
+            logic.effects.push_back(QueuedEffect {
                 effect: effect.effect,
                 context,
             });

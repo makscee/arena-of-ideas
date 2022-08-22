@@ -85,7 +85,7 @@ impl Logic {
                 for (effect, vars, status_id, status_color) in
                     status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
                 {
-                    self.effects.push_front(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect,
                         context: EffectContext {
                             caster: status.caster,
@@ -144,7 +144,7 @@ impl Logic {
                 for (effect, vars, status_id, status_color) in
                     status.trigger(|trigger| matches!(trigger, StatusTrigger::Break))
                 {
-                    self.effects.push_front(QueuedEffect {
+                    self.effects.push_back(QueuedEffect {
                         effect,
                         context: EffectContext {
                             caster: Some(unit.id),
@@ -199,7 +199,7 @@ impl Logic {
                 _ => false,
             })
         }) {
-            self.effects.push_front(QueuedEffect {
+            self.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
                     caster: caster_id,
@@ -229,7 +229,7 @@ impl Logic {
                     })
                 })
             {
-                self.effects.push_front(QueuedEffect {
+                self.effects.push_back(QueuedEffect {
                     effect,
                     context: EffectContext {
                         caster: caster_id,
