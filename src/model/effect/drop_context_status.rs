@@ -15,7 +15,7 @@ impl EffectContainer for DropContextStatusEffect {
 impl EffectImpl for DropContextStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        logic.effects.push_back(QueuedEffect {
+        logic.effects.push_front(QueuedEffect {
             effect: effect.effect,
             context: EffectContext {
                 status_id: None,

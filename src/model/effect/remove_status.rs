@@ -10,7 +10,7 @@ pub struct RemoveStatusEffect {
     pub who: Who,
     pub status: Option<StatusName>,
     #[serde(default)]
-    pub all: bool,
+    pub all: bool, // Remove all statuses with that name or a single one
 }
 
 impl EffectContainer for RemoveStatusEffect {

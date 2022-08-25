@@ -31,7 +31,7 @@ impl EffectImpl for ChangeContextStatusEffect {
             .iter()
             .find(|status| status.status.name == effect.status);
         if let Some(status) = status {
-            logic.effects.push_back(QueuedEffect {
+            logic.effects.push_front(QueuedEffect {
                 effect: effect.effect,
                 context: EffectContext {
                     status_id: Some(status.id),

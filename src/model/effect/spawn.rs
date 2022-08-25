@@ -47,7 +47,7 @@ impl EffectImpl for SpawnEffect {
         let position = target.position;
         let new_id = logic.spawn_unit(&effect.unit_type, faction, position);
 
-        logic.effects.push_back(QueuedEffect {
+        logic.effects.push_front(QueuedEffect {
             effect: effect.after_effect.clone(),
             context: {
                 let mut context = context.clone();

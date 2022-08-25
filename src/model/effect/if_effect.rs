@@ -23,6 +23,6 @@ impl EffectImpl for IfEffect {
         } else {
             effect.r#else
         };
-        logic.effects.push_back(QueuedEffect { effect, context });
+        logic.effects.push_front(QueuedEffect { effect, context });
     }
 }

@@ -1,12 +1,12 @@
 {
     "name": "blob_0",
-    "health": 4,
+    "health": 10,
     "base_damage": 2,
     "radius": 0.4,
     "statuses": [],
     "action": {
         "effect": {
-            "preset": "effects/blob_melee_action.json"
+            "preset": "effects/melee_hit.json"
         }
     },
     "render": {

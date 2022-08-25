@@ -49,7 +49,7 @@ impl EffectImpl for AoeEffect {
             if !effect.filter.matches(unit.faction, caster_faction) {
                 continue;
             }
-            logic.effects.push_back(QueuedEffect {
+            logic.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: EffectContext {
                     from: context.target,

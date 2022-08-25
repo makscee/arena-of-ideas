@@ -54,7 +54,7 @@ impl EffectImpl for AddVarEffect {
             }
         }
 
-        logic.effects.push_back(QueuedEffect {
+        logic.effects.push_front(QueuedEffect {
             effect: effect.effect,
             context: {
                 context.vars.insert(effect.name, value);
