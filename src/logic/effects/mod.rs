@@ -64,7 +64,7 @@ impl Logic {
                         context.vars.insert(v.0.clone(), *v.1);
                     }
                 });
-                debug!("Processing {:?} on {}", effect, context.to_string(self));
+                trace!("Processing {:?} on {}", effect, context.to_string(self));
                 effect.as_box().process(context, self);
 
                 iterations += 1;
