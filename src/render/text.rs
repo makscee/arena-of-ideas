@@ -5,6 +5,7 @@ use super::*;
 #[derive(Clone)]
 pub struct Text {
     pub position: Vec2<f32>,
+    pub render_position: Vec2<f32>,
     pub time: f32,
     pub text: String,
     pub text_type: TextType,
@@ -26,29 +27,11 @@ impl Text {
         if self.time > 0.85 {
             self.color.a = 1.0 - (self.time - 0.85) / 0.15;
         }
+        self.render_position += (self.position - self.render_position) * delta_time * 5.0;
     }
 
     pub fn is_alive(&self) -> bool {
         self.time < 1.0
-    }
-}
-
-impl RenderModel {
-    pub(super) fn add_text_random(
-        &mut self,
-        position: Vec2<f32>,
-        text: impl Into<String>,
-        text_type: TextType,
-        color: Color<f32>,
-    ) {
-        self.texts.push(Text {
-            position,
-            time: 0.0,
-            text: text.into(),
-            text_type,
-            color,
-            scale: 1.0,
-        });
     }
 }
 
@@ -131,6 +114,7 @@ impl TextBlock {
         }
         texts.push_back(Text {
             position,
+            render_position: vec2(position.x, 0.0),
             time: 0.0,
             text,
             text_type,
