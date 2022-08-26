@@ -8,10 +8,11 @@ pub type Tier = u32;
 pub const MAX_TIER: u32 = 5;
 
 #[derive(Clone)]
-pub enum TurnState {
+pub enum TurnPhase {
     None,
-    PreTurn,
-    Turn,
+    PreStrike,
+    Strike,
+    PostStrike,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

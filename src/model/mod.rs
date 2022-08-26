@@ -54,12 +54,14 @@ impl TargetFilter {
 
 #[derive(Clone)]
 pub struct TickModel {
-    pub turn_state: TurnState,
+    pub turn_phase: TurnPhase,
     pub enemy: Id,
     pub player: Id,
     pub tick_time: Time,
     pub tick_num: Ticks,
     pub visual_timer: Time,
+    pub phase_timer: Time,
+    pub phase_timer_start: Time,
 }
 
 #[derive(Clone)]
@@ -122,12 +124,14 @@ impl Model {
 impl TickModel {
     pub fn new(tick_num: Ticks) -> Self {
         Self {
-            turn_state: TurnState::None,
+            turn_phase: TurnPhase::None,
             enemy: 0,
             player: 0,
             tick_time: Time::ZERO,
             tick_num,
             visual_timer: Time::new(UNIT_TURN_TIME),
+            phase_timer: Time::ZERO,
+            phase_timer_start: Time::ONE,
         }
     }
 }

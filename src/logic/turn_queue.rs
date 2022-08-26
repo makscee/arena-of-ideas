@@ -1,16 +1,30 @@
 use super::*;
 
+const UNIT_STARTING_OFFSET: Vec2<f32> = vec2(0.5, 0.0);
+const TIMER_PRE_STRIKE: f32 = 0.3;
+const TIMER_STRIKE: f32 = 0.1;
 impl Logic {
     pub fn process_turn(&mut self) {
-        if self.model.current_tick.visual_timer > Time::new(0.0)
+        if self.model.current_tick.phase_timer > Time::ZERO {
+            if let Some(mut player) = self.model.units.remove(&self.model.current_tick.player) {
+                self.process_turn_render_positions(&mut player);
+                self.model.units.insert(player);
+            }
+            if let Some(mut enemy) = self.model.units.remove(&self.model.current_tick.enemy) {
+                self.process_turn_render_positions(&mut enemy);
+                self.model.units.insert(enemy);
+            }
+            return;
+        }
+        if self.model.current_tick.visual_timer > Time::ZERO
             || self.model.lives <= 0
             || self.model.transition
             || !self.effects.is_empty()
         {
             return;
         }
-        match self.model.current_tick.turn_state {
-            TurnState::None => {
+        match self.model.current_tick.turn_phase {
+            TurnPhase::None => {
                 self.model.current_tick.player = self
                     .model
                     .units
@@ -24,17 +38,21 @@ impl Logic {
                     .units
                     .iter()
                     .find(|unit| unit.position.side == Faction::Enemy && unit.position.x == 0)
-                    .expect("Cant find player unit")
+                    .expect("Cant find enemy unit")
                     .id;
-                self.model.current_tick.turn_state = TurnState::PreTurn;
-                self.model.current_tick.visual_timer += Time::new(UNIT_SWITCH_TIME);
+                self.model.current_tick.turn_phase = TurnPhase::PreStrike;
+                let timer = Time::new(TIMER_PRE_STRIKE);
+                self.model.current_tick.phase_timer_start = timer;
+                self.model.current_tick.phase_timer += timer;
             }
-            TurnState::PreTurn => {
-                self.model.current_tick.turn_state = TurnState::Turn;
-                self.model.current_tick.visual_timer += Time::new(UNIT_PRE_TURN_TIME);
+            TurnPhase::PreStrike => {
+                self.model.current_tick.turn_phase = TurnPhase::Strike;
+                let timer = Time::new(TIMER_STRIKE);
+                self.model.current_tick.phase_timer += timer;
+                self.model.current_tick.phase_timer_start = timer;
                 self.process_units(Self::process_unit_statuses);
             }
-            TurnState::Turn => {
+            TurnPhase::Strike => {
                 self.process_units(Self::process_modifiers);
                 let player = self
                     .model
@@ -51,9 +69,37 @@ impl Logic {
                 self.process_action(&enemy, &player);
                 self.model.units.insert(player);
                 self.model.units.insert(enemy);
-                self.model.current_tick.visual_timer += Time::new(UNIT_TURN_TIME);
-                self.model.current_tick.turn_state = TurnState::None;
+                let timer = Time::new(TIMER_PRE_STRIKE);
+                self.model.current_tick.phase_timer += timer;
+                self.model.current_tick.phase_timer_start = timer;
+                self.model.current_tick.turn_phase = TurnPhase::None;
             }
+            TurnPhase::PostStrike => todo!(),
+        }
+    }
+
+    fn process_turn_render_positions(&mut self, unit: &mut Unit) {
+        let phase_t = r32(1.0)
+            - self.model.current_tick.phase_timer / self.model.current_tick.phase_timer_start;
+        let unit_faction_factor = match unit.faction {
+            Faction::Player => r32(-1.0),
+            Faction::Enemy => r32(1.0),
+        };
+        let unit_pos = unit.position.to_world();
+        let unit_starting_position =
+            unit_pos + UNIT_STARTING_OFFSET.map(|x| r32(x) * unit_faction_factor);
+        let unit_hit_position = vec2(unit_faction_factor * unit.stats.radius, R32::ZERO);
+        match self.model.current_tick.turn_phase {
+            TurnPhase::PreStrike => {
+                unit.render_position =
+                    unit_pos + (unit_starting_position - unit_pos) * phase_t * phase_t;
+            }
+            TurnPhase::Strike => {
+                unit.render_position =
+                    unit_starting_position + (unit_hit_position - unit_starting_position) * phase_t;
+            }
+            TurnPhase::PostStrike => {}
+            _ => {}
         }
     }
 

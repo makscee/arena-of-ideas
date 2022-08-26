@@ -11,9 +11,6 @@
                 "who": "Caster",
                 "stat": "BaseDamage"
             }
-        },
-        {
-            "preset": "effects/vfx_slash.json"
         }
     ]
 }
