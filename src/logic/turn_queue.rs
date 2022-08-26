@@ -28,7 +28,7 @@ impl Logic {
                     .id;
                 self.model.current_tick.turn_state = TurnState::PreTurn;
                 self.model.current_tick.visual_timer += Time::new(UNIT_SWITCH_TIME);
-            } 
+            }
             TurnState::PreTurn => {
                 self.model.current_tick.turn_state = TurnState::Turn;
                 self.model.current_tick.visual_timer += Time::new(UNIT_PRE_TURN_TIME);
@@ -67,10 +67,10 @@ impl Logic {
         }
 
         let mut effect = unit.action.effect.clone();
-        for (effect, vars, status_id, status_color) in unit
-            .all_statuses
-            .iter()
-            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Action)))
+        for (effect, trigger, vars, status_id, status_color) in
+            unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| matches!(trigger, StatusTriggerType::Action))
+            })
         {
             self.effects.push_front(QueuedEffect {
                 effect,

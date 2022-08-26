@@ -37,8 +37,15 @@ impl Default for StatusStacking {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct StatusTrigger {
+    pub no_delay: Option<bool>,
+    #[serde(flatten)]
+    pub trigger_type: StatusTriggerType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
-pub enum StatusTrigger {
+pub enum StatusTriggerType {
     /// Triggered when the owner deals damage of the specified type (or any type if none is specified)
     DamageDealt {
         damage_type: Option<DamageType>,
@@ -316,20 +323,26 @@ impl AttachedStatus {
     /// according to the status listeners
     pub fn trigger<'a>(
         &'a self,
-        mut filter: impl FnMut(&StatusTrigger) -> bool + 'a,
-    ) -> impl Iterator<Item = (Effect, HashMap<VarName, R32>, Id, Color<f32>)> + 'a {
-        self.status
-            .listeners
-            .iter()
-            .filter(move |listener| listener.triggers.iter().any(|trigger| filter(trigger)))
-            .map(|listener| {
-                (
+        mut filter: impl FnMut(&StatusTriggerType) -> bool + 'a,
+    ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, R32>, Id, Color<f32>)> + 'a
+    {
+        self.status.listeners.iter().filter_map(move |listener| {
+            let trigger = listener
+                .triggers
+                .iter()
+                .find(|trigger| filter(&trigger.trigger_type));
+            if trigger.is_some() {
+                Some((
                     listener.effect.clone(),
+                    trigger.unwrap().clone(),
                     self.vars.clone(),
                     self.id,
                     self.status.color,
-                )
-            })
+                ))
+            } else {
+                None
+            }
+        })
     }
 }
 

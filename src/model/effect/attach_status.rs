@@ -77,10 +77,10 @@ impl Logic {
             .units
             .get(&target)
             .expect("Failed to find unit by id");
-        for (effect, vars, status_id, status_color) in
+        for (effect, trigger, vars, status_id, status_color) in
             target.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::SelfDetectAttach {
+                    StatusTriggerType::SelfDetectAttach {
                         status_name: detect,
                         status_action,
                     } => detect == status_name && status_action == &StatusAction::Add,
@@ -102,10 +102,10 @@ impl Logic {
         }
 
         for other in &self.model.units {
-            for (effect, vars, status_id, status_color) in
+            for (effect, trigger, vars, status_id, status_color) in
                 other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::DetectAttach {
+                        StatusTriggerType::DetectAttach {
                             status_name: detect,
                             filter,
                             status_action,

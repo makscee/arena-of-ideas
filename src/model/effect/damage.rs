@@ -95,10 +95,10 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        for (effect, mut vars, status_id, status_color) in
+        for (effect, trigger, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::DamageIncoming {
+                    StatusTriggerType::DamageIncoming {
                         damage_type,
                         except,
                     } => {
@@ -152,10 +152,10 @@ impl EffectImpl for DamageEffect {
             return;
         }
 
-        for (effect, mut vars, status_id, status_color) in
+        for (effect, trigger, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::DamageTaken {
+                    StatusTriggerType::DamageTaken {
                         damage_type,
                         except,
                     } => {
@@ -178,10 +178,15 @@ impl EffectImpl for DamageEffect {
                 status_id: Some(status_id),
                 color: Some(status_color),
             };
+            debug!("{:?}", effect.clone());
             logic.effects.push_back(QueuedEffect {
                 effect,
                 context: context.clone(),
             });
+            debug!("{:?}", trigger.no_delay);
+            if trigger.no_delay.is_some() && trigger.no_delay.unwrap() {
+                continue;
+            }
             logic.effects.push_back(QueuedEffect {
                 effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
                     value: UNIT_TURN_TIME,
@@ -211,10 +216,10 @@ impl EffectImpl for DamageEffect {
         let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
-            for (effect, mut vars, status_id, status_color) in
+            for (effect, trigger, mut vars, status_id, status_color) in
                 caster_unit.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::DamageDealt {
+                        StatusTriggerType::DamageDealt {
                             damage_type,
                             except,
                         } => {
@@ -274,10 +279,10 @@ impl EffectImpl for DamageEffect {
                 .or(logic.model.dead_units.get(&caster))
                 .unwrap();
             if killed {
-                for (effect, mut vars, status_id, status_color) in
+                for (effect, trigger, mut vars, status_id, status_color) in
                     caster.all_statuses.iter().flat_map(|status| {
                         status.trigger(|trigger| match trigger {
-                            StatusTrigger::Kill {
+                            StatusTriggerType::Kill {
                                 damage_type,
                                 except,
                             } => {

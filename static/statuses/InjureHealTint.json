@@ -6,18 +6,7 @@
     "stacking": {
         "type": "Independent"
     },
-    "listeners": [
-        {
-            "triggers": [
-                {
-                    "type": "DamageTaken"
-                }
-            ],
-            "effect": {
-                "type": "Noop"
-            }
-        }
-    ],
+    "listeners": [],
     "render": {
         "path": "shaders/status/status_injure_heal_tint.glsl",
         "parameters": {

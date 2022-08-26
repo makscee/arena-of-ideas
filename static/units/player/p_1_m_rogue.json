@@ -1,8 +1,8 @@
 {
     "name": "rogue",
     "tier": 1,
-    "health": 2,
-    "base_damage": 1,
+    "health": 10,
+    "base_damage": 2,
     "clans": [
         "Assassins"
     ],

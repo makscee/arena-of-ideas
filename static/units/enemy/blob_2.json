@@ -31,7 +31,7 @@
     ],
     "action": {
         "effect": {
-            "preset": "effects/blob_melee_action.json"
+            "preset": "effects/melee_hit.json"
         }
     },
     "render": {

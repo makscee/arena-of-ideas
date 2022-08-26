@@ -79,10 +79,10 @@ impl Logic {
         }
 
         // On spawn effects
-        for (effect, vars, status_id, status_color) in unit
+        for (effect, trigger, vars, status_id, status_color) in unit
             .all_statuses
             .iter()
-            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
+            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTriggerType::Spawn)))
         {
             self.effects.push_back(QueuedEffect {
                 effect,

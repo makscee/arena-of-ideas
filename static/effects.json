@@ -11,6 +11,5 @@
     "effects/vfx_heal.json",
     "effects/vfx_injured_particles.json",
     "effects/vfx_attach_status.json",
-    "effects/vfx_death_particles.json",
-    "effects/blob_melee_action.json"
+    "effects/vfx_death_particles.json"
 ]

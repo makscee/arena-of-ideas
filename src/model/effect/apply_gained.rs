@@ -13,9 +13,9 @@ impl EffectImpl for ApplyGainedEffect {
         let effect = *self;
         let caster = logic.model.units.get_mut(&context.caster.unwrap()).unwrap();
         // TODO: remove these statuses immediately after application
-        for (effect, mut vars, status_id, status_color) in
+        for (effect, trigger, mut vars, status_id, status_color) in
             caster.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| matches!(trigger, StatusTrigger::GainedEffect))
+                status.trigger(|trigger| matches!(trigger, StatusTriggerType::GainedEffect))
             })
         {
             logic.effects.push_front(QueuedEffect {

@@ -82,8 +82,8 @@ impl Logic {
             .sort_by(|a, b| a.status.order.cmp(&b.status.order));
         for status in &mut unit.all_statuses {
             if !status.is_inited {
-                for (effect, vars, status_id, status_color) in
-                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
+                for (effect, trigger, vars, status_id, status_color) in
+                    status.trigger(|trigger| matches!(trigger, StatusTriggerType::Init))
                 {
                     self.effects.push_back(QueuedEffect {
                         effect,
@@ -106,8 +106,8 @@ impl Logic {
                 let ticks = listener
                     .triggers
                     .iter_mut()
-                    .map(|trigger| match trigger {
-                        StatusTrigger::Repeating {
+                    .map(|trigger| match &mut trigger.trigger_type {
+                        StatusTriggerType::Repeating {
                             tick_time,
                             next_tick,
                         } => {
@@ -141,8 +141,8 @@ impl Logic {
             }
             if Self::is_status_expired(status) {
                 expired.push((status.caster, status.id, status.status.name.clone()));
-                for (effect, vars, status_id, status_color) in
-                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Break))
+                for (effect, trigger, vars, status_id, status_color) in
+                    status.trigger(|trigger| matches!(trigger, StatusTriggerType::Break))
                 {
                     self.effects.push_back(QueuedEffect {
                         effect,
@@ -190,15 +190,17 @@ impl Logic {
                 .expect("Failed to find unit by id"),
             UnitRef::Ref(unit) => unit,
         };
-        for (effect, vars, status_id, status_color) in unit.all_statuses.iter().flat_map(|status| {
-            status.trigger(|trigger| match trigger {
-                StatusTrigger::SelfDetectAttach {
-                    status_name: name,
-                    status_action: StatusAction::Remove,
-                } => status_name == name,
-                _ => false,
+        for (effect, trigger, vars, status_id, status_color) in
+            unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTriggerType::SelfDetectAttach {
+                        status_name: name,
+                        status_action: StatusAction::Remove,
+                    } => status_name == name,
+                    _ => false,
+                })
             })
-        }) {
+        {
             self.effects.push_back(QueuedEffect {
                 effect,
                 context: EffectContext {
@@ -213,10 +215,10 @@ impl Logic {
         }
 
         for other in &self.model.units {
-            for (effect, vars, status_id, status_color) in
+            for (effect, trigger, vars, status_id, status_color) in
                 other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTrigger::DetectAttach {
+                        StatusTriggerType::DetectAttach {
                             status_name: name,
                             filter,
                             status_action: StatusAction::Remove,

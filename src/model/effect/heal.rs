@@ -62,10 +62,10 @@ impl EffectImpl for HealEffect {
         target_unit.stats.health += value_clamped;
         target_unit.permanent_stats.health += value_clamped;
 
-        for (effect, mut vars, status_id, status_color) in
+        for (effect, trigger, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::HealTaken { heal_type } => match &heal_type {
+                    StatusTriggerType::HealTaken { heal_type } => match &heal_type {
                         Some(heal_type) => effect.types.contains(heal_type),
                         None => true,
                     },
@@ -108,10 +108,10 @@ impl EffectImpl for HealEffect {
                     .or(logic.model.dead_units.get(&id))
             })
             .expect("Caster not found");
-        for (effect, mut vars, status_id, status_color) in
+        for (effect, trigger, mut vars, status_id, status_color) in
             caster.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::HealDealt { heal_type } => match &heal_type {
+                    StatusTriggerType::HealDealt { heal_type } => match &heal_type {
                         Some(heal_type) => effect.types.contains(heal_type),
                         None => true,
                     },

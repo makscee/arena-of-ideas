@@ -14,7 +14,7 @@ impl EffectImpl for CustomTriggerEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let target = logic.model.units.get_mut(&context.target.unwrap()).unwrap();
-        for (effect, mut vars, status_id, status_color) in target
+        for (effect, trigger, mut vars, status_id, status_color) in target
             .all_statuses
             .iter()
             .filter(|status| {
@@ -26,7 +26,7 @@ impl EffectImpl for CustomTriggerEffect {
             })
             .flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTrigger::Custom { name } => *name == effect.name,
+                    StatusTriggerType::Custom { name } => *name == effect.name,
                     _ => false,
                 })
             })
