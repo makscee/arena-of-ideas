@@ -13,7 +13,7 @@ impl UnitRender {
         }
     }
 
-    pub fn draw_unit(
+    pub fn draw_unit_with_position(
         &self,
         unit: &Unit,
         template: &UnitTemplate,
@@ -21,6 +21,7 @@ impl UnitRender {
         game_time: f64,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
+        position: AABB<f32>,
     ) {
         let shader_program = &self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
         let spawn_scale = match unit.spawn_animation_time_left {
@@ -38,8 +39,7 @@ impl UnitRender {
             .collect();
 
         // Actual render
-        let texture_position = AABB::point(unit.render_position.map(|x| x.as_f32()))
-            .extend_uniform(unit.stats.radius.as_f32() * 2.0); // TODO: configuring?
+        let texture_position = position;
         let texture_size = (texture_position.height() * framebuffer.size().y as f32 / camera.fov
             * 2.0)
             .max(1.0) as usize;
@@ -52,7 +52,7 @@ impl UnitRender {
         let uniforms = (
             ugli::uniforms! {
                 u_time: game_time,
-                u_unit_position: unit.render_position.map(|x| x.as_f32()),
+                u_unit_position: position.center(),
                 u_unit_radius: unit.stats.radius.as_f32(),
                 u_spawn: spawn_scale,
                 u_face_dir: vec2(0.0, 0.0),
@@ -160,5 +160,27 @@ impl UnitRender {
             camera,
             &draw_2d::TexturedQuad::new(texture_position, texture),
         );
+    }
+
+    pub fn draw_unit(
+        &self,
+        unit: &Unit,
+        template: &UnitTemplate,
+        model: Option<&Model>,
+        game_time: f64,
+        camera: &geng::Camera2d,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        let position = AABB::point(unit.render_position.map(|x| x.as_f32()))
+            .extend_uniform(unit.stats.radius.as_f32() * 2.0); // TODO: configuring?
+        self.draw_unit_with_position(
+            unit,
+            template,
+            model,
+            game_time,
+            camera,
+            framebuffer,
+            position,
+        )
     }
 }

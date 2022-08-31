@@ -264,6 +264,9 @@ impl ShopState {
     }
 
     pub fn drag_card(&mut self, state: CardState, position: Vec2<f32>) {
+        if self.shop.money < UNIT_COST {
+            return;
+        }
         self.drag_stop();
         let card = self
             .shop

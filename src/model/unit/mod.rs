@@ -67,7 +67,7 @@ pub enum UnitStat {
     Radius,
     BaseDamage,
     Block,
-    CritChance
+    CritChance,
 }
 
 impl Unit {

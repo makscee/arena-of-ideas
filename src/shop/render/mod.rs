@@ -354,12 +354,20 @@ impl Render {
         if let Some(drag) = &shop.drag {
             match &drag.target {
                 DragTarget::Card { card, .. } => {
-                    let aabb =
-                        AABB::point(drag.position).extend_symmetric(layout.drag_card_size / 2.0);
-                    let clan = self
-                        .card_render
-                        .draw(aabb, Some(card), game_time, framebuffer);
-                    selected_clan = selected_clan.or(clan);
+                    let world_position = self
+                        .camera
+                        .screen_to_world(self.framebuffer_size, drag.position);
+                    let aabb = AABB::point(world_position)
+                        .extend_uniform(card.unit.stats.radius.as_f32() * 2.0);
+                    self.unit_render.draw_unit_with_position(
+                        &card.unit,
+                        &card.template,
+                        None,
+                        game_time,
+                        &self.camera,
+                        framebuffer,
+                        aabb,
+                    );
                 }
             }
         }
