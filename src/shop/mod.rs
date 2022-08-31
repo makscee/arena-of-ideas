@@ -348,6 +348,7 @@ impl Shop {
         let units = assets
             .units
             .iter()
+            .filter(|unit| unit.1.tier > 0)
             .map(|(name, unit)| (name.clone(), unit.clone()))
             .collect();
         Self {
