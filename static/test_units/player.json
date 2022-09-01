@@ -3,15 +3,13 @@
     "health": 300,
     "radius": 0.5,
     "action": {
-        "effect": {
-            "type": "Damage",
-            "types": [
-                "Ranged"
-            ],
-            "value": {
-                "type": "Const",
-                "value": 1
-            }
+        "type": "Damage",
+        "types": [
+            "Ranged"
+        ],
+        "value": {
+            "type": "Const",
+            "value": 1
         }
     }
 }

@@ -5,9 +5,7 @@
     "radius": 0.4,
     "statuses": [],
     "action": {
-        "effect": {
-            "preset": "effects/melee_hit.json"
-        }
+        "preset": "effects/melee_hit.json"
     },
     "render": {
         "path": "shaders/blob_enemy.glsl",

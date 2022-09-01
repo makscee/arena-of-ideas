@@ -5,24 +5,22 @@
     "health": 8,
     "base_damage": 2,
     "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/melee_hit.json"
-                },
-                {
-                    "type": "AOE",
-                    "filter": "Enemies",
-                    "skip_current_target": false,
-                    "range": 1,
-                    "effect": {
-                        "type": "AttachStatus",
-                        "status": "Freeze"
-                    }
+        "type": "List",
+        "effects": [
+            {
+                "preset": "effects/melee_hit.json"
+            },
+            {
+                "type": "AOE",
+                "filter": "Enemies",
+                "skip_current_target": false,
+                "range": 1,
+                "effect": {
+                    "type": "AttachStatus",
+                    "status": "Freeze"
                 }
-            ]
-        }
+            }
+        ]
     },
     "clans": [
         "Freezers"

@@ -3,9 +3,7 @@
     "base_damage": 1,
     "radius": 0.4,
     "action": {
-        "effect": {
-            "preset": "effects/melee_hit.json"
-        }
+        "preset": "effects/melee_hit.json"
     },
     "render": {
         "path": "shaders/default_circle_hero.glsl",

@@ -8,17 +8,15 @@
         "Demons"
     ],
     "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/ranged_hit.json"
-                },
-                {
-                    "preset": "effects/ranged_hit.json"
-                }
-            ]
-        }
+        "type": "List",
+        "effects": [
+            {
+                "preset": "effects/ranged_hit.json"
+            },
+            {
+                "preset": "effects/ranged_hit.json"
+            }
+        ]
     },
     "base": "ranged+"
 }

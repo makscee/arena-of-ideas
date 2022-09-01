@@ -9,54 +9,52 @@
         "Assassins"
     ],
     "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "Freeze"
-                    },
-                    "then": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "AOE",
-                                "filter": "Enemies",
-                                "skip_current_target": false,
-                                "range": 1,
-                                "effect": {
-                                    "type": "Damage",
-                                    "types": [
-                                        "Melee"
-                                    ],
-                                    "value": {
-                                        "type": "Mul",
-                                        "a": {
-                                            "type": "FindStat",
-                                            "who": "Caster",
-                                            "stat": "BaseDamage"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        }
+        "type": "List",
+        "effects": [
+            {
+                "type": "If",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Freeze"
+                },
+                "then": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "AOE",
+                            "filter": "Enemies",
+                            "skip_current_target": false,
+                            "range": 1,
+                            "effect": {
+                                "type": "Damage",
+                                "types": [
+                                    "Melee"
+                                ],
+                                "value": {
+                                    "type": "Mul",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "who": "Caster",
+                                        "stat": "BaseDamage"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 2
                                     }
                                 }
-                            },
-                            {
-                                "preset": "effects/vfx_slash.json"
                             }
-                        ]
-                    },
-                    "else": {
-                        "preset": "effects/melee_hit.json"
-                    }
+                        },
+                        {
+                            "preset": "effects/vfx_slash.json"
+                        }
+                    ]
+                },
+                "else": {
+                    "preset": "effects/melee_hit.json"
                 }
-            ]
-        }
+            }
+        ]
     },
     "base": "melee+"
 }

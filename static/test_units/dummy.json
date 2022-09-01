@@ -3,9 +3,7 @@
     "health": 2999,
     "radius": 0.4,
     "action": {
-        "effect": {
-            "type": "Noop"
-        }
+        "type": "Noop"
     },
     "render": {
         "path": "shaders/blob_enemy.glsl"

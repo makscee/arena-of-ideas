@@ -2,56 +2,6 @@
     {
         "activate": 0,
         "filter": {
-            "Player": null
-        },
-        "statuses": [
-            {
-                "name": "CritContainer",
-                "type": "Modifier",
-                "priority": 0,
-                "condition": {
-                    "type": "Chance",
-                    "percent": {
-                        "type": "FindStat",
-                        "who": "Caster",
-                        "stat": "CritChance"
-                    }
-                },
-                "target": {
-                    "type": "List",
-                    "targets": [
-                        {
-                            "type": "ExtraOutDamageType",
-                            "source": [
-                                "Melee",
-                                "Ranged"
-                            ],
-                            "damage_type": [
-                                "Crit"
-                            ]
-                        },
-                        {
-                            "type": "Damage",
-                            "value": {
-                                "type": "Mul",
-                                "a": {
-                                    "type": "Var",
-                                    "name": "DamageIncoming"
-                                },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 3
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        ]
-    },
-    {
-        "activate": 0,
-        "filter": {
             "Player": null,
             "Enemy": null
         },

@@ -8,15 +8,13 @@
         "Archers"
     ],
     "action": {
+        "type": "AddTargets",
+        "condition": {
+            "type": "Always"
+        },
+        "additional_targets": 1,
         "effect": {
-            "type": "AddTargets",
-            "condition": {
-                "type": "Always"
-            },
-            "additional_targets": 1,
-            "effect": {
-                "preset": "effects/ranged_hit.json"
-            }
+            "preset": "effects/ranged_hit.json"
         }
     },
     "base": "ranged+"

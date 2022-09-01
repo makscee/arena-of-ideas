@@ -3,9 +3,7 @@
     "radius": 0.44,
     "base_damage": 12,
     "action": {
-        "effect": {
-            "preset": "effects/ranged_hit.json"
-        }
+        "preset": "effects/ranged_hit.json"
     },
     "render": {
         "path": "shaders/default_circle_hero.glsl",

@@ -9,28 +9,26 @@
         "Assassins"
     ],
     "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "Poison"
-                    },
-                    "then": {
-                        "preset": "effects/melee_hit.json"
-                    },
-                    "else": {
-                        "type": "Noop"
-                    }
+        "type": "List",
+        "effects": [
+            {
+                "type": "If",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Poison"
                 },
-                {
+                "then": {
                     "preset": "effects/melee_hit.json"
+                },
+                "else": {
+                    "type": "Noop"
                 }
-            ]
-        }
+            },
+            {
+                "preset": "effects/melee_hit.json"
+            }
+        ]
     },
     "base": "melee"
 }

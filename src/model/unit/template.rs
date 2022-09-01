@@ -11,11 +11,10 @@ pub struct UnitTemplate {
     pub description: String,
     pub health: Health,
     pub base_damage: Health,
-    pub block: R32,
-    pub crit_chance: R32,
     pub spawn_animation_time: Time,
     pub radius: R32,
-    pub action: ActionProperties,
+    #[serde(default)]
+    pub action: Effect,
     pub statuses: Vec<StatusRef>,
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
@@ -32,11 +31,9 @@ impl Default for UnitTemplate {
             description: String::new(),
             health: Health::new(1.0),
             base_damage: Health::new(1.0),
-            block: r32(0.0),
-            crit_chance: r32(0.0),
             spawn_animation_time: Time::new(0.0),
             radius: R32::new(0.5),
-            action: ActionProperties { effect: default() },
+            action: default(),
             statuses: default(),
             render_config: ShaderConfig {
                 path: "".to_string(),

@@ -112,7 +112,7 @@ impl Logic {
             return;
         }
 
-        let mut effect = unit.action.effect.clone();
+        let mut effect = unit.action.clone();
         for (effect, trigger, vars, status_id, status_color) in
             unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| matches!(trigger, StatusTriggerType::Action))

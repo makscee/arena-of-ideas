@@ -17,7 +17,6 @@ mod drop_context_status;
 mod heal;
 mod if_effect;
 mod incr_visual_timer;
-mod instant_action;
 mod list;
 mod noop;
 mod random;
@@ -46,7 +45,6 @@ pub use drop_context_status::*;
 pub use heal::*;
 pub use if_effect::*;
 pub use incr_visual_timer::*;
-pub use instant_action::*;
 pub use list::*;
 pub use noop::*;
 pub use random::*;
@@ -62,7 +60,6 @@ pub use visual_chain::*;
 #[serde(tag = "type", deny_unknown_fields, from = "EffectConfig")]
 pub enum Effect {
     Noop(Box<NoopEffect>),
-    InstantAction(Box<InstantActionEffect>),
     Damage(Box<DamageEffect>),
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
@@ -95,7 +92,6 @@ pub enum Effect {
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum RawEffect {
     Noop(Box<NoopEffect>),
-    InstantAction(Box<InstantActionEffect>),
     Damage(Box<DamageEffect>),
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
@@ -165,7 +161,6 @@ impl std::fmt::Debug for Effect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Noop(effect) => effect.fmt(f),
-            Self::InstantAction(effect) => effect.fmt(f),
             Self::Damage(effect) => effect.fmt(f),
             Self::AttachStatus(effect) => effect.fmt(f),
             Self::Spawn(effect) => effect.fmt(f),
@@ -200,7 +195,6 @@ impl From<RawEffect> for Effect {
     fn from(effect: RawEffect) -> Self {
         match effect {
             RawEffect::Noop(effect) => Self::Noop(effect),
-            RawEffect::InstantAction(effect) => Self::InstantAction(effect),
             RawEffect::Damage(effect) => Self::Damage(effect),
             RawEffect::AttachStatus(effect) => Self::AttachStatus(effect),
             RawEffect::Spawn(effect) => Self::Spawn(effect),
@@ -267,7 +261,6 @@ impl Effect {
     pub fn as_mut(&mut self) -> &mut dyn EffectImpl {
         match self {
             Effect::Noop(effect) => &mut **effect,
-            Effect::InstantAction(effect) => &mut **effect,
             Effect::Damage(effect) => &mut **effect,
             Effect::AttachStatus(effect) => &mut **effect,
             Effect::Spawn(effect) => &mut **effect,
@@ -299,7 +292,6 @@ impl Effect {
     pub fn as_box(self) -> Box<dyn EffectImpl> {
         match self {
             Effect::Noop(effect) => effect,
-            Effect::InstantAction(effect) => effect,
             Effect::Damage(effect) => effect,
             Effect::AttachStatus(effect) => effect,
             Effect::Spawn(effect) => effect,

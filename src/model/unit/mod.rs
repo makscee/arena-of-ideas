@@ -15,13 +15,6 @@ pub enum TurnPhase {
     PostStrike,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct ActionProperties {
-    #[serde(default)]
-    pub effect: Effect,
-}
-
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,
@@ -39,7 +32,8 @@ pub struct Unit {
     /// Permanent stats remain for the whole game round
     pub permanent_stats: UnitStats,
     pub position: Position,
-    pub action: ActionProperties,
+    #[serde(default)]
+    pub action: Effect,
     pub clans: Vec<Clan>,
     #[serde(skip)]
     pub render: ShaderConfig,
@@ -56,8 +50,6 @@ pub struct UnitStats {
     pub health: Health,
     pub radius: R32,
     pub base_damage: R32,
-    pub block: R32,
-    pub crit_chance: R32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -66,8 +58,6 @@ pub enum UnitStat {
     MaxHealth,
     Radius,
     BaseDamage,
-    Block,
-    CritChance,
 }
 
 impl Unit {
@@ -120,8 +110,6 @@ impl UnitStats {
             max_hp: template.health,
             health: template.health,
             base_damage: template.base_damage,
-            block: template.block,
-            crit_chance: template.crit_chance,
             radius: template.radius,
         }
     }
@@ -132,8 +120,6 @@ impl UnitStats {
             UnitStat::MaxHealth => self.max_hp,
             UnitStat::Radius => self.radius,
             UnitStat::BaseDamage => self.base_damage,
-            UnitStat::Block => self.block,
-            UnitStat::CritChance => self.crit_chance,
         }
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
@@ -142,8 +128,6 @@ impl UnitStats {
             UnitStat::MaxHealth => &mut self.max_hp,
             UnitStat::Radius => &mut self.radius,
             UnitStat::BaseDamage => &mut self.base_damage,
-            UnitStat::Block => &mut self.block,
-            UnitStat::CritChance => &mut self.crit_chance,
         }
     }
 }

@@ -7,20 +7,18 @@
         "Assassins"
     ],
     "action": {
+        "type": "AddTargets",
+        "condition": {
+            "type": "Always"
+        },
+        "additional_targets": 1,
         "effect": {
-            "type": "AddTargets",
-            "condition": {
-                "type": "Always"
-            },
-            "additional_targets": 1,
-            "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "preset": "effects/ranged_hit.json"
-                    }
-                ]
-            }
+            "type": "List",
+            "effects": [
+                {
+                    "preset": "effects/ranged_hit.json"
+                }
+            ]
         }
     },
     "statuses": [

@@ -5,18 +5,16 @@
     "health": 4,
     "base_damage": 1,
     "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/melee_hit.json"
-                },
-                {
-                    "type": "AttachStatus",
-                    "status": "Freeze"
-                }
-            ]
-        }
+        "type": "List",
+        "effects": [
+            {
+                "preset": "effects/melee_hit.json"
+            },
+            {
+                "type": "AttachStatus",
+                "status": "Freeze"
+            }
+        ]
     },
     "clans": [
         "Freezers"

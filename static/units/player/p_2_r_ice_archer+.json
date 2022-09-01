@@ -5,33 +5,31 @@
     "health": 4,
     "base_damage": 10,
     "action": {
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "preset": "effects/ranged_hit.json"
+        "type": "List",
+        "effects": [
+            {
+                "preset": "effects/ranged_hit.json"
+            },
+            {
+                "type": "If",
+                "condition": {
+                    "type": "UnitHasStatus",
+                    "who": "Target",
+                    "status": "Freeze"
                 },
-                {
-                    "type": "If",
-                    "condition": {
-                        "type": "UnitHasStatus",
-                        "who": "Target",
-                        "status": "Freeze"
-                    },
-                    "then": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "preset": "effects/bonus_shot.json"
-                            }
-                        ]
-                    },
-                    "else": {
-                        "type": "Noop"
-                    }
+                "then": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "preset": "effects/bonus_shot.json"
+                        }
+                    ]
+                },
+                "else": {
+                    "type": "Noop"
                 }
-            ]
-        }
+            }
+        ]
     },
     "statuses": [
         {
