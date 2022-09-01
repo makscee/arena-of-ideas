@@ -14,13 +14,6 @@ impl Logic {
                     .iter()
                     .any(|status| status.status.name == *status_type)
             }
-            Condition::UnitInjured { who } => {
-                let who = context.get(*who);
-                let who = who
-                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
-                    .expect("Caster, From, or Target not found");
-                who.stats.health < who.stats.max_hp
-            }
             Condition::InRange { max_distance } => {
                 let from = context
                     .from

@@ -2,7 +2,7 @@
     "name": "vaccinated+",
     "tier": 2,
     "health": 6,
-    "base_damage": 6,
+    "attack": 6,
     "description": "After taking damage from @Plague gain @Shield and @Heal for 1",
     "clans": [
         "PlagueSpreaders",
@@ -33,13 +33,6 @@
                                 {
                                     "type": "AttachStatus",
                                     "status": "Shield"
-                                },
-                                {
-                                    "type": "Heal",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
                                 }
                             ]
                         }

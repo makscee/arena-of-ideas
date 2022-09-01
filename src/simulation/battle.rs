@@ -79,7 +79,7 @@ impl Battle {
                     .units
                     .clone()
                     .into_iter()
-                    .map(|unit| unit.stats.base_damage.as_f32())
+                    .map(|unit| unit.stats.attack.as_f32())
                     .sum::<f32>();
                 if !player_won {
                     health_sum = -health_sum;

@@ -2,7 +2,7 @@
     "name": "rogue",
     "tier": 1,
     "health": 7,
-    "base_damage": 2,
+    "attack": 2,
     "clans": [
         "Assassins"
     ],

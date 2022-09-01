@@ -2,74 +2,12 @@
     "name": "red_dragon+",
     "tier": 2,
     "health": 8,
-    "base_damage": 9,
+    "attack": 9,
     "description": "Overheal damages all enemies for overhealed amount",
     "clans": [
         "Vampires",
         "Dragons"
     ],
-    "statuses": [
-        {
-            "name": "OnOverheal",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "HealTaken"
-                        }
-                    ],
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "More",
-                            "a": {
-                                "type": "Var",
-                                "name": "IncomingHeal"
-                            },
-                            "b": {
-                                "type": "Var",
-                                "name": "HealthRestored"
-                            }
-                        },
-                        "then": {
-                            "type": "AOE",
-                            "filter": "Enemies",
-                            "skip_current_target": false,
-                            "range": 8,
-                            "effect": {
-                                "type": "List",
-                                "effects": [
-                                    {
-                                        "type": "Damage",
-                                        "value": {
-                                            "type": "Sub",
-                                            "a": {
-                                                "type": "Var",
-                                                "name": "IncomingHeal"
-                                            },
-                                            "b": {
-                                                "type": "Var",
-                                                "name": "HealthRestored"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "preset": "effects/vfx_laser.json"
-                                    }
-                                ]
-                            }
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
-                    }
-                }
-            ]
-        }
-    ],
+    "statuses": [],
     "base": "ranged+"
 }

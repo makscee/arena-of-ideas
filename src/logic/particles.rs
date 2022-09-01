@@ -40,7 +40,7 @@ impl Logic {
                 )]));
                 parameters.0.extend(HashMap::from([(
                     "u_parent_radius".to_string(),
-                    ShaderParameter::Float(parent.stats.radius.as_f32()),
+                    ShaderParameter::Float(parent.render.radius.as_f32()),
                 )]));
                 parameters.0.extend(HashMap::from([(
                     "u_parent_random".to_string(),

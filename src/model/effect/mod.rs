@@ -14,7 +14,6 @@ mod change_target;
 mod custom_trigger;
 mod damage;
 mod drop_context_status;
-mod heal;
 mod if_effect;
 mod incr_visual_timer;
 mod list;
@@ -42,7 +41,6 @@ pub use change_target::*;
 pub use custom_trigger::*;
 pub use damage::*;
 pub use drop_context_status::*;
-pub use heal::*;
 pub use if_effect::*;
 pub use incr_visual_timer::*;
 pub use list::*;
@@ -74,7 +72,6 @@ pub enum Effect {
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     DropContextStatus(Box<DropContextStatusEffect>),
-    Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
@@ -106,7 +103,6 @@ pub enum RawEffect {
     ChangeContext(Box<ChangeContextEffect>),
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     DropContextStatus(Box<DropContextStatusEffect>),
-    Heal(Box<HealEffect>),
     Revive(Box<ReviveEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
@@ -175,7 +171,6 @@ impl std::fmt::Debug for Effect {
             Self::ChangeContext(effect) => effect.fmt(f),
             Self::ChangeContextStatus(effect) => effect.fmt(f),
             Self::DropContextStatus(effect) => effect.fmt(f),
-            Self::Heal(effect) => effect.fmt(f),
             Self::Revive(effect) => effect.fmt(f),
             Self::ApplyGained(effect) => effect.fmt(f),
             Self::ChangeTarget(effect) => effect.fmt(f),
@@ -209,7 +204,6 @@ impl From<RawEffect> for Effect {
             RawEffect::ChangeContext(effect) => Self::ChangeContext(effect),
             RawEffect::ChangeContextStatus(effect) => Self::ChangeContextStatus(effect),
             RawEffect::DropContextStatus(effect) => Self::DropContextStatus(effect),
-            RawEffect::Heal(effect) => Self::Heal(effect),
             RawEffect::Revive(effect) => Self::Revive(effect),
             RawEffect::ApplyGained(effect) => Self::ApplyGained(effect),
             RawEffect::ChangeTarget(effect) => Self::ChangeTarget(effect),
@@ -275,7 +269,6 @@ impl Effect {
             Effect::ChangeContext(effect) => &mut **effect,
             Effect::ChangeContextStatus(effect) => &mut **effect,
             Effect::DropContextStatus(effect) => &mut **effect,
-            Effect::Heal(effect) => &mut **effect,
             Effect::Revive(effect) => &mut **effect,
             Effect::ApplyGained(effect) => &mut **effect,
             Effect::ChangeTarget(effect) => &mut **effect,
@@ -306,7 +299,6 @@ impl Effect {
             Effect::ChangeContext(effect) => effect,
             Effect::ChangeContextStatus(effect) => effect,
             Effect::DropContextStatus(effect) => effect,
-            Effect::Heal(effect) => effect,
             Effect::Revive(effect) => effect,
             Effect::ApplyGained(effect) => effect,
             Effect::ChangeTarget(effect) => effect,

@@ -20,7 +20,7 @@
                     "a": {
                         "type": "FindStat",
                         "who": "Target",
-                        "stat": "MaxHealth"
+                        "stat": "Health"
                     },
                     "b": {
                         "type": "Var",
@@ -35,7 +35,7 @@
                         "a": {
                             "type": "FindStat",
                             "who": "Target",
-                            "stat": "BaseDamage"
+                            "stat": "Attack"
                         },
                         "b": {
                             "type": "Var",
@@ -47,13 +47,13 @@
                         "effects": [
                             {
                                 "type": "ChangeStat",
-                                "stat": "MaxHealth",
+                                "stat": "Health",
                                 "who": "Target",
                                 "value": {
                                     "type": "Sub",
                                     "a": {
                                         "type": "FindStat",
-                                        "stat": "MaxHealth",
+                                        "stat": "Health",
                                         "who": "Target"
                                     },
                                     "b": {
@@ -64,13 +64,13 @@
                             },
                             {
                                 "type": "ChangeStat",
-                                "stat": "MaxHealth",
+                                "stat": "Health",
                                 "who": "Caster",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
                                         "type": "FindStat",
-                                        "stat": "MaxHealth",
+                                        "stat": "Health",
                                         "who": "Caster"
                                     },
                                     "b": {
@@ -81,13 +81,13 @@
                             },
                             {
                                 "type": "ChangeStat",
-                                "stat": "BaseDamage",
+                                "stat": "Attack",
                                 "who": "Target",
                                 "value": {
                                     "type": "Sub",
                                     "a": {
                                         "type": "FindStat",
-                                        "stat": "BaseDamage",
+                                        "stat": "Attack",
                                         "who": "Target"
                                     },
                                     "b": {
@@ -98,48 +98,19 @@
                             },
                             {
                                 "type": "ChangeStat",
-                                "stat": "BaseDamage",
+                                "stat": "Attack",
                                 "who": "Caster",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
                                         "type": "FindStat",
-                                        "stat": "BaseDamage",
+                                        "stat": "Attack",
                                         "who": "Caster"
                                     },
                                     "b": {
                                         "type": "Var",
                                         "name": "StolenDamage"
                                     }
-                                }
-                            },
-                            {
-                                "type": "If",
-                                "condition": {
-                                    "type": "ClanSize",
-                                    "clan": "Demons",
-                                    "count": 6
-                                },
-                                "then": {
-                                    "type": "ChangeContext",
-                                    "target": "Caster",
-                                    "effect": {
-                                        "type": "Heal",
-                                        "value": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "name": "StolenDamage"
-                                            },
-                                            "b": {
-                                                "type": "Var",
-                                                "name": "StolenHealth"
-                                            }
-                                        }
-                                    }
-                                },
-                                "else": {
-                                    "type": "Noop"
                                 }
                             }
                         ]

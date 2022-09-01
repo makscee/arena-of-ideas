@@ -12,9 +12,6 @@ pub enum Condition {
         #[serde(rename = "status")]
         status_type: StatusName,
     },
-    UnitInjured {
-        who: Who,
-    },
     InRange {
         max_distance: Coord,
     },

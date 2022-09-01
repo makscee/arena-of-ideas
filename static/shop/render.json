@@ -1,7 +1,7 @@
 {
     "clans": {
         "Assassins": {
-            "description": "(2) @Scathe 50% chance to apply @Poison \n (4) Each stack of @Poison decreases @base_damage by 1 \n (6) @Poison tick applies @Vulnerability",
+            "description": "(2) @Scathe 50% chance to apply @Poison \n (4) Each stack of @Poison decreases @attack by 1 \n (6) @Poison tick applies @Vulnerability",
             "rows": 2,
             "columns": 3
         },

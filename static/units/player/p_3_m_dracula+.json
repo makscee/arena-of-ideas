@@ -6,7 +6,7 @@
         "Assassins"
     ],
     "health": 15,
-    "base_damage": 5,
+    "attack": 5,
     "description": "Attack @Poisoned target 3 times",
     "action": {
         "type": "List",

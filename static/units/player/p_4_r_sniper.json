@@ -2,7 +2,7 @@
     "name": "sniper",
     "tier": 4,
     "health": 5,
-    "base_damage": 5,
+    "attack": 5,
     "description": "Increased attack range and damage",
     "clans": [
         "Archers",

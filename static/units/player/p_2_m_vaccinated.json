@@ -2,7 +2,7 @@
     "name": "vaccinated",
     "tier": 2,
     "health": 4,
-    "base_damage": 3,
+    "attack": 3,
     "description": "After taking damage from @Plague gain @Shield",
     "clans": [
         "PlagueSpreaders",

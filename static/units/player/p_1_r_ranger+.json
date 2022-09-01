@@ -2,7 +2,7 @@
     "name": "ranger+",
     "tier": 1,
     "health": 4,
-    "base_damage": 4,
+    "attack": 4,
     "description": "@Multishot 2",
     "clans": [
         "Archers"

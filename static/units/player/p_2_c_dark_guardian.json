@@ -1,7 +1,7 @@
 {
 	"name": "dark_guardian",
     "health": 3,
-    "base_damage": 2,
+    "attack": 2,
     "tier": 2,
     "description": "When @Shield absorbs, apply @Siphon Life to attacker",
     "clans": [

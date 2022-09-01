@@ -2,7 +2,7 @@
 	"name": "demonic_guardian",
     "tier": 2,
     "health": 15,
-    "base_damage": 2,
+    "attack": 2,
     "description": "On @Shield gain: @Dark Steal random enemy",
     "clans": [
         "Demons",

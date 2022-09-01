@@ -1,3 +1,4 @@
+use crate::render::UnitRender;
 use std::fmt::format;
 
 use super::*;
@@ -139,7 +140,7 @@ impl Render {
                 // TODO: fix position
                 let template = &self.assets.units[&card.unit.unit_type];
                 let mut unit = card.unit.clone();
-                unit.render_position = Position {
+                unit.render.render_position = Position {
                     side: Faction::Player,
                     x: index.try_into().unwrap(),
                     height: Coord::ZERO,
@@ -358,7 +359,7 @@ impl Render {
                         .camera
                         .screen_to_world(self.framebuffer_size, drag.position);
                     let aabb = AABB::point(world_position)
-                        .extend_uniform(card.unit.stats.radius.as_f32() * 2.0);
+                        .extend_uniform(card.unit.render.radius.as_f32() * 2.0);
                     self.unit_render.draw_unit_with_position(
                         &card.unit,
                         &card.template,

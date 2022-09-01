@@ -1,7 +1,7 @@
 {
     "name": "poison_arrow+",
     "tier": 4,
-    "base_damage": 3,
+    "attack": 3,
     "description": "@Scathe apply @Poison. @Multishot 2",
     "clans": [
         "Assassins"

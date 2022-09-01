@@ -35,29 +35,30 @@ pub struct Unit {
     #[serde(default)]
     pub action: Effect,
     pub clans: Vec<Clan>,
-    #[serde(skip)]
-    pub render: ShaderConfig,
-    pub render_position: Vec2<R32>,
-    pub last_action_time: Time,
-    pub last_injure_time: Time,
-    pub last_heal_time: Time,
+    pub render: UnitRenderConfig,
     pub random_number: R32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitStats {
-    pub max_hp: Health,
     pub health: Health,
+    pub attack: R32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UnitRenderConfig {
+    pub shader_config: ShaderConfig,
     pub radius: R32,
-    pub base_damage: R32,
+    pub render_position: Vec2<R32>,
+    pub last_action_time: Time,
+    pub last_injure_time: Time,
+    pub last_heal_time: Time,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UnitStat {
     Health,
-    MaxHealth,
-    Radius,
-    BaseDamage,
+    Attack,
 }
 
 impl Unit {
@@ -91,14 +92,10 @@ impl Unit {
             faction,
             stats: UnitStats::new(template),
             permanent_stats: UnitStats::new(template),
-            render_position: Vec2::ZERO,
             position,
             action: template.action.clone(),
-            render: template.render_config.clone(),
+            render: UnitRenderConfig::new(template),
             clans: template.clans.clone(),
-            last_action_time: Time::new(0.0),
-            last_injure_time: Time::new(0.0),
-            last_heal_time: Time::new(0.0),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
         }
     }
@@ -107,27 +104,34 @@ impl Unit {
 impl UnitStats {
     pub fn new(template: &UnitTemplate) -> Self {
         Self {
-            max_hp: template.health,
             health: template.health,
-            base_damage: template.base_damage,
-            radius: template.radius,
+            attack: template.attack,
         }
     }
 
     pub fn get(&self, stat: UnitStat) -> R32 {
         match stat {
             UnitStat::Health => self.health,
-            UnitStat::MaxHealth => self.max_hp,
-            UnitStat::Radius => self.radius,
-            UnitStat::BaseDamage => self.base_damage,
+            UnitStat::Attack => self.attack,
         }
     }
     pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
         match stat {
             UnitStat::Health => &mut self.health,
-            UnitStat::MaxHealth => &mut self.max_hp,
-            UnitStat::Radius => &mut self.radius,
-            UnitStat::BaseDamage => &mut self.base_damage,
+            UnitStat::Attack => &mut self.attack,
+        }
+    }
+}
+
+impl UnitRenderConfig {
+    pub fn new(template: &UnitTemplate) -> Self {
+        Self {
+            shader_config: template.render_config.clone(),
+            radius: template.radius,
+            render_position: Vec2::ZERO,
+            last_action_time: Time::new(0.0),
+            last_injure_time: Time::new(0.0),
+            last_heal_time: Time::new(0.0),
         }
     }
 }

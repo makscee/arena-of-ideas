@@ -2,7 +2,7 @@
     "name": "dracula",
     "tier": 3,
     "health": 7,
-    "base_damage": 3,
+    "attack": 3,
     "description": "Attack @Poisoned target twice",
     "clans": [
         "Vampires",

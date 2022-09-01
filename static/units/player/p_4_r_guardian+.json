@@ -5,53 +5,6 @@
     "clans": [
         "Protectors"
     ],
-    "statuses": [
-        {
-            "name": "ShieldAllyEvery4",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "Repeating",
-                            "tick_time": 4,
-                            "next_tick": 4
-                        }
-                    ],
-                    "effect": {
-                        "type": "ChangeTarget",
-                        "filter": "Allies",
-                        "condition": {
-                            "type": "Not",
-                            "condition": {
-                                "type": "UnitHasStatus",
-                                "status": "Shield",
-                                "who": "Target"
-                            }
-                        },
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "AttachStatus",
-                                    "status": "Shield"
-                                },
-                                {
-                                    "type": "Heal",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 2
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            ]
-        }
-    ],
+    "statuses": [],
     "base": "ranged+"
 }

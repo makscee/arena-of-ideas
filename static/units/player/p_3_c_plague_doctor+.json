@@ -2,52 +2,12 @@
     "name": "plague_doctor+",
     "tier": 3,
     "health": 10,
-    "base_damage": 20,
+    "attack": 20,
     "description": "Every 5 ticks remove @Plague and @Heal 3 all allies",
     "clans": [
         "PlagueSpreaders",
         "Protectors"
     ],
-    "statuses": [
-        {
-            "name": "Every5Sec",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "Repeating",
-                            "tick_time": 5,
-                            "next_tick": 5
-                        }
-                    ],
-                    "effect": {
-                        "type": "AOE",
-                        "filter": "Allies",
-                        "skip_current_target": false,
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "RemoveStatus",
-                                    "status": "Plague"
-                                },
-                                {
-                                    "type": "Heal",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 3
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            ]
-        }
-    ],
+    "statuses": [],
     "base": "caster+"
 }

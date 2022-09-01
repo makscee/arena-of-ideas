@@ -24,7 +24,7 @@
                                 "health": {
                                     "type": "FindStat",
                                     "who": "Target",
-                                    "stat": "MaxHealth"
+                                    "stat": "Health"
                                 }
                             },
                             {

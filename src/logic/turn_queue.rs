@@ -88,14 +88,14 @@ impl Logic {
         let unit_pos = unit.position.to_world();
         let unit_starting_position =
             unit_pos + UNIT_STARTING_OFFSET.map(|x| r32(x) * unit_faction_factor);
-        let unit_hit_position = vec2(unit_faction_factor * unit.stats.radius, R32::ZERO);
+        let unit_hit_position = vec2(unit_faction_factor * unit.render.radius, R32::ZERO);
         match self.model.current_tick.turn_phase {
             TurnPhase::PreStrike => {
-                unit.render_position =
+                unit.render.render_position =
                     unit_pos + (unit_starting_position - unit_pos) * phase_t * phase_t;
             }
             TurnPhase::Strike => {
-                unit.render_position =
+                unit.render.render_position =
                     unit_starting_position + (unit_hit_position - unit_starting_position) * phase_t;
             }
             TurnPhase::PostStrike => {}

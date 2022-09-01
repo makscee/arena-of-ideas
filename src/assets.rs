@@ -84,15 +84,6 @@ pub struct DamageTypes {
     pub map: HashMap<DamageType, DamageHealConfig>,
 }
 
-#[derive(Deref, DerefMut, Clone, geng::Assets, Deserialize)]
-#[asset(json)]
-pub struct HealTypes {
-    #[deref]
-    #[deref_mut]
-    #[serde(flatten)]
-    pub map: HashMap<HealType, DamageHealConfig>,
-}
-
 #[derive(geng::Assets)]
 pub struct Assets {
     pub units: UnitTemplates,
@@ -102,7 +93,6 @@ pub struct Assets {
     #[asset(load_with = "load_postfx_render(geng, &base_path)")]
     pub postfx_render: PostfxProgram,
     pub damage_types: DamageTypes,
-    pub heal_types: HealTypes,
     pub clans: ClanEffects,
     pub options: Options,
     pub textures: Textures,

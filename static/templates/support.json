@@ -1,7 +1,7 @@
 {
     "health": 5,
     "radius": 0.4,
-    "base_damage": 0,
+    "attack": 0,
     "action": {
         "type": "Noop"
     },

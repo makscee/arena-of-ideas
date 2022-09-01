@@ -23,7 +23,7 @@ impl UnitRender {
         framebuffer: &mut ugli::Framebuffer,
         position: AABB<f32>,
     ) {
-        let shader_program = &self.assets.get_render(&unit.render); // TODO: move this into to an earlier phase perhaps
+        let shader_program = &self.assets.get_render(&unit.render.shader_config); // TODO: move this into to an earlier phase perhaps
         let spawn_scale = match unit.spawn_animation_time_left {
             Some(time) if template.spawn_animation_time > Time::new(0.0) => {
                 1.0 - (time / template.spawn_animation_time).as_f32()
@@ -53,13 +53,13 @@ impl UnitRender {
             ugli::uniforms! {
                 u_time: game_time,
                 u_unit_position: position.center(),
-                u_unit_radius: unit.stats.radius.as_f32(),
+                u_unit_radius: unit.render.radius.as_f32(),
                 u_spawn: spawn_scale,
                 u_face_dir: vec2(0.0, 0.0),
                 u_random: unit.random_number.as_f32(),
-                u_action_time: unit.last_action_time.as_f32(),
-                u_injure_time: unit.last_injure_time.as_f32(),
-                u_heal_time: unit.last_heal_time.as_f32(),
+                u_action_time: unit.render.last_action_time.as_f32(),
+                u_injure_time: unit.render.last_injure_time.as_f32(),
+                u_heal_time: unit.render.last_heal_time.as_f32(),
                 u_parent_faction: match unit.faction {
                         Faction::Player => 1.0,
                         Faction::Enemy => -1.0,
@@ -69,7 +69,7 @@ impl UnitRender {
                 u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
                 u_clan_count: clan_colors.len(),
                 u_ability_ready: 1.0,
-                u_health: unit.stats.health.as_f32() / unit.stats.max_hp.as_f32(),
+                u_health: 1.0,
             },
             geng::camera2d_uniforms(&texture_camera, texture_size.map(|x| x as f32)),
             shader_program.parameters.clone(),
@@ -171,8 +171,8 @@ impl UnitRender {
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let position = AABB::point(unit.render_position.map(|x| x.as_f32()))
-            .extend_uniform(unit.stats.radius.as_f32() * 2.0); // TODO: configuring?
+        let position = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
+            .extend_uniform(unit.render.radius.as_f32() * 2.0); // TODO: configuring?
         self.draw_unit_with_position(
             unit,
             template,

@@ -2,7 +2,6 @@ pub mod render;
 mod unit_card;
 
 use super::*;
-use crate::render::UnitRender;
 
 use geng::MouseButton;
 use unit_card::*;
@@ -445,34 +444,6 @@ impl Cards {
             *counters.entry(unit_type).or_insert(0) += 1;
         }
         counters.retain(|_, counter| *counter >= 3); // Remove unneeded counters
-
-        // // Replace triples
-        // for maybe_card in self.party.iter_mut().chain(self.inventory.iter_mut()) {
-        //     if let Some(card) = maybe_card {
-        //         if let Some(counter) = counters.get_mut(&card.unit.unit_type) {
-        //             match *counter % 3 {
-        //                 2 | 0 => {
-        //                     // Delete the card
-        //                     *maybe_card = None;
-        //                     *counter -= 1;
-        //                 }
-        //                 1 => {
-        //                     // Replace the card
-        //                     let triple = card.template.triple.clone().unwrap();
-        //                     let template = assets
-        //                         .units
-        //                         .get(&triple)
-        //                         .unwrap_or_else(|| {
-        //                             panic!("Failed to find unit to upgrade to: {triple}")
-        //                         })
-        //                         .clone();
-        //                     *card = UnitCard::new(template, triple, &assets.statuses);
-        //                 }
-        //                 _ => unreachable!(),
-        //             }
-        //         }
-        //     }
-        // }
     }
 }
 

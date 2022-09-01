@@ -61,12 +61,6 @@ pub enum StatusTriggerType {
         damage_type: Option<DamageType>,
         except: Option<DamageType>,
     },
-    /// Triggered when the owner is healed
-    HealTaken { heal_type: Option<HealType> },
-    /// Triggered when the owner heals someone
-    HealDealt { heal_type: Option<HealType> },
-    /// Triggered when the owner heals someone
-    HealIncoming { heal_type: Option<HealType> },
     /// Triggered when the unit spawns
     Spawn,
     /// Triggered when the owner dies

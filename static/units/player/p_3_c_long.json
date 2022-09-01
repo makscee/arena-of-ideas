@@ -2,7 +2,7 @@
 	"name": "long",
     "tier": 3,
     "health": 5,
-    "base_damage": 15,
+    "attack": 15,
     "description": "All allies start with @Shield",
     "clans": [
         "Dragons",

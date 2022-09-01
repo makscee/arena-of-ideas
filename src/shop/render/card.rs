@@ -1,3 +1,4 @@
+use crate::render::UnitRender;
 use geng::Draw2d;
 
 use super::*;
@@ -106,9 +107,9 @@ impl CardRender {
             None,
             game_time,
             &geng::Camera2d {
-                center: vec2(0.0, 0.35 * card.unit.stats.radius.as_f32()),
+                center: vec2(0.0, 0.35 * card.unit.render.radius.as_f32()),
                 rotation: 0.0,
-                fov: card.unit.stats.radius.as_f32() * 1.5,
+                fov: card.unit.render.radius.as_f32() * 1.5,
             },
             &mut temp_framebuffer,
         );
@@ -139,7 +140,7 @@ impl CardRender {
         // Damage
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.stats.base_damage),
+            format!("{}", card.unit.stats.attack),
             Color::WHITE,
         )
         .fit_into(damage_aabb)

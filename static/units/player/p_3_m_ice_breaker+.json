@@ -2,7 +2,7 @@
     "name": "ice_breaker+",
     "tier": 3,
     "health": 15,
-    "base_damage": 5,
+    "attack": 5,
     "description": "Double damage on @Freeze target, also damage enemy behind",
     "clans": [
         "Freezers",
@@ -36,7 +36,7 @@
                                     "a": {
                                         "type": "FindStat",
                                         "who": "Caster",
-                                        "stat": "BaseDamage"
+                                        "stat": "Attack"
                                     },
                                     "b": {
                                         "type": "Const",

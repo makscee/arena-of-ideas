@@ -1,7 +1,7 @@
 {
     "name": "henchman+",
     "tier": 1,
-    "description": "+1 @base_damage for each enemy with @Siphon Life",
+    "description": "+1 @attack for each enemy with @Siphon Life",
     "clans": [
         "Warlocks"
     ],
@@ -25,7 +25,7 @@
                     "b": {
                         "type": "FindStat",
                         "who": "Caster",
-                        "stat": "BaseDamage"
+                        "stat": "Attack"
                     }
                 }
             }

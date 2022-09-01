@@ -2,7 +2,7 @@
     "name": "dark_archer+",
     "tier": 3,
     "health": 16,
-    "base_damage": 25,
+    "attack": 25,
     "description": "@Bonus Shot applies @Siphon Life. Always @Bonus Shot target that has @Siphon Life",
     "clans": [
         "Archers",

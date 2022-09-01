@@ -11,47 +11,6 @@
         {
             "triggers": [
                 {
-                    "type": "Repeating",
-                    "tick_time": 2,
-                    "next_tick": 2
-                }
-            ],
-            "effect": {
-                "type": "Damage",
-                "types": [
-                    "SiphonLife"
-                ],
-                "value": {
-                    "type": "Const",
-                    "value": 1
-                },
-                "on": {
-                    "Injure": {
-                        "type": "ChangeContext",
-                        "target": "Caster",
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "Heal",
-                                    "types": ["SiphonLife"],
-                                    "value": {
-                                        "type": "Var",
-                                        "name": "DamageDealt"
-                                    }
-                                },
-                                {
-                                    "preset": "effects/vfx_heal.json"
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "triggers": [
-                {
                     "type": "Init"
                 }
             ],

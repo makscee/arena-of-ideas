@@ -9,7 +9,7 @@
             "value": {
                 "type": "FindStat",
                 "who": "Caster",
-                "stat": "BaseDamage"
+                "stat": "Attack"
             }
         }
     ]

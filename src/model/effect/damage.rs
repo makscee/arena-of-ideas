@@ -188,7 +188,7 @@ impl EffectImpl for DamageEffect {
         }
 
         let old_hp = target_unit.stats.health;
-        target_unit.last_injure_time = logic.model.time;
+        target_unit.render.last_injure_time = logic.model.time;
         target_unit.stats.health -= damage;
         target_unit.permanent_stats.health -= damage;
         let target_unit = logic

@@ -2,7 +2,7 @@
     "name": "rogue_cultist+",
     "tier": 3,
     "health": 12,
-    "base_damage": 7,
+    "attack": 7,
     "description": "On @Poison apply @Siphon Life to target and random enemy",
     "clans": [
         "Warlocks",

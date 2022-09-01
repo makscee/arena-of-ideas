@@ -14,13 +14,13 @@
             "type": "Modifier",
             "target": {
                 "type": "Stat",
-                "stat": "MaxHealth",
+                "stat": "Health",
                 "value": {
                     "type": "Sum",
                     "a": {
                         "type": "FindStat",
                         "who": "Target",
-                        "stat": "MaxHealth"
+                        "stat": "Health"
                     },
                     "b": {
                         "type": "Const",

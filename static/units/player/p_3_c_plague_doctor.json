@@ -2,7 +2,7 @@
     "name": "plague_doctor",
     "tier": 3,
     "health": 6,
-    "base_damage": 10,
+    "attack": 10,
     "description": "Every 5 ticks remove @Plague from 1 ally",
     "clans": [
         "PlagueSpreaders",

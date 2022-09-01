@@ -52,7 +52,6 @@ pub struct RenderModel {
 #[derive(Debug, Clone)]
 pub enum TextType {
     Damage(Vec<DamageType>),
-    Heal(Vec<HealType>),
     Status,
     Aoe,
 }
@@ -90,7 +89,6 @@ impl RenderModel {
             .or_insert_with(|| TextBlock::new(position.to_world_f32()));
         match text_type {
             TextType::Damage(_) => text_block.add_text_top(text, color, text_type),
-            TextType::Heal(_) => text_block.add_text_bottom(text, color, text_type),
             TextType::Status | TextType::Aoe => text_block.add_text_top(text, color, text_type),
         }
     }
@@ -142,11 +140,11 @@ impl Render {
                 framebuffer,
             );
 
-            let radius = unit.stats.radius.as_f32();
+            let radius = unit.render.radius.as_f32();
 
             // Draw damage and health
             let unit_aabb =
-                AABB::point(unit.render_position.map(|x| x.as_f32())).extend_uniform(radius);
+                AABB::point(unit.render.render_position.map(|x| x.as_f32())).extend_uniform(radius);
             let size = radius * 0.7;
             let damage = AABB::point(unit_aabb.bottom_left())
                 .extend_right(size)
@@ -168,7 +166,7 @@ impl Render {
             let text_color = Color::try_from("#e6e6e6").unwrap();
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
-                format!("{:.0}", unit.stats.base_damage),
+                format!("{:.0}", unit.stats.attack),
                 text_color,
             )
             .fit_into(damage)
@@ -197,8 +195,8 @@ impl Render {
             .draw_2d(&self.geng, framebuffer, &self.camera);
 
             // On unit hover
-            if (mouse_world_pos - unit.render_position.map(|x| x.as_f32())).len()
-                < unit.stats.radius.as_f32()
+            if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
+                < unit.render.radius.as_f32()
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);
@@ -223,7 +221,7 @@ impl Render {
                     .iter()
                     .find(|unit| unit.position.x == i as i64 && unit.faction == faction);
                 let health = match unit {
-                    Some(unit) => (unit.stats.health / unit.stats.max_hp).as_f32(),
+                    Some(unit) => 1.0,
                     None => 0.0,
                 };
 
@@ -270,23 +268,6 @@ impl Render {
                 TextType::Damage(damage_types) => damage_types
                     .iter()
                     .filter_map(|damage_type| self.assets.damage_types.get(damage_type))
-                    .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
-                    .find_map(|config| {
-                        Some(config.color.unwrap_or_else(|| {
-                            *self
-                                .assets
-                                .options
-                                .clan_colors
-                                .get(&config.clan_origin)
-                                .unwrap_or_else(|| {
-                                    panic!("Failed to find clan ({}) color", config.clan_origin)
-                                })
-                        }))
-                    })
-                    .unwrap_or(text.color),
-                TextType::Heal(heal_types) => heal_types
-                    .iter()
-                    .filter_map(|heal_type| self.assets.heal_types.get(heal_type))
                     .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
                     .find_map(|config| {
                         Some(config.color.unwrap_or_else(|| {
@@ -424,11 +405,11 @@ impl Render {
         let total_height = descriptions.iter().map(|(_, _, _, _, h)| *h).sum::<f32>()
             + (descriptions.len() + 1) as f32 * DESCRIPTION_MARGIN;
         let top_left = vec2(
-            unit.render_position.x.as_f32()
-                + unit.stats.radius.as_f32() / 2.0
+            unit.render.render_position.x.as_f32()
+                + unit.render.radius.as_f32() / 2.0
                 + DESCRIPTION_MARGIN
                 + STATUS_DESC_ARROW_SIZE,
-            unit.render_position.y.as_f32() + total_height / 2.0,
+            unit.render.render_position.y.as_f32() + total_height / 2.0,
         );
         let bottom_right =
             top_left + vec2(DESCRIPTION_WIDTH + DESCRIPTION_MARGIN * 2.0, -total_height);
@@ -438,7 +419,7 @@ impl Render {
             STATUS_DESC_BACKGROUND,
         )
         .draw_2d(&self.geng, framebuffer, &self.camera);
-        let left_mid = vec2(top_left.x, unit.render_position.y.as_f32());
+        let left_mid = vec2(top_left.x, unit.render.render_position.y.as_f32());
         draw_2d::Polygon::new(
             vec![
                 left_mid - vec2(STATUS_DESC_ARROW_SIZE, 0.0),
@@ -511,19 +492,6 @@ impl Render {
                                     .damage_types
                                     .get(damage_type)
                                     .map(|config| (damage_type, config))
-                            })
-                            .sorted_by(|a, b| a.1.order.partial_cmp(&b.1.order).unwrap())
-                            .collect(),
-                        text.position,
-                    )),
-                    TextType::Heal(heal_types) => Some((
-                        heal_types
-                            .iter()
-                            .filter_map(|heal_type| {
-                                assets
-                                    .heal_types
-                                    .get(heal_type)
-                                    .map(|config| (heal_type, config))
                             })
                             .sorted_by(|a, b| a.1.order.partial_cmp(&b.1.order).unwrap())
                             .collect(),

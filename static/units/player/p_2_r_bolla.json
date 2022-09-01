@@ -2,7 +2,7 @@
     "name": "bolla",
     "tier": 2,
     "health": 4,
-    "base_damage": 4,
+    "attack": 4,
     "description": "",
     "clans": [
         "Dragons"

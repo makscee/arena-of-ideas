@@ -10,7 +10,7 @@ pub struct UnitTemplate {
     /// Description displayed on the unit card
     pub description: String,
     pub health: Health,
-    pub base_damage: Health,
+    pub attack: R32,
     pub spawn_animation_time: Time,
     pub radius: R32,
     #[serde(default)]
@@ -30,7 +30,7 @@ impl Default for UnitTemplate {
             tier: 0,
             description: String::new(),
             health: Health::new(1.0),
-            base_damage: Health::new(1.0),
+            attack: R32::new(1.0),
             spawn_animation_time: Time::new(0.0),
             radius: R32::new(0.5),
             action: default(),

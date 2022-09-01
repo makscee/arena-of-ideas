@@ -2,7 +2,7 @@
     "name": "ice_archer",
     "tier": 2,
     "health": 2,
-    "base_damage": 5,
+    "attack": 5,
     "description": "@Bonus Shot on @Frozen",
     "action": {
         "type": "List",

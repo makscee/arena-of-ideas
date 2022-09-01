@@ -1,7 +1,7 @@
 {
     "name": "skeleton",
     "health": 0,
-    "base_damage": 1,
+    "attack": 1,
     "radius": 0.28,
     "action": {
         "preset": "effects/melee_hit.json"

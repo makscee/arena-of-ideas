@@ -1,48 +1,5 @@
 [
     {
-        "activate": 2,
-        "filter": {
-            "Player": null
-        },
-        "statuses": [
-            {
-                "name": "PlagueDamageHeal",
-                "type": "Status",
-                "stacking": {
-                    "type": "Refresh"
-                },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageTaken",
-                                "damage_type": "Plague"
-                            }
-                        ],
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "Heal",
-                                    "types": [
-                                        "PlagueResistance"
-                                    ],
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 0.5
-                                    }
-                                },
-                                {
-                                    "preset": "effects/vfx_heal.json"
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }
-        ]
-    },
-    {
         "activate": 4,
         "filter": {
             "Enemy": null

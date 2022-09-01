@@ -1,7 +1,7 @@
 {
     "health": 4,
     "radius": 0.44,
-    "base_damage": 12,
+    "attack": 12,
     "action": {
         "preset": "effects/ranged_hit.json"
     },

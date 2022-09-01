@@ -2,7 +2,7 @@
 	"name": "nosferatu",
     "tier": 2,
     "health": 3,
-    "base_damage": 3,
+    "attack": 3,
     "description": "Apply @Dark Steal on 3 random enemies when hp drop below 50%",
     "clans": [
         "Vampires",

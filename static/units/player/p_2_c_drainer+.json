@@ -2,7 +2,7 @@
     "name": "drainer+",
     "tier": 2,
     "health": 10,
-    "base_damage": 18,
+    "attack": 18,
     "description": "Every 10 ticks apply @Siphon Life to all enemies",
     "clans": [
         "Warlocks"

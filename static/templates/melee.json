@@ -1,6 +1,6 @@
 {
     "health": 4,
-    "base_damage": 1,
+    "attack": 1,
     "radius": 0.4,
     "action": {
         "preset": "effects/melee_hit.json"

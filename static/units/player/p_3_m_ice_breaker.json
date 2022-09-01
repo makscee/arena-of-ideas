@@ -3,7 +3,7 @@
     "tier": 3,
     "description": "Double damage on @Freeze target",
     "health": 10,
-    "base_damage": 3,
+    "attack": 3,
     "statuses": [
         {
             "name": "DoubleDamageOnPoison",

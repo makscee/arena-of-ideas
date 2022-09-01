@@ -3,7 +3,7 @@
     "tier": 2,
     "description": "@Scathe: apply @Freeze to target and enemy behind it",
     "health": 8,
-    "base_damage": 2,
+    "attack": 2,
     "action": {
         "type": "List",
         "effects": [

@@ -18,7 +18,6 @@ pub enum VarName {
     StolenHealth,
     StealPercent,
     RemainingAbsorb,
-    VampirismKoef,
     GlobalVar,
     HealLeft,
 }

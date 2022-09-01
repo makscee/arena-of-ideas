@@ -2,7 +2,7 @@
     "name": "patient_zero",
     "tier": 1,
     "health": 6,
-    "base_damage": 1,
+    "attack": 1,
     "description": "Has @Plague",
     "clans": [
         "PlagueSpreaders"

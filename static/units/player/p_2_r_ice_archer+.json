@@ -3,7 +3,7 @@
     "tier": 2,
     "description": "@Bonus Shot on @Frozen. @Bonus Shot applies @Frozen",
     "health": 4,
-    "base_damage": 10,
+    "attack": 10,
     "action": {
         "type": "List",
         "effects": [

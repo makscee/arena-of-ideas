@@ -2,7 +2,7 @@
     "name": "bolla+",
     "tier": 2,
     "health": 8,
-    "base_damage": 35,
+    "attack": 35,
     "description": "On @Rebirth @Burn all enemies",
     "clans": [
         "Dragons"
