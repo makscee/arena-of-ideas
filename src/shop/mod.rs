@@ -299,18 +299,22 @@ impl ShopState {
                         Interaction::Card(state) => {
                             let from_shop = matches!(old_state, CardState::Shop { .. });
                             let to_shop = matches!(state, CardState::Shop { .. });
-                            if let Some(target @ None) = self.shop.cards.get_card_mut(&state) {
-                                if from_shop && !to_shop {
-                                    // Moved from the shop -> check payment
-                                    if self.shop.money >= UNIT_COST {
+                            if let Some(target) = self.shop.cards.get_card_mut(&state) {
+                                if let Some(unit) = target {
+                                    self.shop.money -= UNIT_COST;
+                                    unit.unit.level_up(card.unit.clone());
+                                    return;
+                                } else {
+                                    if from_shop && !to_shop {
+                                        // Moved from the shop
                                         self.shop.money -= UNIT_COST;
                                         *target = Some(card);
                                         return;
+                                    } else {
+                                        // Change placement
+                                        *target = Some(card);
+                                        return;
                                     }
-                                } else {
-                                    // Change placement
-                                    *target = Some(card);
-                                    return;
                                 }
                             }
                         }

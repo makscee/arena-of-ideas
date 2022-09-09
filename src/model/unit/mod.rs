@@ -6,6 +6,7 @@ pub use template::*;
 pub type UnitType = String;
 pub type Tier = u32;
 pub const MAX_TIER: u32 = 5;
+pub const MAX_LVL: usize = 5;
 
 #[derive(Clone)]
 pub enum TurnPhase {
@@ -18,6 +19,7 @@ pub enum TurnPhase {
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,
+    pub level: usize,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
     pub all_statuses: Vec<AttachedStatus>,
@@ -97,7 +99,25 @@ impl Unit {
             render: UnitRenderConfig::new(template),
             clans: template.clans.clone(),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
+            level: 0,
         }
+    }
+
+    pub fn level_up(&mut self, unit: Unit) -> bool {
+        if unit.unit_type == self.unit_type && self.level < (MAX_LVL - 1) {
+            self.level += 1;
+            self.merge_unit(unit);
+            return true;
+        }
+        false
+    }
+
+    fn merge_unit(&mut self, unit: Unit) {
+        self.permanent_stats.health += unit.stats.health;
+        self.permanent_stats.attack += unit.stats.attack;
+
+        self.stats.health += unit.stats.health;
+        self.stats.attack += unit.stats.attack;
     }
 }
 
