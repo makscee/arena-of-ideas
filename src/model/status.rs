@@ -218,7 +218,7 @@ pub struct Status {
     pub listeners: Vec<StatusListener>,
     /// Initial variables
     #[serde(default)]
-    pub vars: HashMap<VarName, R32>,
+    pub vars: HashMap<VarName, i32>,
     #[serde(default)]
     pub order: i32,
     #[serde(skip, default = "Status::default_color")]
@@ -246,7 +246,7 @@ pub struct AttachedStatus {
     /// Specifies the caster that applied the status
     pub caster: Option<Id>,
     /// Variables that persist for the lifetime of the status
-    pub vars: HashMap<VarName, R32>,
+    pub vars: HashMap<VarName, i32>,
     pub id: Id,
 }
 
@@ -318,7 +318,7 @@ impl AttachedStatus {
     pub fn trigger<'a>(
         &'a self,
         mut filter: impl FnMut(&StatusTriggerType) -> bool + 'a,
-    ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, R32>, Id, Color<f32>)> + 'a
+    ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, i32>, Id, Color<f32>)> + 'a
     {
         self.status.listeners.iter().filter_map(move |listener| {
             let trigger = listener
@@ -387,7 +387,7 @@ pub fn unit_attach_status(
         }
     }
 
-    status.vars.insert(VarName::StackCounter, r32(1.0));
+    status.vars.insert(VarName::StackCounter, 1);
     match &status.status.stacking {
         StatusStacking::Independent => {
             let id = status.id;
@@ -402,14 +402,14 @@ pub fn unit_attach_status(
         }
         StatusStacking::Count => {
             return replace(status, all_statuses, |s| {
-                *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
+                *s.vars.entry(VarName::StackCounter).or_insert(0) += 1;
                 s.id
             })
         }
         StatusStacking::CountRefresh => {
             return replace(status, all_statuses, |s| {
                 s.time = s.status.duration.map(Into::into);
-                *s.vars.entry(VarName::StackCounter).or_insert(R32::ZERO) += r32(1.0);
+                *s.vars.entry(VarName::StackCounter).or_insert(0) += 1;
                 s.id
             })
         }

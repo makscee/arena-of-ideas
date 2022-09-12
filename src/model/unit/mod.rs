@@ -6,7 +6,7 @@ pub use template::*;
 pub type UnitType = String;
 pub type Tier = u32;
 pub const MAX_TIER: u32 = 5;
-pub const MAX_LVL: usize = 5;
+pub const MAX_LEVEL: i32 = 3;
 
 #[derive(Clone)]
 pub enum TurnPhase {
@@ -19,7 +19,6 @@ pub enum TurnPhase {
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,
-    pub level: usize,
     pub unit_type: UnitType,
     pub spawn_animation_time_left: Option<Time>,
     pub all_statuses: Vec<AttachedStatus>,
@@ -43,8 +42,9 @@ pub struct Unit {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitStats {
-    pub health: Health,
-    pub attack: R32,
+    pub health: i32,
+    pub attack: i32,
+    pub stack: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -61,6 +61,7 @@ pub struct UnitRenderConfig {
 pub enum UnitStat {
     Health,
     Attack,
+    Level,
 }
 
 impl Unit {
@@ -99,25 +100,17 @@ impl Unit {
             render: UnitRenderConfig::new(template),
             clans: template.clans.clone(),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
-            level: 0,
         }
     }
-
     pub fn level_up(&mut self, unit: Unit) -> bool {
-        if unit.unit_type == self.unit_type && self.level < (MAX_LVL - 1) {
-            self.level += 1;
-            self.merge_unit(unit);
-            return true;
+        if unit.unit_type == self.unit_type {
+            if self.stats.level_up(unit.stats)
+                && self.permanent_stats.level_up(unit.permanent_stats)
+            {
+                return true;
+            }
         }
         false
-    }
-
-    fn merge_unit(&mut self, unit: Unit) {
-        self.permanent_stats.health += unit.stats.health;
-        self.permanent_stats.attack += unit.stats.attack;
-
-        self.stats.health += unit.stats.health;
-        self.stats.attack += unit.stats.attack;
     }
 }
 
@@ -126,20 +119,51 @@ impl UnitStats {
         Self {
             health: template.health,
             attack: template.attack,
+            stack: 1,
         }
     }
 
-    pub fn get(&self, stat: UnitStat) -> R32 {
+    pub fn get(&self, stat: UnitStat) -> i32 {
         match stat {
             UnitStat::Health => self.health,
             UnitStat::Attack => self.attack,
+            UnitStat::Level => self.level(),
         }
     }
-    pub fn get_mut(&mut self, stat: UnitStat) -> &mut R32 {
+    pub fn get_mut(&mut self, stat: UnitStat) -> &mut i32 {
         match stat {
             UnitStat::Health => &mut self.health,
             UnitStat::Attack => &mut self.attack,
+            UnitStat::Level => &mut self.stack,
         }
+    }
+
+    pub fn level_up(&mut self, stats: UnitStats) -> bool {
+        if self.level() < MAX_LEVEL {
+            self.stack += stats.level();
+            self.merge_unit(stats);
+            return true;
+        }
+        false
+    }
+
+    fn level(&self) -> i32 {
+        let mut stack = self.stack;
+        let mut level = 1;
+        for i in 1..MAX_LEVEL {
+            stack -= i;
+            level = i;
+            if stack <= 0 {
+                break;
+            }
+        }
+
+        level
+    }
+
+    fn merge_unit(&mut self, stats: UnitStats) {
+        self.health += stats.health;
+        self.attack += stats.attack;
     }
 }
 

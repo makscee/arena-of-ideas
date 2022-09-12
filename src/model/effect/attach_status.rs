@@ -19,7 +19,7 @@ pub struct AttachStatusEffect {
     pub who: Who,
     pub status: StatusRef,
     #[serde(default)]
-    pub vars: HashMap<VarName, R32>,
+    pub vars: HashMap<VarName, i32>,
 }
 
 impl EffectContainer for AttachStatusEffect {

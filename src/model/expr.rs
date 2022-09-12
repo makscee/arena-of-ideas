@@ -26,7 +26,7 @@ pub enum VarName {
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Expr {
     Const {
-        value: R32,
+        value: i32,
     },
     Var {
         name: VarName,
@@ -66,7 +66,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn calculate(&self, context: &EffectContext, logic: &Logic) -> R32 {
+    pub fn calculate(&self, context: &EffectContext, logic: &Logic) -> i32 {
         match self {
             Self::Const { value } => *value,
             Self::Var { name } => context.vars[name],
@@ -104,7 +104,7 @@ impl Expr {
                     .from
                     .and_then(|id| logic.model.units.get(&id))
                     .expect("From not found");
-                r32(logic
+                logic
                     .model
                     .units
                     .iter()
@@ -123,7 +123,7 @@ impl Expr {
                             .any(|unit_status| unit_status.status.name == *status_name),
                         None => true,
                     })
-                    .count() as f32)
+                    .count() as i32
             }
             Expr::If {
                 condition,

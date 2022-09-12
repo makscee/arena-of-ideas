@@ -10,7 +10,7 @@ impl Logic {
                 .units
                 .iter()
                 .filter(|unit| unit.faction == Faction::Enemy)
-                .map(|unit| unit.stats.attack.ceil().as_f32() as i32)
+                .map(|unit| unit.stats.attack)
                 .sum();
             if self.model.lives <= 0 {
                 return;

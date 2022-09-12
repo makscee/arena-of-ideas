@@ -44,7 +44,7 @@ pub struct RenderModel {
     pub particles: Collection<Particle>,
     pub last_player_action_time: Time,
     pub last_enemy_action_time: Time,
-    pub damage_instances: VecDeque<f32>,
+    pub damage_instances: VecDeque<i32>,
     text_blocks: HashMap<Position, TextBlock>,
     texts: Vec<Text>,
 }
@@ -64,7 +64,7 @@ impl RenderModel {
             particles: Collection::new(),
             last_player_action_time: Time::ZERO,
             last_enemy_action_time: Time::ZERO,
-            damage_instances: VecDeque::from(vec![1.0; 3]),
+            damage_instances: VecDeque::from(vec![1; 3]),
         }
     }
     pub fn update(&mut self, delta_time: f32) {

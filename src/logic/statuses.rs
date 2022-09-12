@@ -8,7 +8,7 @@ impl Logic {
             || status
                 .vars
                 .get(&VarName::StackCounter)
-                .map(|count| *count <= R32::ZERO)
+                .map(|count| *count <= 0)
                 .unwrap_or(false)
     }
 

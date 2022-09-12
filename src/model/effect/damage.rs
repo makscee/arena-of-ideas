@@ -91,7 +91,7 @@ impl EffectImpl for DamageEffect {
             .and_then(|id| units.get_mut(&id).or(dead_units.get_mut(&id)))
             .expect("Target not found");
 
-        if damage <= Health::new(0.0) {
+        if damage <= 0 {
             return;
         }
 
@@ -136,11 +136,11 @@ impl EffectImpl for DamageEffect {
 
         for status in target_unit.all_statuses.iter() {
             if status.status.name == "Vulnerability" {
-                damage *= r32(2.0);
+                damage *= 2;
             }
         }
 
-        if damage <= Health::new(0.0) {
+        if damage <= 0 {
             return;
         }
 
@@ -197,7 +197,7 @@ impl EffectImpl for DamageEffect {
             .get(&context.target.unwrap())
             .or(logic.model.dead_units.get(&context.target.unwrap()))
             .unwrap();
-        let damage_text = (damage * r32(10.0)).floor() / r32(10.0);
+        let damage_text = damage;
         let text_color = context.color.unwrap_or(Color::RED);
         logic.model.render_model.add_text(
             target_unit.position,
@@ -205,7 +205,7 @@ impl EffectImpl for DamageEffect {
             text_color,
             crate::render::TextType::Damage(effect.types.iter().cloned().collect()),
         );
-        let killed = old_hp > Health::new(0.0) && target_unit.stats.health <= Health::new(0.0);
+        let killed = old_hp > 0 && target_unit.stats.health <= 0;
 
         if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
             for (effect, trigger, mut vars, status_id, status_color) in
@@ -306,20 +306,16 @@ impl EffectImpl for DamageEffect {
         }
 
         let mut damage_instances = &mut logic.model.render_model.damage_instances;
-        let avg_damage: f32 = damage_instances.iter().sum::<f32>() / damage_instances.len() as f32;
-        if damage.as_f32() > avg_damage * 8.0 {
+        let avg_damage: i32 = damage_instances.iter().sum::<i32>() / damage_instances.len() as i32;
+        if damage > avg_damage * 8 {
             logic.model.time_scale = 0.7;
-        } else if damage.as_f32() > avg_damage * 3.0 {
+        } else if damage > avg_damage * 3 {
             logic.model.time_scale = 0.9;
         }
         damage_instances.pop_front();
-        damage_instances.push_back(damage.as_f32());
+        damage_instances.push_back(damage);
 
         logic.model.render_model.damage_instances.pop_front();
-        logic
-            .model
-            .render_model
-            .damage_instances
-            .push_back(damage.as_f32());
+        logic.model.render_model.damage_instances.push_back(damage);
     }
 }

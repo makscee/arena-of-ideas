@@ -24,8 +24,6 @@ use shop::*;
 use utility::*;
 
 use crate::simulation::walkthrough;
-
-type Health = R32;
 type Time = R32;
 type Coord = i64;
 type Id = i64;

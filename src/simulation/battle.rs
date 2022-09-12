@@ -72,15 +72,15 @@ impl Battle {
                     .units
                     .clone()
                     .into_iter()
-                    .map(|unit| unit.stats.health.as_f32())
-                    .sum::<f32>();
+                    .map(|unit| unit.stats.health)
+                    .sum::<i32>();
 
                 let mut damage_sum = model
                     .units
                     .clone()
                     .into_iter()
-                    .map(|unit| unit.stats.attack.as_f32())
-                    .sum::<f32>();
+                    .map(|unit| unit.stats.attack)
+                    .sum::<i32>();
                 if !player_won {
                     health_sum = -health_sum;
                     damage_sum = -damage_sum;

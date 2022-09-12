@@ -13,7 +13,7 @@ pub struct EffectContext {
     pub caster: Option<Id>,
     pub from: Option<Id>,
     pub target: Option<Id>,
-    pub vars: HashMap<VarName, R32>,
+    pub vars: HashMap<VarName, i32>,
     pub status_id: Option<Id>,
     pub color: Option<Color<f32>>,
 }

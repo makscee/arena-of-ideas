@@ -26,7 +26,7 @@ impl Logic {
                 distance_between_units(target, from) <= *max_distance
             }
             Condition::Chance { percent } => {
-                r32(global_rng().gen_range(0.0..=100.0)) < percent.calculate(&context, self)
+                global_rng().gen_range(0..=100) < percent.calculate(&context, self)
             }
             Condition::Equal { a, b } => a.calculate(&context, self) == b.calculate(&context, self),
             Condition::Less { a, b } => a.calculate(&context, self) < b.calculate(&context, self),

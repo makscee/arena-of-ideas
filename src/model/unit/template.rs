@@ -9,8 +9,8 @@ pub struct UnitTemplate {
     pub tier: Tier,
     /// Description displayed on the unit card
     pub description: String,
-    pub health: Health,
-    pub attack: R32,
+    pub health: i32,
+    pub attack: i32,
     pub spawn_animation_time: Time,
     pub radius: R32,
     #[serde(default)]
@@ -29,8 +29,8 @@ impl Default for UnitTemplate {
             long_name: "".to_string(),
             tier: 0,
             description: String::new(),
-            health: Health::new(1.0),
-            attack: R32::new(1.0),
+            health: 1,
+            attack: 1,
             spawn_animation_time: Time::new(0.0),
             radius: R32::new(0.5),
             action: default(),

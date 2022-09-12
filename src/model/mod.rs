@@ -84,7 +84,7 @@ pub struct Model {
     pub time_modifier: f32,
     pub lives: i32,
     /// Variables that persist for the whole game
-    pub vars: HashMap<VarName, R32>,
+    pub vars: HashMap<VarName, i32>,
 }
 
 impl Model {
