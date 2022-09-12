@@ -1,25 +1,4 @@
 [
-    "Freeze.json",
-    "Shield.json",
-    "Invulnerability.json",
-    "Stun.json",
-    "MicroStun.json",
-    "Bleed.json",
-    "Vulnerability.json",
-    "Plague.json",
-    "SiphonLife.json",
-    "SiphonLifeAura.json",
-    "Poison.json",
-    "ShieldDamageDetector.json",
-    "Rebirth.json",
-    "DarkSteal.json",
-    "Barrier.json",
-    "Burn.json",
-    "HPLess50Detector.json",
-    "DarkStealOnBonusShot.json",
     "InjureHealTint.json",
-    "PoisonWeakness.json",
-    "vfx/VfxCooldownTick.json",
-    "CultFollowerMaxHpAura.json",
-    "CultFollower+MaxHpCooldownAura.json"
+    "vfx/VfxCooldownTick.json"
 ]

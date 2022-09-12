@@ -1,0 +1,104 @@
+{
+    "name": "1",
+    "description": "Start of battle: Devour random ally. Their stats multiplied by 1/2/3",
+    "health": 4,
+    "attack": 1,
+    "radius": 0.4,
+    "tier": 1,
+    "clans": [
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "DevourOnStart",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Allies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "ChangeStat",
+                                    "stat": "Health",
+                                    "who": "Caster",
+                                    "value": {
+                                        "type": "Sum",
+                                        "a": {
+                                            "type": "FindStat",
+                                            "stat": "Health",
+                                            "who": "Caster"
+                                        },
+                                        "b": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "FindStat",
+                                                "stat": "Health",
+                                                "who": "Target"
+                                            },
+                                            "b": {
+                                                "type": "FindStat",
+                                                "stat": "Level",
+                                                "who": "Caster"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "ChangeStat",
+                                    "stat": "Attack",
+                                    "who": "Caster",
+                                    "value": {
+                                        "type": "Sum",
+                                        "a": {
+                                            "type": "FindStat",
+                                            "stat": "Attack",
+                                            "who": "Caster"
+                                        },
+                                        "b": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "FindStat",
+                                                "stat": "Attack",
+                                                "who": "Target"
+                                            },
+                                            "b": {
+                                                "type": "FindStat",
+                                                "stat": "Level",
+                                                "who": "Caster"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "Kill",
+                                    "who": "Target"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "render": {
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 200
+    }
+}

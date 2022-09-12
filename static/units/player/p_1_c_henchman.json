@@ -1,8 +1,0 @@
-{
-	"name": "henchman",
-    "tier": 1,
-    "clans": [
-        "Warlocks"
-    ],
-    "base": "caster"
-}
