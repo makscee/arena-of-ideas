@@ -16,6 +16,7 @@ mod damage;
 mod drop_context_status;
 mod if_effect;
 mod incr_visual_timer;
+mod kill;
 mod list;
 mod noop;
 mod random;
@@ -23,7 +24,6 @@ mod remove_status;
 mod repeat;
 mod revive;
 mod spawn;
-mod suicide;
 mod visual;
 mod visual_chain;
 
@@ -43,6 +43,7 @@ pub use damage::*;
 pub use drop_context_status::*;
 pub use if_effect::*;
 pub use incr_visual_timer::*;
+pub use kill::*;
 pub use list::*;
 pub use noop::*;
 pub use random::*;
@@ -50,7 +51,6 @@ pub use remove_status::*;
 pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
-pub use suicide::*;
 pub use visual::*;
 pub use visual_chain::*;
 
@@ -62,7 +62,7 @@ pub enum Effect {
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
-    Suicide(Box<SuicideEffect>),
+    Kill(Box<KillEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
@@ -93,7 +93,7 @@ pub enum RawEffect {
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
-    Suicide(Box<SuicideEffect>),
+    Kill(Box<KillEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
     Random(Box<RandomEffect>),
@@ -161,7 +161,7 @@ impl std::fmt::Debug for Effect {
             Self::AttachStatus(effect) => effect.fmt(f),
             Self::Spawn(effect) => effect.fmt(f),
             Self::AOE(effect) => effect.fmt(f),
-            Self::Suicide(effect) => effect.fmt(f),
+            Self::Kill(effect) => effect.fmt(f),
             Self::AddTargets(effect) => effect.fmt(f),
             Self::Repeat(effect) => effect.fmt(f),
             Self::Random(effect) => effect.fmt(f),
@@ -194,7 +194,7 @@ impl From<RawEffect> for Effect {
             RawEffect::AttachStatus(effect) => Self::AttachStatus(effect),
             RawEffect::Spawn(effect) => Self::Spawn(effect),
             RawEffect::AOE(effect) => Self::AOE(effect),
-            RawEffect::Suicide(effect) => Self::Suicide(effect),
+            RawEffect::Kill(effect) => Self::Kill(effect),
             RawEffect::AddTargets(effect) => Self::AddTargets(effect),
             RawEffect::Repeat(effect) => Self::Repeat(effect),
             RawEffect::Random(effect) => Self::Random(effect),
@@ -259,7 +259,7 @@ impl Effect {
             Effect::AttachStatus(effect) => &mut **effect,
             Effect::Spawn(effect) => &mut **effect,
             Effect::AOE(effect) => &mut **effect,
-            Effect::Suicide(effect) => &mut **effect,
+            Effect::Kill(effect) => &mut **effect,
             Effect::AddTargets(effect) => &mut **effect,
             Effect::Repeat(effect) => &mut **effect,
             Effect::Random(effect) => &mut **effect,
@@ -289,7 +289,7 @@ impl Effect {
             Effect::AttachStatus(effect) => effect,
             Effect::Spawn(effect) => effect,
             Effect::AOE(effect) => effect,
-            Effect::Suicide(effect) => effect,
+            Effect::Kill(effect) => effect,
             Effect::AddTargets(effect) => effect,
             Effect::Repeat(effect) => effect,
             Effect::Random(effect) => effect,
