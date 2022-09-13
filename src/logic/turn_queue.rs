@@ -105,8 +105,9 @@ impl Logic {
                     unit_starting_position + (unit_hit_position - unit_starting_position) * phase_t;
             }
             TurnPhase::PostStrike => {
-                unit.render.render_position =
-                    unit_hit_position + (unit_pos - unit_hit_position) * phase_t * phase_t;
+                unit.render.render_position = unit_hit_position
+                    + (unit_pos - unit_hit_position)
+                        * (r32(1.0) - (r32(1.0) - phase_t) * (r32(1.0) - phase_t));
             }
             _ => {}
         }
