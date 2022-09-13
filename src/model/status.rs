@@ -271,6 +271,33 @@ impl StatusRef {
     }
 }
 
+impl StatusTrigger {
+    pub fn fire(
+        &self,
+        effect: Effect,
+        context: &EffectContext,
+        effects: &mut VecDeque<QueuedEffect<Effect>>,
+    ) {
+        if self.no_delay.is_some() && self.no_delay.unwrap() {
+            effects.push_front(QueuedEffect {
+                effect,
+                context: context.clone(),
+            });
+        } else {
+            effects.push_back(QueuedEffect {
+                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
+                    value: UNIT_TURN_TIME,
+                })),
+                context: context.clone(),
+            });
+            effects.push_back(QueuedEffect {
+                effect,
+                context: context.clone(),
+            });
+        }
+    }
+}
+
 impl Status {
     /// Transforms config into an attached status
     pub fn attach(self, owner: Option<Id>, caster: Option<Id>, next_id: &mut Id) -> AttachedStatus {

@@ -110,7 +110,7 @@ impl Model {
             round,
             config,
             vars: HashMap::new(),
-            current_tick: TickModel::new(0),
+            current_tick: TickModel::new(0, Time::new(1.0)),
             render_model,
             time_scale,
             time_modifier: time_scale,
@@ -122,14 +122,14 @@ impl Model {
 }
 
 impl TickModel {
-    pub fn new(tick_num: Ticks) -> Self {
+    pub fn new(tick_num: Ticks, visual_timer: Time) -> Self {
         Self {
             turn_phase: TurnPhase::None,
             enemy: 0,
             player: 0,
             tick_time: Time::ZERO,
             tick_num,
-            visual_timer: Time::new(UNIT_TURN_TIME),
+            visual_timer,
             phase_timer: Time::ZERO,
             phase_timer_start: Time::ONE,
         }

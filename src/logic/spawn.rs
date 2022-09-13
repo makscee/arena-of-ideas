@@ -79,22 +79,20 @@ impl Logic {
         }
 
         // On spawn effects
-        for (effect, trigger, vars, status_id, status_color) in unit
-            .all_statuses
-            .iter()
-            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTriggerType::Spawn)))
-        {
-            self.effects.push_back(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: Some(unit.id),
-                    from: Some(unit.id),
-                    target: Some(unit.id),
-                    vars,
-                    status_id: Some(status_id),
-                    color: Some(status_color),
-                },
+        for (effect, trigger, vars, status_id, status_color) in
+            unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| matches!(trigger, StatusTriggerType::Spawn))
             })
+        {
+            let context = EffectContext {
+                caster: Some(id),
+                from: Some(id),
+                target: Some(id),
+                vars,
+                status_id: Some(status_id),
+                color: Some(status_color),
+            };
+            trigger.fire(effect, &context, &mut self.effects);
         }
 
         self.model.next_id += 1;
