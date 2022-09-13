@@ -57,7 +57,8 @@
                     {
                         "triggers": [
                             {
-                                "type": "Death"
+                                "type": "Death",
+                                "no_delay": true
                             }
                         ],
                         "effect": {
@@ -66,8 +67,7 @@
                     }
                 ]
             },
-            "InjureHealTint",
-            "VfxCooldownTick"
+            "InjureHealTint"
         ]
     }
 ]
