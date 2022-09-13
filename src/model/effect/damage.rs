@@ -170,21 +170,24 @@ impl EffectImpl for DamageEffect {
                 status_id: Some(status_id),
                 color: Some(status_color),
             };
-            debug!("{:?}", effect.clone());
-            logic.effects.push_back(QueuedEffect {
-                effect,
-                context: context.clone(),
-            });
-            debug!("{:?}", trigger.no_delay);
             if trigger.no_delay.is_some() && trigger.no_delay.unwrap() {
+                logic.effects.push_front(QueuedEffect {
+                    effect,
+                    context: context.clone(),
+                });
                 continue;
+            } else {
+                logic.effects.push_back(QueuedEffect {
+                    effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
+                        value: UNIT_TURN_TIME,
+                    })),
+                    context: context.clone(),
+                });
+                logic.effects.push_back(QueuedEffect {
+                    effect,
+                    context: context.clone(),
+                });
             }
-            logic.effects.push_back(QueuedEffect {
-                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
-                    value: UNIT_TURN_TIME,
-                })),
-                context: context.clone(),
-            });
         }
 
         let old_hp = target_unit.stats.health;

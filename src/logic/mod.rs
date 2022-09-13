@@ -125,9 +125,6 @@ impl Logic {
     }
 
     fn process_unit_render_positions(&mut self, unit: &mut Unit) {
-        if self.model.current_tick.player == unit.id || self.model.current_tick.enemy == unit.id {
-            return;
-        }
         unit.render.render_position +=
             (unit.position.to_world() - unit.render.render_position) * self.delta_time * r32(5.0);
     }

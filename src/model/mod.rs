@@ -31,7 +31,7 @@ pub use unit::*;
 // TODO: make configurable
 pub const SIDE_SLOTS: usize = 6;
 pub const MAX_LIVES: i32 = 10;
-pub const UNIT_TURN_TIME: f32 = 0.25;
+pub const UNIT_TURN_TIME: f32 = 1.0;
 pub const UNIT_PRE_TURN_TIME: f32 = 0.3;
 pub const UNIT_SWITCH_TIME: f32 = 0.3;
 
