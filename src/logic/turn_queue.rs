@@ -2,7 +2,8 @@ use super::*;
 
 const UNIT_STARTING_OFFSET: Vec2<f32> = vec2(0.5, 0.0);
 const TIMER_PRE_STRIKE: f32 = 0.3;
-const TIMER_STRIKE: f32 = 0.1;
+const TIMER_POST_STRIKE: f32 = 0.05;
+const TIMER_STRIKE: f32 = 0.02;
 impl Logic {
     pub fn process_turn(&mut self) {
         if self.model.current_tick.phase_timer > Time::ZERO {
@@ -72,9 +73,14 @@ impl Logic {
                 let timer = Time::new(TIMER_PRE_STRIKE);
                 self.model.current_tick.phase_timer += timer;
                 self.model.current_tick.phase_timer_start = timer;
+                self.model.current_tick.turn_phase = TurnPhase::PostStrike;
+            }
+            TurnPhase::PostStrike => {
+                let timer = Time::new(TIMER_PRE_STRIKE);
+                self.model.current_tick.phase_timer += timer;
+                self.model.current_tick.phase_timer_start = timer;
                 self.model.current_tick.turn_phase = TurnPhase::None;
             }
-            TurnPhase::PostStrike => todo!(),
         }
     }
 
@@ -98,7 +104,10 @@ impl Logic {
                 unit.render.render_position =
                     unit_starting_position + (unit_hit_position - unit_starting_position) * phase_t;
             }
-            TurnPhase::PostStrike => {}
+            TurnPhase::PostStrike => {
+                unit.render.render_position =
+                    unit_hit_position + (unit_pos - unit_hit_position) * phase_t;
+            }
             _ => {}
         }
     }
