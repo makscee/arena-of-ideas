@@ -26,6 +26,13 @@ impl Logic {
         }
         match self.model.current_tick.turn_phase {
             TurnPhase::None => {
+                self.model.current_tick.turn_phase = TurnPhase::PreStrike;
+                let timer = Time::new(TIMER_PRE_STRIKE);
+                self.model.current_tick.phase_timer_start = timer;
+                self.model.current_tick.phase_timer += timer;
+            }
+            TurnPhase::PreStrike => {
+                self.model.current_tick.turn_phase = TurnPhase::Strike;
                 self.model.current_tick.player = self
                     .model
                     .units
@@ -41,13 +48,6 @@ impl Logic {
                     .find(|unit| unit.position.side == Faction::Enemy && unit.position.x == 0)
                     .expect("Cant find enemy unit")
                     .id;
-                self.model.current_tick.turn_phase = TurnPhase::PreStrike;
-                let timer = Time::new(TIMER_PRE_STRIKE);
-                self.model.current_tick.phase_timer_start = timer;
-                self.model.current_tick.phase_timer += timer;
-            }
-            TurnPhase::PreStrike => {
-                self.model.current_tick.turn_phase = TurnPhase::Strike;
                 let timer = Time::new(TIMER_STRIKE);
                 self.model.current_tick.phase_timer += timer;
                 self.model.current_tick.phase_timer_start = timer;
