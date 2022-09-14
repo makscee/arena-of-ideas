@@ -122,7 +122,7 @@ vec2 randCircle(int i)
     return vec2(cos(r2p), sin(r2p));
 }
 
-float e_invSquare(float t)
+float invSquare(float t)
 {
     return 1. - (t - 1.) * (t - 1.);
 }
@@ -201,7 +201,6 @@ vec3 hueShift(vec3 color, float hueAdjust) // hue in radians
     vec3    yIQ   = vec3 (YPrime, I, Q);
 
     return vec3( dot (yIQ, kYIQToR), dot (yIQ, kYIQToG), dot (yIQ, kYIQToB) );
-
 }
 
 float smoothhump(float left, float right, float t) // 0 -> 1 -> 0

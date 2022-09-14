@@ -37,7 +37,7 @@ vec4 renderTriangleParticles(vec2 uv, float triangleSize, float t, vec3 color)
     if (triangleDist(uv, triangleSize * (1 - t * 2)) > 1. || t == 1.) return vec4(0);
 
     const float spread = 3;
-    float radius = clamp(1 - e_invSquare(t), 0., 1.);
+    float radius = clamp(1 - invSquare(t), 0., 1.);
     uv += normalize(uv * t * 0.5);
     uv *= spread;
     uv = vec2(0.5) - fract(uv);
@@ -64,7 +64,7 @@ void main() {
     float fadeAnimation = min(0.5, u_cooldown);
     float triangleSize = -1.7;
 
-    // u_action = e_invSquare(u_action);
+    // u_action = invSquare(u_action);
     float rotation = -vecAngle(u_face_dir);
     vec2 preRotUv = uv;
     uv = rotateCW(uv, rotation);
@@ -76,7 +76,7 @@ void main() {
     triangleSize *= mix(1. - u_action * u_action, 1., triangleGrowMax);
     float tDist = triangleDist(uv, triangleSize);
     col = alphaBlend(col, vec4(colors[0], float(tDist < 1. && cooldownProgress == 1.)));
-    col = alphaBlend(col, renderTriangleParticles(uv - vec2(0,e_invSquare(animationProgress)) * 1.5, triangleSize * triangleGrowMax, animationProgress, colors[0]));
+    col = alphaBlend(col, renderTriangleParticles(uv - vec2(0,invSquare(animationProgress)) * 1.5, triangleSize * triangleGrowMax, animationProgress, colors[0]));
     col = alphaBlend(col, renderAbilityReady(preRotUv, colors[0]));
 
     if (u_injure_time > 0. && abs(u_injure_time - u_time) < injureAnimationTime && dist < u_unit_radius)

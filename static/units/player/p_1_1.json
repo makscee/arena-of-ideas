@@ -86,6 +86,9 @@
                                 {
                                     "type": "Kill",
                                     "who": "Target"
+                                },
+                                {
+                                    "preset": "effects/vfx_stats_gain.json"
                                 }
                             ]
                         }
