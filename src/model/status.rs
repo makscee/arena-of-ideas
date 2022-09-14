@@ -285,13 +285,13 @@ impl StatusTrigger {
             });
         } else {
             effects.push_back(QueuedEffect {
-                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
-                    value: UNIT_TURN_TIME,
-                })),
+                effect,
                 context: context.clone(),
             });
             effects.push_back(QueuedEffect {
-                effect,
+                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
+                    value: UNIT_TURN_TIME,
+                })),
                 context: context.clone(),
             });
         }

@@ -34,6 +34,9 @@ impl Logic {
         }
     }
     pub fn process_deaths(&mut self) {
+        if self.model.current_tick.visual_timer > Time::ZERO {
+            return;
+        }
         let ids = self.model.units.ids().copied().collect::<Vec<_>>();
         for id in ids {
             let unit = self.model.units.get(&id).unwrap();
@@ -44,17 +47,15 @@ impl Logic {
                         status.trigger(|trigger| matches!(trigger, StatusTriggerType::Death))
                     })
                 {
-                    self.effects.push_back(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: Some(unit.id),
-                            from: Some(unit.id),
-                            target: Some(unit.id),
-                            vars,
-                            status_id: Some(status_id),
-                            color: Some(status_color),
-                        },
-                    });
+                    let context = EffectContext {
+                        caster: Some(unit.id),
+                        from: Some(unit.id),
+                        target: Some(unit.id),
+                        vars,
+                        status_id: Some(status_id),
+                        color: Some(status_color),
+                    };
+                    trigger.fire(effect, &context, &mut self.effects);
                 }
                 let unit_position = unit.clone().position;
                 self.update_positions(id, unit_position);
