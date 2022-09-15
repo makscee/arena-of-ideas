@@ -17,18 +17,21 @@ impl Logic {
             }
             self.model.lives -= wounds;
             self.model.transition = self.model.lives > 0;
+            self.model.visual_timer += r32(1.0);
         } else if self.effects.is_empty()
-            && self.model.current_tick.visual_timer <= Time::new(0.0)
-            && self.model.current_tick.phase_timer <= Time::new(0.0)
+            && self.model.visual_timer <= Time::new(0.0)
+            && self.model.phase.timer <= Time::new(0.0)
         {
             self.model.time_scale = 1.0;
             let last_tick = &self.model.current_tick;
-            self.model.current_tick = TickModel::new(last_tick.tick_num + 1, Time::ZERO);
+            self.model.current_tick = TickModel::new(last_tick.tick_num + 1);
         }
-        self.model.current_tick.visual_timer -= self.delta_time;
-        self.model.current_tick.phase_timer -= self.delta_time;
-        self.model.current_tick.visual_timer = self.model.current_tick.visual_timer.max(r32(0.0));
-        self.model.current_tick.phase_timer = self.model.current_tick.phase_timer.max(r32(0.0));
+        if self.model.visual_timer > Time::ZERO {
+            self.model.visual_timer -= self.delta_time;
+        } else if self.model.phase.timer > Time::ZERO {
+            self.model.phase.in_animation = true;
+            self.model.phase.timer -= self.delta_time;
+        }
     }
 
     fn check_end(&mut self) -> bool {
@@ -39,6 +42,6 @@ impl Logic {
             .count()
             < 2
             && self.effects.is_empty()
-            && self.model.current_tick.visual_timer <= Time::new(0.0)
+            && self.model.visual_timer <= Time::new(0.0)
     }
 }

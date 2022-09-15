@@ -53,7 +53,7 @@ impl Logic {
     pub fn process_effects(&mut self) {
         const MAX_ITERATIONS: usize = 1000;
         let mut iterations = 0;
-        while self.model.current_tick.visual_timer <= Time::new(0.0) {
+        while self.model.visual_timer <= Time::new(0.0) {
             if let Some(QueuedEffect {
                 effect,
                 mut context,

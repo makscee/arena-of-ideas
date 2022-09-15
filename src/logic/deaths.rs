@@ -34,7 +34,7 @@ impl Logic {
         }
     }
     pub fn process_deaths(&mut self) {
-        if self.model.current_tick.visual_timer > Time::ZERO {
+        if self.model.visual_timer > Time::ZERO {
             return;
         }
         let ids = self.model.units.ids().copied().collect::<Vec<_>>();

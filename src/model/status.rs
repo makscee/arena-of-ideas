@@ -284,14 +284,14 @@ impl StatusTrigger {
                 context: context.clone(),
             });
         } else {
-            effects.push_back(QueuedEffect {
-                effect,
+            effects.push_front(QueuedEffect {
+                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
+                    value: Some(UNIT_TURN_TIME),
+                })),
                 context: context.clone(),
             });
-            effects.push_back(QueuedEffect {
-                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
-                    value: UNIT_TURN_TIME,
-                })),
+            effects.push_front(QueuedEffect {
+                effect,
                 context: context.clone(),
             });
         }

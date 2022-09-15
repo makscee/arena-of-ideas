@@ -296,6 +296,9 @@ impl geng::State for Game {
         match self.last_frame.model.transition {
             false => None,
             true => {
+                if self.logic.model.visual_timer > Time::ZERO {
+                    return None;
+                }
                 let mut shop_state = shop::ShopState::load(
                     &self.geng,
                     &self.assets,

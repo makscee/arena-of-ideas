@@ -1,9 +1,9 @@
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields, rename = "If")]
+#[serde(tag = "type", deny_unknown_fields)]
 pub struct IncrVisualTimerEffect {
-    pub value: f32,
+    pub value: Option<f32>,
 }
 
 impl EffectContainer for IncrVisualTimerEffect {
@@ -12,6 +12,7 @@ impl EffectContainer for IncrVisualTimerEffect {
 
 impl EffectImpl for IncrVisualTimerEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
-        logic.model.current_tick.visual_timer += Time::new(self.value);
+        let value = self.value.unwrap_or(UNIT_TURN_TIME);
+        logic.model.visual_timer += Time::new(value);
     }
 }

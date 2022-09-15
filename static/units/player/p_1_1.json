@@ -89,6 +89,9 @@
                                 },
                                 {
                                     "preset": "effects/vfx_stats_gain.json"
+                                },
+                                {
+                                    "type": "IncrVisualTimer"
                                 }
                             ]
                         }

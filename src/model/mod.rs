@@ -54,14 +54,26 @@ impl TargetFilter {
 
 #[derive(Clone)]
 pub struct TickModel {
-    pub turn_phase: TurnPhase,
-    pub enemy: Id,
-    pub player: Id,
     pub tick_time: Time,
     pub tick_num: Ticks,
-    pub visual_timer: Time,
-    pub phase_timer: Time,
-    pub phase_timer_start: Time,
+}
+
+#[derive(Clone)]
+pub struct PhaseModel {
+    pub enemy: Id,
+    pub player: Id,
+    pub timer: Time,
+    pub timer_start: Time,
+    pub turn_phase: TurnPhase,
+    pub in_animation: bool,
+}
+
+impl PhaseModel {
+    pub fn set_timer(&mut self, timer: Time) {
+        self.timer = timer;
+        self.timer_start = timer;
+        self.in_animation = true;
+    }
 }
 
 #[derive(Clone)]
@@ -85,6 +97,8 @@ pub struct Model {
     pub lives: i32,
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, i32>,
+    pub visual_timer: Time,
+    pub phase: PhaseModel,
 }
 
 impl Model {
@@ -110,28 +124,31 @@ impl Model {
             round,
             config,
             vars: HashMap::new(),
-            current_tick: TickModel::new(0, Time::new(1.0)),
+            current_tick: TickModel::new(0),
             render_model,
             time_scale,
             time_modifier: time_scale,
             lives,
             player_queue: VecDeque::new(),
             enemy_queue: VecDeque::new(),
+            phase: PhaseModel {
+                enemy: 0,
+                player: 0,
+                timer: Time::ZERO,
+                timer_start: Time::ZERO,
+                turn_phase: TurnPhase::None,
+                in_animation: false,
+            },
+            visual_timer: Time::new(1.0),
         }
     }
 }
 
 impl TickModel {
-    pub fn new(tick_num: Ticks, visual_timer: Time) -> Self {
+    pub fn new(tick_num: Ticks) -> Self {
         Self {
-            turn_phase: TurnPhase::None,
-            enemy: 0,
-            player: 0,
             tick_time: Time::ZERO,
             tick_num,
-            visual_timer,
-            phase_timer: Time::ZERO,
-            phase_timer_start: Time::ONE,
         }
     }
 }

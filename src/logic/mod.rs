@@ -51,10 +51,10 @@ impl Logic {
         self.process_tick();
         self.process_particles();
         self.process_spawns();
-        self.process_turn();
         self.process_auras();
         self.process_render_positions();
         self.process_deaths();
+        self.process_turn();
         self.process_effects();
         self.process_time();
         self.model.render_model.update(self.delta_time.as_f32())
