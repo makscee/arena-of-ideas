@@ -1,0 +1,84 @@
+{
+    "name": "15",
+    "description": "After any ally devoured: gain +1/+1 permanently",
+    "health": 1,
+    "attack": 1,
+    "radius": 0.4,
+    "tier": 1,
+    "clans": [
+        "Demons"
+    ],
+    "statuses": [
+        {
+            "name": "StatsAfterDevour",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Custom",
+                            "name": "Devour"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Health",
+                                "who": "Caster",
+                                "permanent": true,
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "Health",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Attack",
+                                "who": "Caster",
+                                "permanent": true,
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "Attack",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
+                            },
+                            {
+                                "preset": "effects/vfx_stats_gain.json"
+                            },
+                            {
+                                "type": "IncrVisualTimer"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "render": {
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 200
+    }
+}
