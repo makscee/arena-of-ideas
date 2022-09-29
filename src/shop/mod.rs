@@ -122,14 +122,6 @@ impl geng::State for ShopState {
             return None;
         }
         let config = Config {
-            player: self
-                .shop
-                .cards
-                .party
-                .iter()
-                .filter_map(|card| card.as_ref())
-                .map(|card| card.unit.unit_type.clone())
-                .collect(),
             clans: {
                 calc_clan_members(
                     self.shop
@@ -149,7 +141,7 @@ impl geng::State for ShopState {
             .get(self.shop.round - 1)
             .unwrap_or_else(|| panic!("Failed to find round number: {}", self.shop.round))
             .clone();
-        let game_state = Game::new(&self.geng, &self.assets, config, self.shop.take(), round);
+        let game_state = Game::new(&self.geng, &self.assets, config, self.shop.clone(), round);
         Some(geng::Transition::Switch(Box::new(game_state)))
     }
 }
@@ -369,18 +361,26 @@ impl Shop {
         }
     }
 
-    pub fn take(&mut self) -> Self {
-        let mut shop = Shop::new(&self.geng, &self.assets, default());
-        std::mem::swap(self, &mut shop);
-        shop
-    }
-
     pub fn tier_up(&mut self) {
         if let Some(cost) = tier_up_cost(self.tier, self.tier_rounds) {
             if self.money >= cost {
                 self.tier += 1;
                 self.tier_rounds = 0;
                 self.money -= cost;
+            }
+        }
+    }
+
+    pub fn replace_party(&mut self, party: Vec<Unit>) {
+        for unit in party {
+            for index in 0..self.cards.party.len() {
+                if let Some(card) = self.cards.party.get(index).expect("Slot must exist") {
+                    if card.unit.id == unit.id {
+                        if let Some(card_mut) = self.cards.party.get_mut(index).unwrap() {
+                            card_mut.unit = unit.clone();
+                        }
+                    }
+                }
             }
         }
     }

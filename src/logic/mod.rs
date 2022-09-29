@@ -31,8 +31,14 @@ pub struct Logic {
 }
 
 impl Logic {
-    pub fn initialize(&mut self, events: &mut Events, player: Vec<UnitType>, round: GameRound) {
-        self.init_player(player);
+    pub fn initialize(
+        &mut self,
+        events: &mut Events,
+        shop: Option<&mut Shop>,
+        player: Vec<UnitType>,
+        round: GameRound,
+    ) {
+        self.init_player(player, shop);
         self.init_enemies(round);
         self.init_time(events);
     }
@@ -99,21 +105,39 @@ impl Logic {
         }
     }
 
-    fn init_player(&mut self, player: Vec<UnitType>) {
-        for unit_type in &player {
-            self.spawn_unit(unit_type, Faction::Player, Position::zero(Faction::Player));
+    fn init_player(&mut self, player: Vec<UnitType>, shop: Option<&mut Shop>) {
+        if let Some(shop) = shop {
+            let shop_player: Vec<&mut Unit> = shop
+                .cards
+                .party
+                .iter_mut()
+                .filter_map(|card| card.as_mut())
+                .map(|card| &mut card.unit)
+                .rev()
+                .collect();
+            for unit in shop_player {
+                unit.id = self.model.next_id;
+                let mut cloned = unit.clone();
+                cloned.shop_unit = Box::new(Some(unit.clone()));
+                self.spawn_by_unit(cloned);
+            }
+        } else {
+            for unit_type in &player {
+                self.spawn_by_type(unit_type, Faction::Player, Position::zero(Faction::Player));
+            }
         }
     }
 
     fn init_enemies(&mut self, round: GameRound) {
         for unit_type in round.enemies.iter().rev() {
-            let unit = self.spawn_unit(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
+            let unit =
+                self.spawn_by_type(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
             let unit = self.model.units.get_mut(&unit).unwrap();
             let statuses = round.statuses.iter().map(|status| {
                 status.get(&self.model.statuses).clone().attach(
                     Some(unit.id),
                     None,
-                    &mut self.model.next_id,
+                    self.model.next_id,
                 )
             });
             unit.all_statuses.extend(statuses);

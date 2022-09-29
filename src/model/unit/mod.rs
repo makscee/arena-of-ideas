@@ -38,6 +38,7 @@ pub struct Unit {
     pub clans: Vec<Clan>,
     pub render: UnitRenderConfig,
     pub random_number: R32,
+    pub shop_unit: Box<Option<Unit>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -67,14 +68,12 @@ pub enum UnitStat {
 impl Unit {
     pub fn new(
         template: &UnitTemplate,
-        next_id: &mut Id,
+        id: Id,
         unit_type: UnitType,
         faction: Faction,
         position: Position,
         statuses: &Statuses,
     ) -> Self {
-        let id = *next_id;
-        *next_id += 1;
         Self {
             id,
             unit_type,
@@ -82,12 +81,7 @@ impl Unit {
             all_statuses: template
                 .statuses
                 .iter()
-                .map(|status| {
-                    status
-                        .get(statuses)
-                        .clone()
-                        .attach(Some(id), Some(id), next_id)
-                })
+                .map(|status| status.get(statuses).clone().attach(Some(id), Some(id), id))
                 .collect(),
             active_auras: default(),
             modifier_targets: vec![],
@@ -100,6 +94,7 @@ impl Unit {
             render: UnitRenderConfig::new(template),
             clans: template.clans.clone(),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
+            shop_unit: Box::new(None),
         }
     }
     pub fn level_up(&mut self, unit: Unit) -> bool {

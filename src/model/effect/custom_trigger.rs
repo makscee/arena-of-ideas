@@ -13,38 +13,39 @@ impl EffectContainer for CustomTriggerEffect {
 impl EffectImpl for CustomTriggerEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let target = logic.model.units.get_mut(&context.target.unwrap()).unwrap();
-        for (effect, trigger, mut vars, status_id, status_color) in target
-            .all_statuses
-            .iter()
-            .filter(|status| {
-                if let Some(status_id) = context.status_id {
-                    status.id == status_id
-                } else {
-                    true
-                }
-            })
-            .flat_map(|status| {
-                status.trigger(|trigger| match trigger {
-                    StatusTriggerType::Custom { name } => *name == effect.name,
-                    _ => false,
+        for unit in &logic.model.units {
+            for (effect, trigger, mut vars, status_id, status_color) in unit
+                .all_statuses
+                .iter()
+                .filter(|status| {
+                    if let Some(status_id) = context.status_id {
+                        status.id == status_id
+                    } else {
+                        true
+                    }
                 })
-            })
-        {
-            logic.effects.push_back(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: context.caster,
-                    from: context.from,
-                    target: context.target,
-                    vars: {
-                        vars.extend(context.vars.clone());
-                        vars
+                .flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTriggerType::Custom { name } => *name == effect.name,
+                        _ => false,
+                    })
+                })
+            {
+                logic.effects.push_back(QueuedEffect {
+                    effect,
+                    context: EffectContext {
+                        caster: Some(unit.id),
+                        from: context.caster,
+                        target: context.target,
+                        vars: {
+                            vars.extend(context.vars.clone());
+                            vars
+                        },
+                        status_id: Some(status_id),
+                        color: Some(status_color),
                     },
-                    status_id: Some(status_id),
-                    color: Some(status_color),
-                },
-            })
+                })
+            }
         }
     }
 }

@@ -300,9 +300,7 @@ impl StatusTrigger {
 
 impl Status {
     /// Transforms config into an attached status
-    pub fn attach(self, owner: Option<Id>, caster: Option<Id>, next_id: &mut Id) -> AttachedStatus {
-        let id = *next_id;
-        *next_id += 1;
+    pub fn attach(self, owner: Option<Id>, caster: Option<Id>, id: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
             time: self.duration.map(Into::into),

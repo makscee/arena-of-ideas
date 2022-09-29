@@ -2,7 +2,7 @@
     "name": "shooter_0",
     "attack": 1,
     "radius": 0.36,
-    "health": 5,
+    "health": 1,
     "action": {
         "preset": "effects/ranged_hit.json"
     },

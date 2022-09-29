@@ -4,14 +4,27 @@ impl Logic {
     /// Spawns the unit and returns its id. If there is a unit in that position and there is an
     /// empty slot to the left, it and all units to the left are shifted to the left.
     /// Otherwise, if all slots are occupied, the unit is placed on top the unit in that position.
-    pub fn spawn_unit(&mut self, unit_type: &UnitType, faction: Faction, position: Position) -> Id {
+    pub fn spawn_by_type(&mut self, unit_type: &UnitType, faction: Faction, position: Position) -> Id {
         let mut template = &self
             .model
             .unit_templates
             .get(unit_type)
             .unwrap_or_else(|| panic!("Failed to find unit template for {unit_type}"));
-        let id = self.model.next_id;
 
+        let mut unit = Unit::new(
+            &template,
+            self.model.next_id,
+            unit_type.clone(),
+            faction,
+            Position::zero(faction),
+            &self.model.statuses,
+        );
+        self.spawn_by_unit(unit)
+    }
+
+    pub fn spawn_by_unit(&mut self, mut unit: Unit) -> Id {
+        let id = self.model.next_id;
+        let position = unit.position;
         // Check empty slots
         let can_shift = SIDE_SLOTS
             .checked_sub(1)
@@ -43,15 +56,8 @@ impl Logic {
                 .unwrap_or(0)
         };
         let position = Position { height, ..position };
-
-        let mut unit = Unit::new(
-            &template,
-            &mut self.model.next_id,
-            unit_type.clone(),
-            faction,
-            position,
-            &self.model.statuses,
-        );
+        unit.id = id;
+        unit.position = position;
         for (clan, _) in &self.model.clan_effects.map {
             let mut size = 0;
             match unit.faction {
@@ -73,7 +79,7 @@ impl Logic {
                 &mut unit,
                 &self.model.clan_effects,
                 size,
-                &mut self.model.next_id,
+                self.model.next_id,
                 &self.model.statuses,
             );
         }
@@ -97,9 +103,9 @@ impl Logic {
 
         self.model.next_id += 1;
         self.model.units.insert(unit);
-
         id
     }
+
     pub fn process_spawns(&mut self) {
         for unit in &mut self.model.units {
             if let Some(time) = &mut unit.spawn_animation_time_left {

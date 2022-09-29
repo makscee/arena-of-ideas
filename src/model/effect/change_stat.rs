@@ -4,12 +4,18 @@ fn default_who() -> Who {
     Who::Target
 }
 
+fn default_permanent() -> bool {
+    false
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChangeStatEffect {
     pub stat: UnitStat,
     pub value: Expr,
     #[serde(default = "default_who")]
     pub who: Who,
+    #[serde(default = "default_permanent")]
+    pub permanent: bool,
 }
 
 impl EffectContainer for ChangeStatEffect {
@@ -29,5 +35,12 @@ impl EffectImpl for ChangeStatEffect {
             .expect("Target not found");
         *target.stats.get_mut(effect.stat) = value;
         *target.permanent_stats.get_mut(effect.stat) = value;
+
+        if effect.permanent && target.shop_unit.is_some() {
+            let mut shop_unit = target.shop_unit.clone().unwrap();
+            *shop_unit.stats.get_mut(effect.stat) = value;
+            *shop_unit.permanent_stats.get_mut(effect.stat) = value;
+            target.shop_unit = Box::new(Some(shop_unit));
+        }
     }
 }

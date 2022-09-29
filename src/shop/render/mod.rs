@@ -154,6 +154,45 @@ impl Render {
                     &self.camera,
                     framebuffer,
                 );
+
+                let radius = unit.render.radius.as_f32();
+
+                // Draw damage and health
+                let unit_aabb = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
+                    .extend_uniform(radius);
+                let size = radius * 0.7;
+                let damage = AABB::point(unit_aabb.bottom_left())
+                    .extend_right(size)
+                    .extend_up(size);
+                let health = AABB::point(unit_aabb.bottom_right())
+                    .extend_left(size)
+                    .extend_up(size);
+
+                draw_2d::TexturedQuad::new(damage, self.assets.swords_emblem.clone()).draw_2d(
+                    &self.geng,
+                    framebuffer,
+                    &self.camera,
+                );
+                draw_2d::TexturedQuad::new(health, self.assets.hearts.clone()).draw_2d(
+                    &self.geng,
+                    framebuffer,
+                    &self.camera,
+                );
+                let text_color = Color::try_from("#e6e6e6").unwrap();
+                draw_2d::Text::unit(
+                    self.geng.default_font().clone(),
+                    format!("{:.0}", unit.stats.attack),
+                    text_color,
+                )
+                .fit_into(damage)
+                .draw_2d(&self.geng, framebuffer, &self.camera);
+                draw_2d::Text::unit(
+                    self.geng.default_font().clone(),
+                    format!("{:.0}", unit.stats.health),
+                    text_color,
+                )
+                .fit_into(health)
+                .draw_2d(&self.geng, framebuffer, &self.camera);
             }
         }
 

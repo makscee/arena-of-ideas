@@ -62,7 +62,7 @@ impl ClanFilter {
 impl ClanEffect {
     /// Checks the filters (factions and clans) and applies the
     /// effects if the constraints are met.
-    fn apply(&self, unit: &mut Unit, next_id: &mut Id, statuses: &Statuses) {
+    fn apply(&self, unit: &mut Unit, next_id: Id, statuses: &Statuses) {
         if !self.filter.check(unit) {
             return;
         }
@@ -107,7 +107,7 @@ impl Clan {
         unit: &mut Unit,
         effects: &ClanEffects,
         party_members: usize,
-        next_id: &mut Id,
+        id: Id,
         statuses: &Statuses,
     ) {
         let effects = match effects.get(self) {
@@ -122,7 +122,7 @@ impl Clan {
             .filter(|effect| effect.activate <= party_members)
             .sorted_by_key(|effect| effect.activate);
         for effect in effects.rev() {
-            effect.apply(unit, next_id, statuses);
+            effect.apply(unit, id, statuses);
             if effect.replace {
                 break;
             }

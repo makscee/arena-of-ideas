@@ -49,6 +49,7 @@ impl Battle {
         let mut events = Events::new(vec![]);
         logic.initialize(
             &mut events,
+            None,
             self.config.player.clone(),
             self.model.round.clone(),
         );

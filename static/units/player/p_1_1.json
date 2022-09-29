@@ -1,7 +1,7 @@
 {
     "name": "1",
     "description": "Start of battle: Devour random ally. Their stats multiplied by 1/2/3",
-    "health": 4,
+    "health": 2,
     "attack": 1,
     "radius": 0.4,
     "tier": 1,
@@ -92,6 +92,10 @@
                                 },
                                 {
                                     "type": "IncrVisualTimer"
+                                },
+                                {
+                                    "type": "CustomTrigger",
+                                    "name": "Devour"
                                 }
                             ]
                         }

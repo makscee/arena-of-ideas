@@ -94,6 +94,7 @@ impl Game {
         };
         game.logic.initialize(
             &mut game.events,
+            Some(&mut game.shop),
             config.player.clone(),
             game.logic.model.round.clone(),
         );
@@ -299,10 +300,29 @@ impl geng::State for Game {
                 if self.logic.model.visual_timer > Time::ZERO {
                     return None;
                 }
+                let mut party: Vec<Unit> = self
+                    .logic
+                    .model
+                    .units
+                    .iter()
+                    .filter(|unit| unit.faction == Faction::Player && unit.shop_unit.is_some())
+                    .map(|unit| unit.shop_unit.clone().unwrap())
+                    .collect();
+                party.append(
+                    &mut self
+                        .logic
+                        .model
+                        .dead_units
+                        .iter()
+                        .filter(|unit| unit.faction == Faction::Player && unit.shop_unit.is_some())
+                        .map(|unit| unit.shop_unit.clone().unwrap())
+                        .collect(),
+                );
+                self.shop.replace_party(party);
                 let mut shop_state = shop::ShopState::load(
                     &self.geng,
                     &self.assets,
-                    self.shop.take(),
+                    self.shop.clone(),
                     self.last_frame.model.config.clone(),
                 );
                 shop_state.shop.lives = self.last_frame.model.lives;

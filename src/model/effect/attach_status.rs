@@ -44,7 +44,7 @@ impl EffectImpl for AttachStatusEffect {
             let mut status = effect.status.get(&logic.model.statuses).clone().attach(
                 Some(target.id),
                 context.caster,
-                &mut logic.model.next_id,
+                logic.model.next_id,
             );
             if !status.status.hidden {
                 logic.model.render_model.add_text(
