@@ -65,26 +65,13 @@ impl Logic {
         self.model.units.retain(|unit| unit.stats.health > 0);
     }
     fn update_positions(&mut self, unit_id: Id, unit_position: Position) {
-        let mut move_vertically = false;
-        for other in self.model.units.iter_mut().filter(|other| {
-            other.id != unit_id
-                && other.position.side == unit_position.side
-                && other.position.x == unit_position.x
-                && other.position.height > unit_position.height
-        }) {
-            // Move vertically
-            move_vertically = true;
-            other.position.height -= 1;
-        }
-        if !move_vertically {
-            // Move horizontally
-            self.model
-                .units
-                .iter_mut()
-                .filter(|other| {
-                    other.position.side == unit_position.side && other.position.x > unit_position.x
-                })
-                .for_each(|other| other.position.x -= 1);
-        }
+        // Move horizontally
+        self.model
+            .units
+            .iter_mut()
+            .filter(|other| {
+                other.position.side == unit_position.side && other.position.x > unit_position.x
+            })
+            .for_each(|other| other.position.x -= 1);
     }
 }

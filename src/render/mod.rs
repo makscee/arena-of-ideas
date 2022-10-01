@@ -213,7 +213,6 @@ impl Render {
                 let position = Position {
                     x: i as i64,
                     side: faction,
-                    height: 0,
                 }
                 .to_world_f32();
                 let unit = model

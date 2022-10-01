@@ -143,7 +143,6 @@ impl Render {
                 unit.render.render_position = Position {
                     side: Faction::Player,
                     x: index.try_into().unwrap(),
-                    height: Coord::ZERO,
                 }
                 .to_world();
                 self.unit_render.draw_unit(
@@ -206,7 +205,6 @@ impl Render {
                 let position = Position {
                     x: i as i64,
                     side: faction,
-                    height: 0,
                 }
                 .to_world_f32();
                 let empty = shop

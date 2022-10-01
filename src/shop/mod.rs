@@ -218,7 +218,6 @@ impl ShopState {
             let pos = Position {
                 side: Faction::Player,
                 x: x as Coord,
-                height: 0,
             };
             let delta = pos.to_world_f32() - world_pos;
             if delta.len() < 0.5 {

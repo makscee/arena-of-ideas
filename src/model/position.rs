@@ -4,23 +4,18 @@ use super::*;
 pub struct Position {
     pub side: Faction,
     pub x: Coord,
-    pub height: Coord,
 }
 
 impl Position {
     pub fn zero(side: Faction) -> Self {
-        Self {
-            side,
-            x: 0,
-            height: 0,
-        }
+        Self { side, x: 0 }
     }
 
     pub fn to_world(&self) -> Vec2<R32> {
-        let pos = vec2(self.x, self.height).map(|x| r32(x as f32));
+        let pos = r32(self.x as f32);
         match self.side {
-            Faction::Player => vec2(-pos.x - r32(1.0), pos.y),
-            Faction::Enemy => vec2(pos.x + r32(1.0), pos.y),
+            Faction::Player => vec2(-pos - r32(1.0), r32(0.0)),
+            Faction::Enemy => vec2(pos + r32(1.0), r32(0.0)),
         }
     }
 
