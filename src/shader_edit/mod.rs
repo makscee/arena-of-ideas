@@ -1,3 +1,4 @@
+mod shader_config;
 use crate::Instance;
 use geng::prelude::*;
 use std::{path::PathBuf, sync::mpsc::Receiver};
@@ -5,6 +6,7 @@ use std::{path::PathBuf, sync::mpsc::Receiver};
 use notify::{DebouncedEvent, RecommendedWatcher, Watcher};
 
 use crate::model::ShaderParameters;
+pub use shader_config::*;
 
 #[derive(clap::Args)]
 pub struct ShaderEdit {

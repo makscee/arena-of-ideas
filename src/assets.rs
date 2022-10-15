@@ -1,3 +1,4 @@
+use crate::shader_edit::ClanShaderConfig;
 use std::collections::VecDeque;
 
 use super::*;
@@ -102,6 +103,8 @@ pub struct Assets {
     pub swords_emblem: Rc<ugli::Texture>,
     #[asset(path = "rounds/round*.json", range = "1..=15")]
     pub rounds: Vec<GameRound>,
+    #[asset(path = "shaders/clan_shaders/_list.json")]
+    pub clan_shaders: ClanShaderConfigs,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -312,6 +315,13 @@ pub struct ClanEffects {
     pub map: HashMap<Clan, Vec<ClanEffect>>,
 }
 
+#[derive(Clone, Deref, DerefMut)]
+pub struct ClanShaderConfigs {
+    #[deref]
+    #[deref_mut]
+    pub map: HashMap<String, ClanShaderConfig>,
+}
+
 impl Assets {
     pub fn get_render(&self, config: &ShaderConfig) -> ShaderProgram {
         ShaderProgram {
@@ -328,6 +338,35 @@ impl Assets {
             instances: config.instances,
         }
     }
+}
+
+impl geng::LoadAsset for ClanShaderConfigs {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let mut map = HashMap::new();
+
+            let json = <String as geng::LoadAsset>::load(&geng, &path)
+                .await
+                .context(format!("Failed to load clan shaders list from {:?}", path))?;
+            let shaders: Vec<String> = serde_json::from_str(&json)?;
+
+            for shader_path in shaders {
+                let path = path.parent().unwrap().join(shader_path);
+                let json = <String as geng::LoadAsset>::load(&geng, &path)
+                    .await
+                    .context(format!("Failed to load {path:?}"))?;
+                let shader: ClanShaderConfig = serde_json::from_str(&json)?;
+                let name = shader.name.clone();
+                map.insert(name, shader);
+            }
+            Ok(Self { map })
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some("json");
 }
 
 impl geng::LoadAsset for GameRound {

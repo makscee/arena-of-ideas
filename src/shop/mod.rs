@@ -141,7 +141,14 @@ impl geng::State for ShopState {
             .get(self.shop.round - 1)
             .unwrap_or_else(|| panic!("Failed to find round number: {}", self.shop.round))
             .clone();
-        let game_state = Game::new(&self.geng, &self.assets, config, self.shop.clone(), round);
+        let game_state = Game::new(
+            &self.geng,
+            &self.assets,
+            config,
+            self.shop.clone(),
+            round,
+            false,
+        );
         Some(geng::Transition::Switch(Box::new(game_state)))
     }
 }
