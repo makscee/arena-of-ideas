@@ -1,0 +1,51 @@
+body {
+	background: linear-gradient(210deg, #1D4A64 -8.59%, #FFDAE1 100%);
+	margin: 0;
+}
+
+.panel-widget {
+	width: 50%;
+	height: 100%;
+	border: 4px solid rgba(128, 168, 228, 0.8);
+	border-radius: 10px;
+	margin: 16px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+slider {
+	prototype: Slider url(../js/slider.js);
+	display: block;
+}
+
+slider>input {
+	width: 80%;
+	height: 10px;
+}
+
+widget {
+	prototype: Widget url(../js/widget.js);
+
+	display: block;
+
+	height: 100px;
+	padding: 8px;
+	margin: 16px;
+
+	background-color: #c6dae6;
+	border: 6px solid rgba(39, 177, 255, 0.56);
+	border-radius: 10px;
+}
+
+enum {
+	prototype: Enum url(../js/enum.js);
+	display: block;
+}
+
+panel {
+	prototype: Panel url(../js/panel.js);
+	display: block;
+	width: 60%;
+}

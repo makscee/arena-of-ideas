@@ -7,6 +7,7 @@ use ugli::Texture;
 
 mod assets;
 mod custom;
+mod hero_edit;
 mod logic;
 mod model;
 mod render;
@@ -348,6 +349,7 @@ enum Commands {
     Simulate(simulation::Simulate),
     Walkthrough(simulation::Walkthrough),
     UpdateUnits,
+    HeroEditor(hero_edit::HeroEditor),
 }
 
 fn main() {
@@ -432,6 +434,9 @@ fn main() {
                                 Commands::UpdateUnits => {
                                     utility::rename_units(&geng, &static_path(), assets);
                                     std::process::exit(0);
+                                }
+                                Commands::HeroEditor(hero_editor) => {
+                                    hero_editor.run();
                                 }
                             },
                             None => (),
