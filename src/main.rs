@@ -58,6 +58,7 @@ impl Game {
         config: Config,
         shop: Shop,
         round: GameRound,
+        custom: bool,
     ) -> Self {
         let mut model = Model::new(
             config.clone(),
@@ -92,9 +93,10 @@ impl Game {
             new_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             previous_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
         };
+        let shop = if custom { None } else { Some(&mut game.shop) };
         game.logic.initialize(
             &mut game.events,
-            Some(&mut game.shop),
+            shop,
             config.player.clone(),
             game.logic.model.round.clone(),
         );

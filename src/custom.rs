@@ -37,6 +37,6 @@ impl CustomGame {
             fov: custom.fov,
         };
         let shop = Shop::new(geng, assets, shop_config);
-        Box::new(Game::new(geng, assets, config, shop, custom.round))
+        Box::new(Game::new(geng, assets, config, shop, custom.round, true))
     }
 }
