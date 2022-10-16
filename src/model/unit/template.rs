@@ -5,6 +5,7 @@ use super::*;
 pub struct UnitTemplate {
     pub name: UnitType,
     pub long_name: UnitType,
+    pub path: String,
     /// Units with tier equal to 0 are not included in the shop
     pub tier: Tier,
     /// Description displayed on the unit card
@@ -19,6 +20,7 @@ pub struct UnitTemplate {
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
+    pub clan_renders: ClanRenders,
     pub base: Option<UnitType>,
 }
 
@@ -27,6 +29,7 @@ impl Default for UnitTemplate {
         Self {
             name: "".to_string(),
             long_name: "".to_string(),
+            path: "".to_string(),
             tier: 0,
             description: String::new(),
             health: 1,
@@ -42,6 +45,7 @@ impl Default for UnitTemplate {
                 parameters: default(),
             },
             clans: default(),
+            clan_renders: ClanRenders::new(),
             base: None,
         }
     }
@@ -56,11 +60,43 @@ impl geng::LoadAsset for UnitTemplate {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
             let mut result: Self = serde_json::from_str(&json)?;
             result.long_name = file_name;
+            result.path = path.to_str().unwrap().to_string();
             Ok(result)
         }
         .boxed_local()
     }
     const DEFAULT_EXT: Option<&'static str> = Some("json");
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ClanRenders {
+    pub levels: Vec<LevelRenders>,
+}
+
+impl ClanRenders {
+    pub fn new() -> Self {
+        Self { levels: vec![] }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LevelRenders {
+    pub clans: HashMap<Clan, ClanRender>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ClanRender {
+    path: String,
+    parameters: RenderParameters,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct RenderParameters {
+    u_fill: i32,
+    u_size: f32,
+    u_offset: Vec<f32>,
+    u_outline_thickness: f32,
+    u_count: i32,
 }
 
 #[derive(Deref, DerefMut, Clone)]

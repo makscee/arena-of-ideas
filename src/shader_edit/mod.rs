@@ -1,3 +1,4 @@
+mod clan_shader_edit;
 mod shader_config;
 use crate::Instance;
 use geng::prelude::*;
@@ -6,6 +7,7 @@ use std::{path::PathBuf, sync::mpsc::Receiver};
 use notify::{DebouncedEvent, RecommendedWatcher, Watcher};
 
 use crate::model::ShaderParameters;
+pub use clan_shader_edit::*;
 pub use shader_config::*;
 
 #[derive(clap::Args)]

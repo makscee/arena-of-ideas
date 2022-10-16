@@ -21,6 +21,7 @@ use assets::*;
 use logic::*;
 use model::*;
 use render::{Render, RenderModel};
+use shader_edit::*;
 use shop::*;
 use utility::*;
 
@@ -351,6 +352,7 @@ enum Commands {
     Simulate(simulation::Simulate),
     Walkthrough(simulation::Walkthrough),
     UpdateUnits,
+    ClanShader,
     HeroEditor(hero_edit::HeroEditor),
 }
 
@@ -432,6 +434,9 @@ fn main() {
                                 }
                                 Commands::Shader(shader) => {
                                     return shader.run(&geng);
+                                }
+                                Commands::ClanShader => {
+                                    return shader_edit::run(&geng, assets);
                                 }
                                 Commands::UpdateUnits => {
                                     utility::rename_units(&geng, &static_path(), assets);
