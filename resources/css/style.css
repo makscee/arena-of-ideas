@@ -15,19 +15,12 @@ body {
 	align-items: center;
 }
 
-slider {
-	prototype: Slider url(../js/slider.js);
-	display: block;
-}
-
-slider>input {
+widgetSlider {
 	width: 80%;
 	height: 10px;
 }
 
 widget {
-	prototype: Widget url(../js/widget.js);
-
 	display: block;
 
 	height: 100px;
@@ -37,11 +30,6 @@ widget {
 	background-color: #c6dae6;
 	border: 6px solid rgba(39, 177, 255, 0.56);
 	border-radius: 10px;
-}
-
-enum {
-	prototype: Enum url(../js/enum.js);
-	display: block;
 }
 
 panel {

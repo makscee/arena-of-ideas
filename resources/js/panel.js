@@ -1,6 +1,5 @@
-import { Widget } from "./widget";
-import { Slider } from "./slider";
-import { Enum } from "./enum";
+import { WidgetEnum } from "./widgetEnum";
+import { WidgetSlider } from "./widgetSlider";
 
 export class Panel extends Element {
     widgets = [
@@ -18,39 +17,31 @@ export class Panel extends Element {
     }
 
     componentDidMount() {
-        console.log("2 + 3 ", Window.this.xcall("calc_sum", 5, 10));
-        document.on("click", "#minus", function (event, input) {
-            var panel = document.$("panel");
-            // @ts-ignore
-            panel.removeWidget();
-        });
-        document.on("click", "#plus", function (event, input) {
-            var panel = document.$("panel");
-            var type = document.$("#w-type").value;
-            console.log(type);
-            // @ts-ignore
-            panel.addWidget(type);
+        document.on("click", "#save", function (event, input) {
+            Window.this.xcall("save_uniforms");
         });
         this.componentUpdate();
     }
 
     render() {
         this.content(<></>);
-        this.widgets.forEach(type => {
+        this.widgets.forEach(widget => {
             var element;
-            switch (type) {
-                case "text":
-                    element = <widget>some text</widget>;
+            console.log("render widget", widget.type, widget.value);
+            switch (widget.type) {
+                case "Vector":
                     break;
-                case "slider":
-                    element = <widget><slider /></widget>;
+                case "Int":
+                case "Float":
+                    element = <WidgetSlider id={widget.id} from={widget.from} to={widget.to} step={widget.step} value={widget.value} />;
                     break;
-                case "enum":
-                    element = <widget><enum /></widget>;
+                case "Enum":
+                    element = <WidgetEnum id={widget.id} values={widget.values} value={widget.value} />;
                     break;
             }
             this.append(element);
         })
+        this.append(<button id="save">Save</button>)
         // for (var i = 0; i < this.widgets.length; i++) {
         //     this.append(<widget>test {i}</widget>);
         // }
@@ -58,5 +49,11 @@ export class Panel extends Element {
 
     getValue() {
         return 33;
+    }
+
+    createWidget(args) {
+        console.log("Add widget ", args.type);
+        this.widgets.push(args);
+        this.componentUpdate();
     }
 }

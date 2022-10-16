@@ -6,3 +6,4 @@
 static/.DS_Store
 static/one_unit_custom.json
 ArenaOfIdeas.*
+*.code-workspace
