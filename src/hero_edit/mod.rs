@@ -3,7 +3,10 @@ use std::{array, env};
 use geng::prelude::itertools::Itertools;
 use sciter::{dispatch_script_call, make_args, varray, vmap, Element, Value};
 
-use crate::shader_edit::{ClanShaderParam, ClanShaderType};
+use crate::{
+    render::UnitRender,
+    shader_edit::{ClanShaderParam, ClanShaderType},
+};
 
 use super::*;
 
@@ -141,6 +144,7 @@ struct HeroEditorState {
     geng: Geng,
     time: Time,
     model: HeroEditorModel,
+    camera: geng::Camera2d,
 }
 
 struct HeroEditorModel {
@@ -148,23 +152,27 @@ struct HeroEditorModel {
     shaders: HashMap<String, ClanShaderConfig>,
     selected_unit: String,
     selected_shader: String,
+    unit_render: UnitRender,
 }
 
 impl HeroEditorModel {
-    pub fn new(assets: Assets) -> Self {
+    pub fn new(geng: &Geng, assets: Assets) -> Self {
         let units: HashMap<String, UnitTemplate> = assets
             .units
             .map
-            .into_iter()
+            .iter()
+            .filter(|tuple| tuple.1.tier > 0)
             .map(|tuple| (tuple.0.clone(), tuple.1.clone()))
             .collect();
         let shaders: HashMap<String, ClanShaderConfig> = assets
             .clan_shaders
             .map
-            .into_iter()
+            .iter()
             .map(|tuple| (tuple.0.clone(), tuple.1.clone()))
             .collect();
+        let assets = Rc::new(assets);
         Self {
+            unit_render: UnitRender::new(&geng, &assets),
             selected_unit: units
                 .keys()
                 .next()
@@ -183,8 +191,14 @@ impl HeroEditorModel {
 
 impl HeroEditorState {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
+        let camera = geng::Camera2d {
+            center: vec2(0.0, 0.0),
+            rotation: 0.0,
+            fov: 10.0,
+        };
         Self {
-            model: HeroEditorModel::new(assets),
+            camera,
+            model: HeroEditorModel::new(geng, assets),
             geng: geng.clone(),
             time: Time::ZERO,
         }
@@ -205,7 +219,37 @@ impl geng::State for HeroEditorState {
         self.time += delta_time;
     }
 
-    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {}
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        if self.model.selected_unit.is_empty() {
+            return;
+        };
+        let template = self
+            .model
+            .units
+            .get(&self.model.selected_unit)
+            .expect("Can't find unit template");
+
+        let unit = Unit::new(
+            template,
+            1,
+            template.name.clone(),
+            Faction::Player,
+            Position {
+                side: Faction::Player,
+                x: 0,
+            },
+            &Statuses { map: hashmap! {} },
+        );
+        debug!("Draw unit {:?}", unit.unit_type);
+        self.model.unit_render.draw_unit(
+            &unit,
+            template,
+            None,
+            self.time.as_f32().into(),
+            &self.camera,
+            framebuffer,
+        );
+    }
 }
 
 struct Handler;
