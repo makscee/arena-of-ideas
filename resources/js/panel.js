@@ -1,5 +1,6 @@
 import { WidgetEnum } from "./widgetEnum";
 import { WidgetSlider } from "./widgetSlider";
+import { WidgetVector } from "./widgetVector";
 
 export class Panel extends Element {
     widgets = [
@@ -30,13 +31,14 @@ export class Panel extends Element {
             console.log("render widget", widget.type, widget.value);
             switch (widget.type) {
                 case "Vector":
+                    element = <WidgetVector name={widget.name} id={widget.id} from={widget.from} to={widget.to} step={widget.step} value={widget.value} />;
                     break;
                 case "Int":
                 case "Float":
-                    element = <WidgetSlider id={widget.id} from={widget.from} to={widget.to} step={widget.step} value={widget.value} />;
+                    element = <WidgetSlider name={widget.name} id={widget.id} from={widget.from} to={widget.to} step={widget.step} value={widget.value} />;
                     break;
                 case "Enum":
-                    element = <WidgetEnum id={widget.id} values={widget.values} value={widget.value} />;
+                    element = <WidgetEnum name={widget.name} id={widget.id} values={widget.values} value={widget.value} />;
                     break;
             }
             this.append(element);

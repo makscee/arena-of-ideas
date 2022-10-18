@@ -7,7 +7,8 @@ export class Widget extends Element {
     console.log("Constructor ", props, this);
   }
 
-  sendValue() {
-    Window.this.xcall("update_uniform", this.props.id, this.value.toString());
+  sendValue(postfix) {
+    if (postfix) postfix = "|" + postfix;
+    Window.this.xcall("update_uniform", this.props.id + postfix, this.value.toString());
   }
 }

@@ -15,15 +15,10 @@ body {
 	align-items: center;
 }
 
-widgetSlider {
-	width: 80%;
-	height: 10px;
-}
-
-widget {
+.widget {
 	display: block;
 
-	height: 100px;
+	/* height: 100px; */
 	padding: 8px;
 	margin: 16px;
 
@@ -32,8 +27,48 @@ widget {
 	border-radius: 10px;
 }
 
+.flex-container {
+	/* display: flex; */
+	/* flex-direction: row; */
+}
+
+widgetSlider input,
+widgetVector input {
+	width: 50%;
+	display: inline-block;
+}
+
+.widget p {
+	display: inline-block;
+	margin: 10px;
+	/* padding: 15px; */
+	font-family: 'Jura';
+	font-style: normal;
+	font-weight: 700;
+	font-size: 16px;
+}
+
+.widget h3,
+h4 {
+	display: inline-block;
+}
+
+.widget h4 {
+	margin-left: 16px;
+	color: rgb(108, 108, 108);
+}
+
+.widget div {
+	margin: -0px 0px;
+	padding: -5px 0px;
+}
+
 panel {
 	prototype: Panel url(../js/panel.js);
 	display: block;
 	width: 60%;
+}
+
+#save {
+	margin: 16px;
 }

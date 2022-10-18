@@ -27,7 +27,7 @@
             }
         },
         {
-            "name": "Outline Thickness",
+            "name": "Outline Thickne",
             "id": "u_outline_thickness",
             "value": {
                 "type": "Float",

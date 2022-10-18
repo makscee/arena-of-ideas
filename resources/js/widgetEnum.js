@@ -9,10 +9,10 @@ export class WidgetEnum extends Widget {
     }
 
     render() {
-        console.log("render enum", this.props);
-        return <widgetEnum>
+        return <widgetEnum class="widget">
+            <div><h3>{this.props.name || "[No name]"}</h3><h4>{this.props.id}</h4></div>
             <button id="prev">&lt;</button>
-            {this.value}
+            <p>{this.value}</p>
             <button id="next">&gt;</button>
         </widgetEnum>;
     }

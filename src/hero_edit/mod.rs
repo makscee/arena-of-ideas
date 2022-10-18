@@ -19,7 +19,8 @@ impl HeroEditor {
                 let mut values = Value::new();
                 param_values.iter().for_each(|x| values.push(x));
                 args = vmap! {
-                    "type" => Value::from("Enum"),
+                    "type" => "Enum",
+                    "name" => param.name,
                     "id" => param.id,
                     "values" => values,
                     "value" => param_values[0].to_owned(),
@@ -31,6 +32,7 @@ impl HeroEditor {
                 let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
                 args = vmap! {
                     "type" => "Float",
+                    "name" => param.name,
                     "id" => param.id,
                     "from" => from,
                     "to" => to,
@@ -42,7 +44,8 @@ impl HeroEditor {
                 let from = Value::from(range[0].to_string());
                 let to = Value::from(range[1].to_string());
                 args = vmap! {
-                    "type" => "Float",
+                    "type" => "Int",
+                    "name" => param.name,
                     "id" => param.id,
                     "from" => from,
                     "to" => to,
@@ -55,7 +58,8 @@ impl HeroEditor {
                 let to = Value::from(range[1].to_string());
                 let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
                 args = vmap! {
-                    "type" => "Float",
+                    "type" => "Vector",
+                    "name" => param.name,
                     "id" => param.id,
                     "from" => from,
                     "to" => to,
