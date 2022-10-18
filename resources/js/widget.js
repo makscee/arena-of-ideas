@@ -9,6 +9,7 @@ export class Widget extends Element {
 
   sendValue(postfix) {
     if (postfix) postfix = "|" + postfix;
+    else postfix = "";
     Window.this.xcall("update_uniform", this.props.id + postfix, this.value.toString());
   }
 }

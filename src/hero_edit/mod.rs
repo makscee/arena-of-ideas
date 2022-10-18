@@ -11,7 +11,23 @@ use super::*;
 pub struct HeroEditor {}
 
 impl HeroEditor {
-    fn create_widget(panel: Element, param: ClanShaderParam) -> Value {
+    fn create_units_widget(panel: Element, units: Vec<&String>) {
+        let mut values = Value::new();
+        units.iter().for_each(|x| values.push(*x));
+        let value = Value::from(*units.first().expect("No units"));
+        let args = vmap! {
+            "type" => "Enum",
+            "name" => "Select unit",
+            "id" => "unit",
+            "values" => values,
+            "value" => value,
+        };
+        panel
+            .call_method("createWidget", &[args])
+            .expect("Error while calling createWidget()");
+    }
+
+    fn create_widget(panel: Element, param: ClanShaderParam) {
         let mut args;
         match param.value {
             shader_edit::ClanShaderType::Enum { values, show_all } => {
@@ -69,8 +85,8 @@ impl HeroEditor {
             }
         }
         panel
-            .call_method("createWidget", &make_args!(args))
-            .unwrap_or_abort()
+            .call_method("createWidget", &[args])
+            .expect("Error while calling createWidget()");
     }
 
     pub fn run(self, geng: &Geng, assets: Assets) -> Box<dyn geng::State> {
@@ -101,7 +117,11 @@ impl HeroEditor {
 
         use sciter::{Element, Value};
 
-        let root = Element::from_window(hwnd).unwrap();
+        let root = Element::from_window(hwnd).expect("Couldn't get root");
+        let panel = root.find_first("panel").expect("Panel not found").unwrap();
+
+        let units = state.model.units.keys().collect_vec();
+        HeroEditor::create_units_widget(panel.clone(), units);
 
         state
             .model
@@ -111,8 +131,7 @@ impl HeroEditor {
             .parameters
             .iter()
             .for_each(|param| {
-                let panel = root.find_first("panel").expect("panel not found").unwrap();
-                HeroEditor::create_widget(panel, param.clone());
+                HeroEditor::create_widget(panel.clone(), param.clone());
             });
         Box::new(state)
     }

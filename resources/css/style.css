@@ -38,6 +38,11 @@ widgetVector input {
 	display: inline-block;
 }
 
+widgetEnum p {
+	text-align: center;
+	min-width: 100px;
+}
+
 .widget p {
 	display: inline-block;
 	margin: 10px;
