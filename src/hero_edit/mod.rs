@@ -3,7 +3,7 @@ use std::{array, env};
 use geng::prelude::itertools::Itertools;
 use sciter::{dispatch_script_call, make_args, varray, vmap, Element, Value};
 
-use crate::shader_edit::{ClanShaderParam, ShaderWidgetType};
+use crate::shader_edit::{ClanShaderParam, ClanShaderType};
 
 use super::*;
 
@@ -12,10 +12,10 @@ pub struct HeroEditor {}
 
 impl HeroEditor {
     fn create_widget(panel: Element, param: ClanShaderParam) -> Value {
-        let mut args = Value::new();
-        match param.r#type {
-            shader_edit::ShaderWidgetType::Enum => {
-                let param_values = param.values.expect("No values found for Enum param");
+        let mut args;
+        match param.value {
+            shader_edit::ClanShaderType::Enum { values, show_all } => {
+                let param_values = values;
                 let mut values = Value::new();
                 param_values.iter().for_each(|x| values.push(x));
                 args = vmap! {
@@ -25,8 +25,7 @@ impl HeroEditor {
                     "value" => param_values[0].to_owned(),
                 }
             }
-            shader_edit::ShaderWidgetType::Float => {
-                let range = param.range.expect("No range found for Float param");
+            shader_edit::ClanShaderType::Float { range } => {
                 let from = Value::from(range[0].to_string());
                 let to = Value::from(range[1].to_string());
                 let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
@@ -39,16 +38,40 @@ impl HeroEditor {
                     "value" => 1,
                 }
             }
-            shader_edit::ShaderWidgetType::Int => {}
-            shader_edit::ShaderWidgetType::Vector => {}
+            shader_edit::ClanShaderType::Int { range } => {
+                let from = Value::from(range[0].to_string());
+                let to = Value::from(range[1].to_string());
+                args = vmap! {
+                    "type" => "Float",
+                    "id" => param.id,
+                    "from" => from,
+                    "to" => to,
+                    "step" => 1,
+                    "value" => 1,
+                }
+            }
+            shader_edit::ClanShaderType::Vector { range } => {
+                let from = Value::from(range[0].to_string());
+                let to = Value::from(range[1].to_string());
+                let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
+                args = vmap! {
+                    "type" => "Float",
+                    "id" => param.id,
+                    "from" => from,
+                    "to" => to,
+                    "step" => step,
+                    "value" => 1,
+                }
+            }
         }
         panel
             .call_method("createWidget", &make_args!(args))
             .unwrap_or_abort()
     }
 
-    pub fn run(self) {
+    pub fn run(self, geng: &Geng, assets: Assets) -> Box<dyn geng::State> {
         println!("Editor run");
+        let state = HeroEditorState::new(geng, assets);
 
         sciter::set_options(sciter::RuntimeOptions::ScriptFeatures(
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8
@@ -75,19 +98,91 @@ impl HeroEditor {
         use sciter::{Element, Value};
 
         let root = Element::from_window(hwnd).unwrap();
-        let panel = root.find_first("panel").expect("panel not found").unwrap();
 
-        let mut param = ClanShaderParam::default();
-        param.r#type = ShaderWidgetType::Enum;
-        param.range = Some(vec![0.0, 3.0]);
-        param.id = "u_uniform".to_string();
-        param.values = Some(vec![
-            "One".to_string(),
-            "Two".to_string(),
-            "Three".to_string(),
-        ]);
-        let value = HeroEditor::create_widget(panel, param);
+        state
+            .model
+            .shaders
+            .get(&state.model.selected_shader)
+            .expect("Can't find selected shader")
+            .parameters
+            .iter()
+            .for_each(|param| {
+                let panel = root.find_first("panel").expect("panel not found").unwrap();
+                HeroEditor::create_widget(panel, param.clone());
+            });
+        Box::new(state)
     }
+}
+
+struct HeroEditorState {
+    geng: Geng,
+    time: Time,
+    model: HeroEditorModel,
+}
+
+struct HeroEditorModel {
+    units: HashMap<String, UnitTemplate>,
+    shaders: HashMap<String, ClanShaderConfig>,
+    selected_unit: String,
+    selected_shader: String,
+}
+
+impl HeroEditorModel {
+    pub fn new(assets: Assets) -> Self {
+        let units: HashMap<String, UnitTemplate> = assets
+            .units
+            .map
+            .into_iter()
+            .map(|tuple| (tuple.0.clone(), tuple.1.clone()))
+            .collect();
+        let shaders: HashMap<String, ClanShaderConfig> = assets
+            .clan_shaders
+            .map
+            .into_iter()
+            .map(|tuple| (tuple.0.clone(), tuple.1.clone()))
+            .collect();
+        Self {
+            selected_unit: units
+                .keys()
+                .next()
+                .expect("Must be at least one unit to edit")
+                .clone(),
+            selected_shader: shaders
+                .keys()
+                .next()
+                .expect("Must be at least one clan shader")
+                .clone(),
+            units,
+            shaders,
+        }
+    }
+}
+
+impl HeroEditorState {
+    pub fn new(geng: &Geng, assets: Assets) -> Self {
+        Self {
+            model: HeroEditorModel::new(assets),
+            geng: geng.clone(),
+            time: Time::ZERO,
+        }
+    }
+
+    pub fn save(self) {
+        if let Some(unit) = self.model.units.get(&self.model.selected_unit) {
+            let data = serde_json::to_string_pretty(&unit.path).expect("Failed to serialize item");
+            std::fs::write(&unit.path, data)
+                .expect(&format!("Cannot save _list: {:?}", &unit.path));
+        }
+    }
+}
+
+impl geng::State for HeroEditorState {
+    fn update(&mut self, delta_time: f64) {
+        let delta_time = Time::new(delta_time as _);
+        self.time += delta_time;
+    }
+
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {}
 }
 
 struct Handler;

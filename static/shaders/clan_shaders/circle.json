@@ -1,40 +1,52 @@
 {
     "path": "clan_shaders/circle.glsl",
     "name": "Circle",
-    "parameters": {
-        "u_fill": {
+    "parameters": [
+        {
             "name": "Fill",
-            "type": "Enum",
-            "values": [
-                "None",
-                "Clan",
-                "Black"
-            ],
-            "show_all": true
+            "id": "u_fill",
+            "value": {
+                "type": "Enum",
+                "values": [
+                    "None",
+                    "Clan",
+                    "Black"
+                ],
+                "show_all": true
+            }
         },
-        "u_offset": {
+        {
             "name": "Offset",
-            "type": "Vector",
-            "range": [
-                -2.0,
-                2.0
-            ]
+            "id": "u_offset",
+            "value": {
+                "type": "Vector",
+                "range": [
+                    -2.0,
+                    2.0
+                ]
+            }
         },
-        "u_outline_thickness": {
+        {
             "name": "Outline Thickness",
-            "type": "Float",
-            "range": [
-                0.0,
-                5.0
-            ]
+            "id": "u_outline_thickness",
+            "value": {
+                "type": "Float",
+                "range": [
+                    0.0,
+                    5.0
+                ]
+            }
         },
-        "u_count": {
+        {
             "name": "Shapes Count",
-            "type": "Int",
-            "range": [
-                1,
-                10
-            ]
+            "id": "u_count",
+            "value": {
+                "type": "Int",
+                "range": [
+                    1,
+                    10
+                ]
+            }
         }
-    }
+    ]
 }

@@ -352,7 +352,6 @@ enum Commands {
     Simulate(simulation::Simulate),
     Walkthrough(simulation::Walkthrough),
     UpdateUnits,
-    ClanShader,
     HeroEditor(hero_edit::HeroEditor),
 }
 
@@ -435,15 +434,12 @@ fn main() {
                                 Commands::Shader(shader) => {
                                     return shader.run(&geng);
                                 }
-                                Commands::ClanShader => {
-                                    return shader_edit::run(&geng, assets);
-                                }
                                 Commands::UpdateUnits => {
                                     utility::rename_units(&geng, &static_path(), assets);
                                     std::process::exit(0);
                                 }
                                 Commands::HeroEditor(hero_editor) => {
-                                    hero_editor.run();
+                                    return hero_editor.run(&geng, assets);
                                 }
                             },
                             None => (),

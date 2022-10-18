@@ -6,31 +6,27 @@ use super::*;
 pub struct ClanShaderConfig {
     pub path: String,
     pub name: String,
-    pub parameters: HashMap<String, ClanShaderParam>,
+    pub parameters: Vec<ClanShaderParam>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(default, deny_unknown_fields)]
-#[derive(Default)]
+
 pub struct ClanShaderParam {
     pub name: String,
     pub id: String,
-    pub r#type: ShaderWidgetType,
-    pub range: Option<Vec<f32>>,
-    pub values: Option<Vec<String>>,
-    pub show_all: Option<bool>,
+    pub value: ClanShaderType,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub enum ShaderWidgetType {
-    #[default]
-    Enum,
-    Int,
-    Float,
-    Vector,
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum ClanShaderType {
+    Enum { values: Vec<String>, show_all: bool },
+    Int { range: Vec<i32> },
+    Float { range: Vec<f32> },
+    Vector { range: Vec<f32> },
 }
 
-impl fmt::Display for ShaderWidgetType {
+impl fmt::Display for ClanShaderType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
