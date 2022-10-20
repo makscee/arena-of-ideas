@@ -1,7 +1,7 @@
 use std::{array, env};
 
-use geng::prelude::itertools::Itertools;
-use sciter::{dispatch_script_call, make_args, varray, vmap, Element, Value};
+use geng::prelude::*;
+use geng::prelude::{itertools::Itertools, ugli::raw::RGBA};
 
 use crate::{
     render::UnitRender,
@@ -14,117 +14,90 @@ use super::*;
 pub struct HeroEditor {}
 
 impl HeroEditor {
-    fn create_units_widget(panel: Element, units: Vec<&String>) {
-        let mut values = Value::new();
-        units.iter().for_each(|x| values.push(*x));
-        let value = Value::from(*units.first().expect("No units"));
-        let args = vmap! {
-            "type" => "Enum",
-            "name" => "Select unit",
-            "id" => "unit",
-            "values" => values,
-            "value" => value,
-        };
-        panel
-            .call_method("createWidget", &[args])
-            .expect("Error while calling createWidget()");
+    fn draw_units_widget(units: Vec<&String>) {
+        // units.iter().for_each();
+        // let value = Value::from(*units.first().expect("No units"));
+        // let args = vmap! {
+        //     "type" => "Enum",
+        //     "name" => "Select unit",
+        //     "id" => "unit",
+        //     "values" => values,
+        //     "value" => value,
+        // };
+        // panel
+        //     .call_method("createWidget", &[args])
+        //     .expect("Error while calling createWidget()");
     }
 
-    fn create_widget(panel: Element, param: ClanShaderParam) {
-        let mut args;
-        match param.value {
-            shader_edit::ClanShaderType::Enum { values, show_all } => {
-                let param_values = values;
-                let mut values = Value::new();
-                param_values.iter().for_each(|x| values.push(x));
-                args = vmap! {
-                    "type" => "Enum",
-                    "name" => param.name,
-                    "id" => param.id,
-                    "values" => values,
-                    "value" => param_values[0].to_owned(),
-                }
-            }
-            shader_edit::ClanShaderType::Float { range } => {
-                let from = Value::from(range[0].to_string());
-                let to = Value::from(range[1].to_string());
-                let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
-                args = vmap! {
-                    "type" => "Float",
-                    "name" => param.name,
-                    "id" => param.id,
-                    "from" => from,
-                    "to" => to,
-                    "step" => step,
-                    "value" => 1,
-                }
-            }
-            shader_edit::ClanShaderType::Int { range } => {
-                let from = Value::from(range[0].to_string());
-                let to = Value::from(range[1].to_string());
-                args = vmap! {
-                    "type" => "Int",
-                    "name" => param.name,
-                    "id" => param.id,
-                    "from" => from,
-                    "to" => to,
-                    "step" => 1,
-                    "value" => 1,
-                }
-            }
-            shader_edit::ClanShaderType::Vector { range } => {
-                let from = Value::from(range[0].to_string());
-                let to = Value::from(range[1].to_string());
-                let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
-                args = vmap! {
-                    "type" => "Vector",
-                    "name" => param.name,
-                    "id" => param.id,
-                    "from" => from,
-                    "to" => to,
-                    "step" => step,
-                    "value" => 1,
-                }
-            }
-        }
-        panel
-            .call_method("createWidget", &[args])
-            .expect("Error while calling createWidget()");
-    }
+    // fn create_widget(panel: Element, param: ClanShaderParam) {
+    //     let mut args;
+    //     match param.value {
+    //         shader_edit::ClanShaderType::Enum { values, show_all } => {
+    //             let param_values = values;
+    //             let mut values = Value::new();
+    //             param_values.iter().for_each(|x| values.push(x));
+    //             args = vmap! {
+    //                 "type" => "Enum",
+    //                 "name" => param.name,
+    //                 "id" => param.id,
+    //                 "values" => values,
+    //                 "value" => param_values[0].to_owned(),
+    //             }
+    //         }
+    //         shader_edit::ClanShaderType::Float { range } => {
+    //             let from = Value::from(range[0].to_string());
+    //             let to = Value::from(range[1].to_string());
+    //             let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
+    //             args = vmap! {
+    //                 "type" => "Float",
+    //                 "name" => param.name,
+    //                 "id" => param.id,
+    //                 "from" => from,
+    //                 "to" => to,
+    //                 "step" => step,
+    //                 "value" => 1,
+    //             }
+    //         }
+    //         shader_edit::ClanShaderType::Int { range } => {
+    //             let from = Value::from(range[0].to_string());
+    //             let to = Value::from(range[1].to_string());
+    //             args = vmap! {
+    //                 "type" => "Int",
+    //                 "name" => param.name,
+    //                 "id" => param.id,
+    //                 "from" => from,
+    //                 "to" => to,
+    //                 "step" => 1,
+    //                 "value" => 1,
+    //             }
+    //         }
+    //         shader_edit::ClanShaderType::Vector { range } => {
+    //             let from = Value::from(range[0].to_string());
+    //             let to = Value::from(range[1].to_string());
+    //             let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
+    //             args = vmap! {
+    //                 "type" => "Vector",
+    //                 "name" => param.name,
+    //                 "id" => param.id,
+    //                 "from" => from,
+    //                 "to" => to,
+    //                 "step" => step,
+    //                 "value" => 1,
+    //             }
+    //         }
+    //     }
+    //     panel
+    //         .call_method("createWidget", &[args])
+    //         .expect("Error while calling createWidget()");
+    // }
 
     pub fn run(self, geng: &Geng, assets: Assets) -> Box<dyn geng::State> {
         println!("Editor run");
+
         let state = HeroEditorState::new(geng, assets);
-
-        sciter::set_options(sciter::RuntimeOptions::ScriptFeatures(
-            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8
-                | sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8
-                | sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8
-                | sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8,
-        ))
-        .unwrap();
-        sciter::set_options(sciter::RuntimeOptions::DebugMode(true)).unwrap();
-
-        let dir = env::current_dir().unwrap().as_path().display().to_string();
-        let filename = format!("{}/{}", dir, "resources/index.htm");
-        println!("Full filename with path of index.htm: {}", filename);
-
-        let mut frame = sciter::Window::new();
-        frame
-            .set_options(sciter::window::Options::DebugMode(true))
-            .unwrap();
-        frame.event_handler(Handler);
-        frame.load_file(&filename);
-        let hwnd = frame.get_hwnd();
-        frame.run_app();
-
-        use sciter::{Element, Value};
-
-        let root = Element::from_window(hwnd).expect("Couldn't get root");
-        let panel = root.find_first("panel").expect("Panel not found").unwrap();
-
         let units = state.model.units.keys().collect_vec();
-        HeroEditor::create_units_widget(panel.clone(), units);
+
+        // HeroEditor::create_units_widget(panel.clone(), units);
 
         state
             .model
@@ -134,7 +107,7 @@ impl HeroEditor {
             .parameters
             .iter()
             .for_each(|param| {
-                HeroEditor::create_widget(panel.clone(), param.clone());
+                // HeroEditor::create_widget(panel.clone(), param.clone());
             });
         Box::new(state)
     }
@@ -240,7 +213,6 @@ impl geng::State for HeroEditorState {
             },
             &Statuses { map: hashmap! {} },
         );
-        debug!("Draw unit {:?}", unit.unit_type);
         self.model.unit_render.draw_unit(
             &unit,
             template,
@@ -249,24 +221,5 @@ impl geng::State for HeroEditorState {
             &self.camera,
             framebuffer,
         );
-    }
-}
-
-struct Handler;
-
-impl Handler {
-    fn update_uniform(&self, id: String, value: String) {
-        debug!("id={}, value={}", id, value);
-    }
-
-    fn save_uniforms(&self) {
-        debug!("Save uniforms");
-    }
-}
-
-impl sciter::EventHandler for Handler {
-    dispatch_script_call! {
-      fn update_uniform(String, String);
-      fn save_uniforms();
     }
 }
