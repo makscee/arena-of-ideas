@@ -2,7 +2,7 @@
 #![deny(unconditional_recursion)]
 
 use clap::Parser;
-use geng::prelude::*;
+use geng::{prelude::*, ui::Theme};
 use ugli::Texture;
 
 mod assets;
@@ -366,6 +366,12 @@ fn main() {
         )),
         ..default()
     });
+    let mut theme = Theme::dark(&geng);
+    // theme.background_color = Color::WHITE;
+    theme.text_color = Color::BLACK;
+    theme.text_size = 50.0;
+    theme.usable_color = Color::BLACK;
+    geng.set_ui_theme(theme);
 
     // Adds restarting on R
     struct AppWrapper {
