@@ -16,6 +16,10 @@ const vec3 player_faction_color = vec3(1);
 const vec3 enemy_faction_color = vec3(0.988, 0.004, 0.027);
 const vec3 heal_color = vec3(0.129, 1, 0.024);
 
+const vec2 SHADOW_OFFSET = vec2(-0.05, -0.05);
+const vec4 SHADOW_COLOR = vec4(vec3(0), 0.5);
+const float SHADOW_OVERFLOW = 0.04;
+
 uniform float u_time;
 uniform float u_injure_time;
 uniform float u_heal_time;
@@ -41,7 +45,7 @@ uniform float u_parent_faction = 1;
 
 uniform float u_thickness = 0.2;
 uniform float u_curvature = 2;
-uniform vec2 u_direction = vec2(0,1);
+uniform vec2 u_direction = vec2(0, 1);
 
 uniform vec4 u_color = vec4(0);
 uniform vec4 u_clan_color_1 = vec4(0.250, 0, 0.501, 1);
@@ -60,8 +64,7 @@ vec3 colors[3];
 vec3 parent_faction_color;
 vec3 parent_enemy_faction_color;
 
-void commonInit()
-{
+void commonInit() {
     colors[0] = u_clan_color_1.rgb;
     colors[1] = u_clan_color_2.rgb * float(u_clan_count > 1);
     colors[2] = u_clan_color_3.rgb * float(u_clan_count > 2);
@@ -74,84 +77,68 @@ vec4 getColor() {
     return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color.rgb) > 0));
 }
 
-vec4 alphaBlend(vec4 c1, vec4 c2)
-{
-    return vec4(
-        mix(c1.rgb, c2.rgb, c2.a),
-        clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
+vec4 alphaBlend(vec4 c1, vec4 c2) {
+    return vec4(mix(c1.rgb, c2.rgb, c2.a), clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
 }
 
 float luminance(vec4 color) {
-    return 0.2126*color.r + 0.7152*color.g + 0.0722*color.b;
+    return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
 }
 
-float animationFunc(float x)
-{
+float animationFunc(float x) {
     const float t = 4.2;
     const float b = 2.1;
-    return float(x < 0.769) * ((x * 1.3 - 1.) * (x * 1.3 - 1.) - 1.)
-    - float(x > 0.769 && x < 1.)
-    + float(x > 1. && x < 2.) * ((x * b - t) * (x * b - t));
+    return float(x < 0.769) * ((x * 1.3 - 1.) * (x * 1.3 - 1.) - 1.) - float(x > 0.769 && x < 1.) + float(x > 1. && x < 2.) * ((x * b - t) * (x * b - t));
 }
 
-int mod(int a, int b)
-{
-    return a - (b * int(floor(float(a)/float(b))));
+int mod(int a, int b) {
+    return a - (b * int(floor(float(a) / float(b))));
 }
 
-vec2 N22(vec2 p) 
-{
-  vec3 a = fract(p.xyx*vec3(123.34, 234.34, 345.65));
-  a += dot(a, a+34.45);
-  return fract(vec2(a.x*a.y, a.y*a.z));
+vec2 N22(vec2 p) {
+    vec3 a = fract(p.xyx * vec3(123.34, 234.34, 345.65));
+    a += dot(a, a + 34.45);
+    return fract(vec2(a.x * a.y, a.y * a.z));
 }
 
-float rand(int i)
-{
+float rand(int i) {
     return N22(vec2(i * .001)).x;
 }
 
-vec2 randVec(int i)
-{
+vec2 randVec(int i) {
     return N22(vec2(i * .001));
 }
 
-vec2 randCircle(int i) 
-{
+vec2 randCircle(int i) {
     float r2p = rand(i) * pi * 2.;
     return vec2(cos(r2p), sin(r2p));
 }
 
-float invSquare(float t)
-{
+float invSquare(float t) {
     return 1. - (t - 1.) * (t - 1.);
 }
 
-vec2 rotateCW(vec2 p, float a)
-{
+vec2 rotateCW(vec2 p, float a) {
     mat2 m = mat2(cos(a), -sin(a), sin(a), cos(a));
     return p * m;
 }
 
-float vecAngle(vec2 v)
-{
-    if (v == vec2(0.)) return 0.;
-    float r = acos(dot(normalize(v), vec2(0.,1.)));
+float vecAngle(vec2 v) {
+    if(v == vec2(0.))
+        return 0.;
+    float r = acos(dot(normalize(v), vec2(0., 1.)));
     return (r + float(v.x > 0.) * (pi - r) * 2.);
 }
 
-float glowValue(float t)
-{
+float glowValue(float t) {
     return mix(c_glowStart, c_glowEnd, t);
 }
 
-float triangleDist(vec2 p, float radius)
-{
+float triangleDist(vec2 p, float radius) {
     return max(abs(p).x * 0.866025 + p.y * 0.5, -p.y) - radius * 0.5;
 }
 
-vec3 mixColors(float t)
-{
+vec3 mixColors(float t) {
     t += float(t < 0.);
     int colorInd = int(t * clanCountF);
     vec3 c1 = colors[colorInd];
@@ -159,8 +146,7 @@ vec3 mixColors(float t)
     return mix(c1, c2, t * clanCountF - float(colorInd));
 }
 
-vec3 mix3Colors(float t, vec3 colors[3])
-{
+vec3 mix3Colors(float t, vec3 colors[3]) {
     t += float(t < 0.);
     int colorInd = int(t * 3);
     vec3 c1 = colors[colorInd];
@@ -168,8 +154,7 @@ vec3 mix3Colors(float t, vec3 colors[3])
     return mix(c1, c2, t * 3 - float(colorInd));
 }
 
-vec3 mix2Colors(float t, vec3 colors[2])
-{
+vec3 mix2Colors(float t, vec3 colors[2]) {
     t += float(t < 0.);
     int colorInd = int(t * 2);
     vec3 c1 = colors[colorInd];
@@ -179,56 +164,52 @@ vec3 mix2Colors(float t, vec3 colors[2])
 
 vec3 hueShift(vec3 color, float hueAdjust) // hue in radians
 {
-    const vec3  kRGBToYPrime = vec3 (0.299, 0.587, 0.114);
-    const vec3  kRGBToI      = vec3 (0.596, -0.275, -0.321);
-    const vec3  kRGBToQ      = vec3 (0.212, -0.523, 0.311);
+    const vec3 kRGBToYPrime = vec3(0.299, 0.587, 0.114);
+    const vec3 kRGBToI = vec3(0.596, -0.275, -0.321);
+    const vec3 kRGBToQ = vec3(0.212, -0.523, 0.311);
 
-    const vec3  kYIQToR     = vec3 (1.0, 0.956, 0.621);
-    const vec3  kYIQToG     = vec3 (1.0, -0.272, -0.647);
-    const vec3  kYIQToB     = vec3 (1.0, -1.107, 1.704);
+    const vec3 kYIQToR = vec3(1.0, 0.956, 0.621);
+    const vec3 kYIQToG = vec3(1.0, -0.272, -0.647);
+    const vec3 kYIQToB = vec3(1.0, -1.107, 1.704);
 
-    float   YPrime  = dot (color, kRGBToYPrime);
-    float   I       = dot (color, kRGBToI);
-    float   Q       = dot (color, kRGBToQ);
-    float   hue     = atan (Q, I);
-    float   chroma  = sqrt (I * I + Q * Q);
+    float YPrime = dot(color, kRGBToYPrime);
+    float I = dot(color, kRGBToI);
+    float Q = dot(color, kRGBToQ);
+    float hue = atan(Q, I);
+    float chroma = sqrt(I * I + Q * Q);
 
     hue += hueAdjust;
 
-    Q = chroma * sin (hue);
-    I = chroma * cos (hue);
+    Q = chroma * sin(hue);
+    I = chroma * cos(hue);
 
-    vec3    yIQ   = vec3 (YPrime, I, Q);
+    vec3 yIQ = vec3(YPrime, I, Q);
 
-    return vec3( dot (yIQ, kYIQToR), dot (yIQ, kYIQToG), dot (yIQ, kYIQToB) );
+    return vec3(dot(yIQ, kYIQToR), dot(yIQ, kYIQToG), dot(yIQ, kYIQToB));
 }
 
 float smoothhump(float left, float right, float t) // 0 -> 1 -> 0
 {
-    return min(smoothstep(0.,left,t), smoothstep(1.,right,t));
+    return min(smoothstep(0., left, t), smoothstep(1., right, t));
 }
 
-vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
-{
+vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
     float t2 = t * t;
     float one_minus_t = 1.0 - t;
     float one_minus_t2 = one_minus_t * one_minus_t;
     return (P0 * one_minus_t2 * one_minus_t + P1 * 3.0 * t * one_minus_t2 + P2 * 3.0 * t2 * one_minus_t + P3 * t2 * t);
 }
 
-vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3)
-{
+vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
     float t2 = t * t;
-    vec2 tangent = 
-        P0 * (-3 * t2 + 6 * t - 3) +
+    vec2 tangent = P0 * (-3 * t2 + 6 * t - 3) +
         P1 * (9 * t2 - 12 * t + 3) +
         P2 * (-9 * t2 + 6 * t) +
         P3 * (3 * t2);
     return normalize(vec2(tangent.y, -tangent.x));
 }
 
-vec4 bezierParentPartner(float t, vec2 parent, vec2 partner)
-{
+vec4 bezierParentPartner(float t, vec2 parent, vec2 partner) {
     // vec2 dir = normalize(parent - partner);
     vec2 dir = u_direction * u_curvature * (1 + (u_parent_random - 0.5) * .3);
     vec2 p0 = parent;

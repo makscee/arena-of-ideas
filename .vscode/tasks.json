@@ -33,6 +33,23 @@
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"args": [
+				"--",
+				"shader",
+				"local_configs/shader_edit_config.json"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Shader Editor",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
 		}
 	]
 }
