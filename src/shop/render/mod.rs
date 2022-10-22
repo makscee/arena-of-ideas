@@ -145,14 +145,8 @@ impl Render {
                     x: index.try_into().unwrap(),
                 }
                 .to_world();
-                self.unit_render.draw_unit(
-                    &unit,
-                    &card.template,
-                    None,
-                    game_time,
-                    &self.camera,
-                    framebuffer,
-                );
+                self.unit_render
+                    .draw_unit(&unit, None, game_time, &self.camera, framebuffer);
 
                 let radius = unit.render.radius.as_f32();
 
@@ -399,7 +393,6 @@ impl Render {
                         .extend_uniform(card.unit.render.radius.as_f32() * 2.0);
                     self.unit_render.draw_unit_with_position(
                         &card.unit,
-                        &card.template,
                         None,
                         game_time,
                         &self.camera,

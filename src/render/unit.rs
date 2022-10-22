@@ -16,20 +16,20 @@ impl UnitRender {
     pub fn draw_unit_with_position(
         &self,
         unit: &Unit,
-        template: &UnitTemplate,
         model: Option<&Model>,
         game_time: f64,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
         position: AABB<f32>,
     ) {
-        let shader_program = &self.assets.get_render(&unit.render.shader_config); // TODO: move this into to an earlier phase perhaps
-        let spawn_scale = match unit.spawn_animation_time_left {
-            Some(time) if template.spawn_animation_time > Time::new(0.0) => {
-                1.0 - (time / template.spawn_animation_time).as_f32()
-            }
-            _ => 1.0,
-        };
+        // TODO: move this into to an earlier phase perhaps
+        let shader_program = &self.assets.get_render(&unit.render.shader_config);
+        // let spawn_scale = match unit.spawn_animation_time_left {
+        //     Some(time) if template.spawn_animation_time > Time::new(0.0) => {
+        //         1.0 - (time / template.spawn_animation_time).as_f32()
+        //     }
+        //     _ => 1.0,
+        // };
         let quad = shader_program.get_vertices(&self.geng);
 
         let clan_colors: Vec<Color<f32>> = unit
@@ -54,7 +54,7 @@ impl UnitRender {
                 u_time: game_time,
                 u_unit_position: position.center(),
                 u_unit_radius: unit.render.radius.as_f32(),
-                u_spawn: spawn_scale,
+                u_spawn: 1.0,
                 u_face_dir: vec2(0.0, 0.0),
                 u_random: unit.random_number.as_f32(),
                 u_action_time: unit.render.last_action_time.as_f32(),
@@ -165,7 +165,6 @@ impl UnitRender {
     pub fn draw_unit(
         &self,
         unit: &Unit,
-        template: &UnitTemplate,
         model: Option<&Model>,
         game_time: f64,
         camera: &geng::Camera2d,
@@ -173,14 +172,6 @@ impl UnitRender {
     ) {
         let position = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
             .extend_uniform(unit.render.radius.as_f32() * 2.0); // TODO: configuring?
-        self.draw_unit_with_position(
-            unit,
-            template,
-            model,
-            game_time,
-            camera,
-            framebuffer,
-            position,
-        )
+        self.draw_unit_with_position(unit, model, game_time, camera, framebuffer, position)
     }
 }

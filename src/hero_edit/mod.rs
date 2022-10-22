@@ -116,7 +116,7 @@ impl HeroEditor {
 
 struct HeroEditorState {
     geng: Geng,
-    time: Time,
+    time: f64,
     model: HeroEditorModel,
     camera: geng::Camera2d,
     counter: usize,
@@ -126,6 +126,7 @@ struct HeroEditorState {
 }
 
 struct HeroEditorModel {
+    unit: Option<Unit>,
     units: HashMap<String, UnitTemplate>,
     shaders: HashMap<String, ClanShaderConfig>,
     selected_unit: String,
@@ -150,6 +151,7 @@ impl HeroEditorModel {
             .collect();
         let assets = Rc::new(assets);
         Self {
+            unit: None,
             unit_render: UnitRender::new(&geng, &assets),
             selected_unit: units
                 .keys()
@@ -178,7 +180,7 @@ impl HeroEditorState {
             camera,
             model: HeroEditorModel::new(geng, assets),
             geng: geng.clone(),
-            time: Time::ZERO,
+            time: 0.0,
             counter: 0,
             slider: 0.0,
             values: vec![
@@ -310,7 +312,6 @@ fn draw_selector<'a>(
 
 impl geng::State for HeroEditorState {
     fn update(&mut self, delta_time: f64) {
-        let delta_time = Time::new(delta_time as _);
         self.time += delta_time;
     }
 
@@ -319,31 +320,31 @@ impl geng::State for HeroEditorState {
         if self.model.selected_unit.is_empty() {
             return;
         };
-        let template = self
-            .model
-            .units
-            .get(&self.model.selected_unit)
-            .expect("Can't find unit template");
+        let unit = self.model.unit.clone();
+        let unit = unit.unwrap_or_else(|| {
+            let template = self
+                .model
+                .units
+                .get(&self.model.selected_unit)
+                .expect("Can't find unit template");
 
-        let unit = Unit::new(
-            template,
-            1,
-            template.name.clone(),
-            Faction::Player,
-            Position {
-                side: Faction::Player,
-                x: 0,
-            },
-            &Statuses { map: hashmap! {} },
-        );
-        self.model.unit_render.draw_unit(
-            &unit,
-            template,
-            None,
-            self.time.as_f32().into(),
-            &self.camera,
-            framebuffer,
-        );
+            Unit::new(
+                template,
+                1,
+                template.name.clone(),
+                Faction::Player,
+                Position {
+                    side: Faction::Player,
+                    x: 0,
+                },
+                &Statuses { map: hashmap! {} },
+            )
+        });
+        self.model.unit = Some(unit.clone());
+
+        self.model
+            .unit_render
+            .draw_unit(&unit, None, self.time, &self.camera, framebuffer);
     }
 
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn Widget + 'a> {

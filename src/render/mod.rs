@@ -131,14 +131,8 @@ impl Render {
         let mut hovered_unit = None;
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
-            self.unit_render.draw_unit(
-                unit,
-                template,
-                Some(model),
-                game_time,
-                &self.camera,
-                framebuffer,
-            );
+            self.unit_render
+                .draw_unit(unit, Some(model), game_time, &self.camera, framebuffer);
 
             let radius = unit.render.radius.as_f32();
 

@@ -103,7 +103,6 @@ impl CardRender {
         );
         self.render.draw_unit(
             &card.unit,
-            &card.template,
             None,
             game_time,
             &geng::Camera2d {
