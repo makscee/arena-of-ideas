@@ -50,7 +50,8 @@ pub struct UnitStats {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitRenderConfig {
-    pub shader_config: ShaderConfig,
+    pub base_shader_config: ShaderConfig,
+    pub clan_shader_configs: Vec<ShaderConfig>,
     pub radius: R32,
     pub render_position: Vec2<R32>,
     pub last_action_time: Time,
@@ -135,7 +136,7 @@ impl UnitStats {
 
     pub fn level_up(&mut self, stats: UnitStats) -> bool {
         if self.level() < MAX_LEVEL {
-            self.stack += stats.level();
+            self.stack += stats.stack;
             self.merge_unit(stats);
             return true;
         }
@@ -165,7 +166,8 @@ impl UnitStats {
 impl UnitRenderConfig {
     pub fn new(template: &UnitTemplate) -> Self {
         Self {
-            shader_config: template.render_config.clone(),
+            base_shader_config: template.render_config.clone(),
+            clan_shader_configs: template.clan_renders[0].clone(),
             radius: template.radius,
             render_position: Vec2::ZERO,
             last_action_time: Time::new(0.0),

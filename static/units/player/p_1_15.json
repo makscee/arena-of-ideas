@@ -74,11 +74,45 @@
             ]
         }
     ],
+    "clan_renders": [
+        [
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            },
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            },
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            }
+        ],
+        [
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            },
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            },
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            }
+        ],
+        [
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            },
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            },
+            {
+                "path": "shaders/clan_shaders/circle.glsl"
+            }
+        ]
+    ],
     "action": {
         "preset": "effects/melee_hit.json"
     },
     "render": {
-        "path": "shaders/default_circle_hero.glsl",
-        "vertices": 200
+        "path": "shaders/default_circle_hero.glsl"
     }
 }

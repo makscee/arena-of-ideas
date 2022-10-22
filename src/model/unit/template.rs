@@ -20,7 +20,7 @@ pub struct UnitTemplate {
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
-    pub clan_renders: ClanRenders,
+    pub clan_renders: Vec<Vec<ShaderConfig>>, // level_index -> clan_index
     pub base: Option<UnitType>,
 }
 
@@ -45,7 +45,7 @@ impl Default for UnitTemplate {
                 parameters: default(),
             },
             clans: default(),
-            clan_renders: ClanRenders::new(),
+            clan_renders: default(),
             base: None,
         }
     }
@@ -66,37 +66,6 @@ impl geng::LoadAsset for UnitTemplate {
         .boxed_local()
     }
     const DEFAULT_EXT: Option<&'static str> = Some("json");
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct ClanRenders {
-    pub levels: Vec<LevelRenders>,
-}
-
-impl ClanRenders {
-    pub fn new() -> Self {
-        Self { levels: vec![] }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LevelRenders {
-    pub clans: HashMap<Clan, ClanRender>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct ClanRender {
-    path: String,
-    parameters: RenderParameters,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct RenderParameters {
-    u_fill: i32,
-    u_size: f32,
-    u_offset: Vec<f32>,
-    u_outline_thickness: f32,
-    u_count: i32,
 }
 
 #[derive(Deref, DerefMut, Clone)]

@@ -15,83 +15,6 @@ use super::*;
 pub struct HeroEditor {}
 
 impl HeroEditor {
-    fn draw_units_widget(units: Vec<&String>) {
-        // units.iter().for_each();
-        // let value = Value::from(*units.first().expect("No units"));
-        // let args = vmap! {
-        //     "type" => "Enum",
-        //     "name" => "Select unit",
-        //     "id" => "unit",
-        //     "values" => values,
-        //     "value" => value,
-        // };
-        // panel
-        //     .call_method("createWidget", &[args])
-        //     .expect("Error while calling createWidget()");
-    }
-
-    // fn create_widget(panel: Element, param: ClanShaderParam) {
-    //     let mut args;
-    //     match param.value {
-    //         shader_edit::ClanShaderType::Enum { values, show_all } => {
-    //             let param_values = values;
-    //             let mut values = Value::new();
-    //             param_values.iter().for_each(|x| values.push(x));
-    //             args = vmap! {
-    //                 "type" => "Enum",
-    //                 "name" => param.name,
-    //                 "id" => param.id,
-    //                 "values" => values,
-    //                 "value" => param_values[0].to_owned(),
-    //             }
-    //         }
-    //         shader_edit::ClanShaderType::Float { range } => {
-    //             let from = Value::from(range[0].to_string());
-    //             let to = Value::from(range[1].to_string());
-    //             let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
-    //             args = vmap! {
-    //                 "type" => "Float",
-    //                 "name" => param.name,
-    //                 "id" => param.id,
-    //                 "from" => from,
-    //                 "to" => to,
-    //                 "step" => step,
-    //                 "value" => 1,
-    //             }
-    //         }
-    //         shader_edit::ClanShaderType::Int { range } => {
-    //             let from = Value::from(range[0].to_string());
-    //             let to = Value::from(range[1].to_string());
-    //             args = vmap! {
-    //                 "type" => "Int",
-    //                 "name" => param.name,
-    //                 "id" => param.id,
-    //                 "from" => from,
-    //                 "to" => to,
-    //                 "step" => 1,
-    //                 "value" => 1,
-    //             }
-    //         }
-    //         shader_edit::ClanShaderType::Vector { range } => {
-    //             let from = Value::from(range[0].to_string());
-    //             let to = Value::from(range[1].to_string());
-    //             let step = Value::from(((range[1] - range[0]) / 20.0).to_string());
-    //             args = vmap! {
-    //                 "type" => "Vector",
-    //                 "name" => param.name,
-    //                 "id" => param.id,
-    //                 "from" => from,
-    //                 "to" => to,
-    //                 "step" => step,
-    //                 "value" => 1,
-    //             }
-    //         }
-    //     }
-    //     panel
-    //         .call_method("createWidget", &[args])
-    //         .expect("Error while calling createWidget()");
-    // }
-
     pub fn run(self, geng: &Geng, assets: Assets) -> Box<dyn geng::State> {
         println!("Editor run");
 
@@ -126,7 +49,7 @@ struct HeroEditorState {
 }
 
 struct HeroEditorModel {
-    unit: Option<Unit>,
+    unit: Option<Vec<Unit>>,
     units: HashMap<String, UnitTemplate>,
     shaders: HashMap<String, ClanShaderConfig>,
     selected_unit: String,
@@ -172,9 +95,9 @@ impl HeroEditorModel {
 impl HeroEditorState {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
         let camera = geng::Camera2d {
-            center: vec2(0.0, 0.0),
+            center: vec2(-1.5, 0.0),
             rotation: 0.0,
-            fov: 10.0,
+            fov: 5.0,
         };
         Self {
             camera,
@@ -320,31 +243,43 @@ impl geng::State for HeroEditorState {
         if self.model.selected_unit.is_empty() {
             return;
         };
-        let unit = self.model.unit.clone();
-        let unit = unit.unwrap_or_else(|| {
+        if self.model.unit.is_none() {
             let template = self
                 .model
                 .units
                 .get(&self.model.selected_unit)
                 .expect("Can't find unit template");
+            let mut result = vec![];
 
-            Unit::new(
+            let mut new_unit = Unit::new(
                 template,
                 1,
                 template.name.clone(),
                 Faction::Player,
-                Position {
-                    side: Faction::Player,
-                    x: 0,
-                },
+                Position::zero(Faction::Player),
                 &Statuses { map: hashmap! {} },
-            )
-        });
-        self.model.unit = Some(unit.clone());
+            );
+            new_unit.render.render_position.x = r32(-1.0);
+            result.push(new_unit.clone());
+            new_unit.render.render_position.x = R32::ZERO;
+            new_unit.render.clan_shader_configs = template.clan_renders[1].clone();
+            result.push(new_unit.clone());
+            new_unit.render.render_position.x = r32(1.0);
+            new_unit.render.clan_shader_configs = template.clan_renders[2].clone();
+            result.push(new_unit.clone());
+            self.model.unit = Some(result);
+        };
+        let unit = self.model.unit.clone().expect("Unit to render not set");
 
         self.model
             .unit_render
-            .draw_unit(&unit, None, self.time, &self.camera, framebuffer);
+            .draw_unit(&unit[0], None, self.time, &self.camera, framebuffer);
+        self.model
+            .unit_render
+            .draw_unit(&unit[1], None, self.time, &self.camera, framebuffer);
+        self.model
+            .unit_render
+            .draw_unit(&unit[2], None, self.time, &self.camera, framebuffer);
     }
 
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn Widget + 'a> {
