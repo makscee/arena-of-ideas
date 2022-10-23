@@ -31,13 +31,15 @@ struct HeroEditorState {
 }
 
 struct HeroEditorModel {
-    unit: Option<Vec<Unit>>, // 3 levels of unit
+    unit_levels: Vec<Unit>, // 3 levels of unit
     units: Vec<UnitTemplate>,
     shaders: Vec<ClanShaderConfig>,
     selected_unit: usize,
     selected_shader: usize,
     selected_level: usize,
+    selected_clan: usize,
     unit_render: UnitRender,
+    current_parameters: HashMap<String, ShaderParameter>,
 }
 
 impl HeroEditorModel {
@@ -56,13 +58,15 @@ impl HeroEditorModel {
             .collect_vec();
         let assets = Rc::new(assets);
         Self {
-            unit: None,
+            unit_levels: default(),
             unit_render: UnitRender::new(&geng, &assets),
             selected_unit: 0,
             selected_shader: 0,
             selected_level: 0,
+            selected_clan: 0,
             units,
             shaders,
+            current_parameters: default(),
         }
     }
 }
@@ -202,7 +206,21 @@ impl geng::State for HeroEditorState {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
-        if self.model.unit.is_none() {
+        let unit = self.model.unit_levels.clone();
+
+        self.model
+            .unit_render
+            .draw_unit(&unit[0], None, self.time, &self.camera, framebuffer);
+        self.model
+            .unit_render
+            .draw_unit(&unit[1], None, self.time, &self.camera, framebuffer);
+        self.model
+            .unit_render
+            .draw_unit(&unit[2], None, self.time, &self.camera, framebuffer);
+    }
+
+    fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn Widget + 'a> {
+        if self.model.unit_levels.len() == 0 {
             let template = &self.model.units[self.model.selected_unit];
             let mut result = vec![];
 
@@ -225,31 +243,17 @@ impl geng::State for HeroEditorState {
             new_unit.render.clan_shader_configs =
                 Some(template.clan_renders.clone().expect("Clan renders empty")[2].clone());
             result.push(new_unit.clone());
-            self.model.unit = Some(result);
-        };
-        let unit = self.model.unit.clone().expect("Unit to render not set");
-
-        self.model
-            .unit_render
-            .draw_unit(&unit[0], None, self.time, &self.camera, framebuffer);
-        self.model
-            .unit_render
-            .draw_unit(&unit[1], None, self.time, &self.camera, framebuffer);
-        self.model
-            .unit_render
-            .draw_unit(&unit[2], None, self.time, &self.camera, framebuffer);
-    }
-
-    fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn Widget + 'a> {
+            self.model.unit_levels = result;
+        }
+        let selected_level = self.model.selected_level.clone();
+        let mut unit_levels = self.model.unit_levels.clone();
+        let mut unit = unit_levels[selected_level].clone();
         let units = self
             .model
             .units
             .iter()
             .map(|v| v.name.clone())
             .collect_vec();
-
-        let shader_config = self.model.shaders[self.model.selected_shader].clone();
-        let mut shader_params = &mut shader_config.parameters.clone();
 
         let mut widgets = geng::ui::column![];
         widgets.push(
@@ -260,7 +264,6 @@ impl geng::State for HeroEditorState {
                 "Selected unit".to_string(),
                 Box::new(|ind| {
                     self.model.selected_unit = ind;
-                    self.model.unit = None;
                 }),
             )
             .boxed(),
@@ -276,55 +279,80 @@ impl geng::State for HeroEditorState {
             .boxed(),
         );
 
-        // for ele in shader_params.iter_mut() {
-        //     match &mut ele.value {
-        //         ClanShaderType::Enum {
-        //             values,
-        //             show_all,
-        //             value,
-        //         } => widgets.push(Box::new(draw_selector(
-        //             cx,
-        //             value,
-        //             &values,
-        //             ele.name.to_string(),
-        //         ))),
-        //         ClanShaderType::Float { range, value } => {
-        //             widgets.push(
-        //                 draw_slider(
-        //                     cx,
-        //                     value.clone(),
-        //                     ele.name.to_string(),
-        //                     Box::new(|v| *value = v),
-        //                 )
-        //                 .boxed(),
-        //             );
-        //         }
-        //         ClanShaderType::Int { range, value } => {
-        //             widgets.push(
-        //                 draw_slider(
-        //                     cx,
-        //                     (*value) as f64,
-        //                     ele.name.to_string(),
-        //                     Box::new(|v| *value = v as i64),
-        //                 )
-        //                 .boxed(),
-        //             );
-        //         }
-        //         ClanShaderType::Vector { range, value } => {
-        //             widgets.push(
-        //                 draw_slider_vector(
-        //                     cx,
-        //                     *value,
-        //                     ele.name.to_string(),
-        //                     vec2(Box::new(|v| value.x = v), Box::new(|v| value.y = v)),
-        //                 )
-        //                 .boxed(),
-        //             );
-        //         }
-        //     }
-        // }
+        let mut clan_configs = unit.render.clan_shader_configs.unwrap();
+        let mut shader_config = clan_configs[self.model.selected_clan].clone();
+        let shader_parameters = shader_config.parameters.clone();
 
-        // draw_slider(cx, &mut self.slider, "Slider title".to_string()),
+        for ele in self.model.shaders[self.model.selected_shader]
+            .parameters
+            .iter()
+        {
+            // let value = shader_parameters.0[&ele.id].clone();
+
+            // match &ele.value {
+            //     ClanShaderType::Int { range } => {
+            //         let int_value = 0;
+            //         // match value {
+            //         //     ShaderParameter::Int(v) => int_value = v,
+            //         //     _ => panic!("Wrong parameter type"),
+            //         // }
+            //         widgets.push(
+            //             draw_slider(
+            //                 cx,
+            //                 int_value as f64,
+            //                 ele.name.to_string(),
+            //                 Box::new(|v| {
+            //                     // self.model
+            //                     //     .current_parameters
+            //                     //     .insert(ele.id.clone(), ShaderParameter::Int(v.clone() as i32));
+            //                 }),
+            //             )
+            //             .boxed(),
+            //         );
+            //     }
+            //     ClanShaderType::Enum { values, show_all } => todo!(),
+            //     ClanShaderType::Float { range } => todo!(),
+            //     ClanShaderType::Vector { range } => todo!(),
+            //     // ClanShaderType::Enum {
+            //     //     values,
+            //     //     show_all,
+            //     //     value,
+            //     // } => widgets.push(Box::new(draw_selector(
+            //     //     cx,
+            //     //     value,
+            //     //     &values,
+            //     //     ele.name.to_string(),
+            //     // ))),
+            //     // ClanShaderType::Float { range, value } => widgets.push(
+            //     //     draw_slider(
+            //     //         cx,
+            //     //         value.clone(),
+            //     //         ele.name.to_string(),
+            //     //         Box::new(|v| *value = v),
+            //     //     )
+            //     //     .boxed(),
+            //     // ),
+            //     // ClanShaderType::Int { range, value } => widgets.push(
+            //     //     draw_slider(
+            //     //         cx,
+            //     //         (*value) as f64,
+            //     //         ele.name.to_string(),
+            //     //         Box::new(|v| *value = v as i64),
+            //     //     )
+            //     //     .boxed(),
+            //     // ),
+            //     // ClanShaderType::Vector { range, value } => widgets.push(
+            //     //     draw_slider_vector(
+            //     //         cx,
+            //     //         *value,
+            //     //         ele.name.to_string(),
+            //     //         vec2(Box::new(|v| value.x = v), Box::new(|v| value.y = v)),
+            //     //     )
+            //     //     .boxed(),
+            //     // ),
+            // }
+        }
+
         widgets.align(vec2(0.0, 1.0)).boxed()
     }
 }
