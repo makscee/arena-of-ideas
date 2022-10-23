@@ -51,7 +51,7 @@ pub struct UnitStats {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitRenderConfig {
     pub base_shader_config: ShaderConfig,
-    pub clan_shader_configs: Vec<ShaderConfig>,
+    pub clan_shader_configs: Option<Vec<ShaderConfig>>,
     pub radius: R32,
     pub render_position: Vec2<R32>,
     pub last_action_time: Time,
@@ -167,7 +167,10 @@ impl UnitRenderConfig {
     pub fn new(template: &UnitTemplate) -> Self {
         Self {
             base_shader_config: template.render_config.clone(),
-            clan_shader_configs: template.clan_renders[0].clone(),
+            clan_shader_configs: match template.clan_renders {
+                Some(_) => Some(template.clan_renders.clone().unwrap()[0].clone()),
+                None => None,
+            },
             radius: template.radius,
             render_position: Vec2::ZERO,
             last_action_time: Time::new(0.0),

@@ -19,20 +19,6 @@ impl HeroEditor {
         println!("Editor run");
 
         let state = HeroEditorState::new(geng, assets);
-        let units = state.model.units.keys().collect_vec();
-
-        // HeroEditor::create_units_widget(panel.clone(), units);
-
-        state
-            .model
-            .shaders
-            .get(&state.model.selected_shader)
-            .expect("Can't find selected shader")
-            .parameters
-            .iter()
-            .for_each(|param| {
-                // HeroEditor::create_widget(panel.clone(), param.clone());
-            });
         Box::new(state)
     }
 }
@@ -42,50 +28,39 @@ struct HeroEditorState {
     time: f64,
     model: HeroEditorModel,
     camera: geng::Camera2d,
-    counter: usize,
-    values: Vec<String>,
-    slider: f64,
-    index: usize,
 }
 
 struct HeroEditorModel {
-    unit: Option<Vec<Unit>>,
-    units: HashMap<String, UnitTemplate>,
-    shaders: HashMap<String, ClanShaderConfig>,
-    selected_unit: String,
-    selected_shader: String,
+    unit: Option<Vec<Unit>>, // 3 levels of unit
+    units: Vec<UnitTemplate>,
+    shaders: Vec<ClanShaderConfig>,
+    selected_unit: usize,
+    selected_shader: usize,
+    selected_level: usize,
     unit_render: UnitRender,
 }
 
 impl HeroEditorModel {
     pub fn new(geng: &Geng, assets: Assets) -> Self {
-        let units: HashMap<String, UnitTemplate> = assets
+        let units = assets
             .units
             .map
             .iter()
             .filter(|tuple| tuple.1.tier > 0)
-            .map(|tuple| (tuple.0.clone(), tuple.1.clone()))
-            .collect();
-        let shaders: HashMap<String, ClanShaderConfig> = assets
+            .map(|tuple| tuple.1.clone())
+            .collect_vec();
+        let shaders = assets
             .clan_shaders
-            .map
-            .iter()
-            .map(|tuple| (tuple.0.clone(), tuple.1.clone()))
-            .collect();
+            .values()
+            .map(|x| x.clone())
+            .collect_vec();
         let assets = Rc::new(assets);
         Self {
             unit: None,
             unit_render: UnitRender::new(&geng, &assets),
-            selected_unit: units
-                .keys()
-                .next()
-                .expect("Must be at least one unit to edit")
-                .clone(),
-            selected_shader: shaders
-                .keys()
-                .next()
-                .expect("Must be at least one clan shader")
-                .clone(),
+            selected_unit: 0,
+            selected_shader: 0,
+            selected_level: 0,
             units,
             shaders,
         }
@@ -104,23 +79,13 @@ impl HeroEditorState {
             model: HeroEditorModel::new(geng, assets),
             geng: geng.clone(),
             time: 0.0,
-            counter: 0,
-            slider: 0.0,
-            values: vec![
-                "First".to_string(),
-                "Second".to_string(),
-                "Third".to_string(),
-            ],
-            index: 0,
         }
     }
 
     pub fn save(self) {
-        if let Some(unit) = self.model.units.get(&self.model.selected_unit) {
-            let data = serde_json::to_string_pretty(&unit.path).expect("Failed to serialize item");
-            std::fs::write(&unit.path, data)
-                .expect(&format!("Cannot save _list: {:?}", &unit.path));
-        }
+        let path = self.model.units[self.model.selected_unit].path.clone();
+        let data = serde_json::to_string_pretty(&path).expect("Failed to serialize item");
+        std::fs::write(&path, data).expect(&format!("Cannot save _list: {:?}", &path));
     }
 }
 
@@ -190,23 +155,20 @@ fn draw_slider_vector<'a>(
 
 fn draw_selector<'a>(
     cx: &'a geng::ui::Controller,
-    selected: &'a mut String,
+    mut selected: usize,
     values: &Vec<String>,
     title: String,
+    mut setter: Box<dyn FnMut(usize) + 'a>,
 ) -> impl Widget + 'a {
     let minus_button = geng::ui::Button::new(cx, "<");
     let plus_button = geng::ui::Button::new(cx, ">");
-    let mut index = values
-        .iter()
-        .position(|v| v == selected)
-        .unwrap_or_default();
     if minus_button.was_clicked() {
-        index = (index + values.len() - 1) % values.len();
-        *selected = values[index].clone();
+        selected = (selected + values.len() - 1) % values.len();
+        setter(selected);
     }
     if plus_button.was_clicked() {
-        index = (index + values.len() + 1) % values.len();
-        *selected = values[index].clone();
+        selected = (selected + values.len() + 1) % values.len();
+        setter(selected);
     }
 
     (
@@ -216,7 +178,7 @@ fn draw_selector<'a>(
             title.center(),
             (
                 minus_button,
-                values[index]
+                values[selected]
                     .to_string()
                     .center()
                     .fixed_size(vec2(300.0, 80.0)),
@@ -240,15 +202,8 @@ impl geng::State for HeroEditorState {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
-        if self.model.selected_unit.is_empty() {
-            return;
-        };
         if self.model.unit.is_none() {
-            let template = self
-                .model
-                .units
-                .get(&self.model.selected_unit)
-                .expect("Can't find unit template");
+            let template = &self.model.units[self.model.selected_unit];
             let mut result = vec![];
 
             let mut new_unit = Unit::new(
@@ -259,13 +214,16 @@ impl geng::State for HeroEditorState {
                 Position::zero(Faction::Player),
                 &Statuses { map: hashmap! {} },
             );
+            debug!("Drawing new unit: {}", template.name);
             new_unit.render.render_position.x = r32(-1.0);
             result.push(new_unit.clone());
             new_unit.render.render_position.x = R32::ZERO;
-            new_unit.render.clan_shader_configs = template.clan_renders[1].clone();
+            new_unit.render.clan_shader_configs =
+                Some(template.clan_renders.clone().expect("Clan renders empty")[1].clone());
             result.push(new_unit.clone());
             new_unit.render.render_position.x = r32(1.0);
-            new_unit.render.clan_shader_configs = template.clan_renders[2].clone();
+            new_unit.render.clan_shader_configs =
+                Some(template.clan_renders.clone().expect("Clan renders empty")[2].clone());
             result.push(new_unit.clone());
             self.model.unit = Some(result);
         };
@@ -283,74 +241,88 @@ impl geng::State for HeroEditorState {
     }
 
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn Widget + 'a> {
-        let units = self.model.units.keys().cloned().collect();
-
-        let selected_shader = self.model.selected_shader.clone();
-        let shader_config = self
+        let units = self
             .model
-            .shaders
-            .get_mut(&selected_shader)
-            .expect("Shader not found");
-        let mut shader_params = &mut shader_config.parameters;
+            .units
+            .iter()
+            .map(|v| v.name.clone())
+            .collect_vec();
+
+        let shader_config = self.model.shaders[self.model.selected_shader].clone();
+        let mut shader_params = &mut shader_config.parameters.clone();
 
         let mut widgets = geng::ui::column![];
         widgets.push(
             draw_selector(
                 cx,
-                &mut self.model.selected_unit,
+                self.model.selected_unit,
                 &units,
                 "Selected unit".to_string(),
+                Box::new(|ind| {
+                    self.model.selected_unit = ind;
+                    self.model.unit = None;
+                }),
+            )
+            .boxed(),
+        );
+        widgets.push(
+            draw_selector(
+                cx,
+                self.model.selected_level,
+                &vec![1.to_string(), 2.to_string(), 3.to_string()],
+                "Level".to_string(),
+                Box::new(|ind| self.model.selected_level = ind),
             )
             .boxed(),
         );
 
-        for ele in shader_params.iter_mut() {
-            match &mut ele.value {
-                ClanShaderType::Enum {
-                    values,
-                    show_all,
-                    value,
-                } => widgets.push(Box::new(draw_selector(
-                    cx,
-                    value,
-                    &values,
-                    ele.name.to_string(),
-                ))),
-                ClanShaderType::Float { range, value } => {
-                    widgets.push(
-                        draw_slider(
-                            cx,
-                            value.clone(),
-                            ele.name.to_string(),
-                            Box::new(|v| *value = v),
-                        )
-                        .boxed(),
-                    );
-                }
-                ClanShaderType::Int { range, value } => {
-                    widgets.push(
-                        draw_slider(
-                            cx,
-                            (*value) as f64,
-                            ele.name.to_string(),
-                            Box::new(|v| *value = v as i64),
-                        )
-                        .boxed(),
-                    );
-                }
-                ClanShaderType::Vector { range, value } => {
-                    widgets.push(
-                        draw_slider_vector(
-                            cx,
-                            *value,
-                            ele.name.to_string(),
-                            vec2(Box::new(|v| value.x = v), Box::new(|v| value.y = v)),
-                        )
-                        .boxed(),
-                    );
-                }
-            }
-        }
+        // for ele in shader_params.iter_mut() {
+        //     match &mut ele.value {
+        //         ClanShaderType::Enum {
+        //             values,
+        //             show_all,
+        //             value,
+        //         } => widgets.push(Box::new(draw_selector(
+        //             cx,
+        //             value,
+        //             &values,
+        //             ele.name.to_string(),
+        //         ))),
+        //         ClanShaderType::Float { range, value } => {
+        //             widgets.push(
+        //                 draw_slider(
+        //                     cx,
+        //                     value.clone(),
+        //                     ele.name.to_string(),
+        //                     Box::new(|v| *value = v),
+        //                 )
+        //                 .boxed(),
+        //             );
+        //         }
+        //         ClanShaderType::Int { range, value } => {
+        //             widgets.push(
+        //                 draw_slider(
+        //                     cx,
+        //                     (*value) as f64,
+        //                     ele.name.to_string(),
+        //                     Box::new(|v| *value = v as i64),
+        //                 )
+        //                 .boxed(),
+        //             );
+        //         }
+        //         ClanShaderType::Vector { range, value } => {
+        //             widgets.push(
+        //                 draw_slider_vector(
+        //                     cx,
+        //                     *value,
+        //                     ele.name.to_string(),
+        //                     vec2(Box::new(|v| value.x = v), Box::new(|v| value.y = v)),
+        //                 )
+        //                 .boxed(),
+        //             );
+        //         }
+        //     }
+        // }
 
         // draw_slider(cx, &mut self.slider, "Slider title".to_string()),
         widgets.align(vec2(0.0, 1.0)).boxed()

@@ -107,6 +107,32 @@
     "action": {
         "preset": "effects/melee_hit.json"
     },
+    "clan_renders": [
+        [
+            {
+                "path": "shaders/clan_shaders/circle.glsl",
+                "parameters": {
+                    "u_count": 1
+                }
+            }
+        ],
+        [
+            {
+                "path": "shaders/clan_shaders/circle.glsl",
+                "parameters": {
+                    "u_count": 2
+                }
+            }
+        ],
+        [
+            {
+                "path": "shaders/clan_shaders/circle.glsl",
+                "parameters": {
+                    "u_count": 3
+                }
+            }
+        ]
+    ],
     "render": {
         "path": "shaders/default_circle_hero.glsl",
         "vertices": 200

@@ -20,7 +20,7 @@ pub struct UnitTemplate {
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
-    pub clan_renders: Vec<Vec<ShaderConfig>>, // level_index -> clan_index
+    pub clan_renders: Option<Vec<Vec<ShaderConfig>>>, // level_index -> clan_index
     pub base: Option<UnitType>,
 }
 
