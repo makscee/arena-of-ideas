@@ -97,8 +97,10 @@ impl UnitRender {
             );
         }
 
-        if let Some(clan_shader_configs) = &unit.render.clan_shader_configs {
-            let clan_shader_programs = clan_shader_configs
+        if unit.render.clan_shader_configs.len() > 0 {
+            let clan_shader_programs = unit
+                .render
+                .clan_shader_configs
                 .iter()
                 .map(|x| self.assets.get_render(&x))
                 .collect_vec();
