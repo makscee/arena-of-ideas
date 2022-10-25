@@ -20,8 +20,17 @@ pub struct UnitTemplate {
     pub clans: Vec<Clan>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
-    pub clan_renders: Option<Vec<Vec<ShaderConfig>>>, // level_index -> clan_index
+    #[serde(default = "default_renders")]
+    pub clan_renders: Vec<Vec<ShaderConfig>>, // level_index -> clan_index
     pub base: Option<UnitType>,
+}
+
+fn default_renders() -> Vec<Vec<ShaderConfig>> {
+    let mut result: Vec<Vec<ShaderConfig>> = vec![];
+    (0..MAX_LEVEL).into_iter().for_each(|level| {
+        result.push(vec![]);
+    });
+    result
 }
 
 impl Default for UnitTemplate {

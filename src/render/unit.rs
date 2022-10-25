@@ -96,48 +96,44 @@ impl UnitRender {
                 },
             );
         }
+        
+        let clan_shader_programs = unit.render.clan_shader_configs
+            [(unit.stats.get(UnitStat::Level) as usize) - 1]
+            .iter()
+            .map(|x| self.assets.get_render(&x))
+            .collect_vec();
 
-        if unit.render.clan_shader_configs.len() > 0 {
-            let clan_shader_programs = unit
-                .render
-                .clan_shader_configs
-                .iter()
-                .map(|x| self.assets.get_render(&x))
-                .collect_vec();
-
-            for (ind, color) in clan_colors.iter().enumerate() {
-                let program = clan_shader_programs[ind].clone();
-                let mut new_texture =
-                    ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
-                {
-                    let mut framebuffer = ugli::Framebuffer::new_color(
-                        self.geng.ugli(),
-                        ugli::ColorAttachment::Texture(&mut new_texture),
-                    );
-                    let framebuffer = &mut framebuffer;
-                    ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
-                    ugli::draw(
-                        framebuffer,
-                        &program.program,
-                        ugli::DrawMode::TriangleStrip,
-                        &quad,
-                        (
-                            &uniforms,
-                            ugli::uniforms! {
-                                u_previous_texture: &texture,
-                                u_time: game_time,
-                                u_color: color,
-                            },
-                            program.parameters,
-                        ),
-                        ugli::DrawParameters {
-                            // blend_mode: Some(default()),
-                            ..default()
+        for (ind, color) in clan_colors.iter().enumerate() {
+            let program = clan_shader_programs[ind].clone();
+            let mut new_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
+            {
+                let mut framebuffer = ugli::Framebuffer::new_color(
+                    self.geng.ugli(),
+                    ugli::ColorAttachment::Texture(&mut new_texture),
+                );
+                let framebuffer = &mut framebuffer;
+                ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                ugli::draw(
+                    framebuffer,
+                    &program.program,
+                    ugli::DrawMode::TriangleStrip,
+                    &quad,
+                    (
+                        &uniforms,
+                        ugli::uniforms! {
+                            u_previous_texture: &texture,
+                            u_time: game_time,
+                            u_color: color,
                         },
-                    );
-                }
-                texture = new_texture;
+                        program.parameters,
+                    ),
+                    ugli::DrawParameters {
+                        // blend_mode: Some(default()),
+                        ..default()
+                    },
+                );
             }
+            texture = new_texture;
         }
 
         let mut statuses: Vec<_> = unit

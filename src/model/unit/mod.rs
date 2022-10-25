@@ -51,7 +51,7 @@ pub struct UnitStats {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitRenderConfig {
     pub base_shader_config: ShaderConfig,
-    pub clan_shader_configs: Vec<ShaderConfig>,
+    pub clan_shader_configs: Vec<Vec<ShaderConfig>>,
     pub radius: R32,
     pub render_position: Vec2<R32>,
     pub last_action_time: Time,
@@ -146,7 +146,7 @@ impl UnitStats {
     fn level(&self) -> i32 {
         let mut stack = self.stack;
         let mut level = 1;
-        for i in 1..MAX_LEVEL {
+        for i in 1..MAX_LEVEL + 1 {
             stack -= i;
             level = i;
             if stack <= 0 {
@@ -167,10 +167,11 @@ impl UnitRenderConfig {
     pub fn new(template: &UnitTemplate) -> Self {
         Self {
             base_shader_config: template.render_config.clone(),
-            clan_shader_configs: match template.clan_renders {
-                Some(_) => template.clan_renders.clone().unwrap()[0].clone(),
-                None => vec![],
-            },
+            clan_shader_configs: template
+                .clan_renders
+                .iter()
+                .map(|render| render.clone())
+                .collect(),
             radius: template.radius,
             render_position: Vec2::ZERO,
             last_action_time: Time::new(0.0),

@@ -53,7 +53,7 @@ pub struct ShaderProgram {
 impl Default for ShaderConfig {
     fn default() -> Self {
         ShaderConfig {
-            path: "".to_string(),
+            path: "shaders/clan_shaders/circle.glsl".to_string(),
             parameters: default(),
             instances: 1,
             vertices: 1,

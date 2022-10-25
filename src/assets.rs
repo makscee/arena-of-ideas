@@ -475,6 +475,7 @@ impl geng::LoadAsset for UnitTemplates {
                     }
 
                     template.long_name = typ.clone();
+                    template.path = path.to_str().unwrap().to_string();
                     map.insert(name, template);
                 }
             }

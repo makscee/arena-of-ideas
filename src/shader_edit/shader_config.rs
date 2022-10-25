@@ -20,10 +20,22 @@ pub struct ClanShaderParam {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum ClanShaderType {
-    Enum { values: Vec<String>, show_all: bool },
-    Int { range: Vec<i32> },
-    Float { range: Vec<f32> },
-    Vector { range: Vec<f32> },
+    Enum {
+        values: Vec<String>,
+        show_all: bool,
+    },
+    Int {
+        range: Vec<i32>,
+        default: Option<i32>,
+    },
+    Float {
+        range: Vec<f32>,
+        default: Option<f32>,
+    },
+    Vector {
+        range: Vec<f32>,
+        default: Option<Vec2<f32>>,
+    },
 }
 
 impl fmt::Display for ClanShaderType {
