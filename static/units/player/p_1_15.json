@@ -28,7 +28,7 @@
             "x": 0.0,
             "y": 0.0
           },
-          "u_outline_thickness": 0.08176010847091675
+          "u_outline_thickness": 0.074951171875
         },
         "path": "shaders/clan_shaders/circle.glsl",
         "vertices": 1
@@ -43,7 +43,7 @@
             "x": 0.0,
             "y": 0.0
           },
-          "u_outline_thickness": 0.14006434381008148
+          "u_outline_thickness": 0.2658354640007019
         },
         "path": "shaders/clan_shaders/circle.glsl",
         "vertices": 1

@@ -114,14 +114,15 @@ fn draw_slider<'a>(
     }
     (
         geng::ui::ColorBox::new(Color::try_from("#36b3c177").unwrap())
-            .fixed_size(vec2(550.0, 45.0)),
+            .fixed_size(vec2(100.0, 25.0)),
         (
-            title.center(),
+            title.center().fixed_size(vec2(150.0, 40.0)).center(),
             (
-                slider.padding_vertical(16.0).fixed_size(vec2(300.0, 1.0)),
+                slider.padding_vertical(8.0).fixed_size(vec2(170.0, 1.0)),
                 slider_value
+                    .fixed_size(vec2(80.0, 30.0))
                     .center()
-                    .padding_horizontal(64.0)
+                    .padding_horizontal(16.0)
                     .padding_vertical(16.0),
             )
                 .row()
@@ -151,16 +152,16 @@ fn draw_slider_vector<'a>(
     }
     (
         geng::ui::ColorBox::new(Color::try_from("#36b3c177").unwrap())
-            .fixed_size(vec2(550.0, 145.0)),
+            .fixed_size(vec2(100.0, 145.0)),
         (
-            title.center(),
+            title.center().fixed_size(vec2(150.0, 40.0)).center(),
             slider_value
                 .center()
                 .padding_horizontal(64.0)
                 .padding_vertical(16.0),
             (
-                slider_x.padding_vertical(8.0).fixed_size(vec2(300.0, 50.0)),
-                slider_y.padding_vertical(8.0).fixed_size(vec2(300.0, 50.0)),
+                slider_x.padding_vertical(8.0).fixed_size(vec2(200.0, 50.0)),
+                slider_y.padding_vertical(8.0).fixed_size(vec2(200.0, 50.0)),
             )
                 .column()
                 .center(),
@@ -192,25 +193,26 @@ fn draw_selector<'a>(
 
     (
         geng::ui::ColorBox::new(Color::try_from("#36b3c177").unwrap())
-            .fixed_size(vec2(550.0, 25.0)),
+            .fixed_size(vec2(250.0, 10.0)),
         (
-            title.center(),
+            title.center().fixed_size(vec2(150.0, 40.0)).center(),
             (
                 minus_button,
                 values[*selected]
                     .to_string()
                     .center()
-                    .fixed_size(vec2(300.0, 80.0)),
+                    .fixed_size(vec2(150.0, 40.0)),
                 plus_button,
             )
                 .row()
                 .center()
-                .uniform_padding(16.0),
+                .uniform_padding(8.0),
         )
             .column()
             .boxed(),
     )
         .stack()
+        .fixed_size(vec2(220.0, 110.0))
         .uniform_padding(16.0)
 }
 
@@ -234,13 +236,14 @@ impl geng::State for HeroEditorState {
             Position::zero(Faction::Player),
             &Statuses { map: hashmap! {} },
         );
-        unit.render.render_position.x = r32(-1.0);
+        unit.render.render_position.y = r32(1.0);
+        unit.render.render_position.x = r32(1.0);
         (0..3).into_iter().for_each(|index| {
             self.model
                 .unit_render
                 .draw_unit(&unit, None, self.time, &self.camera, framebuffer);
             unit.level_up(unit.clone());
-            unit.render.render_position.x += r32(1.0);
+            unit.render.render_position.y -= r32(1.0);
         });
     }
 
@@ -252,7 +255,7 @@ impl geng::State for HeroEditorState {
             .map(|v| v.name.clone())
             .collect_vec();
 
-        let mut widgets = geng::ui::column![];
+        let mut widgets = vec![];
         widgets.push(
             draw_selector(
                 cx,
@@ -417,6 +420,20 @@ impl geng::State for HeroEditorState {
             self.model.save_clicked = true;
         }
         widgets.push(save_button.fixed_size(vec2(170.0, 100.0)).center().boxed());
-        widgets.align(vec2(0.0, 1.0)).boxed()
+        let mut col1 = geng::ui::column![];
+        let mut col2 = geng::ui::column![];
+        let widgets_len = widgets.len();
+        for (index, widget) in widgets.into_iter().enumerate() {
+            if index < widgets_len / 2 {
+                col1.push(widget);
+            } else {
+                col2.push(widget);
+            }
+        }
+
+        (col1, col2.fixed_size(vec2(350.0, 5000.0)))
+            .row()
+            .align(vec2(0.0, 1.0))
+            .boxed()
     }
 }
