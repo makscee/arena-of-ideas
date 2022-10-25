@@ -1,6 +1,7 @@
 use crate::serde_json::Value;
 use std::{array, env};
 
+use chrono::format;
 use geng::prelude::*;
 use geng::prelude::{itertools::Itertools, ugli::raw::RGBA};
 use geng::ui::Widget;
@@ -289,6 +290,16 @@ impl geng::State for HeroEditorState {
             )
             .boxed(),
         );
+        self.model.selected_shader = self
+            .model
+            .shaders
+            .iter()
+            .map(|x| x.path.clone())
+            .position(|x| {
+                x == selected_unit.clan_renders[self.model.selected_level][self.model.selected_clan]
+                    .path
+            })
+            .expect("Shader not found");
         widgets.push(
             draw_selector(
                 cx,
@@ -351,7 +362,25 @@ impl geng::State for HeroEditorState {
                         .0
                         .insert(ele.id.clone(), ShaderParameter::Int(new_value as i32));
                 }
-                ClanShaderType::Enum { values, show_all } => todo!(),
+                ClanShaderType::Enum { values, show_all } => {
+                    let mut value;
+                    if shader_parameters.0.contains_key(&ele.id) {
+                        value = shader_parameters.0[&ele.id].clone();
+                    } else {
+                        value = ShaderParameter::Int(0);
+                    }
+                    let mut new_value;
+                    match value {
+                        ShaderParameter::Int(v) => new_value = v.clone() as usize,
+                        _ => panic!("Wrong parameter type"),
+                    }
+                    widgets.push(
+                        draw_selector(cx, &mut new_value, values, ele.name.to_string()).boxed(),
+                    );
+                    shader_parameters
+                        .0
+                        .insert(ele.id.clone(), ShaderParameter::Int(new_value as i32));
+                }
                 ClanShaderType::Float { range, default } => {
                     let mut value;
                     if shader_parameters.0.contains_key(&ele.id) {
@@ -411,6 +440,9 @@ impl geng::State for HeroEditorState {
             }
         }
 
+        self.model.units[self.model.selected_unit].clan_renders[self.model.selected_level]
+            [self.model.selected_clan]
+            .path = self.model.shaders[self.model.selected_shader].path.clone();
         self.model.units[self.model.selected_unit].clan_renders[self.model.selected_level]
             [self.model.selected_clan]
             .parameters = shader_parameters;

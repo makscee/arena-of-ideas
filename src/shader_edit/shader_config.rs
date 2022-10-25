@@ -22,6 +22,7 @@ pub struct ClanShaderParam {
 pub enum ClanShaderType {
     Enum {
         values: Vec<String>,
+        #[serde(default)]
         show_all: bool,
     },
     Int {

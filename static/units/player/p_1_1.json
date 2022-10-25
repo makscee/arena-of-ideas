@@ -9,11 +9,34 @@
         "instances": 1,
         "parameters": {
           "u_count": 1,
+          "u_fill": 0,
+          "u_index_offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
           "u_offset": {
             "x": 0.0,
             "y": 0.0
           },
-          "u_outline_thickness": 0.0
+          "u_outline": 0,
+          "u_outline_thickness": 0.0,
+          "u_size": 0.1766231209039688
+        },
+        "path": "shaders/clan_shaders/triangle.glsl",
+        "vertices": 1
+      }
+    ],
+    [
+      {
+        "instances": 1,
+        "parameters": {
+          "u_count": 1,
+          "u_offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "u_outline_thickness": 0.07070312649011612,
+          "u_size": 0.43615302443504333
         },
         "path": "shaders/clan_shaders/circle.glsl",
         "vertices": 1
@@ -28,22 +51,8 @@
             "x": 0.0,
             "y": 0.0
           },
-          "u_outline_thickness": 0.07070312649011612
-        },
-        "path": "shaders/clan_shaders/circle.glsl",
-        "vertices": 1
-      }
-    ],
-    [
-      {
-        "instances": 1,
-        "parameters": {
-          "u_count": 1,
-          "u_offset": {
-            "x": 0.0,
-            "y": 0.0
-          },
-          "u_outline_thickness": 0.10113051533699036
+          "u_outline_thickness": 0.23143689334392548,
+          "u_size": 0.7478616833686829
         },
         "path": "shaders/clan_shaders/circle.glsl",
         "vertices": 1

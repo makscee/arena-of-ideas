@@ -1,5 +1,6 @@
 [
     "common.glsl",
     "particles_functions.glsl",
-    "particles_uniforms.glsl"
+    "particles_uniforms.glsl",
+    "shapes.glsl"
 ]

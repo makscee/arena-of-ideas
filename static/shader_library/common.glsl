@@ -18,7 +18,7 @@ const vec3 heal_color = vec3(0.129, 1, 0.024);
 
 const vec2 SHADOW_OFFSET = vec2(-0.05, -0.05);
 const vec4 SHADOW_COLOR = vec4(vec3(0), 0.5);
-const float SHADOW_OVERFLOW = 0.04;
+const float SHADOW_RADIUS = 0.1;
 
 uniform float u_time;
 uniform float u_injure_time;

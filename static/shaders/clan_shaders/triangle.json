@@ -1,0 +1,40 @@
+{
+    "path": "shaders/clan_shaders/triangle.glsl",
+    "name": "Triangle",
+    "parameters": [
+        {
+            "name": "Offset",
+            "id": "u_offset",
+            "value": {
+                "type": "Vector",
+                "range": [
+                    -2.0,
+                    2.0
+                ]
+            }
+        },
+        {
+            "name": "Outline Thickness",
+            "id": "u_outline_thickness",
+            "value": {
+                "type": "Float",
+                "range": [
+                    0.0,
+                    0.5
+                ]
+            }
+        },
+        {
+            "name": "Shapes Count",
+            "id": "u_count",
+            "value": {
+                "type": "Int",
+                "range": [
+                    1,
+                    5
+                ],
+                "default": 1
+            }
+        }
+    ]
+}
