@@ -9,7 +9,7 @@ pub struct ChangeContextEffect {
     pub from: Option<Who>,
     #[serde(default)]
     pub target: Option<Who>,
-    pub color: Option<Color<f32>>,
+    pub color: Option<Rgba<f32>>,
     pub effect: Effect,
 }
 

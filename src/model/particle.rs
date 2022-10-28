@@ -12,6 +12,6 @@ pub struct Particle {
     pub time_left: Time,
     pub render_config: ShaderConfig,
     pub follow: bool,
-    pub color: Option<Color<f32>>,
+    pub color: Option<Rgba<f32>>,
     pub visible: bool,
 }

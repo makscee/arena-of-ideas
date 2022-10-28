@@ -36,7 +36,7 @@ impl EffectImpl for AoeEffect {
         logic
             .model
             .render_model
-            .add_text(center, "AOE", Color::RED, crate::render::TextType::Aoe);
+            .add_text(center, "AOE", Rgba::RED, crate::render::TextType::Aoe);
         for unit in &logic.model.units {
             if effect.skip_current_target && Some(unit.id) == context.target {
                 continue;

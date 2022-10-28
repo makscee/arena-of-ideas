@@ -126,7 +126,7 @@ pub enum ShaderParameter {
     Vec2(Vec2<f32>),
     Vec3(Vec3<f32>),
     Vec4(Vec4<f32>),
-    Color(Color<f32>),
+    Color(Rgba<f32>),
 }
 
 impl ugli::Uniform for ShaderParameter {

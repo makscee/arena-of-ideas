@@ -238,7 +238,7 @@ impl geng::State for EditState {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Color::BLACK), None);
+        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
 
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
@@ -287,7 +287,7 @@ impl geng::State for EditState {
                 ugli::instanced(&quad, &instances),
                 &uniforms,
                 ugli::DrawParameters {
-                    blend_mode: Some(default()),
+                    blend_mode: Some(ugli::BlendMode::default()),
                     ..default()
                 },
             );

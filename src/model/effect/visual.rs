@@ -14,7 +14,7 @@ pub struct VisualEffect {
     pub follow: bool,
     pub radius: R32,
     #[serde(default = "default_color")]
-    pub color: Option<Color<f32>>,
+    pub color: Option<Rgba<f32>>,
     #[serde(rename = "render")]
     pub render_config: ShaderConfig,
 }
@@ -35,7 +35,7 @@ fn default_partner() -> Who {
     Who::Caster
 }
 
-fn default_color() -> Option<Color<f32>> {
+fn default_color() -> Option<Rgba<f32>> {
     None
 }
 

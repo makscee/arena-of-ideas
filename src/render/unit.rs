@@ -33,7 +33,7 @@ impl UnitRender {
 
         let quad = shader_program.get_vertices(&self.geng);
 
-        let clan_colors: Vec<Color<f32>> = unit
+        let clan_colors: Vec<Rgba<f32>> = unit
             .clans
             .iter()
             .map(|clan| self.assets.options.clan_colors[clan])
@@ -65,9 +65,9 @@ impl UnitRender {
                         Faction::Player => 1.0,
                         Faction::Enemy => -1.0,
                     },
-                u_clan_color_1: clan_colors.get(0).copied().unwrap_or(Color::WHITE),
-                u_clan_color_2: clan_colors.get(1).copied().unwrap_or(Color::WHITE),
-                u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Color::WHITE),
+                u_clan_color_1: clan_colors.get(0).copied().unwrap_or(Rgba::WHITE),
+                u_clan_color_2: clan_colors.get(1).copied().unwrap_or(Rgba::WHITE),
+                u_clan_color_3: clan_colors.get(2).copied().unwrap_or(Rgba::WHITE),
                 u_clan_count: clan_colors.len(),
                 u_ability_ready: 1.0,
                 u_health: 1.0,
@@ -83,7 +83,7 @@ impl UnitRender {
                 ugli::ColorAttachment::Texture(&mut texture),
             );
             let framebuffer = &mut framebuffer;
-            ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+            ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
             ugli::draw(
                 framebuffer,
                 &shader_program.program,
@@ -96,7 +96,7 @@ impl UnitRender {
                 },
             );
         }
-        
+
         let clan_shader_programs = unit.render.clan_shader_configs
             [(unit.stats.get(UnitStat::Level) as usize) - 1]
             .iter()
@@ -112,7 +112,7 @@ impl UnitRender {
                     ugli::ColorAttachment::Texture(&mut new_texture),
                 );
                 let framebuffer = &mut framebuffer;
-                ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
                 ugli::draw(
                     framebuffer,
                     &program.program,
@@ -168,7 +168,7 @@ impl UnitRender {
                 let framebuffer = &mut framebuffer;
                 let status_time = status_time.unwrap_or(0);
                 let status_duration = status_duration.unwrap_or_else(|| 1.try_into().unwrap());
-                ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
                 ugli::draw(
                     framebuffer,
                     &program.program,

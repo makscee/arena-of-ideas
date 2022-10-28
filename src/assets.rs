@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 #[derive(Deserialize, geng::Assets)]
 #[asset(json)]
 pub struct Options {
-    pub clan_colors: HashMap<Clan, Color<f32>>,
+    pub clan_colors: HashMap<Clan, Rgba<f32>>,
     pub keys_mapping: Vec<KeyMapping>,
 }
 
@@ -30,7 +30,7 @@ pub struct StatusConfig {
     pub status: Status,
     #[serde(default)]
     pub description: String,
-    pub color: Option<Color<f32>>,
+    pub color: Option<Rgba<f32>>,
     #[serde(default = "StatusConfig::default_clan_origin")]
     pub clan_origin: Clan,
     pub render: Option<ShaderConfig>,
@@ -41,7 +41,7 @@ impl StatusConfig {
         Clan::Common
     }
 
-    pub fn get_color(&self, options: &Options) -> Color<f32> {
+    pub fn get_color(&self, options: &Options) -> Rgba<f32> {
         self.color.unwrap_or_else(|| {
             *options
                 .clan_colors
@@ -70,7 +70,7 @@ pub struct DamageHealConfig {
     pub description: String,
     #[serde(default = "StatusConfig::default_clan_origin")]
     pub clan_origin: Clan,
-    pub color: Option<Color<f32>>,
+    pub color: Option<Rgba<f32>>,
     // For rendering: lower order = more important
     #[serde(default)]
     pub order: i64,
@@ -609,7 +609,7 @@ impl geng::LoadAsset for Textures {
                                 let color = pixmap
                                     .pixel(pos.x as u32, pixmap.height() - 1 - pos.y as u32)
                                     .unwrap();
-                                Color::rgba(color.red(), color.green(), color.blue(), color.alpha())
+                                Rgba::new(color.red(), color.green(), color.blue(), color.alpha())
                                     .convert()
                             },
                         );

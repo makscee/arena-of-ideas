@@ -18,7 +18,7 @@ const DESCRIPTION_MARGIN: f32 = 0.1;
 const FONT_SIZE: f32 = 0.2;
 
 const DH_DESC_ARROW_SIZE: f32 = 0.1;
-const DH_DESC_BACKGROUND: Color<f32> = Color {
+const DH_DESC_BACKGROUND: Rgba<f32> = Rgba {
     r: 0.2,
     g: 0.2,
     b: 0.2,
@@ -26,13 +26,13 @@ const DH_DESC_BACKGROUND: Color<f32> = Color {
 };
 
 const STATUS_DESC_ARROW_SIZE: f32 = 0.15;
-const STATUS_DESC_FOREGROUND: Color<f32> = Color {
+const STATUS_DESC_FOREGROUND: Rgba<f32> = Rgba {
     r: 0.2,
     g: 0.2,
     b: 0.2,
     a: 1.0,
 };
-const STATUS_DESC_BACKGROUND: Color<f32> = Color {
+const STATUS_DESC_BACKGROUND: Rgba<f32> = Rgba {
     r: 0.1,
     g: 0.1,
     b: 0.1,
@@ -80,7 +80,7 @@ impl RenderModel {
         &mut self,
         position: Position,
         text: impl Into<String>,
-        color: Color<f32>,
+        color: Rgba<f32>,
         text_type: TextType,
     ) {
         let text_block = self
@@ -115,7 +115,7 @@ impl Render {
         }
     }
     pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Color::BLACK), None);
+        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.draw_field(
             &self.assets.custom_renders.field,
             game_time,
@@ -157,7 +157,7 @@ impl Render {
                 framebuffer,
                 &self.camera,
             );
-            let text_color = Color::try_from("#e6e6e6").unwrap();
+            let text_color = Rgba::try_from("#e6e6e6").unwrap();
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
                 format!("{:.0}", unit.stats.attack),
@@ -178,7 +178,7 @@ impl Render {
                 .translate(vec2(0.0, -0.3))
                 .extend_right(radius * 2.0)
                 .extend_down(radius * 0.7);
-            let text_color = Color::try_from("#e6e6e6").unwrap();
+            let text_color = Rgba::try_from("#e6e6e6").unwrap();
 
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
@@ -237,7 +237,7 @@ impl Render {
                         &shader_program.parameters,
                     ),
                     ugli::DrawParameters {
-                        blend_mode: Some(default()),
+                        blend_mode: Some(ugli::BlendMode::default()),
                         ..default()
                     },
                 );
@@ -292,7 +292,7 @@ impl Render {
         self.geng.draw_2d(
             framebuffer,
             &self.camera,
-            &draw_2d::Text::unit(&**self.geng.default_font(), &tick_text, Color::WHITE)
+            &draw_2d::Text::unit(&**self.geng.default_font(), &tick_text, Rgba::WHITE)
                 .scale_uniform(0.3 * text_scale)
                 .translate(vec2(0.0, self.camera.fov * 0.35)),
         );
@@ -313,10 +313,10 @@ impl Render {
                 || model.time_modifier == 4.0 && i == 2
                 || model.time_modifier < 2.0 && i == 0;
             let mut text_scale = 1.0;
-            let mut text_color = Color::try_from("#cccccc").unwrap();
+            let mut text_color = Rgba::try_from("#cccccc").unwrap();
             if is_active {
                 text_scale = 1.3;
-                text_color = Color::WHITE;
+                text_color = Rgba::WHITE;
             }
             self.geng.draw_2d(
                 framebuffer,
@@ -357,7 +357,7 @@ impl Render {
                 ),
                 geng::TextAlign::LEFT,
                 text_size,
-                Color::try_from("#e6e6e6").unwrap(),
+                Rgba::try_from("#e6e6e6").unwrap(),
             );
         }
     }
@@ -458,7 +458,7 @@ impl Render {
                 &description,
                 font_size,
                 text_pos,
-                Color::try_from("#e6e6e6").unwrap(),
+                Rgba::try_from("#e6e6e6").unwrap(),
                 framebuffer,
                 &self.camera,
             );
@@ -588,7 +588,7 @@ impl Render {
                         &lines,
                         font_size,
                         pos,
-                        Color::try_from("#e6e6e6").unwrap(),
+                        Rgba::try_from("#e6e6e6").unwrap(),
                         framebuffer,
                         camera,
                     );
@@ -672,7 +672,7 @@ pub fn draw_text(
     position: Vec2<f32>,
     text_align: geng::TextAlign,
     font_size: f32,
-    color: Color<f32>,
+    color: Rgba<f32>,
 ) {
     const SIZE_HACK: f32 = 1000.0;
     let font = font.borrow();
@@ -701,7 +701,7 @@ pub fn draw_lines(
     lines: &[impl AsRef<str>],
     font_size: f32,
     top_anchor: Vec2<f32>,
-    color: Color<f32>,
+    color: Rgba<f32>,
     framebuffer: &mut ugli::Framebuffer,
     camera: &impl geng::AbstractCamera2d,
 ) {
@@ -728,7 +728,7 @@ pub fn draw_text_wrapped(
     text: impl AsRef<str>,
     font_size: f32,
     target: AABB<f32>,
-    color: Color<f32>,
+    color: Rgba<f32>,
     framebuffer: &mut ugli::Framebuffer,
     camera: &impl geng::AbstractCamera2d,
 ) -> Option<()> {

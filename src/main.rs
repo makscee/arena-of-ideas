@@ -154,7 +154,7 @@ impl geng::State for Game {
                 ugli::ColorAttachment::Texture(&mut self.frame_texture),
             );
             let framebuffer = &mut framebuffer;
-            ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+            ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
             let index = match self
                 .history
                 .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
@@ -186,7 +186,7 @@ impl geng::State for Game {
                     );
                     let framebuffer = &mut framebuffer;
 
-                    ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                    ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
                     ugli::draw(
                         framebuffer,
                         &shader_program.program,
@@ -206,7 +206,7 @@ impl geng::State for Game {
                             &shader_program.parameters,
                         ),
                         ugli::DrawParameters {
-                            blend_mode: Some(default()),
+                            blend_mode: Some(ugli::BlendMode::default()),
                             ..default()
                         },
                     );
@@ -218,7 +218,7 @@ impl geng::State for Game {
                         ugli::ColorAttachment::Texture(&mut self.new_texture),
                     );
                     let framebuffer = &mut framebuffer;
-                    ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+                    ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
                     ugli::draw(
                         framebuffer,
                         &blend_shader_program.program,
@@ -238,7 +238,7 @@ impl geng::State for Game {
                             &blend_shader_program.parameters,
                         ),
                         ugli::DrawParameters {
-                            blend_mode: Some(default()),
+                            blend_mode: Some(ugli::BlendMode::default()),
                             ..default()
                         },
                     );
@@ -261,7 +261,7 @@ impl geng::State for Game {
                 &shader_program.parameters,
             ),
             ugli::DrawParameters {
-                blend_mode: Some(default()),
+                blend_mode: Some(ugli::BlendMode::default()),
                 ..default()
             },
         );
@@ -367,10 +367,10 @@ fn main() {
         ..default()
     });
     let mut theme = Theme::dark(&geng);
-    // theme.background_color = Color::WHITE;
-    theme.text_color = Color::BLACK;
+    // theme.background_color = Rgba::WHITE;
+    theme.text_color = Rgba::BLACK;
     theme.text_size = 50.0;
-    theme.usable_color = Color::BLACK;
+    theme.usable_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
 
     // Adds restarting on R

@@ -31,7 +31,7 @@ impl Render {
                 &shader_program.parameters,
             ),
             ugli::DrawParameters {
-                blend_mode: Some(default()),
+                blend_mode: Some(ugli::BlendMode::default()),
                 ..default()
             },
         );

@@ -222,7 +222,7 @@ pub struct Status {
     #[serde(default)]
     pub order: i32,
     #[serde(skip, default = "Status::default_color")]
-    pub color: Color<f32>,
+    pub color: Rgba<f32>,
     /// Whether the status will be hidden in status description render
     #[serde(default = "Status::default_hidden")]
     pub hidden: bool,
@@ -328,8 +328,8 @@ impl Status {
         }
     }
 
-    fn default_color() -> Color<f32> {
-        Color::WHITE
+    fn default_color() -> Rgba<f32> {
+        Rgba::WHITE
     }
 
     fn default_hidden() -> bool {
@@ -343,7 +343,7 @@ impl AttachedStatus {
     pub fn trigger<'a>(
         &'a self,
         mut filter: impl FnMut(&StatusTriggerType) -> bool + 'a,
-    ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, i32>, Id, Color<f32>)> + 'a
+    ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, i32>, Id, Rgba<f32>)> + 'a
     {
         self.status.listeners.iter().filter_map(move |listener| {
             let trigger = listener

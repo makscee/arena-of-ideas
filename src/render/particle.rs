@@ -28,16 +28,16 @@ impl Render {
                     u_unit_radius: particle.radius.as_f32(),
                     u_spawn: (particle.time_left / particle.duration).as_f32(),
                     u_action: 0.0,
-                    u_clan_color_1: Color::WHITE,
-                    u_clan_color_2: Color::WHITE,
-                    u_clan_color_3: Color::WHITE,
+                    u_clan_color_1: Rgba::WHITE,
+                    u_clan_color_2: Rgba::WHITE,
+                    u_clan_color_3: Rgba::WHITE,
                     u_clan_count: 0,
                 },
                 geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                 shader_program.parameters.clone(),
             ),
             ugli::DrawParameters {
-                blend_mode: Some(default()),
+                blend_mode: Some(ugli::BlendMode::default()),
                 ..default()
             },
         );

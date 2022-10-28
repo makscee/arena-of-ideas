@@ -9,7 +9,7 @@ pub struct Text {
     pub time: f32,
     pub text: String,
     pub text_type: TextType,
-    pub color: Color<f32>,
+    pub color: Rgba<f32>,
     pub scale: f32,
 }
 
@@ -64,12 +64,7 @@ impl TextBlock {
         self.bot_texts.retain(Text::is_alive);
     }
 
-    pub fn add_text_top(
-        &mut self,
-        text: impl Into<String>,
-        color: Color<f32>,
-        text_type: TextType,
-    ) {
+    pub fn add_text_top(&mut self, text: impl Into<String>, color: Rgba<f32>, text_type: TextType) {
         let dir = vec2(0.0, 1.0);
         Self::add_text(
             self.position + dir * 1.5,
@@ -85,7 +80,7 @@ impl TextBlock {
     pub fn add_text_bottom(
         &mut self,
         text: impl Into<String>,
-        color: Color<f32>,
+        color: Rgba<f32>,
         text_type: TextType,
     ) {
         let dir = vec2(0.0, -1.0);
@@ -106,7 +101,7 @@ impl TextBlock {
         texts: &mut VecDeque<Text>,
         text: String,
         text_type: TextType,
-        color: Color<f32>,
+        color: Rgba<f32>,
         scale: f32,
     ) {
         for text in texts.iter_mut() {

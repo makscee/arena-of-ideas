@@ -114,8 +114,7 @@ fn draw_slider<'a>(
         *value = change;
     }
     (
-        geng::ui::ColorBox::new(Color::try_from("#36b3c177").unwrap())
-            .fixed_size(vec2(100.0, 25.0)),
+        geng::ui::ColorBox::new(Rgba::try_from("#36b3c177").unwrap()).fixed_size(vec2(100.0, 25.0)),
         (
             title.center().fixed_size(vec2(150.0, 40.0)).center(),
             (
@@ -152,7 +151,7 @@ fn draw_slider_vector<'a>(
         *value_y = change;
     }
     (
-        geng::ui::ColorBox::new(Color::try_from("#36b3c177").unwrap())
+        geng::ui::ColorBox::new(Rgba::try_from("#36b3c177").unwrap())
             .fixed_size(vec2(100.0, 145.0)),
         (
             title.center().fixed_size(vec2(150.0, 40.0)).center(),
@@ -193,8 +192,7 @@ fn draw_selector<'a>(
     }
 
     (
-        geng::ui::ColorBox::new(Color::try_from("#36b3c177").unwrap())
-            .fixed_size(vec2(250.0, 10.0)),
+        geng::ui::ColorBox::new(Rgba::try_from("#36b3c177").unwrap()).fixed_size(vec2(250.0, 10.0)),
         (
             title.center().fixed_size(vec2(150.0, 40.0)).center(),
             (
@@ -226,7 +224,7 @@ impl geng::State for HeroEditorState {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Color::TRANSPARENT_WHITE), None);
+        ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
         let template = &self.model.units[self.model.selected_unit];
 
         let mut unit = Unit::new(

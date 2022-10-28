@@ -44,7 +44,7 @@ const DESCRIPTION_AABB: AABB<f32> = AABB {
     y_min: 0.17,
     y_max: 0.47,
 };
-const CARD_BACKGROUND_COLOR: Color<f32> = Color {
+const CARD_BACKGROUND_COLOR: Rgba<f32> = Rgba {
     r: 0.1,
     g: 0.1,
     b: 0.1,
@@ -95,7 +95,7 @@ impl CardRender {
         let mut temp_texture = ugli::Texture::new_with(
             self.geng.ugli(),
             hero_aabb.size().map(|x| x.ceil() as _),
-            |_| Color::TRANSPARENT_BLACK,
+            |_| Rgba::TRANSPARENT_BLACK,
         );
         let mut temp_framebuffer = ugli::Framebuffer::new_color(
             self.geng.ugli(),
@@ -140,7 +140,7 @@ impl CardRender {
         draw_2d::Text::unit(
             &**self.geng.default_font(),
             format!("{}", card.unit.stats.attack),
-            Color::WHITE,
+            Rgba::WHITE,
         )
         .fit_into(damage_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
@@ -149,7 +149,7 @@ impl CardRender {
         draw_2d::Text::unit(
             &**self.geng.default_font(),
             format!("{}", card.unit.stats.health),
-            Color::WHITE,
+            Rgba::WHITE,
         )
         .fit_into(health_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
@@ -159,7 +159,7 @@ impl CardRender {
             draw_2d::Text::unit(
                 &**self.geng.default_font(),
                 format!("Tier {}", card.template.tier),
-                Color::WHITE,
+                Rgba::WHITE,
             )
             .fit_into(tier_aabb)
             .draw_2d(&self.geng, framebuffer, camera);
@@ -179,8 +179,8 @@ impl CardRender {
                     .clan_colors
                     .get(&clan)
                     .copied()
-                    .unwrap_or(Color::WHITE);
-                let text_color = Color::WHITE;
+                    .unwrap_or(Rgba::WHITE);
+                let text_color = Rgba::WHITE;
                 let text = format!("{:?}", clan)
                     .chars()
                     .next()
@@ -210,7 +210,7 @@ impl CardRender {
         draw_2d::Text::unit(
             &**self.geng.default_font(),
             format!("{}", card.unit.unit_type),
-            Color::WHITE,
+            Rgba::WHITE,
         )
         .fit_into(name_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
@@ -222,7 +222,7 @@ impl CardRender {
             &card.template.description,
             font_size,
             description_aabb,
-            Color::WHITE,
+            Rgba::WHITE,
             framebuffer,
             camera,
         );

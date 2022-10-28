@@ -184,7 +184,7 @@ impl EffectImpl for DamageEffect {
             .or(logic.model.dead_units.get(&context.target.unwrap()))
             .unwrap();
         let damage_text = damage;
-        let text_color = context.color.unwrap_or(Color::RED);
+        let text_color = context.color.unwrap_or(Rgba::RED);
         logic.model.render_model.add_text(
             target_unit.position,
             &format!("{}", -damage_text),
@@ -239,7 +239,7 @@ impl EffectImpl for DamageEffect {
         }
 
         if killed {
-            // logic.render.add_text(target.position, "KILL", Color::RED);
+            // logic.render.add_text(target.position, "KILL", Rgba::RED);
             if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
                 logic.effects.push_back(QueuedEffect {
                     effect: effect.clone(),

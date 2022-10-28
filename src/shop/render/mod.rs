@@ -11,52 +11,52 @@ pub use card::*;
 pub use layout::*;
 
 const TEXT_OCCUPY_SPACE: f32 = 0.6;
-const BACKGROUND_COLOR: Color<f32> = Color::BLACK;
-const TEXT_BACKGROUND_COLOR: Color<f32> = Color {
+const BACKGROUND_COLOR: Rgba<f32> = Rgba::BLACK;
+const TEXT_BACKGROUND_COLOR: Rgba<f32> = Rgba {
     r: 0.2,
     g: 0.2,
     b: 0.2,
     a: 1.0,
 };
 const SELL_BUTTON_FRAME_WIDTH: f32 = 0.01;
-const SELL_BUTTON_COLOR: Color<f32> = Color {
+const SELL_BUTTON_COLOR: Rgba<f32> = Rgba {
     r: 0.3,
     g: 0.3,
     b: 0.3,
     a: 1.0,
 };
-const BUTTON_COLOR: Color<f32> = Color {
+const BUTTON_COLOR: Rgba<f32> = Rgba {
     r: 0.0,
     g: 0.7,
     b: 1.0,
     a: 1.0,
 };
-const BUTTON_HOVER_COLOR: Color<f32> = Color {
+const BUTTON_HOVER_COLOR: Rgba<f32> = Rgba {
     r: 0.0,
     g: 0.5,
     b: 0.8,
     a: 1.0,
 };
-const BUTTON_PRESS_COLOR: Color<f32> = Color {
+const BUTTON_PRESS_COLOR: Rgba<f32> = Rgba {
     r: 0.0,
     g: 0.3,
     b: 0.6,
     a: 1.0,
 };
-const TEXT_COLOR: Color<f32> = Color::WHITE;
+const TEXT_COLOR: Rgba<f32> = Rgba::WHITE;
 const CLAN_MAX_SIZE: f32 = 0.15;
 const BAR_SIZE: f32 = 0.1;
 /// Relative to the framebuffer size
 const CLAN_INFO_SIZE: Vec2<f32> = vec2(0.3, 0.2);
 /// Relative to the clan info size
 const FONT_SIZE: f32 = 0.1;
-const CLAN_BACKGROUND_COLOR: Color<f32> = Color {
+const CLAN_BACKGROUND_COLOR: Rgba<f32> = Rgba {
     r: 0.3,
     g: 0.3,
     b: 0.3,
     a: 1.0,
 };
-const CLAN_INFO_BACKGROUND_COLOR: Color<f32> = Color {
+const CLAN_INFO_BACKGROUND_COLOR: Rgba<f32> = Rgba {
     r: 0.5,
     g: 0.5,
     b: 0.5,
@@ -113,7 +113,7 @@ impl Render {
         framebuffer: &mut ugli::Framebuffer,
     ) {
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
-        ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None);
+        ugli::clear(framebuffer, Some(BACKGROUND_COLOR), None, None);
         let camera = &geng::PixelPerfectCamera;
         let layout = &render.layout;
 
@@ -171,7 +171,7 @@ impl Render {
                     framebuffer,
                     &self.camera,
                 );
-                let text_color = Color::try_from("#e6e6e6").unwrap();
+                let text_color = Rgba::try_from("#e6e6e6").unwrap();
                 draw_2d::Text::unit(
                     self.geng.default_font().clone(),
                     format!("{:.0}", unit.stats.attack),
@@ -227,7 +227,7 @@ impl Render {
                         &shader_program.parameters,
                     ),
                     ugli::DrawParameters {
-                        blend_mode: Some(default()),
+                        blend_mode: Some(ugli::BlendMode::default()),
                         ..default()
                     },
                 );
@@ -316,8 +316,8 @@ impl Render {
                     .clan_colors
                     .get(&clan)
                     .copied()
-                    .unwrap_or(Color::WHITE);
-                let text_color = Color::WHITE;
+                    .unwrap_or(Rgba::WHITE);
+                let text_color = Rgba::WHITE;
                 let text = format!("{:?}", clan)
                     .chars()
                     .next()
@@ -438,7 +438,7 @@ fn draw_clan_info(
     );
 }
 
-fn button_color(widget: &LayoutWidget) -> Color<f32> {
+fn button_color(widget: &LayoutWidget) -> Rgba<f32> {
     if widget.pressed {
         BUTTON_PRESS_COLOR
     } else if widget.hovered {
@@ -451,7 +451,7 @@ fn button_color(widget: &LayoutWidget) -> Color<f32> {
 fn draw_rectangle(
     text: impl AsRef<str>,
     aabb: AABB<f32>,
-    color: Color<f32>,
+    color: Rgba<f32>,
     geng: &Geng,
     framebuffer: &mut ugli::Framebuffer,
 ) {
@@ -468,7 +468,7 @@ fn draw_rectangle_frame(
     text: impl AsRef<str>,
     aabb: AABB<f32>,
     width: f32,
-    color: Color<f32>,
+    color: Rgba<f32>,
     geng: &Geng,
     framebuffer: &mut ugli::Framebuffer,
 ) {
