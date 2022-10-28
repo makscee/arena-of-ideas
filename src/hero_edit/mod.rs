@@ -114,24 +114,38 @@ fn draw_slider<'a>(
         *value = change;
     }
     (
-        geng::ui::ColorBox::new(Rgba::try_from("#36b3c177").unwrap()).fixed_size(vec2(100.0, 25.0)),
+        geng::ui::ColorBox::new(Rgba::try_from("#4d9ea777").unwrap()),
         (
-            title.center().fixed_size(vec2(150.0, 40.0)).center(),
+            Text::new(title, cx.geng().default_font(), 40.0, Rgba::BLACK)
+                .padding_horizontal(16.0)
+                .center()
+                .background_color(Rgba::try_from("#1491d477").unwrap()),
             (
-                slider.padding_vertical(8.0).fixed_size(vec2(170.0, 1.0)),
-                slider_value
-                    .fixed_size(vec2(80.0, 30.0))
-                    .center()
+                slider
                     .padding_horizontal(16.0)
-                    .padding_vertical(16.0),
+                    .padding_vertical(8.0)
+                    .constraints_override(Constraints {
+                        min_size: vec2(220.0, 0.0),
+                        flex: vec2(0.0, 1.0),
+                    }),
+                Text::new(slider_value, cx.geng().default_font(), 32.0, Rgba::BLACK)
+                    .padding_horizontal(16.0)
+                    .padding_vertical(8.0)
+                    .constraints_override(Constraints {
+                        min_size: vec2(50.0, 0.0),
+                        flex: vec2(0.0, 1.0),
+                    }),
             )
                 .row()
-                .center(),
+                .constraints_override(Constraints {
+                    min_size: vec2(0.0, 60.0),
+                    flex: vec2(0.0, 0.0),
+                }),
         )
             .column(),
     )
         .stack()
-        .uniform_padding(16.0)
+        .uniform_padding(8.0)
 }
 
 fn draw_slider_vector<'a>(
