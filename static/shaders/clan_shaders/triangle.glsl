@@ -1,12 +1,12 @@
 #include <common.glsl>
 
-uniform int u_fill = 1;
-uniform int u_outline = 2;
-uniform vec2 u_offset = vec2(0.0, 0.0);
-uniform vec2 u_index_offset = vec2(0.2, -0.1);
-uniform float u_outline_thickness = 0.05;
-uniform int u_count = 3;
-uniform float u_size = 0.3;
+uniform int u_fill;
+uniform int u_outline;
+uniform vec2 u_offset;
+uniform vec2 u_index_offset;
+uniform float u_outline_thickness;
+uniform int u_count;
+uniform float u_size;
 uniform float u_rotation;
 
 #ifdef VERTEX_SHADER

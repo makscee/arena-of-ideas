@@ -2,6 +2,7 @@ use crate::serde_json::Value;
 use std::{array, env};
 
 use chrono::format;
+use geng::prelude::ugli::uniforms;
 use geng::prelude::{itertools::Itertools, ugli::raw::RGBA};
 use geng::ui::Widget;
 use geng::{prelude::*, Draw2d};
@@ -55,6 +56,38 @@ impl HeroEditorModel {
             .iter()
             .filter(|tuple| tuple.1.tier > 0)
             .map(|tuple| tuple.1.clone())
+            .map(|mut unit| {
+                let mut parameters = ShaderParameters::new();
+                parameters.0.extend(HashMap::from([(
+                    "u_count".to_string(),
+                    ShaderParameter::Int(1),
+                )]));
+                parameters.0.extend(HashMap::from([(
+                    "u_fill".to_string(),
+                    ShaderParameter::Int(1),
+                )]));
+                if unit.clans.len() > unit.clan_renders.len() {
+                    let mut clan_renders = vec![];
+                    for i in 0..3 {
+                        let mut configs = vec![];
+                        for i in 0..unit.clans.len() {
+                            parameters.0.insert(
+                                "u_size".to_string(),
+                                ShaderParameter::Float(1.0 / (i as f32 + 2.0)),
+                            );
+                            configs.push(ShaderConfig {
+                                path: "shaders/clan_shaders/circle.glsl".to_string(),
+                                parameters: parameters.clone(),
+                                vertices: default(),
+                                instances: default(),
+                            });
+                        }
+                        clan_renders.push(configs);
+                    }
+                    unit.clan_renders = clan_renders;
+                }
+                unit
+            })
             .collect_vec();
         let shaders = assets
             .clan_shaders

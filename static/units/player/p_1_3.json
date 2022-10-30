@@ -1,0 +1,131 @@
+{
+  "action": {
+    "preset": "effects/melee_hit.json"
+  },
+  "attack": 1,
+  "clan_renders": [
+    [
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_index_offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "u_offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "u_outline": 0,
+          "u_outline_thickness": 0.0,
+          "u_size": 0.5
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      },
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.3333333432674408
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      },
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.25
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      }
+    ],
+    [
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.5
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      },
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.3333333432674408
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      },
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.25
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      }
+    ],
+    [
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.5
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      },
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.3333333432674408
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      },
+      {
+        "instances": 0,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 1,
+          "u_size": 0.25
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 0
+      }
+    ]
+  ],
+  "clans": [
+    "Demons",
+    "Protectors",
+    "Warlocks"
+  ],
+  "description": "TBD",
+  "health": 2,
+  "name": "3",
+  "radius": 0.4,
+  "render": {
+    "instances": 1,
+    "parameters": {},
+    "path": "shaders/default_circle_hero.glsl",
+    "vertices": 200
+  },
+  "statuses": [],
+  "tier": 1
+}
