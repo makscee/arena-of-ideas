@@ -7,6 +7,7 @@ uniform vec2 u_index_offset = vec2(0.3, -0.1);
 uniform float u_outline_thickness = 0.05;
 uniform int u_count = 3;
 uniform float u_size = 0.3;
+uniform float u_rotation;
 
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
@@ -33,6 +34,7 @@ float distance1d(float x, float size) {
 float shapeDistance(vec2 uv, int index, float size) {
     uv -= u_offset + float(index) * u_index_offset;
 
+    uv = rotateCW(uv, u_rotation * pi * 2);
     float dx = distance1d(uv.x, size);
     float dy = distance1d(uv.y, size);
 

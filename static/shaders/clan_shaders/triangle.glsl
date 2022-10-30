@@ -7,6 +7,7 @@ uniform vec2 u_index_offset = vec2(0.2, -0.1);
 uniform float u_outline_thickness = 0.05;
 uniform int u_count = 3;
 uniform float u_size = 0.3;
+uniform float u_rotation;
 
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
@@ -40,6 +41,7 @@ float toSegment(vec2 p, vec2 a, vec2 b) {
 float shapeDistance(vec2 uv, int index, float size) {
     uv -= u_offset + float(index) * u_index_offset;
 
+    uv = rotateCW(uv, u_rotation * pi * 2);
     vec2 p = uv;
     vec2 p1 = -vec2(size);
     vec2 p2 = vec2(size, -size);
