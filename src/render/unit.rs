@@ -104,6 +104,9 @@ impl UnitRender {
             .collect_vec();
 
         for (ind, color) in clan_colors.iter().enumerate() {
+            if clan_shader_programs.len() <= ind {
+                continue;
+            }
             let program = clan_shader_programs[ind].clone();
             let mut new_texture = ugli::Texture::new_uninitialized(self.geng.ugli(), texture_size);
             {

@@ -4,17 +4,17 @@ use geng::ui::*;
 
 pub struct Slider<'a> {
     sense: &'a mut Sense,
-    pos: &'a mut Option<AABB<f64>>,
+    pos: &'a mut Option<AABB<f32>>,
     tick_radius: &'a mut f32,
-    value: f64,
-    range: RangeInclusive<f64>,
-    change: RefCell<&'a mut Option<f64>>,
+    value: f32,
+    range: RangeInclusive<f32>,
+    change: RefCell<&'a mut Option<f32>>,
 }
 
 impl<'a> Slider<'a> {
     const ANIMATION_SPEED: f32 = 5.0;
 
-    pub fn new(cx: &'a Controller, value: f64, range: RangeInclusive<f64>) -> Self {
+    pub fn new(cx: &'a Controller, value: f32, range: RangeInclusive<f32>) -> Self {
         Slider {
             sense: cx.get_state(),
             tick_radius: cx.get_state(),
@@ -25,7 +25,7 @@ impl<'a> Slider<'a> {
         }
     }
 
-    pub fn get_change(&self) -> Option<f64> {
+    pub fn get_change(&self) -> Option<f32> {
         self.change.borrow_mut().take()
     }
 }
@@ -44,7 +44,7 @@ impl<'a> Widget for Slider<'a> {
             .clamp_abs(Self::ANIMATION_SPEED * delta_time as f32);
     }
     fn draw(&mut self, cx: &mut DrawContext) {
-        *self.pos = Some(cx.position);
+        *self.pos = Some(cx.position.map(|x| x as f32));
         let geng = cx.geng;
         let draw_2d = geng.draw_2d_helper();
         let position = cx.position.map(|x| x as f32);
@@ -116,7 +116,7 @@ impl<'a> Widget for Slider<'a> {
             if let geng::Event::MouseDown { position, .. }
             | geng::Event::MouseMove { position, .. } = &event
             {
-                let position = position.x - aabb.x_min;
+                let position = position.x as f32 - aabb.x_min;
                 let new_value = *self.range.start()
                     + ((position - aabb.height() / 6.0) / (aabb.width() - aabb.height() / 3.0))
                         .clamp(0.0, 1.0)

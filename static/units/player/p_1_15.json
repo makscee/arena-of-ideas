@@ -11,31 +11,16 @@
           "u_count": 1,
           "u_fill": 0,
           "u_index_offset": {
-            "x": 0.0,
+            "x": -0.0,
             "y": 0.0
           },
           "u_offset": {
             "x": 0.0,
-            "y": 0.0
+            "y": -0.0
           },
           "u_outline": 1,
-          "u_outline_thickness": 0.18286974728107452,
-          "u_size": 0.43615302443504333
-        },
-        "path": "shaders/clan_shaders/square.glsl",
-        "vertices": 1
-      }
-    ],
-    [
-      {
-        "instances": 1,
-        "parameters": {
-          "u_count": 1,
-          "u_offset": {
-            "x": 0.0,
-            "y": 0.0
-          },
-          "u_outline_thickness": 0.074951171875
+          "u_outline_thickness": 0.10999999940395355,
+          "u_size": 0.41999998688697815
         },
         "path": "shaders/clan_shaders/circle.glsl",
         "vertices": 1
@@ -46,11 +31,40 @@
         "instances": 1,
         "parameters": {
           "u_count": 1,
-          "u_offset": {
-            "x": 0.0,
+          "u_fill": 0,
+          "u_index_offset": {
+            "x": -0.0,
             "y": 0.0
           },
-          "u_outline_thickness": 0.2658354640007019
+          "u_offset": {
+            "x": 0.0,
+            "y": -0.0
+          },
+          "u_outline": 1,
+          "u_outline_thickness": 0.20000000298023224,
+          "u_size": 0.5699999928474426
+        },
+        "path": "shaders/clan_shaders/circle.glsl",
+        "vertices": 1
+      }
+    ],
+    [
+      {
+        "instances": 1,
+        "parameters": {
+          "u_count": 1,
+          "u_fill": 0,
+          "u_index_offset": {
+            "x": -0.0,
+            "y": 0.0
+          },
+          "u_offset": {
+            "x": 0.0,
+            "y": -0.0
+          },
+          "u_outline": 1,
+          "u_outline_thickness": 0.3700000047683716,
+          "u_size": 0.7699999809265137
         },
         "path": "shaders/clan_shaders/circle.glsl",
         "vertices": 1
