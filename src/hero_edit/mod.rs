@@ -272,10 +272,14 @@ fn draw_selector<'a>(
                 .background_color(Rgba::try_from("#1491d477").unwrap()),
             (
                 minus_button,
-                values[*selected]
-                    .to_string()
-                    .center()
-                    .fixed_size(vec2(150.0, 40.0)),
+                Text::new(
+                    values[*selected].to_string(),
+                    cx.geng().default_font(),
+                    35.0,
+                    Rgba::BLACK,
+                )
+                .center()
+                .fixed_size(vec2(170.0, 40.0)),
                 plus_button,
             )
                 .row()
