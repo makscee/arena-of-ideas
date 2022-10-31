@@ -137,7 +137,7 @@ impl Shop {
                 framebuffer,
                 camera,
             );
-            let text_color = Color::try_from("#e6e6e6").unwrap();
+            let text_color = Rgba::try_from("#e6e6e6").unwrap();
             draw_2d::Text::unit(
                 geng.default_font().clone(),
                 format!("{:.0}", unit.stats.attack),
@@ -196,7 +196,7 @@ impl Shop {
                         &shader_program.parameters,
                     ),
                     ugli::DrawParameters {
-                        blend_mode: Some(default()),
+                        blend_mode: Some(ugli::BlendMode::default()),
                         ..default()
                     },
                 );
@@ -231,17 +231,17 @@ impl Shop {
             self.enabled = false;
         }
         let text = format!("Tier {}", self.tier);
-        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Color::WHITE);
+        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::WHITE);
 
         let text = match tier_up_cost(self.tier, self.tier_rounds) {
             Some(cost) => format!("Tier Up ({})", cost),
             None => "Tier Up (?)".to_string(),
         };
-        let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Color::WHITE);
+        let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::WHITE);
 
         let text = if self.money == 1 { "coin" } else { "coins" };
         let text = format!("{} {}", self.money, text);
-        let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Color::WHITE);
+        let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::WHITE);
 
         left.push(reroll.boxed());
         right.push(go.boxed());

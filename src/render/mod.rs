@@ -121,7 +121,7 @@ impl Render {
         shop: &Shop,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        ugli::clear(framebuffer, Some(Rgba::BLACK), None);
+        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.draw_field(
             &self.assets.custom_renders.field,
             game_time,
