@@ -222,6 +222,69 @@ impl UnitRender {
         self.draw_unit_with_position(unit, model, game_time, camera, framebuffer, position)
     }
 
+    pub fn draw_unit_stats(
+        &self,
+        unit: &Unit,
+        camera: &geng::Camera2d,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        let radius = unit.render.radius.as_f32();
+
+        // Draw damage and health
+        let unit_aabb =
+            AABB::point(unit.render.render_position.map(|x| x.as_f32())).extend_uniform(radius);
+        let size = radius * 0.5;
+        let damage = AABB::point(unit_aabb.bottom_left())
+            .extend_right(size)
+            .extend_up(size)
+            .translate(vec2(0.0, -0.1));
+        let health = AABB::point(unit_aabb.bottom_right())
+            .extend_left(size)
+            .extend_up(size)
+            .translate(vec2(0.0, -0.1));
+
+        draw_2d::Quad::new(
+            damage.extend_uniform(0.03),
+            Rgba::try_from("#d0a632").unwrap(),
+        )
+        .draw_2d(&self.geng, framebuffer, camera);
+        draw_2d::Quad::new(
+            health.extend_uniform(0.03),
+            Rgba::try_from("#e13d2f").unwrap(),
+        )
+        .draw_2d(&self.geng, framebuffer, camera);
+        let text_color = Rgba::try_from("#ffffff").unwrap();
+        draw_2d::Text::unit(
+            self.geng.default_font().clone(),
+            format!("{:.0}", unit.stats.attack),
+            text_color,
+        )
+        .fit_into(damage)
+        .draw_2d(&self.geng, framebuffer, camera);
+        draw_2d::Text::unit(
+            self.geng.default_font().clone(),
+            format!("{:.0}", unit.stats.health),
+            text_color,
+        )
+        .fit_into(health)
+        .draw_2d(&self.geng, framebuffer, camera);
+
+        // Draw name
+        let name_aabb = AABB::point(unit_aabb.bottom_left())
+            .translate(vec2(0.0, -0.3))
+            .extend_right(radius * 2.0)
+            .extend_down(radius * 0.7);
+        let text_color = Rgba::try_from("#838383").unwrap();
+
+        draw_2d::Text::unit(
+            self.geng.default_font().clone(),
+            &unit.unit_type,
+            text_color,
+        )
+        .fit_into(name_aabb)
+        .draw_2d(&self.geng, framebuffer, camera);
+    }
+
     pub fn draw_hover(
         &self,
         unit: &Unit,

@@ -12,7 +12,7 @@ const float injureAnimationTime = 0.5;
 const float thicknessOuter = 0.07;
 const float thicknessInner = thicknessOuter * .5;
 
-const vec3 player_faction_color = vec3(1);
+const vec3 player_faction_color = vec3(0);
 const vec3 enemy_faction_color = vec3(0.988, 0.004, 0.027);
 const vec3 heal_color = vec3(0.129, 1, 0.024);
 

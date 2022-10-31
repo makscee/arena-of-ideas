@@ -105,6 +105,7 @@ impl Shop {
         let mut hovered_unit = None;
         for (index, unit) in self.units.iter_mut().enumerate() {
             unit_render.draw_unit(&unit, None, game_time, &camera, framebuffer);
+            unit_render.draw_unit_stats(&unit, &camera, framebuffer);
 
             // On unit hover
             if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
@@ -113,45 +114,6 @@ impl Shop {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit.clone());
             }
-
-            let radius = unit.render.radius.as_f32();
-
-            // Draw damage and health
-            let unit_aabb =
-                AABB::point(unit.render.render_position.map(|x| x.as_f32())).extend_uniform(radius);
-            let size = radius * 0.7;
-            let damage = AABB::point(unit_aabb.bottom_left())
-                .extend_right(size)
-                .extend_up(size);
-            let health = AABB::point(unit_aabb.bottom_right())
-                .extend_left(size)
-                .extend_up(size);
-
-            draw_2d::TexturedQuad::new(damage, assets.swords_emblem.clone()).draw_2d(
-                &geng,
-                framebuffer,
-                camera,
-            );
-            draw_2d::TexturedQuad::new(health, assets.hearts.clone()).draw_2d(
-                &geng,
-                framebuffer,
-                camera,
-            );
-            let text_color = Rgba::try_from("#e6e6e6").unwrap();
-            draw_2d::Text::unit(
-                geng.default_font().clone(),
-                format!("{:.0}", unit.stats.attack),
-                text_color,
-            )
-            .fit_into(damage)
-            .draw_2d(&geng, framebuffer, camera);
-            draw_2d::Text::unit(
-                geng.default_font().clone(),
-                format!("{:.0}", unit.stats.health),
-                text_color,
-            )
-            .fit_into(health)
-            .draw_2d(&geng, framebuffer, camera);
         }
 
         // Draw slots
@@ -186,10 +148,7 @@ impl Shop {
                         ugli::uniforms! {
                             u_time: game_time,
                             u_unit_position: position,
-                            u_parent_faction: match faction {
-                                Faction::Player => 1.0,
-                                Faction::Enemy => -1.0,
-                            },
+                            u_parent_faction: 1.0,
                             u_health: health,
                         },
                         geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),

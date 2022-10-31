@@ -121,7 +121,7 @@ impl Render {
         shop: &Shop,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
+        ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
         self.draw_field(
             &self.assets.custom_renders.field,
             game_time,
@@ -140,59 +140,8 @@ impl Render {
             self.unit_render
                 .draw_unit(unit, Some(model), game_time, &self.camera, framebuffer);
 
-            let radius = unit.render.radius.as_f32();
-
-            // Draw damage and health
-            let unit_aabb =
-                AABB::point(unit.render.render_position.map(|x| x.as_f32())).extend_uniform(radius);
-            let size = radius * 0.7;
-            let damage = AABB::point(unit_aabb.bottom_left())
-                .extend_right(size)
-                .extend_up(size);
-            let health = AABB::point(unit_aabb.bottom_right())
-                .extend_left(size)
-                .extend_up(size);
-
-            draw_2d::TexturedQuad::new(damage, self.assets.swords_emblem.clone()).draw_2d(
-                &self.geng,
-                framebuffer,
-                &self.camera,
-            );
-            draw_2d::TexturedQuad::new(health, self.assets.hearts.clone()).draw_2d(
-                &self.geng,
-                framebuffer,
-                &self.camera,
-            );
-            let text_color = Rgba::try_from("#e6e6e6").unwrap();
-            draw_2d::Text::unit(
-                self.geng.default_font().clone(),
-                format!("{:.0}", unit.stats.attack),
-                text_color,
-            )
-            .fit_into(damage)
-            .draw_2d(&self.geng, framebuffer, &self.camera);
-            draw_2d::Text::unit(
-                self.geng.default_font().clone(),
-                format!("{:.0}", unit.stats.health),
-                text_color,
-            )
-            .fit_into(health)
-            .draw_2d(&self.geng, framebuffer, &self.camera);
-
-            // Draw name
-            let name_aabb = AABB::point(unit_aabb.bottom_left())
-                .translate(vec2(0.0, -0.3))
-                .extend_right(radius * 2.0)
-                .extend_down(radius * 0.7);
-            let text_color = Rgba::try_from("#e6e6e6").unwrap();
-
-            draw_2d::Text::unit(
-                self.geng.default_font().clone(),
-                &unit.unit_type,
-                text_color,
-            )
-            .fit_into(name_aabb)
-            .draw_2d(&self.geng, framebuffer, &self.camera);
+            self.unit_render
+                .draw_unit_stats(unit, &self.camera, framebuffer);
 
             // On unit hover
             if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
