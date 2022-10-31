@@ -154,6 +154,9 @@ impl Render {
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);
+                if let Some(unit) = hovered_unit {
+                    self.unit_render.draw_hover(&unit, &self.camera, framebuffer);
+                }
             }
         }
 
