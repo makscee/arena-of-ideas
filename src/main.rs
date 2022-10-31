@@ -37,6 +37,12 @@ struct FrameHistory {
     model: Model,
 }
 
+#[derive(PartialEq, Eq, Hash)]
+pub enum GameState {
+    Shop,
+    Battle,
+}
+
 pub struct Game {
     geng: Geng,
     assets: Rc<Assets>,
@@ -47,10 +53,11 @@ pub struct Game {
     logic: Logic,
     events: Events,
     render: Render,
-    shop: Shop,
     frame_texture: Texture,
     previous_texture: Texture,
     new_texture: Texture,
+    shop: Shop,
+    state: GameState,
 }
 
 impl Game {
@@ -58,7 +65,6 @@ impl Game {
         geng: &Geng,
         assets: &Rc<Assets>,
         config: Config,
-        shop: Shop,
         round: GameRound,
         custom: bool,
     ) -> Self {
@@ -70,7 +76,7 @@ impl Game {
             round,
             RenderModel::new(),
             1.0,
-            shop.lives,
+            10,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model);
@@ -80,28 +86,28 @@ impl Game {
             model: logic.model.clone(),
         };
         let history = vec![last_frame.clone()];
+        let render = Render::new(geng, &assets, &config);
+        let mut shop = Shop::new(assets, render.camera.clone());
+        shop.reroll(true);
+
         let mut game = Self {
             geng: geng.clone(),
             assets: assets.clone(),
             time: 0.0,
             history,
-            render: Render::new(geng, &assets, &config),
+            render,
             timeline_captured: false,
-            shop,
             logic,
             events,
             last_frame,
             frame_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             new_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             previous_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
-        };
-        let shop = if custom { None } else { Some(&mut game.shop) };
-        game.logic.initialize(
-            &mut game.events,
             shop,
-            config.player.clone(),
-            game.logic.model.round.clone(),
-        );
+            state: GameState::Shop,
+        };
+        game.logic
+            .initialize(&mut game.events, game.logic.model.round.clone());
         game
     }
 }
@@ -130,7 +136,22 @@ impl geng::State for Game {
         let last_frame = &self.last_frame;
 
         if self.time > self.last_frame.time {
-            self.logic.update(delta_time);
+            if self.shop.updated && self.state == GameState::Shop {
+                self.shop.updated = false;
+                self.logic.model.units.clear();
+                for unit in self.shop.team.iter_mut() {
+                    unit.id = self.logic.model.next_id;
+                    self.logic.model.next_id += 1;
+                    self.logic.model.units.insert(unit.clone());
+                }
+            }
+
+            if self.state == GameState::Battle {
+                self.logic.update(delta_time);
+            }
+            if self.state == GameState::Shop && !self.shop.enabled {
+                self.logic.model.transition = true;
+            }
 
             let new_frame = FrameHistory {
                 time: self.time,
@@ -168,7 +189,15 @@ impl geng::State for Game {
                 .get(index)
                 .unwrap_or(self.history.last().unwrap());
             game_time = entry.time;
-            self.render.draw(game_time, &entry.model, framebuffer);
+            self.render
+                .draw(game_time, &entry.model, &self.shop, framebuffer);
+            self.shop.draw(
+                &self.geng,
+                &self.assets,
+                game_time,
+                framebuffer,
+                &self.render.camera,
+            );
         }
 
         let blend_shader_program = &self.assets.postfx_render.blend_shader;
@@ -278,6 +307,7 @@ impl geng::State for Game {
             }
             _ => {}
         }
+        self.shop.handle_event(event);
     }
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
         use geng::ui::*;
@@ -288,51 +318,43 @@ impl geng::State for Game {
             Box::new(|new_time| self.time = new_time),
         );
         self.timeline_captured = timeline.sense().unwrap().is_captured();
-        Box::new(
+        let mut col = geng::ui::column![];
+
+        if let Some(overlay) = self.shop.ui(cx) {
+            col.push(overlay.boxed());
+        }
+
+        col.push(
             timeline
                 .constraints_override(Constraints {
                     min_size: vec2(0.0, 32.0),
                     flex: vec2(1.0, 0.0),
                 })
-                .align(vec2(0.5, 0.0)),
-        )
+                .align(vec2(0.5, 0.0))
+                .boxed(),
+        );
+        col.align(vec2(0.5, 0.0)).boxed()
     }
     fn transition(&mut self) -> Option<geng::Transition> {
-        match self.last_frame.model.transition {
-            false => None,
-            true => {
-                if self.logic.model.visual_timer > Time::ZERO {
-                    return None;
+        if self.last_frame.model.transition {
+            self.logic.model.transition = false;
+            match self.state {
+                GameState::Shop => {
+                    self.state = GameState::Battle;
+                    self.shop.enabled = false;
+                    self.logic.model.units.clear();
+                    self.logic.init_player(self.shop.team.clone());
+                    self.logic.init_enemies(self.logic.model.round.clone());
                 }
-                let mut party: Vec<Unit> = self
-                    .logic
-                    .model
-                    .units
-                    .iter()
-                    .filter(|unit| unit.faction == Faction::Player && unit.shop_unit.is_some())
-                    .map(|unit| unit.shop_unit.clone().unwrap())
-                    .collect();
-                party.append(
-                    &mut self
-                        .logic
-                        .model
-                        .dead_units
-                        .iter()
-                        .filter(|unit| unit.faction == Faction::Player && unit.shop_unit.is_some())
-                        .map(|unit| unit.shop_unit.clone().unwrap())
-                        .collect(),
-                );
-                self.shop.replace_party(party);
-                let mut shop_state = shop::ShopState::load(
-                    &self.geng,
-                    &self.assets,
-                    self.shop.clone(),
-                    self.last_frame.model.config.clone(),
-                );
-                shop_state.shop.lives = self.last_frame.model.lives;
-                Some(geng::Transition::Switch(Box::new(shop_state)))
+                GameState::Battle => {
+                    if self.logic.model.visual_timer <= r32(0.0) {
+                        self.state = GameState::Shop;
+                        self.shop.enabled = true;
+                    }
+                }
             }
         }
+        None
     }
 }
 
@@ -367,10 +389,10 @@ fn main() {
         ..default()
     });
     let mut theme = Theme::dark(&geng);
-    // theme.background_color = Rgba::WHITE;
-    theme.text_color = Rgba::BLACK;
+    // theme.background_color = Color::WHITE;
+    theme.text_color = Rgba::WHITE;
     theme.text_size = 50.0;
-    theme.usable_color = Rgba::BLACK;
+    theme.usable_color = Rgba::WHITE;
     geng.set_ui_theme(theme);
 
     // Adds restarting on R
@@ -451,8 +473,15 @@ fn main() {
                             None => (),
                         }
 
+                        let round = assets
+                            .rounds
+                            .get(0)
+                            .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
+                            .clone();
                         let assets = Rc::new(assets);
-                        Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
+
+                        Box::new(Game::new(&geng, &assets, config, round, true))
+                        //Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
                     }
                 },
             );
