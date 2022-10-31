@@ -41,6 +41,7 @@ pub struct Shop {
     pub lives: i32,
     pub enabled: bool,
     pub updated: bool,
+    pub freezed: bool,
 }
 
 impl Shop {
@@ -67,6 +68,7 @@ impl Shop {
             camera,
             drag_controller: DragController::new(),
             updated: false,
+            freezed: false,
         }
     }
 
@@ -78,6 +80,10 @@ impl Shop {
                 self.money -= cost;
             }
         }
+    }
+
+    pub fn freeze(&mut self) {
+        self.freezed = !self.freezed;
     }
 
     pub fn draw(
@@ -103,6 +109,7 @@ impl Shop {
         };
 
         let mut hovered_unit = None;
+        
         for (index, unit) in self.units.iter_mut().enumerate() {
             unit_render.draw_unit(&unit, None, game_time, &camera, framebuffer);
             unit_render.draw_unit_stats(&unit, &camera, framebuffer);
@@ -185,6 +192,10 @@ impl Shop {
         if tier_up.was_clicked() {
             self.tier_up();
         }
+        let freeze = geng::ui::Button::new(cx, "freeze");
+        if freeze.was_clicked() {
+            self.freeze();
+        }
         let go = geng::ui::Button::new(cx, "Go");
         if go.was_clicked() {
             self.enabled = false;
@@ -204,6 +215,11 @@ impl Shop {
 
         left.push(
             reroll
+                .background_color(Rgba::try_from("#aabbff").unwrap())
+                .boxed(),
+        );
+        left.push(
+            freeze
                 .background_color(Rgba::try_from("#aabbff").unwrap())
                 .boxed(),
         );
@@ -354,6 +370,10 @@ impl Shop {
 
     /// Rerolls the shop units. If `force` is true, then the cost is not paid.
     pub fn reroll(&mut self, force: bool) {
+        if self.freezed && force {
+            self.freezed = false;
+            return;
+        }
         if self.money >= REROLL_COST || force {
             if !force {
                 self.money -= REROLL_COST;
@@ -392,6 +412,7 @@ impl Shop {
                     unit.position = position.clone();
                 }
             }
+            self.freezed = false;
         }
     }
 }
@@ -406,14 +427,6 @@ fn calc_clan_members<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<C
         *clans.entry(*clan).or_insert(0) += 1;
     }
     clans
-}
-
-fn roll(choices: &[UnitTemplate], tier: Tier, units: usize) -> Vec<UnitTemplate> {
-    choices
-        .iter()
-        .filter(|unit| unit.tier <= tier)
-        .cloned() // TODO: optimize
-        .choose_multiple(&mut global_rng(), units)
 }
 
 fn earn_money(round: usize) -> Money {

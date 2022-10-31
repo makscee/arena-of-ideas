@@ -349,8 +349,11 @@ impl geng::State for Game {
                 GameState::Battle => {
                     if self.logic.model.visual_timer <= r32(0.0) {
                         self.logic.model.transition = false;
+                        self.logic.model.render_model.clear();
                         self.state = GameState::Shop;
                         self.shop.enabled = true;
+                        self.shop.updated = true;
+                        self.shop.reroll(true);
                     }
                 }
             }

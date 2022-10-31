@@ -76,6 +76,11 @@ impl RenderModel {
         }
         self.texts.retain(Text::is_alive);
     }
+    pub fn clear(&mut self) {
+        self.text_blocks.clear();
+        self.texts.clear();
+        self.particles.clear();
+    }
     pub fn add_text(
         &mut self,
         position: Position,
