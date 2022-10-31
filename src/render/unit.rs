@@ -1,8 +1,11 @@
+use crate::shop::render::CardRender;
+
 use super::*;
 
 pub struct UnitRender {
     pub geng: Geng,
     pub assets: Rc<Assets>,
+    card_render: CardRender,
 }
 
 impl UnitRender {
@@ -10,6 +13,7 @@ impl UnitRender {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
+            card_render: CardRender::new(geng, assets),
         }
     }
 
@@ -216,5 +220,20 @@ impl UnitRender {
         let position = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
             .extend_uniform(unit.render.radius.as_f32() * 2.0); // TODO: configuring?
         self.draw_unit_with_position(unit, model, game_time, camera, framebuffer, position)
+    }
+
+    pub fn draw_hover(
+        &self,
+        unit: &Unit,
+        camera: &geng::Camera2d,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        self.card_render.draw(
+            AABB::point(unit.render.render_position.map(|x| x.as_f32()))
+                .extend_positive(Vec2 { x: 3.0, y: 4.0 }),
+            unit.template.clone(),
+            framebuffer,
+            camera,
+        );
     }
 }

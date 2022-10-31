@@ -114,8 +114,14 @@ impl Render {
             unit_render: UnitRender::new(geng, assets),
         }
     }
-    pub fn draw(&mut self, game_time: f64, model: &Model, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
+    pub fn draw(
+        &mut self,
+        game_time: f64,
+        model: &Model,
+        shop: &Shop,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        ugli::clear(framebuffer, Some(Rgba::BLACK), None);
         self.draw_field(
             &self.assets.custom_renders.field,
             game_time,
@@ -213,6 +219,7 @@ impl Render {
                     .units
                     .iter()
                     .find(|unit| unit.position.x == i as i64 && unit.faction == faction);
+
                 let health = match unit {
                     Some(unit) => 1.0,
                     None => 0.0,
@@ -286,19 +293,9 @@ impl Render {
             );
         }
 
-        // Tick indicator
-        let tick_text = model.current_tick.tick_num.to_string();
-        let text_scale = f32::max(1.1 - (model.current_tick.tick_time.as_f32()) / 2.0, 1.0);
-        self.geng.draw_2d(
-            framebuffer,
-            &self.camera,
-            &draw_2d::Text::unit(&**self.geng.default_font(), &tick_text, Rgba::WHITE)
-                .scale_uniform(0.3 * text_scale)
-                .translate(vec2(0.0, self.camera.fov * 0.35)),
-        );
-
         if let Some(unit) = hovered_unit {
             self.draw_statuses_desc(unit, framebuffer);
+            //self.unit_render.draw_hover(unit, &self.camera, framebuffer);
             if let Some(text_block) = model.render_model.text_blocks.get(&unit.position) {
                 self.draw_damage_heal_desc(text_block, framebuffer);
             }

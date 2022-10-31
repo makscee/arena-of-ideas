@@ -32,21 +32,26 @@ impl Logic {
                 self.model.phase.turn_phase = TurnPhase::PreStrike;
                 let timer = Time::new(TIMER_PRE_STRIKE);
                 self.model.phase.set_timer(timer);
-                self.model.phase.player = self
+                let player_unit = self
                     .model
                     .units
                     .iter()
-                    .find(|unit| unit.position.side == Faction::Player && unit.position.x == 0)
-                    .expect("Cant find player unit")
-                    .id;
+                    .find(|unit| unit.position.side == Faction::Player && unit.position.x == 0);
+                if player_unit.is_none() {
+                    return;
+                };
+                self.model.phase.player = player_unit.unwrap().id;
 
-                self.model.phase.enemy = self
+                let enemy_unit = self
                     .model
                     .units
                     .iter()
-                    .find(|unit| unit.position.side == Faction::Enemy && unit.position.x == 0)
-                    .expect("Cant find enemy unit")
-                    .id;
+                    .find(|unit| unit.position.side == Faction::Enemy && unit.position.x == 0);
+
+                if enemy_unit.is_none() {
+                    return;
+                };
+                self.model.phase.enemy = enemy_unit.unwrap().id;
             }
             TurnPhase::PreStrike => {
                 self.model.phase.turn_phase = TurnPhase::Strike;

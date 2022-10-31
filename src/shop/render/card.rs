@@ -8,6 +8,8 @@ use super::*;
 const TOP_SPACE: f32 = 0.1;
 const FONT_SIZE: f32 = 0.08;
 const HERO_HEIGHT: f32 = 0.35;
+/// Height divided by width
+const CARD_SIZE_RATIO: f32 = 1.3269;
 const DAMAGE_AABB: AABB<f32> = AABB {
     x_min: 0.02,
     x_max: 0.09,
@@ -54,7 +56,6 @@ const CARD_BACKGROUND_COLOR: Rgba<f32> = Rgba {
 pub struct CardRender {
     geng: Geng,
     assets: Rc<Assets>,
-    render: UnitRender,
 }
 
 impl CardRender {
@@ -62,18 +63,16 @@ impl CardRender {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
-            render: UnitRender::new(geng, assets),
         }
     }
 
     pub fn draw(
-        &mut self,
+        &self,
         card_aabb: AABB<f32>,
-        card: Option<&UnitCard>,
-        game_time: f64,
+        template: UnitTemplate,
         framebuffer: &mut ugli::Framebuffer,
-    ) -> Option<Clan> {
-        let camera = &geng::PixelPerfectCamera;
+        camera: &Camera2d,
+    ) {
         let width = card_aabb.width();
         let height = card_aabb.height();
 
@@ -81,36 +80,6 @@ impl CardRender {
             &self.geng,
             framebuffer,
             camera,
-        );
-
-        let card = match card {
-            Some(card) => card,
-            None => return None,
-        };
-
-        // Hero layout
-        let mut hero_aabb = card_aabb.extend_up(-TOP_SPACE * height);
-        hero_aabb.y_min = hero_aabb.y_max - HERO_HEIGHT * height;
-        let hero_aabb = hero_aabb;
-        let mut temp_texture = ugli::Texture::new_with(
-            self.geng.ugli(),
-            hero_aabb.size().map(|x| x.ceil() as _),
-            |_| Rgba::TRANSPARENT_BLACK,
-        );
-        let mut temp_framebuffer = ugli::Framebuffer::new_color(
-            self.geng.ugli(),
-            ugli::ColorAttachment::Texture(&mut temp_texture),
-        );
-        self.render.draw_unit(
-            &card.unit,
-            None,
-            game_time,
-            &geng::Camera2d {
-                center: vec2(0.0, 0.35 * card.unit.render.radius.as_f32()),
-                rotation: 0.0,
-                fov: card.unit.render.radius.as_f32() * 1.5,
-            },
-            &mut temp_framebuffer,
         );
 
         let layout = |aabb: AABB<f32>| aabb.map(|x| x * height).translate(card_aabb.bottom_left());
@@ -121,16 +90,8 @@ impl CardRender {
         let name_aabb = layout(NAME_AABB);
         let description_aabb = layout(DESCRIPTION_AABB);
 
-        // Render
-        // Hero
-        draw_2d::TexturedQuad::new(hero_aabb, &temp_texture).draw_2d(
-            &self.geng,
-            framebuffer,
-            camera,
-        );
-
         // Card texture
-        draw_2d::TexturedQuad::new(card_aabb, &*self.render.assets.card).draw_2d(
+        draw_2d::TexturedQuad::new(card_aabb, &*self.assets.card).draw_2d(
             &self.geng,
             framebuffer,
             camera,
@@ -139,7 +100,7 @@ impl CardRender {
         // Damage
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.stats.attack),
+            format!("{}", template.attack),
             Rgba::WHITE,
         )
         .fit_into(damage_aabb)
@@ -148,17 +109,17 @@ impl CardRender {
         // Health
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.stats.health),
+            format!("{}", template.health),
             Rgba::WHITE,
         )
         .fit_into(health_aabb)
         .draw_2d(&self.geng, framebuffer, camera);
 
         // Tier
-        if card.template.tier > 0 {
+        if template.tier > 0 {
             draw_2d::Text::unit(
                 &**self.geng.default_font(),
-                format!("Tier {}", card.template.tier),
+                format!("Tier {}", template.tier),
                 Rgba::WHITE,
             )
             .fit_into(tier_aabb)
@@ -168,7 +129,7 @@ impl CardRender {
         // Clans
         let mut selected_clan = None;
         {
-            let clans = card.template.clans.iter().sorted().collect::<Vec<_>>();
+            let clans = template.clans.iter().sorted().collect::<Vec<_>>();
             let size = clan_aabb.height();
             let clan_size = vec2(size, size);
             let mut position = clan_aabb.top_left() + vec2(size, -size) / 2.0;
@@ -209,7 +170,7 @@ impl CardRender {
         // Name
         draw_2d::Text::unit(
             &**self.geng.default_font(),
-            format!("{}", card.unit.unit_type),
+            format!("{}", template.name),
             Rgba::WHITE,
         )
         .fit_into(name_aabb)
@@ -219,14 +180,12 @@ impl CardRender {
         let font_size = FONT_SIZE * height;
         crate::render::draw_text_wrapped(
             &**self.geng.default_font(),
-            &card.template.description,
+            &template.description,
             font_size,
             description_aabb,
             Rgba::WHITE,
             framebuffer,
             camera,
         );
-
-        selected_clan
     }
 }

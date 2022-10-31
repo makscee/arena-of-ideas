@@ -1,3 +1,5 @@
+use crate::shop::drag_controller::{DragTarget, Touchable};
+
 use super::*;
 mod template;
 
@@ -39,6 +41,7 @@ pub struct Unit {
     pub render: UnitRenderConfig,
     pub random_number: R32,
     pub shop_unit: Box<Option<Unit>>,
+    pub template: UnitTemplate,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +67,25 @@ pub enum UnitStat {
     Health,
     Attack,
     Level,
+}
+
+impl Touchable for Unit {
+    fn touch_box(&self) -> AABB<f32> {
+        let position = self.render.render_position.map(|x| x.as_f32());
+        AABB::point(position).extend_uniform(self.render.radius.as_f32() * 2.0)
+    }
+}
+
+impl DragTarget for Unit {
+    fn drag(&mut self, pointer_position: Vec2<R32>) {
+        self.render.render_position = pointer_position.clone();
+    }
+    fn restore(&mut self) {
+        self.render.render_position = self.position.to_world();
+    }
+    fn position(&self) -> Vec2<f32> {
+        self.render.render_position.map(|x| x.as_f32())
+    }
 }
 
 impl Unit {
@@ -96,6 +118,7 @@ impl Unit {
             clans: template.clans.clone(),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
             shop_unit: Box::new(None),
+            template: template.clone(),
         }
     }
     pub fn level_up(&mut self, unit: Unit) -> bool {

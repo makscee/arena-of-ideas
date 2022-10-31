@@ -36,7 +36,6 @@ impl CustomGame {
             enemy_clans: hashmap! {},
             fov: custom.fov,
         };
-        let shop = Shop::new(geng, assets, shop_config);
-        Box::new(Game::new(geng, assets, config, shop, custom.round, true))
+        Box::new(Game::new(geng, assets, config, custom.round, true))
     }
 }

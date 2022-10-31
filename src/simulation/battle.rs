@@ -47,12 +47,12 @@ impl Battle {
     pub fn run(mut self) -> BattleResult {
         let mut logic = Logic::new(self.model.clone());
         let mut events = Events::new(vec![]);
-        logic.initialize(
-            &mut events,
-            None,
-            self.config.player.clone(),
-            self.model.round.clone(),
-        );
+        // logic.initialize(
+        //     &mut events,
+        //     None,
+        //     self.config.player.clone(),
+        //     self.model.round.clone(),
+        // );
 
         loop {
             logic.update(self.delta_time);
