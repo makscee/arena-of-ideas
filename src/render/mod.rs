@@ -303,7 +303,7 @@ impl Render {
                 ),
                 geng::TextAlign::LEFT,
                 text_size,
-                Rgba::try_from("#e6e6e6").unwrap(),
+                Rgba::try_from("#6d6d6d").unwrap(),
             );
         }
     }
@@ -404,7 +404,7 @@ impl Render {
                 &description,
                 font_size,
                 text_pos,
-                Rgba::try_from("#e6e6e6").unwrap(),
+                Rgba::try_from("#6d6d6d").unwrap(),
                 framebuffer,
                 &self.camera,
             );
@@ -534,7 +534,7 @@ impl Render {
                         &lines,
                         font_size,
                         pos,
-                        Rgba::try_from("#e6e6e6").unwrap(),
+                        Rgba::try_from("#6d6d6d").unwrap(),
                         framebuffer,
                         camera,
                     );

@@ -391,9 +391,9 @@ fn main() {
     });
     let mut theme = Theme::dark(&geng);
     // theme.background_color = Color::WHITE;
-    theme.text_color = Rgba::WHITE;
+    theme.text_color = Rgba::BLACK;
     theme.text_size = 50.0;
-    theme.usable_color = Rgba::WHITE;
+    theme.usable_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
 
     // Adds restarting on R

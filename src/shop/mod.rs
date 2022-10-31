@@ -190,17 +190,17 @@ impl Shop {
             self.enabled = false;
         }
         let text = format!("Tier {}", self.tier);
-        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::WHITE);
+        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
 
         let text = match tier_up_cost(self.tier, self.tier_rounds) {
             Some(cost) => format!("Tier Up ({})", cost),
             None => "Tier Up (?)".to_string(),
         };
-        let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::WHITE);
+        let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
 
         let text = if self.money == 1 { "coin" } else { "coins" };
         let text = format!("{} {}", self.money, text);
-        let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::WHITE);
+        let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
 
         left.push(reroll.boxed());
         right.push(go.boxed());
