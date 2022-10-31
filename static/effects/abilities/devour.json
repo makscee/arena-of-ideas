@@ -1,0 +1,78 @@
+{
+    "type": "ChangeTarget",
+    "filter": "Allies",
+    "condition": {
+        "type": "Always"
+    },
+    "effect": {
+        "type": "List",
+        "effects": [
+            {
+                "stat": "Health",
+                "type": "ChangeStat",
+                "who": "Caster",
+                "value": {
+                    "a": {
+                        "stat": "Health",
+                        "type": "FindStat",
+                        "who": "Caster"
+                    },
+                    "b": {
+                        "a": {
+                            "stat": "Health",
+                            "type": "FindStat",
+                            "who": "Target"
+                        },
+                        "b": {
+                            "stat": "Level",
+                            "type": "FindStat",
+                            "who": "Caster"
+                        },
+                        "type": "Mul"
+                    },
+                    "type": "Sum"
+                }
+            },
+            {
+                "stat": "Attack",
+                "type": "ChangeStat",
+                "who": "Caster",
+                "value": {
+                    "a": {
+                        "stat": "Attack",
+                        "type": "FindStat",
+                        "who": "Caster"
+                    },
+                    "b": {
+                        "a": {
+                            "stat": "Attack",
+                            "type": "FindStat",
+                            "who": "Target"
+                        },
+                        "b": {
+                            "stat": "Level",
+                            "type": "FindStat",
+                            "who": "Caster"
+                        },
+                        "type": "Mul"
+                    },
+                    "type": "Sum"
+                }
+            },
+            {
+                "type": "Kill",
+                "who": "Target"
+            },
+            {
+                "preset": "effects/vfx_stats_gain.json"
+            },
+            {
+                "type": "IncrVisualTimer"
+            },
+            {
+                "name": "Devour",
+                "type": "CustomTrigger"
+            }
+        ]
+    }
+}

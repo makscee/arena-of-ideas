@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type", deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct IncrVisualTimerEffect {
     pub value: Option<f32>,
 }

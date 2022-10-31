@@ -12,5 +12,6 @@
     "effects/vfx_injured_particles.json",
     "effects/vfx_attach_status.json",
     "effects/vfx_death_particles.json",
-    "effects/vfx_stats_gain.json"
+    "effects/vfx_stats_gain.json",
+    "effects/abilities/devour.json"
 ]

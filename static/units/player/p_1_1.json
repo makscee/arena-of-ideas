@@ -88,89 +88,14 @@
     {
       "listeners": [
         {
-          "effect": {
-            "condition": {
-              "type": "Always"
-            },
-            "effect": {
-              "effects": [
-                {
-                  "stat": "Health",
-                  "type": "ChangeStat",
-                  "value": {
-                    "a": {
-                      "stat": "Health",
-                      "type": "FindStat",
-                      "who": "Caster"
-                    },
-                    "b": {
-                      "a": {
-                        "stat": "Health",
-                        "type": "FindStat",
-                        "who": "Target"
-                      },
-                      "b": {
-                        "stat": "Level",
-                        "type": "FindStat",
-                        "who": "Caster"
-                      },
-                      "type": "Mul"
-                    },
-                    "type": "Sum"
-                  },
-                  "who": "Caster"
-                },
-                {
-                  "stat": "Attack",
-                  "type": "ChangeStat",
-                  "value": {
-                    "a": {
-                      "stat": "Attack",
-                      "type": "FindStat",
-                      "who": "Caster"
-                    },
-                    "b": {
-                      "a": {
-                        "stat": "Attack",
-                        "type": "FindStat",
-                        "who": "Target"
-                      },
-                      "b": {
-                        "stat": "Level",
-                        "type": "FindStat",
-                        "who": "Caster"
-                      },
-                      "type": "Mul"
-                    },
-                    "type": "Sum"
-                  },
-                  "who": "Caster"
-                },
-                {
-                  "type": "Kill",
-                  "who": "Target"
-                },
-                {
-                  "preset": "effects/vfx_stats_gain.json"
-                },
-                {
-                  "type": "IncrVisualTimer"
-                },
-                {
-                  "name": "Devour",
-                  "type": "CustomTrigger"
-                }
-              ],
-              "type": "List"
-            },
-            "filter": "Allies",
-            "type": "ChangeTarget"
-          },
           "triggers": [
             {
               "type": "Spawn"
             }
-          ]
+          ],
+          "effect": {
+            "preset": "effects/abilities/devour.json"
+          }
         }
       ],
       "name": "DevourOnStart",
