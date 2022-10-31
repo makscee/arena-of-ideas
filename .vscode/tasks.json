@@ -4,6 +4,18 @@
 		{
 			"type": "cargo",
 			"command": "run",
+			"args": [],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Run Game",
+			"group": {
+				"kind": "build"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
 			"args": [
 				"--",
 				"custom-game",
