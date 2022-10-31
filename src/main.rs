@@ -337,9 +337,9 @@ impl geng::State for Game {
     }
     fn transition(&mut self) -> Option<geng::Transition> {
         if self.last_frame.model.transition {
-            self.logic.model.transition = false;
             match self.state {
                 GameState::Shop => {
+                    self.logic.model.transition = false;
                     self.state = GameState::Battle;
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
@@ -348,6 +348,7 @@ impl geng::State for Game {
                 }
                 GameState::Battle => {
                     if self.logic.model.visual_timer <= r32(0.0) {
+                        self.logic.model.transition = false;
                         self.state = GameState::Shop;
                         self.shop.enabled = true;
                     }
