@@ -202,8 +202,15 @@ impl Shop {
         let text = format!("{} {}", self.money, text);
         let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
 
-        left.push(reroll.boxed());
-        right.push(go.boxed());
+        left.push(
+            reroll
+                .background_color(Rgba::try_from("#aabbff").unwrap())
+                .boxed(),
+        );
+        right.push(
+            go.background_color(Rgba::try_from("#aabbff").unwrap())
+                .boxed(),
+        );
         row.push(left.boxed());
         row.push(
             right
@@ -224,6 +231,7 @@ impl Shop {
         col.push(row.boxed());
         col.push(
             tier_up
+                .background_color(Rgba::try_from("#aabbff").unwrap())
                 .flex_align(
                     Vec2 {
                         x: Some(1.0),
