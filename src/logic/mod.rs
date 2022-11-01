@@ -31,8 +31,30 @@ pub struct Logic {
 }
 
 impl Logic {
-    pub fn initialize(&mut self, events: &mut Events, round: GameRound) {
+    pub fn initialize(&mut self, events: &mut Events) {
         self.init_time(events);
+    }
+
+    pub fn initialize_custom(
+        &mut self,
+        events: &mut Events,
+        custom_player: Vec<UnitTemplate>,
+    ) -> Vec<Unit> {
+        self.init_time(events);
+        self.model.transition = true;
+        custom_player
+            .iter()
+            .map(|template| {
+                let unit = Unit::new(
+                    &template,
+                    self.model.next_id,
+                    Position::zero(Faction::Player),
+                    &self.model.statuses,
+                );
+                self.model.next_id += 1;
+                unit
+            })
+            .collect()
     }
 
     pub fn new(mut model: Model) -> Self {

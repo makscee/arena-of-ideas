@@ -31,7 +31,6 @@ impl CustomGame {
         .unwrap();
         let config = Config {
             player: custom.player,
-            shop_player: vec![],
             clans: custom.clans,
             enemy_clans: hashmap! {},
             fov: custom.fov,

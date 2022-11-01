@@ -19,8 +19,6 @@ impl Logic {
         let mut unit = Unit::new(
             &template,
             self.model.next_id,
-            unit_type.clone(),
-            faction,
             Position::zero(faction),
             &self.model.statuses,
         );

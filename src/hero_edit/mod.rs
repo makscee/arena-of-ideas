@@ -310,8 +310,6 @@ impl geng::State for HeroEditorState {
         let mut unit = Unit::new(
             &template,
             1,
-            template.name.clone(),
-            Faction::Player,
             Position::zero(Faction::Player),
             &Statuses { map: hashmap! {} },
         );

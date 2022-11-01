@@ -2,7 +2,10 @@
 #![deny(unconditional_recursion)]
 
 use clap::Parser;
-use geng::{prelude::*, ui::Theme};
+use geng::{
+    prelude::{itertools::Itertools, *},
+    ui::Theme,
+};
 use ugli::Texture;
 
 mod assets;
@@ -58,6 +61,7 @@ pub struct Game {
     new_texture: Texture,
     shop: Shop,
     state: GameState,
+    custom: bool,
 }
 
 impl Game {
@@ -105,9 +109,23 @@ impl Game {
             previous_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             shop,
             state: GameState::Shop,
+            custom,
         };
-        game.logic
-            .initialize(&mut game.events, game.logic.model.round.clone());
+        match custom {
+            true => {
+                let player = config
+                    .player
+                    .iter()
+                    .map(|unit_type| assets.units.get(unit_type).expect(""))
+                    .cloned()
+                    .collect();
+                let team = game.logic.initialize_custom(&mut game.events, player);
+                game.shop.team = team;
+            }
+            false => {
+                game.logic.initialize(&mut game.events);
+            }
+        }
         game
     }
 }
@@ -484,8 +502,7 @@ fn main() {
                             .clone();
                         let assets = Rc::new(assets);
 
-                        Box::new(Game::new(&geng, &assets, config, round, true))
-                        //Box::new(shop::ShopState::new(&geng, &assets, shop_config, config))
+                        Box::new(Game::new(&geng, &assets, config, round, false))
                     }
                 },
             );

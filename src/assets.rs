@@ -275,8 +275,6 @@ pub struct Config {
     #[serde(default)]
     pub player: Vec<UnitType>,
     #[serde(default)]
-    pub shop_player: Vec<Unit>,
-    #[serde(default)]
     pub clans: HashMap<Clan, usize>,
     #[serde(default)]
     pub enemy_clans: HashMap<Clan, usize>,

@@ -388,8 +388,6 @@ impl Shop {
                         Unit::new(
                             &template.clone(),
                             0,
-                            template.name.clone(),
-                            Faction::Enemy,
                             Position::zero(Faction::Player),
                             &Statuses { map: hashmap! {} },
                         )

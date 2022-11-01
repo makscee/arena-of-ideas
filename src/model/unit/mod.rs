@@ -89,17 +89,10 @@ impl DragTarget for Unit {
 }
 
 impl Unit {
-    pub fn new(
-        template: &UnitTemplate,
-        id: Id,
-        unit_type: UnitType,
-        faction: Faction,
-        position: Position,
-        statuses: &Statuses,
-    ) -> Self {
+    pub fn new(template: &UnitTemplate, id: Id, position: Position, statuses: &Statuses) -> Self {
         Self {
             id,
-            unit_type,
+            unit_type: template.name.clone(),
             spawn_animation_time_left: Some(template.spawn_animation_time),
             all_statuses: template
                 .statuses
@@ -109,7 +102,7 @@ impl Unit {
             active_auras: default(),
             modifier_targets: vec![],
             flags: vec![],
-            faction,
+            faction: position.side,
             stats: UnitStats::new(template),
             permanent_stats: UnitStats::new(template),
             position,
