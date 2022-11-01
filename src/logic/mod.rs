@@ -38,21 +38,20 @@ impl Logic {
     pub fn initialize_custom(
         &mut self,
         events: &mut Events,
-        custom_player: Vec<UnitTemplate>,
+        custom_player: Vec<UnitType>,
     ) -> Vec<Unit> {
         self.init_time(events);
         self.model.transition = true;
         custom_player
             .iter()
-            .map(|template| {
-                let unit = Unit::new(
-                    &template,
-                    self.model.next_id,
-                    Position::zero(Faction::Player),
-                    &self.model.statuses,
-                );
-                self.model.next_id += 1;
-                unit
+            .map(|unit_type| {
+                let id = self.spawn_by_type(unit_type, Position::zero(Faction::Player));
+                self.model
+                    .units
+                    .iter()
+                    .find(|unit| unit.id == id)
+                    .expect("Cant find unit")
+                    .clone()
             })
             .collect()
     }
@@ -131,8 +130,7 @@ impl Logic {
 
     pub fn init_enemies(&mut self, round: GameRound) {
         for unit_type in round.enemies.iter().rev() {
-            let unit =
-                self.spawn_by_type(&unit_type, Faction::Enemy, Position::zero(Faction::Enemy));
+            let unit = self.spawn_by_type(&unit_type, Position::zero(Faction::Enemy));
             let unit = self.model.units.get_mut(&unit).unwrap();
             let statuses = round.statuses.iter().map(|status| {
                 status.get(&self.model.statuses).clone().attach(

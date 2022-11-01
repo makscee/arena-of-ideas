@@ -2,25 +2,45 @@
     "action": {
         "preset": "effects/melee_hit.json"
     },
-    "attack": 4,
+    "attack": 1,
     "clan_renders": [
         [
             {
                 "instances": 1,
                 "parameters": {
                     "u_count": 1,
-                    "u_fill": 0,
+                    "u_fill": 1,
                     "u_index_offset": {
-                        "x": -0.0,
+                        "x": 0.0,
                         "y": 0.0
                     },
                     "u_offset": {
-                        "x": 0.0,
-                        "y": -0.0
+                        "x": -0.41899043321609497,
+                        "y": 0.0
                     },
-                    "u_outline": 1,
-                    "u_outline_thickness": 0.10999999940395355,
-                    "u_size": 0.41999998688697815
+                    "u_outline": 0,
+                    "u_outline_thickness": 0.0,
+                    "u_size": 0.2646785080432892
+                },
+                "path": "shaders/clan_shaders/circle.glsl",
+                "vertices": 1
+            },
+            {
+                "instances": 1,
+                "parameters": {
+                    "u_count": 1,
+                    "u_fill": 1,
+                    "u_index_offset": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "u_offset": {
+                        "x": 0.41775405406951904,
+                        "y": 0.0
+                    },
+                    "u_outline": 0,
+                    "u_outline_thickness": 0.0,
+                    "u_size": 0.2646785080432892
                 },
                 "path": "shaders/clan_shaders/circle.glsl",
                 "vertices": 1
@@ -31,18 +51,38 @@
                 "instances": 1,
                 "parameters": {
                     "u_count": 1,
-                    "u_fill": 0,
+                    "u_fill": 1,
                     "u_index_offset": {
-                        "x": -0.0,
+                        "x": 0.0,
                         "y": 0.0
                     },
                     "u_offset": {
-                        "x": 0.0,
-                        "y": -0.0
+                        "x": -0.4000000059604645,
+                        "y": 0.0
                     },
-                    "u_outline": 1,
-                    "u_outline_thickness": 0.20000000298023224,
-                    "u_size": 0.5699999928474426
+                    "u_outline": 0,
+                    "u_outline_thickness": 0.0,
+                    "u_size": 0.4000000059604645
+                },
+                "path": "shaders/clan_shaders/circle.glsl",
+                "vertices": 1
+            },
+            {
+                "instances": 1,
+                "parameters": {
+                    "u_count": 1,
+                    "u_fill": 1,
+                    "u_index_offset": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "u_offset": {
+                        "x": 0.4000000059604645,
+                        "y": 0.0
+                    },
+                    "u_outline": 0,
+                    "u_outline_thickness": 0.0,
+                    "u_size": 0.4000000059604645
                 },
                 "path": "shaders/clan_shaders/circle.glsl",
                 "vertices": 1
@@ -53,18 +93,38 @@
                 "instances": 1,
                 "parameters": {
                     "u_count": 1,
-                    "u_fill": 0,
+                    "u_fill": 1,
                     "u_index_offset": {
-                        "x": -0.0,
+                        "x": 0.0,
                         "y": 0.0
                     },
                     "u_offset": {
-                        "x": 0.0,
-                        "y": -0.0
+                        "x": -0.4000000059604645,
+                        "y": 0.0
                     },
-                    "u_outline": 1,
-                    "u_outline_thickness": 0.3700000047683716,
-                    "u_size": 0.7699999809265137
+                    "u_outline": 2,
+                    "u_outline_thickness": 0.14000000059604645,
+                    "u_size": 0.4300000071525574
+                },
+                "path": "shaders/clan_shaders/circle.glsl",
+                "vertices": 1
+            },
+            {
+                "instances": 1,
+                "parameters": {
+                    "u_count": 1,
+                    "u_fill": 1,
+                    "u_index_offset": {
+                        "x": 0.0,
+                        "y": 0.0
+                    },
+                    "u_offset": {
+                        "x": 0.4000000059604645,
+                        "y": 0.0
+                    },
+                    "u_outline": 2,
+                    "u_outline_thickness": 0.14000000059604645,
+                    "u_size": 0.4300000071525574
                 },
                 "path": "shaders/clan_shaders/circle.glsl",
                 "vertices": 1
@@ -74,15 +134,15 @@
     "clans": [
         "Demons"
     ],
-    "description": "After any ally devoured: gain +1/+1 permanently",
-    "health": 4,
-    "name": "Mold",
+    "description": "When unit Devoured: gain +2/+2",
+    "health": 1,
+    "name": "Scavenger",
     "radius": 0.4,
     "render": {
         "instances": 1,
         "parameters": {},
         "path": "shaders/default_circle_hero.glsl",
-        "vertices": 4
+        "vertices": 200
     },
     "statuses": [
         {
@@ -91,7 +151,6 @@
                     "effect": {
                         "effects": [
                             {
-                                "permanent": true,
                                 "stat": "Health",
                                 "type": "ChangeStat",
                                 "value": {
@@ -104,7 +163,7 @@
                                         "type": "Mul",
                                         "a": {
                                             "type": "Const",
-                                            "value": 1
+                                            "value": 2
                                         },
                                         "b": {
                                             "stat": "Level",
@@ -117,7 +176,6 @@
                                 "who": "Caster"
                             },
                             {
-                                "permanent": true,
                                 "stat": "Attack",
                                 "type": "ChangeStat",
                                 "value": {
@@ -130,7 +188,7 @@
                                         "type": "Mul",
                                         "a": {
                                             "type": "Const",
-                                            "value": 1
+                                            "value": 2
                                         },
                                         "b": {
                                             "stat": "Level",
@@ -144,27 +202,24 @@
                             },
                             {
                                 "preset": "effects/vfx_stats_gain.json"
-                            },
-                            {
-                                "type": "IncrVisualTimer"
                             }
                         ],
                         "type": "List"
                     },
                     "triggers": [
                         {
-                            "name": "Devour",
-                            "type": "Custom"
+                            "type": "Custom",
+                            "name": "Devour"
                         }
                     ]
                 }
             ],
-            "name": "StatsAfterDevour",
+            "name": "WhenDevourAdd",
             "stacking": {
                 "type": "Independent"
             },
             "type": "Status"
         }
     ],
-    "tier": 4
+    "tier": 1
 }

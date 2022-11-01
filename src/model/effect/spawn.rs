@@ -44,8 +44,9 @@ impl EffectImpl for SpawnEffect {
                     .or(logic.model.dead_units.get(&id))
             })
             .expect("Target not found");
-        let position = target.position;
-        let new_id = logic.spawn_by_type(&effect.unit_type, faction, position);
+        let mut position = target.position;
+        position.side = faction;
+        let new_id = logic.spawn_by_type(&effect.unit_type, position);
 
         logic.effects.push_front(QueuedEffect {
             effect: effect.after_effect.clone(),

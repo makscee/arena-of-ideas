@@ -58,7 +58,7 @@ impl Shop {
             round: 0,
             tier: 1,
             tier_rounds: 0,
-            money: earn_money(0) * 10,
+            money: earn_money(0) * 100,
             units: vec![],
             team: vec![],
             available: units,

@@ -113,13 +113,9 @@ impl Game {
         };
         match custom {
             true => {
-                let player = config
-                    .player
-                    .iter()
-                    .map(|unit_type| assets.units.get(unit_type).expect(""))
-                    .cloned()
-                    .collect();
-                let team = game.logic.initialize_custom(&mut game.events, player);
+                let team = game
+                    .logic
+                    .initialize_custom(&mut game.events, config.player.clone());
                 game.shop.team = team;
             }
             false => {
