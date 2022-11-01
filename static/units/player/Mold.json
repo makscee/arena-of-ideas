@@ -2,7 +2,7 @@
   "action": {
     "preset": "effects/melee_hit.json"
   },
-  "attack": 1,
+  "attack": 4,
   "clan_renders": [
     [
       {
@@ -75,8 +75,8 @@
     "Demons"
   ],
   "description": "After any ally devoured: gain +1/+1 permanently",
-  "health": 1,
-  "name": "15",
+  "health": 4,
+  "name": "Mold",
   "radius": 0.4,
   "render": {
     "instances": 1,
@@ -150,5 +150,5 @@
       "type": "Status"
     }
   ],
-  "tier": 1
+  "tier": 4
 }
