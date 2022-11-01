@@ -58,16 +58,16 @@ impl HeroEditorModel {
             .filter(|tuple| tuple.1.tier > 0)
             .map(|tuple| tuple.1.clone())
             .map(|mut unit| {
-                let mut parameters = ShaderParameters::new();
-                parameters.0.extend(HashMap::from([(
-                    "u_count".to_string(),
-                    ShaderParameter::Int(1),
-                )]));
-                parameters.0.extend(HashMap::from([(
-                    "u_fill".to_string(),
-                    ShaderParameter::Int(1),
-                )]));
-                if unit.clans.len() > unit.clan_renders.len() {
+                if unit.clans.len() > unit.clan_renders[0].len() {
+                    let mut parameters = ShaderParameters::new();
+                    parameters.0.extend(HashMap::from([(
+                        "u_count".to_string(),
+                        ShaderParameter::Int(1),
+                    )]));
+                    parameters.0.extend(HashMap::from([(
+                        "u_fill".to_string(),
+                        ShaderParameter::Int(1),
+                    )]));
                     let mut clan_renders = vec![];
                     for i in 0..3 {
                         let mut configs = vec![];
