@@ -76,7 +76,7 @@
   ],
   "description": "Start of battle: Devour random ally. Their stats multiplied by 1/2/3",
   "health": 2,
-  "name": "1",
+  "name": "Guttler",
   "radius": 0.4,
   "render": {
     "instances": 1,
@@ -105,5 +105,5 @@
       "type": "Status"
     }
   ],
-  "tier": 1
+  "tier": 2
 }
