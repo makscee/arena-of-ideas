@@ -466,6 +466,17 @@ impl geng::LoadAsset for UnitTemplates {
                     let mut template: UnitTemplate = serde_json::from_value(json)
                         .context(format!("Failed to parse {path:?}"))?;
 
+                    let render_path = base_path.join(format!("{}_render.json", typ));
+                    if render_path.exists() {
+                        let json =
+                            <serde_json::Value as geng::LoadAsset>::load(&geng, &render_path)
+                                .await
+                                .context(format!("Failed to load render {render_path:?}"))?;
+                        let render: Vec<Vec<ShaderConfig>> = serde_json::from_value(json)
+                            .context(format!("Failed to parse {render_path:?}"))?;
+                        template.clan_renders = render;
+                    }
+
                     let mut name = template.name.clone();
                     if name.is_empty() {
                         warn!("Name not set: {}", typ);

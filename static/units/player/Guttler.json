@@ -1,82 +1,15 @@
 {
+  "name": "Guttler",
+  "description": "Start of battle: Devour random ally. Their stats multiplied by 1/2/3",
+  "attack": 1,
+  "health": 2,
+  "tier": 2,
   "action": {
     "preset": "effects/melee_hit.json"
   },
-  "attack": 1,
-  "clan_renders": [
-    [
-      {
-        "instances": 1,
-        "parameters": {
-          "u_count": 2,
-          "u_fill": 1,
-          "u_index_offset": {
-            "x": -0.5417067408561707,
-            "y": 0.6598557829856873
-          },
-          "u_offset": {
-            "x": 0.30000001192092896,
-            "y": -0.30000001192092896
-          },
-          "u_outline": 2,
-          "u_outline_thickness": 0.0,
-          "u_size": 0.3100000023841858
-        },
-        "path": "shaders/clan_shaders/circle.glsl",
-        "vertices": 1
-      }
-    ],
-    [
-      {
-        "instances": 1,
-        "parameters": {
-          "u_count": 2,
-          "u_fill": 1,
-          "u_index_offset": {
-            "x": -0.5760817527770996,
-            "y": 0.6223557591438293
-          },
-          "u_offset": {
-            "x": 0.3094951808452606,
-            "y": -0.3466346263885498
-          },
-          "u_outline": 2,
-          "u_outline_thickness": 0.11999999731779099,
-          "u_size": 0.43615302443504333
-        },
-        "path": "shaders/clan_shaders/circle.glsl",
-        "vertices": 1
-      }
-    ],
-    [
-      {
-        "instances": 1,
-        "parameters": {
-          "u_count": 2,
-          "u_fill": 1,
-          "u_index_offset": {
-            "x": -0.5760817527770996,
-            "y": 0.6223557591438293
-          },
-          "u_offset": {
-            "x": 0.3094951808452606,
-            "y": -0.3466346263885498
-          },
-          "u_outline": 2,
-          "u_outline_thickness": 0.27000001072883606,
-          "u_size": 0.4699999988079071
-        },
-        "path": "shaders/clan_shaders/circle.glsl",
-        "vertices": 1
-      }
-    ]
-  ],
   "clans": [
     "Demons"
   ],
-  "description": "Start of battle: Devour random ally. Their stats multiplied by 1/2/3",
-  "health": 2,
-  "name": "Guttler",
   "radius": 0.4,
   "render": {
     "instances": 1,
@@ -104,6 +37,5 @@
       },
       "type": "Status"
     }
-  ],
-  "tier": 2
+  ]
 }

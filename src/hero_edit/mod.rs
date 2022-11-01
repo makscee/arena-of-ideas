@@ -1,4 +1,5 @@
 use crate::serde_json::Value;
+use std::path::Path;
 use std::{array, env};
 
 use chrono::format;
@@ -126,12 +127,11 @@ impl HeroEditorState {
 
     pub fn save(&self) {
         let unit = &self.model.units[self.model.selected_unit];
-        let unit_str = std::fs::read_to_string(&unit.path).expect("Cant load unit file");
-        let mut template: Value = serde_json::from_str(&unit_str).unwrap();
-        template["clan_renders"] = serde_json::to_value(unit.clan_renders.clone()).unwrap();
-        let data = serde_json::to_string_pretty(&template).expect("Failed to serialize item");
-        std::fs::write(&unit.path, data)
-            .expect(&format!("Cannot save unit file: {:?}", &unit.path));
+        let mut path = Path::new(&unit.path).to_owned();
+        path.set_file_name(format!("{}_render.json", unit.name));
+        let renders: Vec<Vec<ShaderConfig>> = unit.clan_renders.clone();
+        let data = serde_json::to_string_pretty(&renders).expect("Failed to serialize item");
+        std::fs::write(&path, data).expect(&format!("Cannot save unit file: {:?}", &path));
     }
 }
 

@@ -1,148 +1,15 @@
 {
-    "action": {
-        "preset": "effects/melee_hit.json"
-    },
-    "attack": 1,
-    "clan_renders": [
-        [
-            {
-                "instances": 1,
-                "parameters": {
-                    "u_count": 1,
-                    "u_fill": 1,
-                    "u_index_offset": {
-                        "x": 0.0,
-                        "y": 0.0
-                    },
-                    "u_offset": {
-                        "x": -0.41899043321609497,
-                        "y": 0.0
-                    },
-                    "u_outline": 0,
-                    "u_outline_thickness": 0.0,
-                    "u_size": 0.2646785080432892
-                },
-                "path": "shaders/clan_shaders/circle.glsl",
-                "vertices": 1
-            },
-            {
-                "instances": 1,
-                "parameters": {
-                    "u_count": 1,
-                    "u_fill": 1,
-                    "u_index_offset": {
-                        "x": 0.0,
-                        "y": 0.0
-                    },
-                    "u_offset": {
-                        "x": 0.41775405406951904,
-                        "y": 0.0
-                    },
-                    "u_outline": 0,
-                    "u_outline_thickness": 0.0,
-                    "u_size": 0.2646785080432892
-                },
-                "path": "shaders/clan_shaders/circle.glsl",
-                "vertices": 1
-            }
-        ],
-        [
-            {
-                "instances": 1,
-                "parameters": {
-                    "u_count": 1,
-                    "u_fill": 1,
-                    "u_index_offset": {
-                        "x": 0.0,
-                        "y": 0.0
-                    },
-                    "u_offset": {
-                        "x": -0.4000000059604645,
-                        "y": 0.0
-                    },
-                    "u_outline": 0,
-                    "u_outline_thickness": 0.0,
-                    "u_size": 0.4000000059604645
-                },
-                "path": "shaders/clan_shaders/circle.glsl",
-                "vertices": 1
-            },
-            {
-                "instances": 1,
-                "parameters": {
-                    "u_count": 1,
-                    "u_fill": 1,
-                    "u_index_offset": {
-                        "x": 0.0,
-                        "y": 0.0
-                    },
-                    "u_offset": {
-                        "x": 0.4000000059604645,
-                        "y": 0.0
-                    },
-                    "u_outline": 0,
-                    "u_outline_thickness": 0.0,
-                    "u_size": 0.4000000059604645
-                },
-                "path": "shaders/clan_shaders/circle.glsl",
-                "vertices": 1
-            }
-        ],
-        [
-            {
-                "instances": 1,
-                "parameters": {
-                    "u_count": 1,
-                    "u_fill": 1,
-                    "u_index_offset": {
-                        "x": 0.0,
-                        "y": 0.0
-                    },
-                    "u_offset": {
-                        "x": -0.4000000059604645,
-                        "y": 0.0
-                    },
-                    "u_outline": 2,
-                    "u_outline_thickness": 0.14000000059604645,
-                    "u_size": 0.4300000071525574
-                },
-                "path": "shaders/clan_shaders/circle.glsl",
-                "vertices": 1
-            },
-            {
-                "instances": 1,
-                "parameters": {
-                    "u_count": 1,
-                    "u_fill": 1,
-                    "u_index_offset": {
-                        "x": 0.0,
-                        "y": 0.0
-                    },
-                    "u_offset": {
-                        "x": 0.4000000059604645,
-                        "y": 0.0
-                    },
-                    "u_outline": 2,
-                    "u_outline_thickness": 0.14000000059604645,
-                    "u_size": 0.4300000071525574
-                },
-                "path": "shaders/clan_shaders/circle.glsl",
-                "vertices": 1
-            }
-        ]
-    ],
+    "name": "Scavenger",
+    "description": "When unit Devoured: gain +2/+2",
+    "tier": 1,
     "clans": [
         "Demons"
     ],
-    "description": "When unit Devoured: gain +2/+2",
+    "attack": 1,
     "health": 1,
-    "name": "Scavenger",
     "radius": 0.4,
-    "render": {
-        "instances": 1,
-        "parameters": {},
-        "path": "shaders/default_circle_hero.glsl",
-        "vertices": 200
+    "action": {
+        "preset": "effects/melee_hit.json"
     },
     "statuses": [
         {
@@ -221,5 +88,10 @@
             "type": "Status"
         }
     ],
-    "tier": 1
+    "render": {
+        "instances": 1,
+        "parameters": {},
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 200
+    }
 }

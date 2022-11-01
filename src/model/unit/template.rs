@@ -60,23 +60,6 @@ impl Default for UnitTemplate {
     }
 }
 
-impl geng::LoadAsset for UnitTemplate {
-    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
-        let geng = geng.clone();
-        let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
-        let path = path.to_owned();
-        async move {
-            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            let mut result: Self = serde_json::from_str(&json)?;
-            result.long_name = file_name;
-            result.path = path.to_str().unwrap().to_string();
-            Ok(result)
-        }
-        .boxed_local()
-    }
-    const DEFAULT_EXT: Option<&'static str> = Some("json");
-}
-
 #[derive(Deref, DerefMut, Clone)]
 pub struct UnitTemplates {
     #[deref]
