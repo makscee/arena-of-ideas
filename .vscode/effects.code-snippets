@@ -1,0 +1,50 @@
+{
+	"Attach Status": {
+		"prefix": "attach_status",
+		"body": [
+			"{",
+			"  \"type\": \"AttachStatus\",",
+			"  \"status\": \"${1:Shield}\"",
+			"}"
+		],
+		"description": "Attach Status"
+	},
+	"Add Targets": {
+		"prefix": "add_targets",
+		"body": [
+			"{",
+			"    \"type\": \"AddTargets\",",
+			"    \"condition\": {",
+			"        \"type\": \"Always\"",
+			"    },",
+			"    \"additional_targets\": 1,",
+			"    \"effect\": $TM_SELECTED_TEXT$1",
+			"}"
+		],
+		"description": "Add Targets"
+	},
+	"Change Target": {
+		"prefix": "change_target",
+		"body": [
+			"{",
+			"    \"type\": \"ChangeTarget\",",
+			"    \"filter\": \"Allies\",",
+			"    \"condition\": {",
+			"        \"type\": \"UnitInjured\",",
+			"        \"who\": \"Target\"",
+			"    },",
+			"    \"effect\": $TM_SELECTED_TEXT$1",
+			"}"
+		],
+		"description": "Change Target"
+	},
+	"Condition Always": {
+		"prefix": "condition_always",
+		"body": [
+			"{",
+			"    \"type\": \"Always\"",
+			"}"
+		],
+		"description": "Condition Always"
+	}
+}
