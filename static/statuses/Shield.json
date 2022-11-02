@@ -18,7 +18,17 @@
                 }
             ],
             "effect": {
-                "type": "RemoveStatus"
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "RemoveStatus",
+                        "status": "Shield"
+                    },
+                    {
+                        "type": "CustomTrigger",
+                        "name": "ShieldRemoved"
+                    }
+                ]
             }
         },
         {

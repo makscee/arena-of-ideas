@@ -1,0 +1,113 @@
+{
+    "name": "Procurator",
+    "description": "Devour ally that loses Shield",
+    "attack": 1,
+    "health": 3,
+    "tier": 2,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Demons",
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "DevourShieldLost",
+            "type": "Status",
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Custom",
+                            "name": "ShieldRemoved"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "name": "BeforeDevour",
+                                "type": "CustomTrigger",
+                                "who": "Target"
+                            },
+                            {
+                                "type": "Kill",
+                                "who": "Target"
+                            },
+                            {
+                                "stat": "Health",
+                                "type": "ChangeStat",
+                                "who": "Caster",
+                                "value": {
+                                    "a": {
+                                        "stat": "Health",
+                                        "type": "FindStat",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "a": {
+                                            "stat": "Health",
+                                            "type": "FindStat",
+                                            "who": "Target"
+                                        },
+                                        "b": {
+                                            "stat": "Level",
+                                            "type": "FindStat",
+                                            "who": "Caster"
+                                        },
+                                        "type": "Mul"
+                                    },
+                                    "type": "Sum"
+                                }
+                            },
+                            {
+                                "stat": "Attack",
+                                "type": "ChangeStat",
+                                "who": "Caster",
+                                "value": {
+                                    "a": {
+                                        "stat": "Attack",
+                                        "type": "FindStat",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "a": {
+                                            "stat": "Attack",
+                                            "type": "FindStat",
+                                            "who": "Target"
+                                        },
+                                        "b": {
+                                            "stat": "Level",
+                                            "type": "FindStat",
+                                            "who": "Caster"
+                                        },
+                                        "type": "Mul"
+                                    },
+                                    "type": "Sum"
+                                }
+                            },
+                            {
+                                "preset": "effects/vfx_stats_gain.json"
+                            },
+                            {
+                                "type": "IncrVisualTimer"
+                            },
+                            {
+                                "name": "Devour",
+                                "type": "CustomTrigger"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "stacking": {
+                "type": "Independent"
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}
