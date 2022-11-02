@@ -20,6 +20,8 @@ pub enum VarName {
     RemainingAbsorb,
     GlobalVar,
     HealLeft,
+    OldHealth,
+    OldAttack,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
