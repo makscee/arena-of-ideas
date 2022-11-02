@@ -8,6 +8,15 @@
         "type": "List",
         "effects": [
             {
+                "name": "BeforeDevour",
+                "type": "CustomTrigger",
+                "who": "Target"
+            },
+            {
+                "type": "Kill",
+                "who": "Target"
+            },
+            {
                 "stat": "Health",
                 "type": "ChangeStat",
                 "who": "Caster",
@@ -58,10 +67,6 @@
                     },
                     "type": "Sum"
                 }
-            },
-            {
-                "type": "Kill",
-                "who": "Target"
             },
             {
                 "preset": "effects/vfx_stats_gain.json"

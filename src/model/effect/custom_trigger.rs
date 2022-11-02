@@ -4,6 +4,7 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct CustomTriggerEffect {
     name: String,
+    who: Option<Who>,
 }
 
 impl EffectContainer for CustomTriggerEffect {
@@ -13,7 +14,17 @@ impl EffectContainer for CustomTriggerEffect {
 impl EffectImpl for CustomTriggerEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
+        let name = effect.name.clone();
+        let mut target_unit: Option<Id> = None;
+        if let Some(target) = effect.who {
+            target_unit = context.get(target);
+        }
         for unit in &logic.model.units {
+            if let Some(target_unit) = target_unit {
+                if unit.id != target_unit {
+                    continue;
+                }
+            }
             for (effect, trigger, mut vars, status_id, status_color) in unit
                 .all_statuses
                 .iter()
@@ -31,7 +42,7 @@ impl EffectImpl for CustomTriggerEffect {
                     })
                 })
             {
-                logic.effects.push_back(QueuedEffect {
+                logic.effects.push_front(QueuedEffect {
                     effect,
                     context: EffectContext {
                         caster: Some(unit.id),

@@ -1,20 +1,26 @@
 {
-    "name": "Scavenger",
-    "description": "When unit Devoured: gain +2/+2",
+    "name": "Fugus",
     "tier": 1,
-    "clans": [
-        "Demons"
-    ],
+    "description": "Before being Devoured: gain +4/+4",
     "attack": 1,
-    "health": 1,
-    "radius": 0.4,
+    "health": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },
+    "clans": [
+        "Demons"
+    ],
+    "radius": 0.4,
     "statuses": [
         {
             "listeners": [
                 {
+                    "triggers": [
+                        {
+                            "type": "Custom",
+                            "name": "BeforeDevour"
+                        }
+                    ],
                     "effect": {
                         "effects": [
                             {
@@ -75,16 +81,10 @@
                             }
                         ],
                         "type": "List"
-                    },
-                    "triggers": [
-                        {
-                            "type": "Custom",
-                            "name": "Devour"
-                        }
-                    ]
+                    }
                 }
             ],
-            "name": "WhenDevourAdd",
+            "name": "BeforeDevour",
             "stacking": {
                 "type": "Independent"
             },

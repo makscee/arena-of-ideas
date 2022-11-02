@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{cmp::Ordering, collections::VecDeque};
 
 use super::*;
 mod auras;
@@ -119,7 +119,19 @@ impl Logic {
     }
 
     pub fn init_player(&mut self, player: Vec<Unit>) {
-        for (index, unit) in player.iter().enumerate() {
+        for (index, unit) in player
+            .iter()
+            .sorted_by(|a, b| {
+                if a.position.x < b.position.x {
+                    Ordering::Less
+                } else if a.position.x > b.position.x {
+                    Ordering::Greater
+                } else {
+                    Ordering::Equal
+                }
+            })
+            .enumerate()
+        {
             let mut cloned = unit.clone();
             cloned.position.x = index as i64;
             cloned.id = self.model.next_id;
