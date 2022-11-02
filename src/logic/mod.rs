@@ -45,13 +45,19 @@ impl Logic {
         custom_player
             .iter()
             .map(|unit_type| {
-                let id = self.spawn_by_type(unit_type, Position::zero(Faction::Player));
-                self.model
-                    .units
-                    .iter()
-                    .find(|unit| unit.id == id)
-                    .expect("Cant find unit")
-                    .clone()
+                let mut template = &self
+                    .model
+                    .unit_templates
+                    .get(unit_type)
+                    .unwrap_or_else(|| panic!("Failed to find unit template for {unit_type}"));
+
+                let unit = Unit::new(
+                    &template,
+                    self.model.next_id,
+                    Position::zero(Faction::Player),
+                    &self.model.statuses,
+                );
+                unit
             })
             .collect()
     }
