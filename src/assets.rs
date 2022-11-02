@@ -11,7 +11,9 @@ pub struct Options {
     pub clan_colors: HashMap<Clan, Rgba<f32>>,
     pub keys_mapping: Vec<KeyMapping>,
 }
-
+fn static_path() -> std::path::PathBuf {
+    "static".into()
+}
 #[derive(Deserialize, Clone)]
 pub struct KeyMapping {
     pub event: GameEvent,

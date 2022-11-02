@@ -42,6 +42,10 @@ struct EditState {
     watcher: RecommendedWatcher,
 }
 
+fn static_path() -> std::path::PathBuf {
+    "static".into()
+}
+
 impl EditState {
     pub fn new(geng: &Geng, config_path: String) -> Self {
         // Load config

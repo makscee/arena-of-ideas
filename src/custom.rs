@@ -17,6 +17,10 @@ struct CustomConfig {
     fov: f32,
 }
 
+fn static_path() -> std::path::PathBuf {
+    "static".into()
+}
+
 impl CustomGame {
     pub fn run(
         self,

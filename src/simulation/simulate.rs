@@ -3,7 +3,9 @@ use super::*;
 pub struct Simulate {
     config_path: PathBuf,
 }
-
+fn static_path() -> std::path::PathBuf {
+    "static".into()
+}
 impl Simulate {
     pub fn run(self, geng: &Geng, assets: Assets, mut config: Config) {
         let start = Instant::now();
