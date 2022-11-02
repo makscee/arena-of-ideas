@@ -57,6 +57,7 @@ impl HeroEditorModel {
             .iter()
             .filter(|tuple| tuple.1.tier > 0)
             .map(|tuple| tuple.1.clone())
+            .sorted_by(|a, b| Ord::cmp(&a.clan_renders[0].len(), &b.clan_renders[0].len()))
             .map(|mut unit| {
                 if unit.clans.len() > unit.clan_renders[0].len() {
                     let mut parameters = ShaderParameters::new();
