@@ -2,8 +2,8 @@
     "name": "Patron",
     "description": "Give Shield to ally after they Devour",
     "attack": 1,
-    "health": 1,
-    "tier": 1,
+    "health": 3,
+    "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },
