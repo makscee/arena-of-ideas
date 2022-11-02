@@ -1,0 +1,42 @@
+{
+    "name": "Patron",
+    "description": "Give Shield to ally after they Devour",
+    "attack": 1,
+    "health": 1,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Demons",
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "ShieldAfterDevour",
+            "type": "Status",
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Custom",
+                            "name": "Devour"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AttachStatus",
+                        "status": "Shield",
+                        "who": "From"
+                    }
+                }
+            ],
+            "stacking": {
+                "type": "Independent"
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}
