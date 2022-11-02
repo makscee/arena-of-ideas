@@ -46,5 +46,77 @@
 			"}"
 		],
 		"description": "Condition Always"
+	},
+	"List": {
+		"prefix": "list",
+		"body": [
+			"{",
+			"    \"type\": \"List\",",
+			"    \"effects\": [",
+			"        $TM_SELECTED_TEXT$1",
+			"    ]",
+			"}"
+		],
+		"description": "Condition Always"
+	},
+	"Change Stats": {
+		"prefix": "change_stats",
+		"body": [
+			"{",
+			"   \"type\": \"ChangeStat\",",
+			"   \"stat\": \"${1:Health}\",",
+			"   \"who\": \"${2:Caster}\",",
+			"   \"value\": {",
+			"       \"a\": {",
+			"           \"stat\": \"${1:Health}\",",
+			"           \"type\": \"FindStat\",",
+			"           \"who\": \"${2:Caster}\"",
+			"       },",
+			"       \"b\": {",
+			"            \"type\": \"Const\",",
+			"            \"value\": 1",
+			"       },",
+			"       \"type\": \"Sum\"",
+			"   }",
+			" }"
+		],
+		"description": "Change Stats"
+	},
+	"Level Mul": {
+		"prefix": "level_mul",
+		"body": [
+			"{",
+			"  \"a\": $TM_SELECTED_TEXT,",
+			"  \"b\": {",
+			"    \"type\": \"FindStat\",",
+			"    \"stat\": \"Level\",",
+			"    \"who\": \"Caster\"",
+			"  },",
+			"  \"type\": \"Mul\"",
+			"}"
+		],
+		"description": "Level Mul"
+	},
+	"Level Stat": {
+		"prefix": "level_stat",
+		"body": [
+			"{",
+			"    \"type\": \"FindStat\",",
+			"    \"stat\": \"Level\",",
+			"    \"who\": \"Caster\"",
+			"}"
+		],
+		"description": "Level Stat"
+	},
+	"Change Context": {
+		"prefix": "change_context",
+		"body": [
+			"{",
+			"    \"type\": \"ChangeContext\",",
+			"    \"target\": \"Caster\",",
+			"    \"effect\": $TM_SELECTED_TEXT$1",
+			"}"
+		],
+		"description": "Change Context"
 	}
 }

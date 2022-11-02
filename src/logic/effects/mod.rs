@@ -28,10 +28,14 @@ impl EffectContext {
     }
     pub fn to_string(&self, logic: &Logic) -> String {
         format!(
-            "caster: {}, from: {}, target: {}",
+            "caster: {}, from: {}, target: {} status: {}",
             self.unit_to_string(self.caster, logic),
             self.unit_to_string(self.from, logic),
             self.unit_to_string(self.target, logic),
+            match self.status_id {
+                None => "None".to_string(),
+                Some(id) => id.to_string(),
+            }
         )
     }
     pub fn unit_to_string(&self, unit: Option<Id>, logic: &Logic) -> String {
@@ -64,7 +68,7 @@ impl Logic {
                         context.vars.insert(v.0.clone(), *v.1);
                     }
                 });
-                trace!("Processing {:?} on {}", effect, context.to_string(self));
+                debug!("Processing {:?} on {}", effect, context.to_string(self));
                 effect.as_box().process(context, self);
 
                 iterations += 1;

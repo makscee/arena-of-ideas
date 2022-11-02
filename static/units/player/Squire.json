@@ -2,7 +2,7 @@
     "name": "Squire",
     "description": "Start of battle: gain Shield and +1/2/3 HP",
     "attack": 1,
-    "health": 1,
+    "health": 2,
     "tier": 1,
     "action": {
         "preset": "effects/melee_hit.json"

@@ -69,6 +69,12 @@ pub enum UnitStat {
     Level,
 }
 
+impl fmt::Display for UnitStat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl Touchable for Unit {
     fn touch_box(&self) -> AABB<f32> {
         let position = self.render.render_position.map(|x| x.as_f32());

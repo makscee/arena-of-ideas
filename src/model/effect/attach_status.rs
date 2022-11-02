@@ -9,6 +9,12 @@ pub enum Who {
     Target,
 }
 
+impl fmt::Display for Who {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 fn default_who() -> Who {
     Who::Target
 }
@@ -56,6 +62,24 @@ impl EffectImpl for AttachStatusEffect {
             }
 
             status.vars.extend(effect.vars.into_iter());
+            if !status.is_inited {
+                for (effect, trigger, vars, status_id, status_color) in
+                    status.trigger(|trigger| matches!(trigger, StatusTriggerType::Init))
+                {
+                    logic.effects.push_front(QueuedEffect {
+                        effect,
+                        context: EffectContext {
+                            caster: status.caster,
+                            from: Some(target.id),
+                            target: Some(target.id),
+                            vars,
+                            status_id: Some(status_id),
+                            color: Some(status_color),
+                        },
+                    })
+                }
+                status.is_inited = true;
+            }
             let attached_status_id = unit_attach_status(status, &mut target.all_statuses);
 
             let target_id = target.id;

@@ -11,6 +11,9 @@
 			"label": "Run Game",
 			"group": {
 				"kind": "build"
+			},
+			"env": {
+				"LOG": "debug"
 			}
 		},
 		{
@@ -20,7 +23,7 @@
 				"--",
 				"custom-game",
 				"--config",
-				"local_configs/maks_config.json"
+				"local_configs/custom_config.json"
 			],
 			"problemMatcher": [
 				"$rustc"
@@ -28,6 +31,9 @@
 			"label": "Custom Game",
 			"group": {
 				"kind": "build"
+			},
+			"env": {
+				"LOG": "trace"
 			}
 		},
 		{

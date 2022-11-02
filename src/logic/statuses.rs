@@ -85,7 +85,7 @@ impl Logic {
                 for (effect, trigger, vars, status_id, status_color) in
                     status.trigger(|trigger| matches!(trigger, StatusTriggerType::Init))
                 {
-                    self.effects.push_back(QueuedEffect {
+                    self.effects.push_front(QueuedEffect {
                         effect,
                         context: EffectContext {
                             caster: status.caster,
@@ -161,6 +161,7 @@ impl Logic {
 
         unit.all_statuses
             .retain(|status| !Self::is_status_expired(status));
+        debug!("statuses to remove: {}", expired.len());
 
         unit.flags = unit
             .all_statuses

@@ -36,7 +36,7 @@ impl Logic {
 
                 parameters.0.extend(HashMap::from([(
                     "u_parent_position".to_string(),
-                    ShaderParameter::Vec2(parent.position.to_world().map(|x| x.as_f32())),
+                    ShaderParameter::Vec2(parent.render.render_position.map(|x| x.as_f32())),
                 )]));
                 parameters.0.extend(HashMap::from([(
                     "u_parent_radius".to_string(),

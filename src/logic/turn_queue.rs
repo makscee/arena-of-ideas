@@ -52,14 +52,17 @@ impl Logic {
                     return;
                 };
                 self.model.phase.enemy = enemy_unit.unwrap().id;
+                self.process_units(Self::process_unit_statuses);
             }
             TurnPhase::PreStrike => {
+                debug!("Phase: PreStrike");
                 self.model.phase.turn_phase = TurnPhase::Strike;
                 let timer = Time::new(TIMER_STRIKE);
                 self.model.phase.set_timer(timer);
                 self.process_units(Self::process_unit_statuses);
             }
             TurnPhase::Strike => {
+                debug!("Phase: Strike");
                 self.process_units(Self::process_modifiers);
                 let player = self
                     .model
@@ -76,14 +79,15 @@ impl Logic {
                 self.process_action(&enemy, &player);
                 self.model.units.insert(player);
                 self.model.units.insert(enemy);
-                let timer = Time::new(TIMER_PRE_STRIKE);
-                self.model.phase.set_timer(timer);
+                self.process_units(Self::process_unit_statuses);
                 self.model.phase.turn_phase = TurnPhase::PostStrike;
             }
             TurnPhase::PostStrike => {
+                debug!("Phase: PostStrike");
                 let timer = Time::new(TIMER_PRE_STRIKE);
                 self.model.phase.set_timer(timer);
                 self.model.phase.turn_phase = TurnPhase::None;
+                self.process_units(Self::process_unit_statuses);
             }
         }
     }

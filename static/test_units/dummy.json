@@ -5,40 +5,7 @@
     "action": {
         "type": "Noop"
     },
-    "statuses": [
-        {
-            "name": "OnTakeDamageHeal",
-            "type": "Status",
-            "stacking": {
-                "type": "Independent"
-            },
-            "listeners": [
-                {
-                    "triggers": [
-                        {
-                            "type": "DamageTaken"
-                        }
-                    ],
-                    "effect": {
-                        "type": "ChangeStat",
-                        "stat": "Health",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "FindStat",
-                                "stat": "Health",
-                                "who": "Target"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": 9
-                            }
-                        }
-                    }
-                }
-            ]
-        }
-    ],
+    "statuses": [],
     "render": {
         "path": "shaders/blob_enemy.glsl"
     }
