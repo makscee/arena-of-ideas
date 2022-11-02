@@ -52,7 +52,7 @@ impl EffectImpl for CustomTriggerEffect {
                             vars.extend(context.vars.clone());
                             vars
                         },
-                        status_id: Some(status_id),
+                        status_id: None,
                         color: Some(status_color),
                     },
                 })
