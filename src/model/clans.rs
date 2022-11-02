@@ -22,6 +22,7 @@ pub enum Clan {
     Protectors,
     Demons,
     Dragons,
+    Wizards,
     Common,
 }
 
@@ -95,6 +96,7 @@ impl fmt::Display for Clan {
             Clan::Warlocks => write!(f, "Warlocks"),
             Clan::Protectors => write!(f, "Protectors"),
             Clan::Demons => write!(f, "Demons"),
+            Clan::Wizards => write!(f, "Wizards"),
             Clan::Dragons => write!(f, "Dragons"),
             Clan::Common => write!(f, "Common"),
         }

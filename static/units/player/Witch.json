@@ -1,0 +1,46 @@
+{
+    "name": "Witch",
+    "description": "Start of battle: launch Magic Missile 1/2/3 times",
+    "attack": 1,
+    "health": 2,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Wizards"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "MissilesOnStart",
+            "type": "Status",
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": {
+                            "type": "FindStat",
+                            "who": "Caster",
+                            "stat": "Level"
+                        },
+                        "effect": {
+                            "preset": "effects/abilities/magic_missile.json"
+                        }
+                    }
+                }
+            ],
+            "stacking": {
+                "type": "Independent"
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}

@@ -19,7 +19,10 @@
                     ],
                     "effect": {
                         "type": "Repeat",
-                        "times": 2,
+                        "times": {
+                            "type": "Const",
+                            "value": 2
+                        },
                         "effect": {
                             "type": "Spawn",
                             "unit_type": "blob_0"

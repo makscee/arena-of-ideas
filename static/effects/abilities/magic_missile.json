@@ -1,0 +1,34 @@
+{
+    "type": "ChangeTarget",
+    "filter": "Enemies",
+    "condition": {
+        "type": "Always"
+    },
+    "effect": {
+        "type": "List",
+        "effects": [
+            {
+                "name": "BeforeMissile",
+                "type": "CustomTrigger",
+                "who": "Target"
+            },
+            {
+                "type": "Damage",
+                "types": [
+                    "MagicMissile"
+                ],
+                "value": {
+                    "type": "Const",
+                    "value": 1
+                }
+            },
+            {
+                "type": "IncrVisualTimer"
+            },
+            {
+                "name": "MagicMissile",
+                "type": "CustomTrigger"
+            }
+        ]
+    }
+}

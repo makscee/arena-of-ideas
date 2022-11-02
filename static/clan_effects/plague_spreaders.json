@@ -21,7 +21,10 @@
                         ],
                         "effect": {
                             "type": "Repeat",
-                            "times": 2,
+                            "times": {
+                                "type": "Const",
+                                "value": 2
+                            },
                             "effect": {
                                 "type": "AttachStatus",
                                 "status": "Vulnerability"

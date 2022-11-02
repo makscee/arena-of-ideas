@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct RepeatEffect {
-    pub times: usize,
+    pub times: Expr,
     pub effect: Effect,
 }
 
@@ -16,7 +16,8 @@ impl EffectContainer for RepeatEffect {
 impl EffectImpl for RepeatEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        for _ in 0..effect.times {
+        let times = effect.times.calculate(&context, logic);
+        for _ in 0..times {
             logic.effects.push_front(QueuedEffect {
                 effect: effect.effect.clone(),
                 context: context.clone(),
