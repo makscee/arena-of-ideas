@@ -23,8 +23,38 @@
                         }
                     ],
                     "effect": {
-                        "type": "AttachStatus",
-                        "status": "Shield"
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AttachStatus",
+                                "status": "Shield"
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Health",
+                                "who": "Caster",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "stat": "Health",
+                                        "type": "FindStat",
+                                        "who": "Target"
+                                    },
+                                    "b": {
+                                        "a": {
+                                            "type": "Const",
+                                            "value": 1
+                                        },
+                                        "b": {
+                                            "type": "FindStat",
+                                            "stat": "Level",
+                                            "who": "Caster"
+                                        },
+                                        "type": "Mul"
+                                    }
+                                }
+                            }
+                        ]
                     }
                 }
             ],
