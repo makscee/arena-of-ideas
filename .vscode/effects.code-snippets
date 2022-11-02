@@ -118,5 +118,16 @@
 			"}"
 		],
 		"description": "Change Context"
+	},
+	"Repeat": {
+		"prefix": "repeat",
+		"body": [
+			"{",
+			"    \"type\": \"Repeat\",",
+			"    \"times\": ${1:2},",
+			"    \"effect\": $TM_SELECTED_TEXT$2",
+			"}"
+		],
+		"description": "Repeat"
 	}
 }

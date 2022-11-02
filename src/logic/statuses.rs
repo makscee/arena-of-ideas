@@ -161,7 +161,6 @@ impl Logic {
 
         unit.all_statuses
             .retain(|status| !Self::is_status_expired(status));
-        debug!("statuses to remove: {}", expired.len());
 
         unit.flags = unit
             .all_statuses

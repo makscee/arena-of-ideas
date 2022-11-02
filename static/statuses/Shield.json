@@ -18,44 +18,7 @@
                 }
             ],
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "AddVar",
-                        "name": "Charges",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Var",
-                                "name": "Charges"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": -1
-                            }
-                        }
-                    },
-                    {
-                        "type": "If",
-                        "condition": {
-                            "type": "Equal",
-                            "a": {
-                                "type": "Const",
-                                "value": 0
-                            },
-                            "b": {
-                                "type": "Var",
-                                "name": "Charges"
-                            }
-                        },
-                        "then": {
-                            "type": "RemoveStatus"
-                        },
-                        "else": {
-                            "type": "Noop"
-                        }
-                    }
-                ]
+                "type": "RemoveStatus"
             }
         },
         {
@@ -80,8 +43,5 @@
     ],
     "render": {
         "path": "shaders/status/status_default.glsl"
-    },
-    "vars": {
-        "Charges": 0
     }
 }
