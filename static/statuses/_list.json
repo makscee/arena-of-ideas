@@ -1,4 +1,5 @@
 [
     "InjureHealTint.json",
-    "Shield.json"
+    "Shield.json",
+    "ShieldDamageDetector.json"
 ]
