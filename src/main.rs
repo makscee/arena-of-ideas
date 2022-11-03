@@ -68,8 +68,9 @@ impl Game {
     pub fn new(
         geng: &Geng,
         assets: &Rc<Assets>,
+        rounds: Vec<GameRound>,
         config: Config,
-        round: GameRound,
+        round: usize,
         custom: bool,
     ) -> Self {
         let mut model = Model::new(
@@ -78,6 +79,7 @@ impl Game {
             assets.clans.clone(),
             assets.statuses.clone(),
             round,
+            rounds,
             RenderModel::new(),
             1.0,
             10,
@@ -90,7 +92,7 @@ impl Game {
             model: logic.model.clone(),
         };
         let history = vec![last_frame.clone()];
-        let render = Render::new(geng, &assets, &config);
+        let render = Render::new(geng, &assets, &config, logic.model.rounds.clone());
         let mut shop = Shop::new(assets, render.camera.clone());
         shop.reroll(true);
 
@@ -358,12 +360,21 @@ impl geng::State for Game {
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
                     self.logic.init_player(self.shop.team.clone());
-                    self.logic.init_enemies(self.logic.model.round.clone());
+                    let round = self
+                        .logic
+                        .model
+                        .rounds
+                        .get(self.logic.model.round)
+                        .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
+                        .clone();
+                    self.logic.init_enemies(round.clone());
                 }
                 GameState::Battle => {
                     if self.logic.model.visual_timer <= r32(0.0) {
                         self.logic.model.transition = false;
                         self.logic.model.render_model.clear();
+
+                        self.logic.model.round += 1;
                         self.state = GameState::Shop;
                         self.shop.enabled = true;
                         self.shop.updated = true;
@@ -493,15 +504,9 @@ fn main() {
                             },
                             None => (),
                         }
-
-                        let round = assets
-                            .rounds
-                            .get(0)
-                            .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
-                            .clone();
+                        let rounds = assets.rounds.clone();
                         let assets = Rc::new(assets);
-
-                        Box::new(Game::new(&geng, &assets, config, round, false))
+                        Box::new(Game::new(&geng, &assets, rounds, config, 0, false))
                     }
                 },
             );

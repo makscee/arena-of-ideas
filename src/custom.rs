@@ -33,12 +33,13 @@ impl CustomGame {
             &static_path().join(&self.config),
         ))
         .unwrap();
+        let rounds = vec![custom.round.clone()];
         let config = Config {
             player: custom.player,
             clans: custom.clans,
             enemy_clans: hashmap! {},
             fov: custom.fov,
         };
-        Box::new(Game::new(geng, assets, config, custom.round, true))
+        Box::new(Game::new(geng, assets, rounds, config, 0, true))
     }
 }

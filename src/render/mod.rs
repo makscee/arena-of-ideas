@@ -103,11 +103,12 @@ pub struct Render {
     geng: Geng,
     pub camera: geng::Camera2d,
     assets: Rc<Assets>,
+    rounds: Vec<GameRound>,
     unit_render: UnitRender,
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: &Config) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: &Config, rounds: Vec<GameRound>) -> Self {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -117,6 +118,7 @@ impl Render {
                 fov: config.fov,
             },
             unit_render: UnitRender::new(geng, assets),
+            rounds,
         }
     }
     pub fn draw(
@@ -155,7 +157,8 @@ impl Render {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);
                 if let Some(unit) = hovered_unit {
-                    self.unit_render.draw_hover(&unit, &self.camera, framebuffer);
+                    self.unit_render
+                        .draw_hover(&unit, &self.camera, framebuffer);
                 }
             }
         }
@@ -296,8 +299,13 @@ impl Render {
         let text_size = 55.0;
         let left_margin = 20.0;
         let framebuffer_size = framebuffer.size();
+        let round = self
+            .rounds
+            .get(model.round)
+            .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
+            .clone();
         let lines: Vec<String> = vec![
-            format!("--- {} ---", model.round.name),
+            format!("--- {} ---", round.name),
             format!("Lives: {}", model.lives),
         ];
         for (i, line) in lines.into_iter().enumerate() {
