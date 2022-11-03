@@ -1,6 +1,6 @@
 {
     "name": "Watchman",
-    "description": "Enemy died: give shield to ally",
+    "description": "Enemy died: give Shield and +2/4/6 HP to ally",
     "tier": 1,
     "attack": 1,
     "health": 2,
@@ -21,16 +21,41 @@
                                 "type": "ChangeTarget",
                                 "filter": "Allies",
                                 "condition": {
-                                    "type": "Not",
-                                    "condition": {
-                                        "type": "UnitHasStatus",
-                                        "status": "Shield",
-                                        "who": "Target"
-                                    }
+                                    "type": "Always"
                                 },
                                 "effect": {
-                                    "type": "AttachStatus",
-                                    "status": "Shield"
+                                    "type": "List",
+                                    "effects": [
+                                        {
+                                            "type": "AttachStatus",
+                                            "status": "Shield"
+                                        },
+                                        {
+                                            "type": "ChangeStat",
+                                            "stat": "Health",
+                                            "who": "Target",
+                                            "value": {
+                                                "type": "Sum",
+                                                "a": {
+                                                    "stat": "Health",
+                                                    "type": "FindStat",
+                                                    "who": "Target"
+                                                },
+                                                "b": {
+                                                    "a": {
+                                                        "type": "Const",
+                                                        "value": 2
+                                                    },
+                                                    "b": {
+                                                        "type": "FindStat",
+                                                        "stat": "Level",
+                                                        "who": "Caster"
+                                                    },
+                                                    "type": "Mul"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             },
                             {
