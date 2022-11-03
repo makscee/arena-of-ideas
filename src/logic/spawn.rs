@@ -71,7 +71,10 @@ impl Logic {
                 status_id: Some(status_id),
                 color: Some(status_color),
             };
-            trigger.fire(effect, &context, &mut self.effects);
+            self.effects.push_front(QueuedEffect {
+                effect,
+                context: context.clone(),
+            });
         }
 
         self.model.next_id += 1;

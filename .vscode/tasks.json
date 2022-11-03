@@ -33,7 +33,7 @@
 				"kind": "build"
 			},
 			"env": {
-				"LOG": "trace"
+				"LOG": "debug"
 			}
 		},
 		{

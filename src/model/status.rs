@@ -71,9 +71,7 @@ pub enum StatusTriggerType {
     /// Triggered when the owner dies
     Death,
     /// Triggered when unit of faction dies (or any faction if none is specified)
-    UnitDeath{
-        faction: Option<Faction>
-    },
+    UnitDeath { faction: Option<Faction> },
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
     Kill {
         damage_type: Option<DamageType>,
@@ -117,6 +115,12 @@ pub enum StatusTriggerType {
     Action,
     /// Triggered the moment unit's cooldown decreases
     CooldownTick,
+}
+
+impl fmt::Display for StatusTriggerType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
