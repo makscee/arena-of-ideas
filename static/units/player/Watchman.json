@@ -1,0 +1,63 @@
+{
+    "name": "Watchman",
+    "description": "Enemy died: give shield to ally",
+    "tier": 1,
+    "attack": 3,
+    "health": 2,
+    "clans": [
+        "Protectors"
+    ],
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "radius": 0.4,
+    "statuses": [
+        {
+            "listeners": [
+                {
+                    "effect": {
+                        "effects": [
+                            {
+                                "type": "ChangeTarget",
+                                "filter": "Allies",
+                                "condition": {
+                                    "type": "Not",
+                                    "condition": {
+                                        "type": "UnitHasStatus",
+                                        "status": "Shield",
+                                        "who": "Target"
+                                    }
+                                },
+                                "effect": {
+                                    "type": "AttachStatus",
+                                    "status": "Shield"
+                                }
+                            },
+                            {
+                                "type": "IncrVisualTimer"
+                            }
+                        ],
+                        "type": "List"
+                    },
+                    "triggers": [
+                        {
+                            "type": "UnitDeath",
+                            "faction": "Enemy"
+                        }
+                    ]
+                }
+            ],
+            "name": "StatsAfterShield",
+            "stacking": {
+                "type": "Independent"
+            },
+            "type": "Status"
+        }
+    ],
+    "render": {
+        "instances": 1,
+        "parameters": {},
+        "path": "shaders/default_circle_hero.glsl",
+        "vertices": 4
+    }
+}
