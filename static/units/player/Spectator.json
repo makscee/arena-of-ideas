@@ -13,7 +13,7 @@
     "radius": 0.4,
     "statuses": [
         {
-            "name": "GetStatsOnMissiles",
+            "name": "DevourOnMagicMissiles",
             "type": "Status",
             "listeners": [
                 {

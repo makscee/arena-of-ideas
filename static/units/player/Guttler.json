@@ -27,7 +27,14 @@
             }
           ],
           "effect": {
-            "preset": "effects/abilities/devour.json"
+            "type": "ChangeTarget",
+            "filter": "Allies",
+            "condition": {
+              "type": "Always"
+            },
+            "effect": {
+              "preset": "effects/abilities/devour.json"
+            }
           }
         }
       ],
