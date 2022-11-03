@@ -207,8 +207,8 @@ fn draw_slider_vector<'a>(
 ) -> impl Widget + 'a {
     let slider_value = format!("{:.2} : {:.2}", value.x, value.y);
     let slider = vec2slider::Vec2Slider::new(cx, *value);
-    let slider_x = slider::Slider::new(cx, value.x, -1.0..=1.0);
-    let slider_y = slider::Slider::new(cx, value.y, -1.0..=1.0);
+    let slider_x = slider::Slider::new(cx, value.x, range[0]..=range[1]);
+    let slider_y = slider::Slider::new(cx, value.y, range[0]..=range[1]);
     let bg_color = match shift {
         false => Rgba::try_from("#4d9ea777").unwrap(),
         true => Rgba::try_from("#315e6377").unwrap(),
@@ -300,6 +300,7 @@ impl geng::State for HeroEditorState {
         self.time += delta_time;
         if self.model.save_clicked {
             self.save();
+            self.model.save_clicked = false;
         }
         self.model.shift_pressed = self.geng.window().is_key_pressed(geng::Key::LShift);
     }
@@ -343,6 +344,7 @@ impl geng::State for HeroEditorState {
 
         let mut col_left = geng::ui::column![];
         let mut col_right = geng::ui::column![];
+        let prev_selected_unit = self.model.selected_unit;
         col_left.push(
             draw_selector(
                 cx,
@@ -352,6 +354,10 @@ impl geng::State for HeroEditorState {
             )
             .boxed(),
         );
+        if prev_selected_unit != self.model.selected_unit {
+            self.model.selected_level = 0;
+            self.model.selected_clan = 0;
+        }
         col_left.push(
             draw_selector(
                 cx,
@@ -542,6 +548,7 @@ impl geng::State for HeroEditorState {
                     .parameters
                     .clone();
             }
+            self.model.selected_clan = 0;
         } else if copy_clan_button.was_clicked() && self.model.selected_clan > 0 {
             self.model.units[self.model.selected_unit].clan_renders[self.model.selected_level]
                 [self.model.selected_clan]
