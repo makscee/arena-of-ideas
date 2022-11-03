@@ -374,6 +374,13 @@ impl geng::State for Game {
                     if self.logic.model.visual_timer <= r32(0.0) {
                         self.logic.model.transition = false;
                         self.logic.model.render_model.clear();
+                        if self.logic.model.round == 1 {
+                            // round #3
+                            self.shop.tier = 2;
+                        } else if self.logic.model.round == 4 {
+                            // round #6
+                            self.shop.tier = 3;
+                        }
 
                         self.logic.model.round += 1;
                         self.state = GameState::Shop;
