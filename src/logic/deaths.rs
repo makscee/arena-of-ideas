@@ -15,6 +15,13 @@ impl Logic {
                                 && clan.map(|clan| unit.clans.contains(&clan)).unwrap_or(true)
                                 && distance_between_units(other, unit) > *range
                         }
+                        StatusTriggerType::UnitDeath { faction } => {
+                            if let Some(faction) = faction {
+                                unit.faction == *faction
+                            } else {
+                                true
+                            }
+                        }
                         _ => false,
                     })
                 })
