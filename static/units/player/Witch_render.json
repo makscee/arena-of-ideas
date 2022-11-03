@@ -1,21 +1,22 @@
 [
   [
     {
-      "path": "shaders/clan_shaders/circle.glsl",
+      "path": "shaders/clan_shaders/triangle.glsl",
       "parameters": {
-        "u_count": 1,
-        "u_fill": 2,
-        "u_outline_thickness": 0.22,
         "u_offset": {
           "x": 0.0,
-          "y": 0.47
+          "y": 1.23
         },
-        "u_size": 0.36,
+        "u_count": 1,
+        "u_outline": 0,
         "u_index_offset": {
           "x": 0.0,
           "y": 0.0
         },
-        "u_outline": 1
+        "u_size": 0.5,
+        "u_fill": 1,
+        "u_outline_thickness": 0.0,
+        "u_rotation": 1.0
       },
       "vertices": 0,
       "instances": 0
@@ -23,43 +24,45 @@
   ],
   [
     {
-      "path": "shaders/clan_shaders/circle.glsl",
+      "path": "shaders/clan_shaders/triangle.glsl",
       "parameters": {
-        "u_fill": 2,
         "u_offset": {
           "x": 0.0,
-          "y": 0.37
+          "y": 1.23
         },
+        "u_count": 1,
+        "u_outline": 0,
         "u_index_offset": {
           "x": 0.0,
           "y": 0.0
         },
-        "u_count": 1,
-        "u_outline": 1,
-        "u_outline_thickness": 0.22,
-        "u_size": 0.49
-      },
-      "vertices": 0,
-      "instances": 0
-    }
-  ],
-  [
-    {
-      "path": "shaders/clan_shaders/circle.glsl",
-      "parameters": {
-        "u_offset": {
-          "x": 0.0,
-          "y": 0.2
-        },
-        "u_outline_thickness": 0.22,
-        "u_fill": 2,
-        "u_outline": 1,
         "u_size": 0.7,
+        "u_fill": 1,
+        "u_outline_thickness": 0.0,
+        "u_rotation": 1.0
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ],
+  [
+    {
+      "path": "shaders/clan_shaders/triangle.glsl",
+      "parameters": {
+        "u_offset": {
+          "x": 0.0,
+          "y": 1.2
+        },
         "u_count": 1,
+        "u_outline": 2,
         "u_index_offset": {
           "x": 0.0,
           "y": 0.0
-        }
+        },
+        "u_size": 0.8,
+        "u_fill": 1,
+        "u_outline_thickness": 0.16,
+        "u_rotation": 1.0
       },
       "vertices": 0,
       "instances": 0
