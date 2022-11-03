@@ -23,6 +23,13 @@
                 }
             },
             {
+                "type": "ChangeContext",
+                "color": "#c00ee8",
+                "effect": {
+                    "preset": "effects/vfx_laser.json"
+                }
+            },
+            {
                 "type": "IncrVisualTimer"
             },
             {
