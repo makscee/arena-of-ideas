@@ -113,6 +113,31 @@ impl Shop {
         for (index, unit) in self.units.iter_mut().enumerate() {
             unit_render.draw_unit(&unit, None, game_time, &camera, framebuffer);
             unit_render.draw_unit_stats(&unit, &camera, framebuffer);
+            let tier = assets
+                .units
+                .get(&unit.unit_type)
+                .unwrap_or_else(|| panic!("Failed to find unit {}", unit.unit_type))
+                .tier;
+            let radius = unit.render.radius.as_f32();
+            let unit_aabb =
+                AABB::point(unit.render.render_position.map(|x| x.as_f32())).extend_uniform(radius);
+            let size = radius * 0.5;
+            let damage = AABB::point(unit_aabb.top_left())
+                .extend_right(size)
+                .extend_up(size)
+                .translate(vec2(-0.1, 0.1));
+            draw_2d::Quad::new(
+                damage.extend_uniform(0.03),
+                Rgba::try_from("#6e6e6e").unwrap(),
+            )
+            .draw_2d(&geng, framebuffer, camera);
+            draw_2d::Text::unit(
+                geng.default_font().clone(),
+                format!("T{}", tier),
+                Rgba::WHITE,
+            )
+            .fit_into(damage)
+            .draw_2d(&geng, framebuffer, camera);
 
             // On unit hover
             if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()

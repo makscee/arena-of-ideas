@@ -20,7 +20,6 @@ impl UnitRender {
     pub fn draw_unit_with_position(
         &self,
         unit: &Unit,
-        model: Option<&Model>,
         game_time: f64,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
@@ -219,7 +218,7 @@ impl UnitRender {
     ) {
         let position = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
             .extend_uniform(unit.render.radius.as_f32() * 2.0); // TODO: configuring?
-        self.draw_unit_with_position(unit, model, game_time, camera, framebuffer, position)
+        self.draw_unit_with_position(unit, game_time, camera, framebuffer, position)
     }
 
     pub fn draw_unit_stats(
