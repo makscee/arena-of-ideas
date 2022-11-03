@@ -1,6 +1,6 @@
 {
     "name": "Mold",
-    "description": "After any ally devoured: gain +1/+1 permanently",
+    "description": "Unit Devoured: gain +1/+1 permanently",
     "tier": 4,
     "attack": 4,
     "health": 4,
