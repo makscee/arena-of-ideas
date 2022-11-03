@@ -58,7 +58,7 @@ impl Shop {
             round: 0,
             tier: 1,
             tier_rounds: 0,
-            money: earn_money(0) * 100,
+            money: 10,
             units: vec![],
             team: vec![],
             available: units,
@@ -109,7 +109,7 @@ impl Shop {
         };
 
         let mut hovered_unit = None;
-        
+
         for (index, unit) in self.units.iter_mut().enumerate() {
             unit_render.draw_unit(&unit, None, game_time, &camera, framebuffer);
             unit_render.draw_unit_stats(&unit, &camera, framebuffer);
@@ -188,10 +188,10 @@ impl Shop {
         if reroll.was_clicked() {
             self.reroll(false);
         }
-        let tier_up = geng::ui::Button::new(cx, "tier_up");
-        if tier_up.was_clicked() {
-            self.tier_up();
-        }
+        // let tier_up = geng::ui::Button::new(cx, "tier_up");
+        // if tier_up.was_clicked() {
+        //     self.tier_up();
+        // }
         let freeze = geng::ui::Button::new(cx, "freeze");
         if freeze.was_clicked() {
             self.freeze();
@@ -201,13 +201,13 @@ impl Shop {
             self.enabled = false;
         }
         let text = format!("Tier {}", self.tier);
-        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
+        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 120.0, Rgba::BLACK);
 
-        let text = match tier_up_cost(self.tier, self.tier_rounds) {
-            Some(cost) => format!("Tier Up ({})", cost),
-            None => "Tier Up (?)".to_string(),
-        };
-        let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
+        // let text = match tier_up_cost(self.tier, self.tier_rounds) {
+        //     Some(cost) => format!("Tier Up ({})", cost),
+        //     None => "Tier Up (?)".to_string(),
+        // };
+        // let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
 
         let text = if self.money == 1 { "coin" } else { "coins" };
         let text = format!("{} {}", self.money, text);
@@ -215,16 +215,22 @@ impl Shop {
 
         left.push(
             reroll
+                .uniform_padding(16.0)
                 .background_color(Rgba::try_from("#aabbff").unwrap())
+                .uniform_padding(16.0)
                 .boxed(),
         );
         left.push(
             freeze
+                .uniform_padding(16.0)
                 .background_color(Rgba::try_from("#aabbff").unwrap())
+                .uniform_padding(16.0)
                 .boxed(),
         );
         right.push(
-            go.background_color(Rgba::try_from("#aabbff").unwrap())
+            go.fixed_size(vec2(128.0, 128.0))
+                .uniform_padding(16.0)
+                .background_color(Rgba::try_from("#aabbff").unwrap())
                 .boxed(),
         );
         row.push(left.boxed());
@@ -241,22 +247,22 @@ impl Shop {
         );
 
         shop_info.push(tier.boxed());
-        shop_info.push(tier_up_cost.boxed());
+        // shop_info.push(tier_up_cost.boxed());
         shop_info.push(coins.boxed());
         col.push(shop_info.boxed());
         col.push(row.boxed());
-        col.push(
-            tier_up
-                .background_color(Rgba::try_from("#aabbff").unwrap())
-                .flex_align(
-                    Vec2 {
-                        x: Some(1.0),
-                        y: Some(0.0),
-                    },
-                    Vec2 { x: 0.0, y: 0.0 },
-                )
-                .boxed(),
-        );
+        // col.push(
+        //     tier_up
+        //         .background_color(Rgba::try_from("#aabbff").unwrap())
+        //         .flex_align(
+        //             Vec2 {
+        //                 x: Some(1.0),
+        //                 y: Some(0.0),
+        //             },
+        //             Vec2 { x: 0.0, y: 0.0 },
+        //         )
+        //         .boxed(),
+        // );
         Some(col.padding_left(30.0).padding_right(30.0))
     }
 

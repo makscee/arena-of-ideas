@@ -360,6 +360,7 @@ impl geng::State for Game {
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
                     self.logic.init_player(self.shop.team.clone());
+                    self.shop.money = 10;
                     let round = self
                         .logic
                         .model
