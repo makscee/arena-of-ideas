@@ -51,6 +51,11 @@ pub enum StatusTriggerType {
         damage_type: Option<DamageType>,
         except: Option<DamageType>,
     },
+    /// Triggered when any unit deals damage of the specified type (or any type if none is specified)
+    DamageHits {
+        damage_type: Option<DamageType>,
+        except: Option<DamageType>,
+    },
     /// Triggered when the owner takes damage of the specified type (or any type if none is specified)
     DamageTaken {
         damage_type: Option<DamageType>,

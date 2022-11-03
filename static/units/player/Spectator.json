@@ -1,0 +1,91 @@
+{
+    "name": "Spectator",
+    "description": "Gain +1/+1 whenever Magic Missile hits",
+    "attack": 1,
+    "health": 1,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "GetStatsOnMissiles",
+            "type": "Status",
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageHits",
+                            "damage_type": "MagicMissile"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Health",
+                                "who": "Caster",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "stat": "Health",
+                                        "type": "FindStat",
+                                        "who": "Caster"
+                                    },
+                                    "b": {
+                                        "a": {
+                                            "type": "Const",
+                                            "value": 1
+                                        },
+                                        "b": {
+                                            "type": "FindStat",
+                                            "stat": "Level",
+                                            "who": "Caster"
+                                        },
+                                        "type": "Mul"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Attack",
+                                "who": "Caster",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "stat": "Attack",
+                                        "type": "FindStat",
+                                        "who": "Target"
+                                    },
+                                    "b": {
+                                        "a": {
+                                            "type": "Const",
+                                            "value": 1
+                                        },
+                                        "b": {
+                                            "type": "FindStat",
+                                            "stat": "Level",
+                                            "who": "Caster"
+                                        },
+                                        "type": "Mul"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ],
+            "stacking": {
+                "type": "Independent"
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}

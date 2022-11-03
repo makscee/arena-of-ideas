@@ -85,6 +85,35 @@ impl EffectImpl for DamageEffect {
         }
 
         let units = &mut logic.model.units;
+
+        units.iter().for_each(|unit| {
+            for (effect, trigger, mut vars, status_id, status_color) in
+                unit.all_statuses.iter().flat_map(|status| {
+                    status.trigger(|trigger| match trigger {
+                        StatusTriggerType::DamageHits {
+                            damage_type,
+                            except,
+                        } => {
+                            !effect.types.contains(&except.clone().unwrap_or_default())
+                                && (damage_type.is_none()
+                                    || effect.types.contains(&damage_type.clone().unwrap()))
+                        }
+                        _ => false,
+                    })
+                })
+            {
+                let context = EffectContext {
+                    caster: Some(unit.id),
+                    from: context.from,
+                    target: context.target,
+                    vars: vars.clone(),
+                    status_id: Some(status_id),
+                    color: Some(status_color),
+                };
+                trigger.fire(effect, &context, &mut logic.effects);
+            }
+        });
+
         let dead_units = &mut logic.model.dead_units;
         let target_unit = context
             .target
