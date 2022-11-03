@@ -5,7 +5,7 @@ pub struct Battle {
     config: Config,
     model: Model,
     delta_time: f64,
-    // TODO: time or steps limit
+    round: GameRound,
 }
 
 #[derive(Serialize, Clone)]
@@ -28,6 +28,7 @@ impl Battle {
         delta_time: f64,
         lives: i32,
     ) -> Self {
+        let rounds = vec![round.clone()];
         Self {
             config: config.clone(),
             model: Model::new(
@@ -35,12 +36,14 @@ impl Battle {
                 units_templates,
                 clan_effects,
                 statuses,
-                round,
+                0,
+                rounds,
                 RenderModel::new(),
                 1.0,
                 lives,
             ),
             delta_time,
+            round,
         }
     }
 
@@ -91,7 +94,7 @@ impl Battle {
                     damage_sum: damage_sum as i32,
                     health_sum: health_sum as i32,
                     player_won,
-                    round: self.model.round.name,
+                    round: self.round.name,
                     units_alive,
                 };
             }
