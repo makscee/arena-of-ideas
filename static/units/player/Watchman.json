@@ -2,7 +2,7 @@
     "name": "Watchman",
     "description": "Enemy died: give shield to ally",
     "tier": 1,
-    "attack": 3,
+    "attack": 1,
     "health": 2,
     "clans": [
         "Protectors"
