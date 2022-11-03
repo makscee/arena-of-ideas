@@ -35,5 +35,9 @@
 	"RedDragonOverheal": {
 		"description": "Damage from Red Dragon overheal",
 		"clan_origin": "Vampires"
+	},
+	"MagicMissile": {
+		"description": "Magic Missle",
+		"clan_origin": "Wizards"
 	}
 }
