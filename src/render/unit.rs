@@ -242,6 +242,14 @@ impl UnitRender {
             .extend_left(size)
             .extend_up(size)
             .translate(vec2(0.0, -0.1));
+        let lvl = AABB::point(unit_aabb.bottom_right())
+            .extend_left(size * 2.0)
+            .extend_up(size)
+            .translate(vec2(-0.1, -0.85));
+        let next_lvl = AABB::point(unit_aabb.bottom_right())
+            .extend_left(size * 2.0)
+            .extend_up(size * 0.5)
+            .translate(vec2(-0.1, -1.0));
 
         draw_2d::Quad::new(
             damage.extend_uniform(0.03),
@@ -253,6 +261,11 @@ impl UnitRender {
             Rgba::try_from("#e13d2f").unwrap(),
         )
         .draw_2d(&self.geng, framebuffer, camera);
+        draw_2d::Quad::new(lvl.extend_uniform(0.03), Rgba::try_from("#ffc83c").unwrap()).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
         let text_color = Rgba::try_from("#ffffff").unwrap();
         draw_2d::Text::unit(
             self.geng.default_font().clone(),
@@ -268,6 +281,27 @@ impl UnitRender {
         )
         .fit_into(health)
         .draw_2d(&self.geng, framebuffer, camera);
+        draw_2d::Text::unit(
+            self.geng.default_font().clone(),
+            format!("LVL:{}", unit.stats.level().to_string()),
+            text_color,
+        )
+        .fit_into(lvl)
+        .draw_2d(&self.geng, framebuffer, camera);
+        if unit.stats.level() < MAX_LEVEL {
+            draw_2d::Quad::new(
+                next_lvl.extend_uniform(0.03),
+                Rgba::try_from("#b68404").unwrap(),
+            )
+            .draw_2d(&self.geng, framebuffer, camera);
+            draw_2d::Text::unit(
+                self.geng.default_font().clone(),
+                format!("NEXT:{}", unit.stats.stacks_left_to_level().to_string()),
+                text_color,
+            )
+            .fit_into(next_lvl)
+            .draw_2d(&self.geng, framebuffer, camera);
+        }
 
         // Draw name
         let name_aabb = AABB::point(unit_aabb.bottom_left())

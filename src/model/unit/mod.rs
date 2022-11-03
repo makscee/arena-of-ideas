@@ -9,6 +9,7 @@ pub type UnitType = String;
 pub type Tier = u32;
 pub const MAX_TIER: u32 = 5;
 pub const MAX_LEVEL: i32 = 3;
+const STACKS_PER_LVL: i32 = 3;
 
 #[derive(Clone)]
 pub enum TurnPhase {
@@ -48,7 +49,7 @@ pub struct Unit {
 pub struct UnitStats {
     pub health: i32,
     pub attack: i32,
-    pub stack: i32,
+    pub stacks: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -137,7 +138,7 @@ impl UnitStats {
         Self {
             health: template.health,
             attack: template.attack,
-            stack: 1,
+            stacks: 1,
         }
     }
 
@@ -152,31 +153,25 @@ impl UnitStats {
         match stat {
             UnitStat::Health => &mut self.health,
             UnitStat::Attack => &mut self.attack,
-            UnitStat::Level => &mut self.stack,
+            UnitStat::Level => &mut self.stacks,
         }
     }
 
     pub fn level_up(&mut self, stats: UnitStats) -> bool {
         if self.level() < MAX_LEVEL {
-            self.stack += stats.stack;
+            self.stacks += stats.stacks;
             self.merge_unit(stats);
             return true;
         }
         false
     }
 
-    fn level(&self) -> i32 {
-        let mut stack = self.stack;
-        let mut level = 1;
-        for i in 1..MAX_LEVEL + 1 {
-            stack -= i;
-            level = i;
-            if stack <= 0 {
-                break;
-            }
-        }
+    pub fn level(&self) -> i32 {
+        self.stacks / STACKS_PER_LVL + 1
+    }
 
-        level
+    pub fn stacks_left_to_level(&self) -> i32 {
+        STACKS_PER_LVL - self.stacks % STACKS_PER_LVL
     }
 
     fn merge_unit(&mut self, stats: UnitStats) {
