@@ -6,6 +6,11 @@
         "Wizards": "#c00ee8",
         "Common": "#ffffff"
     },
+    "clan_descriptions": {
+        "Demons": [],
+        "Protectors": [],
+        "Wizards": []
+    },
     "keys_mapping": [
         {
             "event": "Pause",

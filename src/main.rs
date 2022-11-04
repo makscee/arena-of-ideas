@@ -472,23 +472,17 @@ fn main() {
                         let config = <Config as geng::LoadAsset>::load(&geng, &config_path)
                             .await
                             .expect("Failed to load config");
-                        let shop_config = <ShopConfig as geng::LoadAsset>::load(
-                            &geng,
-                            &static_path().join("shop"),
-                        )
-                        .await
-                        .expect("Failed to load shop config");
-                        (assets, config, shop_config)
+                        (assets, config)
                     }
                 },
                 {
                     let geng = geng.clone();
-                    move |(assets, config, shop_config)| {
+                    move |(assets, config)| {
                         match opts.command {
                             Some(command) => match command {
                                 Commands::CustomGame(custom) => {
                                     let assets = Rc::new(assets);
-                                    return custom.run(&geng, &assets, shop_config);
+                                    return custom.run(&geng, &assets);
                                 }
                                 Commands::Test => {
                                     tests::run_tests(assets);

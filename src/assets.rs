@@ -9,6 +9,7 @@ use once_cell::sync::Lazy;
 #[asset(json)]
 pub struct Options {
     pub clan_colors: HashMap<Clan, Rgba<f32>>,
+    pub clan_descriptions: HashMap<Clan, Vec<String>>,
     pub keys_mapping: Vec<KeyMapping>,
 }
 fn static_path() -> std::path::PathBuf {
@@ -281,32 +282,6 @@ pub struct Config {
     #[serde(default)]
     pub enemy_clans: HashMap<Clan, usize>,
     pub fov: f32,
-}
-
-#[derive(Debug, Deserialize, geng::Assets, Clone)]
-#[asset(json)]
-pub struct ShopRenderConfig {
-    pub clans: HashMap<Clan, ClanRenderConfig>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ClanRenderConfig {
-    pub description: String,
-    pub rows: usize,
-    pub columns: usize,
-}
-
-#[derive(geng::Assets, Clone)]
-pub struct ShopConfig {
-    pub render: ShopRenderConfig,
-}
-
-impl Default for ShopConfig {
-    fn default() -> Self {
-        Self {
-            render: ShopRenderConfig { clans: default() },
-        }
-    }
 }
 
 #[derive(Clone, Deref)]
