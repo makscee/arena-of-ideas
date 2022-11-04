@@ -1,12 +1,6 @@
 {
-    "Freezers": "freezers.json",
-    "Archers": "archers.json",
-    "Assassins": "assassins.json",
-    "Warlocks": "warlocks.json",
     "Protectors": "protectors.json",
     "Demons": "demons.json",
-    "Vampires": "vampires.json",
-    "Dragons": "dragons.json",
-    "Common": "common.json",
-    "PlagueSpreaders": "plague_spreaders.json"
+    "Wizards": "wizards.json",
+    "Common": "common.json"
 }
