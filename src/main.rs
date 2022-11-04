@@ -390,6 +390,7 @@ impl geng::State for Game {
                         self.shop.enabled = true;
                         self.shop.updated = true;
                         self.shop.reroll(true);
+                        self.history = vec![self.last_frame.clone()];
                     }
                 }
             }
