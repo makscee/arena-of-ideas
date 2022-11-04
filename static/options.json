@@ -1,15 +1,8 @@
 {
     "clan_colors": {
-        "Assassins": "#2a6700",
-        "Archers": "#5f9ea0",
-        "Freezers": "#1e90ff",
-        "Vampires": "#dc143c",
-        "Skeletons": "#E6E6E6",
         "Warlocks": "#400080",
-        "PlagueSpreaders": "#808003",
         "Demons": "#800040",
         "Protectors": "#fecc66",
-        "Dragons": "#fd8008",
         "Wizards": "#c00ee8",
         "Common": "#ffffff"
     },
