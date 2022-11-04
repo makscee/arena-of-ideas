@@ -207,7 +207,7 @@ impl geng::State for Game {
                 .unwrap_or(self.history.last().unwrap());
             game_time = entry.time;
             self.render
-                .draw(game_time, &entry.model, &self.shop, framebuffer);
+                .draw(game_time, &entry.model, &mut self.shop, framebuffer);
             self.shop.draw(
                 &self.geng,
                 &self.assets,

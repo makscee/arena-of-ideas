@@ -1,15 +1,35 @@
 {
-    "clan_colors": {
-        "Warlocks": "#400080",
-        "Demons": "#800040",
-        "Protectors": "#fecc66",
-        "Wizards": "#c00ee8",
-        "Common": "#ffffff"
-    },
-    "clan_descriptions": {
-        "Demons": [],
-        "Protectors": [],
-        "Wizards": []
+    "clan_configs": {
+        "Demons": {
+            "color": "#800040",
+            "ability": "Devour: kill unit and gain their stats",
+            "description": [
+                "Devour gives +2/+2 additional stats",
+                "Devour gives +2/+2 permanent stats",
+                "When Devouring, deal victims ATK to random enemy"
+            ]
+        },
+        "Protectors": {
+            "color": "#fecc66",
+            "ability": "Shield: cancel next dmg taken",
+            "description": [
+                "Start of battle: give Shield to random ally",
+                "Allies with Shield have +2/+2",
+                "Enemy died: give Shield to random ally"
+            ]
+        },
+        "Wizards": {
+            "color": "#c00ee8",
+            "ability": "Magic Missile: deal 1 dmg to random enemy",
+            "description": [
+                "Caster gains +1 HP on Magic Missile hit",
+                "Magic Missile +1 DMG",
+                "Magic Missile strikes twice"
+            ]
+        },
+        "Common": {
+            "color": "#000000"
+        }
     },
     "keys_mapping": [
         {

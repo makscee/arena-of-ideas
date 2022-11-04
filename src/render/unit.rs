@@ -39,7 +39,7 @@ impl UnitRender {
         let clan_colors: Vec<Rgba<f32>> = unit
             .clans
             .iter()
-            .map(|clan| self.assets.options.clan_colors[clan])
+            .map(|clan| self.assets.options.clan_configs[clan].color)
             .collect();
 
         // Actual render

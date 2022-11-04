@@ -125,7 +125,7 @@ impl Render {
         &mut self,
         game_time: f64,
         model: &Model,
-        shop: &Shop,
+        shop: &mut shop::Shop,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
@@ -162,6 +162,7 @@ impl Render {
                 }
             }
         }
+        shop.unit_hovered = hovered_unit.is_some();
 
         // Draw slots
         let factions = vec![Faction::Player, Faction::Enemy];
@@ -231,14 +232,14 @@ impl Render {
                     .sorted_by(|a, b| a.order.partial_cmp(&b.order).unwrap())
                     .find_map(|config| {
                         Some(config.color.unwrap_or_else(|| {
-                            *self
-                                .assets
+                            self.assets
                                 .options
-                                .clan_colors
+                                .clan_configs
                                 .get(&config.clan_origin)
                                 .unwrap_or_else(|| {
                                     panic!("Failed to find clan ({}) color", config.clan_origin)
                                 })
+                                .color
                         }))
                     })
                     .unwrap_or(text.color),
@@ -526,13 +527,14 @@ impl Render {
                     draw_2d::Quad::new(aabb, DH_DESC_BACKGROUND).draw_2d(geng, framebuffer, camera);
 
                     let color = config.color.unwrap_or_else(|| {
-                        *assets
+                        assets
                             .options
-                            .clan_colors
+                            .clan_configs
                             .get(&config.clan_origin)
                             .unwrap_or_else(|| {
                                 panic!("Failed to find clan ({}) color", config.clan_origin)
                             })
+                            .color
                     });
                     let pos = vec2(aabb.center().x, aabb.y_max - font_size);
                     draw_text(

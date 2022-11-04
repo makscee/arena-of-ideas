@@ -8,13 +8,23 @@ use once_cell::sync::Lazy;
 #[derive(Deserialize, geng::Assets)]
 #[asset(json)]
 pub struct Options {
-    pub clan_colors: HashMap<Clan, Rgba<f32>>,
-    pub clan_descriptions: HashMap<Clan, Vec<String>>,
+    pub clan_configs: HashMap<Clan, ClanConfig>,
     pub keys_mapping: Vec<KeyMapping>,
 }
+
+#[derive(Deserialize, Clone)]
+pub struct ClanConfig {
+    pub color: Rgba<f32>,
+    #[serde(default)]
+    pub ability: String,
+    #[serde(default)]
+    pub description: Vec<String>,
+}
+
 fn static_path() -> std::path::PathBuf {
     "static".into()
 }
+
 #[derive(Deserialize, Clone)]
 pub struct KeyMapping {
     pub event: GameEvent,
@@ -46,10 +56,11 @@ impl StatusConfig {
 
     pub fn get_color(&self, options: &Options) -> Rgba<f32> {
         self.color.unwrap_or_else(|| {
-            *options
-                .clan_colors
+            options
+                .clan_configs
                 .get(&self.clan_origin)
                 .unwrap_or_else(|| panic!("Failed to find clan ({}) color", self.clan_origin))
+                .color
         })
     }
 }

@@ -21,6 +21,7 @@ const UNIT_SELL_COST: Money = 1;
 const REROLL_COST: Money = 1;
 const TIER_UP_COST: [Money; 5] = [5, 7, 8, 9, 10];
 const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
+const CLAN_BONUS_ACTIVATION_SIZE: [usize; 3] = [2, 4, 5];
 
 pub type Money = u32;
 
@@ -41,7 +42,9 @@ pub struct Shop {
     pub lives: i32,
     pub enabled: bool,
     pub updated: bool,
-    pub freezed: bool,
+    pub frozen: bool,
+    pub unit_hovered: bool,
+    pub clan_configs: HashMap<Clan, ClanConfig>,
 }
 
 impl Shop {
@@ -68,7 +71,9 @@ impl Shop {
             camera,
             drag_controller: DragController::new(),
             updated: false,
-            freezed: false,
+            frozen: false,
+            unit_hovered: false,
+            clan_configs: assets.options.clan_configs.clone(),
         }
     }
 
@@ -83,7 +88,7 @@ impl Shop {
     }
 
     pub fn freeze(&mut self) {
-        self.freezed = !self.freezed;
+        self.frozen = !self.frozen;
     }
 
     pub fn draw(
@@ -193,6 +198,7 @@ impl Shop {
                 );
             }
         }
+        self.unit_hovered = self.unit_hovered || hovered_unit.is_some();
 
         if let Some(unit) = hovered_unit {
             unit_render.draw_hover(&unit, camera, framebuffer);
@@ -213,10 +219,6 @@ impl Shop {
         if reroll.was_clicked() {
             self.reroll(false);
         }
-        // let tier_up = geng::ui::Button::new(cx, "tier_up");
-        // if tier_up.was_clicked() {
-        //     self.tier_up();
-        // }
         let freeze = geng::ui::Button::new(cx, "freeze");
         if freeze.was_clicked() {
             self.freeze();
@@ -225,37 +227,84 @@ impl Shop {
         if go.was_clicked() {
             self.enabled = false;
         }
+        let text_color = Rgba::BLACK;
+        let button_color = Rgba::try_from("#aabbff").unwrap();
         let text = format!("Tier {}", self.tier);
-        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 120.0, Rgba::BLACK);
-
-        // let text = match tier_up_cost(self.tier, self.tier_rounds) {
-        //     Some(cost) => format!("Tier Up ({})", cost),
-        //     None => "Tier Up (?)".to_string(),
-        // };
-        // let tier_up_cost = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
+        let tier = geng::ui::Text::new(text, cx.geng().default_font(), 120.0, text_color);
 
         let text = if self.money == 1 { "coin" } else { "coins" };
         let text = format!("{} {}", self.money, text);
-        let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, Rgba::BLACK);
+        let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, text_color);
+
+        let mut clans_info = geng::ui::column![];
+        let clan_members = calc_clan_members(&self.team);
+        for (clan, config) in self.clan_configs.iter() {
+            if config.description.len() < 3 {
+                continue;
+            }
+            let members = *clan_members.get(clan).unwrap_or(&0);
+            let mut descriptions = geng::ui::column![];
+            descriptions.push(
+                Text::new(
+                    config.ability.clone(),
+                    cx.geng().default_font(),
+                    40.0,
+                    config.color,
+                )
+                .boxed(),
+            );
+            for (i, text) in config.description.iter().enumerate() {
+                let activation_size = CLAN_BONUS_ACTIVATION_SIZE[i];
+                let color: Rgba<f32> = match activation_size <= members {
+                    true => config.color,
+                    false => Rgba::try_from("#818181").unwrap(),
+                };
+                descriptions.push(
+                    Text::new(
+                        format!("({}) {}", activation_size, text),
+                        cx.geng().default_font(),
+                        30.0,
+                        color,
+                    )
+                    .boxed(),
+                )
+            }
+            clans_info.push(
+                (
+                    Text::new(
+                        clan.to_string(),
+                        cx.geng().default_font(),
+                        40.0,
+                        Rgba::WHITE,
+                    )
+                    .padding_horizontal(16.0)
+                    .center()
+                    .background_color(config.color),
+                    descriptions.padding_left(16.0),
+                )
+                    .row()
+                    .boxed(),
+            )
+        }
 
         left.push(
             reroll
                 .uniform_padding(16.0)
-                .background_color(Rgba::try_from("#aabbff").unwrap())
+                .background_color(button_color)
                 .uniform_padding(16.0)
                 .boxed(),
         );
         left.push(
             freeze
                 .uniform_padding(16.0)
-                .background_color(Rgba::try_from("#aabbff").unwrap())
+                .background_color(button_color)
                 .uniform_padding(16.0)
                 .boxed(),
         );
         right.push(
             go.fixed_size(vec2(128.0, 128.0))
                 .uniform_padding(16.0)
-                .background_color(Rgba::try_from("#aabbff").unwrap())
+                .background_color(button_color)
                 .boxed(),
         );
         row.push(left.boxed());
@@ -271,24 +320,20 @@ impl Shop {
                 .boxed(),
         );
 
+        if !self.unit_hovered {
+            shop_info.push(
+                clans_info
+                    .flex_align(vec2(Some(1.0), Some(1.0)), vec2(0.0, 1.0))
+                    .padding_top(100.0)
+                    .padding_left(32.0)
+                    .boxed(),
+            );
+        }
         shop_info.push(tier.boxed());
-        // shop_info.push(tier_up_cost.boxed());
         shop_info.push(coins.boxed());
         col.push(shop_info.boxed());
         col.push(row.boxed());
-        // col.push(
-        //     tier_up
-        //         .background_color(Rgba::try_from("#aabbff").unwrap())
-        //         .flex_align(
-        //             Vec2 {
-        //                 x: Some(1.0),
-        //                 y: Some(0.0),
-        //             },
-        //             Vec2 { x: 0.0, y: 0.0 },
-        //         )
-        //         .boxed(),
-        // );
-        Some(col.padding_left(30.0).padding_right(30.0))
+        Some(col.uniform_padding(30.0))
     }
 
     pub fn handle_event(&mut self, event: geng::Event) {
@@ -404,8 +449,8 @@ impl Shop {
 
     /// Rerolls the shop units. If `force` is true, then the cost is not paid.
     pub fn reroll(&mut self, force: bool) {
-        if self.freezed && force {
-            self.freezed = false;
+        if self.frozen && force {
+            self.frozen = false;
             return;
         }
         if self.money >= REROLL_COST || force {
@@ -444,7 +489,7 @@ impl Shop {
                     unit.position = position.clone();
                 }
             }
-            self.freezed = false;
+            self.frozen = false;
         }
     }
 }

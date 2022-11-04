@@ -134,13 +134,12 @@ impl CardRender {
             let clan_size = vec2(size, size);
             let mut position = clan_aabb.top_left() + vec2(size, -size) / 2.0;
             for clan in clans {
-                let clan_color = self
-                    .assets
-                    .options
-                    .clan_colors
-                    .get(&clan)
-                    .copied()
-                    .unwrap_or(Rgba::WHITE);
+                let clan_config = self.assets.options.clan_configs.get(&clan);
+                let mut clan_color = Rgba::BLACK;
+                if let Some(clan_config) = clan_config {
+                    clan_color = clan_config.color;
+                }
+
                 let text_color = Rgba::WHITE;
                 let text = format!("{:?}", clan)
                     .chars()
