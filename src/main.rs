@@ -26,6 +26,7 @@ use model::*;
 use render::{Render, RenderModel};
 use shader_edit::*;
 use shop::*;
+use std::cmp;
 use utility::*;
 
 use crate::simulation::walkthrough;
@@ -381,8 +382,10 @@ impl geng::State for Game {
                             // round #6
                             self.shop.tier = 3;
                         }
-
-                        self.logic.model.round += 1;
+                        self.logic.model.round = cmp::min(
+                            self.logic.model.round + 1,
+                            self.logic.model.rounds.len() - 1,
+                        );
                         self.state = GameState::Shop;
                         self.shop.enabled = true;
                         self.shop.updated = true;

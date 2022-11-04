@@ -378,7 +378,10 @@ impl Shop {
                     }
                     if !dropped {
                         drag.restore();
-                        self.units.push(drag);
+                        match self.drag_controller.source {
+                            DragSource::Team => self.team.push(drag),
+                            DragSource::Shop => self.units.push(drag),
+                        }
                     }
                 }
             }
