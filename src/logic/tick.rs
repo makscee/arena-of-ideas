@@ -5,17 +5,12 @@ use super::*;
 impl Logic {
     pub fn process_tick(&mut self) {
         if self.check_end() {
-            let wounds: i32 = self
-                .model
-                .units
-                .iter()
-                .filter(|unit| unit.faction == Faction::Enemy)
-                .map(|unit| unit.stats.attack)
-                .sum();
             if self.model.lives <= 0 {
                 return;
             }
-            self.model.lives -= wounds;
+            if self.model.units.iter().any(|x| x.faction == Faction::Enemy) {
+                self.model.lives -= 1;
+            }
             self.model.transition = self.model.lives > 0;
             self.model.visual_timer += r32(1.0);
         } else if self.effects.is_empty()

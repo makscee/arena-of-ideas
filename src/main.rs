@@ -83,7 +83,7 @@ impl Game {
             rounds,
             RenderModel::new(),
             1.0,
-            10,
+            3,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model);
