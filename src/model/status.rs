@@ -342,7 +342,7 @@ impl Status {
     }
 
     fn default_color() -> Rgba<f32> {
-        Rgba::WHITE
+        Rgba::BLACK
     }
 
     fn default_hidden() -> bool {

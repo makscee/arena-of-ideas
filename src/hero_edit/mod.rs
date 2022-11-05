@@ -329,7 +329,7 @@ impl geng::State for HeroEditorState {
             self.model
                 .unit_render
                 .draw_unit(&unit, None, self.time, &self.camera, framebuffer);
-            unit.level_up(unit.clone());
+            unit.stats.stacks += STACKS_PER_LVL;
             unit.render.render_position.y -= r32(1.0);
         });
     }

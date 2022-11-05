@@ -66,6 +66,13 @@
             "preset": "effects/vfx_stats_gain.json"
         },
         {
+            "type": "ChangeContext",
+            "color": "#800040",
+            "effect": {
+                "preset": "effects/vfx_laser.json"
+            }
+        },
+        {
             "type": "IncrVisualTimer"
         },
         {

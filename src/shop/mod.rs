@@ -407,7 +407,7 @@ impl Shop {
                                 .iter_mut()
                                 .find(|unit| unit.position.x == i as i64)
                             {
-                                dropped = unit_in_slot.level_up(drag.clone());
+                                dropped = unit_in_slot.merge(drag.clone());
                             } else {
                                 drag.position = Position {
                                     side: Faction::Player,

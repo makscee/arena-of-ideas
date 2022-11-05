@@ -9,7 +9,7 @@ pub type UnitType = String;
 pub type Tier = u32;
 pub const MAX_TIER: u32 = 5;
 pub const MAX_LEVEL: i32 = 3;
-const STACKS_PER_LVL: i32 = 3;
+pub const STACKS_PER_LVL: i32 = 3;
 
 #[derive(Clone)]
 pub enum TurnPhase {
@@ -121,10 +121,10 @@ impl Unit {
             template: template.clone(),
         }
     }
-    pub fn level_up(&mut self, unit: Unit) -> bool {
+    pub fn merge(&mut self, unit: Unit) -> bool {
         if unit.unit_type == self.unit_type {
-            if self.stats.level_up(unit.stats)
-                && self.permanent_stats.level_up(unit.permanent_stats)
+            if self.stats.do_stack(unit.stats)
+                && self.permanent_stats.do_stack(unit.permanent_stats)
             {
                 return true;
             }
@@ -157,7 +157,7 @@ impl UnitStats {
         }
     }
 
-    pub fn level_up(&mut self, stats: UnitStats) -> bool {
+    pub fn do_stack(&mut self, stats: UnitStats) -> bool {
         if self.level() < MAX_LEVEL {
             self.stacks += stats.stacks;
             self.merge_unit(stats);

@@ -129,5 +129,76 @@
 			"}"
 		],
 		"description": "Repeat"
+	},
+	"Preset": {
+		"prefix": "preset",
+		"body": [
+			"{",
+			"    \"preset\": \"effects/$1\"",
+			"}"
+		],
+		"description": "Preset"
+	},
+	"Damage": {
+		"prefix": "damage",
+		"body": [
+			"{",
+			"    \"type\": \"Damage\",",
+			"    \"types\":",
+			"    [",
+			"        \"${1:Melee}\"",
+			"    ],",
+			"    \"value\":",
+			"    {",
+			"        \"type\": \"FindStat\",",
+			"        \"who\": \"Caster\",",
+			"        \"stat\": \"BaseDamage\"",
+			"    }",
+			"}"
+		],
+		"description": "Damage"
+	},
+	"Sum": {
+		"prefix": "sum",
+		"body": [
+			"{",
+			"    \"type\": \"Sum\",",
+			"    \"a\": $TM_SELECTED_TEXT$1,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "Sum"
+	},
+	"Sub": {
+		"prefix": "sub",
+		"body": [
+			"{",
+			"    \"type\": \"Sub\",",
+			"    \"a\": $TM_SELECTED_TEXT$1,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "Sub"
+	},
+	"Mul": {
+		"prefix": "mul",
+		"body": [
+			"{",
+			"    \"type\": \"Mul\",",
+			"    \"a\": $TM_SELECTED_TEXT$1,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "Mul"
+	},
+	"Const": {
+		"prefix": "const",
+		"body": [
+			"{",
+			"    \"type\": \"Const\",",
+			"    \"value\": ${1:1}",
+			"}"
+		],
+		"description": "Const"
 	}
 }
