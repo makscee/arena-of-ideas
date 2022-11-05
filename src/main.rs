@@ -331,7 +331,7 @@ impl geng::State for Game {
         let mut timeline = Slider::new(
             cx,
             self.time,
-            0.0..=self.last_frame.time,
+            self.history[0].time..=self.last_frame.time,
             Box::new(|new_time| self.time = new_time),
         );
         self.timeline_captured = timeline.sense().unwrap().is_captured();
@@ -356,6 +356,8 @@ impl geng::State for Game {
         if self.last_frame.model.transition {
             match self.state {
                 GameState::Shop => {
+                    self.history.clear();
+                    self.history.push(self.last_frame.clone());
                     self.logic.model.transition = false;
                     self.state = GameState::Battle;
                     self.shop.enabled = false;
