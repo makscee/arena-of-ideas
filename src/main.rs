@@ -356,12 +356,13 @@ impl geng::State for Game {
         if self.last_frame.model.transition {
             match self.state {
                 GameState::Shop => {
+                    self.state = GameState::Battle;
                     self.history.clear();
                     self.history.push(self.last_frame.clone());
                     self.logic.model.transition = false;
-                    self.state = GameState::Battle;
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
+                    self.logic.model.config.clans = calc_clan_members(&self.shop.team);
                     self.logic.init_player(self.shop.team.clone());
                     self.shop.money = 10;
                     let round = self
@@ -375,6 +376,7 @@ impl geng::State for Game {
                 }
                 GameState::Battle => {
                     if self.logic.model.visual_timer <= r32(0.0) {
+                        self.state = GameState::Shop;
                         self.logic.model.transition = false;
                         self.logic.model.render_model.clear();
                         if self.logic.model.round == 1 {
@@ -388,7 +390,6 @@ impl geng::State for Game {
                             self.logic.model.round + 1,
                             self.logic.model.rounds.len() - 1,
                         );
-                        self.state = GameState::Shop;
                         self.shop.enabled = true;
                         self.shop.updated = true;
                         self.shop.reroll(true);

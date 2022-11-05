@@ -494,7 +494,7 @@ impl Shop {
     }
 }
 
-fn calc_clan_members<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<Clan, usize> {
+pub fn calc_clan_members<'a>(units: impl IntoIterator<Item = &'a Unit>) -> HashMap<Clan, usize> {
     let unique_units = units
         .into_iter()
         .map(|unit| (&unit.unit_type, &unit.clans))

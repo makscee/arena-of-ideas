@@ -20,9 +20,6 @@ pub struct ClanFilter(Option<HashMap<Faction, Option<Vec<Clan>>>>);
 pub struct ClanEffect {
     /// Number of heroes required to activate the effect
     activate: usize,
-    /// Whether effects with lower requirements should be removed
-    #[serde(default)]
-    replace: bool,
     /// Filter target units by factions and alliances
     #[serde(default)]
     filter: ClanFilter,
@@ -95,9 +92,6 @@ impl Clan {
             .sorted_by_key(|effect| effect.activate);
         for effect in effects.rev() {
             effect.apply(unit, id, statuses);
-            if effect.replace {
-                break;
-            }
         }
     }
 }
