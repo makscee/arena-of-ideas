@@ -364,6 +364,7 @@ impl geng::State for Game {
                     self.logic.model.units.clear();
                     self.logic.model.config.clans = calc_clan_members(&self.shop.team);
                     self.logic.init_player(self.shop.team.clone());
+                    self.shop.team = self.logic.model.units.iter().map(|unit| unit.clone()).collect();
                     self.shop.money = 10;
                     let round = self
                         .logic
@@ -390,6 +391,17 @@ impl geng::State for Game {
                             self.logic.model.round + 1,
                             self.logic.model.rounds.len() - 1,
                         );
+
+                        self.shop.team.iter_mut().for_each(|shop_unit| {
+                            let unit = self
+                                .logic
+                                .model
+                                .units
+                                .iter()
+                                .chain(self.logic.model.dead_units.iter())
+                                .find(|unit| unit.id == shop_unit.id);
+                            *shop_unit = unit.unwrap().shop_unit.clone().unwrap();
+                        });
                         self.shop.enabled = true;
                         self.shop.updated = true;
                         self.shop.reroll(true);

@@ -23,8 +23,6 @@ pub enum VarName {
     OldHealth,
     OldAttack,
     DevourMultiplier,
-    DevourAdditional,
-    DevourPermanent
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

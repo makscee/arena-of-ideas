@@ -16,16 +16,18 @@ impl EffectContainer for ChangeTargetEffect {
 impl EffectImpl for ChangeTargetEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
-        let caster = context
-            .caster
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get(&id)
-                    .or(logic.model.dead_units.get(&id))
-            })
-            .expect("caster not found");
+        debug!("ChangeTarget: {}", context.caster.unwrap());
+        let caster = context.caster.and_then(|id| {
+            logic
+                .model
+                .units
+                .get(&id)
+                .or(logic.model.dead_units.get(&id))
+        });
+        if caster.is_none() {
+            return;
+        };
+        let caster = caster.unwrap();
 
         let caster_faction = caster.faction;
         let target = context.target;

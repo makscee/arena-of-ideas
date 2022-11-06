@@ -44,8 +44,12 @@ impl EffectContext {
                 if let Some(unit) = logic.model.units.get(&id) {
                     format!("{}#{}", unit.unit_type, id)
                 } else {
-                    let unit = logic.model.dead_units.get(&id).unwrap();
-                    format!("{}#{}(dead)", unit.unit_type, id)
+                    let unit = logic.model.dead_units.get(&id);
+                    if let Some(unit) = unit {
+                        format!("{}#{}(dead)", unit.unit_type, id)
+                    } else {
+                        format!("{}(not found)", id)
+                    }
                 }
             }
             None => "None".to_owned(),
