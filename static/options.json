@@ -5,17 +5,17 @@
             "ability": "Devour: kill unit and gain their stats",
             "description": [
                 "Devour gives +2/+2 additional stats",
-                "Devour gives +2/+2 permanent stats",
-                "When Devouring, deal victims ATK to random enemy"
+                "When Devouring, deal victims ATK to random enemy",
+                "Devour gives +2/+2 permanent stats"
             ]
         },
         "Protectors": {
             "color": "#fecc66",
             "ability": "Shield: cancel next dmg taken",
             "description": [
-                "Start of battle: give Shield to random ally",
+                "Start of battle: give Shield to front ally",
                 "Allies with Shield have +2/+2",
-                "Enemy died: give Shield to random ally"
+                "Enemy died: give Shield to front ally"
             ]
         },
         "Wizards": {
