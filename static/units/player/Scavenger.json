@@ -1,6 +1,6 @@
 {
     "name": "Scavenger",
-    "description": "When unit Devoured: gain +2/+2",
+    "description": "When unit Devoured: gain (+2/+2)/(+4/+4)/(+6/+6)",
     "tier": 1,
     "clans": [
         "Demons"
