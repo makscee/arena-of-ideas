@@ -1,7 +1,7 @@
 {
     "name": "Fugus",
     "tier": 1,
-    "description": "Before being Devoured: gain +4/+4",
+    "description": "Before being Devoured: gain +2/+2, (+4/+4), (+6/+6)",
     "attack": 1,
     "health": 2,
     "action": {
