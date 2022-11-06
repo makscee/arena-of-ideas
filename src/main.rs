@@ -362,9 +362,19 @@ impl geng::State for Game {
                     self.logic.model.transition = false;
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
-                    self.logic.model.config.clans = calc_clan_members(&self.shop.team);
+
+                    if !self.custom {
+                        self.logic.model.config.clans = calc_clan_members(&self.shop.team);
+                    }
+
                     self.logic.init_player(self.shop.team.clone());
-                    self.shop.team = self.logic.model.units.iter().map(|unit| unit.clone()).collect();
+                    self.shop.team = self
+                        .logic
+                        .model
+                        .units
+                        .iter()
+                        .map(|unit| unit.clone())
+                        .collect();
                     self.shop.money = 10;
                     let round = self
                         .logic

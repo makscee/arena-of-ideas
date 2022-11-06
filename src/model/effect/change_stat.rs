@@ -33,13 +33,14 @@ impl EffectImpl for ChangeStatEffect {
             .get_mut(&target)
             .or(logic.model.dead_units.get_mut(&target))
             .expect("Target not found");
+        let change_value = value - target.stats.get_mut(effect.stat).clone();
         *target.stats.get_mut(effect.stat) = value;
         *target.permanent_stats.get_mut(effect.stat) = value;
 
         if effect.permanent && target.shop_unit.is_some() {
             let mut shop_unit = target.shop_unit.clone().unwrap();
-            *shop_unit.stats.get_mut(effect.stat) = value;
-            *shop_unit.permanent_stats.get_mut(effect.stat) = value;
+            *shop_unit.stats.get_mut(effect.stat) += change_value;
+            *shop_unit.permanent_stats.get_mut(effect.stat) += change_value;
             target.shop_unit = Box::new(Some(shop_unit));
         }
     }

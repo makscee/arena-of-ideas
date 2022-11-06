@@ -24,7 +24,13 @@ impl EffectImpl for ChangeContextStatusEffect {
         let effect = *self;
         let target = context
             .target
-            .and_then(|id| logic.model.units.get(&id))
+            .and_then(|id| {
+                logic
+                    .model
+                    .units
+                    .get(&id)
+                    .or_else(|| logic.model.units.get(&id))
+            })
             .expect("Target not found");
         let status = target
             .all_statuses

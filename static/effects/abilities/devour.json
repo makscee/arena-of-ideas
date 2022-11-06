@@ -19,11 +19,18 @@
                     "count": 6
                 },
                 "then": {
-                    "type": "Damage",
-                    "value": {
-                        "type": "FindStat",
-                        "who": "Target",
-                        "stat": "Attack"
+                    "type": "ChangeTarget",
+                    "filter": "Enemies",
+                    "condition": {
+                        "type": "Always"
+                    },
+                    "effect": {
+                        "type": "Damage",
+                        "value": {
+                            "type": "FindStat",
+                            "who": "From",
+                            "stat": "Attack"
+                        }
                     }
                 },
                 "else": {
