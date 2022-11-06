@@ -11,6 +11,8 @@ pub struct ChangeContextEffect {
     pub target: Option<Who>,
     pub color: Option<Rgba<f32>>,
     pub effect: Effect,
+    #[serde(default)]
+    pub default_vars: HashMap<VarName, i32>,
 }
 
 impl EffectContainer for ChangeContextEffect {
@@ -22,6 +24,12 @@ impl EffectContainer for ChangeContextEffect {
 impl EffectImpl for ChangeContextEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
+        let mut vars = context.vars.clone();
+        for entry in &effect.default_vars {
+            if !vars.contains_key(&entry.0) {
+                vars.insert(entry.0.clone(), entry.1.clone());
+            }
+        }
         logic.effects.push_front(QueuedEffect {
             effect: effect.effect,
             context: EffectContext {
@@ -41,6 +49,7 @@ impl EffectImpl for ChangeContextEffect {
                     Some(color) => Some(color),
                     None => context.color,
                 },
+                vars,
                 ..context
             },
         });
