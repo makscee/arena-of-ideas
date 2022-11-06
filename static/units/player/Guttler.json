@@ -33,7 +33,16 @@
               "type": "Always"
             },
             "effect": {
-              "preset": "effects/abilities/devour.json"
+              "type": "AddVar",
+              "name": "DevourMultiplier",
+              "value": {
+                "type": "FindStat",
+                "who": "Caster",
+                "stat": "Level"
+              },
+              "effect": {
+                "preset": "effects/abilities/devour.json"
+              }
             }
           }
         }
