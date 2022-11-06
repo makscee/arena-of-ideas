@@ -274,7 +274,7 @@ impl Render {
             let mut text_color = Rgba::try_from("#cccccc").unwrap();
             if is_active {
                 text_scale = 1.3;
-                text_color = Rgba::WHITE;
+                text_color = Rgba::try_from("#4a4a4a").unwrap();
             }
             self.geng.draw_2d(
                 framebuffer,
