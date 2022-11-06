@@ -16,7 +16,7 @@
                 "condition": {
                     "type": "ClanSize",
                     "clan": "Demons",
-                    "count": 6
+                    "count": 5
                 },
                 "then": {
                     "type": "ChangeTarget",
