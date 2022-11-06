@@ -4,6 +4,7 @@ use crate::simulation::simulation_config::RegexUnit;
 pub struct BalanceSimulation {
     unit: UnitType,
     repeats: usize,
+    tier: u32,
     all_units: Vec<UnitTemplate>,
     all_clans: Vec<Clan>,
     config: Config,
@@ -13,6 +14,7 @@ impl BalanceSimulation {
     pub fn new(
         unit: UnitType,
         repeats: usize,
+        tier: u32,
         all_units: Vec<UnitTemplate>,
         all_clans: Vec<Clan>,
         config: Config,
@@ -20,6 +22,7 @@ impl BalanceSimulation {
         Self {
             unit,
             repeats,
+            tier,
             all_units,
             all_clans,
             config,
@@ -28,34 +31,34 @@ impl BalanceSimulation {
 
     fn same_tier(&self, unit: &UnitTemplate) -> Vec<BattleConfig> {
         let mut battles: Vec<BattleConfig> = vec![];
-        // let same_tier = self.all_units.clone().into_iter().filter(|other| {
-        //     other.tier == unit.tier
-        //         && (other.triple.is_some() && unit.triple.is_some()
-        //             || other.triple.is_none() && unit.triple.is_none())
-        // });
-        // for enemy in same_tier {
-        //     let round = GameRound {
-        //         name: "".to_string(),
-        //         statuses: vec![],
-        //         enemies: vec![enemy.name.clone()],
-        //     };
+        let same_tier = self
+            .all_units
+            .clone()
+            .into_iter()
+            .filter(|other| other.tier == unit.tier);
+        for enemy in same_tier {
+            let round = GameRound {
+                name: "".to_string(),
+                statuses: vec![],
+                enemies: vec![enemy.name.clone()],
+            };
 
-        //     (1..=6).for_each(|i| {
-        //         unit.clans.clone().into_iter().for_each(|clan| {
-        //             enemy.clans.clone().into_iter().for_each(|enemy_clan| {
-        //                 battles.push(BattleConfig {
-        //                     unit: Some(unit.name.clone()),
-        //                     player: vec![unit.name.clone()],
-        //                     round: round.clone(),
-        //                     repeats: self.repeats,
-        //                     clans: hashmap! {clan => i},
-        //                     enemy_clans: hashmap! {enemy_clan => i},
-        //                     group: SimulationGroup::SameTier,
-        //                 })
-        //             })
-        //         });
-        //     });
-        // }
+            (1..=6).for_each(|i| {
+                unit.clans.clone().into_iter().for_each(|clan| {
+                    enemy.clans.clone().into_iter().for_each(|enemy_clan| {
+                        battles.push(BattleConfig {
+                            unit: Some(unit.name.clone()),
+                            player: vec![unit.name.clone()],
+                            round: round.clone(),
+                            repeats: self.repeats,
+                            clans: hashmap! {clan => i},
+                            enemy_clans: hashmap! {enemy_clan => i},
+                            group: SimulationGroup::SameTier,
+                        })
+                    })
+                });
+            });
+        }
         battles
     }
 
@@ -65,106 +68,106 @@ impl BalanceSimulation {
             return battles;
         };
 
-        // let first_tier = self.all_units.clone().into_iter().filter(|other| {
-        //     other.tier == 1
-        //         && (other.triple.is_some() && unit.triple.is_some()
-        //             || other.triple.is_none() && unit.triple.is_none())
-        // });
-        // let upper_tier = self.all_units.clone().into_iter().filter(|other| {
-        //     other.tier == unit.tier + 1
-        //         && (other.triple.is_some() && unit.triple.is_some()
-        //             || other.triple.is_none() && unit.triple.is_none())
-        // });
-        // for enemy in upper_tier {
-        //     let round = GameRound {
-        //         name: "".to_string(),
-        //         statuses: vec![],
-        //         enemies: vec![enemy.name.clone()],
-        //     };
-        //     for ally in first_tier.clone() {
-        //         (1..=6).for_each(|i| {
-        //             unit.clans.clone().into_iter().for_each(|clan| {
-        //                 enemy.clans.clone().into_iter().for_each(|enemy_clan| {
-        //                     battles.push(BattleConfig {
-        //                         unit: Some(unit.name.clone()),
-        //                         player: vec![unit.name.clone(), ally.name.clone()],
-        //                         round: round.clone(),
-        //                         repeats: self.repeats,
-        //                         clans: hashmap! {clan => i},
-        //                         enemy_clans: hashmap! {enemy_clan => i},
-        //                         group: SimulationGroup::UpperTier,
-        //                     });
-        //                     battles.push(BattleConfig {
-        //                         unit: Some(unit.name.clone()),
-        //                         player: vec![ally.name.clone(), unit.name.clone()],
-        //                         round: round.clone(),
-        //                         repeats: self.repeats,
-        //                         clans: hashmap! {clan => i},
-        //                         enemy_clans: hashmap! {enemy_clan => i},
-        //                         group: SimulationGroup::UpperTier,
-        //                     });
-        //                 })
-        //             });
-        //         });
-        //     }
-        // }
+        let first_tier = self
+            .all_units
+            .clone()
+            .into_iter()
+            .filter(|other| other.tier == 1);
+        let upper_tier = self
+            .all_units
+            .clone()
+            .into_iter()
+            .filter(|other| other.tier == unit.tier + 1);
+        for enemy in upper_tier {
+            let round = GameRound {
+                name: "".to_string(),
+                statuses: vec![],
+                enemies: vec![enemy.name.clone()],
+            };
+            for ally in first_tier.clone() {
+                (1..=6).for_each(|i| {
+                    unit.clans.clone().into_iter().for_each(|clan| {
+                        enemy.clans.clone().into_iter().for_each(|enemy_clan| {
+                            battles.push(BattleConfig {
+                                unit: Some(unit.name.clone()),
+                                player: vec![unit.name.clone(), ally.name.clone()],
+                                round: round.clone(),
+                                repeats: self.repeats,
+                                clans: hashmap! {clan => i},
+                                enemy_clans: hashmap! {enemy_clan => i},
+                                group: SimulationGroup::UpperTier,
+                            });
+                            battles.push(BattleConfig {
+                                unit: Some(unit.name.clone()),
+                                player: vec![ally.name.clone(), unit.name.clone()],
+                                round: round.clone(),
+                                repeats: self.repeats,
+                                clans: hashmap! {clan => i},
+                                enemy_clans: hashmap! {enemy_clan => i},
+                                group: SimulationGroup::UpperTier,
+                            });
+                        })
+                    });
+                });
+            }
+        }
         battles
     }
 
     fn lower_tier(&self, unit: &UnitTemplate) -> Vec<BattleConfig> {
         let mut battles: Vec<BattleConfig> = vec![];
-        // if unit.tier == 1 {
-        //     return battles;
-        // };
+        if unit.tier == 1 {
+            return battles;
+        };
 
-        // let first_tier = self.all_units.clone().into_iter().filter(|other| {
-        //     other.tier == 1
-        //         && (other.triple.is_some() && unit.triple.is_some()
-        //             || other.triple.is_none() && unit.triple.is_none())
-        // });
-        // let lower_tier = self.all_units.clone().into_iter().filter(|other| {
-        //     other.tier == unit.tier - 1
-        //         && (other.triple.is_some() && unit.triple.is_some()
-        //             || other.triple.is_none() && unit.triple.is_none())
-        // });
-        // for enemy in lower_tier.clone() {
-        //     for second_enemy in first_tier.clone() {
-        //         (1..=6).for_each(|i| {
-        //             unit.clans.clone().into_iter().for_each(|clan| {
-        //                 enemy.clans.clone().into_iter().for_each(|enemy_clan| {
-        //                     let round = GameRound {
-        //                         name: "".to_string(),
-        //                         statuses: vec![],
-        //                         enemies: vec![enemy.name.clone(), second_enemy.name.clone()],
-        //                     };
-        //                     battles.push(BattleConfig {
-        //                         unit: Some(unit.name.clone()),
-        //                         player: vec![unit.name.clone()],
-        //                         round: round.clone(),
-        //                         repeats: self.repeats,
-        //                         clans: hashmap! {clan => i},
-        //                         enemy_clans: hashmap! {enemy_clan => i},
-        //                         group: SimulationGroup::LowerTier,
-        //                     });
-        //                     let round = GameRound {
-        //                         name: "".to_string(),
-        //                         statuses: vec![],
-        //                         enemies: vec![second_enemy.name.clone(), enemy.name.clone()],
-        //                     };
-        //                     battles.push(BattleConfig {
-        //                         unit: Some(unit.name.clone()),
-        //                         player: vec![unit.name.clone()],
-        //                         round: round.clone(),
-        //                         repeats: self.repeats,
-        //                         clans: hashmap! {clan => i},
-        //                         enemy_clans: hashmap! {enemy_clan => i},
-        //                         group: SimulationGroup::LowerTier,
-        //                     });
-        //                 })
-        //             });
-        //         });
-        //     }
-        // }
+        let first_tier = self
+            .all_units
+            .clone()
+            .into_iter()
+            .filter(|other| other.tier == 1);
+        let lower_tier = self
+            .all_units
+            .clone()
+            .into_iter()
+            .filter(|other| other.tier == unit.tier - 1);
+        for enemy in lower_tier.clone() {
+            for second_enemy in first_tier.clone() {
+                (1..=6).for_each(|i| {
+                    unit.clans.clone().into_iter().for_each(|clan| {
+                        enemy.clans.clone().into_iter().for_each(|enemy_clan| {
+                            let round = GameRound {
+                                name: "".to_string(),
+                                statuses: vec![],
+                                enemies: vec![enemy.name.clone(), second_enemy.name.clone()],
+                            };
+                            battles.push(BattleConfig {
+                                unit: Some(unit.name.clone()),
+                                player: vec![unit.name.clone()],
+                                round: round.clone(),
+                                repeats: self.repeats,
+                                clans: hashmap! {clan => i},
+                                enemy_clans: hashmap! {enemy_clan => i},
+                                group: SimulationGroup::LowerTier,
+                            });
+                            let round = GameRound {
+                                name: "".to_string(),
+                                statuses: vec![],
+                                enemies: vec![second_enemy.name.clone(), enemy.name.clone()],
+                            };
+                            battles.push(BattleConfig {
+                                unit: Some(unit.name.clone()),
+                                player: vec![unit.name.clone()],
+                                round: round.clone(),
+                                repeats: self.repeats,
+                                clans: hashmap! {clan => i},
+                                enemy_clans: hashmap! {enemy_clan => i},
+                                group: SimulationGroup::LowerTier,
+                            });
+                        })
+                    });
+                });
+            }
+        }
         battles
     }
 
@@ -172,7 +175,7 @@ impl BalanceSimulation {
         let regex = regex::Regex::new(&unit).expect("Failed to parse a regular expression");
         all_units
             .iter()
-            .filter(move |unit| regex.is_match(&unit.long_name))
+            .filter(move |unit| unit.tier == self.tier && regex.is_match(&unit.long_name))
             .cloned()
             .collect()
     }

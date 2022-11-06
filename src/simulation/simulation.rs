@@ -38,9 +38,10 @@ impl<'a> Simulation<'a> {
         all_clans: Vec<Clan>,
     ) -> Self {
         let variant: Box<dyn SimulationVariant> = match simulation_type {
-            SimulationType::Balance { unit, repeats } => Box::new(BalanceSimulation::new(
+            SimulationType::Balance { unit, repeats, tier } => Box::new(BalanceSimulation::new(
                 unit,
                 repeats,
+                tier,
                 all_units,
                 all_clans,
                 config.clone(),

@@ -40,6 +40,23 @@
 			"type": "cargo",
 			"command": "run",
 			"args": [
+				"--release",
+				"--",
+				"simulate",
+				"local_configs/simulation_config.json"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Simulation",
+			"group": {
+				"kind": "build"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"args": [
 				"--",
 				"hero-editor"
 			],

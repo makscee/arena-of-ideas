@@ -2,7 +2,11 @@ use super::*;
 
 impl Logic {
     pub fn kill(&mut self, id: Id) {
-        let unit = self.model.units.get_mut(&id).unwrap();
+        let unit = self.model.units.get_mut(&id);
+        if unit.is_none() {
+            return;
+        }
+        let unit = unit.unwrap();
         unit.permanent_stats.health = 0;
         let unit = self.model.units.get(&id).unwrap();
 
@@ -69,7 +73,9 @@ impl Logic {
             }
         }
 
-        self.model.units.retain(|unit| unit.permanent_stats.health > 0);
+        self.model
+            .units
+            .retain(|unit| unit.permanent_stats.health > 0);
     }
     fn update_positions(&mut self, unit_id: Id, unit_position: Position) {
         // Move horizontally

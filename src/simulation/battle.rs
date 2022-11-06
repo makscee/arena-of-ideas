@@ -1,4 +1,4 @@
-use crate::model::MAX_LIVES;
+use crate::model::{Position, MAX_LIVES};
 
 use super::*;
 pub struct Battle {
@@ -50,12 +50,13 @@ impl Battle {
     pub fn run(mut self) -> BattleResult {
         let mut logic = Logic::new(self.model.clone());
         let mut events = Events::new(vec![]);
-        // logic.initialize(
-        //     &mut events,
-        //     None,
-        //     self.config.player.clone(),
-        //     self.model.round.clone(),
-        // );
+        logic.initialize(&mut events);
+        self.config.player.iter().for_each(|unit_config| {
+            logic.spawn_by_type(unit_config, Position::zero(Faction::Player));
+        });
+        self.round.enemies.iter().for_each(|unit_config| {
+            logic.spawn_by_type(unit_config, Position::zero(Faction::Enemy));
+        });
 
         loop {
             logic.update(self.delta_time);
