@@ -34,20 +34,26 @@
         {
             "triggers": [
                 {
+                    "type": "DamageIncoming"
+                }
+            ],
+            "effect": {
+                "type": "ChangeContextStatus",
+                "status": "Shield",
+                "effect": {
+                    "type": "CustomTrigger",
+                    "name": "ShieldAbsorb"
+                }
+            }
+        },
+        {
+            "triggers": [
+                {
                     "type": "Init"
                 }
             ],
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "AttachStatus",
-                        "status": "ShieldDamageDetector"
-                    },
-                    {
-                        "preset": "effects/vfx_attach_status.json"
-                    }
-                ]
+                "preset": "effects/vfx_attach_status.json"
             }
         }
     ],
