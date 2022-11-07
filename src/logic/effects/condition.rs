@@ -53,6 +53,13 @@ impl Logic {
             Condition::And { a, b } => {
                 self.check_condition(&*a, context) && self.check_condition(&*b, context)
             }
+            Condition::Position { who, position } => {
+                let who = context
+                    .get(*who)
+                    .and_then(|id| self.model.units.get(&id).or(self.model.dead_units.get(&id)))
+                    .expect("Caster, From, or Target not found");
+                who.position.x == *position
+            }
         }
     }
 }
