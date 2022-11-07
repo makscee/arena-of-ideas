@@ -279,7 +279,8 @@ impl Shop {
                     )
                     .padding_horizontal(16.0)
                     .center()
-                    .background_color(config.color),
+                    .background_color(config.color)
+                    .fixed_size(vec2(200.0, 0.0)),
                     descriptions.padding_left(16.0),
                 )
                     .row()
