@@ -472,9 +472,6 @@ fn main() {
         geng: Geng,
         state_manager: geng::StateManager,
     }
-    fn static_path() -> std::path::PathBuf {
-        "static".into()
-    }
 
     impl AppWrapper {
         fn new(geng: &Geng) -> Self {

@@ -21,10 +21,6 @@ pub struct ClanConfig {
     pub description: Vec<String>,
 }
 
-fn static_path() -> std::path::PathBuf {
-    "static".into()
-}
-
 #[derive(Deserialize, Clone)]
 pub struct KeyMapping {
     pub event: GameEvent,

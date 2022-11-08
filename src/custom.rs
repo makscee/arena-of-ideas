@@ -17,10 +17,6 @@ struct CustomConfig {
     fov: f32,
 }
 
-fn static_path() -> std::path::PathBuf {
-    "static".into()
-}
-
 impl CustomGame {
     pub fn run(self, geng: &Geng, assets: &Rc<Assets>) -> Box<dyn geng::State> {
         let custom = futures::executor::block_on(<CustomConfig as geng::LoadAsset>::load(

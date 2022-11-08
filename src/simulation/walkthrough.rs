@@ -20,9 +20,6 @@ struct WalkthroughConfig {
     lives: i32,
     repeats: usize,
 }
-fn static_path() -> std::path::PathBuf {
-    "static".into()
-}
 impl Walkthrough {
     pub fn run(self, geng: &Geng, assets: Assets, mut config: Config) {
         let start = Instant::now();
