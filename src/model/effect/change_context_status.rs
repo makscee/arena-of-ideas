@@ -22,16 +22,20 @@ impl EffectContainer for ChangeContextStatusEffect {
 impl EffectImpl for ChangeContextStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let target = context
-            .target
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get(&id)
-                    .or_else(|| logic.model.units.get(&id))
-            })
-            .expect("Target not found");
+        let target = context.target.and_then(|id| {
+            logic
+                .model
+                .units
+                .get(&id)
+                .or_else(|| logic.model.units.get(&id))
+        });
+        if target.is_none() {
+            //error!("Target not found: {}", &context.target.unwrap());
+            return;
+        }
+
+        let target = target.unwrap();
+
         let status = target
             .all_statuses
             .iter()

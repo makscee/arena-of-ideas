@@ -54,7 +54,7 @@ impl Battle {
         self.config.player.iter().for_each(|unit_config| {
             logic.spawn_by_type(unit_config, Position::zero(Faction::Player));
         });
-        self.round.enemies.iter().for_each(|unit_config| {
+        self.round.enemies.iter().rev().for_each(|unit_config| {
             logic.spawn_by_type(unit_config, Position::zero(Faction::Enemy));
         });
 
@@ -66,34 +66,22 @@ impl Battle {
                     .units
                     .iter()
                     .all(|unit| matches!(unit.faction, Faction::Player));
-                let units_alive = model
+
+                let units_alive: Vec<String> = model
                     .units
                     .clone()
                     .into_iter()
                     .map(|unit| unit.unit_type)
                     .collect();
-
-                let mut health_sum = model
-                    .units
-                    .clone()
-                    .into_iter()
-                    .map(|unit| unit.stats.health)
-                    .sum::<i32>();
-
-                let mut damage_sum = model
-                    .units
-                    .clone()
-                    .into_iter()
-                    .map(|unit| unit.stats.attack)
-                    .sum::<i32>();
-                if !player_won {
-                    health_sum = -health_sum;
-                    damage_sum = -damage_sum;
-                }
+                let units_count = if player_won {
+                    units_alive.len() as i32
+                } else {
+                    -(units_alive.len() as i32)
+                };
                 return BattleResult {
                     player: self.model.config.player.clone(),
-                    damage_sum: damage_sum as i32,
-                    health_sum: health_sum as i32,
+                    damage_sum: units_count.clone(),
+                    health_sum: units_count.clone(),
                     player_won,
                     round: self.round.name,
                     units_alive,

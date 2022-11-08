@@ -57,6 +57,26 @@
 			"type": "cargo",
 			"command": "run",
 			"args": [
+				"--release",
+				"--",
+				"walkthrough",
+				"local_configs/walkthrough_config.json"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Walkthrough",
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"LOG": "warn"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"args": [
 				"--",
 				"hero-editor"
 			],

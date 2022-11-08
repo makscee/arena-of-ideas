@@ -16,7 +16,7 @@ pub struct Walkthrough {
 #[serde(deny_unknown_fields)]
 struct WalkthroughConfig {
     shop_updates: VecDeque<usize>,
-    unit_picks: Vec<usize>,
+    unit_picks: Vec<(usize, usize)>,
     lives: i32,
     repeats: usize,
 }
@@ -33,17 +33,23 @@ impl Walkthrough {
         .unwrap();
         info!("Starting walkthrough");
 
-        let all_units: Vec<UnitTemplate> =
-            assets.units.iter().map(|entry| entry.1).cloned().collect();
+        let all_units: Vec<UnitTemplate> = assets
+            .units
+            .iter()
+            .filter(|unit| unit.1.tier > 0)
+            .map(|entry| entry.1)
+            .cloned()
+            .collect();
         let mut walkthrough_results: HashMap<String, String> = hashmap! {};
 
-        let mut hero_rounds:HashMap<UnitType, usize> = hashmap! {};
-        let mut hero_picks_last:HashMap<UnitType, usize> = hashmap! {};
-        let mut hero_picks:HashMap<UnitType, usize> = hashmap! {};
-        let mut end_rounds:HashMap<String, usize> = hashmap! {};
-        let mut round_damages:HashMap<String, (i32, i32)> = hashmap! {};
+        let mut hero_rounds: HashMap<UnitType, usize> = hashmap! {};
+        let mut hero_picks_last: HashMap<UnitType, usize> = hashmap! {};
+        let mut hero_picks: HashMap<UnitType, usize> = hashmap! {};
+        let mut end_rounds: HashMap<String, usize> = hashmap! {};
+        let mut round_damages: HashMap<String, (i32, i32)> = hashmap! {};
 
         for index in 0..walkthrough_config.repeats {
+            let walkthrough_start = Instant::now();
             let mut tier = 1;
             let mut round_index = 0;
             let mut player: Vec<UnitType> = vec![];
@@ -53,22 +59,17 @@ impl Walkthrough {
             let mut inventory_units: VecDeque<UnitTemplate> = VecDeque::new();
             let mut lives = walkthrough_config.lives;
             for round in &assets.rounds {
+                let round_start = Instant::now();
                 let count = if walkthrough_config.unit_picks.len() <= round_index {
                     walkthrough_config.unit_picks[walkthrough_config.unit_picks.len() - 1]
                 } else {
                     walkthrough_config.unit_picks[round_index]
                 };
 
-                let variants = Self::shop_variants(
-                    &player,
-                    count,
-                    tier,
-                    all_units.clone(),
-                    &mut inventory_units,
-                );
+                let variants =
+                    Self::shop_variants(&player, count.0, count.1, tier, all_units.clone());
                 let mut best_win: Option<BattleResult> = None;
                 let mut best_lose: Option<BattleResult> = None;
-
                 variants.into_iter().for_each(|variant| {
                     let clans = Self::calc_clan_members(&variant);
                     let result = Battle::new(
@@ -114,15 +115,16 @@ impl Walkthrough {
                 });
                 let battle_result = best_win.unwrap_or_else(|| best_lose.unwrap());
                 if battle_result.damage_sum < 0 {
-                    lives += battle_result.damage_sum;
+                    lives -= 1;
                 }
-                
+
                 if lives <= 0 {
                     results.push(battle_result);
                     break;
                 }
 
                 round_index += 1;
+                let current_tier = tier;
                 if let Some(next_update_round_unwrap) = next_update_round {
                     if next_update_round_unwrap == round_index + 1 {
                         tier += 1;
@@ -131,9 +133,7 @@ impl Walkthrough {
                 }
                 let s1: HashSet<UnitType> = battle_result.player.iter().cloned().collect();
                 let s2: HashSet<UnitType> = player.iter().cloned().collect();
-                (&s1 - &s2).iter()
-                .cloned()
-                .for_each(|unit|{
+                (&s1 - &s2).iter().cloned().for_each(|unit| {
                     *hero_picks.entry(unit).or_insert(0) += 1;
                 });
                 player = battle_result.player.clone();
@@ -143,9 +143,9 @@ impl Walkthrough {
                     .into_iter()
                     .map(|unit| unit.name.clone())
                     .collect();
-                info!(
-                "\nLives: {} \nPlayer team:{:?} \nUnits alive:{:?} \nInventory:{:?} \nRound: {} \nTier: {}",
-                lives, player, alives, inventory, round_index, tier - 1 
+                warn!(
+                "Walkthrough:{}/{}, Round: {}, Time: {:?}, Lives: {}, Tier: {}, \nPlayer: {:?}, \nAlives: {:?}",
+                index + 1, walkthrough_config.repeats, round_index, round_start.elapsed(), lives,  current_tier, player, alives
             );
                 results.push(battle_result);
             }
@@ -154,42 +154,52 @@ impl Walkthrough {
             let mut lives = walkthrough_config.lives;
 
             results.clone().into_iter().for_each(|result| {
-                result.player.clone()
-                .into_iter()
-                .for_each(|unit| *hero_rounds.entry(unit).or_insert(0) += 1);
-                
+                result
+                    .player
+                    .clone()
+                    .into_iter()
+                    .for_each(|unit| *hero_rounds.entry(unit).or_insert(0) += 1);
+
                 last_result = Some(result.clone());
                 lost_lives.push_str(
                     format!(
                         "({} D:{} H:{})",
-                        result.round,
-                        result.damage_sum,
-                        result.health_sum
+                        result.round, result.damage_sum, result.health_sum
                     )
                     .as_str(),
                 );
-                let round_damage = round_damages.entry(result.round).or_insert((0,0));
+                let round_damage = round_damages.entry(result.round).or_insert((0, 0));
                 round_damage.0 += result.damage_sum;
                 round_damage.1 += result.health_sum;
-                if result.damage_sum < 0{
+                if result.damage_sum < 0 {
                     lives += result.damage_sum;
                 }
             });
             let last_result = last_result.unwrap().clone();
-            last_result.player.clone()
+            last_result
+                .player
+                .clone()
                 .into_iter()
                 .for_each(|unit| *hero_picks_last.entry(unit).or_insert(0) += 1);
             *end_rounds.entry(last_result.round.clone()).or_insert(0) += 1;
             walkthrough_results.insert(
                 format!("{:?}", last_result.player),
-                format!(
-                    "{}, Lives: {} {}",
-                    last_result.round, lives, lost_lives
-                ),
+                format!("{}, Lives: {} {}", last_result.round, lives, lost_lives),
+            );
+            let time = walkthrough_start.elapsed();
+            let all_time = start.elapsed();
+            let time_remaining = (all_time / ((index as u32) + 1))
+                * (walkthrough_config.repeats - (index + 1)) as u32;
+            warn!(
+                "Walkthrough:{}/{} \nTime: {:?}\nTime remaining: {:?}",
+                index + 1,
+                walkthrough_config.repeats,
+                time,
+                time_remaining
             );
         }
 
-        info!("Walkthrough ended: {:?}", start.elapsed());
+        warn!("Walkthrough ended: {:?}", start.elapsed());
         let result_path = PathBuf::new().join("simulation_result");
         let date_path = result_path.join(format!("{:?}", chrono::offset::Utc::now()));
 
@@ -209,25 +219,51 @@ impl Walkthrough {
             },
         }
 
-        let mut round_damage_string = "".to_owned(); 
-        round_damages.clone()
-        .into_iter()
-        .sorted_by(|a,b| b.1.1.cmp(&a.1.1))
-        .for_each(|(k, v)| {
-            round_damage_string.push_str(format!("{}: {}:{}\n", k, v.0, v.1).as_str());
+        let mut round_damage_string = "".to_owned();
+        round_damages
+            .clone()
+            .into_iter()
+            .sorted_by(|a, b| b.1 .1.cmp(&a.1 .1))
+            .for_each(|(k, v)| {
+                round_damage_string.push_str(format!("{}: {}:{}\n", k, v.0, v.1).as_str());
+            });
+
+        // Add not picked heroes
+        all_units.iter().for_each(|unit| {
+            if !hero_rounds.contains_key(&unit.name) {
+                hero_rounds.insert(unit.name.clone(), 0);
+            }
+            if !hero_picks.contains_key(&unit.name) {
+                hero_picks.insert(unit.name.clone(), 0);
+            }
+            if !hero_picks_last.contains_key(&unit.name) {
+                hero_picks_last.insert(unit.name.clone(), 0);
+            }
         });
 
         // Write results
         write_to(date_path.join("result.json"), &walkthrough_results)
             .expect("Failed to write results");
-        write_to_file(date_path.join("hero_rounds.txt"), &Self::to_file(&hero_rounds))
-            .expect("Failed to write results");
-        write_to_file(date_path.join("hero_picks.txt"), &Self::to_file(&hero_picks))
-            .expect("Failed to write results");
-        write_to_file(date_path.join("hero_picks_last.txt"),&Self::to_file (&hero_picks_last))
-            .expect("Failed to write results");
-        write_to_file(date_path.join("end_rounds.txt"), &Self::to_file(&end_rounds))
-            .expect("Failed to write results");
+        write_to_file(
+            date_path.join("hero_rounds.txt"),
+            &Self::to_file(&hero_rounds),
+        )
+        .expect("Failed to write results");
+        write_to_file(
+            date_path.join("hero_picks.txt"),
+            &Self::to_file(&hero_picks),
+        )
+        .expect("Failed to write results");
+        write_to_file(
+            date_path.join("hero_picks_last.txt"),
+            &Self::to_file(&hero_picks_last),
+        )
+        .expect("Failed to write results");
+        write_to_file(
+            date_path.join("end_rounds.txt"),
+            &Self::to_file(&end_rounds),
+        )
+        .expect("Failed to write results");
         write_to_file(date_path.join("round_damages.txt"), &round_damage_string)
             .expect("Failed to write results");
 
@@ -237,20 +273,20 @@ impl Walkthrough {
     fn to_file(map: &HashMap<String, usize>) -> String {
         let mut result = "".to_owned();
         map.clone()
-        .into_iter()
-        .sorted_by(|a,b| b.1.cmp(&a.1))
-        .for_each(|(k, v)| {
-            result.push_str(format!("{}: {}\n", k, v).as_str());
-        });
+            .into_iter()
+            .sorted_by(|a, b| b.1.cmp(&a.1))
+            .for_each(|(k, v)| {
+                result.push_str(format!("{}: {}\n", k, v).as_str());
+            });
         result
     }
 
     fn shop_variants(
         player: &Vec<UnitType>,
         count: usize,
+        rerolls: usize,
         tier: usize,
         all_units: Vec<UnitTemplate>,
-        inventory_units: &mut VecDeque<UnitTemplate>,
     ) -> Vec<Vec<UnitTemplate>> {
         let mut result: Vec<Vec<UnitTemplate>> = vec![];
         let player: Vec<UnitTemplate> = player
@@ -269,7 +305,7 @@ impl Walkthrough {
             return result;
         }
 
-        let units_count = TIER_UNITS[tier - 1];
+        let units_count = TIER_UNITS[tier - 1] * rerolls;
         let mut shop_units = all_units
             .clone()
             .into_iter()
@@ -285,57 +321,41 @@ impl Walkthrough {
                 .combinations(count)
                 .for_each(|mut variant| {
                     variant.append(&mut player.clone());
-                    variant.append(&mut inventory_units.iter().cloned().collect());
-                    inventory_units.clear();
-                    variant = Self::check_triple(variant, all_units.clone());
-                    variant = Self::check_max_slots(variant, inventory_units);
-                    result.push(variant);
+                    variant = Self::check_stackable(variant, all_units.clone());
+                    let variants = Self::check_max_slots(variant);
+                    variants
+                        .into_iter()
+                        .for_each(|variant| result.push(variant));
                 })
         }
-
         result
     }
 
-    fn check_max_slots(
-        team: Vec<UnitTemplate>,
-        inventory_units: &mut VecDeque<UnitTemplate>,
-    ) -> Vec<UnitTemplate> {
-        let delete_count = team.len() as i32 - (SIDE_SLOTS as i32);
-        if delete_count > 0 {
-            let mut sorted = team.clone();
-            sorted.sort_by(|a, b| {
-                b.tier
-                    .cmp(&a.tier)
-            });
-            (0..delete_count).into_iter().for_each(|i| {
-                if inventory_units.len() == MAX_INVENTORY {
-                    inventory_units.pop_back();
-                }
-                inventory_units.push_front(sorted.pop().unwrap());
-            });
-            sorted
-        } else {
-            team
-        }
+    fn check_max_slots(team: Vec<UnitTemplate>) -> Vec<Vec<UnitTemplate>> {
+        team.into_iter().combinations(SIDE_SLOTS).collect()
     }
 
-    fn check_triple(team: Vec<UnitTemplate>, all_units: Vec<UnitTemplate>) -> Vec<UnitTemplate> {
+    fn check_stackable(team: Vec<UnitTemplate>, all_units: Vec<UnitTemplate>) -> Vec<UnitTemplate> {
         let mut result: Vec<UnitTemplate> = vec![];
-        let mut counts: HashMap<UnitType, (usize, UnitTemplate)> = hashmap! {};
-        team.into_iter()
-            .for_each(|unit| counts.entry(unit.name.clone()).or_insert((0, unit)).0 += 1);
-        counts.into_values().for_each(|(count, unit)| {
-            let mut count = count;
-            // while unit.triple.is_some() && count >= 3 {
-            //     count -= 3;
-            //     let triple = all_units
-            //         .clone()
-            //         .into_iter()
-            //         .find(|template| *template.name == unit.triple.as_ref().unwrap().clone())
-            //         .unwrap();
-            //     result.push(triple);
-            // }
-            (0..count).for_each(|i| result.push(unit.clone()));
+        let mut counts: HashMap<UnitType, Vec<UnitTemplate>> = hashmap! {};
+        team.into_iter().for_each(|unit| {
+            counts
+                .entry(unit.name.clone())
+                .or_insert(vec![])
+                .push(unit.clone())
+        });
+        counts.into_values().for_each(|stacks| {
+            let mut unit = stacks.first().unwrap().clone();
+            let mut count = stacks.len();
+            let mut unit_to_add = 0;
+            for i in 1..=stacks.len() {
+                unit.stacks += 1;
+                if unit.stacks >= 6 {
+                    result.push(unit.clone());
+                    unit.stacks = 0;
+                }
+            }
+            result.push(unit);
         });
         result
     }

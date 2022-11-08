@@ -64,16 +64,20 @@ impl Logic {
             TurnPhase::Strike => {
                 debug!("Phase: Strike");
                 self.process_units(Self::process_modifiers);
-                let player = self
-                    .model
-                    .units
-                    .remove(&self.model.phase.player)
-                    .expect("Cant find player unit");
-                let enemy = self
-                    .model
-                    .units
-                    .remove(&self.model.phase.enemy)
-                    .expect("Cant find enemy unit");
+                let player = self.model.units.remove(&self.model.phase.player);
+                if player.is_none() {
+                    error!("Cant find Player unit: {}", &self.model.phase.player);
+                    self.model.transition = true;
+                    return;
+                }
+                let player = player.unwrap();
+
+                let enemy = self.model.units.remove(&self.model.phase.enemy);
+                if enemy.is_none() {
+                    self.model.transition = true;
+                    return;
+                }
+                let enemy = enemy.unwrap();
 
                 self.process_action(&player, &enemy);
                 self.process_action(&enemy, &player);

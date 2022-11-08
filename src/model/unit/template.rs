@@ -12,6 +12,8 @@ pub struct UnitTemplate {
     pub description: String,
     pub health: i32,
     pub attack: i32,
+    #[serde(default = "default_stacks")]
+    pub stacks: i32,
     pub spawn_animation_time: Time,
     pub radius: R32,
     #[serde(default)]
@@ -23,6 +25,10 @@ pub struct UnitTemplate {
     #[serde(default = "default_renders")]
     pub clan_renders: Vec<Vec<ShaderConfig>>, // level_index -> clan_index
     pub base: Option<UnitType>,
+}
+
+fn default_stacks() -> i32 {
+    1
 }
 
 fn default_renders() -> Vec<Vec<ShaderConfig>> {
@@ -43,6 +49,7 @@ impl Default for UnitTemplate {
             description: String::new(),
             health: 1,
             attack: 1,
+            stacks: 1,
             spawn_animation_time: Time::new(0.0),
             radius: R32::new(0.5),
             action: default(),

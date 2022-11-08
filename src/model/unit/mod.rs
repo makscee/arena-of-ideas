@@ -138,7 +138,7 @@ impl UnitStats {
         Self {
             health: template.health,
             attack: template.attack,
-            stacks: 1,
+            stacks: template.stacks,
         }
     }
 
