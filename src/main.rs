@@ -396,6 +396,12 @@ impl geng::State for Game {
                         } else if self.logic.model.round == 4 {
                             // round #6
                             self.shop.tier = 3;
+                        } else if self.logic.model.round == 7 {
+                            // round #6
+                            self.shop.tier = 4;
+                        } else if self.logic.model.round == 10 {
+                            // round #6
+                            self.shop.tier = 5;
                         }
                         self.logic.model.round = cmp::min(
                             self.logic.model.round + 1,
