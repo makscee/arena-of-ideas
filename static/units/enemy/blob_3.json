@@ -1,11 +1,9 @@
 {
     "name": "blob_3",
-    "health": 400,
+    "health": 1500,
     "attack": 80,
     "radius": 0.4,
-    "statuses": [
-        
-    ],
+    "statuses": [],
     "action": {
         "preset": "effects/melee_hit.json"
     },
