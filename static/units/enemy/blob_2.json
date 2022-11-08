@@ -1,7 +1,7 @@
 {
     "name": "blob_2",
-    "health": 50,
-    "attack": 5,
+    "health": 120,
+    "attack": 40,
     "radius": 0.4,
     "statuses": [
         {

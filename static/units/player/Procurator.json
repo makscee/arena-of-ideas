@@ -2,7 +2,7 @@
     "name": "Procurator",
     "description": "Devour ally that loses Shield",
     "attack": 1,
-    "health": 3,
+    "health": 2,
     "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"

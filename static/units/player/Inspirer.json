@@ -1,9 +1,9 @@
 {
     "name": "Inspirer",
     "description": "After strike: give ally Shield",
-    "attack": 1,
+    "attack": 2,
     "health": 3,
-    "tier": 3,
+    "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },

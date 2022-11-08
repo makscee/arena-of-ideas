@@ -2,8 +2,8 @@
   "name": "Guttler",
   "description": "Start of battle: Devour random ally. Their stats multiplied by 1/2/3",
   "attack": 1,
-  "health": 2,
-  "tier": 2,
+  "health": 3,
+  "tier": 1,
   "action": {
     "preset": "effects/melee_hit.json"
   },

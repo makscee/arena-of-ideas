@@ -1,9 +1,9 @@
 {
     "name": "Comrade",
     "description": "Ally gains Shield: gain +1/+1",
-    "tier": 1,
+    "tier": 2,
     "attack": 2,
-    "health": 1,
+    "health": 6,
     "clans": [
         "Protectors"
     ],

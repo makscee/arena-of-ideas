@@ -1,9 +1,9 @@
 {
     "name": "Mold",
     "description": "Unit Devoured: gain +1/+1 permanently",
-    "tier": 4,
-    "attack": 4,
-    "health": 4,
+    "tier": 3,
+    "attack": 6,
+    "health": 6,
     "clans": [
         "Demons"
     ],

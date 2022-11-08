@@ -3,7 +3,7 @@
     "description": "Start of battle: exchange stats with random enemy",
     "attack": 1,
     "health": 2,
-    "tier": 3,
+    "tier": 1,
     "action": {
         "preset": "effects/melee_hit.json"
     },
