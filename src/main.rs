@@ -458,6 +458,7 @@ fn main() {
             include_str!("vertex_prefix.glsl").to_owned(),
             include_str!("fragment_prefix.glsl").to_owned(),
         )),
+        target_ui_resolution: Some(vec2(2560.0, 1600.0)),
         ..default()
     });
     let mut theme = Theme::dark(&geng);
