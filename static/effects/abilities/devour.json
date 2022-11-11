@@ -7,8 +7,8 @@
         "type": "List",
         "effects": [
             {
-                "name": "BeforeDevour",
                 "type": "CustomTrigger",
+                "name": "BeforeDevour",
                 "who": "Target"
             },
             {
@@ -42,8 +42,8 @@
                 "who": "Target"
             },
             {
-                "stat": "Health",
                 "type": "ChangeStat",
+                "stat": "Health",
                 "who": "Owner",
                 "value": {
                     "a": {
@@ -67,8 +67,8 @@
                 }
             },
             {
-                "stat": "Attack",
                 "type": "ChangeStat",
+                "stat": "Attack",
                 "who": "Owner",
                 "value": {
                     "a": {

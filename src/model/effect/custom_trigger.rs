@@ -41,7 +41,7 @@ impl EffectImpl for CustomTriggerEffect {
                     })
                 })
             {
-                logic.effects.push_front(
+                logic.effects.push_back(
                     EffectContext {
                         creator: context.owner,
                         owner: unit.id,

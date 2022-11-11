@@ -361,6 +361,7 @@ impl geng::State for Game {
                 GameState::Shop => {
                     self.state = GameState::Battle;
                     self.logic.model.transition = false;
+                    self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.0);
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
 

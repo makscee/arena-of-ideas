@@ -33,19 +33,15 @@ impl EffectOrchestrator {
     }
 
     pub fn add_delay(&mut self, context: &EffectContext, value: f32) {
+        let q_id = context.get_q_id();
+        self.add_delay_by_id(q_id, value);
+    }
+
+    pub fn add_delay_by_id(&mut self, q_id: String, value: f32) {
         if value <= 0.0 {
             return;
         }
-        let q_id = context.get_q_id();
-
-        let mut new_value = self
-            .delays
-            .get(&q_id)
-            .expect(&format!(
-                "Delays Queue#{} not initialized",
-                context.get_q_id()
-            ))
-            .clone();
+        let mut new_value = *self.delays.get(&q_id).unwrap_or(&0.0);
         new_value += value;
         self.delays.insert(q_id, new_value);
     }

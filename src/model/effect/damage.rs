@@ -18,6 +18,8 @@ pub struct DamageEffect {
     pub types: HashSet<DamageType>,
     #[serde(default)]
     pub on: HashMap<DamageTrigger, Effect>,
+    #[serde(default)]
+    pub queue_delay: bool,
 }
 
 impl EffectContainer for DamageEffect {
@@ -308,5 +310,9 @@ impl EffectImpl for DamageEffect {
 
         logic.model.render_model.damage_instances.pop_front();
         logic.model.render_model.damage_instances.push_back(damage);
+
+        if effect.queue_delay {
+            logic.effects.add_delay(&context, 1.0);
+        }
     }
 }

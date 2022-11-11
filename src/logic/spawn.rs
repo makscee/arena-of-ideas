@@ -69,7 +69,7 @@ impl Logic {
                 vars,
                 status_id: Some(status_id),
                 color: status_color,
-                queue_id: None,
+                queue_id: Some("Spawn".to_owned()),
             };
             self.effects.push_front(context, effect);
         }

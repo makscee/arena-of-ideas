@@ -37,6 +37,7 @@
                             },
                             {
                                 "type": "Damage",
+                                "queue_delay": true,
                                 "types": [],
                                 "value": {
                                     "type": "Mul",
