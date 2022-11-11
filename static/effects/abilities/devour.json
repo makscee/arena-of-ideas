@@ -28,7 +28,7 @@
                         "type": "Damage",
                         "value": {
                             "type": "FindStat",
-                            "who": "From",
+                            "who": "Owner",
                             "stat": "Attack"
                         }
                     }
@@ -44,12 +44,12 @@
             {
                 "stat": "Health",
                 "type": "ChangeStat",
-                "who": "Caster",
+                "who": "Owner",
                 "value": {
                     "a": {
                         "stat": "Health",
                         "type": "FindStat",
-                        "who": "Caster"
+                        "who": "Owner"
                     },
                     "b": {
                         "a": {
@@ -69,12 +69,12 @@
             {
                 "stat": "Attack",
                 "type": "ChangeStat",
-                "who": "Caster",
+                "who": "Owner",
                 "value": {
                     "a": {
                         "stat": "Attack",
                         "type": "FindStat",
-                        "who": "Caster"
+                        "who": "Owner"
                     },
                     "b": {
                         "a": {
@@ -101,13 +101,13 @@
                 "then": {
                     "stat": "Health",
                     "type": "ChangeStat",
-                    "who": "Caster",
+                    "who": "Owner",
                     "value": {
                         "type": "Sum",
                         "a": {
                             "stat": "Health",
                             "type": "FindStat",
-                            "who": "Caster"
+                            "who": "Owner"
                         },
                         "b": {
                             "type": "Const",
@@ -129,13 +129,13 @@
                 "then": {
                     "stat": "Attack",
                     "type": "ChangeStat",
-                    "who": "Caster",
+                    "who": "Owner",
                     "value": {
                         "type": "Sum",
                         "a": {
                             "stat": "Attack",
                             "type": "FindStat",
-                            "who": "Caster"
+                            "who": "Owner"
                         },
                         "b": {
                             "type": "Const",
@@ -157,14 +157,14 @@
                 "then": {
                     "stat": "Health",
                     "type": "ChangeStat",
-                    "who": "Caster",
+                    "who": "Owner",
                     "permanent": true,
                     "value": {
                         "type": "Sum",
                         "a": {
                             "stat": "Health",
                             "type": "FindStat",
-                            "who": "Caster"
+                            "who": "Owner"
                         },
                         "b": {
                             "type": "Const",
@@ -186,14 +186,14 @@
                 "then": {
                     "stat": "Attack",
                     "type": "ChangeStat",
-                    "who": "Caster",
+                    "who": "Owner",
                     "permanent": true,
                     "value": {
                         "type": "Sum",
                         "a": {
                             "stat": "Attack",
                             "type": "FindStat",
-                            "who": "Caster"
+                            "who": "Owner"
                         },
                         "b": {
                             "type": "Const",
@@ -214,9 +214,6 @@
                 "effect": {
                     "preset": "effects/vfx_laser.json"
                 }
-            },
-            {
-                "type": "IncrVisualTimer"
             },
             {
                 "name": "Devour",

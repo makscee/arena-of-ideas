@@ -26,7 +26,7 @@ enum UnitRef<'a> {
 pub struct Logic {
     pub model: Model,
     pub delta_time: Time,
-    pub effects: VecDeque<QueuedEffect<Effect>>,
+    pub effects: EffectOrchestrator,
     pub paused: bool,
 }
 
@@ -66,13 +66,13 @@ impl Logic {
         Self {
             model,
             delta_time: Time::new(0.0),
-            effects: VecDeque::new(),
+            effects: EffectOrchestrator::new(),
             paused: false,
         }
     }
 
-    pub fn update(&mut self, delta_time: f64) {
-        self.delta_time = Time::new(delta_time as f32);
+    pub fn update(&mut self, delta_time: f32) {
+        self.delta_time = Time::new(delta_time);
         self.process_tick();
         self.process_particles();
         self.process_spawns();
@@ -81,8 +81,9 @@ impl Logic {
         self.process_deaths();
         self.process_turn();
         self.process_effects();
+        self.process_delays(delta_time);
         self.process_time();
-        self.model.render_model.update(self.delta_time.as_f32())
+        self.model.render_model.update(delta_time)
     }
 
     fn process_units(&mut self, mut f: impl FnMut(&mut Self, &mut Unit)) {
@@ -152,8 +153,8 @@ impl Logic {
             let unit = self.model.units.get_mut(&unit).unwrap();
             let statuses = round.statuses.iter().map(|status| {
                 status.get(&self.model.statuses).clone().attach(
-                    Some(unit.id),
-                    None,
+                    unit.id,
+                    unit.id,
                     self.model.next_id,
                 )
             });

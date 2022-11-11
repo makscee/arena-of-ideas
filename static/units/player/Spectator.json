@@ -29,13 +29,13 @@
                             {
                                 "type": "ChangeStat",
                                 "stat": "Health",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
                                         "stat": "Health",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "a": {
@@ -45,7 +45,7 @@
                                         "b": {
                                             "type": "FindStat",
                                             "stat": "Level",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "type": "Mul"
                                     }
@@ -54,7 +54,7 @@
                             {
                                 "type": "ChangeStat",
                                 "stat": "Attack",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
@@ -70,7 +70,7 @@
                                         "b": {
                                             "type": "FindStat",
                                             "stat": "Level",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "type": "Mul"
                                     }

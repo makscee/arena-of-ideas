@@ -23,7 +23,7 @@ impl Logic {
                             .map(|status| {
                                 status.get(&self.model.statuses).clone().attach_aura(
                                     aura_status.id,
-                                    Some(other.id),
+                                    other.id,
                                     unit.id,
                                 )
                             })
@@ -31,9 +31,10 @@ impl Logic {
                         new_statuses.extend(statuses.iter().map(|status| {
                             (
                                 other.id,
-                                Some(unit.id),
+                                unit.id,
                                 status.id,
                                 status.status.name.clone(),
+                                status.status.color,
                             )
                         }));
                         other.flags.extend(
@@ -47,8 +48,20 @@ impl Logic {
                 }
             }
         }
-        for (target, caster, status, name) in new_statuses {
-            self.trigger_status_attach(target, caster, status, &name);
+        for (target, creator, status, name, color) in new_statuses {
+            self.trigger_status_attach(
+                EffectContext {
+                    owner: target,
+                    creator,
+                    target,
+                    queue_id: None,
+                    vars: default(),
+                    status_id: Some(status),
+                    color,
+                },
+                status,
+                &name,
+            );
         }
     }
 
@@ -57,10 +70,14 @@ impl Logic {
         for i in 0..unit.all_statuses.len() {
             let status = unit.all_statuses.get(i).unwrap();
             if let Some(aura_id) = status.is_aura {
-                let caster = status.caster;
+                let creator = status.creator;
                 let keep = (|| {
-                    let caster = self.model.units.get(&caster?)?;
-                    let aura = caster
+                    let creator = self
+                        .model
+                        .units
+                        .get(&creator)
+                        .expect(&format!("Aura#{} creator#{} not found", aura_id, creator));
+                    let aura = creator
                         .all_statuses
                         .iter()
                         .find(|status| status.id == aura_id)?;
@@ -68,7 +85,7 @@ impl Logic {
                         StatusEffect::Aura(aura) => aura,
                         _ => return None,
                     };
-                    aura.is_applicable(caster, unit).then_some(())
+                    aura.is_applicable(creator, unit).then_some(())
                 })()
                 .is_some();
                 let status = unit.all_statuses.get_mut(i).unwrap();
@@ -78,14 +95,14 @@ impl Logic {
                     // The aura became inactive -> drop the status
                     status.time = Some(0);
                     unit.active_auras.remove(&aura_id);
-                    dropped_statuses.push((status.caster, status.id, status.status.name.clone()));
+                    dropped_statuses.push((status.creator, status.id, status.status.name.clone()));
                 }
             }
         }
         unit.all_statuses
             .retain(|status| status.is_aura.is_none() || status.time.is_none());
-        for (caster, status, name) in dropped_statuses {
-            self.trigger_status_drop(UnitRef::Ref(unit), caster, status, &name);
+        for (creator, status, name) in dropped_statuses {
+            self.trigger_status_drop(UnitRef::Ref(unit), creator, status, &name);
         }
     }
 }

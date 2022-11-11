@@ -32,55 +32,49 @@ impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let mut effect = *self;
         let mut damage = effect.value.calculate(&context, logic);
-        if let Some(caster) = context.caster {
-            let caster_unit = logic
-                .model
-                .units
-                .get(&caster)
-                .or(logic.model.dead_units.get(&caster))
-                .unwrap();
-            for (modifier_context, modifier_target) in &caster_unit.modifier_targets {
-                match modifier_target {
-                    //Add extra damage types
-                    ModifierTarget::ExtraOutDamageType {
-                        source,
-                        damage_type,
-                    } => {
-                        if effect
+        let owner = logic.model.get(Who::Owner, &context);
+
+        for (modifier_context, modifier_target) in &owner.modifier_targets {
+            match modifier_target {
+                //Add extra damage types
+                ModifierTarget::ExtraOutDamageType {
+                    source,
+                    damage_type,
+                } => {
+                    if effect
+                        .types
+                        .iter()
+                        .any(|source_type| source.contains(source_type))
+                    {
+                        effect.types.extend(damage_type.clone());
+                    }
+                }
+                //Modify damage value
+                ModifierTarget::Damage {
+                    source,
+                    condition,
+                    value,
+                } => {
+                    let mut context = context.clone();
+                    context.vars.insert(VarName::DamageIncoming, damage);
+                    context.vars.extend(modifier_context.vars.clone());
+                    if let Some(damage_types) = source {
+                        if !effect
                             .types
                             .iter()
-                            .any(|source_type| source.contains(source_type))
+                            .any(|source_type| damage_types.contains(source_type))
                         {
-                            effect.types.extend(damage_type.clone());
+                            break;
                         }
                     }
-                    //Modify damage value
-                    ModifierTarget::Damage {
-                        source,
-                        condition,
-                        value,
-                    } => {
-                        let mut context = context.clone();
-                        context.vars.insert(VarName::DamageIncoming, damage);
-                        context.vars.extend(modifier_context.vars.clone());
-                        if let Some(damage_types) = source {
-                            if !effect
-                                .types
-                                .iter()
-                                .any(|source_type| damage_types.contains(source_type))
-                            {
-                                break;
-                            }
+                    if let Some(condition) = condition {
+                        if !logic.check_condition(&condition, &context) {
+                            break;
                         }
-                        if let Some(condition) = condition {
-                            if !logic.check_condition(condition, &context) {
-                                break;
-                            }
-                        }
-                        damage = value.calculate(&context, logic);
                     }
-                    _ => (),
+                    damage = value.calculate(&context, logic);
                 }
+                _ => (),
             }
         }
 
@@ -90,7 +84,7 @@ impl EffectImpl for DamageEffect {
             for (effect, trigger, mut vars, status_id, status_color) in
                 unit.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTriggerType::DamageHits {
+                        StatusTrigger::DamageHits {
                             damage_type,
                             except,
                         } => {
@@ -103,31 +97,26 @@ impl EffectImpl for DamageEffect {
                 })
             {
                 let context = EffectContext {
-                    caster: Some(unit.id),
-                    from: context.from,
-                    target: context.target,
-                    vars: vars.clone(),
+                    owner: unit.id,
+                    creator: context.owner,
                     status_id: Some(status_id),
-                    color: Some(status_color),
+                    color: status_color,
+                    ..context.clone()
                 };
-                trigger.fire(effect, &context, &mut logic.effects);
+                logic.effects.push_back(context, effect);
             }
         });
-
-        let dead_units = &mut logic.model.dead_units;
-        let target_unit = context
-            .target
-            .and_then(|id| units.get_mut(&id).or(dead_units.get_mut(&id)))
-            .expect("Target not found");
 
         if damage <= 0 {
             return;
         }
+        let dead_units = &mut logic.model.dead_units;
+        let target_unit = logic.model.get(Who::Target, &context);
 
         for (effect, trigger, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTriggerType::DamageIncoming {
+                    StatusTrigger::DamageIncoming {
                         damage_type,
                         except,
                     } => {
@@ -139,27 +128,34 @@ impl EffectImpl for DamageEffect {
                 })
             })
         {
-            logic.effects.push_back(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: context.caster,
-                    from: context.from,
-                    target: context.target,
+            logic.effects.push_back(
+                EffectContext {
+                    owner: target_unit.id,
+                    creator: context.owner,
                     vars: {
                         vars.insert(VarName::DamageIncoming, damage);
                         vars
                     },
                     status_id: Some(status_id),
-                    color: Some(status_color),
+                    color: status_color,
+                    ..context.clone()
                 },
-            })
+                effect,
+            )
         }
 
+        let target_position = target_unit.position.clone();
         if target_unit
             .flags
             .iter()
             .any(|flag| matches!(flag, UnitStatFlag::DamageImmune))
         {
+            logic.model.render_model.add_text(
+                target_position,
+                "ABSORBED",
+                Rgba::RED,
+                crate::render::TextType::Status,
+            );
             return;
         }
 
@@ -176,7 +172,7 @@ impl EffectImpl for DamageEffect {
         for (effect, trigger, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTriggerType::DamageTaken {
+                    StatusTrigger::DamageTaken {
                         damage_type,
                         except,
                     } => {
@@ -188,45 +184,91 @@ impl EffectImpl for DamageEffect {
                 })
             })
         {
-            let context = EffectContext {
-                caster: context.caster,
-                from: context.from,
-                target: context.target,
-                vars: {
-                    vars.insert(VarName::DamageTaken, damage);
-                    vars
+            logic.effects.push_back(
+                EffectContext {
+                    owner: target_unit.id,
+                    creator: context.owner,
+                    vars: {
+                        vars.insert(VarName::DamageIncoming, damage);
+                        vars
+                    },
+                    status_id: Some(status_id),
+                    color: status_color,
+                    ..context.clone()
                 },
-                status_id: Some(status_id),
-                color: Some(status_color),
-            };
-            trigger.fire(effect, &context, &mut logic.effects);
+                effect,
+            )
         }
 
-        let old_hp = target_unit.stats.health;
-        target_unit.render.last_injure_time = logic.model.time;
-        target_unit.stats.health -= damage;
-        target_unit.permanent_stats.health -= damage;
-        let target_unit = logic
-            .model
-            .units
-            .get(&context.target.unwrap())
-            .or(logic.model.dead_units.get(&context.target.unwrap()))
-            .unwrap();
-        let damage_text = damage;
-        let text_color = context.color.unwrap_or(Rgba::RED);
+        let time = logic.model.time.clone();
         logic.model.render_model.add_text(
-            target_unit.position,
-            &format!("{}", -damage_text),
-            text_color,
+            target_position,
+            &format!("{}", -damage),
+            context.color,
             crate::render::TextType::Damage(effect.types.iter().cloned().collect()),
         );
+        let target_unit = logic.model.get_mut(Who::Target, &context);
+        let old_hp = target_unit.stats.health;
+        target_unit.render.last_injure_time = time;
+        target_unit.stats.health -= damage;
+        target_unit.permanent_stats.health -= damage;
+        let target_unit = logic.model.get(Who::Target, &context);
         let killed = old_hp > 0 && target_unit.stats.health <= 0;
+        let owner_unit = logic.model.get(Who::Owner, &context);
 
-        if let Some(caster_unit) = context.caster.and_then(|id| logic.model.units.get(&id)) {
+        for (effect, trigger, mut vars, status_id, status_color) in
+            owner_unit.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| match trigger {
+                    StatusTrigger::DamageDealt {
+                        damage_type,
+                        except,
+                    } => {
+                        !effect.types.contains(&except.clone().unwrap_or_default())
+                            && (damage_type.is_none()
+                                || effect.types.contains(&damage_type.clone().unwrap()))
+                    }
+                    _ => false,
+                })
+            })
+        {
+            logic.effects.push_back(
+                EffectContext {
+                    vars: {
+                        vars.insert(VarName::DamageDealt, damage);
+                        vars
+                    },
+                    status_id: Some(status_id),
+                    color: status_color,
+                    ..context.clone()
+                },
+                effect,
+            )
+        }
+
+        if let Some(effect) = effect.on.get(&DamageTrigger::Injure) {
+            logic.effects.push_back(
+                {
+                    let mut context = context.clone();
+                    context.vars.insert(VarName::DamageDealt, damage);
+                    context
+                },
+                effect.clone(),
+            );
+        }
+
+        if killed {
+            if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
+                logic.effects.push_back(context.clone(), effect.clone());
+            }
+        }
+
+        // Kill trigger
+
+        if killed {
             for (effect, trigger, mut vars, status_id, status_color) in
-                caster_unit.all_statuses.iter().flat_map(|status| {
+                owner_unit.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTriggerType::DamageDealt {
+                        StatusTrigger::Kill {
                             damage_type,
                             except,
                         } => {
@@ -238,86 +280,20 @@ impl EffectImpl for DamageEffect {
                     })
                 })
             {
-                logic.effects.push_back(QueuedEffect {
-                    effect,
-                    context: EffectContext {
-                        caster: context.caster,
-                        from: context.from,
-                        target: context.target,
+                logic.effects.push_back(
+                    EffectContext {
                         vars: {
                             vars.extend(context.vars.clone());
-                            vars.insert(VarName::DamageDealt, damage);
                             vars
                         },
                         status_id: Some(status_id),
-                        color: Some(status_color),
+                        color: status_color,
+                        ..context.clone()
                     },
-                })
+                    effect,
+                )
             }
-        }
-
-        if let Some(effect) = effect.on.get(&DamageTrigger::Injure) {
-            logic.effects.push_back(QueuedEffect {
-                effect: effect.clone(),
-                context: {
-                    let mut context = context.clone();
-                    context.vars.insert(VarName::DamageDealt, damage);
-                    context
-                },
-            });
-        }
-
-        if killed {
-            // logic.render.add_text(target.position, "KILL", Rgba::RED);
-            if let Some(effect) = effect.on.get(&DamageTrigger::Kill) {
-                logic.effects.push_back(QueuedEffect {
-                    effect: effect.clone(),
-                    context: context.clone(),
-                });
-            }
-        }
-
-        // Kill trigger
-        if let Some(caster) = context.caster {
-            let caster = logic
-                .model
-                .units
-                .get(&caster)
-                .or(logic.model.dead_units.get(&caster))
-                .unwrap();
-            if killed {
-                for (effect, trigger, mut vars, status_id, status_color) in
-                    caster.all_statuses.iter().flat_map(|status| {
-                        status.trigger(|trigger| match trigger {
-                            StatusTriggerType::Kill {
-                                damage_type,
-                                except,
-                            } => {
-                                !effect.types.contains(&except.clone().unwrap_or_default())
-                                    && (damage_type.is_none()
-                                        || effect.types.contains(&damage_type.clone().unwrap()))
-                            }
-                            _ => false,
-                        })
-                    })
-                {
-                    logic.effects.push_back(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: context.caster,
-                            from: context.from,
-                            target: context.target,
-                            vars: {
-                                vars.extend(context.vars.clone());
-                                vars
-                            },
-                            status_id: Some(status_id),
-                            color: Some(status_color),
-                        },
-                    })
-                }
-                logic.kill(context.target.unwrap());
-            }
+            logic.kill(context.target, context.clone());
         }
 
         let mut damage_instances = &mut logic.model.render_model.damage_instances;

@@ -11,27 +11,25 @@ impl EffectContainer for ApplyGainedEffect {
 impl EffectImpl for ApplyGainedEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let caster = logic.model.units.get_mut(&context.caster.unwrap()).unwrap();
+        let owner = logic.model.get(Who::Owner, &context);
         // TODO: remove these statuses immediately after application
         for (effect, trigger, mut vars, status_id, status_color) in
-            caster.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| matches!(trigger, StatusTriggerType::GainedEffect))
+            owner.all_statuses.iter().flat_map(|status| {
+                status.trigger(|trigger| matches!(trigger, StatusTrigger::GainedEffect))
             })
         {
-            logic.effects.push_front(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: context.caster,
-                    from: context.from,
-                    target: context.target,
+            logic.effects.push_front(
+                EffectContext {
                     vars: {
                         vars.extend(context.vars.clone());
                         vars
                     },
                     status_id: Some(status_id),
-                    color: Some(status_color),
+                    color: status_color,
+                    ..context.clone()
                 },
-            })
+                effect,
+            )
         }
     }
 }

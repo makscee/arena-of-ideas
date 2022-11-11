@@ -16,8 +16,7 @@
                     {
                         "triggers": [
                             {
-                                "type": "DamageTaken",
-                                "no_delay": true
+                                "type": "DamageTaken"
                             }
                         ],
                         "effect": {
@@ -57,8 +56,7 @@
                     {
                         "triggers": [
                             {
-                                "type": "Death",
-                                "no_delay": true
+                                "type": "Death"
                             }
                         ],
                         "effect": {

@@ -29,6 +29,6 @@ impl EffectImpl for RandomEffect {
             .unwrap()
             .effect
             .clone();
-        logic.effects.push_front(QueuedEffect { effect, context });
+        logic.effects.push_front(context, effect);
     }
 }

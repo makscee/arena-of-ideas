@@ -104,7 +104,7 @@ impl Unit {
             all_statuses: template
                 .statuses
                 .iter()
-                .map(|status| status.get(statuses).clone().attach(Some(id), Some(id), id))
+                .map(|status| status.get(statuses).clone().attach(id, id, id))
                 .collect(),
             active_auras: default(),
             modifier_targets: vec![],

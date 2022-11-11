@@ -26,13 +26,7 @@ impl EffectImpl for ChangeStatEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut Logic) {
         let effect = *self;
         let value = effect.value.calculate(&context, logic);
-        let target = context.get(effect.who).unwrap();
-        let target = logic
-            .model
-            .units
-            .get_mut(&target)
-            .or(logic.model.dead_units.get_mut(&target))
-            .expect("Target not found");
+        let mut target = logic.model.get_mut(Who::Target, &context);
         let change_value = value - target.stats.get_mut(effect.stat).clone();
         *target.stats.get_mut(effect.stat) = value;
         *target.permanent_stats.get_mut(effect.stat) = value;

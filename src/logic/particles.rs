@@ -9,26 +9,24 @@ impl Logic {
             }
             particle.visible = true;
             particle.time_left -= self.delta_time;
-            let parent = particle.parent.and_then(|parent| {
-                self.model
-                    .units
-                    .get(&parent)
-                    .or(self.model.dead_units.get(&parent))
-            });
-            let partner = particle.partner.and_then(|partner| {
-                self.model
-                    .units
-                    .get(&partner)
-                    .or(self.model.dead_units.get(&partner))
-            });
+            let parent = self
+                .model
+                .units
+                .get(&particle.parent)
+                .or(self.model.dead_units.get(&particle.parent));
+
+            let partner = self
+                .model
+                .units
+                .get(&particle.partner)
+                .or(self.model.dead_units.get(&particle.partner));
             let mut parameters = &mut particle.render_config.parameters;
 
-            if let Some(color) = particle.color {
-                parameters.0.extend(HashMap::from([(
-                    "u_color".to_string(),
-                    ShaderParameter::Color(color),
-                )]));
-            }
+            parameters.0.extend(HashMap::from([(
+                "u_color".to_string(),
+                ShaderParameter::Color(particle.color),
+            )]));
+
             if let Some(parent) = parent {
                 if particle.follow {
                     particle.position = parent.position.to_world();

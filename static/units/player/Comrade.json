@@ -15,7 +15,15 @@
         {
             "listeners": [
                 {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Shield",
+                            "filter": "Allies"
+                        }
+                    ],
                     "effect": {
+                        "type": "List",
                         "effects": [
                             {
                                 "stat": "Health",
@@ -24,7 +32,7 @@
                                     "a": {
                                         "stat": "Health",
                                         "type": "FindStat",
-                                        "who": "From"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "type": "Mul",
@@ -35,12 +43,12 @@
                                         "b": {
                                             "stat": "Level",
                                             "type": "FindStat",
-                                            "who": "From"
+                                            "who": "Owner"
                                         }
                                     },
                                     "type": "Sum"
                                 },
-                                "who": "From"
+                                "who": "Owner"
                             },
                             {
                                 "stat": "Attack",
@@ -49,7 +57,7 @@
                                     "a": {
                                         "stat": "Attack",
                                         "type": "FindStat",
-                                        "who": "From"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "type": "Mul",
@@ -60,29 +68,18 @@
                                         "b": {
                                             "stat": "Level",
                                             "type": "FindStat",
-                                            "who": "From"
+                                            "who": "Owner"
                                         }
                                     },
                                     "type": "Sum"
                                 },
-                                "who": "From"
+                                "who": "Owner"
                             },
                             {
                                 "preset": "effects/vfx_stats_gain.json"
-                            },
-                            {
-                                "type": "IncrVisualTimer"
                             }
-                        ],
-                        "type": "List"
-                    },
-                    "triggers": [
-                        {
-                            "type": "DetectAttach",
-                            "status_name": "Shield",
-                            "filter": "Allies"
-                        }
-                    ]
+                        ]
+                    }
                 }
             ],
             "name": "StatsAfterShield",

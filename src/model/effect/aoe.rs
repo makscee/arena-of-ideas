@@ -18,27 +18,15 @@ impl EffectContainer for AoeEffect {
 impl EffectImpl for AoeEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let caster = context
-            .caster
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get(&id)
-                    .or(logic.model.dead_units.get(&id))
-            })
-            .expect("Caster not found");
-        let caster_faction = caster.faction;
-        let center = context
-            .target
-            .and_then(|id| logic.model.units.get(&id).map(|unit| unit.position))
-            .expect("Target not found");
+        let owner = logic.model.get(Who::Owner, &context);
+        let owner_faction = owner.faction;
+        let center = logic.model.get(Who::Owner, &context).position;
         logic
             .model
             .render_model
             .add_text(center, "AOE", Rgba::RED, crate::render::TextType::Aoe);
         for unit in &logic.model.units {
-            if effect.skip_current_target && Some(unit.id) == context.target {
+            if effect.skip_current_target && unit.id == context.target {
                 continue;
             }
             if let Some(range) = effect.range {
@@ -46,17 +34,17 @@ impl EffectImpl for AoeEffect {
                     continue;
                 }
             }
-            if !effect.filter.matches(unit.faction, caster_faction) {
+            if !effect.filter.matches(unit.faction, owner_faction) {
                 continue;
             }
-            logic.effects.push_front(QueuedEffect {
-                effect: effect.effect.clone(),
-                context: EffectContext {
-                    from: context.target,
-                    target: Some(unit.id),
-                    ..context.clone()
+            logic.effects.push_front(
+                {
+                    let mut context = context.clone();
+                    context.target = unit.id;
+                    context
                 },
-            });
+                effect.effect.clone(),
+            );
         }
     }
 }

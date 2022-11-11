@@ -11,12 +11,9 @@ impl EffectContainer for KillEffect {
 
 impl EffectImpl for KillEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
-        if let Some(target) = context
-            .get(self.who)
-            .and_then(|id| logic.model.units.get_mut(&id))
-        {
-            let id = target.id;
-            logic.kill(id);
+        let id = context.get_id(self.who);
+        if logic.model.units.get(&id).is_some() {
+            logic.kill(id, context);
         }
     }
 }

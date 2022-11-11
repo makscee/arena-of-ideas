@@ -32,7 +32,7 @@ fn default_parent() -> Who {
 }
 
 fn default_partner() -> Who {
-    Who::Caster
+    Who::Owner
 }
 
 fn default_color() -> Option<Rgba<f32>> {
@@ -47,40 +47,30 @@ impl EffectImpl for VisualEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
 
-        let parent = context.get(effect.parent);
-        let position = parent
-            .and_then(|parent| {
-                logic
-                    .model
-                    .units
-                    .get(&parent)
-                    .or(logic.model.dead_units.get(&parent))
-            })
-            .map(|unit| unit.position);
-        let mut effect_color = None;
-        if let Some(color) = effect.color {
-            effect_color = Some(color);
-        } else if let Some(color) = context.color {
-            effect_color = Some(color);
-        }
-        if let Some(position) = position {
-            let partner = context.get(effect.partner);
+        let parent = logic.model.get(effect.parent, &context);
+        let partner = logic.model.get(effect.partner, &context);
 
-            logic.model.render_model.particles.insert(Particle {
-                id: logic.model.next_id,
-                radius: effect.radius,
-                duration: effect.duration,
-                delay: effect.delay,
-                time_left: effect.duration,
-                render_config: effect.render_config,
-                parent,
-                partner,
-                position: position.to_world(),
-                follow: effect.follow,
-                color: effect_color,
-                visible: false,
-            });
-            logic.model.next_id += 1;
-        }
+        let effect_color = if let Some(color) = effect.color {
+            color
+        } else {
+            context.color
+        };
+
+        logic.model.render_model.particles.insert(Particle {
+            id: logic.model.next_id,
+            radius: effect.radius,
+            duration: effect.duration,
+            delay: effect.delay,
+            time_left: effect.duration,
+            render_config: effect.render_config,
+            parent: parent.id,
+            partner: partner.id,
+            position: parent.position.to_world(),
+            follow: effect.follow,
+            color: effect_color,
+            visible: false,
+        });
+        logic.model.next_id += 1;
+        logic.effects.add_delay(&context, effect.duration.as_f32());
     }
 }

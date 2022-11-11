@@ -16,17 +16,8 @@ impl EffectContainer for SpawnEffect {
 impl EffectImpl for SpawnEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let caster = context
-            .caster
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get(&id)
-                    .or(logic.model.dead_units.get(&id))
-            })
-            .expect("Caster not found");
-        let mut faction = caster.faction;
+        let owner = logic.model.get(Who::Owner, &context);
+        let mut faction = owner.faction;
         if effect.switch_faction {
             if faction == Faction::Player {
                 faction = Faction::Enemy;
@@ -34,27 +25,18 @@ impl EffectImpl for SpawnEffect {
                 faction = Faction::Player;
             }
         }
-        let target = context
-            .target
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get(&id)
-                    .or(logic.model.dead_units.get(&id))
-            })
-            .expect("Target not found");
+        let target = logic.model.get(Who::Target, &context);
         let mut position = target.position;
         position.side = faction;
         let new_id = logic.spawn_by_type(&effect.unit_type, position);
 
-        logic.effects.push_front(QueuedEffect {
-            effect: effect.after_effect.clone(),
-            context: {
+        logic.effects.push_front(
+            {
                 let mut context = context.clone();
-                context.target = Some(new_id);
+                context.target = new_id;
                 context
             },
-        })
+            effect.after_effect.clone(),
+        )
     }
 }

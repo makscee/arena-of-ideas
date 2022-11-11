@@ -37,15 +37,8 @@ impl Default for StatusStacking {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StatusTrigger {
-    pub no_delay: Option<bool>,
-    #[serde(flatten)]
-    pub trigger_type: StatusTriggerType,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]
-pub enum StatusTriggerType {
+pub enum StatusTrigger {
     /// Triggered when the owner deals damage of the specified type (or any type if none is specified)
     DamageDealt {
         damage_type: Option<DamageType>,
@@ -70,8 +63,8 @@ pub enum StatusTriggerType {
     Spawn,
     /// Triggered when the owner dies
     Death,
-    /// Triggered when unit of faction dies (or any faction if none is specified)
-    UnitDeath { faction: Option<Faction> },
+    /// Triggered when any unit of faction dies (or any faction if none is specified)
+    DetectDeath { faction: Option<Faction> },
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
     Kill {
         damage_type: Option<DamageType>,
@@ -98,13 +91,6 @@ pub enum StatusTriggerType {
         #[serde(default)]
         status_action: StatusAction,
     },
-    /// Triggered periodically
-    Repeating {
-        #[serde(default = "zero")]
-        tick_time: Ticks,
-        #[serde(default = "zero")]
-        next_tick: Ticks,
-    },
     /// Triggered by CustomTriggerEffect
     Custom { name: String },
     /// Triggered right after status was attached
@@ -117,7 +103,7 @@ pub enum StatusTriggerType {
     CooldownTick,
 }
 
-impl fmt::Display for StatusTriggerType {
+impl fmt::Display for StatusTrigger {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -255,9 +241,9 @@ pub struct AttachedStatus {
     /// If `None`, then the status remains attached.
     pub time: Option<Ticks>,
     /// Specifies the owner of the status
-    pub owner: Option<Id>,
-    /// Specifies the caster that applied the status
-    pub caster: Option<Id>,
+    pub owner: Id,
+    /// Specifies the creator that applied the status
+    pub creator: Id,
     /// Variables that persist for the lifetime of the status
     pub vars: HashMap<VarName, i32>,
     pub id: Id,
@@ -284,36 +270,9 @@ impl StatusRef {
     }
 }
 
-impl StatusTrigger {
-    pub fn fire(
-        &self,
-        effect: Effect,
-        context: &EffectContext,
-        effects: &mut VecDeque<QueuedEffect<Effect>>,
-    ) {
-        if self.no_delay.is_some() && self.no_delay.unwrap() {
-            effects.push_front(QueuedEffect {
-                effect,
-                context: context.clone(),
-            });
-        } else {
-            effects.push_front(QueuedEffect {
-                effect: Effect::IncrVisualTimer(Box::new(IncrVisualTimerEffect {
-                    value: Some(UNIT_TURN_TIME),
-                })),
-                context: context.clone(),
-            });
-            effects.push_front(QueuedEffect {
-                effect,
-                context: context.clone(),
-            });
-        }
-    }
-}
-
 impl Status {
     /// Transforms config into an attached status
-    pub fn attach(self, owner: Option<Id>, caster: Option<Id>, id: Id) -> AttachedStatus {
+    pub fn attach(self, owner: Id, creator: Id, id: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
             time: self.duration.map(Into::into),
@@ -321,21 +280,21 @@ impl Status {
             is_inited: false,
             status: self,
             owner,
-            caster,
+            creator,
             id,
         }
     }
 
     /// Transforms config into an attached status with `is_aura` set to `true`
     /// and `time` set to `None`, which means that it needs to be removed manually
-    pub fn attach_aura(self, aura_id: Id, owner: Option<Id>, caster: Id) -> AttachedStatus {
+    pub fn attach_aura(self, aura_id: Id, owner: Id, creator: Id) -> AttachedStatus {
         AttachedStatus {
             vars: self.vars.clone(),
             time: None,
             is_aura: Some(aura_id),
             is_inited: false,
             status: self,
-            caster: Some(caster),
+            creator,
             owner,
             id: -1,
         }
@@ -355,14 +314,11 @@ impl AttachedStatus {
     /// according to the status listeners
     pub fn trigger<'a>(
         &'a self,
-        mut filter: impl FnMut(&StatusTriggerType) -> bool + 'a,
+        mut filter: impl FnMut(&StatusTrigger) -> bool + 'a,
     ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, i32>, Id, Rgba<f32>)> + 'a
     {
         self.status.listeners.iter().filter_map(move |listener| {
-            let trigger = listener
-                .triggers
-                .iter()
-                .find(|trigger| filter(&trigger.trigger_type));
+            let trigger = listener.triggers.iter().find(|trigger| filter(&trigger));
             if trigger.is_some() {
                 Some((
                     listener.effect.clone(),

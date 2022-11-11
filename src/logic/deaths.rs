@@ -1,7 +1,7 @@
 use super::*;
 
 impl Logic {
-    pub fn kill(&mut self, id: Id) {
+    pub fn kill(&mut self, id: Id, context: EffectContext) {
         let unit = self.model.units.get_mut(&id);
         if unit.is_none() {
             return;
@@ -11,15 +11,15 @@ impl Logic {
         let unit = self.model.units.get(&id).unwrap();
 
         for other in self.model.units.iter().filter(|other| other.id != unit.id) {
-            for (effect, trigger, vars, status_id, status_color) in
+            for (effect, trigger, vars, status_id, color) in
                 other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTriggerType::Scavenge { who, range, clan } => {
+                        StatusTrigger::Scavenge { who, range, clan } => {
                             who.matches(other.faction, unit.faction)
                                 && clan.map(|clan| unit.clans.contains(&clan)).unwrap_or(true)
                                 && distance_between_units(other, unit) > *range
                         }
-                        StatusTriggerType::UnitDeath { faction } => {
+                        StatusTrigger::DetectDeath { faction } => {
                             if let Some(faction) = faction {
                                 unit.faction == *faction
                             } else {
@@ -30,46 +30,46 @@ impl Logic {
                     })
                 })
             {
-                self.effects.push_back(QueuedEffect {
-                    effect,
-                    context: EffectContext {
-                        caster: Some(other.id),
-                        from: Some(other.id),
-                        target: Some(unit.id),
-                        vars,
+                self.effects.push_back(
+                    EffectContext {
+                        owner: other.id,
+                        creator: unit.id,
+                        target: unit.id,
                         status_id: Some(status_id),
-                        color: Some(status_color),
+                        vars: context.vars.clone(),
+                        queue_id: context.queue_id.clone(),
+                        color,
+                        ..context
                     },
-                })
+                    effect,
+                )
             }
         }
     }
     pub fn process_deaths(&mut self) {
-        if self.model.visual_timer > Time::ZERO {
-            return;
-        }
         let ids = self.model.units.ids().copied().collect::<Vec<_>>();
         for id in ids {
             let unit = self.model.units.get(&id).unwrap();
             if unit.permanent_stats.health <= 0 {
                 self.model.dead_units.insert(unit.clone());
-                for (effect, trigger, vars, status_id, status_color) in
+                for (effect, trigger, vars, status_id, color) in
                     unit.all_statuses.iter().flat_map(|status| {
-                        status.trigger(|trigger| matches!(trigger, StatusTriggerType::Death))
+                        status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))
                     })
                 {
                     let context = EffectContext {
-                        caster: Some(unit.id),
-                        from: Some(unit.id),
-                        target: Some(unit.id),
+                        owner: unit.id,
+                        creator: unit.id,
+                        target: unit.id,
                         vars,
                         status_id: Some(status_id),
-                        color: Some(status_color),
+                        color,
+                        queue_id: None,
                     };
-                    trigger.fire(effect, &context, &mut self.effects);
+                    self.effects.push_back(context, effect);
                 }
                 let unit_position = unit.clone().position;
-                self.update_positions(id, unit_position);
+                self.update_positions(unit_position);
             }
         }
 
@@ -77,7 +77,7 @@ impl Logic {
             .units
             .retain(|unit| unit.permanent_stats.health > 0);
     }
-    fn update_positions(&mut self, unit_id: Id, unit_position: Position) {
+    fn update_positions(&mut self, unit_position: Position) {
         // Move horizontally
         self.model
             .units

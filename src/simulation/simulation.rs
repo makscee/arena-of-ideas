@@ -38,7 +38,11 @@ impl<'a> Simulation<'a> {
         all_clans: Vec<Clan>,
     ) -> Self {
         let variant: Box<dyn SimulationVariant> = match simulation_type {
-            SimulationType::Balance { unit, repeats, tier } => Box::new(BalanceSimulation::new(
+            SimulationType::Balance {
+                unit,
+                repeats,
+                tier,
+            } => Box::new(BalanceSimulation::new(
                 unit,
                 repeats,
                 tier,
@@ -106,7 +110,7 @@ impl<'a> Simulation<'a> {
                             self.statuses.clone(),
                             battle.round.clone(),
                             self.units.clone(),
-                            0.02 as f64,
+                            0.02,
                             MAX_LIVES,
                         )
                         .run();

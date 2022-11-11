@@ -56,7 +56,7 @@
                         ],
                         "effect": {
                             "type": "ChangeContext",
-                            "target": "Caster",
+                            "target": "Owner",
                             "effect": {
                                 "type": "AttachStatus",
                                 "status": "Freeze"

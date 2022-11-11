@@ -4,7 +4,7 @@ impl Render {
     pub fn draw_field(
         &self,
         shader_program: &ShaderProgram,
-        game_time: f64,
+        game_time: f32,
         model: &Model,
         framebuffer: &mut ugli::Framebuffer,
     ) {

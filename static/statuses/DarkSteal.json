@@ -65,13 +65,13 @@
                             {
                                 "type": "ChangeStat",
                                 "stat": "Health",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
                                         "type": "FindStat",
                                         "stat": "Health",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "type": "Var",
@@ -99,13 +99,13 @@
                             {
                                 "type": "ChangeStat",
                                 "stat": "Attack",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
                                         "type": "FindStat",
                                         "stat": "Attack",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "type": "Var",

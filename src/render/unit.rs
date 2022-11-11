@@ -20,7 +20,7 @@ impl UnitRender {
     pub fn draw_unit_with_position(
         &self,
         unit: &Unit,
-        game_time: f64,
+        game_time: f32,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
         position: AABB<f32>,
@@ -212,7 +212,7 @@ impl UnitRender {
         &self,
         unit: &Unit,
         model: Option<&Model>,
-        game_time: f64,
+        game_time: f32,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
     ) {

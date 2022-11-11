@@ -95,7 +95,7 @@ impl Shop {
         &mut self,
         geng: &Geng,
         assets: &Rc<Assets>,
-        game_time: f64,
+        game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
         camera: &Camera2d,
     ) {

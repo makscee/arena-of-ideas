@@ -53,7 +53,7 @@ impl ClanEffect {
             status
                 .get(statuses)
                 .clone()
-                .attach(Some(unit.id), Some(unit.id), next_id)
+                .attach(unit.id, unit.id, next_id)
         }));
     }
 }

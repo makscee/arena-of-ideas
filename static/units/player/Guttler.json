@@ -37,7 +37,7 @@
               "name": "DevourMultiplier",
               "value": {
                 "type": "FindStat",
-                "who": "Caster",
+                "who": "Owner",
                 "stat": "Level"
               },
               "effect": {

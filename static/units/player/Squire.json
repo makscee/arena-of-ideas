@@ -32,7 +32,7 @@
                             {
                                 "type": "ChangeStat",
                                 "stat": "Health",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "type": "Sum",
                                     "a": {
@@ -48,7 +48,7 @@
                                         "b": {
                                             "type": "FindStat",
                                             "stat": "Level",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "type": "Mul"
                                     }

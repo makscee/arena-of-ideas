@@ -22,27 +22,19 @@ impl EffectImpl for RemoveStatusEffect {
         let effect = *self;
         let status_name = &effect.status;
         let status_id = context.status_id;
-        let target = context.get(effect.who);
+        let target = logic.model.get_mut(Who::Target, &context);
         let all = effect.all;
-        if let Some(target) = target {
-            let target = logic
-                .model
-                .units
-                .get_mut(&target)
-                .or(logic.model.dead_units.get_mut(&target))
-                .unwrap();
-            for status in &mut target.all_statuses {
-                if match status_name {
-                    Some(name) => *name == status.status.name,
-                    None => match status_id {
-                        Some(id) => id == status.id,
-                        None => false,
-                    },
-                } {
-                    status.time = Some(0);
-                    if !all {
-                        return;
-                    }
+        for status in &mut target.all_statuses {
+            if match status_name {
+                Some(name) => *name == status.status.name,
+                None => match status_id {
+                    Some(id) => id == status.id,
+                    None => false,
+                },
+            } {
+                status.time = Some(0);
+                if !all {
+                    return;
                 }
             }
         }

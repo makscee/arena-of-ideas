@@ -4,9 +4,9 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct ChangeContextEffect {
     #[serde(default)]
-    pub caster: Option<Who>,
+    pub owner: Option<Who>,
     #[serde(default)]
-    pub from: Option<Who>,
+    pub creator: Option<Who>,
     #[serde(default)]
     pub target: Option<Who>,
     pub color: Option<Rgba<f32>>,
@@ -30,28 +30,28 @@ impl EffectImpl for ChangeContextEffect {
                 vars.insert(entry.0.clone(), entry.1.clone());
             }
         }
-        logic.effects.push_front(QueuedEffect {
-            effect: effect.effect,
-            context: EffectContext {
-                caster: match effect.caster {
-                    Some(who) => context.get(who),
-                    None => context.caster,
+        logic.effects.push_front(
+            EffectContext {
+                creator: match effect.creator {
+                    Some(who) => context.get_id(who),
+                    None => context.creator,
                 },
-                from: match effect.from {
-                    Some(who) => context.get(who),
-                    None => context.from,
+                owner: match effect.owner {
+                    Some(who) => context.get_id(who),
+                    None => context.owner,
                 },
                 target: match effect.target {
-                    Some(who) => context.get(who),
+                    Some(who) => context.get_id(who),
                     None => context.target,
                 },
                 color: match effect.color {
-                    Some(color) => Some(color),
+                    Some(color) => color,
                     None => context.color,
                 },
                 vars,
                 ..context
             },
-        });
+            effect.effect,
+        );
     }
 }

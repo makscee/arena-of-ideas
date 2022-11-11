@@ -1,7 +1,7 @@
 {
     "type": "Visual",
     "duration": 1.5,
-    "parent": "Caster",
+    "parent": "Owner",
     "follow": false,
     "radius": 1.0,
     "color": "#ffff0a",

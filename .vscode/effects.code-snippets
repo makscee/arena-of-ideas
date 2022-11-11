@@ -65,12 +65,12 @@
 			"{",
 			"   \"type\": \"ChangeStat\",",
 			"   \"stat\": \"${1:Health}\",",
-			"   \"who\": \"${2:Caster}\",",
+			"   \"who\": \"${2:Owner}\",",
 			"   \"value\": {",
 			"       \"a\": {",
 			"           \"stat\": \"${1:Health}\",",
 			"           \"type\": \"FindStat\",",
-			"           \"who\": \"${2:Caster}\"",
+			"           \"who\": \"${2:Owner}\"",
 			"       },",
 			"       \"b\": {",
 			"            \"type\": \"Const\",",
@@ -90,7 +90,7 @@
 			"  \"b\": {",
 			"    \"type\": \"FindStat\",",
 			"    \"stat\": \"Level\",",
-			"    \"who\": \"Caster\"",
+			"    \"who\": \"Owner\"",
 			"  },",
 			"  \"type\": \"Mul\"",
 			"}"
@@ -103,7 +103,7 @@
 			"{",
 			"    \"type\": \"FindStat\",",
 			"    \"stat\": \"Level\",",
-			"    \"who\": \"Caster\"",
+			"    \"who\": \"Owner\"",
 			"}"
 		],
 		"description": "Level Stat"
@@ -113,7 +113,7 @@
 		"body": [
 			"{",
 			"    \"type\": \"ChangeContext\",",
-			"    \"target\": \"Caster\",",
+			"    \"target\": \"Owner\",",
 			"    \"effect\": $TM_SELECTED_TEXT$1",
 			"}"
 		],
@@ -151,7 +151,7 @@
 			"    \"value\":",
 			"    {",
 			"        \"type\": \"FindStat\",",
-			"        \"who\": \"Caster\",",
+			"        \"who\": \"Owner\",",
 			"        \"stat\": \"BaseDamage\"",
 			"    }",
 			"}"

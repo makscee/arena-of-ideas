@@ -16,38 +16,24 @@ impl EffectContainer for ChangeTargetEffect {
 impl EffectImpl for ChangeTargetEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
-        debug!("ChangeTarget: {}", context.caster.unwrap());
-        let caster = context.caster.and_then(|id| {
-            logic
-                .model
-                .units
-                .get(&id)
-                .or(logic.model.dead_units.get(&id))
-        });
-        if caster.is_none() {
-            return;
-        };
-        let caster = caster.unwrap();
+        let owner = logic.model.get(Who::Owner, &context);
 
-        let caster_faction = caster.faction;
+        let owner_faction = owner.faction;
         let target = context.target;
         if let Some(unit) = logic
             .model
             .units
             .iter()
-            .filter(|unit| unit.id != caster.id && Some(unit.id) != target)
-            .filter(|unit| effect.filter.matches(unit.faction, caster_faction))
+            .filter(|unit| unit.id != owner.id && unit.id != target)
+            .filter(|unit| effect.filter.matches(unit.faction, owner_faction))
             .filter(|unit| {
-                context.target = Some(unit.id);
+                context.target = unit.id;
                 logic.check_condition(&effect.condition, &context)
             })
             .choose(&mut global_rng())
         {
-            context.target = Some(unit.id);
-            logic.effects.push_front(QueuedEffect {
-                effect: effect.effect,
-                context,
-            });
+            context.target = unit.id;
+            logic.effects.push_front(context, effect.effect);
         }
     }
 }

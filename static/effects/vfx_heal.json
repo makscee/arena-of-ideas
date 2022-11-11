@@ -1,7 +1,7 @@
 {
     "type": "Visual",
     "duration": 1.0,
-    "parent": "From",
+    "parent": "Owner",
     "partner": "Target",
     "follow": false,
     "radius": 0.04,

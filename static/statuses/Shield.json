@@ -8,7 +8,7 @@
     "flags": [
         "DamageImmune"
     ],
-    "color": "#fecc66",
+    "clan_origin": "Protectors",
     "listeners": [
         {
             "triggers": [

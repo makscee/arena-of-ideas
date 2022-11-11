@@ -37,7 +37,7 @@
                                     "value": {
                                         "stat": "Health",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "effect": {
                                         "type": "List",
@@ -45,7 +45,7 @@
                                             {
                                                 "stat": "Health",
                                                 "type": "ChangeStat",
-                                                "who": "Caster",
+                                                "who": "Owner",
                                                 "value": {
                                                     "stat": "Health",
                                                     "type": "FindStat",
@@ -70,7 +70,7 @@
                                     "value": {
                                         "stat": "Attack",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "effect": {
                                         "type": "List",
@@ -78,7 +78,7 @@
                                             {
                                                 "stat": "Attack",
                                                 "type": "ChangeStat",
-                                                "who": "Caster",
+                                                "who": "Owner",
                                                 "value": {
                                                     "stat": "Attack",
                                                     "type": "FindStat",
@@ -99,9 +99,6 @@
                                 },
                                 {
                                     "preset": "effects/vfx_stats_gain.json"
-                                },
-                                {
-                                    "type": "IncrVisualTimer"
                                 }
                             ]
                         }

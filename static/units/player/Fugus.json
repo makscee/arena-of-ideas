@@ -30,7 +30,7 @@
                                     "a": {
                                         "stat": "Health",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "type": "Mul",
@@ -41,12 +41,12 @@
                                         "b": {
                                             "stat": "Level",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         }
                                     },
                                     "type": "Sum"
                                 },
-                                "who": "Caster"
+                                "who": "Owner"
                             },
                             {
                                 "stat": "Attack",
@@ -55,7 +55,7 @@
                                     "a": {
                                         "stat": "Attack",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "type": "Mul",
@@ -66,18 +66,15 @@
                                         "b": {
                                             "stat": "Level",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         }
                                     },
                                     "type": "Sum"
                                 },
-                                "who": "Caster"
+                                "who": "Owner"
                             },
                             {
                                 "preset": "effects/vfx_stats_gain.json"
-                            },
-                            {
-                                "type": "IncrVisualTimer"
                             }
                         ],
                         "type": "List"

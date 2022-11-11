@@ -39,12 +39,12 @@
                             {
                                 "stat": "Health",
                                 "type": "ChangeStat",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "a": {
                                         "stat": "Health",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "a": {
@@ -55,7 +55,7 @@
                                         "b": {
                                             "stat": "Level",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "type": "Mul"
                                     },
@@ -65,12 +65,12 @@
                             {
                                 "stat": "Attack",
                                 "type": "ChangeStat",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "value": {
                                     "a": {
                                         "stat": "Attack",
                                         "type": "FindStat",
-                                        "who": "Caster"
+                                        "who": "Owner"
                                     },
                                     "b": {
                                         "a": {
@@ -81,7 +81,7 @@
                                         "b": {
                                             "stat": "Level",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "type": "Mul"
                                     },
@@ -90,9 +90,6 @@
                             },
                             {
                                 "preset": "effects/vfx_stats_gain.json"
-                            },
-                            {
-                                "type": "IncrVisualTimer"
                             },
                             {
                                 "name": "Devour",

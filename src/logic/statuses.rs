@@ -16,17 +16,18 @@ impl Logic {
         &mut self,
         unit: &Unit,
     ) -> Vec<(EffectContext, ModifierTarget)> {
-        let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = Vec::new();
+        let mut modifier_targets: Vec<(EffectContext, ModifierTarget)> = vec![];
         for status in &unit.all_statuses {
             if !Self::is_status_expired(status) {
                 if let StatusEffect::Modifier(modifier) = &status.status.effect {
                     let context = EffectContext {
-                        caster: Some(unit.id),
-                        from: status.caster,
-                        target: Some(unit.id),
+                        owner: unit.id,
+                        creator: status.creator,
+                        target: unit.id,
                         vars: status.vars.clone(),
                         status_id: Some(status.id),
-                        color: None,
+                        color: status.status.color,
+                        queue_id: None,
                     };
                     if let ModifierTarget::List { targets } = &modifier.target {
                         if match &modifier.condition {
@@ -77,84 +78,49 @@ impl Logic {
     }
 
     pub fn process_unit_statuses(&mut self, unit: &mut Unit) {
-        let mut expired: Vec<(Option<Id>, Id, String)> = Vec::new();
+        let mut expired: Vec<(Id, Id, String)> = vec![];
         unit.all_statuses
             .sort_by(|a, b| a.status.order.cmp(&b.status.order));
         for status in &mut unit.all_statuses {
             if !status.is_inited {
                 for (effect, trigger, vars, status_id, status_color) in
-                    status.trigger(|trigger| matches!(trigger, StatusTriggerType::Init))
+                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
                 {
-                    self.effects.push_front(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: status.caster,
-                            from: Some(unit.id),
-                            target: Some(unit.id),
+                    self.effects.push_front(
+                        EffectContext {
+                            owner: unit.id,
+                            creator: status.creator,
+                            target: unit.id,
                             vars,
                             status_id: Some(status_id),
-                            color: Some(status_color),
+                            color: status_color,
+                            queue_id: None,
                         },
-                    })
+                        effect,
+                    );
                 }
                 status.is_inited = true;
             }
             if let Some(time) = &mut status.time {
                 *time = time.saturating_sub(1);
             }
-            for listener in &mut status.status.listeners {
-                let ticks = listener
-                    .triggers
-                    .iter_mut()
-                    .map(|trigger| match &mut trigger.trigger_type {
-                        StatusTriggerType::Repeating {
-                            tick_time,
-                            next_tick,
-                        } => {
-                            let cur_tick = self.model.current_tick.tick_num;
-                            let mut ticks = 0;
-                            if *next_tick <= 0 {
-                                *next_tick += *tick_time;
-                                ticks += 1;
-                            } else {
-                                *next_tick -= 1;
-                            }
-
-                            ticks
-                        }
-                        _ => 0,
-                    })
-                    .sum();
-                for _ in 0..ticks {
-                    self.effects.push_back(QueuedEffect {
-                        effect: listener.effect.clone(),
-                        context: EffectContext {
-                            caster: status.caster.or(Some(unit.id)),
-                            from: Some(unit.id),
-                            target: Some(unit.id),
-                            vars: status.vars.clone(),
-                            status_id: Some(status.id),
-                            color: Some(status.status.color),
-                        },
-                    });
-                }
-            }
             if Self::is_status_expired(status) {
-                expired.push((status.caster, status.id, status.status.name.clone()));
+                expired.push((status.owner, status.id, status.status.name.clone()));
                 for (effect, trigger, vars, status_id, status_color) in
-                    status.trigger(|trigger| matches!(trigger, StatusTriggerType::Break))
+                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Break))
                 {
-                    self.effects.push_back(QueuedEffect {
-                        effect,
-                        context: EffectContext {
-                            caster: Some(unit.id),
-                            from: Some(unit.id),
-                            target: Some(unit.id),
+                    self.effects.push_back(
+                        EffectContext {
+                            owner: unit.id,
+                            creator: unit.id,
+                            target: unit.id,
                             vars,
                             status_id: Some(status_id),
-                            color: Some(status_color),
+                            color: status_color,
+                            queue_id: None,
                         },
-                    })
+                        effect,
+                    );
                 }
             }
         }
@@ -170,15 +136,15 @@ impl Logic {
             .collect();
 
         // Detect expired statuses
-        for (caster_id, status_id, detect_status) in expired {
-            self.trigger_status_drop(UnitRef::Ref(unit), caster_id, status_id, &detect_status)
+        for (creator_id, status_id, detect_status) in expired {
+            self.trigger_status_drop(UnitRef::Ref(unit), creator_id, status_id, &detect_status)
         }
     }
 
     pub(super) fn trigger_status_drop(
         &mut self,
         unit: UnitRef<'_>,
-        caster_id: Option<Id>,
+        creator_id: Id,
         status_id: Id,
         status_name: &StatusName,
     ) {
@@ -193,7 +159,7 @@ impl Logic {
         for (effect, trigger, vars, status_id, status_color) in
             unit.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {
-                    StatusTriggerType::SelfDetectAttach {
+                    StatusTrigger::SelfDetectAttach {
                         status_name: name,
                         status_action: StatusAction::Remove,
                     } => status_name == name,
@@ -201,24 +167,25 @@ impl Logic {
                 })
             })
         {
-            self.effects.push_back(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: caster_id,
-                    from: Some(unit.id),
-                    target: Some(unit.id),
+            self.effects.push_back(
+                EffectContext {
+                    creator: creator_id,
+                    owner: unit.id,
+                    target: unit.id,
                     vars,
                     status_id: Some(status_id),
-                    color: Some(status_color),
+                    color: status_color,
+                    queue_id: None,
                 },
-            })
+                effect,
+            );
         }
 
         for other in &self.model.units {
             for (effect, trigger, vars, status_id, status_color) in
                 other.all_statuses.iter().flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTriggerType::DetectAttach {
+                        StatusTrigger::DetectAttach {
                             status_name: name,
                             filter,
                             status_action: StatusAction::Remove,
@@ -231,17 +198,18 @@ impl Logic {
                     })
                 })
             {
-                self.effects.push_back(QueuedEffect {
-                    effect,
-                    context: EffectContext {
-                        caster: caster_id,
-                        from: Some(other.id),
-                        target: Some(unit.id),
+                self.effects.push_back(
+                    EffectContext {
+                        creator: creator_id,
+                        owner: other.id,
+                        target: unit.id,
                         vars,
                         status_id: Some(status_id),
-                        color: Some(status_color),
+                        color: status_color,
+                        queue_id: None,
                     },
-                })
+                    effect,
+                )
             }
         }
     }

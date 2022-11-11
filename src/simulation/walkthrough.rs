@@ -82,7 +82,7 @@ impl Walkthrough {
                         assets.statuses.clone(),
                         round.clone(),
                         assets.units.clone(),
-                        0.02 as f64,
+                        0.02,
                         lives,
                     )
                     .run();

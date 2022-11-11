@@ -4,8 +4,7 @@
         "filter": {
             "Player": null
         },
-        "statuses": [
-        ]
+        "statuses": []
     },
     {
         "activate": 6,
@@ -34,14 +33,14 @@
                                 "a": {
                                     "type": "FindStat",
                                     "stat": "Health",
-                                    "who": "Caster"
+                                    "who": "Owner"
                                 },
                                 "b": {
                                     "type": "Const",
                                     "value": 3
                                 }
                             },
-                            "who": "Caster"
+                            "who": "Owner"
                         }
                     }
                 ]

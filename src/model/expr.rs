@@ -77,13 +77,7 @@ impl Expr {
             Self::Sub { a, b } => a.calculate(context, logic) - b.calculate(context, logic),
             Self::Mul { a, b } => a.calculate(context, logic) * b.calculate(context, logic),
             Self::FindStat { who, stat } => {
-                let target = context.get(*who).unwrap();
-                let target = logic
-                    .model
-                    .units
-                    .get(&target)
-                    .or_else(|| logic.model.dead_units.get(&target))
-                    .unwrap();
+                let target = logic.model.get(*who, &context);
                 target.stats.get(*stat)
             }
             Self::WithVar {
@@ -103,10 +97,7 @@ impl Expr {
                 status,
                 clan,
             } => {
-                let from = context
-                    .from
-                    .and_then(|id| logic.model.units.get(&id))
-                    .expect("From not found");
+                let owner = logic.model.get(Who::Owner, &context);
                 logic
                     .model
                     .units
@@ -116,7 +107,7 @@ impl Expr {
                         None => true,
                     })
                     .filter(|unit| match max_distance {
-                        Some(distance) => distance_between_units(from, unit) < *distance,
+                        Some(distance) => distance_between_units(owner, unit) < *distance,
                         None => true,
                     })
                     .filter(|unit| match status {

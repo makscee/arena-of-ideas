@@ -98,7 +98,6 @@ pub struct Model {
     pub lives: i32,
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, i32>,
-    pub visual_timer: Time,
     pub phase: PhaseModel,
 }
 
@@ -142,8 +141,23 @@ impl Model {
                 turn_phase: TurnPhase::None,
                 in_animation: false,
             },
-            visual_timer: Time::new(1.0),
         }
+    }
+
+    pub fn get(&self, who: Who, context: &EffectContext) -> &Unit {
+        let who_id = context.get_id(who);
+        self.units
+            .get(&who_id)
+            .or(self.dead_units.get(&who_id))
+            .expect(&format!("Can't find {}#{}", who, who_id))
+    }
+
+    pub fn get_mut(&mut self, who: Who, context: &EffectContext) -> &mut Unit {
+        let who_id = context.get_id(who);
+        self.units
+            .get_mut(&who_id)
+            .or(self.dead_units.get_mut(&who_id))
+            .expect(&format!("Can't find {}#{}", who, who_id))
     }
 }
 

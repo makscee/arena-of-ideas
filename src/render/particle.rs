@@ -5,7 +5,7 @@ impl Render {
         &self,
         particle: &Particle,
         shader_program: &ShaderProgram,
-        game_time: f64,
+        game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         if !particle.visible {

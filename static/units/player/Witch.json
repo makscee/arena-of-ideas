@@ -26,7 +26,7 @@
                         "type": "Repeat",
                         "times": {
                             "type": "FindStat",
-                            "who": "Caster",
+                            "who": "Owner",
                             "stat": "Level"
                         },
                         "effect": {

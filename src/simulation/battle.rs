@@ -4,7 +4,7 @@ use super::*;
 pub struct Battle {
     config: Config,
     model: Model,
-    delta_time: f64,
+    delta_time: f32,
     round: GameRound,
 }
 
@@ -25,7 +25,7 @@ impl Battle {
         statuses: Statuses,
         round: GameRound,
         units_templates: UnitTemplates,
-        delta_time: f64,
+        delta_time: f32,
         lives: i32,
     ) -> Self {
         let rounds = vec![round.clone()];

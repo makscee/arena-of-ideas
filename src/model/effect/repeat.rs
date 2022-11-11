@@ -18,10 +18,9 @@ impl EffectImpl for RepeatEffect {
         let effect = *self;
         let times = effect.times.calculate(&context, logic);
         for _ in 0..times {
-            logic.effects.push_front(QueuedEffect {
-                effect: effect.effect.clone(),
-                context: context.clone(),
-            });
+            logic
+                .effects
+                .push_front(context.clone(), effect.effect.clone())
         }
     }
 }

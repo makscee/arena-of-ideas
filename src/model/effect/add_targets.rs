@@ -18,14 +18,8 @@ impl EffectContainer for AddTargetsEffect {
 impl EffectImpl for AddTargetsEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let from = context
-            .from
-            .and_then(|id| logic.model.units.get(&id))
-            .expect("From not found");
-        let target = context
-            .target
-            .and_then(|id| logic.model.units.get(&id))
-            .expect("Target not found");
+        let owner = logic.model.get(Who::Owner, &context);
+        let target = logic.model.get(Who::Target, &context);
         let mut targets: HashSet<Id> = default();
         targets.insert(target.id);
         while match effect.additional_targets {
@@ -42,7 +36,7 @@ impl EffectImpl for AddTargetsEffect {
                     logic.check_condition(
                         &effect.condition,
                         &EffectContext {
-                            target: Some(unit.id),
+                            target: unit.id,
                             ..context.clone()
                         },
                     )
@@ -55,13 +49,14 @@ impl EffectImpl for AddTargetsEffect {
             }
         }
         for target in targets {
-            logic.effects.push_front(QueuedEffect {
-                effect: effect.effect.clone(),
-                context: EffectContext {
-                    target: Some(target),
-                    ..context.clone()
+            logic.effects.push_front(
+                {
+                    let mut context = context.clone();
+                    context.target = target;
+                    context
                 },
-            });
+                effect.effect.clone(),
+            );
         }
     }
 }

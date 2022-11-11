@@ -32,7 +32,7 @@ impl HeroEditor {
 
 struct HeroEditorState {
     geng: Geng,
-    time: f64,
+    time: f32,
     model: HeroEditorModel,
     camera: geng::Camera2d,
 }
@@ -297,7 +297,7 @@ fn draw_selector<'a>(
 
 impl geng::State for HeroEditorState {
     fn update(&mut self, delta_time: f64) {
-        self.time += delta_time;
+        self.time += delta_time as f32;
         if self.model.save_clicked {
             self.save();
             self.model.save_clicked = false;

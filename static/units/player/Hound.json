@@ -49,7 +49,7 @@
                                         "b": {
                                             "type": "FindStat",
                                             "stat": "Level",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         }
                                     },
                                     "b": {

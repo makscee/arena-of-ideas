@@ -21,7 +21,7 @@
                             "type": "Mul",
                             "a": {
                                 "type": "FindStat",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "stat": "Level"
                             },
                             "b": {
@@ -35,7 +35,7 @@
                     },
                     "triggers": [
                         {
-                            "type": "UnitDeath",
+                            "type": "DetectDeath",
                             "faction": "Player"
                         }
                     ]

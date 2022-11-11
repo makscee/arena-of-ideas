@@ -4,7 +4,7 @@
         {
             "type": "Visual",
             "duration": 0.7,
-            "parent": "Caster",
+            "parent": "Owner",
             "partner": "Target",
             "follow": false,
             "radius": 1.5,
@@ -25,7 +25,7 @@
         {
             "type": "Visual",
             "duration": 0.2,
-            "parent": "Caster",
+            "parent": "Owner",
             "partner": "Target",
             "follow": false,
             "radius": 1.5,

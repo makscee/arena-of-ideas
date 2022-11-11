@@ -13,7 +13,7 @@
                 ],
                 "value": {
                     "type": "FindStat",
-                    "who": "Caster",
+                    "who": "Owner",
                     "stat": "Attack"
                 }
             }

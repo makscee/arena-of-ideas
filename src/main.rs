@@ -37,7 +37,7 @@ type Ticks = u64;
 
 #[derive(Clone)]
 struct FrameHistory {
-    time: f64,
+    time: f32,
     model: Model,
 }
 
@@ -50,7 +50,7 @@ pub enum GameState {
 pub struct Game {
     geng: Geng,
     assets: Rc<Assets>,
-    time: f64,
+    time: f32,
     timeline_captured: bool,
     history: Vec<FrameHistory>,
     last_frame: FrameHistory,
@@ -131,6 +131,7 @@ impl Game {
 
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
+        let delta_time = delta_time as f32;
         if self.timeline_captured || self.logic.paused {
             return;
         }
@@ -147,8 +148,7 @@ impl geng::State for Game {
             .history
             .get(index)
             .unwrap_or(self.history.last().unwrap());
-        let delta_time =
-            delta_time * entry.model.time_scale as f64 * entry.model.time_modifier as f64;
+        let delta_time = delta_time * entry.model.time_scale * entry.model.time_modifier;
         self.time += delta_time;
         let last_frame = &self.last_frame;
 
@@ -175,6 +175,9 @@ impl geng::State for Game {
                 model: self.logic.model.clone(),
             };
             self.last_frame = new_frame.clone();
+            if self.state == GameState::Shop {
+                self.history.clear();
+            }
             self.history.push(new_frame);
         }
     }
@@ -330,9 +333,9 @@ impl geng::State for Game {
         use geng::ui::*;
         let mut timeline = Slider::new(
             cx,
-            self.time,
-            self.history[0].time..=self.last_frame.time,
-            Box::new(|new_time| self.time = new_time),
+            self.time as f64,
+            self.history[0].time as f64..=self.last_frame.time as f64,
+            Box::new(|new_time| self.time = new_time as f32),
         );
         self.timeline_captured = timeline.sense().unwrap().is_captured();
         let mut col = geng::ui::column![];
@@ -386,7 +389,7 @@ impl geng::State for Game {
                     self.logic.init_enemies(round.clone());
                 }
                 GameState::Battle => {
-                    if self.logic.model.visual_timer <= r32(0.0) {
+                    if self.logic.effects.is_empty() {
                         self.state = GameState::Shop;
                         self.logic.model.transition = false;
                         self.logic.model.render_model.clear();

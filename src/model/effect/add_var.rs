@@ -9,7 +9,7 @@ pub struct AddVarEffect {
     pub value: Expr,
     #[serde(default)]
     pub status_name: Option<StatusName>,
-    pub caster: Option<Who>,
+    pub creator: Option<Who>,
     #[serde(default)]
     pub effect: Effect,
 }
@@ -22,22 +22,18 @@ impl EffectImpl for AddVarEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
         let value = effect.value.calculate(&context, logic);
-        let target = context
-            .target
-            .and_then(|id| {
-                logic
-                    .model
-                    .units
-                    .get_mut(&id)
-                    .or(logic.model.dead_units.get_mut(&id))
-            })
+        let target = logic
+            .model
+            .units
+            .get_mut(&context.target)
+            .or(logic.model.dead_units.get_mut(&context.target))
             .expect("Target not found");
         if let Some(status_name) = effect.status_name {
             for status in target.all_statuses.iter_mut().filter(|status| {
                 status.status.name == status_name
                     && effect
-                        .caster
-                        .map(|caster| context.get(caster) == status.caster)
+                        .creator
+                        .map(|creator| context.get_id(creator) == status.creator)
                         .unwrap_or(true)
             }) {
                 status.vars.insert(effect.name.clone(), value);
@@ -46,20 +42,20 @@ impl EffectImpl for AddVarEffect {
             for status in target.all_statuses.iter_mut().filter(|status| {
                 status.id == status_id
                     && effect
-                        .caster
-                        .map(|caster| context.get(caster) == status.caster)
+                        .creator
+                        .map(|creator| context.get_id(creator) == status.creator)
                         .unwrap_or(true)
             }) {
                 status.vars.insert(effect.name.clone(), value);
             }
         }
 
-        logic.effects.push_front(QueuedEffect {
-            effect: effect.effect,
-            context: {
+        logic.effects.push_front(
+            {
                 context.vars.insert(effect.name, value);
                 context
             },
-        });
+            effect.effect,
+        );
     }
 }

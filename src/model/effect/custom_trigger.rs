@@ -15,15 +15,14 @@ impl EffectImpl for CustomTriggerEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let name = effect.name.clone();
-        let mut target_unit: Option<Id> = None;
-        if let Some(target) = effect.who {
-            target_unit = context.get(target);
-        }
+        let target_id = effect.who.and_then(|who| Some(context.get_id(who)));
         for unit in &logic.model.units {
-            if let Some(target_unit) = target_unit {
-                if unit.id != target_unit {
-                    continue;
-                }
+            if target_id
+                .and_then(|id| Some(id != unit.id))
+                .or(Some(false))
+                .unwrap()
+            {
+                continue;
             }
             for (effect, trigger, mut vars, status_id, status_color) in unit
                 .all_statuses
@@ -37,25 +36,25 @@ impl EffectImpl for CustomTriggerEffect {
                 })
                 .flat_map(|status| {
                     status.trigger(|trigger| match trigger {
-                        StatusTriggerType::Custom { name } => *name == effect.name,
+                        StatusTrigger::Custom { name } => *name == effect.name,
                         _ => false,
                     })
                 })
             {
-                logic.effects.push_front(QueuedEffect {
-                    effect,
-                    context: EffectContext {
-                        caster: Some(unit.id),
-                        from: context.caster,
-                        target: context.target,
+                logic.effects.push_front(
+                    EffectContext {
+                        creator: context.owner,
+                        owner: unit.id,
                         vars: {
                             vars.extend(context.vars.clone());
                             vars
                         },
                         status_id: None,
-                        color: Some(status_color),
+                        color: status_color,
+                        ..context.clone()
                     },
-                })
+                    effect,
+                )
             }
         }
     }

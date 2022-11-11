@@ -123,7 +123,7 @@ impl Render {
     }
     pub fn draw(
         &mut self,
-        game_time: f64,
+        game_time: f32,
         model: &Model,
         shop: &mut shop::Shop,
         framebuffer: &mut ugli::Framebuffer,

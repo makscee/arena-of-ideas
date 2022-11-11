@@ -57,23 +57,21 @@ impl Logic {
         }
 
         // On spawn effects
-        for (effect, trigger, vars, status_id, status_color) in
-            unit.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| matches!(trigger, StatusTriggerType::Spawn))
-            })
+        for (effect, trigger, vars, status_id, status_color) in unit
+            .all_statuses
+            .iter()
+            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
         {
             let context = EffectContext {
-                caster: Some(id),
-                from: Some(id),
-                target: Some(id),
+                owner: id,
+                creator: id,
+                target: id,
                 vars,
                 status_id: Some(status_id),
-                color: Some(status_color),
+                color: status_color,
+                queue_id: None,
             };
-            self.effects.push_front(QueuedEffect {
-                effect,
-                context: context.clone(),
-            });
+            self.effects.push_front(context, effect);
         }
 
         self.model.next_id += 1;

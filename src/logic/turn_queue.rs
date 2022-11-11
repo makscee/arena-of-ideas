@@ -6,11 +6,7 @@ const TIMER_POST_STRIKE: f32 = 0.05;
 const TIMER_STRIKE: f32 = 0.05;
 impl Logic {
     pub fn process_turn(&mut self) {
-        if self.model.visual_timer > Time::ZERO
-            || self.model.lives <= 0
-            || self.model.transition
-            || !self.effects.is_empty()
-        {
+        if self.model.lives <= 0 || self.model.transition || !self.effects.is_empty() {
             return;
         }
         if self.model.phase.in_animation {
@@ -64,25 +60,23 @@ impl Logic {
             TurnPhase::Strike => {
                 debug!("Phase: Strike");
                 self.process_units(Self::process_modifiers);
-                let player = self.model.units.remove(&self.model.phase.player);
+                let player = self.model.units.get(&self.model.phase.player);
                 if player.is_none() {
                     error!("Cant find Player unit: {}", &self.model.phase.player);
                     self.model.transition = true;
                     return;
                 }
-                let player = player.unwrap();
+                let player = player.unwrap().clone();
 
-                let enemy = self.model.units.remove(&self.model.phase.enemy);
+                let enemy = self.model.units.get(&self.model.phase.enemy);
                 if enemy.is_none() {
                     self.model.transition = true;
                     return;
                 }
-                let enemy = enemy.unwrap();
+                let enemy = enemy.unwrap().clone();
 
                 self.process_action(&player, &enemy);
                 self.process_action(&enemy, &player);
-                self.model.units.insert(player);
-                self.model.units.insert(enemy);
                 self.process_units(Self::process_unit_statuses);
                 self.model.phase.turn_phase = TurnPhase::PostStrike;
             }
@@ -134,34 +128,36 @@ impl Logic {
         }
 
         let mut effect = unit.action.clone();
-        for (effect, trigger, vars, status_id, status_color) in
-            unit.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| matches!(trigger, StatusTriggerType::Action))
-            })
-        {
-            self.effects.push_front(QueuedEffect {
-                effect,
-                context: EffectContext {
-                    caster: Some(unit.id),
-                    from: Some(unit.id),
-                    target: Some(target.id),
-                    vars,
-                    status_id: Some(status_id),
-                    color: Some(status_color),
-                },
-            });
-        }
-        self.effects.push_back(QueuedEffect {
-            effect,
-            context: EffectContext {
-                caster: Some(unit.id),
-                from: Some(unit.id),
-                target: Some(target.id),
+        self.effects.push_back(
+            EffectContext {
+                owner: unit.id,
+                creator: unit.id,
+                target: target.id,
                 vars: default(),
                 status_id: None,
-                color: None,
+                color: Rgba::BLACK, // todo: faction color
+                queue_id: None,
             },
-        });
+            effect,
+        );
+        for (effect, trigger, vars, status_id, status_color) in unit
+            .all_statuses
+            .iter()
+            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Action)))
+        {
+            self.effects.push_back(
+                EffectContext {
+                    owner: unit.id,
+                    creator: unit.id,
+                    target: target.id,
+                    vars,
+                    status_id: Some(status_id),
+                    color: status_color,
+                    queue_id: None,
+                },
+                effect,
+            );
+        }
         match unit.faction {
             Faction::Player => self.model.render_model.last_player_action_time = self.model.time,
             Faction::Enemy => self.model.render_model.last_enemy_action_time = self.model.time,

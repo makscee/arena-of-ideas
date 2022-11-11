@@ -22,12 +22,12 @@
                             "type": "If",
                             "condition": {
                                 "type": "Position",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "position": 0
                             },
                             "then": {
                                 "type": "AttachStatus",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "status": "Shield"
                             },
                             "else": {
@@ -66,12 +66,12 @@
                                 {
                                     "type": "ChangeStat",
                                     "stat": "Health",
-                                    "who": "Caster",
+                                    "who": "Owner",
                                     "value": {
                                         "a": {
                                             "stat": "Health",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "b": {
                                             "type": "Const",
@@ -83,12 +83,12 @@
                                 {
                                     "type": "ChangeStat",
                                     "stat": "Attack",
-                                    "who": "Caster",
+                                    "who": "Owner",
                                     "value": {
                                         "a": {
                                             "stat": "Attack",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "b": {
                                             "type": "Const",
@@ -114,12 +114,12 @@
                                 {
                                     "type": "ChangeStat",
                                     "stat": "Health",
-                                    "who": "Caster",
+                                    "who": "Owner",
                                     "value": {
                                         "a": {
                                             "stat": "Health",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "b": {
                                             "type": "Const",
@@ -131,12 +131,12 @@
                                 {
                                     "type": "ChangeStat",
                                     "stat": "Attack",
-                                    "who": "Caster",
+                                    "who": "Owner",
                                     "value": {
                                         "a": {
                                             "stat": "Attack",
                                             "type": "FindStat",
-                                            "who": "Caster"
+                                            "who": "Owner"
                                         },
                                         "b": {
                                             "type": "Const",
@@ -168,7 +168,7 @@
                     {
                         "triggers": [
                             {
-                                "type": "UnitDeath",
+                                "type": "DetectDeath",
                                 "faction": "Enemy"
                             }
                         ],
@@ -176,12 +176,12 @@
                             "type": "If",
                             "condition": {
                                 "type": "Position",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "position": 0
                             },
                             "then": {
                                 "type": "AttachStatus",
-                                "who": "Caster",
+                                "who": "Owner",
                                 "status": "Shield"
                             },
                             "else": {
