@@ -81,8 +81,6 @@ pub struct Model {
     pub next_id: Id,
     pub time: Time,
     pub units: Collection<Unit>,
-    pub player_queue: VecDeque<Unit>,
-    pub enemy_queue: VecDeque<Unit>,
     pub dead_units: Collection<Unit>,
     pub config: Config,
     pub round: usize,
@@ -131,8 +129,6 @@ impl Model {
             time_scale,
             time_modifier: time_scale,
             lives,
-            player_queue: VecDeque::new(),
-            enemy_queue: VecDeque::new(),
             phase: PhaseModel {
                 enemy: 0,
                 player: 0,

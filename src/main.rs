@@ -360,8 +360,6 @@ impl geng::State for Game {
             match self.state {
                 GameState::Shop => {
                     self.state = GameState::Battle;
-                    self.history.clear();
-                    self.history.push(self.last_frame.clone());
                     self.logic.model.transition = false;
                     self.shop.enabled = false;
                     self.logic.model.units.clear();
