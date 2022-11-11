@@ -16,6 +16,7 @@
         {
             "type": "Visual",
             "duration": 1.0,
+            "queue_delay": 1.0,
             "parent": "Owner",
             "partner": "Target",
             "follow": false,

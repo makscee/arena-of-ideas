@@ -6,6 +6,8 @@ pub struct VisualEffect {
     pub duration: Time,
     #[serde(default = "default_delay")]
     pub delay: Time,
+    #[serde(default = "default_delay")]
+    pub queue_delay: Time, // all queue effects processing will be stopped for this time
     #[serde(default = "default_parent")]
     pub parent: Who,
     #[serde(default = "default_partner")]
@@ -71,6 +73,8 @@ impl EffectImpl for VisualEffect {
             visible: false,
         });
         logic.model.next_id += 1;
-        logic.effects.add_delay(&context, effect.duration.as_f32());
+        logic
+            .effects
+            .add_delay(&context, effect.queue_delay.as_f32());
     }
 }

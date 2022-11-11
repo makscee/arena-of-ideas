@@ -3,7 +3,26 @@
     "effects": [
         {
             "type": "Visual",
+            "duration": 0.2,
+            "parent": "Owner",
+            "partner": "Target",
+            "follow": false,
+            "radius": 1.5,
+            "render": {
+                "path": "shaders/vfx_curve.glsl",
+                "parameters": {
+                    "u_curvature": 1.5,
+                    "u_thickness": 0.15,
+                    "u_end_cut": 0.2
+                },
+                "vertices": 30,
+                "instances": 1
+            }
+        },
+        {
+            "type": "Visual",
             "duration": 0.7,
+            "queue_delay": 0.7,
             "parent": "Owner",
             "partner": "Target",
             "follow": false,
@@ -20,24 +39,6 @@
                 },
                 "vertices": 2,
                 "instances": 50
-            }
-        },
-        {
-            "type": "Visual",
-            "duration": 0.2,
-            "parent": "Owner",
-            "partner": "Target",
-            "follow": false,
-            "radius": 1.5,
-            "render": {
-                "path": "shaders/vfx_curve.glsl",
-                "parameters": {
-                    "u_curvature": 1.5,
-                    "u_thickness": 0.15,
-                    "u_end_cut": 0.2
-                },
-                "vertices": 30,
-                "instances": 1
             }
         }
     ]

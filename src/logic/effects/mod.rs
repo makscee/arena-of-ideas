@@ -33,6 +33,9 @@ impl EffectOrchestrator {
     }
 
     pub fn add_delay(&mut self, context: &EffectContext, value: f32) {
+        if value <= 0.0 {
+            return;
+        }
         let q_id = context.get_q_id();
 
         let mut new_value = self
@@ -112,7 +115,7 @@ impl EffectOrchestrator {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.effects.values().all(|x| x.is_empty())
+        self.delays.values().all(|x| *x <= 0.0) && self.effects.values().all(|x| x.is_empty())
     }
 }
 
