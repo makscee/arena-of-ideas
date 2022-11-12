@@ -1,3 +1,6 @@
+use crate::Position;
+use std::{fs::create_dir, vec};
+
 use geng::prelude::itertools::sorted;
 
 use super::*;
@@ -45,15 +48,25 @@ impl Walkthrough {
         let mut end_rounds: HashMap<String, usize> = hashmap! {};
         let mut round_damages: HashMap<String, (i32, i32)> = hashmap! {};
 
+        // Create directories
+        let result_path = PathBuf::new().join("simulation_result");
+        let date_path = result_path.join(format!("{:?}", chrono::offset::Utc::now()));
+
+        Self::create_dir(&result_path);
+        Self::create_dir(&date_path);
+
         for index in 0..walkthrough_config.repeats {
+            let current_simulation_path = date_path.join(format!("Simulation#{}", index + 1));
+            let battles_path = current_simulation_path.join("battles");
+            Self::create_dir(&current_simulation_path);
+            Self::create_dir(&battles_path);
             let walkthrough_start = Instant::now();
             let mut tier = 1;
             let mut round_index = 0;
-            let mut player: Vec<UnitType> = vec![];
+            let mut player: Vec<Unit> = vec![];
             let mut shop_updates = walkthrough_config.shop_updates.clone();
             let mut next_update_round = shop_updates.pop_front();
             let mut results: Vec<BattleResult> = vec![];
-            let mut inventory_units: VecDeque<UnitTemplate> = VecDeque::new();
             let mut lives = walkthrough_config.lives;
             for round in &assets.rounds {
                 let round_start = Instant::now();
@@ -68,13 +81,12 @@ impl Walkthrough {
                 let mut best_win: Option<BattleResult> = None;
                 let mut best_lose: Option<BattleResult> = None;
                 variants.into_iter().for_each(|variant| {
-                    let clans = Self::calc_clan_members(&variant);
+                    let clans = Self::calc_clan_members(
+                        &variant.iter().map(|unit| unit.template.clone()).collect(),
+                    );
                     let result = Battle::new(
                         Config {
-                            player: variant
-                                .into_iter()
-                                .map(|unit| unit.name)
-                                .collect::<Vec<UnitType>>(),
+                            player: vec![],
                             clans,
                             ..config.clone()
                         },
@@ -84,6 +96,7 @@ impl Walkthrough {
                         assets.units.clone(),
                         0.02,
                         lives,
+                        variant,
                     )
                     .run();
                     if result.player_won {
@@ -101,7 +114,7 @@ impl Walkthrough {
                         best_lose = match &best_lose {
                             None => Some(result),
                             Some(lose) => {
-                                if lose.units_alive.len() < result.units_alive.len() {
+                                if lose.units_alive.len() > result.units_alive.len() {
                                     Some(result)
                                 } else {
                                     Some(lose.clone())
@@ -128,22 +141,32 @@ impl Walkthrough {
                         next_update_round = shop_updates.pop_front();
                     }
                 }
-                let s1: HashSet<UnitType> = battle_result.player.iter().cloned().collect();
-                let s2: HashSet<UnitType> = player.iter().cloned().collect();
+
+                let s1: HashSet<UnitType> = battle_result
+                    .player
+                    .iter()
+                    .map(|unit| unit.unit_type.clone())
+                    .collect();
+                let s2: HashSet<UnitType> =
+                    player.iter().map(|unit| unit.unit_type.clone()).collect();
                 (&s1 - &s2).iter().cloned().for_each(|unit| {
                     *hero_picks.entry(unit).or_insert(0) += 1;
                 });
                 player = battle_result.player.clone();
+                let enemy = battle_result.enemy.clone();
                 let alives: Vec<UnitType> = battle_result.units_alive.clone();
-                let inventory: Vec<UnitType> = inventory_units
-                    .clone()
-                    .into_iter()
-                    .map(|unit| unit.name.clone())
+                let player_types: Vec<UnitType> = battle_result
+                    .player
+                    .iter()
+                    .map(|unit| unit.unit_type.clone())
                     .collect();
-                warn!(
-                "Walkthrough:{}/{}, Round: {}, Time: {:?}, Lives: {}, Tier: {}, \nPlayer: {:?}, \nAlives: {:?}",
-                index + 1, walkthrough_config.repeats, round_index, round_start.elapsed(), lives,  current_tier, player, alives
-            );
+                let log = format!(
+                    "Walkthrough:{}/{}, Round: {}, Time: {:?}, Lives: {}, Tier: {}\nStats Before:{:?} \nPlayer: {:?} \nEnemy: {:?}\nAlives: {:?}\nStats after:{:?} ",
+                    index + 1, walkthrough_config.repeats, round_index, round_start.elapsed(), lives,  current_tier, battle_result.stats_before, player_types, enemy,  alives, battle_result.stats_after
+                    );
+
+                write_to(battles_path.join(format!("{}.txt", round.name)), &log)
+                    .expect("Failed to write results");
                 results.push(battle_result);
             }
             let mut lost_lives = "".to_owned();
@@ -155,7 +178,7 @@ impl Walkthrough {
                     .player
                     .clone()
                     .into_iter()
-                    .for_each(|unit| *hero_rounds.entry(unit).or_insert(0) += 1);
+                    .for_each(|unit| *hero_rounds.entry(unit.unit_type).or_insert(0) += 1);
 
                 last_result = Some(result.clone());
                 lost_lives.push_str(
@@ -169,7 +192,7 @@ impl Walkthrough {
                 round_damage.0 += result.damage_sum;
                 round_damage.1 += result.health_sum;
                 if result.damage_sum < 0 {
-                    lives += result.damage_sum;
+                    lives -= 1;
                 }
             });
             let last_result = last_result.unwrap().clone();
@@ -177,10 +200,15 @@ impl Walkthrough {
                 .player
                 .clone()
                 .into_iter()
-                .for_each(|unit| *hero_picks_last.entry(unit).or_insert(0) += 1);
+                .for_each(|unit| *hero_picks_last.entry(unit.unit_type).or_insert(0) += 1);
             *end_rounds.entry(last_result.round.clone()).or_insert(0) += 1;
+            let last_result_types: Vec<UnitType> = last_result
+                .player
+                .iter()
+                .map(|unit| unit.unit_type.clone())
+                .collect();
             walkthrough_results.insert(
-                format!("{:?}", last_result.player),
+                format!("{:?}", last_result_types),
                 format!("{}, Lives: {} {}", last_result.round, lives, lost_lives),
             );
             let time = walkthrough_start.elapsed();
@@ -195,26 +223,7 @@ impl Walkthrough {
                 time_remaining
             );
         }
-
         warn!("Walkthrough ended: {:?}", start.elapsed());
-        let result_path = PathBuf::new().join("simulation_result");
-        let date_path = result_path.join(format!("{:?}", chrono::offset::Utc::now()));
-
-        // Create directories
-        match std::fs::create_dir_all(&result_path) {
-            Ok(()) => {}
-            Err(error) => match error.kind() {
-                std::io::ErrorKind::AlreadyExists => {}
-                _ => panic!("Failed to create a simulation_result directory: {error}"),
-            },
-        }
-        match std::fs::create_dir_all(&date_path) {
-            Ok(()) => {}
-            Err(error) => match error.kind() {
-                std::io::ErrorKind::AlreadyExists => {}
-                _ => panic!("Failed to create a simulation_result directory: {error}"),
-            },
-        }
 
         let mut round_damage_string = "".to_owned();
         round_damages
@@ -222,7 +231,15 @@ impl Walkthrough {
             .into_iter()
             .sorted_by(|a, b| b.1 .1.cmp(&a.1 .1))
             .for_each(|(k, v)| {
-                round_damage_string.push_str(format!("{}: {}:{}\n", k, v.0, v.1).as_str());
+                round_damage_string.push_str(
+                    format!(
+                        "{}: {}:{}\n",
+                        k,
+                        v.0 / (walkthrough_config.repeats as i32),
+                        v.1 / (walkthrough_config.repeats as i32)
+                    )
+                    .as_str(),
+                );
             });
 
         // Add not picked heroes
@@ -267,6 +284,16 @@ impl Walkthrough {
         info!("Results saved: {:?}", start.elapsed());
     }
 
+    fn create_dir(path: &PathBuf) {
+        match std::fs::create_dir_all(path) {
+            Ok(()) => {}
+            Err(error) => match error.kind() {
+                std::io::ErrorKind::AlreadyExists => {}
+                _ => panic!("Failed to create a simulation_result directory: {error}"),
+            },
+        }
+    }
+
     fn to_file(map: &HashMap<String, usize>) -> String {
         let mut result = "".to_owned();
         map.clone()
@@ -279,36 +306,29 @@ impl Walkthrough {
     }
 
     fn shop_variants(
-        player: &Vec<UnitType>,
+        player: &Vec<Unit>,
         count: usize,
         rerolls: usize,
         tier: usize,
         all_units: Vec<UnitTemplate>,
-    ) -> Vec<Vec<UnitTemplate>> {
-        let mut result: Vec<Vec<UnitTemplate>> = vec![];
-        let player: Vec<UnitTemplate> = player
-            .into_iter()
-            .map(|unit| {
-                all_units
-                    .clone()
-                    .into_iter()
-                    .find(|template| *template.name == *unit)
-                    .unwrap()
-            })
-            .collect();
+    ) -> Vec<Vec<Unit>> {
+        let mut result: Vec<Vec<Unit>> = vec![];
 
         if count == 0 {
             result.push(player.clone());
             return result;
         }
 
-        let units_count = TIER_UNITS[tier - 1] * rerolls;
-        let mut shop_units = all_units
+        let units_count = TIER_UNITS[tier - 1] + (TIER_UNITS[tier - 1] * rerolls);
+        let statuses = Statuses { map: hashmap! {} };
+        let mut shop_units: Vec<Unit> = all_units
             .clone()
             .into_iter()
             .filter(|unit| unit.tier <= tier as u32)
-            .choose_multiple(&mut global_rng(), units_count);
-
+            .choose_multiple(&mut global_rng(), units_count)
+            .iter()
+            .map(|template| Unit::new(template, 0, Position::zero(Faction::Player), &statuses))
+            .collect();
         if shop_units.len() <= count {
             shop_units.append(&mut player.clone());
             result.push(shop_units);
@@ -320,24 +340,27 @@ impl Walkthrough {
                     variant.append(&mut player.clone());
                     variant = Self::check_stackable(variant, all_units.clone());
                     let variants = Self::check_max_slots(variant);
-                    variants
-                        .into_iter()
-                        .for_each(|variant| result.push(variant));
+                    variants.into_iter().for_each(|variant| {
+                        result.push(variant);
+                    });
                 })
         }
         result
     }
 
-    fn check_max_slots(team: Vec<UnitTemplate>) -> Vec<Vec<UnitTemplate>> {
+    fn check_max_slots(team: Vec<Unit>) -> Vec<Vec<Unit>> {
+        if team.len() <= SIDE_SLOTS {
+            return vec![team.clone()];
+        }
         team.into_iter().combinations(SIDE_SLOTS).collect()
     }
 
-    fn check_stackable(team: Vec<UnitTemplate>, all_units: Vec<UnitTemplate>) -> Vec<UnitTemplate> {
-        let mut result: Vec<UnitTemplate> = vec![];
-        let mut counts: HashMap<UnitType, Vec<UnitTemplate>> = hashmap! {};
+    fn check_stackable(team: Vec<Unit>, all_units: Vec<UnitTemplate>) -> Vec<Unit> {
+        let mut result: Vec<Unit> = vec![];
+        let mut counts: HashMap<UnitType, Vec<Unit>> = hashmap! {};
         team.into_iter().for_each(|unit| {
             counts
-                .entry(unit.name.clone())
+                .entry(unit.unit_type.clone())
                 .or_insert(vec![])
                 .push(unit.clone())
         });
@@ -345,14 +368,15 @@ impl Walkthrough {
             let mut unit = stacks.first().unwrap().clone();
             let mut count = stacks.len();
             let mut unit_to_add = 0;
-            for i in 1..=stacks.len() {
-                unit.stacks += 1;
-                if unit.stacks >= 6 {
-                    result.push(unit.clone());
-                    unit.stacks = 0;
+            stacks.iter().for_each(|unit_to_merge| {
+                if unit.id != unit_to_merge.id {
+                    if !unit.merge(unit_to_merge.clone()) {
+                        result.push(unit.clone());
+                        unit = unit_to_merge.clone();
+                    }
                 }
-            }
-            result.push(unit);
+            });
+            result.push(unit.clone());
         });
         result
     }

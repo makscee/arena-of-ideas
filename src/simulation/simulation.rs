@@ -1,3 +1,4 @@
+use crate::model::Position;
 use crate::model::UnitTemplate;
 use crate::simulation::balance_simulation::BalanceSimulation;
 use crate::simulation::round_simulation::RoundSimulation;
@@ -99,6 +100,19 @@ impl<'a> Simulation<'a> {
             .flat_map(|battle| {
                 let results: Vec<BattleView> = (1..=battle.repeats)
                     .map(|i| {
+                        let statuses = Statuses { map: hashmap!() };
+                        let player: Vec<Unit> = battle
+                            .player
+                            .iter()
+                            .map(|unit_type| {
+                                Unit::new(
+                                    &self.units[unit_type],
+                                    0,
+                                    Position::zero(Faction::Player),
+                                    &statuses,
+                                )
+                            })
+                            .collect();
                         let result = Battle::new(
                             Config {
                                 player: battle.player.clone(),
@@ -112,6 +126,7 @@ impl<'a> Simulation<'a> {
                             self.units.clone(),
                             0.02,
                             MAX_LIVES,
+                            player
                         )
                         .run();
                         BattleView {

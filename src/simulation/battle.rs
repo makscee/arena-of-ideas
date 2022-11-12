@@ -6,15 +6,19 @@ pub struct Battle {
     model: Model,
     delta_time: f32,
     round: GameRound,
+    player: Vec<Unit>,
 }
 
 #[derive(Serialize, Clone)]
 pub struct BattleResult {
-    pub player: Vec<UnitType>,
+    pub player: Vec<Unit>,
+    pub enemy: Vec<UnitType>,
     pub player_won: bool,
     pub damage_sum: i32,
     pub health_sum: i32,
     pub units_alive: Vec<UnitType>,
+    pub stats_before: HashMap<UnitType, String>,
+    pub stats_after: HashMap<UnitType, String>,
     pub round: String,
 }
 
@@ -27,6 +31,7 @@ impl Battle {
         units_templates: UnitTemplates,
         delta_time: f32,
         lives: i32,
+        player: Vec<Unit>,
     ) -> Self {
         let rounds = vec![round.clone()];
         Self {
@@ -44,15 +49,29 @@ impl Battle {
             ),
             delta_time,
             round,
+            player,
         }
     }
 
     pub fn run(mut self) -> BattleResult {
         let mut logic = Logic::new(self.model.clone());
         let mut events = Events::new(vec![]);
+        let mut stats_before: HashMap<UnitType, String> = hashmap! {};
+        let mut stats_after: HashMap<UnitType, String> = hashmap! {};
+
         logic.initialize(&mut events);
-        self.config.player.iter().for_each(|unit_config| {
-            logic.spawn_by_type(unit_config, Position::zero(Faction::Player));
+        self.player.iter().for_each(|unit| {
+            stats_before.insert(
+                unit.unit_type.clone(),
+                format!(
+                    "{}/{}::{}::{}",
+                    unit.stats.attack,
+                    unit.stats.health,
+                    unit.stats.level(),
+                    unit.stats.stacks
+                ),
+            );
+            logic.spawn_by_unit(unit.clone());
         });
         self.round.enemies.iter().rev().for_each(|unit_config| {
             logic.spawn_by_type(unit_config, Position::zero(Faction::Enemy));
@@ -61,6 +80,7 @@ impl Battle {
         loop {
             logic.update(self.delta_time);
             let model = &logic.model;
+
             if model.lives <= 0 || model.transition || model.current_tick.tick_num > 100 {
                 let player_won = model
                     .units
@@ -71,7 +91,27 @@ impl Battle {
                     .units
                     .clone()
                     .into_iter()
-                    .map(|unit| unit.unit_type)
+                    .map(|unit| {
+                        stats_after.insert(
+                            unit.unit_type.clone(),
+                            format!(
+                                "{}/{}::{}::{}",
+                                unit.stats.attack,
+                                unit.stats.health,
+                                unit.stats.level(),
+                                unit.stats.stacks
+                            ),
+                        );
+                        unit.unit_type
+                    })
+                    .collect();
+                let player = model
+                    .units
+                    .clone()
+                    .into_iter()
+                    .chain(model.dead_units.clone().into_iter())
+                    .filter(|unit| unit.faction == Faction::Player)
+                    .map(|unit| unit.shop_unit.unwrap())
                     .collect();
                 let units_count = if player_won {
                     units_alive.len() as i32
@@ -79,12 +119,15 @@ impl Battle {
                     -(units_alive.len() as i32)
                 };
                 return BattleResult {
-                    player: self.model.config.player.clone(),
+                    player,
+                    enemy: self.round.enemies.clone(),
                     damage_sum: units_count.clone(),
                     health_sum: units_count.clone(),
                     player_won,
                     round: self.round.name,
                     units_alive,
+                    stats_before,
+                    stats_after,
                 };
             }
         }

@@ -73,9 +73,10 @@ impl Logic {
             };
             self.effects.push_front(context, effect);
         }
-
+        unit.shop_unit = Box::new(Some(unit.clone()));
         self.model.next_id += 1;
         self.model.units.insert(unit);
+
         id
     }
 
