@@ -3,7 +3,7 @@
     "description": "20% chance to Devour enemy hit by Magic Missile",
     "attack": 2,
     "health": 2,
-    "tier": 2,
+    "tier": 3,
     "action": {
         "preset": "effects/melee_hit.json"
     },

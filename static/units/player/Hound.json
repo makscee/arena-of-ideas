@@ -3,7 +3,7 @@
     "description": "Devour random enemy and take 12/8/4 damage",
     "attack": 1,
     "health": 1,
-    "tier": 1,
+    "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },

@@ -3,7 +3,7 @@
     "description": "Start of battle: launch Magic Missile 1/2/3 times",
     "attack": 1,
     "health": 2,
-    "tier": 1,
+    "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },
