@@ -8,7 +8,7 @@ pub struct AddTargetsEffect {
     pub condition: Condition,
     pub effect: Effect,
     #[serde(default)]
-    pub replace: bool,
+    pub replace: bool, // remove original Target
 }
 
 impl EffectContainer for AddTargetsEffect {
