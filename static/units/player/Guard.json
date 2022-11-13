@@ -1,0 +1,66 @@
+{
+    "name": "Guard",
+    "description": "Start of battle: gain Shield",
+    "attack": 1,
+    "health": 2,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "ShieldAndStatsOnSpawn",
+            "type": "Status",
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Death"
+                        }
+                    ],
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AttachStatus",
+                                "status": "Shield"
+                            },
+                            {
+                                "type": "If",
+                                "condition": {
+                                    "type": "Equal",
+                                    "a": {
+                                        "type": "FindStat",
+                                        "stat": "Level",
+                                        "who": "Owner"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                },
+                                "then": {
+                                    "type": "AttachStatus",
+                                    "status": "Shield"
+                                },
+                                "else": {
+                                    "type": "Noop"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ],
+            "stacking": {
+                "type": "Independent"
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}
