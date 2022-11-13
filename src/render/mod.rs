@@ -54,6 +54,7 @@ pub enum TextType {
     Damage(Vec<DamageType>),
     Status,
     Aoe,
+    Message,
 }
 
 impl RenderModel {
@@ -95,6 +96,7 @@ impl RenderModel {
         match text_type {
             TextType::Damage(_) => text_block.add_text_top(text, color, text_type),
             TextType::Status | TextType::Aoe => text_block.add_text_top(text, color, text_type),
+            TextType::Message => text_block.add_text_top(text, color, text_type),
         }
     }
 }
@@ -455,6 +457,7 @@ impl Render {
                     )),
                     TextType::Status => None,
                     TextType::Aoe => None,
+                    TextType::Message => None,
                 })
                 .collect()
         }

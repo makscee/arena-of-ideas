@@ -1,0 +1,45 @@
+{
+    "name": "Squire",
+    "description": "Detect Shield: give +1/+1 (+2/+2) (+3/+3)",
+    "attack": 1,
+    "health": 1,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "DetectShieldGiveStats",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Shield",
+                            "filter": "Allies"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/give_stats.json",
+                        "value": {
+                            "type": "FindStat",
+                            "stat": "Level",
+                            "who": "Owner"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}

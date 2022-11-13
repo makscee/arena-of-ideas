@@ -24,7 +24,10 @@
                 "--config",
                 "local_configs/custom_config.json"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "."
+            }
         },
         {
             "type": "lldb",
@@ -42,7 +45,10 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "."
+            }
         },
         {
             "type": "lldb",
@@ -61,7 +67,10 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "."
+            }
         }
     ]
 }

@@ -17,6 +17,7 @@ mod drop_context_status;
 mod if_effect;
 mod kill;
 mod list;
+mod message;
 mod noop;
 mod random;
 mod remove_status;
@@ -43,6 +44,7 @@ pub use drop_context_status::*;
 pub use if_effect::*;
 pub use kill::*;
 pub use list::*;
+pub use message::*;
 pub use noop::*;
 pub use random::*;
 pub use remove_status::*;
@@ -60,6 +62,7 @@ pub enum Effect {
     AttachStatus(Box<AttachStatusEffect>),
     Spawn(Box<SpawnEffect>),
     AOE(Box<AoeEffect>),
+    Message(Box<MessageEffect>),
     Kill(Box<KillEffect>),
     AddTargets(Box<AddTargetsEffect>),
     Repeat(Box<RepeatEffect>),
@@ -100,6 +103,7 @@ pub enum RawEffect {
     ChangeContextStatus(Box<ChangeContextStatusEffect>),
     DropContextStatus(Box<DropContextStatusEffect>),
     Revive(Box<ReviveEffect>),
+    Message(Box<MessageEffect>),
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
@@ -162,6 +166,7 @@ impl std::fmt::Debug for Effect {
             Self::Repeat(effect) => effect.fmt(f),
             Self::Random(effect) => effect.fmt(f),
             Self::List(effect) => effect.fmt(f),
+            Self::Message(effect) => effect.fmt(f),
             Self::If(effect) => effect.fmt(f),
             Self::ChangeContext(effect) => effect.fmt(f),
             Self::ChangeContextStatus(effect) => effect.fmt(f),
@@ -206,6 +211,7 @@ impl From<RawEffect> for Effect {
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::VisualChain(effect) => Self::VisualChain(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
+            RawEffect::Message(effect) => Self::Message(effect),
             RawEffect::AddGlobalVar(effect) => Self::AddGlobalVar(effect),
             RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
             RawEffect::CustomTrigger(effect) => Self::CustomTrigger(effect),
@@ -263,6 +269,7 @@ impl Effect {
             Effect::ChangeContextStatus(effect) => &mut **effect,
             Effect::DropContextStatus(effect) => &mut **effect,
             Effect::Revive(effect) => &mut **effect,
+            Effect::Message(effect) => &mut **effect,
             Effect::ApplyGained(effect) => &mut **effect,
             Effect::ChangeTarget(effect) => &mut **effect,
             Effect::ChangeStat(effect) => &mut **effect,
@@ -293,6 +300,7 @@ impl Effect {
             Effect::DropContextStatus(effect) => effect,
             Effect::Revive(effect) => effect,
             Effect::ApplyGained(effect) => effect,
+            Effect::Message(effect) => effect,
             Effect::ChangeTarget(effect) => effect,
             Effect::ChangeStat(effect) => effect,
             Effect::Action(effect) => effect,

@@ -79,7 +79,7 @@ impl EffectOrchestrator {
         self.effects
             .get_mut(&q_id)
             .unwrap()
-            .push_front(QueuedEffect {
+            .push_back(QueuedEffect {
                 effect,
                 context: context.clone(),
             });
@@ -105,9 +105,15 @@ impl EffectOrchestrator {
         None
     }
 
-    pub fn get_next_effect(&mut self) -> Option<QueuedEffect<Effect>> {
-        self.get_available_q_id()
-            .and_then(|x| self.effects.get_mut(&x).unwrap().pop_front())
+    pub fn get_next_effect(&mut self) -> Option<(String, QueuedEffect<Effect>)> {
+        let q_id = self.get_available_q_id();
+
+        q_id.clone().and_then(|x| {
+            Some((
+                q_id.unwrap(),
+                self.effects.get_mut(&x).unwrap().pop_front().unwrap(),
+            ))
+        })
     }
 
     pub fn is_empty(&self) -> bool {
@@ -165,17 +171,25 @@ impl Logic {
     pub fn process_effects(&mut self) {
         const MAX_ITERATIONS: usize = 1000;
         let mut iterations = 0;
-        while let Some(QueuedEffect {
-            effect,
-            mut context,
-        }) = self.effects.get_next_effect()
+        while let Some((
+            q_id,
+            QueuedEffect {
+                effect,
+                mut context,
+            },
+        )) = self.effects.get_next_effect()
         {
             self.model.vars.iter().for_each(|v| {
                 if !context.vars.contains_key(v.0) {
                     context.vars.insert(v.0.clone(), *v.1);
                 }
             });
-            debug!("Processing {:?} on {}", effect, context.to_string(self));
+            debug!(
+                "Processing q#{} {:?} on {}",
+                q_id,
+                effect,
+                context.to_string(self)
+            );
             effect.as_box().process(context, self);
             iterations += 1;
             if iterations > MAX_ITERATIONS {

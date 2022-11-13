@@ -1,7 +1,8 @@
 {
     "type": "Visual",
     "duration": 1.5,
-    "parent": "Owner",
+    "queue_delay": 0.7,
+    "parent": "Target",
     "follow": false,
     "radius": 1.0,
     "color": "#ffff0a",

@@ -86,7 +86,7 @@
 		"prefix": "level_mul",
 		"body": [
 			"{",
-			"  \"a\": $TM_SELECTED_TEXT,",
+			"  \"a\": $1$TM_SELECTED_TEXT,",
 			"  \"b\": {",
 			"    \"type\": \"FindStat\",",
 			"    \"stat\": \"Level\",",
@@ -231,5 +231,64 @@
 			"}"
 		],
 		"description": "Equal"
+	},
+	"Status New": {
+		"prefix": "status_new",
+		"body": [
+			"{",
+			"    \"name\": \"${1:OnDealDamage}\",",
+			"    \"type\": \"Status\",",
+			"    \"stacking\": {",
+			"        \"type\": \"Independent\"",
+			"    },",
+			"    \"listeners\": [",
+			"        {",
+			"            \"triggers\": [",
+			"                {",
+			"                    \"type\": \"${2:DamageDealt}\",",
+			"                    \"damage_type\": \"Crit\"",
+			"                }",
+			"            ],",
+			"            \"effect\": $TM_SELECTED_TEXT$3",
+			"        }",
+			"    ]",
+			"}"
+		],
+		"description": "Status New"
+	},
+	"Status Detect": {
+		"prefix": "status_detect",
+		"body": [
+			"{",
+			"    \"name\": \"DetectShield*\",",
+			"    \"type\": \"Status\",",
+			"    \"stacking\": {",
+			"        \"type\": \"Independent\"",
+			"    },",
+			"    \"listeners\": [",
+			"        {",
+			"            \"triggers\": [",
+			"                {",
+			"                    \"type\": \"DetectAttach\",",
+			"                    \"status_name\": \"${1:Shield}\",",
+			"                    \"filter\": \"Allies\"",
+			"                }",
+			"            ],",
+			"            \"effect\": $2$TM_SELECTED_TEXT",
+			"        }",
+			"    ]",
+			"}"
+		],
+		"description": "Status Detect"
+	},
+	"Var": {
+		"prefix": "var",
+		"body": [
+			"{",
+			"    \"type\": \"Var\",",
+			"    \"name\": \"$1$TM_SELECTED_TEXT\"",
+			"}"
+		],
+		"description": "Var"
 	}
 }

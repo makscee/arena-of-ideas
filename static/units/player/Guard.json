@@ -19,7 +19,7 @@
                 {
                     "triggers": [
                         {
-                            "type": "Death"
+                            "type": "Spawn"
                         }
                     ],
                     "effect": {
