@@ -5,6 +5,7 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct MessageEffect {
     pub text: String,
+    pub color: Option<Rgba<f32>>,
 }
 
 impl EffectContainer for MessageEffect {
@@ -13,6 +14,9 @@ impl EffectContainer for MessageEffect {
 
 impl EffectImpl for MessageEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
+        if let Some(color) = &self.color {
+            context.color = color.clone();
+        }
         let position = logic.model.get(Who::Target, &context).position;
         logic.model.render_model.add_text(
             position,

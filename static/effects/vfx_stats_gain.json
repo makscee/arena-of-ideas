@@ -1,17 +1,42 @@
 {
-    "type": "Visual",
-    "duration": 1.5,
-    "queue_delay": 0.7,
-    "parent": "Target",
-    "follow": false,
-    "radius": 1.0,
-    "color": "#ffff0a",
-    "render": {
-        "path": "shaders/vfx_stats_gain.glsl",
-        "parameters": {
-            "u_unit_radius": 0.2
+    "type": "List",
+    "effects": [
+        {
+            "type": "Visual",
+            "duration": 0.7,
+            "parent": "Creator",
+            "partner": "Target",
+            "follow": false,
+            "radius": 0.04,
+            "render": {
+                "path": "shaders/vfx_curve_particles.glsl",
+                "parameters": {
+                    "u_direction": [
+                        0.0,
+                        1.0
+                    ],
+                    "p_disperse": 0.0,
+                    "u_thickness": 0.3,
+                    "p_speed": 0.5
+                },
+                "instances": 200
+            }
         },
-        "vertices": 2,
-        "instances": 50
-    }
+        {
+            "type": "Visual",
+            "duration": 1.5,
+            "queue_delay": 0.7,
+            "parent": "Target",
+            "follow": false,
+            "radius": 1.0,
+            "render": {
+                "path": "shaders/vfx_stats_gain.glsl",
+                "parameters": {
+                    "u_unit_radius": 0.2
+                },
+                "vertices": 2,
+                "instances": 50
+            }
+        }
+    ]
 }

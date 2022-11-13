@@ -8,6 +8,7 @@
     "effect": {
         "type": "ChangeContext",
         "owner": "Target",
+        "color": "#ffb300",
         "effect": {
             "type": "List",
             "effects": [
