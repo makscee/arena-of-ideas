@@ -1,0 +1,47 @@
+{
+    "name": "Gravedigger",
+    "description": "After ally death: give Shield to first ally",
+    "attack": 1,
+    "health": 1,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "GiveShieldAfterDeath",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectDeath",
+                            "faction": "Player"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Allies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}
