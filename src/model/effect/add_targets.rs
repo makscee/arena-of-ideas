@@ -7,6 +7,8 @@ pub struct AddTargetsEffect {
     #[serde(default)]
     pub condition: Condition,
     pub effect: Effect,
+    #[serde(default)]
+    pub replace: bool,
 }
 
 impl EffectContainer for AddTargetsEffect {
@@ -47,6 +49,9 @@ impl EffectImpl for AddTargetsEffect {
             } else {
                 break;
             }
+        }
+        if effect.replace {
+            targets.remove(&target.id);
         }
         for target in targets {
             logic.effects.push_front(

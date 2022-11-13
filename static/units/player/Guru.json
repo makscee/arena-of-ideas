@@ -1,6 +1,6 @@
 {
-    "name": "Zealot",
-    "description": "Detect Shield: gain +1/2/3 ATK",
+    "name": "Guru",
+    "description": "Start of Battle: give Shield to 2 adjacent allies",
     "attack": 1,
     "health": 1,
     "tier": 1,
@@ -13,7 +13,7 @@
     "radius": 0.4,
     "statuses": [
         {
-            "name": "DetectShieldGainAtk",
+            "name": "DetectShieldGiveStats",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -22,21 +22,20 @@
                 {
                     "triggers": [
                         {
-                            "type": "DetectAttach",
-                            "status_name": "Shield",
-                            "filter": "Allies"
+                            "type": "Spawn"
                         }
                     ],
                     "effect": {
-                        "type": "ChangeContext",
-                        "target": "Owner",
+                        "type": "AddTargets",
+                        "replace": true,
+                        "condition": {
+                            "type": "InRange",
+                            "max_distance": 1
+                        },
+                        "additional_targets": 2,
                         "effect": {
-                            "preset": "effects/give_atk.json",
-                            "value": {
-                                "type": "FindStat",
-                                "stat": "Level",
-                                "who": "Owner"
-                            }
+                            "type": "AttachStatus",
+                            "status": "Shield"
                         }
                     }
                 }
