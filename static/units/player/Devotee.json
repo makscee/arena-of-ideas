@@ -1,0 +1,47 @@
+{
+    "name": "Devotee",
+    "description": "+1/+2/+3 ATK for each ally with Shield",
+    "attack": 1,
+    "health": 1,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "ATKforShields",
+            "type": "Modifier",
+            "target": {
+                "type": "Stat",
+                "stat": "Attack",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "UnitsInRange",
+                            "status": "Shield"
+                        },
+                        "b": {
+                            "type": "FindStat",
+                            "who": "Owner",
+                            "stat": "Level"
+                        }
+                    },
+                    "b": {
+                        "type": "FindStat",
+                        "stat": "Attack",
+                        "who": "Owner"
+                    }
+                }
+            }
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}
