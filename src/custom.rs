@@ -12,6 +12,7 @@ pub struct CustomGame {
 #[asset(json)]
 struct CustomConfig {
     player: Vec<UnitType>,
+    level: Option<i32>,
     clans: HashMap<Clan, usize>,
     round: GameRound,
     fov: f32,
@@ -31,6 +32,14 @@ impl CustomGame {
             enemy_clans: hashmap! {},
             fov: custom.fov,
         };
-        Box::new(Game::new(geng, assets, rounds, config, 0, true))
+        Box::new(Game::new(
+            geng,
+            assets,
+            rounds,
+            config,
+            0,
+            true,
+            custom.level,
+        ))
     }
 }

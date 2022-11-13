@@ -200,5 +200,36 @@
 			"}"
 		],
 		"description": "Const"
+	},
+	"If": {
+		"prefix": "if",
+		"body": [
+			"{",
+			"    \"type\": \"If\",",
+			"    \"condition\": {",
+			"        \"type\": \"UnitHasStatus\",",
+			"        \"who\": \"Target\",",
+			"        \"status\": \"Freeze\"",
+			"    },",
+			"    \"then\": ",
+			"        $TM_SELECTED_TEXT$1",
+			"    ,",
+			"    \"else\": {",
+			"        \"type\": \"Noop\"",
+			"    }",
+			"}"
+		],
+		"description": "If"
+	},
+	"Equal": {
+		"prefix": "equal",
+		"body": [
+			"{",
+			"    \"type\": \"Equal\",",
+			"    \"a\": $1$TM_SELECTED_TEXT,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "Equal"
 	}
 }

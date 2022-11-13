@@ -73,6 +73,7 @@ impl Game {
         config: Config,
         round: usize,
         custom: bool,
+        level: Option<i32>, // level of player team for custom game
     ) -> Self {
         let mut model = Model::new(
             config.clone(),
@@ -116,9 +117,15 @@ impl Game {
         };
         match custom {
             true => {
-                let team = game
+                let mut team = game
                     .logic
                     .initialize_custom(&mut game.events, config.player.clone());
+                if let Some(level) = level {
+                    team.iter_mut().for_each(|u| {
+                        u.permanent_stats.stacks += (level - 1) * STACKS_PER_LVL;
+                        u.stats.stacks += (level - 1) * STACKS_PER_LVL;
+                    });
+                }
                 game.shop.team = team;
             }
             false => {
@@ -543,7 +550,7 @@ fn main() {
                         }
                         let rounds = assets.rounds.clone();
                         let assets = Rc::new(assets);
-                        Box::new(Game::new(&geng, &assets, rounds, config, 0, false))
+                        Box::new(Game::new(&geng, &assets, rounds, config, 0, false, None))
                     }
                 },
             );
