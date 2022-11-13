@@ -1,0 +1,41 @@
+{
+    "type": "AddVar",
+    "name": "Value",
+    "value": {
+        "type": "Const",
+        "value": 1
+    },
+    "effect": {
+        "type": "ChangeContext",
+        "owner": "Target",
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "ChangeStat",
+                    "stat": "Health",
+                    "who": "Target",
+                    "value": {
+                        "a": {
+                            "stat": "Health",
+                            "type": "FindStat",
+                            "who": "Target"
+                        },
+                        "b": {
+                            "type": "Var",
+                            "name": "Value"
+                        },
+                        "type": "Sum"
+                    }
+                },
+                {
+                    "type": "Message",
+                    "text": "+HP"
+                },
+                {
+                    "preset": "effects/vfx_stats_gain.json"
+                }
+            ]
+        }
+    }
+}

@@ -15,5 +15,7 @@
     "effects/vfx_stats_gain.json",
     "effects/abilities/devour.json",
     "effects/abilities/magic_missile.json",
-    "effects/give_stats.json"
+    "effects/give_stats.json",
+    "effects/give_atk.json",
+    "effects/give_hp.json"
 ]

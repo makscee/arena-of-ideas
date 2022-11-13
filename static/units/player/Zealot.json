@@ -1,0 +1,49 @@
+{
+    "name": "Zealot",
+    "description": "Detect Shield: gain +1/2/3 ATK",
+    "attack": 1,
+    "health": 1,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "DetectShieldGiveStats",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Shield",
+                            "filter": "Allies"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeContext",
+                        "target": "Owner",
+                        "effect": {
+                            "preset": "effects/give_atk.json",
+                            "value": {
+                                "type": "FindStat",
+                                "stat": "Level",
+                                "who": "Owner"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}
