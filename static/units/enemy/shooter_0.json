@@ -1,6 +1,6 @@
 {
     "name": "shooter_0",
-    "attack": 8,
+    "attack": 10,
     "radius": 0.36,
     "health": 10,
     "action": {

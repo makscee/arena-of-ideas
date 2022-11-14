@@ -2,8 +2,8 @@
     "name": "Devotee",
     "description": "+1/+2/+3 ATK for each ally with Shield",
     "attack": 1,
-    "health": 1,
-    "tier": 1,
+    "health": 4,
+    "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },

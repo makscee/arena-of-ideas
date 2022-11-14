@@ -1,9 +1,9 @@
 {
     "name": "Adept",
     "description": "Gain Shield: gain +1/+1 (+2/+2) (+3/+3)",
-    "attack": 1,
-    "health": 1,
-    "tier": 1,
+    "attack": 2,
+    "health": 2,
+    "tier": 2,
     "action": {
         "preset": "effects/melee_hit.json"
     },
