@@ -14,31 +14,84 @@
     "statuses": [
         {
             "name": "ATKforShields",
-            "type": "Modifier",
-            "target": {
-                "type": "Stat",
-                "stat": "Attack",
-                "value": {
-                    "type": "Sum",
-                    "a": {
-                        "type": "Mul",
-                        "a": {
-                            "type": "UnitsInRange",
-                            "status": "Shield"
-                        },
-                        "b": {
-                            "type": "FindStat",
-                            "who": "Owner",
-                            "stat": "Level"
+            "type": "Status",
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Shield",
+                            "filter": "Allies"
                         }
-                    },
-                    "b": {
-                        "type": "FindStat",
-                        "stat": "Attack",
-                        "who": "Owner"
+                    ],
+                    "effect": {
+                        "type": "ChangeContext",
+                        "target": "Owner",
+                        "effect": {
+                            "preset": "effects/give_atk.json",
+                            "value": {
+                                "type": "FindStat",
+                                "stat": "Level",
+                                "who": "Owner"
+                            }
+                        }
+                    }
+                },
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectAttach",
+                            "status_name": "Shield",
+                            "filter": "Allies",
+                            "status_action": "Remove"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeContext",
+                        "target": "Owner",
+                        "effect": {
+                            "preset": "effects/lose_atk.json",
+                            "value": {
+                                "type": "FindStat",
+                                "stat": "Level",
+                                "who": "Owner"
+                            }
+                        }
+                    }
+                },
+                {
+                    "triggers": [
+                        {
+                            "type": "DetectDeath",
+                            "condition": {
+                                "type": "And",
+                                "a": {
+                                    "type": "UnitHasStatus",
+                                    "who": "Target",
+                                    "status": "Shield"
+                                },
+                                "b": {
+                                    "type": "Faction",
+                                    "who": "Target",
+                                    "faction": "Player"
+                                }
+                            }
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeContext",
+                        "target": "Owner",
+                        "effect": {
+                            "preset": "effects/lose_atk.json",
+                            "value": {
+                                "type": "FindStat",
+                                "stat": "Level",
+                                "who": "Owner"
+                            }
+                        }
                     }
                 }
-            }
+            ]
         }
     ],
     "render": {
