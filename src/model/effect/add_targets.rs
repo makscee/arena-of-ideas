@@ -35,7 +35,8 @@ impl EffectImpl for AddTargetsEffect {
                 .filter(|unit| unit.faction == target.faction)
                 .filter(|unit| !targets.contains(&unit.id))
                 .filter(|unit| {
-                    logic.check_condition(
+                    Logic::check_condition(
+                        &logic.model,
                         &effect.condition,
                         &EffectContext {
                             target: unit.id,

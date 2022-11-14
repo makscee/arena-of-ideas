@@ -33,7 +33,7 @@ impl EffectContainer for DamageEffect {
 impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let mut effect = *self;
-        let mut damage = effect.value.calculate(&context, logic);
+        let mut damage = effect.value.calculate(&context, &logic.model);
         let owner = logic.model.get(Who::Owner, &context);
 
         for (modifier_context, modifier_target) in &owner.modifier_targets {
@@ -70,11 +70,11 @@ impl EffectImpl for DamageEffect {
                         }
                     }
                     if let Some(condition) = condition {
-                        if !logic.check_condition(&condition, &context) {
+                        if !Logic::check_condition(&logic.model, &condition, &context) {
                             break;
                         }
                     }
-                    damage = value.calculate(&context, logic);
+                    damage = value.calculate(&context, &logic.model);
                 }
                 _ => (),
             }

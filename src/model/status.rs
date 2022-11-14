@@ -64,7 +64,7 @@ pub enum StatusTrigger {
     /// Triggered when the owner dies
     Death,
     /// Triggered when any unit of faction dies (or any faction if none is specified)
-    DetectDeath { faction: Option<Faction> },
+    DetectDeath { condition: Condition },
     /// Triggered when the owner kills another unit with damage of the specified type (or any if none is specified)
     Kill {
         damage_type: Option<DamageType>,

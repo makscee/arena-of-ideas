@@ -18,7 +18,7 @@ impl EffectContainer for IfEffect {
 impl EffectImpl for IfEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let effect = if logic.check_condition(&effect.condition, &context) {
+        let effect = if Logic::check_condition(&logic.model, &effect.condition, &context) {
             effect.then
         } else {
             effect.r#else

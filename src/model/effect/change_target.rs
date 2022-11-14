@@ -28,7 +28,7 @@ impl EffectImpl for ChangeTargetEffect {
             .filter(|unit| effect.filter.matches(unit.faction, owner_faction))
             .filter(|unit| {
                 context.target = unit.id;
-                logic.check_condition(&effect.condition, &context)
+                Logic::check_condition(&logic.model, &effect.condition, &context)
             })
             .choose(&mut global_rng())
         {

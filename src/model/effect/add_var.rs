@@ -21,7 +21,7 @@ impl EffectContainer for AddVarEffect {
 impl EffectImpl for AddVarEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
-        let value = effect.value.calculate(&context, logic);
+        let value = effect.value.calculate(&context, &logic.model);
         let target = logic
             .model
             .units

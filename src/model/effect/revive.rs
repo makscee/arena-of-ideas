@@ -13,7 +13,7 @@ impl EffectContainer for ReviveEffect {
 impl EffectImpl for ReviveEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let health = effect.health.calculate(&context, logic);
+        let health = effect.health.calculate(&context, &logic.model);
         let unit = logic.model.dead_units.remove(&context.target);
         if unit.is_none() {
             warn!("Tried to revive unit#{} that is not dead", context.target);

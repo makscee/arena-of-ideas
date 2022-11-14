@@ -46,6 +46,9 @@ pub enum Expr {
         a: Box<Expr>,
         b: Box<Expr>,
     },
+    Inv {
+        value: Box<Expr>,
+    },
     FindStat {
         who: Who,
         stat: UnitStat,
@@ -69,15 +72,16 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn calculate(&self, context: &EffectContext, logic: &Logic) -> i32 {
+    pub fn calculate(&self, context: &EffectContext, model: &Model) -> i32 {
         match self {
             Self::Const { value } => *value,
             Self::Var { name } => context.vars[name],
-            Self::Sum { a, b } => a.calculate(context, logic) + b.calculate(context, logic),
-            Self::Sub { a, b } => a.calculate(context, logic) - b.calculate(context, logic),
-            Self::Mul { a, b } => a.calculate(context, logic) * b.calculate(context, logic),
+            Self::Sum { a, b } => a.calculate(context, model) + b.calculate(context, model),
+            Self::Sub { a, b } => a.calculate(context, model) - b.calculate(context, model),
+            Self::Mul { a, b } => a.calculate(context, model) * b.calculate(context, model),
+            Self::Inv { value } => 0 - value.calculate(context, model),
             Self::FindStat { who, stat } => {
-                let target = logic.model.get(*who, &context);
+                let target = model.get(*who, &context);
                 target.stats.get(*stat)
             }
             Self::WithVar {
@@ -88,8 +92,8 @@ impl Expr {
                 let mut context = context.clone();
                 context
                     .vars
-                    .insert(name.clone(), value.calculate(&context, logic));
-                result.calculate(&context, logic)
+                    .insert(name.clone(), value.calculate(&context, model));
+                result.calculate(&context, model)
             }
             Self::UnitsInRange {
                 max_distance,
@@ -97,9 +101,8 @@ impl Expr {
                 status,
                 clan,
             } => {
-                let owner = logic.model.get(Who::Owner, &context);
-                logic
-                    .model
+                let owner = model.get(Who::Owner, &context);
+                model
                     .units
                     .iter()
                     .filter(|unit| match faction {
@@ -124,10 +127,10 @@ impl Expr {
                 then,
                 r#else,
             } => {
-                if logic.check_condition(condition, context) {
-                    then.calculate(&context, logic)
+                if Logic::check_condition(model, condition, context) {
+                    then.calculate(&context, model)
                 } else {
-                    r#else.calculate(&context, logic)
+                    r#else.calculate(&context, model)
                 }
             }
         }

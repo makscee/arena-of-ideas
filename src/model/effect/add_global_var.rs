@@ -15,7 +15,7 @@ impl EffectContainer for AddGlobalVarEffect {
 impl EffectImpl for AddGlobalVarEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
-        let value = effect.value.calculate(&context, logic);
+        let value = effect.value.calculate(&context, &logic.model);
         logic.model.vars.insert(effect.name, value);
     }
 }

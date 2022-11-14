@@ -16,7 +16,7 @@ impl EffectContainer for RepeatEffect {
 impl EffectImpl for RepeatEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let times = effect.times.calculate(&context, logic);
+        let times = effect.times.calculate(&context, &logic.model);
         for _ in 0..times {
             logic
                 .effects
