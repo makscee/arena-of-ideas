@@ -12,6 +12,7 @@ tiny-skia = "0.6"
 notify = "4.0.17" # File watch
 regex = "1.5.6"
 chrono = "0.4"
+tween = "1.0.0"
 
 [patch.crates-io]
 # Temp workaround until update in geng, as this issue is already fixed upstream

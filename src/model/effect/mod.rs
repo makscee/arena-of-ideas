@@ -1,6 +1,5 @@
 use super::*;
 
-mod action;
 mod add_global_var;
 mod add_targets;
 mod add_var;
@@ -19,15 +18,16 @@ mod kill;
 mod list;
 mod message;
 mod noop;
+mod position_tween;
 mod random;
 mod remove_status;
 mod repeat;
 mod revive;
 mod spawn;
+mod turn;
 mod visual;
 mod visual_chain;
 
-pub use action::*;
 pub use add_global_var::*;
 pub use add_targets::*;
 pub use add_var::*;
@@ -46,11 +46,13 @@ pub use kill::*;
 pub use list::*;
 pub use message::*;
 pub use noop::*;
+pub use position_tween::*;
 pub use random::*;
 pub use remove_status::*;
 pub use repeat::*;
 pub use revive::*;
 pub use spawn::*;
+pub use turn::*;
 pub use visual::*;
 pub use visual_chain::*;
 
@@ -76,11 +78,12 @@ pub enum Effect {
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
-    Action(Box<ActionEffect>),
+    Turn(Box<TurnEffect>),
     Visual(Box<VisualEffect>),
     VisualChain(Box<VisualChainEffect>),
     AddVar(Box<AddVarEffect>),
     AddGlobalVar(Box<AddGlobalVarEffect>),
+    PositionTween(Box<PositionTweenEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
 }
@@ -107,11 +110,12 @@ pub enum RawEffect {
     ApplyGained(Box<ApplyGainedEffect>),
     ChangeTarget(Box<ChangeTargetEffect>),
     ChangeStat(Box<ChangeStatEffect>),
-    Action(Box<ActionEffect>),
+    Turn(Box<TurnEffect>),
     Visual(Box<VisualEffect>),
     VisualChain(Box<VisualChainEffect>),
     AddVar(Box<AddVarEffect>),
     AddGlobalVar(Box<AddGlobalVarEffect>),
+    PositionTween(Box<PositionTweenEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
 }
@@ -175,13 +179,14 @@ impl std::fmt::Debug for Effect {
             Self::ApplyGained(effect) => effect.fmt(f),
             Self::ChangeTarget(effect) => effect.fmt(f),
             Self::ChangeStat(effect) => effect.fmt(f),
-            Self::Action(effect) => effect.fmt(f),
             Self::Visual(effect) => effect.fmt(f),
             Self::VisualChain(effect) => effect.fmt(f),
             Self::AddVar(effect) => effect.fmt(f),
             Self::AddGlobalVar(effect) => effect.fmt(f),
             Self::RemoveStatus(effect) => effect.fmt(f),
             Self::CustomTrigger(effect) => effect.fmt(f),
+            Self::Turn(effect) => effect.fmt(f),
+            Self::PositionTween(effect) => effect.fmt(f),
         }
     }
 }
@@ -207,7 +212,7 @@ impl From<RawEffect> for Effect {
             RawEffect::ApplyGained(effect) => Self::ApplyGained(effect),
             RawEffect::ChangeTarget(effect) => Self::ChangeTarget(effect),
             RawEffect::ChangeStat(effect) => Self::ChangeStat(effect),
-            RawEffect::Action(effect) => Self::Action(effect),
+            RawEffect::Turn(effect) => Self::Turn(effect),
             RawEffect::Visual(effect) => Self::Visual(effect),
             RawEffect::VisualChain(effect) => Self::VisualChain(effect),
             RawEffect::AddVar(effect) => Self::AddVar(effect),
@@ -215,6 +220,7 @@ impl From<RawEffect> for Effect {
             RawEffect::AddGlobalVar(effect) => Self::AddGlobalVar(effect),
             RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
             RawEffect::CustomTrigger(effect) => Self::CustomTrigger(effect),
+            RawEffect::PositionTween(effect) => Self::PositionTween(effect),
         }
     }
 }
@@ -273,13 +279,14 @@ impl Effect {
             Effect::ApplyGained(effect) => &mut **effect,
             Effect::ChangeTarget(effect) => &mut **effect,
             Effect::ChangeStat(effect) => &mut **effect,
-            Effect::Action(effect) => &mut **effect,
             Effect::Visual(effect) => &mut **effect,
             Effect::VisualChain(effect) => &mut **effect,
             Effect::AddVar(effect) => &mut **effect,
             Effect::AddGlobalVar(effect) => &mut **effect,
             Effect::RemoveStatus(effect) => &mut **effect,
             Effect::CustomTrigger(effect) => &mut **effect,
+            Effect::Turn(effect) => &mut **effect,
+            Effect::PositionTween(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -303,13 +310,14 @@ impl Effect {
             Effect::Message(effect) => effect,
             Effect::ChangeTarget(effect) => effect,
             Effect::ChangeStat(effect) => effect,
-            Effect::Action(effect) => effect,
             Effect::Visual(effect) => effect,
             Effect::VisualChain(effect) => effect,
             Effect::AddVar(effect) => effect,
             Effect::AddGlobalVar(effect) => effect,
             Effect::RemoveStatus(effect) => effect,
             Effect::CustomTrigger(effect) => effect,
+            Effect::Turn(effect) => effect,
+            Effect::PositionTween(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

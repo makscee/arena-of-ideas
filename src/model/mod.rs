@@ -62,18 +62,7 @@ pub struct TickModel {
 pub struct PhaseModel {
     pub enemy: Id,
     pub player: Id,
-    pub timer: Time,
-    pub timer_start: Time,
     pub turn_phase: TurnPhase,
-    pub in_animation: bool,
-}
-
-impl PhaseModel {
-    pub fn set_timer(&mut self, timer: Time) {
-        self.timer = timer;
-        self.timer_start = timer;
-        self.in_animation = true;
-    }
 }
 
 #[derive(Clone)]
@@ -132,15 +121,12 @@ impl Model {
             phase: PhaseModel {
                 enemy: 0,
                 player: 0,
-                timer: Time::ZERO,
-                timer_start: Time::ZERO,
                 turn_phase: TurnPhase::None,
-                in_animation: false,
             },
         }
     }
 
-    pub fn get(&self, who: Who, context: &EffectContext) -> &Unit {
+    pub fn get_who(&self, who: Who, context: &EffectContext) -> &Unit {
         let who_id = context.get_id(who);
         self.units
             .get(&who_id)
@@ -148,12 +134,26 @@ impl Model {
             .expect(&format!("Can't find {}#{}", who, who_id))
     }
 
-    pub fn get_mut(&mut self, who: Who, context: &EffectContext) -> &mut Unit {
+    pub fn get_who_mut(&mut self, who: Who, context: &EffectContext) -> &mut Unit {
         let who_id = context.get_id(who);
         self.units
             .get_mut(&who_id)
             .or(self.dead_units.get_mut(&who_id))
             .expect(&format!("Can't find {}#{}", who, who_id))
+    }
+
+    pub fn get(&self, id: Id, context: &EffectContext) -> &Unit {
+        self.units
+            .get(&id)
+            .or(self.dead_units.get(&id))
+            .expect(&format!("Can't find Unit#{}", id))
+    }
+
+    pub fn get_mut(&mut self, id: Id, context: &EffectContext) -> &mut Unit {
+        self.units
+            .get_mut(&id)
+            .or(self.dead_units.get_mut(&id))
+            .expect(&format!("Can't find Unit#{}", id))
     }
 }
 

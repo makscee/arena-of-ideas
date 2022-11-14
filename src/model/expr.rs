@@ -81,7 +81,7 @@ impl Expr {
             Self::Mul { a, b } => a.calculate(context, model) * b.calculate(context, model),
             Self::Inv { value } => 0 - value.calculate(context, model),
             Self::FindStat { who, stat } => {
-                let target = model.get(*who, &context);
+                let target = model.get_who(*who, &context);
                 target.stats.get(*stat)
             }
             Self::WithVar {
@@ -101,7 +101,7 @@ impl Expr {
                 status,
                 clan,
             } => {
-                let owner = model.get(Who::Owner, &context);
+                let owner = model.get_who(Who::Owner, &context);
                 model
                     .units
                     .iter()

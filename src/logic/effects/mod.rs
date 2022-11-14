@@ -42,7 +42,7 @@ impl EffectOrchestrator {
             return;
         }
         let mut new_value = *self.delays.get(&q_id).unwrap_or(&0.0);
-        new_value += value;
+        new_value = value.max(new_value);
         self.delays.insert(q_id, new_value);
     }
 
@@ -105,15 +105,21 @@ impl EffectOrchestrator {
         None
     }
 
-    pub fn get_next_effect(&mut self) -> Option<(String, QueuedEffect<Effect>)> {
-        let q_id = self.get_available_q_id();
+    pub fn collect_next_effects(&mut self) -> Vec<QueuedEffect<Effect>> {
+        let mut result = vec![];
+        let qs = self.effects.keys().map(|x| x.clone()).collect_vec();
+        for q_id in qs {
+            if self.is_queue_delayed(&q_id) || self.effects[&q_id].is_empty() {
+                continue;
+            }
+            result.push(self.effects.get_mut(&q_id).unwrap().pop_front().unwrap());
+        }
+        result
+    }
 
-        q_id.clone().and_then(|x| {
-            Some((
-                q_id.unwrap(),
-                self.effects.get_mut(&x).unwrap().pop_front().unwrap(),
-            ))
-        })
+    pub fn clear(&mut self) {
+        self.effects.clear();
+        self.delays.clear();
     }
 
     pub fn is_empty(&self) -> bool {
@@ -171,14 +177,12 @@ impl Logic {
     pub fn process_effects(&mut self) {
         const MAX_ITERATIONS: usize = 1000;
         let mut iterations = 0;
-        while let Some((
-            q_id,
-            QueuedEffect {
+        let mut next_effects = self.effects.collect_next_effects();
+        while !next_effects.is_empty() {
+            let QueuedEffect {
                 effect,
                 mut context,
-            },
-        )) = self.effects.get_next_effect()
-        {
+            } = next_effects.pop().unwrap();
             self.model.vars.iter().for_each(|v| {
                 if !context.vars.contains_key(v.0) {
                     context.vars.insert(v.0.clone(), *v.1);
@@ -186,7 +190,7 @@ impl Logic {
             });
             debug!(
                 "Processing q#{} {:?} on {}",
-                q_id,
+                context.get_q_id(),
                 effect,
                 context.to_string(self)
             );
@@ -195,6 +199,9 @@ impl Logic {
             if iterations > MAX_ITERATIONS {
                 error!("Exceeded effect processing limit: {}", MAX_ITERATIONS);
                 break;
+            }
+            if next_effects.is_empty() {
+                next_effects = self.effects.collect_next_effects();
             }
         }
     }

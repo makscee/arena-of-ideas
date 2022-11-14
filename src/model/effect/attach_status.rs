@@ -30,7 +30,7 @@ impl EffectImpl for AttachStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let status_name = effect.status.name();
-        let target = logic.model.get(Who::Target, &context);
+        let target = logic.model.get_who(Who::Target, &context);
         // Check if unit is immune to status attachment
         if target
             .flags
@@ -76,8 +76,15 @@ impl EffectImpl for AttachStatusEffect {
             status.is_inited = true;
         }
 
-        let target = logic.model.get_mut(Who::Target, &context);
+        let target = logic.model.get_who_mut(Who::Target, &context);
         let attached_status_id = unit_attach_status(status, &mut target.all_statuses);
+        debug!(
+            "Attach status {}#{} {}#{}",
+            effect.status.name(),
+            attached_status_id,
+            target.unit_type,
+            target.id
+        );
 
         let target_id = target.id;
         logic.trigger_status_attach(context, attached_status_id, status_name);
@@ -91,7 +98,7 @@ impl Logic {
         attached_status_id: Id,
         status_name: &StatusName,
     ) {
-        let target = self.model.get(Who::Target, &context);
+        let target = self.model.get_who(Who::Target, &context);
         for (effect, trigger, mut vars, status_id, status_color) in
             target.all_statuses.iter().flat_map(|status| {
                 status.trigger(|trigger| match trigger {

@@ -11,14 +11,6 @@ pub const MAX_TIER: u32 = 5;
 pub const MAX_LEVEL: i32 = 3;
 pub const STACKS_PER_LVL: i32 = 3;
 
-#[derive(Clone)]
-pub enum TurnPhase {
-    None,
-    PreStrike,
-    Strike,
-    PostStrike,
-}
-
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
     pub id: Id,

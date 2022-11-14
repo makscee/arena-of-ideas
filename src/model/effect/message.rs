@@ -17,7 +17,7 @@ impl EffectImpl for MessageEffect {
         if let Some(color) = &self.color {
             context.color = color.clone();
         }
-        let position = logic.model.get(Who::Target, &context).position;
+        let position = logic.model.get_who(Who::Target, &context).position;
         logic.model.render_model.add_text(
             position,
             &format!("{}", self.text),

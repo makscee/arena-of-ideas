@@ -49,8 +49,8 @@ impl EffectImpl for VisualEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
 
-        let parent = logic.model.get(effect.parent, &context);
-        let partner = logic.model.get(effect.partner, &context);
+        let parent = logic.model.get_who(effect.parent, &context);
+        let partner = logic.model.get_who(effect.partner, &context);
 
         let effect_color = if let Some(color) = effect.color {
             color

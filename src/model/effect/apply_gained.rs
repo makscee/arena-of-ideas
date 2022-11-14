@@ -11,7 +11,7 @@ impl EffectContainer for ApplyGainedEffect {
 impl EffectImpl for ApplyGainedEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let owner = logic.model.get(Who::Owner, &context);
+        let owner = logic.model.get_who(Who::Owner, &context);
         // TODO: remove these statuses immediately after application
         for (effect, trigger, mut vars, status_id, status_color) in
             owner.all_statuses.iter().flat_map(|status| {

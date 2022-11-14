@@ -20,8 +20,8 @@ impl EffectContainer for AddTargetsEffect {
 impl EffectImpl for AddTargetsEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let owner = logic.model.get(Who::Owner, &context);
-        let target = logic.model.get(Who::Target, &context);
+        let owner = logic.model.get_who(Who::Owner, &context);
+        let target = logic.model.get_who(Who::Target, &context);
         let mut targets: HashSet<Id> = default();
         targets.insert(target.id);
         while match effect.additional_targets {

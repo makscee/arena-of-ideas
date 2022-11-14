@@ -6,161 +6,75 @@ const TIMER_POST_STRIKE: f32 = 0.05;
 const TIMER_STRIKE: f32 = 0.05;
 impl Logic {
     pub fn process_turn(&mut self) {
-        if self.model.lives <= 0 || self.model.transition || !self.effects.is_empty() {
+        if !self.effects.is_empty() {
             return;
         }
-        if self.model.phase.in_animation {
-            if let Some(mut player) = self.model.units.remove(&self.model.phase.player) {
-                self.process_turn_render_positions(&mut player);
-                self.model.units.insert(player);
+        if self.check_end() {
+            if self.model.lives <= 0 {
+                return;
             }
-            if let Some(mut enemy) = self.model.units.remove(&self.model.phase.enemy) {
-                self.process_turn_render_positions(&mut enemy);
-                self.model.units.insert(enemy);
+            if self.model.units.iter().any(|x| x.faction == Faction::Enemy) {
+                self.model.lives -= 1;
             }
-            if self.model.phase.timer <= Time::ZERO {
-                self.model.phase.in_animation = false;
-            }
+            self.model.transition = self.model.lives > 0;
+            self.effects.clear();
             return;
         }
+        debug!("Process turn phase = {:?}", self.model.phase.turn_phase);
+
         match self.model.phase.turn_phase {
             TurnPhase::None => {
+                self.model.phase.player = self
+                    .model
+                    .units
+                    .iter()
+                    .find(|u| u.position.x == 0 && u.faction == Faction::Player)
+                    .expect("Front player unit not found")
+                    .id;
+                self.model.phase.enemy = self
+                    .model
+                    .units
+                    .iter()
+                    .find(|u| u.position.x == 0 && u.faction == Faction::Enemy)
+                    .expect("Front enemy unit not found")
+                    .id;
                 self.model.phase.turn_phase = TurnPhase::PreStrike;
-                let timer = Time::new(TIMER_PRE_STRIKE);
-                self.model.phase.set_timer(timer);
-                let player_unit = self
-                    .model
-                    .units
-                    .iter()
-                    .find(|unit| unit.position.side == Faction::Player && unit.position.x == 0);
-                if player_unit.is_none() {
-                    return;
-                };
-                self.model.phase.player = player_unit.unwrap().id;
-
-                let enemy_unit = self
-                    .model
-                    .units
-                    .iter()
-                    .find(|unit| unit.position.side == Faction::Enemy && unit.position.x == 0);
-
-                if enemy_unit.is_none() {
-                    return;
-                };
-                self.model.phase.enemy = enemy_unit.unwrap().id;
-                self.process_units(Self::process_unit_statuses);
             }
-            TurnPhase::PreStrike => {
-                debug!("Phase: PreStrike");
-                self.model.phase.turn_phase = TurnPhase::Strike;
-                let timer = Time::new(TIMER_STRIKE);
-                self.model.phase.set_timer(timer);
-                self.process_units(Self::process_unit_statuses);
-            }
-            TurnPhase::Strike => {
-                debug!("Phase: Strike");
-                self.process_units(Self::process_modifiers);
-                let player = self.model.units.get(&self.model.phase.player);
-                if player.is_none() {
-                    error!("Cant find Player unit: {}", &self.model.phase.player);
-                    self.model.transition = true;
-                    return;
-                }
-                let player = player.unwrap().clone();
-
-                let enemy = self.model.units.get(&self.model.phase.enemy);
-                if enemy.is_none() {
-                    self.model.transition = true;
-                    return;
-                }
-                let enemy = enemy.unwrap().clone();
-
-                self.process_action(&player, &enemy);
-                self.process_action(&enemy, &player);
-                self.process_units(Self::process_unit_statuses);
-                self.model.phase.turn_phase = TurnPhase::PostStrike;
-            }
+            TurnPhase::PreStrike => self.model.phase.turn_phase = TurnPhase::Strike,
+            TurnPhase::Strike => self.model.phase.turn_phase = TurnPhase::PostStrike,
             TurnPhase::PostStrike => {
-                debug!("Phase: PostStrike");
-                let timer = Time::new(TIMER_PRE_STRIKE);
-                self.model.phase.set_timer(timer);
                 self.model.phase.turn_phase = TurnPhase::None;
-                self.process_units(Self::process_unit_statuses);
+                self.effects
+                    .add_delay_by_id("Turn".to_owned(), TurnPhase::None.duration().as_f32());
+                return;
             }
         }
-    }
 
-    fn process_turn_render_positions(&mut self, unit: &mut Unit) {
-        let phase_t = r32(1.0) - self.model.phase.timer / self.model.phase.timer_start;
-        let unit_faction_factor = match unit.faction {
-            Faction::Player => r32(-1.0),
-            Faction::Enemy => r32(1.0),
-        };
-        let unit_slot_pos = unit.position.to_world();
-        let unit_starting_position =
-            unit_slot_pos + UNIT_STARTING_OFFSET.map(|x| r32(x) * unit_faction_factor);
-        let unit_hit_position = vec2(unit_faction_factor * unit.render.radius, R32::ZERO);
-        match self.model.phase.turn_phase {
-            TurnPhase::PreStrike => {
-                unit.render.render_position =
-                    unit_slot_pos + (unit_starting_position - unit_slot_pos) * phase_t * phase_t;
-            }
-            TurnPhase::Strike => {
-                unit.render.render_position =
-                    unit_starting_position + (unit_hit_position - unit_starting_position) * phase_t;
-            }
-            TurnPhase::PostStrike => {
-                // unit.render.render_position = unit_hit_position
-                //     + (unit_slot_pos - unit_hit_position)
-                //         * (r32(1.0) - (r32(1.0) - phase_t) * (r32(1.0) - phase_t));
-            }
-            _ => {}
-        }
-    }
-
-    fn process_action(&mut self, unit: &Unit, target: &Unit) {
-        if unit
-            .flags
-            .iter()
-            .any(|flag| matches!(flag, UnitStatFlag::ActionUnable))
-        {
-            return;
-        }
-
-        let mut effect = unit.action.clone();
+        let effect = Effect::Turn(Box::new(TurnEffect {
+            phase: self.model.phase.turn_phase.clone(),
+            player: self.model.phase.player,
+            enemy: self.model.phase.enemy,
+        }));
         self.effects.push_back(
             EffectContext {
-                owner: unit.id,
-                creator: unit.id,
-                target: target.id,
+                queue_id: Some("Turn".to_owned()),
+                owner: 0,
+                creator: 0,
+                target: 0,
                 vars: default(),
                 status_id: None,
-                color: Rgba::BLACK, // todo: faction color
-                queue_id: None,
+                color: Rgba::BLACK,
             },
             effect,
-        );
-        for (effect, trigger, vars, status_id, status_color) in unit
-            .all_statuses
+        )
+    }
+
+    fn check_end(&mut self) -> bool {
+        self.model
+            .units
             .iter()
-            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Action)))
-        {
-            self.effects.push_back(
-                EffectContext {
-                    owner: unit.id,
-                    creator: unit.id,
-                    target: target.id,
-                    vars,
-                    status_id: Some(status_id),
-                    color: status_color,
-                    queue_id: None,
-                },
-                effect,
-            );
-        }
-        match unit.faction {
-            Faction::Player => self.model.render_model.last_player_action_time = self.model.time,
-            Faction::Enemy => self.model.render_model.last_enemy_action_time = self.model.time,
-        }
+            .unique_by(|unit| unit.faction)
+            .count()
+            < 2
     }
 }

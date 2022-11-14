@@ -16,7 +16,7 @@ impl EffectContainer for SpawnEffect {
 impl EffectImpl for SpawnEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let owner = logic.model.get(Who::Owner, &context);
+        let owner = logic.model.get_who(Who::Owner, &context);
         let mut faction = owner.faction;
         if effect.switch_faction {
             if faction == Faction::Player {
@@ -25,7 +25,7 @@ impl EffectImpl for SpawnEffect {
                 faction = Faction::Player;
             }
         }
-        let target = logic.model.get(Who::Target, &context);
+        let target = logic.model.get_who(Who::Target, &context);
         let mut position = target.position;
         position.side = faction;
         let new_id = logic.spawn_by_type(&effect.unit_type, position);

@@ -8,7 +8,6 @@ mod events;
 mod particles;
 mod spawn;
 mod statuses;
-mod tick;
 mod time;
 mod turn_queue;
 mod util;
@@ -73,12 +72,13 @@ impl Logic {
 
     pub fn update(&mut self, delta_time: f32) {
         self.delta_time = Time::new(delta_time);
-        self.process_tick();
         self.process_particles();
         self.process_spawns();
         self.process_auras();
+
         self.process_render_positions();
         self.process_deaths();
+        self.process_units(Self::process_unit_statuses);
         self.process_turn();
         self.process_effects();
         self.process_delays(delta_time);

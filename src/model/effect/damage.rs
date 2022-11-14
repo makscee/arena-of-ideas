@@ -34,7 +34,7 @@ impl EffectImpl for DamageEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let mut effect = *self;
         let mut damage = effect.value.calculate(&context, &logic.model);
-        let owner = logic.model.get(Who::Owner, &context);
+        let owner = logic.model.get_who(Who::Owner, &context);
 
         for (modifier_context, modifier_target) in &owner.modifier_targets {
             match modifier_target {
@@ -113,7 +113,7 @@ impl EffectImpl for DamageEffect {
             return;
         }
         let dead_units = &mut logic.model.dead_units;
-        let target_unit = logic.model.get(Who::Target, &context);
+        let target_unit = logic.model.get_who(Who::Target, &context);
 
         for (effect, trigger, mut vars, status_id, status_color) in
             target_unit.all_statuses.iter().flat_map(|status| {
@@ -209,14 +209,14 @@ impl EffectImpl for DamageEffect {
             context.color,
             crate::render::TextType::Damage(effect.types.iter().cloned().collect()),
         );
-        let target_unit = logic.model.get_mut(Who::Target, &context);
+        let target_unit = logic.model.get_who_mut(Who::Target, &context);
         let old_hp = target_unit.stats.health;
         target_unit.render.last_injure_time = time;
         target_unit.stats.health -= damage;
         target_unit.permanent_stats.health -= damage;
-        let target_unit = logic.model.get(Who::Target, &context);
+        let target_unit = logic.model.get_who(Who::Target, &context);
         let killed = old_hp > 0 && target_unit.stats.health <= 0;
-        let owner_unit = logic.model.get(Who::Owner, &context);
+        let owner_unit = logic.model.get_who(Who::Owner, &context);
 
         for (effect, trigger, mut vars, status_id, status_color) in
             owner_unit.all_statuses.iter().flat_map(|status| {

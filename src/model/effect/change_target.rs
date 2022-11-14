@@ -16,7 +16,7 @@ impl EffectContainer for ChangeTargetEffect {
 impl EffectImpl for ChangeTargetEffect {
     fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
         let effect = *self;
-        let owner = logic.model.get(Who::Owner, &context);
+        let owner = logic.model.get_who(Who::Owner, &context);
 
         let owner_faction = owner.faction;
         let target = context.target;

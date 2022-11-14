@@ -22,7 +22,7 @@ impl EffectContainer for ChangeContextStatusEffect {
 impl EffectImpl for ChangeContextStatusEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let target = logic.model.get(Who::Target, &context);
+        let target = logic.model.get_who(Who::Target, &context);
 
         let status = target
             .all_statuses

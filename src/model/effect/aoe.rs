@@ -18,9 +18,9 @@ impl EffectContainer for AoeEffect {
 impl EffectImpl for AoeEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        let owner = logic.model.get(Who::Owner, &context);
+        let owner = logic.model.get_who(Who::Owner, &context);
         let owner_faction = owner.faction;
-        let center = logic.model.get(Who::Owner, &context).position;
+        let center = logic.model.get_who(Who::Owner, &context).position;
         logic
             .model
             .render_model
