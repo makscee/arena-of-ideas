@@ -13,6 +13,7 @@
     "effects/vfx_attach_status.json",
     "effects/vfx_death_particles.json",
     "effects/vfx_stats_gain.json",
+    "effects/vfx_stats_lose.json",
     "effects/abilities/devour.json",
     "effects/abilities/magic_missile.json",
     "effects/give_stats.json",

@@ -33,7 +33,8 @@ flat in int p_index;
 flat in float p_t;
 
 void main() {
-    if (v_quad_pos.y < 0. || v_quad_pos.y > 1. - abs(v_quad_pos.x)) discard;
+    if (u_direction.y < 0 && (v_quad_pos.y > 0. || v_quad_pos.y < -1. + abs(v_quad_pos.x))) discard;
+    if (u_direction.y > 0 && (v_quad_pos.y < 0. || v_quad_pos.y > 1. - abs(v_quad_pos.x))) discard;
     commonInit();
     vec3 col = u_color.rgb;
     float alpha = .8 * (1. - p_t);

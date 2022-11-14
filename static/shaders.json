@@ -16,7 +16,7 @@
     "shaders/vfx_slash.glsl",
     "shaders/vfx_slash_particles.glsl",
     "shaders/vfx_particle_cooldown_burst.glsl",
-    "shaders/vfx_stats_gain.glsl",
+    "shaders/vfx_stats.glsl",
     "shaders/clan_shaders/circle.glsl",
     "shaders/clan_shaders/square.glsl",
     "shaders/clan_shaders/triangle.glsl"

@@ -33,7 +33,7 @@
                     "text": "-ATK"
                 },
                 {
-                    "preset": "effects/vfx_stats_gain.json"
+                    "preset": "effects/vfx_stats_lose.json"
                 }
             ]
         }

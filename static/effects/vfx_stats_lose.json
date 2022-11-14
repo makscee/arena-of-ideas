@@ -32,7 +32,11 @@
             "render": {
                 "path": "shaders/vfx_stats.glsl",
                 "parameters": {
-                    "u_unit_radius": 0.2
+                    "u_unit_radius": 0.2,
+                    "u_direction": [
+                        0,
+                        -1
+                    ]
                 },
                 "vertices": 2,
                 "instances": 50
