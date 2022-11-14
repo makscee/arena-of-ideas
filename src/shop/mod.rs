@@ -398,10 +398,6 @@ impl Shop {
                         })
                         .extend_uniform(drag.render.radius.as_f32() * 2.0);
                         if slot_box.contains(drag.position()) {
-                            if self.drag_controller.source == DragSource::Shop {
-                                self.money -= UNIT_COST;
-                            }
-
                             dropped = true;
                             if let Some(unit_in_slot) = self
                                 .team
@@ -417,6 +413,11 @@ impl Shop {
                                 drag.faction = Faction::Player;
                                 drag.drag(drag.position.to_world());
                                 self.team.push(drag.clone());
+                            }
+                            if dropped {
+                                if self.drag_controller.source == DragSource::Shop {
+                                    self.money -= UNIT_COST;
+                                }
                             }
                             self.updated = true;
                             break;
