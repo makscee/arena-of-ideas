@@ -17,5 +17,6 @@
     "effects/abilities/magic_missile.json",
     "effects/give_stats.json",
     "effects/give_atk.json",
-    "effects/give_hp.json"
+    "effects/give_hp.json",
+    "effects/lose_atk.json"
 ]
