@@ -169,7 +169,11 @@
                         "triggers": [
                             {
                                 "type": "DetectDeath",
-                                "faction": "Enemy"
+                                "condition": {
+                                    "type": "Faction",
+                                    "who": "Target",
+                                    "faction": "Enemy"
+                                }
                             }
                         ],
                         "effect": {

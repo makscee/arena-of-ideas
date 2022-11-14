@@ -23,7 +23,11 @@
                     "triggers": [
                         {
                             "type": "DetectDeath",
-                            "faction": "Player"
+                            "condition": {
+                                "type": "Faction",
+                                "who": "Target",
+                                "faction": "Player"
+                            }
                         }
                     ],
                     "effect": {
