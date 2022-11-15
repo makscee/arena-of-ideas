@@ -70,7 +70,7 @@ impl EffectImpl for DamageEffect {
                         }
                     }
                     if let Some(condition) = condition {
-                        if !Logic::check_condition(&logic.model, &condition, &context) {
+                        if !logic.model.check_condition(&condition, &context) {
                             break;
                         }
                     }

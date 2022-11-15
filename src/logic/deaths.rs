@@ -20,7 +20,7 @@ impl Logic {
                                 && distance_between_units(other, unit) > *range
                         }
                         StatusTrigger::DetectDeath { condition } => {
-                            Self::check_condition(&self.model, condition, &context)
+                            self.model.check_condition(condition, &context)
                         }
                         _ => false,
                     })

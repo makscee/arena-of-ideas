@@ -127,7 +127,7 @@ impl Expr {
                 then,
                 r#else,
             } => {
-                if Logic::check_condition(model, condition, context) {
+                if model.check_condition(condition, context) {
                     then.calculate(&context, model)
                 } else {
                     r#else.calculate(&context, model)

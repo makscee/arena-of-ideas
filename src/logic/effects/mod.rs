@@ -1,7 +1,5 @@
 use super::*;
 
-mod condition;
-
 #[derive(Clone)]
 pub struct QueuedEffect<T> {
     pub effect: T,

@@ -33,8 +33,7 @@ impl Logic {
                         if match &modifier.condition {
                             Some(condition) => {
                                 self.model.units.insert(unit.clone());
-                                let result =
-                                    Self::check_condition(&self.model, condition, &context);
+                                let result = self.model.check_condition(condition, &context);
                                 self.model.units.remove(&unit.id);
                                 result
                             }
@@ -49,7 +48,7 @@ impl Logic {
                     } else if match &modifier.condition {
                         Some(condition) => {
                             self.model.units.insert(unit.clone());
-                            let result = Self::check_condition(&self.model, condition, &context);
+                            let result = self.model.check_condition(condition, &context);
                             self.model.units.remove(&unit.id);
                             result
                         }
