@@ -10,12 +10,7 @@ impl Logic {
             .get(unit_type)
             .unwrap_or_else(|| panic!("Failed to find unit template for {unit_type}"));
 
-        let mut unit = Unit::new(
-            &template,
-            self.model.next_id,
-            position,
-            &self.model.statuses,
-        );
+        let mut unit = Unit::new(&template, -1, position, &self.model.statuses);
         self.spawn_by_unit(unit)
     }
 
@@ -67,6 +62,9 @@ impl Logic {
 
     pub fn spawn_by_unit(&mut self, mut unit: Unit) -> Id {
         let id = self.model.next_id;
+        self.model.next_id += 1;
+        unit.id = id;
+        debug!("Spawn by unit {}#{}", unit.unit_type, unit.id);
         let position = unit.position;
         // Check empty slots
         // Shift the units, assuming that there are no empty slots in between
@@ -75,12 +73,8 @@ impl Logic {
             .iter_mut()
             .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
             .for_each(|unit| unit.position.x += 1);
-        unit.id = id;
-        unit.shop_unit = Box::new(Some(unit.clone()));
         self.apply_clan_effects(&mut unit);
-        self.model.next_id += 1;
         self.model.units.insert(unit);
-
         id
     }
 

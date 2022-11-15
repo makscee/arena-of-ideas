@@ -324,7 +324,7 @@ impl Walkthrough {
         let mut shop_units: Vec<Unit> = all_units
             .clone()
             .into_iter()
-            .filter(|unit| unit.tier <= tier as u32)
+            .filter(|unit| unit.tier <= tier)
             .choose_multiple(&mut global_rng(), units_count)
             .iter()
             .map(|template| Unit::new(template, 0, Position::zero(Faction::Player), &statuses))

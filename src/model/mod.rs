@@ -69,6 +69,7 @@ pub struct PhaseModel {
 pub struct Model {
     pub next_id: Id,
     pub time: Time,
+    pub team: Vec<Unit>,
     pub units: Collection<Unit>,
     pub dead_units: Collection<Unit>,
     pub config: Config,
@@ -79,13 +80,13 @@ pub struct Model {
     pub statuses: Statuses,
     pub transition: bool,
     pub render_model: RenderModel,
-    pub current_tick: TickModel,
     pub time_scale: f32,
     pub time_modifier: f32,
     pub lives: i32,
     /// Variables that persist for the whole game
     pub vars: HashMap<VarName, i32>,
     pub phase: PhaseModel,
+    pub shop: Shop,
 }
 
 impl Model {
@@ -99,6 +100,7 @@ impl Model {
         render_model: RenderModel,
         time_scale: f32,
         lives: i32,
+        shop: Shop,
     ) -> Self {
         Self {
             next_id: 0,
@@ -113,16 +115,17 @@ impl Model {
             rounds,
             config,
             vars: HashMap::new(),
-            current_tick: TickModel::new(0),
             render_model,
             time_scale,
             time_modifier: time_scale,
             lives,
+            team: vec![],
             phase: PhaseModel {
                 enemy: 0,
                 player: 0,
                 turn_phase: TurnPhase::None,
             },
+            shop,
         }
     }
 
@@ -214,6 +217,19 @@ impl Model {
                 who.position.x == *position
             }
         }
+    }
+
+    pub fn calculate_clan_members<'a>(&mut self) {
+        let unique_units = self
+            .team
+            .iter()
+            .map(|unit| (&unit.unit_type, &unit.clans))
+            .collect::<HashMap<_, _>>();
+        let mut clans = HashMap::new();
+        for clan in unique_units.into_values().flatten() {
+            *clans.entry(*clan).or_insert(0) += 1;
+        }
+        self.config.clans = clans;
     }
 }
 

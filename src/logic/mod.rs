@@ -125,7 +125,10 @@ impl Logic {
         }
     }
 
-    pub fn init_player(&mut self) {
+    pub fn init_round(&mut self, round: GameRound) {
+        for unit in self.model.team.clone().iter() {
+            self.spawn_by_unit(unit.clone());
+        }
         for (index, unit) in self
             .model
             .units
@@ -141,17 +144,11 @@ impl Logic {
             })
             .enumerate()
         {
-            unit.shop_unit = Box::new(Some(unit.clone()));
-            unit.position.x = index as i64;            
+            unit.position.x = index as i64;
         }
-
-        self.process_units(Self::apply_clan_effects);
-    }
-
-    pub fn init_enemies(&mut self, round: GameRound) {
         for unit_type in round.enemies.iter().rev() {
             let unit = self.spawn_by_type(&unit_type, Position::zero(Faction::Enemy));
-            let unit = self.model.units.get_mut(&unit).unwrap();
+            let mut unit = self.model.units.get_mut(&unit).unwrap();
             let statuses = round.statuses.iter().map(|status| {
                 status.get(&self.model.statuses).clone().attach(
                     unit.id,

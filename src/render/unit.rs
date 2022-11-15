@@ -1,39 +1,18 @@
 use crate::shop::render::CardRender;
+use strfmt::strfmt;
 
 use super::*;
 
-pub struct UnitRender {
-    pub geng: Geng,
-    pub assets: Rc<Assets>,
-    card_render: CardRender,
-}
-
-impl UnitRender {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>) -> Self {
-        Self {
-            geng: geng.clone(),
-            assets: assets.clone(),
-            card_render: CardRender::new(geng, assets),
-        }
-    }
-
+impl Render {
     pub fn draw_unit_with_position(
         &self,
         unit: &Unit,
         game_time: f32,
-        camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
         position: AABB<f32>,
     ) {
         // TODO: move this into to an earlier phase perhaps
         let shader_program = &self.assets.get_render(&unit.render.base_shader_config);
-        // let spawn_scale = match unit.spawn_animation_time_left {
-        //     Some(time) if template.spawn_animation_time > Time::new(0.0) => {
-        //         1.0 - (time / template.spawn_animation_time).as_f32()
-        //     }
-        //     _ => 1.0,
-        // };
-
         let quad = shader_program.get_vertices(&self.geng);
 
         let clan_colors: Vec<Rgba<f32>> = unit
@@ -44,9 +23,9 @@ impl UnitRender {
 
         // Actual render
         let texture_position = position;
-        let texture_size = (texture_position.height() * framebuffer.size().y as f32 / camera.fov
-            * 2.0)
-            .max(1.0) as usize;
+        let texture_size =
+            (texture_position.height() * framebuffer.size().y as f32 / self.camera.fov * 2.0)
+                .max(1.0) as usize;
         let texture_size = vec2(texture_size, texture_size);
         let texture_camera = geng::Camera2d {
             center: texture_position.center(),
@@ -59,7 +38,6 @@ impl UnitRender {
                 u_unit_position: position.center(),
                 u_unit_radius: unit.render.radius.as_f32(),
                 u_spawn: 1.0,
-                u_face_dir: vec2(0.0, 0.0),
                 u_random: unit.random_number.as_f32(),
                 u_action_time: unit.render.last_action_time.as_f32(),
                 u_injure_time: unit.render.last_injure_time.as_f32(),
@@ -203,30 +181,18 @@ impl UnitRender {
         }
         self.geng.draw_2d(
             framebuffer,
-            camera,
+            &self.camera,
             &draw_2d::TexturedQuad::new(texture_position, texture),
         );
     }
 
-    pub fn draw_unit(
-        &self,
-        unit: &Unit,
-        model: Option<&Model>,
-        game_time: f32,
-        camera: &geng::Camera2d,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
+    pub fn draw_unit(&self, unit: &Unit, game_time: f32, framebuffer: &mut ugli::Framebuffer) {
         let position = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
             .extend_uniform(unit.render.radius.as_f32() * 2.0); // TODO: configuring?
-        self.draw_unit_with_position(unit, game_time, camera, framebuffer, position)
+        self.draw_unit_with_position(unit, game_time, framebuffer, position)
     }
 
-    pub fn draw_unit_stats(
-        &self,
-        unit: &Unit,
-        camera: &geng::Camera2d,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
+    pub fn draw_unit_stats(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {
         let radius = unit.render.radius.as_f32();
 
         // Draw damage and health
@@ -254,12 +220,12 @@ impl UnitRender {
             damage.extend_uniform(0.03),
             Rgba::try_from("#d0a632").unwrap(),
         )
-        .draw_2d(&self.geng, framebuffer, camera);
+        .draw_2d(&self.geng, framebuffer, &self.camera);
         draw_2d::Quad::new(
             health.extend_uniform(0.03),
             Rgba::try_from("#e13d2f").unwrap(),
         )
-        .draw_2d(&self.geng, framebuffer, camera);
+        .draw_2d(&self.geng, framebuffer, &self.camera);
         let text_color = Rgba::try_from("#ffffff").unwrap();
         draw_2d::Text::unit(
             self.geng.default_font().clone(),
@@ -267,37 +233,37 @@ impl UnitRender {
             text_color,
         )
         .fit_into(damage)
-        .draw_2d(&self.geng, framebuffer, camera);
+        .draw_2d(&self.geng, framebuffer, &self.camera);
         draw_2d::Text::unit(
             self.geng.default_font().clone(),
             format!("{:.0}", unit.stats.health),
             text_color,
         )
         .fit_into(health)
-        .draw_2d(&self.geng, framebuffer, camera);
+        .draw_2d(&self.geng, framebuffer, &self.camera);
         if unit.faction == Faction::Player {
             draw_2d::Quad::new(lvl.extend_uniform(0.03), Rgba::try_from("#ffc83c").unwrap())
-                .draw_2d(&self.geng, framebuffer, camera);
+                .draw_2d(&self.geng, framebuffer, &self.camera);
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
                 format!("LVL:{}", unit.stats.level().to_string()),
                 text_color,
             )
             .fit_into(lvl)
-            .draw_2d(&self.geng, framebuffer, camera);
+            .draw_2d(&self.geng, framebuffer, &self.camera);
             if unit.stats.level() < MAX_LEVEL {
                 draw_2d::Quad::new(
                     next_lvl.extend_uniform(0.03),
                     Rgba::try_from("#b68404").unwrap(),
                 )
-                .draw_2d(&self.geng, framebuffer, camera);
+                .draw_2d(&self.geng, framebuffer, &self.camera);
                 draw_2d::Text::unit(
                     self.geng.default_font().clone(),
                     format!("NEXT:{}", unit.stats.stacks_left_to_level().to_string()),
                     text_color,
                 )
                 .fit_into(next_lvl)
-                .draw_2d(&self.geng, framebuffer, camera);
+                .draw_2d(&self.geng, framebuffer, &self.camera);
             }
         }
 
@@ -310,13 +276,14 @@ impl UnitRender {
 
         draw_2d::Text::unit(
             self.geng.default_font().clone(),
-            &unit.unit_type,
+            format!("{}#{}", unit.unit_type, unit.id),
             text_color,
         )
         .fit_into(name_aabb)
-        .draw_2d(&self.geng, framebuffer, camera);
+        .draw_2d(&self.geng, framebuffer, &self.camera);
     }
 
+    //todo: fix
     pub fn draw_hover(
         &self,
         model: &Model,
@@ -325,13 +292,21 @@ impl UnitRender {
         framebuffer: &mut ugli::Framebuffer,
         vars: HashMap<VarName, i32>,
     ) {
-        self.card_render.draw(
-            AABB::point(unit.render.render_position.map(|x| x.as_f32()))
-                .extend_positive(Vec2 { x: 3.0, y: 4.0 }),
-            unit.template.clone(),
+        let aabb = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
+            .extend_uniform(0.7)
+            .translate(vec2(0.0, -1.8));
+        draw_2d::Quad::new(aabb, Rgba::BLACK).draw_2d(&self.geng, framebuffer, camera);
+        let font_size = FONT_SIZE * aabb.height();
+        let template = model.unit_templates.get(&unit.unit_type).unwrap();
+        let text = strfmt(&template.description, &vars).unwrap_or(template.description.clone());
+        crate::render::draw_text_wrapped(
+            &**self.geng.default_font(),
+            &text,
+            font_size,
+            aabb.extend_uniform(-0.1),
+            Rgba::WHITE,
             framebuffer,
             camera,
-            vars,
         );
     }
 }

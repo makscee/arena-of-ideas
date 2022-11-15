@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct DragController<T>
 where
     T: DragTarget,
@@ -17,7 +18,7 @@ impl<T: DragTarget> DragController<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum DragSource {
     Team,
     Shop,

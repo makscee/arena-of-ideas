@@ -8,10 +8,7 @@ use geng::prelude::{itertools::Itertools, ugli::raw::RGBA};
 use geng::ui::Widget;
 use geng::{prelude::*, Draw2d};
 
-use crate::{
-    render::UnitRender,
-    shader_edit::{ClanShaderParam, ClanShaderType},
-};
+use crate::shader_edit::{ClanShaderParam, ClanShaderType};
 
 use super::*;
 
@@ -44,7 +41,7 @@ struct HeroEditorModel {
     selected_shader: usize,
     selected_level: usize,
     selected_clan: usize,
-    unit_render: UnitRender,
+    render: Render,
     save_clicked: bool,
     shift_pressed: bool,
 }
@@ -98,7 +95,7 @@ impl HeroEditorModel {
             .collect_vec();
         let assets = Rc::new(assets);
         Self {
-            unit_render: UnitRender::new(&geng, &assets),
+            render: Render::new(&geng, &assets, 3.0),
             selected_unit: 0,
             selected_shader: 0,
             selected_level: 0,
@@ -326,9 +323,7 @@ impl geng::State for HeroEditorState {
             &self.camera,
         );
         (0..3).into_iter().for_each(|index| {
-            self.model
-                .unit_render
-                .draw_unit(&unit, None, self.time, &self.camera, framebuffer);
+            self.model.render.draw_unit(&unit, self.time, framebuffer);
             unit.stats.stacks += STACKS_PER_LVL;
             unit.render.render_position.y -= r32(1.0);
         });

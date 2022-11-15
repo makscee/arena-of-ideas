@@ -24,6 +24,5 @@ impl Logic {
     }
     pub fn process_time(&mut self) {
         self.model.time += self.delta_time;
-        self.model.current_tick.tick_time += self.delta_time;
     }
 }

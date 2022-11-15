@@ -60,7 +60,6 @@ pub struct Game {
     previous_texture: Texture,
     new_texture: Texture,
     state: GameState,
-    shop: Shop,
     custom: bool,
 }
 
@@ -74,6 +73,7 @@ impl Game {
         custom: bool,
         level: Option<i32>, // level of player team for custom game
     ) -> Self {
+        let mut shop = Shop::new(1, &assets.units);
         let mut model = Model::new(
             config.clone(),
             assets.units.clone(),
@@ -84,7 +84,10 @@ impl Game {
             RenderModel::new(),
             1.0,
             3,
+            shop,
         );
+        model.shop.refresh(&mut model.next_id, &assets.statuses);
+
         let mut events = Events::new(assets.options.keys_mapping.clone());
         let mut logic = Logic::new(model.clone());
 
@@ -93,9 +96,7 @@ impl Game {
             model: logic.model.clone(),
         };
         let history = vec![last_frame.clone()];
-        let render = Render::new(geng, &assets, &config, logic.model.rounds.clone());
-        let mut shop = Shop::new(assets, render.camera.clone(), model, 1);
-        shop.reroll(true);
+        let render = Render::new(geng, &assets, config.fov);
 
         let mut game = Self {
             geng: geng.clone(),
@@ -112,21 +113,18 @@ impl Game {
             previous_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             state: GameState::Shop,
             custom,
-            shop,
         };
         match custom {
             true => {
-                let mut team = game
-                    .logic
-                    .initialize_custom(&mut game.events, config.player.clone());
-                if let Some(level) = level {
-                    team.iter_mut().for_each(|u| {
-                        u.permanent_stats.stacks += (level - 1) * STACKS_PER_LVL;
-                        u.stats.stacks += (level - 1) * STACKS_PER_LVL;
-                    });
+                for (ind, unit) in config.player.iter().enumerate() {
+                    let unit = game.logic.spawn_by_type(
+                        &unit,
+                        Position {
+                            side: Faction::Player,
+                            x: ind as i64,
+                        },
+                    );
                 }
-                team.into_iter()
-                    .for_each(|unit| game.logic.model.units.insert(unit));
             }
             false => {
                 game.logic.initialize(&mut game.events);
@@ -158,15 +156,29 @@ impl geng::State for Game {
         let delta_time = delta_time * entry.model.time_scale * entry.model.time_modifier;
         self.time += delta_time;
         let last_frame = &self.last_frame;
+        match self.state {
+            GameState::Battle => {}
+            GameState::Shop => {
+                self.logic.model.units = self
+                    .logic
+                    .model
+                    .team
+                    .iter()
+                    .chain(self.logic.model.shop.case.iter())
+                    .map(|u| u.clone())
+                    .collect();
+            }
+        }
 
         if self.time > self.last_frame.time {
             match self.state {
                 GameState::Shop => {
-                    if self.shop.updated {
-                        self.shop.updated = false;
-                        self.logic.model = self.shop.model.clone();
-                    }
                     self.history.clear();
+                    self.logic
+                        .model
+                        .shop
+                        .refresh(&mut self.logic.model.next_id, &self.logic.model.statuses);
+                    self.logic.model.calculate_clan_members();
                 }
                 GameState::Battle => {
                     self.logic.update(delta_time);
@@ -306,16 +318,22 @@ impl geng::State for Game {
             },
         );
         match self.state {
-            GameState::Shop => self
-                .shop
-                .draw(&self.geng, &self.assets, game_time, framebuffer),
+            GameState::Shop => self.logic.model.shop.draw(
+                &self.render,
+                framebuffer,
+                game_time,
+                &self.logic.model.team,
+            ),
             GameState::Battle => {}
         }
     }
     fn handle_event(&mut self, event: geng::Event) {
         match self.state {
             GameState::Shop => {
-                self.shop.handle_event(event);
+                self.logic
+                    .model
+                    .shop
+                    .handle_event(&self.render, event, &mut self.logic.model.team);
             }
             GameState::Battle => match event {
                 geng::Event::MouseDown { button, .. } => {
@@ -343,7 +361,12 @@ impl geng::State for Game {
 
         match self.state {
             GameState::Shop => {
-                if let Some(overlay) = self.shop.ui(cx) {
+                if let Some(overlay) = self.logic.model.shop.ui(
+                    cx,
+                    &mut self.logic.model.transition,
+                    &self.assets.options.clan_configs,
+                    &self.logic.model.config.clans,
+                ) {
                     col.push(overlay.boxed());
                 }
             }
@@ -363,57 +386,43 @@ impl geng::State for Game {
     }
 
     fn transition(&mut self) -> Option<geng::Transition> {
-        if self.logic .model.transition {
+        if self.logic.model.transition {
             self.logic.model.transition = false;
             match self.state {
                 GameState::Shop => {
+                    self.state = GameState::Battle;
                     self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.0);
-                    self.logic
-                        .model
-                        .units
-                        .retain(|unit| unit.faction == Faction::Player);
-
-                    if !self.custom {
-                        self.logic.model.config.clans = calc_clan_members(&self.logic.model.units);
-                    }
-
-                    self.logic.init_player();
                     let round = self
                         .logic
                         .model
                         .rounds
                         .get(self.logic.model.round)
-                        .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
+                        .unwrap_or_else(|| {
+                            panic!("Failed to find round number: {}", self.logic.model.round)
+                        })
                         .clone();
-                    self.logic.init_enemies(round.clone());
-                    self.state = GameState::Battle;
+                    if !self.custom {
+                        self.logic.model.calculate_clan_members();
+                    }
+                    self.logic.model.units.clear();
+                    self.logic.init_round(round);
                 }
                 GameState::Battle => {
                     if self.logic.effects.is_empty() {
-                        self.logic.model.render_model.clear();
-                        self.logic.model.round = cmp::min(
-                            self.logic.model.round + 1,
-                            self.logic.model.rounds.len() - 1,
-                        );
-                        //Update tier every 3 rounds
-                        let tier = ((self.logic.model.round + 1) / 3 + 1) as u32;
-
-                        let mut model = self.logic.model.clone();
-                        model.units = self
-                            .logic
-                            .model
-                            .units
-                            .iter()
-                            .chain(self.logic.model.dead_units.iter())
-                            .filter(|unit| unit.faction == Faction::Player)
-                            .map(|unit| unit.shop_unit.clone().unwrap())
-                            .collect();
-                        model.dead_units.clear();
-                        self.shop.tier = tier;
-                        self.shop.model = model;
-                        self.shop.reroll(true);
-                        self.history = vec![self.last_frame.clone()];
                         self.state = GameState::Shop;
+                        // Upgrade tier every 3 rounds
+                        let tier = ((self.logic.model.round + 1) / 3 + 1);
+                        self.logic.model.shop = Shop::new(tier, &self.assets.units);
+                        self.logic
+                            .model
+                            .shop
+                            .refresh(&mut self.logic.model.next_id, &self.logic.model.statuses);
+                        self.logic.model.render_model.clear();
+                        self.logic.model.round =
+                            (self.logic.model.round + 1).min(self.logic.model.rounds.len() - 1);
+                        self.logic.model.units.clear();
+                        self.logic.model.dead_units.clear();
+                        self.history = vec![self.last_frame.clone()];
                     }
                 }
             }

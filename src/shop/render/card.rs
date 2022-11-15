@@ -1,4 +1,3 @@
-use crate::render::UnitRender;
 use geng::Draw2d;
 use strfmt::strfmt;
 

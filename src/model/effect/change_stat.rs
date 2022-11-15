@@ -31,11 +31,12 @@ impl EffectImpl for ChangeStatEffect {
         *target.stats.get_mut(effect.stat) = value;
         *target.permanent_stats.get_mut(effect.stat) = value;
 
-        if effect.permanent && target.shop_unit.is_some() {
-            let mut shop_unit = target.shop_unit.clone().unwrap();
-            *shop_unit.stats.get_mut(effect.stat) += change_value;
-            *shop_unit.permanent_stats.get_mut(effect.stat) += change_value;
-            target.shop_unit = Box::new(Some(shop_unit));
-        }
+        // todo: fix
+        // if effect.permanent && target.shop_unit.is_some() {
+        //     let mut shop_unit = target.shop_unit.clone().unwrap();
+        //     *shop_unit.stats.get_mut(effect.stat) += change_value;
+        //     *shop_unit.permanent_stats.get_mut(effect.stat) += change_value;
+        //     target.shop_unit = Box::new(Some(shop_unit));
+        // }
     }
 }

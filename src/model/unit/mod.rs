@@ -6,8 +6,8 @@ mod template;
 pub use template::*;
 
 pub type UnitType = String;
-pub type Tier = u32;
-pub const MAX_TIER: u32 = 5;
+pub type Tier = usize;
+pub const MAX_TIER: usize = 5;
 pub const MAX_LEVEL: i32 = 3;
 pub const STACKS_PER_LVL: i32 = 3;
 
@@ -33,7 +33,6 @@ pub struct Unit {
     pub clans: Vec<Clan>,
     pub render: UnitRenderConfig,
     pub random_number: R32,
-    pub shop_unit: Box<Option<Unit>>,
     pub template: UnitTemplate,
     pub vars: HashMap<VarName, i32>,
 }
@@ -110,7 +109,6 @@ impl Unit {
             render: UnitRenderConfig::new(template),
             clans: template.clans.clone(),
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
-            shop_unit: Box::new(None),
             template: template.clone(),
             vars: hashmap! {},
         }

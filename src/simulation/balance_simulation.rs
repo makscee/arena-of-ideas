@@ -4,7 +4,7 @@ use crate::simulation::simulation_config::RegexUnit;
 pub struct BalanceSimulation {
     unit: UnitType,
     repeats: usize,
-    tier: u32,
+    tier: usize,
     all_units: Vec<UnitTemplate>,
     all_clans: Vec<Clan>,
     config: Config,
@@ -14,7 +14,7 @@ impl BalanceSimulation {
     pub fn new(
         unit: UnitType,
         repeats: usize,
-        tier: u32,
+        tier: usize,
         all_units: Vec<UnitTemplate>,
         all_clans: Vec<Clan>,
         config: Config,

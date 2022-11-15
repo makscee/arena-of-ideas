@@ -12,7 +12,7 @@ pub struct SimulationConfig {
 pub enum SimulationType {
     Balance {
         unit: RegexUnit,
-        tier: u32,
+        tier: usize,
         repeats: usize,
     },
     Units {

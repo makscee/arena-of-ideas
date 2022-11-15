@@ -104,23 +104,21 @@ impl RenderModel {
 pub struct Render {
     geng: Geng,
     pub camera: geng::Camera2d,
+    pub framebuffer_size: Vec2<f32>,
     assets: Rc<Assets>,
-    rounds: Vec<GameRound>,
-    unit_render: UnitRender,
 }
 
 impl Render {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>, config: &Config, rounds: Vec<GameRound>) -> Self {
+    pub fn new(geng: &Geng, assets: &Rc<Assets>, fov: f32) -> Self {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
             camera: geng::Camera2d {
                 center: vec2(0.0, 0.0),
                 rotation: 0.0,
-                fov: config.fov,
+                fov,
             },
-            unit_render: UnitRender::new(geng, assets),
-            rounds,
+            framebuffer_size: Vec2::ZERO,
         }
     }
     pub fn draw(&mut self, game_time: f32, model: &Model, framebuffer: &mut ugli::Framebuffer) {
@@ -131,20 +129,19 @@ impl Render {
             model,
             framebuffer,
         );
-        let framebuffer_size = framebuffer.size().map(|x| x as f32);
+        self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         let mouse_world_pos = self.camera.screen_to_world(
-            framebuffer_size,
+            self.framebuffer_size,
             self.geng.window().mouse_pos().map(|x| x as f32),
         );
 
         let mut hovered_unit = None;
+
         for unit in &model.units {
             let template = &self.assets.units[&unit.unit_type];
-            self.unit_render
-                .draw_unit(unit, Some(model), game_time, &self.camera, framebuffer);
+            self.draw_unit(unit, game_time, framebuffer);
 
-            self.unit_render
-                .draw_unit_stats(unit, &self.camera, framebuffer);
+            self.draw_unit_stats(unit, framebuffer);
 
             // On unit hover
             if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
@@ -170,8 +167,7 @@ impl Render {
                         .into_iter()
                         .map(|(name, expr)| (name, expr.calculate(&context, model)))
                         .collect();
-                    self.unit_render
-                        .draw_hover(model, &unit, &self.camera, framebuffer, vars);
+                    self.draw_hover(model, &unit, &self.camera, framebuffer, vars);
                 }
             }
         }
@@ -312,29 +308,31 @@ impl Render {
         let text_size = 55.0;
         let left_margin = 20.0;
         let framebuffer_size = framebuffer.size();
-        let round = self
-            .rounds
-            .get(model.round)
-            .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
-            .clone();
-        let lines: Vec<String> = vec![
-            format!("--- {} ---", round.name),
-            format!("Lives: {}", model.lives),
-        ];
-        for (i, line) in lines.into_iter().enumerate() {
-            self.geng.default_font().draw(
-                framebuffer,
-                &PixelPerfectCamera,
-                &line,
-                vec2(
-                    left_margin,
-                    framebuffer_size[1] as f32 - line_height * (i as f32 + 1.0),
-                ),
-                geng::TextAlign::LEFT,
-                text_size,
-                Rgba::try_from("#6d6d6d").unwrap(),
-            );
-        }
+
+        //todo: fix
+        // let round = self
+        //     .rounds
+        //     .get(model.round)
+        //     .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
+        //     .clone();
+        // let lines: Vec<String> = vec![
+        //     format!("--- {} ---", round.name),
+        //     format!("Lives: {}", model.lives),
+        // ];
+        // for (i, line) in lines.into_iter().enumerate() {
+        //     self.geng.default_font().draw(
+        //         framebuffer,
+        //         &PixelPerfectCamera,
+        //         &line,
+        //         vec2(
+        //             left_margin,
+        //             framebuffer_size[1] as f32 - line_height * (i as f32 + 1.0),
+        //         ),
+        //         geng::TextAlign::LEFT,
+        //         text_size,
+        //         Rgba::try_from("#6d6d6d").unwrap(),
+        //     );
+        // }
     }
 
     fn draw_statuses_desc(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {

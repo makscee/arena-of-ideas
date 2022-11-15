@@ -1,4 +1,7 @@
-use crate::model::{Position, MAX_LIVES};
+use crate::{
+    model::{Position, MAX_LIVES},
+    shop::Shop,
+};
 
 use super::*;
 pub struct Battle {
@@ -34,6 +37,7 @@ impl Battle {
         player: Vec<Unit>,
     ) -> Self {
         let rounds = vec![round.clone()];
+        let shop = Shop::new(1, &units_templates);
         Self {
             config: config.clone(),
             model: Model::new(
@@ -46,6 +50,7 @@ impl Battle {
                 RenderModel::new(),
                 1.0,
                 lives,
+                shop,
             ),
             delta_time,
             round,
@@ -71,7 +76,7 @@ impl Battle {
                     unit.stats.stacks
                 ),
             );
-            logic.spawn_by_unit(unit.clone());
+            // logic.spawn_by_unit(unit.clone());
         });
         self.round.enemies.iter().rev().for_each(|unit_config| {
             logic.spawn_by_type(unit_config, Position::zero(Faction::Enemy));
@@ -81,7 +86,7 @@ impl Battle {
             logic.update(self.delta_time);
             let model = &logic.model;
 
-            if model.lives <= 0 || model.transition || model.current_tick.tick_num > 100 {
+            if model.lives <= 0 || model.transition {
                 let player_won = model
                     .units
                     .iter()
@@ -105,13 +110,13 @@ impl Battle {
                         unit.unit_type
                     })
                     .collect();
+                //todo: revert to team units
                 let player = model
                     .units
                     .clone()
                     .into_iter()
                     .chain(model.dead_units.clone().into_iter())
                     .filter(|unit| unit.faction == Faction::Player)
-                    .map(|unit| unit.shop_unit.unwrap())
                     .collect();
                 let units_count = if player_won {
                     units_alive.len() as i32
