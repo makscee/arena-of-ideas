@@ -1,4 +1,5 @@
 use super::*;
+use strfmt::strfmt;
 
 // Display text message
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -18,9 +19,10 @@ impl EffectImpl for MessageEffect {
             context.color = color.clone();
         }
         let position = logic.model.get_who(Who::Target, &context).position;
+        let text = strfmt(&self.text, &context.vars).unwrap_or(self.text);
         logic.model.render_model.add_text(
             position,
-            &format!("{}", self.text),
+            text,
             context.color,
             crate::render::TextType::Message,
         );

@@ -1,6 +1,6 @@
 pub use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, enum_utils::FromStr)]
 pub enum VarName {
     DamageIncoming,
     DamageDealt,
@@ -75,7 +75,14 @@ impl Expr {
     pub fn calculate(&self, context: &EffectContext, model: &Model) -> i32 {
         match self {
             Self::Const { value } => *value,
-            Self::Var { name } => context.vars[name],
+            Self::Var { name } => {
+                for unit in model.get_all(context) {
+                    if unit.template.vars.contains_key(name) {
+                        return unit.template.vars[name].calculate(context, model);
+                    }
+                }
+                context.vars[name]
+            }
             Self::Sum { a, b } => a.calculate(context, model) + b.calculate(context, model),
             Self::Sub { a, b } => a.calculate(context, model) - b.calculate(context, model),
             Self::Mul { a, b } => a.calculate(context, model) * b.calculate(context, model),

@@ -1,5 +1,6 @@
 use crate::render::UnitRender;
 use geng::Draw2d;
+use strfmt::strfmt;
 
 use super::*;
 
@@ -72,6 +73,7 @@ impl CardRender {
         template: UnitTemplate,
         framebuffer: &mut ugli::Framebuffer,
         camera: &Camera2d,
+        vars: HashMap<VarName, i32>,
     ) {
         let width = card_aabb.width();
         let height = card_aabb.height();
@@ -177,9 +179,10 @@ impl CardRender {
 
         // Description
         let font_size = FONT_SIZE * height;
+        let text = strfmt(&template.description, &vars).unwrap_or(template.description);
         crate::render::draw_text_wrapped(
             &**self.geng.default_font(),
-            &template.description,
+            &text,
             font_size,
             description_aabb,
             Rgba::WHITE,

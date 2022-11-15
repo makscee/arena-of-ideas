@@ -25,6 +25,8 @@ pub struct UnitTemplate {
     #[serde(default = "default_renders")]
     pub clan_renders: Vec<Vec<ShaderConfig>>, // level_index -> clan_index
     pub base: Option<UnitType>,
+    #[serde(default)]
+    pub vars: HashMap<VarName, Expr>,
 }
 
 fn default_stacks() -> i32 {
@@ -63,6 +65,7 @@ impl Default for UnitTemplate {
             clans: default(),
             clan_renders: default(),
             base: None,
+            vars: hashmap! {},
         }
     }
 }

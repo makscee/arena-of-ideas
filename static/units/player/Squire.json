@@ -1,6 +1,6 @@
 {
     "name": "Squire",
-    "description": "Detect Shield: give +1/+1 (+2/+2) (+3/+3)",
+    "description": "Detect Shield: give +{Value}/+{Value}",
     "attack": 1,
     "health": 1,
     "tier": 1,
@@ -30,9 +30,8 @@
                     "effect": {
                         "preset": "effects/give_stats.json",
                         "value": {
-                            "type": "FindStat",
-                            "stat": "Level",
-                            "who": "Owner"
+                            "type": "Var",
+                            "name": "Value"
                         }
                     }
                 }
@@ -41,5 +40,12 @@
     ],
     "render": {
         "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
     }
 }

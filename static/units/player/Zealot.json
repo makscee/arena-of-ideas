@@ -1,6 +1,6 @@
 {
     "name": "Zealot",
-    "description": "Detect Shield: gain +1/2/3 ATK",
+    "description": "Detect Shield: gain +{Value} ATK",
     "attack": 1,
     "health": 1,
     "tier": 1,
@@ -33,9 +33,8 @@
                         "effect": {
                             "preset": "effects/give_atk.json",
                             "value": {
-                                "type": "FindStat",
-                                "stat": "Level",
-                                "who": "Owner"
+                                "type": "Var",
+                                "name": "Value"
                             }
                         }
                     }
@@ -45,5 +44,12 @@
     ],
     "render": {
         "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
     }
 }

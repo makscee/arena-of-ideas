@@ -319,9 +319,11 @@ impl UnitRender {
 
     pub fn draw_hover(
         &self,
+        model: &Model,
         unit: &Unit,
         camera: &geng::Camera2d,
         framebuffer: &mut ugli::Framebuffer,
+        vars: HashMap<VarName, i32>,
     ) {
         self.card_render.draw(
             AABB::point(unit.render.render_position.map(|x| x.as_f32()))
@@ -329,6 +331,7 @@ impl UnitRender {
             unit.template.clone(),
             framebuffer,
             camera,
+            vars,
         );
     }
 }

@@ -1,6 +1,6 @@
 {
     "name": "Adept",
-    "description": "Gain Shield: gain +1/+1 (+2/+2) (+3/+3)",
+    "description": "Gain Shield: gain +{Value}/+{Value}",
     "attack": 2,
     "health": 2,
     "tier": 2,
@@ -29,9 +29,8 @@
                     "effect": {
                         "preset": "effects/give_stats.json",
                         "value": {
-                            "type": "FindStat",
-                            "stat": "Level",
-                            "who": "Owner"
+                            "type": "Var",
+                            "name": "Value"
                         }
                     }
                 }
@@ -40,5 +39,12 @@
     ],
     "render": {
         "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
     }
 }

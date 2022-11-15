@@ -35,6 +35,7 @@ pub struct Unit {
     pub random_number: R32,
     pub shop_unit: Box<Option<Unit>>,
     pub template: UnitTemplate,
+    pub vars: HashMap<VarName, i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -111,8 +112,10 @@ impl Unit {
             random_number: r32(global_rng().gen_range(0.0..=1.0)),
             shop_unit: Box::new(None),
             template: template.clone(),
+            vars: hashmap! {},
         }
     }
+
     pub fn merge(&mut self, unit: Unit) -> bool {
         if unit.unit_type == self.unit_type {
             if self.stats.do_stack(unit.stats)

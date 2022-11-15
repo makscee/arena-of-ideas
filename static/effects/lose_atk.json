@@ -30,7 +30,7 @@
                 },
                 {
                     "type": "Message",
-                    "text": "-ATK"
+                    "text": "-{Value}"
                 },
                 {
                     "preset": "effects/vfx_stats_lose.json"

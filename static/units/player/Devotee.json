@@ -1,6 +1,6 @@
 {
     "name": "Devotee",
-    "description": "+1/+2/+3 ATK for each ally with Shield",
+    "description": "+{Value} ATK for each ally with Shield",
     "attack": 1,
     "health": 4,
     "tier": 2,
@@ -30,9 +30,8 @@
                         "effect": {
                             "preset": "effects/give_atk.json",
                             "value": {
-                                "type": "FindStat",
-                                "stat": "Level",
-                                "who": "Owner"
+                                "type": "Var",
+                                "name": "Value"
                             }
                         }
                     }
@@ -52,9 +51,8 @@
                         "effect": {
                             "preset": "effects/lose_atk.json",
                             "value": {
-                                "type": "FindStat",
-                                "stat": "Level",
-                                "who": "Owner"
+                                "type": "Var",
+                                "name": "Value"
                             }
                         }
                     }
@@ -84,9 +82,8 @@
                         "effect": {
                             "preset": "effects/lose_atk.json",
                             "value": {
-                                "type": "FindStat",
-                                "stat": "Level",
-                                "who": "Owner"
+                                "type": "Var",
+                                "name": "Value"
                             }
                         }
                     }
@@ -94,6 +91,13 @@
             ]
         }
     ],
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
+    },
     "render": {
         "path": "shaders/default_circle_hero.glsl"
     }
