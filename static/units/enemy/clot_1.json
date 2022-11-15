@@ -1,7 +1,7 @@
 {
     "name": "clot_1",
-    "health": 40,
-    "attack": 15,
+    "health": 2,
+    "attack": 24,
     "radius": 0.4,
     "statuses": [
         {
