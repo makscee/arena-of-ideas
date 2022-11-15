@@ -1,7 +1,7 @@
 {
-    "name": "blob_1",
-    "health": 40,
-    "attack": 15,
+    "name": "clot_3",
+    "health": 60,
+    "attack": 30,
     "radius": 0.4,
     "statuses": [
         {
@@ -25,7 +25,7 @@
                         },
                         "effect": {
                             "type": "Spawn",
-                            "unit_type": "blob_0"
+                            "unit_type": "clot_2"
                         }
                     }
                 }
@@ -39,8 +39,8 @@
         "path": "shaders/blob_enemy.glsl",
         "parameters": {
             "u_padding": 2.0,
-            "u_color": "#108001",
-            "u_shape": 0
+            "u_color": "#000001",
+            "u_shape": 2
         }
     }
 }

@@ -3,7 +3,35 @@
     "health": 60,
     "attack": 30,
     "radius": 0.4,
-    "statuses": [],
+    "statuses": [
+        {
+            "name": "SpawnBlobDeathrattle",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Death"
+                        }
+                    ],
+                    "effect": {
+                        "type": "Repeat",
+                        "times": {
+                            "type": "Const",
+                            "value": 2
+                        },
+                        "effect": {
+                            "type": "Spawn",
+                            "unit_type": "blob_2"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
     "action": {
         "preset": "effects/melee_hit.json"
     },
@@ -11,7 +39,8 @@
         "path": "shaders/blob_enemy.glsl",
         "parameters": {
             "u_padding": 2.0,
-            "u_color": "#08330c"
+            "u_color": "#000001",
+            "u_shape": 0
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "blob_1",
+    "name": "glob_1",
     "health": 40,
     "attack": 15,
     "radius": 0.4,
@@ -25,7 +25,7 @@
                         },
                         "effect": {
                             "type": "Spawn",
-                            "unit_type": "blob_0"
+                            "unit_type": "glob_0"
                         }
                     }
                 }
@@ -40,7 +40,7 @@
         "parameters": {
             "u_padding": 2.0,
             "u_color": "#108001",
-            "u_shape": 0
+            "u_shape": 1
         }
     }
 }
