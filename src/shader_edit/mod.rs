@@ -238,7 +238,7 @@ impl geng::State for EditState {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
+        ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
 
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),

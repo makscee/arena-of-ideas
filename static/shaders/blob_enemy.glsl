@@ -1,18 +1,13 @@
 #include <common.glsl>
 
-
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 void main() {
-    // float u_action_time = u_time - fract(u_time);
-    float action_t = smoothstep(ACTION_ANIMATION_TIME, 0, u_time - u_action_time);
-    action_t *= action_t;
     v_quad_pos = a_pos * (1.0 + u_padding);
-    float size = u_unit_radius + action_t * .2;
-    vec2 pos = v_quad_pos * size + u_unit_position;
+    vec2 pos = v_quad_pos * u_unit_radius + u_unit_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -20,61 +15,51 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
+uniform int u_shape;
 
-float getRingAlpha(
-    vec2 uv, float r, float thickness, float glow, float glowStartV, float innerMult, float outerMult)
-{
-    float dist = distance(uv, vec2(0.));
-    float circleDist = abs(r - dist);
-    float halfThickness = thickness * .5;
-    glow *= max(r, 0.5);
-    return max(float(circleDist < halfThickness),
-
-        float(circleDist > halfThickness && circleDist < halfThickness + glow)
-        * mix(glowStartV, 0., (circleDist - halfThickness) / glow)
-        * (float(dist > r) * outerMult + float(dist < r) * 1.)
-        * (float(dist < r) * innerMult + float(dist > r) * 1.));
+float getRingAlpha(vec2 uv, float r, float thickness, float spread, float glowValue, float glowSpread, float innerMul, float outerMul) {
+    float sdf = 0.;
+    if(u_shape == 0) {
+        sdf = circleSDF(uv, r);
+    } else if(u_shape == 1) {
+        sdf = squareSDF(uv, r);
+    } else if(u_shape == 2) {
+        sdf = triangleSDF(uv, r, 0.);
+    }
+    float asdf = abs(sdf);
+    return float(asdf < thickness) + smoothstep(spread, 0., asdf - thickness) + smoothstep(-glowSpread, 0., sdf + thickness) * glowValue * innerMul * float(sdf < -thickness) + smoothstep(glowSpread, 0., sdf - thickness) * glowValue * outerMul * float(sdf > thickness);
 }
 
 void main() {
     commonInit();
-    float glow = 0.35 + sin(u_time) * .1;
-
     vec2 uv = v_quad_pos;
+    float size = 1.0;
+    vec3 color = getColor().rgb;
+    float t = u_time;
 
-    vec3 colors[2];
-    colors[0] = getColor().rgb;
-    colors[1] = vec3(1, 0.980, 0.941);
+    float clock_1 = sin(t);
+    float clock_d2 = sin(t / 2);
+    float clock_d4 = sin(t / 4);
+    float clock_m2 = sin(t * 2);
 
-    float innerTime = u_time - floor(u_time / pi * 2.) * pi * 2. + u_random * 100.;
+    float thickness = clock_1 * .01 + .01 + clock_d4 * .01;
+    float spread = 0.01;
+    float glowValue = clock_d2 * .1 + 0.3;
+    float glowSpread = (1. - clock_1) * .1 + 0.4;
+    float innerMul = clock_m2 * .3 + 1.;
+    float outerMul = clock_m2 * .3 + 0.3;
+    vec4 col = vec4(color, getRingAlpha(uv, size, thickness, spread, glowValue, glowSpread, innerMul, outerMul));
 
-    float outerR = 1., innerR = 0.8 + sin(innerTime) * .5;
+    thickness = 0.;
+    spread = 0.;
+    glowValue = 0.3;
+    glowSpread = (1. - clock_1) * .1 + 0.4;
+    innerMul = .5 * smoothstep(0.7, 1., sin(t + 0.9));
+    outerMul = 0.;
 
-    const float innerFade = 1.2;
-    float innerAlpha = float(cos(innerTime) > 0.) + float(cos(innerTime + innerFade));
-    innerAlpha = clamp(innerAlpha, 0., 1.);
+    size = clock_1 * 2.;
+    col = alphaBlend(col, vec4(color, getRingAlpha(uv, size, thickness, spread, glowValue, glowSpread, innerMul, outerMul)));
 
-    float innerAlpha2 = -1., innerR2 = -1.;
-
-    float distCenter = distance(uv,vec2(0.0,0.0));
-    float distOuter = outerR - distCenter;
-    float distInner = innerR - distCenter;
-
-
-    vec4 col = vec4(colors[0], getRingAlpha(uv, outerR, thicknessOuter, glow, .3, 1.5, 0.));
-    col = alphaBlend(col, vec4(colors[0], getRingAlpha(uv, outerR, thicknessOuter, glow, .3, 1.5, 0.)));
-    col = alphaBlend(col, vec4(colors[0], getRingAlpha(uv, innerR, 0., glow * 1.5, .5, 1.7, 1.) * innerAlpha));
-    
-    float insideCircTime = u_time + u_random * 200.;
-    float v = mix(0.5, 0.0, distance(uv,
-        vec2(cos(insideCircTime * 1.13 + sin(insideCircTime * .5) * 2.),
-            sin(insideCircTime * 2.73)) * innerR * .8)) * float(distCenter < outerR + thicknessOuter * .5);
-    col = alphaBlend(col, vec4(colors[0], v));
-    if (length(uv) < outerR)
-    {
-        col *= col.a;
-        col.a = 1;
-    }
     gl_FragColor = col;
 }
 #endif

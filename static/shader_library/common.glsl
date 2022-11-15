@@ -229,3 +229,61 @@ float clanColorHash() {
 float colorHash(vec3 color) {
     return fract(color.r * 1.1 + color.g * 2.1 + color.b * 4.3);
 }
+
+/// Shapes
+float distance1d(float x, float size) {
+    return max(-size - x, x - size);
+}
+
+float toPoint(vec2 p, vec2 o) {
+    return length(p - o);
+}
+
+float toSegment(vec2 p, vec2 a, vec2 b) {
+    vec2 v = normalize(b - a);
+    vec2 n = vec2(v.y, -v.x);
+    return dot(p - a, n);
+}
+
+float triangleSDF(vec2 uv, float size, float rotation) {
+    uv = rotateCW(uv, rotation * pi * 2);
+    vec2 p = uv;
+    vec2 p1 = -vec2(size);
+    vec2 p2 = vec2(size, -size);
+    vec2 p3 = vec2(0., size);
+    float d1 = toSegment(p, p1, p2);
+    float d2 = toSegment(p, p2, p3);
+    float d3 = toSegment(p, p3, p1);
+    float d = max(max(d1, d2), d3);
+    if(dot(p - p1, p1 - p2) > 0.0 && dot(p - p1, p1 - p3) > 0.0) {
+        d = toPoint(p, p1);
+    }
+    if(dot(p - p2, p2 - p1) > 0.0 && dot(p - p2, p2 - p3) > 0.0) {
+        d = toPoint(p, p2);
+    }
+    if(dot(p - p3, p3 - p1) > 0.0 && dot(p - p3, p3 - p2) > 0.0) {
+        d = toPoint(p, p3);
+    }
+    return d;
+}
+
+float squareSDF(vec2 uv, float size, float rotation) {
+    uv = rotateCW(uv, rotation * pi * 2);
+    float dx = distance1d(uv.x, size);
+    float dy = distance1d(uv.y, size);
+
+    float d = max(dx, dy);
+    if(sign(dx) > 0.0 && sign(dy) > 0.0) {
+        float corner_distance = sqrt(dx * dx + dy * dy);
+        d = max(d, corner_distance);
+    }
+    return d;
+}
+
+float squareSDF(vec2 uv, float size) {
+    return squareSDF(uv, size, 0.);
+}
+
+float circleSDF(vec2 uv, float radius) {
+    return length(uv) - radius;
+}

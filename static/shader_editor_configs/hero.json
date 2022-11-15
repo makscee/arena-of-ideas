@@ -1,0 +1,13 @@
+{
+	"path": "shaders/blob_enemy.glsl",
+	"parameters": {
+		"u_padding": 1.0,
+		"u_parent_position": [0.0,0.0],
+		"u_unit_radius": 1.0,
+		"u_unit_random": 0.3,
+		"u_parent_faction": 1.0
+	},
+	"vertices": 200,
+	"instances": 1,
+	"fov": 5
+}

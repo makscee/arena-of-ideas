@@ -27,39 +27,9 @@ void main() {
 uniform sampler2D u_previous_texture;
 in vec2 v_quad_pos;
 
-float toPoint(vec2 p, vec2 o) {
-    return length(p - o);
-}
-
-float toSegment(vec2 p, vec2 a, vec2 b) {
-    vec2 v = normalize(b - a);
-    vec2 n = vec2(v.y, -v.x);
-    return dot(p - a, n);
-}
-
-// NEEDS TO BE COUNTER CLOCKWISE
 float shapeDistance(vec2 uv, int index, float size) {
     uv -= u_offset + float(index) * u_index_offset;
-
-    uv = rotateCW(uv, u_rotation * pi * 2);
-    vec2 p = uv;
-    vec2 p1 = -vec2(size);
-    vec2 p2 = vec2(size, -size);
-    vec2 p3 = vec2(0., size);
-    float d1 = toSegment(p, p1, p2);
-    float d2 = toSegment(p, p2, p3);
-    float d3 = toSegment(p, p3, p1);
-    float d = max(max(d1, d2), d3);
-    if(dot(p - p1, p1 - p2) > 0.0 && dot(p - p1, p1 - p3) > 0.0) {
-        d = toPoint(p, p1);
-    }
-    if(dot(p - p2, p2 - p1) > 0.0 && dot(p - p2, p2 - p3) > 0.0) {
-        d = toPoint(p, p2);
-    }
-    if(dot(p - p3, p3 - p1) > 0.0 && dot(p - p3, p3 - p2) > 0.0) {
-        d = toPoint(p, p3);
-    }
-    return d;
+    return triangleSDF(uv, size, u_rotation);
 }
 
 #include <shapes.glsl>

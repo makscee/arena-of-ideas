@@ -27,23 +27,9 @@ void main() {
 uniform sampler2D u_previous_texture;
 in vec2 v_quad_pos;
 
-float distance1d(float x, float size) {
-    return max(-size - x, x - size);
-}
-
 float shapeDistance(vec2 uv, int index, float size) {
     uv -= u_offset + float(index) * u_index_offset;
-
-    uv = rotateCW(uv, u_rotation * pi * 2);
-    float dx = distance1d(uv.x, size);
-    float dy = distance1d(uv.y, size);
-
-    float d = max(dx, dy);
-    if(sign(dx) > 0.0 && sign(dy) > 0.0) {
-        float corner_distance = sqrt(dx * dx + dy * dy);
-        d = max(d, corner_distance);
-    }
-    return d;
+    return squareSDF(uv, size, u_rotation);
 }
 
 #include <shapes.glsl>
