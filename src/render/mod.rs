@@ -123,13 +123,7 @@ impl Render {
             rounds,
         }
     }
-    pub fn draw(
-        &mut self,
-        game_time: f32,
-        model: &Model,
-        shop: &mut shop::Shop,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
+    pub fn draw(&mut self, game_time: f32, model: &Model, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
         self.draw_field(
             &self.assets.custom_renders.field,
@@ -158,13 +152,29 @@ impl Render {
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);
+
                 if let Some(unit) = hovered_unit {
+                    let context = EffectContext {
+                        owner: unit.id,
+                        creator: unit.id,
+                        target: unit.id,
+                        vars: hashmap! {},
+                        color: Rgba::BLACK,
+                        queue_id: None,
+                        status_id: None,
+                    };
+                    let vars: HashMap<VarName, i32> = unit
+                        .template
+                        .vars
+                        .clone()
+                        .into_iter()
+                        .map(|(name, expr)| (name, expr.calculate(&context, model)))
+                        .collect();
                     self.unit_render
-                        .draw_hover(&unit, &self.camera, framebuffer);
+                        .draw_hover(model, &unit, &self.camera, framebuffer, vars);
                 }
             }
         }
-        shop.unit_hovered = hovered_unit.is_some();
 
         // Draw slots
         let factions = vec![Faction::Player, Faction::Enemy];

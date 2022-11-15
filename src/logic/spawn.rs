@@ -19,17 +19,7 @@ impl Logic {
         self.spawn_by_unit(unit)
     }
 
-    pub fn spawn_by_unit(&mut self, mut unit: Unit) -> Id {
-        let id = self.model.next_id;
-        let position = unit.position;
-        // Check empty slots
-        // Shift the units, assuming that there are no empty slots in between
-        self.model
-            .units
-            .iter_mut()
-            .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
-            .for_each(|unit| unit.position.x += 1);
-        unit.id = id;
+    pub fn apply_clan_effects(&mut self, unit: &mut Unit) {
         for (clan, _) in &self.model.clan_effects.map {
             let mut size = 0;
             match unit.faction {
@@ -48,7 +38,7 @@ impl Logic {
             }
 
             clan.apply_effects(
-                &mut unit,
+                unit,
                 &self.model.clan_effects,
                 size,
                 self.model.next_id,
@@ -63,9 +53,9 @@ impl Logic {
             .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
         {
             let context = EffectContext {
-                owner: id,
-                creator: id,
-                target: id,
+                owner: unit.id,
+                creator: unit.id,
+                target: unit.id,
                 vars,
                 status_id: Some(status_id),
                 color: status_color,
@@ -73,7 +63,21 @@ impl Logic {
             };
             self.effects.push_front(context, effect);
         }
+    }
+
+    pub fn spawn_by_unit(&mut self, mut unit: Unit) -> Id {
+        let id = self.model.next_id;
+        let position = unit.position;
+        // Check empty slots
+        // Shift the units, assuming that there are no empty slots in between
+        self.model
+            .units
+            .iter_mut()
+            .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
+            .for_each(|unit| unit.position.x += 1);
+        unit.id = id;
         unit.shop_unit = Box::new(Some(unit.clone()));
+        self.apply_clan_effects(&mut unit);
         self.model.next_id += 1;
         self.model.units.insert(unit);
 

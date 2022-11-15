@@ -34,21 +34,19 @@ pub struct Shop {
     pub tier_rounds: usize,
     pub money: Money,
     pub available: Vec<(UnitType, UnitTemplate)>,
-    pub units: Vec<Unit>,
-    pub team: Vec<Unit>,
     pub drag_controller: DragController<Unit>,
     pub camera: Camera2d,
     pub framebuffer_size: Vec2<f32>,
     pub lives: i32,
-    pub enabled: bool,
     pub updated: bool,
     pub frozen: bool,
     pub unit_hovered: bool,
     pub clan_configs: HashMap<Clan, ClanConfig>,
+    pub model: Model,
 }
 
 impl Shop {
-    pub fn new(assets: &Rc<Assets>, camera: Camera2d) -> Self {
+    pub fn new(assets: &Rc<Assets>, camera: Camera2d, model: Model, tier: u32) -> Self {
         let units = assets
             .units
             .iter()
@@ -59,21 +57,19 @@ impl Shop {
         Self {
             statuses: assets.statuses.clone(),
             round: 0,
-            tier: 1,
+            tier,
             tier_rounds: 0,
             money: 10,
-            units: vec![],
-            team: vec![],
             available: units,
             lives: MAX_LIVES,
-            enabled: true,
             framebuffer_size: Vec2::ZERO,
             camera,
             drag_controller: DragController::new(),
-            updated: false,
+            updated: true,
             frozen: false,
             unit_hovered: false,
             clan_configs: assets.options.clan_configs.clone(),
+            model,
         }
     }
 
@@ -97,118 +93,15 @@ impl Shop {
         assets: &Rc<Assets>,
         game_time: f32,
         framebuffer: &mut ugli::Framebuffer,
-        camera: &Camera2d,
     ) {
-        if !self.enabled {
-            return;
-        };
         let unit_render = UnitRender::new(&geng, assets);
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
-        let mouse_world_pos = camera.screen_to_world(
-            self.framebuffer_size,
-            geng.window().mouse_pos().map(|x| x as f32),
-        );
-
         if let Some(drag) = &self.drag_controller.drag_target {
-            unit_render.draw_unit(&drag, None, game_time, &camera, framebuffer);
+            unit_render.draw_unit(&drag, None, game_time, &self.camera, framebuffer);
         };
-
-        let mut hovered_unit = None;
-
-        for (index, unit) in self.units.iter_mut().enumerate() {
-            unit_render.draw_unit(&unit, None, game_time, &camera, framebuffer);
-            unit_render.draw_unit_stats(&unit, &camera, framebuffer);
-            let tier = assets
-                .units
-                .get(&unit.unit_type)
-                .unwrap_or_else(|| panic!("Failed to find unit {}", unit.unit_type))
-                .tier;
-            let radius = unit.render.radius.as_f32();
-            let unit_aabb =
-                AABB::point(unit.render.render_position.map(|x| x.as_f32())).extend_uniform(radius);
-            let size = radius * 0.5;
-            let damage = AABB::point(unit_aabb.top_left())
-                .extend_right(size)
-                .extend_up(size)
-                .translate(vec2(-0.1, 0.1));
-            draw_2d::Quad::new(
-                damage.extend_uniform(0.03),
-                Rgba::try_from("#6e6e6e").unwrap(),
-            )
-            .draw_2d(&geng, framebuffer, camera);
-            draw_2d::Text::unit(
-                geng.default_font().clone(),
-                format!("T{}", tier),
-                Rgba::WHITE,
-            )
-            .fit_into(damage)
-            .draw_2d(&geng, framebuffer, camera);
-
-            // On unit hover
-            if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
-                < unit.render.radius.as_f32()
-            {
-                // Draw extra ui: statuses descriptions, damage/heal descriptions
-                hovered_unit = Some(unit.clone());
-            }
-        }
-
-        // Draw slots
-        let factions = vec![Faction::Player, Faction::Enemy];
-        let shader_program = &assets.custom_renders.slot;
-        for faction in factions {
-            for i in 0..SIDE_SLOTS {
-                let quad = shader_program.get_vertices(geng);
-                let framebuffer_size = framebuffer.size();
-                let position = Position {
-                    x: i as i64,
-                    side: faction,
-                }
-                .to_world_f32();
-                let unit = self
-                    .units
-                    .iter()
-                    .chain(self.team.iter())
-                    .find(|unit| unit.position.x == i as i64 && unit.faction == faction);
-
-                let health = match unit {
-                    Some(unit) => 1.0,
-                    None => 0.0,
-                };
-
-                ugli::draw(
-                    framebuffer,
-                    &shader_program.program,
-                    ugli::DrawMode::TriangleStrip,
-                    &quad,
-                    (
-                        ugli::uniforms! {
-                            u_time: game_time,
-                            u_unit_position: position,
-                            u_parent_faction: 1.0,
-                            u_health: health,
-                        },
-                        geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
-                        &shader_program.parameters,
-                    ),
-                    ugli::DrawParameters {
-                        blend_mode: Some(ugli::BlendMode::default()),
-                        ..default()
-                    },
-                );
-            }
-        }
-        self.unit_hovered = self.unit_hovered || hovered_unit.is_some();
-
-        if let Some(unit) = hovered_unit {
-            unit_render.draw_hover(&unit, camera, framebuffer);
-        }
     }
 
     pub fn ui<'b>(&mut self, cx: &'b geng::ui::Controller) -> Option<impl Widget + 'b> {
-        if !self.enabled {
-            return None;
-        };
         let mut col = geng::ui::column![];
         let mut shop_info = geng::ui::column![];
         let mut left = geng::ui::column![];
@@ -225,7 +118,8 @@ impl Shop {
         }
         let go = geng::ui::Button::new(cx, "Go");
         if go.was_clicked() {
-            self.enabled = false;
+            self.model.transition = true;
+            self.updated = true;
         }
         let text_color = Rgba::BLACK;
         let button_color = Rgba::try_from("#aabbff").unwrap();
@@ -237,7 +131,13 @@ impl Shop {
         let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, text_color);
 
         let mut clans_info = geng::ui::column![];
-        let clan_members = calc_clan_members(&self.team);
+        let team: Vec<&Unit> = self
+            .model
+            .units
+            .iter()
+            .filter(|unit| unit.faction == Faction::Player)
+            .collect();
+        let clan_members = calc_clan_members(team);
         for (clan, config) in self.clan_configs.iter() {
             if config.description.len() < 3 {
                 continue;
@@ -338,44 +238,38 @@ impl Shop {
     }
 
     pub fn handle_event(&mut self, event: geng::Event) {
-        if !self.enabled {
-            return;
-        };
         match event {
             geng::Event::MouseDown {
                 position,
                 button: MouseButton::Left,
             } => {
                 let position = position.map(|x| x as f32);
-                let mouse_world_pos = self
-                    .camera
-                    .screen_to_world(self.framebuffer_size, position.map(|x| x as f32));
-
-                let mut drag_index = -1 as i32;
-                if self.money >= UNIT_COST {
-                    for (index, unit) in self.units.iter().enumerate() {
-                        if unit.is_touched(mouse_world_pos) {
-                            drag_index = index as i32;
-                            break;
-                        }
+                let mouse_world_pos = self.camera.screen_to_world(
+                    self.framebuffer_size.map(|x| x as f32),
+                    position.map(|x| x as f32),
+                );
+                let mut id = -1;
+                for unit in &self.model.units {
+                    if unit.is_touched(mouse_world_pos) {
+                        id = unit.id;
+                        self.drag_controller.source = if unit.faction == Faction::Player {
+                            DragSource::Team
+                        } else {
+                            DragSource::Shop
+                        };
+                        break;
                     }
                 }
-                if drag_index >= 0 {
-                    self.drag_controller.drag_target = Some(self.units.remove(drag_index as usize));
-                    self.drag_controller.source = DragSource::Shop;
-                } else {
-                    for (index, unit) in self.team.iter().enumerate() {
-                        if unit.is_touched(mouse_world_pos) {
-                            drag_index = index as i32;
-                            break;
+                if id >= 0 {
+                    if self.drag_controller.source == DragSource::Shop {
+                        if self.money >= UNIT_COST {
+                            self.drag_controller.drag_target =
+                                self.model.units.remove(&(id as i64));
                         }
+                    } else {
+                        self.drag_controller.drag_target = self.model.units.remove(&(id as i64));
                     }
-                    if drag_index >= 0 {
-                        self.drag_controller.drag_target =
-                            Some(self.team.remove(drag_index as usize));
-                        self.drag_controller.source = DragSource::Team;
-                        self.updated = true;
-                    }
+                    self.updated = true;
                 }
             }
             geng::Event::MouseUp {
@@ -399,20 +293,22 @@ impl Shop {
                         .extend_uniform(drag.render.radius.as_f32() * 2.0);
                         if slot_box.contains(drag.position()) {
                             dropped = true;
-                            if let Some(unit_in_slot) = self
-                                .team
-                                .iter_mut()
-                                .find(|unit| unit.position.x == i as i64)
-                            {
-                                dropped = unit_in_slot.merge(drag.clone());
-                            } else {
-                                drag.position = Position {
-                                    side: Faction::Player,
-                                    x: i as i64,
-                                };
-                                drag.faction = Faction::Player;
-                                drag.drag(drag.position.to_world());
-                                self.team.push(drag.clone());
+                            let unit_in_slot = self.model.units.iter_mut().find(|unit| {
+                                unit.faction == Faction::Player && unit.position.x == i as i64
+                            });
+                            match unit_in_slot {
+                                Some(unit_in_slot) => {
+                                    dropped = unit_in_slot.merge(drag.clone());
+                                }
+                                None => {
+                                    drag.position = Position {
+                                        side: Faction::Player,
+                                        x: i as i64,
+                                    };
+                                    drag.faction = Faction::Player;
+                                    drag.drag(drag.position.to_world());
+                                    self.model.units.insert(drag.clone());
+                                }
                             }
                             if dropped {
                                 if self.drag_controller.source == DragSource::Shop {
@@ -425,10 +321,8 @@ impl Shop {
                     }
                     if !dropped {
                         drag.restore();
-                        match self.drag_controller.source {
-                            DragSource::Team => self.team.push(drag),
-                            DragSource::Shop => self.units.push(drag),
-                        }
+                        self.model.units.insert(drag);
+                        self.updated = true;
                     }
                 }
             }
@@ -445,7 +339,10 @@ impl Shop {
     pub fn world_position(&self, position: Vec2<f64>) -> Vec2<R32> {
         let position = position.map(|x| x as f32);
         self.camera
-            .screen_to_world(self.framebuffer_size, position.map(|x| x as f32))
+            .screen_to_world(
+                self.framebuffer_size.map(|x| x as f32),
+                position.map(|x| x as f32),
+            )
             .map(|x| r32(x))
     }
 
@@ -459,7 +356,10 @@ impl Shop {
             if !force {
                 self.money -= REROLL_COST;
             }
-            if let Some(units) = tier_units_number(self.tier) {
+            self.model
+                .units
+                .retain(|unit| unit.faction == Faction::Player);
+            if let Some(count) = tier_units_number(self.tier) {
                 let mut rng = global_rng();
                 let options = self
                     .available
@@ -469,7 +369,7 @@ impl Shop {
                         Unit::new(
                             &template.clone(),
                             0,
-                            Position::zero(Faction::Player),
+                            Position::zero(Faction::Enemy),
                             &Statuses { map: hashmap! {} },
                         )
                     })
@@ -478,20 +378,25 @@ impl Shop {
                     error!("No units are available to roll");
                     return;
                 }
-                self.units = (0..units)
+                let units: Vec<Unit> = (0..count)
                     .map(|_| options.choose(&mut rng).unwrap().clone())
                     .collect();
-                for (index, unit) in self.units.iter_mut().enumerate() {
+                for (index, unit) in units.iter().enumerate() {
+                    let mut cloned = unit.clone();
                     let position = Position {
                         side: Faction::Enemy,
                         x: index.try_into().unwrap(),
                     };
-                    unit.render.render_position = position.to_world();
-                    unit.faction = position.side;
-                    unit.position = position.clone();
+                    cloned.render.render_position = position.to_world();
+                    cloned.faction = position.side;
+                    cloned.position = position.clone();
+                    cloned.id = self.model.next_id;
+                    self.model.units.insert(cloned);
+                    self.model.next_id += 1;
                 }
             }
             self.frozen = false;
+            self.updated = true;
         }
     }
 }

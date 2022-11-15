@@ -125,9 +125,11 @@ impl Logic {
         }
     }
 
-    pub fn init_player(&mut self, player: Vec<Unit>) {
-        for (index, unit) in player
-            .iter()
+    pub fn init_player(&mut self) {
+        for (index, unit) in self
+            .model
+            .units
+            .iter_mut()
             .sorted_by(|a, b| {
                 if a.position.x < b.position.x {
                     Ordering::Less
@@ -139,12 +141,11 @@ impl Logic {
             })
             .enumerate()
         {
-            let mut cloned = unit.clone();
-            cloned.position.x = index as i64;
-            cloned.id = self.model.next_id;
-            cloned.shop_unit = Box::new(Some(unit.clone()));
-            self.spawn_by_unit(cloned);
+            unit.shop_unit = Box::new(Some(unit.clone()));
+            unit.position.x = index as i64;            
         }
+
+        self.process_units(Self::apply_clan_effects);
     }
 
     pub fn init_enemies(&mut self, round: GameRound) {

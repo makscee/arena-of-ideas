@@ -41,7 +41,6 @@ struct FrameHistory {
     model: Model,
 }
 
-#[derive(PartialEq, Eq, Hash)]
 pub enum GameState {
     Shop,
     Battle,
@@ -60,8 +59,8 @@ pub struct Game {
     frame_texture: Texture,
     previous_texture: Texture,
     new_texture: Texture,
-    shop: Shop,
     state: GameState,
+    shop: Shop,
     custom: bool,
 }
 
@@ -87,7 +86,7 @@ impl Game {
             3,
         );
         let mut events = Events::new(assets.options.keys_mapping.clone());
-        let mut logic = Logic::new(model);
+        let mut logic = Logic::new(model.clone());
 
         let last_frame = FrameHistory {
             time: 0.0,
@@ -95,7 +94,7 @@ impl Game {
         };
         let history = vec![last_frame.clone()];
         let render = Render::new(geng, &assets, &config, logic.model.rounds.clone());
-        let mut shop = Shop::new(assets, render.camera.clone());
+        let mut shop = Shop::new(assets, render.camera.clone(), model, 1);
         shop.reroll(true);
 
         let mut game = Self {
@@ -111,9 +110,9 @@ impl Game {
             frame_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             new_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
             previous_texture: Texture::new_uninitialized(geng.ugli(), geng.window().size()),
-            shop,
             state: GameState::Shop,
             custom,
+            shop,
         };
         match custom {
             true => {
@@ -126,7 +125,8 @@ impl Game {
                         u.stats.stacks += (level - 1) * STACKS_PER_LVL;
                     });
                 }
-                game.shop.team = team;
+                team.into_iter()
+                    .for_each(|unit| game.logic.model.units.insert(unit));
             }
             false => {
                 game.logic.initialize(&mut game.events);
@@ -160,31 +160,23 @@ impl geng::State for Game {
         let last_frame = &self.last_frame;
 
         if self.time > self.last_frame.time {
-            if self.shop.updated && self.state == GameState::Shop {
-                self.shop.updated = false;
-                self.logic.model.units.clear();
-                for unit in self.shop.team.iter_mut() {
-                    unit.id = self.logic.model.next_id;
-                    self.logic.model.next_id += 1;
-                    self.logic.model.units.insert(unit.clone());
+            match self.state {
+                GameState::Shop => {
+                    if self.shop.updated {
+                        self.shop.updated = false;
+                        self.logic.model = self.shop.model.clone();
+                    }
+                    self.history.clear();
                 }
-            }
-
-            if self.state == GameState::Battle {
-                self.logic.update(delta_time);
-            }
-            if self.state == GameState::Shop && !self.shop.enabled {
-                self.logic.model.transition = true;
+                GameState::Battle => {
+                    self.logic.update(delta_time);
+                }
             }
 
             let new_frame = FrameHistory {
                 time: self.time,
                 model: self.logic.model.clone(),
             };
-            self.last_frame = new_frame.clone();
-            if self.state == GameState::Shop {
-                self.history.clear();
-            }
             self.history.push(new_frame);
         }
     }
@@ -216,15 +208,7 @@ impl geng::State for Game {
                 .get(index)
                 .unwrap_or(self.history.last().unwrap());
             game_time = entry.time;
-            self.render
-                .draw(game_time, &entry.model, &mut self.shop, framebuffer);
-            self.shop.draw(
-                &self.geng,
-                &self.assets,
-                game_time,
-                framebuffer,
-                &self.render.camera,
-            );
+            self.render.draw(game_time, &entry.model, framebuffer);
         }
 
         let blend_shader_program = &self.assets.postfx_render.blend_shader;
@@ -321,20 +305,30 @@ impl geng::State for Game {
                 ..default()
             },
         );
+        match self.state {
+            GameState::Shop => self
+                .shop
+                .draw(&self.geng, &self.assets, game_time, framebuffer),
+            GameState::Battle => {}
+        }
     }
     fn handle_event(&mut self, event: geng::Event) {
-        match event {
-            geng::Event::MouseDown { button, .. } => {
-                self.events
-                    .trigger_by_key(format!("Mouse{:?}", button), &mut self.logic);
+        match self.state {
+            GameState::Shop => {
+                self.shop.handle_event(event);
             }
-            geng::Event::KeyDown { key } => {
-                self.events
-                    .trigger_by_key(format!("{:?}", key), &mut self.logic);
-            }
-            _ => {}
+            GameState::Battle => match event {
+                geng::Event::MouseDown { button, .. } => {
+                    self.events
+                        .trigger_by_key(format!("Mouse{:?}", button), &mut self.logic);
+                }
+                geng::Event::KeyDown { key } => {
+                    self.events
+                        .trigger_by_key(format!("{:?}", key), &mut self.logic);
+                }
+                _ => {}
+            },
         }
-        self.shop.handle_event(event);
     }
     fn ui<'a>(&'a mut self, cx: &'a geng::ui::Controller) -> Box<dyn geng::ui::Widget + 'a> {
         use geng::ui::*;
@@ -347,8 +341,13 @@ impl geng::State for Game {
         self.timeline_captured = timeline.sense().unwrap().is_captured();
         let mut col = geng::ui::column![];
 
-        if let Some(overlay) = self.shop.ui(cx) {
-            col.push(overlay.boxed());
+        match self.state {
+            GameState::Shop => {
+                if let Some(overlay) = self.shop.ui(cx) {
+                    col.push(overlay.boxed());
+                }
+            }
+            _ => {}
         }
 
         col.push(
@@ -362,29 +361,23 @@ impl geng::State for Game {
         );
         col.align(vec2(0.5, 0.0)).boxed()
     }
+
     fn transition(&mut self) -> Option<geng::Transition> {
-        if self.last_frame.model.transition {
+        if self.logic .model.transition {
+            self.logic.model.transition = false;
             match self.state {
                 GameState::Shop => {
-                    self.state = GameState::Battle;
-                    self.logic.model.transition = false;
                     self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.0);
-                    self.shop.enabled = false;
-                    self.logic.model.units.clear();
-
-                    if !self.custom {
-                        self.logic.model.config.clans = calc_clan_members(&self.shop.team);
-                    }
-
-                    self.logic.init_player(self.shop.team.clone());
-                    self.shop.team = self
-                        .logic
+                    self.logic
                         .model
                         .units
-                        .iter()
-                        .map(|unit| unit.clone())
-                        .collect();
-                    self.shop.money = 10;
+                        .retain(|unit| unit.faction == Faction::Player);
+
+                    if !self.custom {
+                        self.logic.model.config.clans = calc_clan_members(&self.logic.model.units);
+                    }
+
+                    self.logic.init_player();
                     let round = self
                         .logic
                         .model
@@ -393,44 +386,34 @@ impl geng::State for Game {
                         .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
                         .clone();
                     self.logic.init_enemies(round.clone());
+                    self.state = GameState::Battle;
                 }
                 GameState::Battle => {
                     if self.logic.effects.is_empty() {
-                        self.state = GameState::Shop;
-                        self.logic.model.transition = false;
                         self.logic.model.render_model.clear();
-                        if self.logic.model.round == 1 {
-                            // round #3
-                            self.shop.tier = 2;
-                        } else if self.logic.model.round == 4 {
-                            // round #6
-                            self.shop.tier = 3;
-                        } else if self.logic.model.round == 7 {
-                            // round #6
-                            self.shop.tier = 4;
-                        } else if self.logic.model.round == 10 {
-                            // round #6
-                            self.shop.tier = 5;
-                        }
                         self.logic.model.round = cmp::min(
                             self.logic.model.round + 1,
                             self.logic.model.rounds.len() - 1,
                         );
+                        //Update tier every 3 rounds
+                        let tier = ((self.logic.model.round + 1) / 3 + 1) as u32;
 
-                        self.shop.team.iter_mut().for_each(|shop_unit| {
-                            let unit = self
-                                .logic
-                                .model
-                                .units
-                                .iter()
-                                .chain(self.logic.model.dead_units.iter())
-                                .find(|unit| unit.id == shop_unit.id);
-                            *shop_unit = unit.unwrap().shop_unit.clone().unwrap();
-                        });
-                        self.shop.enabled = true;
-                        self.shop.updated = true;
+                        let mut model = self.logic.model.clone();
+                        model.units = self
+                            .logic
+                            .model
+                            .units
+                            .iter()
+                            .chain(self.logic.model.dead_units.iter())
+                            .filter(|unit| unit.faction == Faction::Player)
+                            .map(|unit| unit.shop_unit.clone().unwrap())
+                            .collect();
+                        model.dead_units.clear();
+                        self.shop.tier = tier;
+                        self.shop.model = model;
                         self.shop.reroll(true);
                         self.history = vec![self.last_frame.clone()];
+                        self.state = GameState::Shop;
                     }
                 }
             }
