@@ -116,15 +116,8 @@ impl Game {
         };
         match custom {
             true => {
-                for (ind, unit) in config.player.iter().enumerate() {
-                    let unit = game.logic.spawn_by_type(
-                        &unit,
-                        Position {
-                            side: Faction::Player,
-                            x: ind as i64,
-                        },
-                    );
-                }
+                game.logic
+                    .initialize_custom(&mut game.events, &config.player, level);
             }
             false => {
                 game.logic.initialize(&mut game.events);
@@ -178,7 +171,9 @@ impl geng::State for Game {
                         .model
                         .shop
                         .refresh(&mut self.logic.model.next_id, &self.logic.model.statuses);
-                    self.logic.model.calculate_clan_members();
+                    if !self.custom {
+                        self.logic.model.calculate_clan_members();
+                    }
                 }
                 GameState::Battle => {
                     self.logic.update(delta_time);
@@ -189,6 +184,7 @@ impl geng::State for Game {
                 time: self.time,
                 model: self.logic.model.clone(),
             };
+            self.last_frame = new_frame.clone();
             self.history.push(new_frame);
         }
     }
@@ -408,6 +404,9 @@ impl geng::State for Game {
                     self.logic.init_round(round);
                 }
                 GameState::Battle => {
+                    if self.custom {
+                        return None;
+                    }
                     if self.logic.effects.is_empty() {
                         self.state = GameState::Shop;
                         // Upgrade tier every 3 rounds

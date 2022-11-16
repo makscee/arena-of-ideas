@@ -4,17 +4,28 @@ impl Logic {
     /// Spawns the unit and returns its id. If there is a unit in that position and there is an
     /// empty slot to the left, it and all units to the left are shifted to the left
     pub fn spawn_by_type(&mut self, unit_type: &UnitType, position: Position) -> Id {
+        let mut unit = self.create_by_type(unit_type, position);
+        self.spawn_by_unit(unit)
+    }
+
+    /// Create unit without putting it in model.units
+    pub fn create_by_type(&mut self, unit_type: &UnitType, position: Position) -> Unit {
         let mut template = &self
             .model
             .unit_templates
             .get(unit_type)
             .unwrap_or_else(|| panic!("Failed to find unit template for {unit_type}"));
-
-        let mut unit = Unit::new(&template, -1, position, &self.model.statuses);
-        self.spawn_by_unit(unit)
+        let mut unit = Unit::new(
+            &template,
+            self.model.next_id,
+            position,
+            &self.model.statuses,
+        );
+        self.model.next_id += 1;
+        unit
     }
 
-    pub fn apply_clan_effects(&mut self, unit: &mut Unit) {
+    pub fn apply_spawn_effects(&mut self, unit: &mut Unit) {
         for (clan, _) in &self.model.clan_effects.map {
             let mut size = 0;
             match unit.faction {
@@ -56,7 +67,7 @@ impl Logic {
                 color: status_color,
                 queue_id: Some("Spawn".to_owned()),
             };
-            self.effects.push_front(context, effect);
+            self.effects.push_back(context, effect);
         }
     }
 
@@ -73,7 +84,7 @@ impl Logic {
             .iter_mut()
             .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
             .for_each(|unit| unit.position.x += 1);
-        self.apply_clan_effects(&mut unit);
+        self.apply_spawn_effects(&mut unit);
         self.model.units.insert(unit);
         id
     }

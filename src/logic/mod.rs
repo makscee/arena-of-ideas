@@ -37,28 +37,25 @@ impl Logic {
     pub fn initialize_custom(
         &mut self,
         events: &mut Events,
-        custom_player: Vec<UnitType>,
-    ) -> Vec<Unit> {
+        custom_player: &Vec<UnitType>,
+        level: Option<i32>,
+    ) {
         self.init_time(events);
         self.model.transition = true;
-        custom_player
-            .iter()
-            .map(|unit_type| {
-                let mut template = &self
-                    .model
-                    .unit_templates
-                    .get(unit_type)
-                    .unwrap_or_else(|| panic!("Failed to find unit template for {unit_type}"));
-
-                let unit = Unit::new(
-                    &template,
-                    self.model.next_id,
-                    Position::zero(Faction::Player),
-                    &self.model.statuses,
-                );
-                unit
-            })
-            .collect()
+        self.effects.add_delay_by_id("Spawn".to_owned(), 1.0);
+        for (ind, unit) in custom_player.iter().enumerate() {
+            let mut unit = self.create_by_type(
+                unit,
+                Position {
+                    side: Faction::Player,
+                    x: ind as i64,
+                },
+            );
+            if let Some(level) = level {
+                unit.stats.stacks += STACKS_PER_LVL * (level - 1);
+            }
+            self.model.team.push(unit);
+        }
     }
 
     pub fn new(mut model: Model) -> Self {
