@@ -6,6 +6,75 @@
         },
         "statuses": [
             {
+                "name": "StatsOnShield",
+                "type": "Status",
+                "stacking": {
+                    "type": "Independent"
+                },
+                "listeners": [
+                    {
+                        "triggers": [
+                            {
+                                "type": "SelfDetectAttach",
+                                "status_name": "Shield",
+                                "status_action": "Add"
+                            }
+                        ],
+                        "effect": {
+                            "type": "ChangeStat",
+                            "stat": "Attack",
+                            "who": "Owner",
+                            "value": {
+                                "a": {
+                                    "stat": "Attack",
+                                    "type": "FindStat",
+                                    "who": "Owner"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
+                                "type": "Sum"
+                            }
+                        }
+                    },
+                    {
+                        "triggers": [
+                            {
+                                "type": "SelfDetectAttach",
+                                "status_name": "Shield",
+                                "status_action": "Remove"
+                            }
+                        ],
+                        "effect": {
+                            "type": "ChangeStat",
+                            "stat": "Attack",
+                            "who": "Owner",
+                            "value": {
+                                "a": {
+                                    "stat": "Attack",
+                                    "type": "FindStat",
+                                    "who": "Owner"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
+                                "type": "Sub"
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "activate": 4,
+        "filter": {
+            "Player": null
+        },
+        "statuses": [
+            {
                 "name": "ShieldFrontOnStart",
                 "type": "Status",
                 "stacking": {
@@ -33,119 +102,6 @@
                             "else": {
                                 "type": "Noop"
                             }
-                        }
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "activate": 4,
-        "filter": {
-            "Player": null
-        },
-        "statuses": [
-            {
-                "name": "StatsOnShield",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
-                },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "SelfDetectAttach",
-                                "status_name": "Shield",
-                                "status_action": "Add"
-                            }
-                        ],
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "Health",
-                                    "who": "Owner",
-                                    "value": {
-                                        "a": {
-                                            "stat": "Health",
-                                            "type": "FindStat",
-                                            "who": "Owner"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        },
-                                        "type": "Sum"
-                                    }
-                                },
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "Attack",
-                                    "who": "Owner",
-                                    "value": {
-                                        "a": {
-                                            "stat": "Attack",
-                                            "type": "FindStat",
-                                            "who": "Owner"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        },
-                                        "type": "Sum"
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "triggers": [
-                            {
-                                "type": "SelfDetectAttach",
-                                "status_name": "Shield",
-                                "status_action": "Remove"
-                            }
-                        ],
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "Health",
-                                    "who": "Owner",
-                                    "value": {
-                                        "a": {
-                                            "stat": "Health",
-                                            "type": "FindStat",
-                                            "who": "Owner"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        },
-                                        "type": "Sub"
-                                    }
-                                },
-                                {
-                                    "type": "ChangeStat",
-                                    "stat": "Attack",
-                                    "who": "Owner",
-                                    "value": {
-                                        "a": {
-                                            "stat": "Attack",
-                                            "type": "FindStat",
-                                            "who": "Owner"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 2
-                                        },
-                                        "type": "Sub"
-                                    }
-                                }
-                            ]
                         }
                     }
                 ]

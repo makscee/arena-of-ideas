@@ -3,7 +3,7 @@
     "effects": [
         {
             "type": "Visual",
-            "duration": 0.8,
+            "duration": 0.4,
             "parent": "Target",
             "follow": true,
             "radius": 0.03,
@@ -15,8 +15,8 @@
         },
         {
             "type": "Visual",
-            "duration": 1.0,
-            "queue_delay": 1.0,
+            "duration": 0.7,
+            "queue_delay": 0.5,
             "parent": "Owner",
             "partner": "Target",
             "follow": false,

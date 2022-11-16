@@ -1,6 +1,6 @@
 {
     "name": "Squire",
-    "description": "Detect Shield: give +{Value}/+{Value}",
+    "description": "Detect Shield: give +{Value} HP",
     "attack": 1,
     "health": 1,
     "tier": 1,
@@ -28,7 +28,7 @@
                         }
                     ],
                     "effect": {
-                        "preset": "effects/give_stats.json",
+                        "preset": "effects/give_hp.json",
                         "value": {
                             "type": "Var",
                             "name": "Value"

@@ -31,6 +31,7 @@ pub struct Shop {
     pub stock: Vec<(UnitType, UnitTemplate)>,
     pub case: Vec<Unit>,
     pub drag_controller: DragController<Unit>,
+    pub dirty: bool,
 }
 
 impl Shop {
@@ -48,6 +49,7 @@ impl Shop {
             drag_controller: DragController::new(),
             case: vec![],
             reroll: true,
+            dirty: true,
         }
     }
 
@@ -78,16 +80,11 @@ impl Shop {
             case.push(unit);
             *next_id += 1;
         }
+        self.dirty = true;
         self.case = case;
     }
 
-    pub fn draw(
-        &mut self,
-        render: &Render,
-        framebuffer: &mut ugli::Framebuffer,
-        game_time: f32,
-        team: &Vec<Unit>,
-    ) {
+    pub fn draw(&mut self, render: &Render, framebuffer: &mut ugli::Framebuffer, game_time: f32) {
         if let Some(drag) = &self.drag_controller.drag_target {
             render.draw_unit(&drag, game_time, framebuffer);
         };
@@ -244,6 +241,7 @@ impl Shop {
                         }
                     }
                 }
+                self.dirty = true;
             }
             geng::Event::MouseUp {
                 position,
@@ -299,6 +297,7 @@ impl Shop {
                         }
                     }
                 }
+                self.dirty = true;
             }
             geng::Event::MouseMove { position, .. } => {
                 if let Some(mut drag) = self.drag_controller.drag_target.take() {

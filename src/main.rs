@@ -152,14 +152,17 @@ impl geng::State for Game {
         match self.state {
             GameState::Battle => {}
             GameState::Shop => {
-                self.logic.model.units = self
-                    .logic
-                    .model
-                    .team
-                    .iter()
-                    .chain(self.logic.model.shop.case.iter())
-                    .map(|u| u.clone())
-                    .collect();
+                if self.logic.model.shop.dirty {
+                    self.logic.model.shop.dirty = false;
+                    self.logic.model.units = self
+                        .logic
+                        .model
+                        .team
+                        .iter()
+                        .chain(self.logic.model.shop.case.iter())
+                        .map(|u| u.clone())
+                        .collect();
+                }
             }
         }
 
@@ -189,6 +192,7 @@ impl geng::State for Game {
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        let _time_tracker = time_tracker.track("main draw");
         let window_size = self.geng.window().size();
         if self.frame_texture.size() != window_size {
             self.frame_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
@@ -314,12 +318,11 @@ impl geng::State for Game {
             },
         );
         match self.state {
-            GameState::Shop => self.logic.model.shop.draw(
-                &self.render,
-                framebuffer,
-                game_time,
-                &self.logic.model.team,
-            ),
+            GameState::Shop => self
+                .logic
+                .model
+                .shop
+                .draw(&self.render, framebuffer, game_time),
             GameState::Battle => {}
         }
     }

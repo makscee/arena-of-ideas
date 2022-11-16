@@ -3,7 +3,7 @@
     "effects": [
         {
             "type": "Visual",
-            "duration": 0.7,
+            "duration": 0.4,
             "parent": "Creator",
             "partner": "Target",
             "follow": false,
@@ -24,8 +24,8 @@
         },
         {
             "type": "Visual",
-            "duration": 1.5,
-            "queue_delay": 0.7,
+            "duration": 1.0,
+            "queue_delay": 0.4,
             "parent": "Target",
             "follow": false,
             "radius": 1.0,

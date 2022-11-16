@@ -13,8 +13,8 @@
             "color": "#fecc66",
             "ability": "Shield: cancel next dmg taken",
             "description": [
+                "Allies with Shield have +1 ATK",
                 "Start of battle: give Shield to front ally",
-                "Allies with Shield have +2/+2",
                 "Enemy died: give Shield to front ally"
             ]
         },
