@@ -15,12 +15,6 @@ impl EffectContainer for SoundEffect {
 impl EffectImpl for SoundEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
-        match logic.sound_controller.sounds.get_mut(&effect.name) {
-            Some(sound) => {
-                sound.looped = effect.r#loop;
-                sound.play();
-            }
-            None => error!("Sound not found: {}", effect.name),
-        }
+        logic.sound_controller.play_sound(effect.name.clone());
     }
 }
