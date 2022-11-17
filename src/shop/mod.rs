@@ -61,7 +61,7 @@ impl Shop {
         }
         self.reroll = false;
         let mut case = vec![];
-        for i in 0..TIER_UNITS[self.tier as usize] {
+        for i in 0..TIER_UNITS[self.tier - 1 as usize] {
             let unit = &self
                 .stock
                 .choose(&mut global_rng())
