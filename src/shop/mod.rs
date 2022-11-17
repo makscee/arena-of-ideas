@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use geng::ui::*;
 use geng::Draw2d;
 use usvg::Point;
@@ -291,15 +293,19 @@ impl Shop {
                         })
                         .extend_uniform(drag.render.radius.as_f32() * 2.0);
                         if slot_box.contains(drag.position()) {
-                            dropped = true;
-                            let mut unit_in_slot = team.iter_mut().find(|unit| {
-                                unit.faction == Faction::Player && unit.position.x == i as i64
-                            });
+                            let mut unit_in_slot =
+                                team.iter_mut().find(|unit| unit.position.x == i as i64);
                             match unit_in_slot {
                                 Some(unit_in_slot) => {
                                     if unit_in_slot.merge(drag.clone()) {
                                         dropped = true;
                                         sound_controller.merge();
+                                    } else if self.drag_controller.source == DragSource::Team {
+                                        let pos = drag.position.clone();
+                                        drag.position = unit_in_slot.position.clone();
+                                        unit_in_slot.position = pos.clone();
+                                        drag.drag(drag.position.to_world());
+                                        unit_in_slot.drag(unit_in_slot.position.to_world());
                                     }
                                 }
                                 None => {
@@ -310,6 +316,7 @@ impl Shop {
                                     drag.faction = Faction::Player;
                                     drag.drag(drag.position.to_world());
                                     team.push(drag.clone());
+                                    dropped = true;
                                 }
                             }
                             if dropped {
