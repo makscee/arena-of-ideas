@@ -32,6 +32,7 @@ pub struct Shop {
     pub case: Vec<Unit>,
     pub drag_controller: DragController<Unit>,
     pub dirty: bool,
+    pub toggle_clans_info: bool,
 }
 
 impl Shop {
@@ -50,6 +51,7 @@ impl Shop {
             case: vec![],
             reroll: true,
             dirty: true,
+            toggle_clans_info: false,
         }
     }
 
@@ -124,54 +126,60 @@ impl Shop {
         let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, text_color);
 
         let mut clans_info = geng::ui::column![];
-        for (clan, config) in clan_configs.iter() {
-            if config.description.len() < 3 {
-                continue;
-            }
-            let members = *clan_members.get(clan).unwrap_or(&0);
-            let mut descriptions = geng::ui::column![];
-            descriptions.push(
-                Text::new(
-                    config.ability.clone(),
-                    cx.geng().default_font(),
-                    40.0,
-                    config.color,
-                )
-                .boxed(),
-            );
-            for (i, text) in config.description.iter().enumerate() {
-                let activation_size = CLAN_BONUS_ACTIVATION_SIZE[i];
-                let color: Rgba<f32> = match activation_size <= members {
-                    true => config.color,
-                    false => Rgba::try_from("#818181").unwrap(),
-                };
+        let clans_info_button = Button::new(cx, "Clans Info");
+        if clans_info_button.was_clicked() {
+            self.toggle_clans_info = !self.toggle_clans_info;
+        }
+        if self.toggle_clans_info {
+            for (clan, config) in clan_configs.iter() {
+                if config.description.len() < 3 {
+                    continue;
+                }
+                let members = *clan_members.get(clan).unwrap_or(&0);
+                let mut descriptions = geng::ui::column![];
                 descriptions.push(
                     Text::new(
-                        format!("({}) {}", activation_size, text),
-                        cx.geng().default_font(),
-                        30.0,
-                        color,
-                    )
-                    .boxed(),
-                )
-            }
-            clans_info.push(
-                (
-                    Text::new(
-                        clan.to_string(),
+                        config.ability.clone(),
                         cx.geng().default_font(),
                         40.0,
-                        Rgba::WHITE,
+                        config.color,
                     )
-                    .padding_horizontal(16.0)
-                    .center()
-                    .background_color(config.color)
-                    .fixed_size(vec2(200.0, 0.0)),
-                    descriptions.padding_left(16.0),
-                )
-                    .row()
                     .boxed(),
-            )
+                );
+                for (i, text) in config.description.iter().enumerate() {
+                    let activation_size = CLAN_BONUS_ACTIVATION_SIZE[i];
+                    let color: Rgba<f32> = match activation_size <= members {
+                        true => config.color,
+                        false => Rgba::try_from("#818181").unwrap(),
+                    };
+                    descriptions.push(
+                        Text::new(
+                            format!("({}) {}", activation_size, text),
+                            cx.geng().default_font(),
+                            30.0,
+                            color,
+                        )
+                        .boxed(),
+                    )
+                }
+                clans_info.push(
+                    (
+                        Text::new(
+                            clan.to_string(),
+                            cx.geng().default_font(),
+                            40.0,
+                            Rgba::WHITE,
+                        )
+                        .padding_horizontal(16.0)
+                        .center()
+                        .background_color(config.color)
+                        .fixed_size(vec2(200.0, 0.0)),
+                        descriptions.padding_left(16.0),
+                    )
+                        .row()
+                        .boxed(),
+                )
+            }
         }
 
         left.push(
@@ -201,9 +209,17 @@ impl Shop {
         );
 
         shop_info.push(
+            clans_info_button
+                .background_color(button_color)
+                .flex_align(vec2(None, None), vec2(0.0, 1.0))
+                .uniform_padding(16.0)
+                .uniform_padding(16.0)
+                .boxed(),
+        );
+        shop_info.push(
             clans_info
                 .flex_align(vec2(Some(1.0), Some(1.0)), vec2(0.0, 1.0))
-                .padding_top(100.0)
+                .padding_top(32.0)
                 .padding_left(32.0)
                 .boxed(),
         );
