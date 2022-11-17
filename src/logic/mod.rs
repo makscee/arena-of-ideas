@@ -8,12 +8,12 @@ mod deaths;
 mod effects;
 mod events;
 mod particles;
+mod sound_controller;
 mod spawn;
 mod statuses;
 mod time;
 mod turn_queue;
 mod util;
-pub mod sound_controller;
 
 pub use effects::*;
 pub use events::*;

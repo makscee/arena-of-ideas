@@ -6,10 +6,7 @@ mod particle;
 mod text;
 mod unit;
 
-use geng::{
-    prelude::{bincode::config, itertools::Itertools},
-    Draw2d, PixelPerfectCamera,
-};
+use geng::{prelude::itertools::Itertools, Draw2d, PixelPerfectCamera};
 use text::*;
 pub use unit::*;
 

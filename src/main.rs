@@ -6,6 +6,7 @@ use geng::{
     prelude::{itertools::Itertools, *},
     ui::Theme,
 };
+use time_tracker::TimeTracker;
 use ugli::Texture;
 
 mod assets;
@@ -18,6 +19,7 @@ mod shader_edit;
 mod shop;
 mod simulation;
 mod tests;
+mod time_tracker;
 mod utility;
 
 use assets::*;
@@ -134,7 +136,6 @@ impl geng::State for Game {
         if self.timeline_captured || self.logic.paused {
             return;
         }
-
         let index = match self
             .history
             .binary_search_by_key(&r32(geng::prelude::Float::as_f32(self.time)), |entry| {
@@ -193,7 +194,6 @@ impl geng::State for Game {
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        //let _time_tracker = time_tracker.track("main draw");
         let window_size = self.geng.window().size();
         if self.frame_texture.size() != window_size {
             self.frame_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
@@ -418,7 +418,7 @@ impl geng::State for Game {
                     if self.logic.effects.is_empty() {
                         self.state = GameState::Shop;
                         // Upgrade tier every 3 rounds
-                        let tier = ((self.logic.model.round + 1) / 3 + 1);
+                        let tier = (self.logic.model.round + 1) / 3 + 1;
                         self.logic.model.shop = Shop::new(tier, &self.assets.units);
                         self.logic
                             .model

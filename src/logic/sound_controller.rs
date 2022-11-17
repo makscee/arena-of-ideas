@@ -2,7 +2,7 @@ use super::*;
 
 const ENABLE_SOUND: bool = false;
 pub struct SoundController {
-    pub sounds: Sounds,
+    sounds: Sounds,
 }
 
 impl SoundController {
@@ -42,7 +42,7 @@ impl SoundController {
         self.play_sound("level_up.ogg".to_string());
     }
 
-    fn play_sound(&self, file: String) {
+    pub fn play_sound(&self, file: String) {
         if !ENABLE_SOUND {
             return;
         }
