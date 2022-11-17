@@ -5,7 +5,7 @@ impl Logic {
     /// empty slot to the left, it and all units to the left are shifted to the left
     pub fn spawn_by_type(&mut self, unit_type: &UnitType, position: Position) -> Id {
         let mut unit = self.create_by_type(unit_type, position);
-        self.spawn_by_unit(unit)
+        self.spawn_by_unit(unit, false)
     }
 
     /// Create unit without putting it in model.units
@@ -71,7 +71,7 @@ impl Logic {
         }
     }
 
-    pub fn spawn_by_unit(&mut self, mut unit: Unit) -> Id {
+    pub fn spawn_by_unit(&mut self, mut unit: Unit, no_shift: bool) -> Id {
         let id = self.model.next_id;
         self.model.next_id += 1;
         unit.id = id;
@@ -79,11 +79,13 @@ impl Logic {
         let position = unit.position;
         // Check empty slots
         // Shift the units, assuming that there are no empty slots in between
-        self.model
-            .units
-            .iter_mut()
-            .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
-            .for_each(|unit| unit.position.x += 1);
+        if !no_shift {
+            self.model
+                .units
+                .iter_mut()
+                .filter(|unit| unit.position.side == position.side && unit.position.x >= position.x)
+                .for_each(|unit| unit.position.x += 1);
+        }
         self.apply_spawn_effects(&mut unit);
         self.model.units.insert(unit);
         id

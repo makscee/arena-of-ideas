@@ -131,7 +131,7 @@ impl Logic {
 
     pub fn init_round(&mut self, round: GameRound) {
         for unit in self.model.team.clone().iter() {
-            self.spawn_by_unit(unit.clone());
+            self.spawn_by_unit(unit.clone(), true);
         }
         for (index, unit) in self
             .model
