@@ -15,7 +15,7 @@
             "description": [
                 "Allies with Shield have +1 ATK",
                 "Start of battle: give Shield to front ally",
-                "Enemy died: give Shield to front ally"
+                "Shield now stacks"
             ]
         },
         "Wizards": {

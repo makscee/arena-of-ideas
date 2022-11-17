@@ -57,7 +57,43 @@
                 }
             ],
             "effect": {
-                "preset": "effects/vfx_attach_status.json"
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "And",
+                            "a": {
+                                "type": "More",
+                                "a": {
+                                    "type": "StatusCount",
+                                    "status": "Shield"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            "b": {
+                                "type": "Not",
+                                "condition": {
+                                    "type": "ClanSize",
+                                    "clan": "Protectors",
+                                    "count": 5
+                                }
+                            }
+                        },
+                        "then": {
+                            "type": "RemoveStatus"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    },
+                    {
+                        "preset": "effects/vfx_attach_status.json"
+                    }
+                ]
             }
         }
     ],

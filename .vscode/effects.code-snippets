@@ -290,5 +290,78 @@
 			"}"
 		],
 		"description": "Var"
+	},
+	"And": {
+		"prefix": "and",
+		"body": [
+			"{",
+			"    \"type\": \"And\",",
+			"    \"a\": $1$TM_SELECTED_TEXT,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "And"
+	},
+	"Or": {
+		"prefix": "or",
+		"body": [
+			"{",
+			"    \"type\": \"Or\",",
+			"    \"a\": $1$TM_SELECTED_TEXT,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "Or"
+	},
+	"Condition_clan": {
+		"prefix": "condition_clan",
+		"body": [
+			"{",
+			"    \"type\": \"ClanSize\",",
+			"    \"clan\": \"${1:Protectors}\",",
+			"    \"count\": ${2:4}",
+			"}"
+		],
+		"description": "Condition_clan"
+	},
+	"Not": {
+		"prefix": "not",
+		"body": [
+			"{",
+			"    \"type\": \"Not\",",
+			"    \"condition\": $TM_SELECTED_TEXT $1",
+			"}"
+		],
+		"description": "Not"
+	},
+	"Remove status": {
+		"prefix": "remove_status",
+		"body": [
+			"{",
+			"    \"type\": \"RemoveStatus\",",
+			"    \"status\": \"${1:Shield}\"",
+			"}"
+		],
+		"description": "Remove status"
+	},
+	"Noop": {
+		"prefix": "noop",
+		"body": [
+			"{",
+			"    \"type\": \"Noop\"",
+			"}"
+		],
+		"description": "Noop"
+	},
+	"More": {
+		"prefix": "more",
+		"body": [
+			"{",
+			"    \"type\": \"More\",",
+			"    \"a\": $1$TM_SELECTED_TEXT,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "More"
 	}
 }

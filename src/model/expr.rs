@@ -69,6 +69,9 @@ pub enum Expr {
         then: Box<Expr>,
         r#else: Box<Expr>,
     },
+    StatusCount {
+        status: StatusName,
+    },
 }
 
 impl Expr {
@@ -129,7 +132,7 @@ impl Expr {
                     })
                     .count() as i32
             }
-            Expr::If {
+            Self::If {
                 condition,
                 then,
                 r#else,
@@ -140,6 +143,12 @@ impl Expr {
                     r#else.calculate(&context, model)
                 }
             }
+            Self::StatusCount { status } => model
+                .get_who(Who::Target, &context)
+                .all_statuses
+                .iter()
+                .filter(|s| s.status.name == *status)
+                .count() as i32,
         }
     }
 }

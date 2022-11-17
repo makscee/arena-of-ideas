@@ -216,6 +216,10 @@ impl Model {
                 let who = self.get_who(*who, &context);
                 who.position.x == *position
             }
+            Condition::Or { a, b } => {
+                Self::check_condition(self, &*a, context)
+                    || Self::check_condition(self, &*b, context)
+            }
         }
     }
 

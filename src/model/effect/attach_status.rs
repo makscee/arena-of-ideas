@@ -68,6 +68,7 @@ impl EffectImpl for AttachStatusEffect {
                             vars
                         },
                         color: status_color,
+                        status_id: Some(status_id),
                         ..context.clone()
                     },
                     effect,

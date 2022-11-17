@@ -49,6 +49,10 @@ pub enum Condition {
         a: Box<Condition>,
         b: Box<Condition>,
     },
+    Or {
+        a: Box<Condition>,
+        b: Box<Condition>,
+    },
     Position {
         who: Who,
         position: i64,

@@ -107,50 +107,5 @@
                 ]
             }
         ]
-    },
-    {
-        "activate": 5,
-        "filter": {
-            "Player": null
-        },
-        "statuses": [
-            {
-                "name": "ShieldOnEnemyDied",
-                "type": "Status",
-                "stacking": {
-                    "type": "Independent"
-                },
-                "listeners": [
-                    {
-                        "triggers": [
-                            {
-                                "type": "DetectDeath",
-                                "condition": {
-                                    "type": "Faction",
-                                    "who": "Target",
-                                    "faction": "Enemy"
-                                }
-                            }
-                        ],
-                        "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "Position",
-                                "who": "Owner",
-                                "position": 0
-                            },
-                            "then": {
-                                "type": "AttachStatus",
-                                "who": "Owner",
-                                "status": "Shield"
-                            },
-                            "else": {
-                                "type": "Noop"
-                            }
-                        }
-                    }
-                ]
-            }
-        ]
     }
 ]
