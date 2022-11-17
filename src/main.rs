@@ -66,7 +66,7 @@ pub struct Game {
 impl Game {
     pub fn new(
         geng: &Geng,
-        assets: &Rc<Assets>,
+        assets: &mut Rc<Assets>,
         rounds: Vec<GameRound>,
         config: Config,
         round: usize,
@@ -89,7 +89,8 @@ impl Game {
         model.shop.refresh(&mut model.next_id, &assets.statuses);
 
         let mut events = Events::new(assets.options.keys_mapping.clone());
-        let mut logic = Logic::new(model.clone());
+        let assets_ref = Rc::get_mut(assets).unwrap();
+        let mut logic = Logic::new(model.clone(), mem::take(&mut assets_ref.sounds));
 
         let last_frame = FrameHistory {
             time: 0.0,
@@ -192,7 +193,7 @@ impl geng::State for Game {
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        let _time_tracker = time_tracker.track("main draw");
+        //let _time_tracker = time_tracker.track("main draw");
         let window_size = self.geng.window().size();
         if self.frame_texture.size() != window_size {
             self.frame_texture = Texture::new_uninitialized(self.geng.ugli(), window_size);
@@ -329,10 +330,12 @@ impl geng::State for Game {
     fn handle_event(&mut self, event: geng::Event) {
         match self.state {
             GameState::Shop => {
-                self.logic
-                    .model
-                    .shop
-                    .handle_event(&self.render, event, &mut self.logic.model.team);
+                self.logic.model.shop.handle_event(
+                    &self.logic.sound_controller,
+                    &self.render,
+                    event,
+                    &mut self.logic.model.team,
+                );
             }
             GameState::Battle => match event {
                 geng::Event::MouseDown { button, .. } => {
@@ -362,6 +365,7 @@ impl geng::State for Game {
             GameState::Shop => {
                 if let Some(overlay) = self.logic.model.shop.ui(
                     cx,
+                    &self.logic.sound_controller,
                     &mut self.logic.model.transition,
                     &self.assets.options.clan_configs,
                     &self.logic.model.config.clans,
@@ -405,6 +409,7 @@ impl geng::State for Game {
                     }
                     self.logic.model.units.clear();
                     self.logic.init_round(round);
+                    self.logic.sound_controller.start();
                 }
                 GameState::Battle => {
                     if self.custom {
@@ -514,8 +519,8 @@ fn main() {
                         match opts.command {
                             Some(command) => match command {
                                 Commands::CustomGame(custom) => {
-                                    let assets = Rc::new(assets);
-                                    return custom.run(&geng, &assets);
+                                    let mut assets = Rc::new(assets);
+                                    return custom.run(&geng, &mut assets);
                                 }
                                 Commands::Test => {
                                     tests::run_tests(assets);
@@ -543,8 +548,16 @@ fn main() {
                             None => (),
                         }
                         let rounds = assets.rounds.clone();
-                        let assets = Rc::new(assets);
-                        Box::new(Game::new(&geng, &assets, rounds, config, 0, false, None))
+                        let mut assets = Rc::new(assets);
+                        Box::new(Game::new(
+                            &geng,
+                            &mut assets,
+                            rounds,
+                            config,
+                            0,
+                            false,
+                            None,
+                        ))
                     }
                 },
             );

@@ -1,8 +1,9 @@
 use crate::shader_edit::ClanShaderConfig;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fs};
 
 use super::*;
 
+use geng::Sound;
 use once_cell::sync::Lazy;
 
 #[derive(Deserialize, geng::Assets)]
@@ -108,6 +109,8 @@ pub struct Assets {
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
+    #[asset(path = "sounds/")]
+    pub sounds: Sounds,
     pub card: Rc<ugli::Texture>,
     pub hearts: Rc<ugli::Texture>,
     pub swords_emblem: Rc<ugli::Texture>,
@@ -270,6 +273,13 @@ pub struct Shaders {
     #[deref]
     #[deref_mut]
     pub map: HashMap<String, Rc<ugli::Program>>,
+}
+
+#[derive(Deref, DerefMut, Default)]
+pub struct Sounds {
+    #[deref]
+    #[deref_mut]
+    pub map: HashMap<String, Sound>,
 }
 
 #[derive(Deref, DerefMut)]
@@ -564,6 +574,31 @@ impl geng::LoadAsset for Shaders {
     }
 
     const DEFAULT_EXT: Option<&'static str> = Some("json");
+}
+
+impl geng::LoadAsset for Sounds {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let mut map = HashMap::new();
+            let sound_paths = fs::read_dir(path).unwrap();
+
+            for path in sound_paths {
+                match path {
+                    Ok(path) => {
+                        let sound = <Sound as geng::LoadAsset>::load(&geng, &path.path()).await?;
+                        map.insert(path.file_name().to_str().unwrap().to_string(), sound);
+                    }
+                    Err(_) => error!("Cant load sound: {:?}", path),
+                }
+            }
+            Ok(Self { map })
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some(".ogg");
 }
 
 impl geng::LoadAsset for Textures {

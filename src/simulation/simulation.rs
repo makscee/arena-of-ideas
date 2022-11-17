@@ -126,7 +126,7 @@ impl<'a> Simulation<'a> {
                             self.units.clone(),
                             0.02,
                             MAX_LIVES,
-                            player
+                            player,
                         )
                         .run();
                         BattleView {

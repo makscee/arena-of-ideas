@@ -1,3 +1,5 @@
+use crate::assets::Sounds;
+
 use super::*;
 #[derive(clap::Args)]
 pub struct Simulate {

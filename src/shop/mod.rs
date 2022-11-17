@@ -93,6 +93,7 @@ impl Shop {
     pub fn ui<'b>(
         &mut self,
         cx: &'b geng::ui::Controller,
+        sound_controller: &'b SoundController,
         transition: &mut bool,
         clan_configs: &HashMap<Clan, ClanConfig>,
         clan_members: &HashMap<Clan, usize>,
@@ -105,10 +106,12 @@ impl Shop {
 
         let reroll = geng::ui::Button::new(cx, "reroll");
         if reroll.was_clicked() {
+            sound_controller.click();
             self.reroll(false);
         }
         let go = geng::ui::Button::new(cx, "Go");
         if go.was_clicked() {
+            sound_controller.click();
             *transition = true;
         }
         let text_color = Rgba::BLACK;
@@ -211,7 +214,13 @@ impl Shop {
         Some(col.uniform_padding(30.0))
     }
 
-    pub fn handle_event(&mut self, render: &Render, event: geng::Event, team: &mut Vec<Unit>) {
+    pub fn handle_event(
+        &mut self,
+        sound_controller: &SoundController,
+        render: &Render,
+        event: geng::Event,
+        team: &mut Vec<Unit>,
+    ) {
         match event {
             geng::Event::MouseDown {
                 position,
@@ -233,11 +242,13 @@ impl Shop {
                         self.drag_controller.source = DragSource::Team;
                         let unit = team.remove(ind);
                         self.drag_controller.drag_target = Some(unit);
+                        sound_controller.click();
                     } else if self.money >= UNIT_COST {
                         if let Some((ind, _)) = self.case.iter().find_position(|u| u.id == id) {
                             self.drag_controller.source = DragSource::Shop;
                             let unit = self.case.remove(ind);
                             self.drag_controller.drag_target = Some(unit);
+                            sound_controller.click();
                         }
                     }
                 }
@@ -252,6 +263,7 @@ impl Shop {
                     if self.world_position(render, position).x > r32(0.0)
                         && self.drag_controller.source == DragSource::Team
                     {
+                        sound_controller.sell();
                         self.money += UNIT_SELL_COST;
                         return;
                     }
@@ -269,7 +281,10 @@ impl Shop {
                             });
                             match unit_in_slot {
                                 Some(unit_in_slot) => {
-                                    dropped = unit_in_slot.merge(drag.clone());
+                                    if unit_in_slot.merge(drag.clone()) {
+                                        dropped = true;
+                                        sound_controller.merge();
+                                    }
                                 }
                                 None => {
                                     drag.position = Position {
@@ -283,6 +298,7 @@ impl Shop {
                             }
                             if dropped {
                                 if self.drag_controller.source == DragSource::Shop {
+                                    sound_controller.buy();
                                     self.money -= UNIT_COST;
                                 }
                             }

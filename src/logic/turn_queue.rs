@@ -15,6 +15,9 @@ impl Logic {
             }
             if self.model.units.iter().any(|x| x.faction == Faction::Enemy) {
                 self.model.lives -= 1;
+                self.sound_controller.lose();
+            } else {
+                self.sound_controller.win();
             }
             self.model.transition = self.model.lives > 0;
             self.effects.clear();

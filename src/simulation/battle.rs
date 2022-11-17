@@ -1,4 +1,5 @@
 use crate::{
+    assets::Sounds,
     model::{Position, MAX_LIVES},
     shop::Shop,
 };
@@ -59,7 +60,7 @@ impl Battle {
     }
 
     pub fn run(mut self) -> BattleResult {
-        let mut logic = Logic::new(self.model.clone());
+        let mut logic = Logic::new(self.model.clone(), Sounds { map: hashmap!() });
         let mut events = Events::new(vec![]);
         let mut stats_before: HashMap<UnitType, String> = hashmap! {};
         let mut stats_after: HashMap<UnitType, String> = hashmap! {};

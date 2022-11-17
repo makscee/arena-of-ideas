@@ -20,7 +20,16 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/vfx_injured_particles.json"
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "Sound",
+                                    "name": "face_hit.ogg"
+                                },
+                                {
+                                    "preset": "effects/vfx_injured_particles.json"
+                                }
+                            ]
                         }
                     },
                     {
@@ -31,8 +40,17 @@
                             }
                         ],
                         "effect": {
-                            "preset": "effects/vfx_injured_particles.json",
-                            "color": "#fd8008"
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "Sound",
+                                    "name": "face_hit.ogg"
+                                },
+                                {
+                                    "preset": "effects/vfx_injured_particles.json",
+                                    "color": "#fd8008"
+                                }
+                            ]
                         }
                     }
                 ]

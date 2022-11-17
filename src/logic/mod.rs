@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
+pub use self::sound_controller::SoundController;
+
 use super::*;
 mod auras;
 mod deaths;
@@ -11,6 +13,7 @@ mod statuses;
 mod time;
 mod turn_queue;
 mod util;
+pub mod sound_controller;
 
 pub use effects::*;
 pub use events::*;
@@ -26,12 +29,14 @@ pub struct Logic {
     pub model: Model,
     pub delta_time: Time,
     pub effects: EffectOrchestrator,
+    pub sound_controller: SoundController,
     pub paused: bool,
 }
 
 impl Logic {
     pub fn initialize(&mut self, events: &mut Events) {
         self.init_time(events);
+        self.sound_controller.start_music();
     }
 
     pub fn initialize_custom(
@@ -58,12 +63,14 @@ impl Logic {
         }
     }
 
-    pub fn new(mut model: Model) -> Self {
+    pub fn new(mut model: Model, sounds: Sounds) -> Self {
+        let sound_controller = SoundController::new(sounds);
         Self {
             model,
             delta_time: Time::new(0.0),
             effects: EffectOrchestrator::new(),
             paused: false,
+            sound_controller,
         }
     }
 

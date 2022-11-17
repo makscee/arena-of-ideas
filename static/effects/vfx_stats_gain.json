@@ -2,6 +2,10 @@
     "type": "List",
     "effects": [
         {
+            "type": "Sound",
+            "name": "buff.ogg"
+        },
+        {
             "type": "Visual",
             "duration": 0.4,
             "parent": "Creator",

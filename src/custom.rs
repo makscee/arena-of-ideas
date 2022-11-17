@@ -19,7 +19,7 @@ struct CustomConfig {
 }
 
 impl CustomGame {
-    pub fn run(self, geng: &Geng, assets: &Rc<Assets>) -> Box<dyn geng::State> {
+    pub fn run(self, geng: &Geng, assets: &mut Rc<Assets>) -> Box<dyn geng::State> {
         let custom = futures::executor::block_on(<CustomConfig as geng::LoadAsset>::load(
             geng,
             &static_path().join(&self.config),

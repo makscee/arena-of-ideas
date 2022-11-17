@@ -1,4 +1,4 @@
-use crate::Position;
+use crate::{assets::Sounds, Position};
 use std::{fs::create_dir, vec};
 
 use geng::prelude::itertools::sorted;

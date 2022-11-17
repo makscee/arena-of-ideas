@@ -21,6 +21,10 @@
                 "type": "List",
                 "effects": [
                     {
+                        "type": "Sound",
+                        "name": "absorb.ogg"
+                    },
+                    {
                         "type": "RemoveStatus",
                         "status": "Shield"
                     },

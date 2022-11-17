@@ -23,6 +23,7 @@ mod random;
 mod remove_status;
 mod repeat;
 mod revive;
+mod sound;
 mod spawn;
 mod turn;
 mod visual;
@@ -51,6 +52,7 @@ pub use random::*;
 pub use remove_status::*;
 pub use repeat::*;
 pub use revive::*;
+pub use sound::*;
 pub use spawn::*;
 pub use turn::*;
 pub use visual::*;
@@ -86,6 +88,7 @@ pub enum Effect {
     PositionTween(Box<PositionTweenEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
+    Sound(Box<SoundEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -118,6 +121,7 @@ pub enum RawEffect {
     PositionTween(Box<PositionTweenEffect>),
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
+    Sound(Box<SoundEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -187,6 +191,7 @@ impl std::fmt::Debug for Effect {
             Self::CustomTrigger(effect) => effect.fmt(f),
             Self::Turn(effect) => effect.fmt(f),
             Self::PositionTween(effect) => effect.fmt(f),
+            Self::Sound(effect) => effect.fmt(f),
         }
     }
 }
@@ -221,6 +226,7 @@ impl From<RawEffect> for Effect {
             RawEffect::RemoveStatus(effect) => Self::RemoveStatus(effect),
             RawEffect::CustomTrigger(effect) => Self::CustomTrigger(effect),
             RawEffect::PositionTween(effect) => Self::PositionTween(effect),
+            RawEffect::Sound(effect) => Self::Sound(effect),
         }
     }
 }
@@ -287,6 +293,7 @@ impl Effect {
             Effect::CustomTrigger(effect) => &mut **effect,
             Effect::Turn(effect) => &mut **effect,
             Effect::PositionTween(effect) => &mut **effect,
+            Effect::Sound(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -318,6 +325,7 @@ impl Effect {
             Effect::CustomTrigger(effect) => effect,
             Effect::Turn(effect) => effect,
             Effect::PositionTween(effect) => effect,
+            Effect::Sound(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {
