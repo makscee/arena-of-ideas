@@ -66,6 +66,8 @@ impl Battle {
         let mut stats_after: HashMap<UnitType, String> = hashmap! {};
 
         logic.initialize(&mut events);
+        logic.model.team = self.player.clone();
+        logic.init_round(self.round.clone());
         self.player.iter().for_each(|unit| {
             stats_before.insert(
                 unit.unit_type.clone(),
@@ -77,10 +79,6 @@ impl Battle {
                     unit.stats.stacks
                 ),
             );
-            // logic.spawn_by_unit(unit.clone());
-        });
-        self.round.enemies.iter().rev().for_each(|unit_config| {
-            logic.spawn_by_type(unit_config, Position::zero(Faction::Enemy));
         });
 
         loop {
@@ -112,13 +110,7 @@ impl Battle {
                     })
                     .collect();
                 //todo: revert to team units
-                let player = model
-                    .units
-                    .clone()
-                    .into_iter()
-                    .chain(model.dead_units.clone().into_iter())
-                    .filter(|unit| unit.faction == Faction::Player)
-                    .collect();
+                let player = model.team.clone();
                 let units_count = if player_won {
                     units_alive.len() as i32
                 } else {

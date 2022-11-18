@@ -94,7 +94,7 @@ impl Walkthrough {
                         assets.statuses.clone(),
                         round.clone(),
                         assets.units.clone(),
-                        0.02,
+                        0.2,
                         lives,
                         variant,
                     )
@@ -128,46 +128,49 @@ impl Walkthrough {
                     lives -= 1;
                 }
 
-                if lives <= 0 {
-                    results.push(battle_result);
-                    break;
-                }
-
-                round_index += 1;
                 let current_tier = tier;
-                if let Some(next_update_round_unwrap) = next_update_round {
-                    if next_update_round_unwrap == round_index + 1 {
-                        tier += 1;
-                        next_update_round = shop_updates.pop_front();
-                    }
-                }
-
-                let s1: HashSet<UnitType> = battle_result
-                    .player
-                    .iter()
-                    .map(|unit| unit.unit_type.clone())
-                    .collect();
-                let s2: HashSet<UnitType> =
-                    player.iter().map(|unit| unit.unit_type.clone()).collect();
-                (&s1 - &s2).iter().cloned().for_each(|unit| {
-                    *hero_picks.entry(unit).or_insert(0) += 1;
-                });
-                player = battle_result.player.clone();
-                let enemy = battle_result.enemy.clone();
-                let alives: Vec<UnitType> = battle_result.units_alive.clone();
                 let player_types: Vec<UnitType> = battle_result
                     .player
                     .iter()
                     .map(|unit| unit.unit_type.clone())
                     .collect();
+
+                let enemy = battle_result.enemy.clone();
+                let alives: Vec<UnitType> = battle_result.units_alive.clone();
+
                 let log = format!(
                     "Walkthrough:{}/{}, Round: {}, Time: {:?}, Lives: {}, Tier: {}\nStats Before:{:?} \nPlayer: {:?} \nEnemy: {:?}\nAlives: {:?}\nStats after:{:?} ",
-                    index + 1, walkthrough_config.repeats, round_index, round_start.elapsed(), lives,  current_tier, battle_result.stats_before, player_types, enemy,  alives, battle_result.stats_after
+                    index + 1, walkthrough_config.repeats, round_index, round_start.elapsed(), lives,  current_tier, battle_result.stats_before, player_types, enemy, alives, battle_result.stats_after
                     );
 
                 write_to(battles_path.join(format!("{}.txt", round.name)), &log)
                     .expect("Failed to write results");
-                results.push(battle_result);
+                results.push(battle_result.clone());
+
+                if lives > 0 {
+                    round_index += 1;
+
+                    if let Some(next_update_round_unwrap) = next_update_round {
+                        if next_update_round_unwrap == round_index + 1 {
+                            tier += 1;
+                            next_update_round = shop_updates.pop_front();
+                        }
+                    }
+
+                    let s1: HashSet<UnitType> = battle_result
+                        .player
+                        .iter()
+                        .map(|unit| unit.unit_type.clone())
+                        .collect();
+                    let s2: HashSet<UnitType> =
+                        player.iter().map(|unit| unit.unit_type.clone()).collect();
+                    (&s1 - &s2).iter().cloned().for_each(|unit| {
+                        *hero_picks.entry(unit).or_insert(0) += 1;
+                    });
+                    player = battle_result.player.clone();
+                } else {
+                    break;
+                }
             }
             let mut lost_lives = "".to_owned();
             let mut last_result = None;
@@ -201,7 +204,12 @@ impl Walkthrough {
                 .clone()
                 .into_iter()
                 .for_each(|unit| *hero_picks_last.entry(unit.unit_type).or_insert(0) += 1);
-            *end_rounds.entry(last_result.round.clone()).or_insert(0) += 1;
+            let round_name = if last_result.player_won {
+                "Win".to_owned()
+            } else {
+                last_result.round.clone()
+            };
+            *end_rounds.entry(round_name).or_insert(0) += 1;
             let last_result_types: Vec<UnitType> = last_result
                 .player
                 .iter()
