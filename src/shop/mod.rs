@@ -101,6 +101,8 @@ impl Shop {
         transition: &mut bool,
         clan_configs: &HashMap<Clan, ClanConfig>,
         clan_members: &HashMap<Clan, usize>,
+        lives: &i32,
+        round: &usize,
     ) -> Option<impl Widget + 'b> {
         let mut col = geng::ui::column![];
         let mut shop_info = geng::ui::column![];
@@ -126,6 +128,11 @@ impl Shop {
         let text = if self.money == 1 { "coin" } else { "coins" };
         let text = format!("{} {}", self.money, text);
         let coins = geng::ui::Text::new(text, cx.geng().default_font(), 60.0, text_color);
+
+        let text = format!("Round: {}", round + 1);
+        let round = geng::ui::Text::new(text, cx.geng().default_font(), 90.0, text_color);
+        let text = format!("Lives: {}", lives);
+        let lives = geng::ui::Text::new(text, cx.geng().default_font(), 90.0, text_color);
 
         let mut clans_info = geng::ui::column![];
         let clans_info_button = Button::new(cx, "Clans Info");
@@ -211,10 +218,21 @@ impl Shop {
         );
 
         shop_info.push(
+            lives
+                .flex_align(vec2(None, None), vec2(0.0, 1.0))
+                .uniform_padding(8.0)
+                .boxed(),
+        );
+        shop_info.push(
+            round
+                .flex_align(vec2(None, None), vec2(0.0, 1.0))
+                .uniform_padding(8.0)
+                .boxed(),
+        );
+        shop_info.push(
             clans_info_button
                 .background_color(button_color)
                 .flex_align(vec2(None, None), vec2(0.0, 1.0))
-                .uniform_padding(16.0)
                 .uniform_padding(16.0)
                 .boxed(),
         );

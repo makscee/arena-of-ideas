@@ -369,6 +369,8 @@ impl geng::State for Game {
                     &mut self.logic.model.transition,
                     &self.assets.options.clan_configs,
                     &self.logic.model.config.clans,
+                    &self.logic.model.lives,
+                    &self.logic.model.round,
                 ) {
                     col.push(overlay.boxed());
                 }
