@@ -9,18 +9,16 @@ impl Logic {
         if !self.effects.is_empty() {
             return;
         }
-        if self.check_end() {
+        if let Some(victory) = self.check_end() {
             if self.model.lives <= 0 {
                 return;
             }
-            if self.model.units.iter().any(|x| x.faction == Faction::Enemy) {
+            if !victory {
                 self.model.lives -= 1;
                 self.sound_controller.lose();
             } else {
-                self.sound_controller.win();
             }
             self.model.transition = self.model.lives > 0;
-            self.effects.clear();
             return;
         }
         debug!("Process turn phase = {:?}", self.model.phase.turn_phase);
@@ -72,12 +70,19 @@ impl Logic {
         )
     }
 
-    fn check_end(&mut self) -> bool {
-        self.model
+    pub fn check_end(&mut self) -> Option<bool> {
+        // true = victory, false = lose
+        if self
+            .model
             .units
             .iter()
             .unique_by(|unit| unit.faction)
             .count()
             < 2
+        {
+            Some(!self.model.units.iter().any(|x| x.faction == Faction::Enemy))
+        } else {
+            None
+        }
     }
 }

@@ -2,6 +2,7 @@ use super::*;
 use std::collections::VecDeque;
 
 mod field;
+mod panel;
 mod particle;
 mod text;
 mod unit;
@@ -39,6 +40,7 @@ const STATUS_DESC_BACKGROUND: Rgba<f32> = Rgba {
 #[derive(Clone)]
 pub struct RenderModel {
     pub particles: Collection<Particle>,
+    pub panels: Collection<Panel>,
     pub last_player_action_time: Time,
     pub last_enemy_action_time: Time,
     pub damage_instances: VecDeque<i32>,
@@ -63,6 +65,7 @@ impl RenderModel {
             last_player_action_time: Time::ZERO,
             last_enemy_action_time: Time::ZERO,
             damage_instances: VecDeque::from(vec![1; 3]),
+            panels: Collection::new(),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
@@ -300,36 +303,9 @@ impl Render {
             }
         }
 
-        // Info panel
-        let line_height = 44.0;
-        let text_size = 55.0;
-        let left_margin = 20.0;
-        let framebuffer_size = framebuffer.size();
-
-        //todo: fix
-        // let round = self
-        //     .rounds
-        //     .get(model.round)
-        //     .unwrap_or_else(|| panic!("Failed to find round number: {}", 0))
-        //     .clone();
-        // let lines: Vec<String> = vec![
-        //     format!("--- {} ---", round.name),
-        //     format!("Lives: {}", model.lives),
-        // ];
-        // for (i, line) in lines.into_iter().enumerate() {
-        //     self.geng.default_font().draw(
-        //         framebuffer,
-        //         &PixelPerfectCamera,
-        //         &line,
-        //         vec2(
-        //             left_margin,
-        //             framebuffer_size[1] as f32 - line_height * (i as f32 + 1.0),
-        //         ),
-        //         geng::TextAlign::LEFT,
-        //         text_size,
-        //         Rgba::try_from("#6d6d6d").unwrap(),
-        //     );
-        // }
+        for panel in &model.render_model.panels {
+            self.draw_panel(panel, game_time, framebuffer);
+        }
     }
 
     fn draw_statuses_desc(&self, unit: &Unit, framebuffer: &mut ugli::Framebuffer) {

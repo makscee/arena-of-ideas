@@ -18,6 +18,7 @@ mod kill;
 mod list;
 mod message;
 mod noop;
+mod panel;
 mod position_tween;
 mod random;
 mod remove_status;
@@ -47,6 +48,7 @@ pub use kill::*;
 pub use list::*;
 pub use message::*;
 pub use noop::*;
+pub use panel::*;
 pub use position_tween::*;
 pub use random::*;
 pub use remove_status::*;
@@ -89,6 +91,7 @@ pub enum Effect {
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
     Sound(Box<SoundEffect>),
+    Panel(Box<PanelEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -122,6 +125,7 @@ pub enum RawEffect {
     RemoveStatus(Box<RemoveStatusEffect>),
     CustomTrigger(Box<CustomTriggerEffect>),
     Sound(Box<SoundEffect>),
+    Panel(Box<PanelEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -192,6 +196,7 @@ impl std::fmt::Debug for Effect {
             Self::Turn(effect) => effect.fmt(f),
             Self::PositionTween(effect) => effect.fmt(f),
             Self::Sound(effect) => effect.fmt(f),
+            Self::Panel(effect) => effect.fmt(f),
         }
     }
 }
@@ -227,6 +232,7 @@ impl From<RawEffect> for Effect {
             RawEffect::CustomTrigger(effect) => Self::CustomTrigger(effect),
             RawEffect::PositionTween(effect) => Self::PositionTween(effect),
             RawEffect::Sound(effect) => Self::Sound(effect),
+            RawEffect::Panel(effect) => Self::Panel(effect),
         }
     }
 }
@@ -294,6 +300,7 @@ impl Effect {
             Effect::Turn(effect) => &mut **effect,
             Effect::PositionTween(effect) => &mut **effect,
             Effect::Sound(effect) => &mut **effect,
+            Effect::Panel(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -326,6 +333,7 @@ impl Effect {
             Effect::Turn(effect) => effect,
             Effect::PositionTween(effect) => effect,
             Effect::Sound(effect) => effect,
+            Effect::Panel(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

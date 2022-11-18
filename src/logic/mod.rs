@@ -7,6 +7,7 @@ mod auras;
 mod deaths;
 mod effects;
 mod events;
+mod panels;
 mod particles;
 mod sound_controller;
 mod spawn;

@@ -169,6 +169,17 @@ impl EffectContext {
             None => "None".to_owned(),
         }
     }
+    pub fn empty() -> EffectContext {
+        EffectContext {
+            queue_id: None,
+            owner: 0,
+            creator: 0,
+            target: 0,
+            status_id: None,
+            color: Rgba::BLACK,
+            vars: default(),
+        }
+    }
 }
 
 impl Logic {
