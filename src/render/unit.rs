@@ -283,7 +283,6 @@ impl Render {
         .draw_2d(&self.geng, framebuffer, &self.camera);
     }
 
-    //todo: fix
     pub fn draw_hover(
         &self,
         model: &Model,
@@ -292,11 +291,22 @@ impl Render {
         framebuffer: &mut ugli::Framebuffer,
         vars: HashMap<VarName, i32>,
     ) {
+        if unit.clans.is_empty() {
+            return;
+        }
         let aabb = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
             .extend_uniform(0.7)
             .translate(vec2(0.0, -1.8));
-        draw_2d::Quad::new(aabb, Rgba::BLACK).draw_2d(&self.geng, framebuffer, camera);
-        let font_size = FONT_SIZE * aabb.height();
+        let clan_color = self.assets.options.clan_configs[&unit.clans[0]]
+            .color
+            .clone();
+        draw_2d::Quad::new(aabb, clan_color).draw_2d(&self.geng, framebuffer, camera);
+        draw_2d::Quad::new(aabb.extend_uniform(-0.08), Rgba::BLACK).draw_2d(
+            &self.geng,
+            framebuffer,
+            camera,
+        );
+        let font_size = FONT_SIZE;
         let template = model.unit_templates.get(&unit.unit_type).unwrap();
         let text = strfmt(&template.description, &vars).unwrap_or(template.description.clone());
         crate::render::draw_text_wrapped(

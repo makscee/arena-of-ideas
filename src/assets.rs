@@ -111,9 +111,6 @@ pub struct Assets {
     pub shaders: Shaders,
     #[asset(path = "sounds/")]
     pub sounds: Sounds,
-    pub card: Rc<ugli::Texture>,
-    pub hearts: Rc<ugli::Texture>,
-    pub swords_emblem: Rc<ugli::Texture>,
     #[asset(path = "rounds/round*.json", range = "1..=10")]
     pub rounds: Vec<GameRound>,
     #[asset(path = "shaders/clan_shaders/_list.json")]

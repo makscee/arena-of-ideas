@@ -91,13 +91,6 @@ impl CardRender {
         let name_aabb = layout(NAME_AABB);
         let description_aabb = layout(DESCRIPTION_AABB);
 
-        // Card texture
-        draw_2d::TexturedQuad::new(card_aabb, &*self.assets.card).draw_2d(
-            &self.geng,
-            framebuffer,
-            camera,
-        );
-
         // Damage
         draw_2d::Text::unit(
             &**self.geng.default_font(),
