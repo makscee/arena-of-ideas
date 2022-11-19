@@ -31,7 +31,7 @@
                 },
                 {
                     "type": "Message",
-                    "text": "+HP"
+                    "text": "+{Value} ATK"
                 },
                 {
                     "preset": "effects/vfx_stats_gain.json"

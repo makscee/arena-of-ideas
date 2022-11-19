@@ -15,8 +15,8 @@
         },
         {
             "type": "Visual",
-            "duration": 0.7,
-            "queue_delay": 0.5,
+            "duration": 0.5,
+            "queue_delay": 0.6,
             "parent": "Owner",
             "partner": "Target",
             "follow": false,

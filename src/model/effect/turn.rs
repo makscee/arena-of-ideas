@@ -14,10 +14,10 @@ pub enum TurnPhase {
 impl TurnPhase {
     pub fn duration(&self) -> Time {
         match self {
-            TurnPhase::None => Time::new(0.3),
+            TurnPhase::None => Time::new(0.2),
             TurnPhase::PreStrike => Time::new(0.3),
             TurnPhase::Strike => Time::new(0.05),
-            TurnPhase::PostStrike => Time::new(0.1),
+            TurnPhase::PostStrike => Time::new(0.3),
         }
     }
     fn position(&self, unit: &Unit) -> Vec2<RealImpl<f32>> {

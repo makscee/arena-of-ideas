@@ -1,7 +1,7 @@
 {
     "type": "Visual",
-    "duration": 0.5,
-    "queue_delay": 0.5,
+    "duration": 0.6,
+    "queue_delay": 0.6,
     "parent": "Target",
     "follow": false,
     "radius": 1.0,
