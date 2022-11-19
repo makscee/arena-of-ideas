@@ -6,17 +6,30 @@ const TIMER_POST_STRIKE: f32 = 0.05;
 const TIMER_STRIKE: f32 = 0.05;
 impl Logic {
     pub fn process_turn(&mut self) {
-        if !self.effects.is_empty() {
+        if !self.effects.is_empty() || self.model.transition {
             return;
         }
         if let Some(victory) = self.check_end() {
             if self.model.lives <= 0 {
                 return;
             }
-            if !victory {
+            if victory {
+                self.sound_controller.win();
+                Panel::create(
+                    &mut self.effects,
+                    "Victory".to_owned(),
+                    r32(2.0),
+                    Some(Rgba::try_from("#23ff40").unwrap()),
+                );
+            } else {
                 self.model.lives -= 1;
                 self.sound_controller.lose();
-            } else {
+                Panel::create(
+                    &mut self.effects,
+                    "Defeat".to_owned(),
+                    r32(2.0),
+                    Some(Rgba::try_from("#7c0000").unwrap()),
+                );
             }
             self.model.transition = self.model.lives > 0;
             return;

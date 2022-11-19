@@ -392,7 +392,7 @@ impl geng::State for Game {
     }
 
     fn transition(&mut self) -> Option<geng::Transition> {
-        if self.logic.model.transition {
+        if self.logic.model.transition && self.logic.effects.is_empty() {
             self.logic.model.transition = false;
             match self.state {
                 GameState::Shop => {
