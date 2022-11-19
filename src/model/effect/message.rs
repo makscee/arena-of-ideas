@@ -7,6 +7,25 @@ use strfmt::strfmt;
 pub struct MessageEffect {
     pub text: String,
     pub color: Option<Rgba<f32>>,
+    pub position: Option<Position>,
+}
+
+impl MessageEffect {
+    pub fn create(
+        effects: &mut EffectOrchestrator,
+        text: String,
+        color: Option<Rgba<f32>>,
+        position: Position,
+    ) {
+        effects.push_front(
+            EffectContext::empty(),
+            Effect::Message(Box::new(MessageEffect {
+                text,
+                color,
+                position: Some(position),
+            })),
+        );
+    }
 }
 
 impl EffectContainer for MessageEffect {
@@ -18,7 +37,10 @@ impl EffectImpl for MessageEffect {
         if let Some(color) = &self.color {
             context.color = color.clone();
         }
-        let position = logic.model.get_who(Who::Target, &context).position;
+        let position = match self.position {
+            Some(position) => position,
+            None => logic.model.get_who(Who::Target, &context).position,
+        };
         let text = strfmt(&self.text, &context.vars).unwrap_or(self.text);
         logic.model.render_model.add_text(
             position,

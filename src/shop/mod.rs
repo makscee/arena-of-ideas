@@ -35,6 +35,7 @@ pub struct Shop {
     pub drag_controller: DragController<Unit>,
     pub dirty: bool,
     pub toggle_clans_info: bool,
+    pub new_messages: Vec<(String, Option<Rgba<f32>>, Position)>,
 }
 
 impl Shop {
@@ -47,13 +48,14 @@ impl Shop {
 
         Self {
             tier,
-            money: 10,
+            money: 100,
             stock,
             drag_controller: DragController::new(),
-            case: vec![],
+            case: default(),
             reroll: true,
             dirty: true,
             toggle_clans_info: false,
+            new_messages: default(),
         }
     }
 
@@ -318,6 +320,18 @@ impl Shop {
                                     if unit_in_slot.merge(drag.clone()) {
                                         dropped = true;
                                         sound_controller.merge();
+                                        if unit_in_slot.stats.stacks_left_to_level() == 3 {
+                                            self.new_messages.push((
+                                                "Level Up!".to_owned(),
+                                                Some(Rgba::try_from("#004ac2").unwrap()),
+                                                unit_in_slot.position.clone(),
+                                            ));
+                                        }
+                                        self.new_messages.push((
+                                            "+Stack".to_owned(),
+                                            Some(Rgba::try_from("#00e2de").unwrap()),
+                                            unit_in_slot.position.clone(),
+                                        ));
                                     } else if self.drag_controller.source == DragSource::Team {
                                         let pos = drag.position.clone();
                                         drag.position = unit_in_slot.position.clone();

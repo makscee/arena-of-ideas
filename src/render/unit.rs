@@ -242,7 +242,7 @@ impl Render {
         .fit_into(health)
         .draw_2d(&self.geng, framebuffer, &self.camera);
         if unit.faction == Faction::Player {
-            draw_2d::Quad::new(lvl.extend_uniform(0.03), Rgba::try_from("#ffc83c").unwrap())
+            draw_2d::Quad::new(lvl.extend_uniform(0.03), Rgba::try_from("#004ac2").unwrap())
                 .draw_2d(&self.geng, framebuffer, &self.camera);
             draw_2d::Text::unit(
                 self.geng.default_font().clone(),
@@ -254,7 +254,7 @@ impl Render {
             if unit.stats.level() < MAX_LEVEL {
                 draw_2d::Quad::new(
                     next_lvl.extend_uniform(0.03),
-                    Rgba::try_from("#b68404").unwrap(),
+                    Rgba::try_from("#00e2de").unwrap(),
                 )
                 .draw_2d(&self.geng, framebuffer, &self.camera);
                 draw_2d::Text::unit(

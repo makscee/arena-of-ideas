@@ -3,6 +3,7 @@
 
 use clap::Parser;
 use geng::{
+    net::Message,
     prelude::{itertools::Itertools, *},
     ui::Theme,
 };
@@ -180,6 +181,17 @@ impl geng::State for Game {
                     if !self.custom {
                         self.logic.model.calculate_clan_members();
                     }
+                    for (text, color, position) in self.logic.model.shop.new_messages.iter() {
+                        MessageEffect::create(
+                            &mut self.logic.effects,
+                            text.clone(),
+                            color.clone(),
+                            position.clone(),
+                        );
+                    }
+                    self.logic.model.shop.new_messages.clear();
+                    self.logic.process_effects();
+                    self.logic.model.render_model.update(delta_time)
                 }
                 GameState::Battle => {
                     self.logic.update(delta_time);
