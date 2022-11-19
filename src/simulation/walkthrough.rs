@@ -94,7 +94,7 @@ impl Walkthrough {
                         assets.statuses.clone(),
                         round.clone(),
                         assets.units.clone(),
-                        0.2,
+                        0.5,
                         lives,
                         variant,
                     )
@@ -103,7 +103,7 @@ impl Walkthrough {
                         best_win = match &best_win {
                             None => Some(result),
                             Some(win) => {
-                                if win.units_alive.len() < result.units_alive.len() {
+                                if win.damage_sum < result.damage_sum {
                                     Some(result)
                                 } else {
                                     Some(win.clone())
@@ -114,7 +114,7 @@ impl Walkthrough {
                         best_lose = match &best_lose {
                             None => Some(result),
                             Some(lose) => {
-                                if lose.units_alive.len() > result.units_alive.len() {
+                                if lose.damage_sum < result.damage_sum {
                                     Some(result)
                                 } else {
                                     Some(lose.clone())
@@ -204,7 +204,7 @@ impl Walkthrough {
                 .clone()
                 .into_iter()
                 .for_each(|unit| *hero_picks_last.entry(unit.unit_type).or_insert(0) += 1);
-            let round_name = if last_result.player_won {
+            let round_name = if lives > 0 {
                 "Win".to_owned()
             } else {
                 last_result.round.clone()
@@ -347,7 +347,8 @@ impl Walkthrough {
                 .for_each(|mut variant| {
                     variant.append(&mut player.clone());
                     variant = Self::check_stackable(variant, all_units.clone());
-                    let variants = Self::check_max_slots(variant);
+                    let mut variants = Self::check_max_slots(variant);
+                    variants = Self::position_combinations(variants);
                     variants.into_iter().for_each(|variant| {
                         result.push(variant);
                     });
@@ -361,6 +362,22 @@ impl Walkthrough {
             return vec![team.clone()];
         }
         team.into_iter().combinations(SIDE_SLOTS).collect()
+    }
+
+    fn position_combinations(variants: Vec<Vec<Unit>>) -> Vec<Vec<Unit>> {
+        let mut result: Vec<Vec<Unit>> = vec![];
+        variants.into_iter().for_each(|team| {
+            let mut permutations = team.into_iter().permutations(SIDE_SLOTS).collect();
+            result.append(&mut permutations);
+        });
+
+        result.iter_mut().for_each(|team| {
+            for (index, unit) in team.iter_mut().enumerate() {
+                unit.position.x = index as i64;
+            }
+        });
+
+        result
     }
 
     fn check_stackable(team: Vec<Unit>, all_units: Vec<UnitTemplate>) -> Vec<Unit> {

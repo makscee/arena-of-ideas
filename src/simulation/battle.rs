@@ -65,21 +65,27 @@ impl Battle {
         let mut stats_before: HashMap<UnitType, String> = hashmap! {};
         let mut stats_after: HashMap<UnitType, String> = hashmap! {};
 
-        logic.initialize(&mut events);
-        logic.model.team = self.player.clone();
-        logic.init_round(self.round.clone());
-        self.player.iter().for_each(|unit| {
+        self.player.iter_mut().for_each(|unit| {
             stats_before.insert(
                 unit.unit_type.clone(),
                 format!(
-                    "{}/{}::{}::{}",
+                    "{}/{},L{},S{},P{},ID{}",
                     unit.stats.attack,
                     unit.stats.health,
                     unit.stats.level(),
-                    unit.stats.stacks
+                    unit.stats.stacks,
+                    unit.position.x,
+                    unit.id,
                 ),
             );
+
+            unit.id = self.model.next_id;
+            self.model.next_id += 1;
         });
+
+        logic.initialize(&mut events);
+        logic.model.team = self.player.clone();
+        logic.init_round(self.round.clone());
 
         loop {
             logic.update(self.delta_time);
@@ -99,11 +105,13 @@ impl Battle {
                         stats_after.insert(
                             unit.unit_type.clone(),
                             format!(
-                                "{}/{}::{}::{}",
+                                "{}/{},L{},S{},P{},ID{}",
                                 unit.stats.attack,
                                 unit.stats.health,
                                 unit.stats.level(),
-                                unit.stats.stacks
+                                unit.stats.stacks,
+                                unit.position.x,
+                                unit.id,
                             ),
                         );
                         unit.unit_type
