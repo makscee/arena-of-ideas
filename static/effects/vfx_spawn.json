@@ -1,0 +1,23 @@
+{
+    "type": "List",
+    "effects": [
+        {
+            "type": "Visual",
+            "duration": 0.6,
+            "queue_delay": 0.6,
+            "parent": "Target",
+            "follow": true,
+            "radius": 0.03,
+            "render": {
+                "path": "shaders/vfx_particle_spin.glsl",
+                "vertices": 2,
+                "instances": 300
+            }
+        },
+        {
+            "type": "Message",
+            "text": "Spawn",
+            "color": "#c3008f"
+        }
+    ]
+}

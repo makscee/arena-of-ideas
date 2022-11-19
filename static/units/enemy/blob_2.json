@@ -7,6 +7,7 @@
         {
             "name": "SpawnBlobDeathrattle",
             "type": "Status",
+            "order": 1000,
             "stacking": {
                 "type": "Independent"
             },
@@ -21,11 +22,14 @@
                         "type": "Repeat",
                         "times": {
                             "type": "Const",
-                            "value": 4
+                            "value": 2
                         },
                         "effect": {
                             "type": "Spawn",
-                            "unit_type": "blob_0"
+                            "unit_type": "blob_1",
+                            "after_effect": {
+                                "preset": "effects/vfx_spawn.json"
+                            }
                         }
                     }
                 }

@@ -363,5 +363,15 @@
 			"}"
 		],
 		"description": "More"
+	},
+	"Message": {
+		"prefix": "message",
+		"body": [
+			"{",
+			"    \"type\": \"Message\",",
+			"    \"text\": $1$TM_SELECTED_TEXT",
+			"}"
+		],
+		"description": "Message"
 	}
 }
