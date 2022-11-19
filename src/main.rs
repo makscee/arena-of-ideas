@@ -392,7 +392,7 @@ impl geng::State for Game {
     }
 
     fn transition(&mut self) -> Option<geng::Transition> {
-        if self.logic.model.transition && self.logic.effects.is_empty() {
+        if self.logic.model.transition {
             self.logic.model.transition = false;
             match self.state {
                 GameState::Shop => {
@@ -404,6 +404,7 @@ impl geng::State for Game {
                         Some(Rgba::try_from("#a52600").unwrap()),
                     );
                     self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.0);
+                    self.logic.model.in_battle = true;
                     let round = self
                         .logic
                         .model

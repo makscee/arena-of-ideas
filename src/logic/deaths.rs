@@ -44,12 +44,10 @@ impl Logic {
     }
     pub fn process_deaths(&mut self) {
         let ids = self.model.units.ids().copied().collect::<Vec<_>>();
-        let mut new_death = false;
         for id in ids {
             let unit = self.model.units.get(&id).unwrap();
             if unit.permanent_stats.health <= 0 {
                 self.model.dead_units.insert(unit.clone());
-                new_death = true;
                 for (effect, trigger, vars, status_id, color) in
                     unit.all_statuses.iter().flat_map(|status| {
                         status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))

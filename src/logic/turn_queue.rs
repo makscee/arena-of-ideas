@@ -6,7 +6,11 @@ const TIMER_POST_STRIKE: f32 = 0.05;
 const TIMER_STRIKE: f32 = 0.05;
 impl Logic {
     pub fn process_turn(&mut self) {
-        if !self.effects.is_empty() || self.model.transition {
+        if !self.effects.is_empty() {
+            return;
+        }
+        if !self.model.in_battle {
+            self.model.transition = self.model.lives > 0;
             return;
         }
         if let Some(victory) = self.check_end() {
@@ -31,7 +35,7 @@ impl Logic {
                     Some(Rgba::try_from("#7c0000").unwrap()),
                 );
             }
-            self.model.transition = self.model.lives > 0;
+            self.model.in_battle = false;
             return;
         }
         debug!("Process turn phase = {:?}", self.model.phase.turn_phase);

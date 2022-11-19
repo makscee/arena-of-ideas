@@ -36,7 +36,7 @@ impl Render {
             framebuffer,
             &self.camera,
             &panel.text,
-            vec2(t * 5.0, 2.0),
+            vec2(t * 15.0, 2.0),
             TextAlign::CENTER,
             font_size,
             panel.color,

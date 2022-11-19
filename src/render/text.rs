@@ -73,7 +73,7 @@ impl TextBlock {
             text.into(),
             text_type,
             color,
-            1.0,
+            0.7,
         )
     }
 
