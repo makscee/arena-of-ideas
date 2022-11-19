@@ -1,7 +1,7 @@
 {
     "name": "glob_3",
-    "health": 60,
-    "attack": 30,
+    "health": 12,
+    "attack": 12,
     "radius": 0.4,
     "statuses": [
         {

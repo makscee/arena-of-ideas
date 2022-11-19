@@ -3,7 +3,9 @@
     "statuses": [],
     "enemies": [
         "clot_1",
+        "clot_1",
         "glob_1",
-        "blob_1"
+        "blob_1",
+        "blob_2"
     ]
 }

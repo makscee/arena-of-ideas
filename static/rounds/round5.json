@@ -2,6 +2,9 @@
     "name": "Round_05",
     "statuses": [],
     "enemies": [
+        "clot_0",
+        "clot_0",
+        "clot_1",
         "glob_1",
         "blob_1"
     ]
