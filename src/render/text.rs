@@ -10,7 +10,8 @@ pub struct Text {
     pub text: String,
     pub text_type: TextType,
     pub color: Rgba<f32>,
-    pub scale: f32,
+    pub scale: f32, // animated by update()
+    pub size: f32,  // initial size
 }
 
 #[derive(Clone)]
@@ -102,7 +103,7 @@ impl TextBlock {
         text: String,
         text_type: TextType,
         color: Rgba<f32>,
-        scale: f32,
+        size: f32,
     ) {
         for text in texts.iter_mut() {
             text.position += direction * 0.5;
@@ -114,7 +115,8 @@ impl TextBlock {
             text,
             text_type,
             color,
-            scale,
+            size,
+            scale: 1.0,
         });
     }
 }
