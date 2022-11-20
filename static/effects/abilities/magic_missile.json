@@ -1,97 +1,84 @@
 {
-    "type": "ChangeTarget",
-    "filter": "Enemies",
-    "condition": {
-        "type": "Always"
+    "type": "AddVar",
+    "name": "Value",
+    "value": {
+        "type": "Const",
+        "value": 1
     },
     "effect": {
-        "type": "List",
-        "effects": [
-            {
-                "name": "BeforeMissile",
-                "type": "CustomTrigger",
-                "who": "Target"
+        "type": "Repeat",
+        "times": {
+            "type": "If",
+            "condition": {
+                "type": "ClanSize",
+                "clan": "Wizards",
+                "count": 5
             },
-            {
-                "type": "Repeat",
-                "times": {
-                    "type": "If",
-                    "condition": {
-                        "type": "ClanSize",
-                        "clan": "Wizards",
-                        "count": 5
-                    },
-                    "then": {
-                        "type": "Const",
-                        "value": 2
-                    },
-                    "else": {
-                        "type": "Const",
-                        "value": 1
-                    }
+            "then": {
+                "a": {
+                    "type": "Const",
+                    "value": 2
                 },
-                "effect": {
-                    "type": "Damage",
-                    "types": [
-                        "MagicMissile"
-                    ],
-                    "value": {
-                        "type": "If",
-                        "condition": {
-                            "type": "ClanSize",
-                            "clan": "Wizards",
-                            "count": 4
-                        },
-                        "then": {
-                            "type": "Const",
-                            "value": 2
-                        },
-                        "else": {
-                            "type": "Const",
-                            "value": 1
-                        }
-                    }
-                }
-            },
-            {
-                "type": "If",
-                "condition": {
-                    "type": "ClanSize",
-                    "clan": "Wizards",
-                    "count": 2
+                "b": {
+                    "type": "Var",
+                    "name": "Value"
                 },
-                "then": {
-                    "stat": "Health",
-                    "type": "ChangeStat",
-                    "who": "Owner",
-                    "value": {
-                        "a": {
-                            "stat": "Health",
-                            "type": "FindStat",
-                            "who": "Owner"
-                        },
-                        "b": {
-                            "type": "Const",
-                            "value": 1
-                        },
-                        "type": "Sum"
-                    }
-                },
-                "else": {
-                    "type": "Noop"
-                }
+                "type": "Mul"
             },
-            {
-                "type": "ChangeContext",
-                "color": "#c00ee8",
-                "effect": {
-                    "preset": "effects/vfx_laser.json"
-                }
-            },
-            {
-                "name": "MagicMissile",
-                "type": "CustomTrigger"
+            "else": {
+                "type": "Var",
+                "name": "Value"
             }
-        ]
+        },
+        "effect": {
+            "type": "ChangeTarget",
+            "filter": "Enemies",
+            "condition": {
+                "type": "Always"
+            },
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "name": "BeforeMissile",
+                        "type": "CustomTrigger",
+                        "who": "Target"
+                    },
+                    {
+                        "type": "Damage",
+                        "types": [
+                            "MagicMissile"
+                        ],
+                        "value": {
+                            "type": "If",
+                            "condition": {
+                                "type": "ClanSize",
+                                "clan": "Wizards",
+                                "count": 3
+                            },
+                            "then": {
+                                "type": "Const",
+                                "value": 2
+                            },
+                            "else": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    },
+                    {
+                        "type": "ChangeContext",
+                        "color": "#c00ee8",
+                        "effect": {
+                            "preset": "effects/vfx_laser.json"
+                        }
+                    },
+                    {
+                        "name": "MagicMissile",
+                        "type": "CustomTrigger"
+                    }
+                ]
+            }
+        }
     }
 }
