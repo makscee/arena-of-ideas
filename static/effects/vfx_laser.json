@@ -2,6 +2,10 @@
     "type": "List",
     "effects": [
         {
+            "type": "Sound",
+            "name": "remote_attack.ogg"
+        },
+        {
             "type": "Visual",
             "duration": 0.2,
             "parent": "Owner",

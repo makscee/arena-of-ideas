@@ -319,13 +319,15 @@ impl Shop {
                                 Some(unit_in_slot) => {
                                     if unit_in_slot.merge(drag.clone()) {
                                         dropped = true;
-                                        sound_controller.merge();
                                         if unit_in_slot.stats.stacks_left_to_level() == 3 {
+                                            sound_controller.level_up();
                                             self.new_messages.push((
                                                 "Level Up!".to_owned(),
                                                 Some(Rgba::try_from("#004ac2").unwrap()),
                                                 unit_in_slot.position.clone(),
                                             ));
+                                        } else {
+                                            sound_controller.merge();
                                         }
                                         self.new_messages.push((
                                             "+Stack".to_owned(),

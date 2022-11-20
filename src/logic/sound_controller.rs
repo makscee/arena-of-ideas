@@ -1,13 +1,16 @@
 use super::*;
 
-const ENABLE_SOUND: bool = false;
 pub struct SoundController {
     sounds: Sounds,
+    enabled: bool,
 }
 
 impl SoundController {
     pub fn new(sounds: Sounds) -> Self {
-        Self { sounds }
+        Self {
+            sounds,
+            enabled: true,
+        }
     }
 
     pub fn start_music(&mut self) {
@@ -19,11 +22,11 @@ impl SoundController {
     }
 
     pub fn buy(&self) {
-        self.play_sound("shop.ogg".to_string());
+        self.play_sound("coin.ogg".to_string());
     }
 
     pub fn sell(&self) {
-        self.play_sound("shop.ogg".to_string());
+        self.play_sound("coin.ogg".to_string());
     }
 
     pub fn start(&self) {
@@ -39,18 +42,26 @@ impl SoundController {
     }
 
     pub fn merge(&self) {
+        self.play_sound("merge.ogg".to_string());
+    }
+
+    pub fn level_up(&self) {
         self.play_sound("level_up.ogg".to_string());
     }
 
     pub fn play_sound(&self, file: String) {
-        if !ENABLE_SOUND {
+        if !self.enabled {
             return;
         }
         self.sounds[&file].play();
     }
 
+    pub fn enable(&mut self, enable: bool) {
+        self.enabled = enable;
+    }
+
     pub fn play_music_loop(&mut self, file: String) {
-        if !ENABLE_SOUND {
+        if !self.enabled {
             return;
         }
         let mut music = self
