@@ -1,6 +1,6 @@
 {
     "name": "Shaman",
-    "description": "Gain Shield: cast 1/2/3 Magic Missile",
+    "description": "Gain Shield: cast {Value} Magic Missile",
     "attack": 2,
     "health": 3,
     "tier": 2,
