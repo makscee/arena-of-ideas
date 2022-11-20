@@ -69,6 +69,6 @@ impl SoundController {
             .get_mut(&file)
             .expect(&format!("Can't find music file {}", file));
         music.looped = true;
-        music.play();
+        music.play().set_volume(0.7);
     }
 }
