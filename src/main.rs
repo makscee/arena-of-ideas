@@ -449,6 +449,8 @@ impl geng::State for Game {
                         self.logic.model.render_model.clear();
                         self.logic.model.round =
                             (self.logic.model.round + 1).min(self.logic.model.rounds.len() - 1);
+                        self.logic.model.shop.money =
+                            (self.logic.model.round as u32 + self.logic.model.shop.money).min(10);
                         self.logic.model.units.clear();
                         self.logic.model.dead_units.clear();
                         self.history = vec![self.last_frame.clone()];

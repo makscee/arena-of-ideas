@@ -21,7 +21,7 @@ const UNIT_SELL_COST: Money = 1;
 const REROLL_COST: Money = 1;
 const TIER_UP_COST: [Money; 5] = [5, 7, 8, 9, 10];
 const TIER_UNITS: [usize; 6] = [3, 4, 4, 5, 5, 6];
-const CLAN_BONUS_ACTIVATION_SIZE: [usize; 3] = [2, 4, 5];
+const CLAN_BONUS_ACTIVATION_SIZE: [usize; 2] = [3, 5];
 
 pub type Money = u32;
 
@@ -48,7 +48,7 @@ impl Shop {
 
         Self {
             tier,
-            money: 100,
+            money: 6,
             stock,
             drag_controller: DragController::new(),
             case: default(),
@@ -143,7 +143,7 @@ impl Shop {
         }
         if self.toggle_clans_info {
             for (clan, config) in clan_configs.iter() {
-                if config.description.len() < 3 {
+                if config.description.len() < 2 {
                     continue;
                 }
                 let members = *clan_members.get(clan).unwrap_or(&0);
