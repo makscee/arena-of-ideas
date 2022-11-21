@@ -1,7 +1,7 @@
 {
     "name": "glob_0",
-    "health": 4,
-    "attack": 4,
+    "health": 2,
+    "attack": 2,
     "radius": 0.4,
     "statuses": [],
     "action": {
