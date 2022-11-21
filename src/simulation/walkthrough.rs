@@ -367,7 +367,8 @@ impl Walkthrough {
     fn position_combinations(variants: Vec<Vec<Unit>>) -> Vec<Vec<Unit>> {
         let mut result: Vec<Vec<Unit>> = vec![];
         variants.into_iter().for_each(|team| {
-            let mut permutations = team.into_iter().permutations(SIDE_SLOTS).collect();
+            let count = team.len();
+            let mut permutations = team.into_iter().permutations(count).collect();
             result.append(&mut permutations);
         });
 
