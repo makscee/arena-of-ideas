@@ -4,7 +4,6 @@
             "color": "#800040",
             "ability": "Devour: kill unit and gain their stats",
             "description": [
-                "Devour gives +2/+2 additional stats",
                 "When Devouring, deal victims ATK to random enemy",
                 "Devour gives +2/+2 permanent stats"
             ]
@@ -13,7 +12,6 @@
             "color": "#fecc66",
             "ability": "Shield: cancel next dmg taken",
             "description": [
-                "Allies with Shield have +1 ATK",
                 "Start of battle: give Shield to front ally",
                 "Shield now stacks"
             ]
@@ -22,7 +20,6 @@
             "color": "#c00ee8",
             "ability": "Magic Missile: deal 1 dmg to random enemy",
             "description": [
-                "Caster gains +1 HP on Magic Missile hit",
                 "Magic Missile +1 DMG",
                 "Magic Missile strikes twice"
             ]
