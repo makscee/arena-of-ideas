@@ -46,14 +46,16 @@ impl Logic {
                     .model
                     .units
                     .iter()
-                    .find(|u| u.position.x == 0 && u.faction == Faction::Player)
+                    .filter(|u| u.faction == Faction::Player)
+                    .min_by(|x, y| x.position.x.cmp(&y.position.x))
                     .expect("Front player unit not found")
                     .id;
                 self.model.phase.enemy = self
                     .model
                     .units
                     .iter()
-                    .find(|u| u.position.x == 0 && u.faction == Faction::Enemy)
+                    .filter(|u| u.faction == Faction::Enemy)
+                    .min_by(|x, y| x.position.x.cmp(&y.position.x))
                     .expect("Front enemy unit not found")
                     .id;
                 self.model.phase.turn_phase = TurnPhase::PreStrike;

@@ -85,6 +85,7 @@ impl Battle {
 
         logic.initialize(&mut events);
         logic.model.team = self.player.clone();
+        logic.model.in_battle = true;
         logic.init_round(self.round.clone());
 
         loop {
@@ -117,7 +118,6 @@ impl Battle {
                         unit.unit_type
                     })
                     .collect();
-                //todo: revert to team units
                 let player = model.team.clone();
                 let units_count = if player_won {
                     units_alive.len() as i32
