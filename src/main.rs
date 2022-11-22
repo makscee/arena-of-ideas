@@ -234,7 +234,8 @@ impl geng::State for Game {
                 .get(index)
                 .unwrap_or(self.history.last().unwrap());
             game_time = entry.time;
-            self.render.draw(game_time, &entry.model, framebuffer);
+            self.render
+                .draw(game_time, &entry.model, framebuffer, &self.state);
         }
 
         let blend_shader_program = &self.assets.postfx_render.blend_shader;

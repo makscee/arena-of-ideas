@@ -121,7 +121,13 @@ impl Render {
             framebuffer_size: Vec2::ZERO,
         }
     }
-    pub fn draw(&mut self, game_time: f32, model: &Model, framebuffer: &mut ugli::Framebuffer) {
+    pub fn draw(
+        &mut self,
+        game_time: f32,
+        model: &Model,
+        framebuffer: &mut ugli::Framebuffer,
+        game_state: &GameState,
+    ) {
         ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
         self.draw_field(
             &self.assets.custom_renders.field,
@@ -142,10 +148,15 @@ impl Render {
             self.draw_unit(unit, game_time, framebuffer);
 
             self.draw_unit_stats(unit, framebuffer);
+            let force_draw_hover = match game_state {
+                GameState::Shop => true,
+                GameState::Battle => false,
+            } && unit.faction == Faction::Enemy;
 
             // On unit hover
-            if (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
-                < unit.render.radius.as_f32()
+            if force_draw_hover
+                || (mouse_world_pos - unit.render.render_position.map(|x| x.as_f32())).len()
+                    < unit.render.radius.as_f32()
             {
                 // Draw extra ui: statuses descriptions, damage/heal descriptions
                 hovered_unit = Some(unit);

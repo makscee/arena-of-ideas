@@ -295,25 +295,25 @@ impl Render {
             return;
         }
         let aabb = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
-            .extend_uniform(0.7)
-            .translate(vec2(0.0, -1.8));
+            .extend_uniform(0.5)
+            .translate(vec2(0.0, -1.5));
         let clan_color = self.assets.options.clan_configs[&unit.clans[0]]
             .color
             .clone();
         draw_2d::Quad::new(aabb, clan_color).draw_2d(&self.geng, framebuffer, camera);
-        draw_2d::Quad::new(aabb.extend_uniform(-0.08), Rgba::BLACK).draw_2d(
+        draw_2d::Quad::new(aabb.extend_uniform(-0.05), Rgba::BLACK).draw_2d(
             &self.geng,
             framebuffer,
             camera,
         );
-        let font_size = FONT_SIZE;
+        let font_size = 0.17;
         let template = model.unit_templates.get(&unit.unit_type).unwrap();
         let text = strfmt(&template.description, &vars).unwrap_or(template.description.clone());
         crate::render::draw_text_wrapped(
             &**self.geng.default_font(),
             &text,
             font_size,
-            aabb.extend_uniform(-0.1),
+            aabb.extend_uniform(-0.07),
             Rgba::WHITE,
             framebuffer,
             camera,
