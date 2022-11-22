@@ -115,7 +115,7 @@ impl Shop {
         let reroll = geng::ui::Button::new(cx, "reroll");
         if reroll.was_clicked() {
             sound_controller.click();
-            self.reroll(false);
+            self.reroll();
         }
         let go = geng::ui::Button::new(cx, "Go");
         if go.was_clicked() {
@@ -390,9 +390,9 @@ impl Shop {
             .map(|x| r32(x))
     }
 
-    /// Rerolls the shop units. If `force` is true, then the cost is not paid.
-    pub fn reroll(&mut self, force: bool) {
-        if self.money >= REROLL_COST || force {
+    /// Rerolls the shop units.
+    pub fn reroll(&mut self) {
+        if self.money >= REROLL_COST {
             self.money -= REROLL_COST;
             self.reroll = true;
         }

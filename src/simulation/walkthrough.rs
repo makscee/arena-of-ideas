@@ -80,7 +80,14 @@ impl Walkthrough {
                     Self::shop_variants(&player, count.0, count.1, tier, all_units.clone());
                 let mut best_win: Option<BattleResult> = None;
                 let mut best_lose: Option<BattleResult> = None;
-                variants.into_iter().for_each(|variant| {
+                let mut i = 0;
+                let length = variants.len();
+                for variant in variants.into_iter() {
+                    i += 1;
+                    println!(
+                        "Sim:{}/{}, Round:{}, Variant: {}/{}",
+                        index, walkthrough_config.repeats, round.name, i, length
+                    );
                     let clans = Self::calc_clan_members(
                         &variant.iter().map(|unit| unit.template.clone()).collect(),
                     );
@@ -110,6 +117,7 @@ impl Walkthrough {
                                 }
                             }
                         };
+                        break;
                     } else {
                         best_lose = match &best_lose {
                             None => Some(result),
@@ -122,7 +130,7 @@ impl Walkthrough {
                             }
                         };
                     }
-                });
+                }
                 let battle_result = best_win.unwrap_or_else(|| best_lose.unwrap());
                 if battle_result.damage_sum < 0 {
                     lives -= 1;
@@ -377,7 +385,6 @@ impl Walkthrough {
                 unit.position.x = index as i64;
             }
         });
-
         result
     }
 
