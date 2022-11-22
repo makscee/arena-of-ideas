@@ -1,13 +1,5 @@
 {
     "clan_configs": {
-        "Demons": {
-            "color": "#800040",
-            "ability": "Devour: kill unit and gain their stats",
-            "description": [
-                "When Devouring, deal victims ATK to random enemy",
-                "Devour gives +2/+2 permanent stats"
-            ]
-        },
         "Protectors": {
             "color": "#fecc66",
             "ability": "Shield: cancel next dmg taken",

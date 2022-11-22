@@ -54,7 +54,7 @@ impl Shop {
             case: default(),
             reroll: true,
             dirty: true,
-            toggle_clans_info: false,
+            toggle_clans_info: true,
             new_messages: default(),
         }
     }
