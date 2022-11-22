@@ -7,7 +7,7 @@
         },
         {
             "type": "Visual",
-            "duration": 0.2,
+            "duration": 0.6,
             "parent": "Owner",
             "partner": "Target",
             "follow": false,
@@ -25,8 +25,8 @@
         },
         {
             "type": "Visual",
-            "duration": 0.7,
-            "queue_delay": 0.7,
+            "duration": 2.1,
+            "queue_delay": 2.1,
             "parent": "Owner",
             "partner": "Target",
             "follow": false,

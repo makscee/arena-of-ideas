@@ -3,8 +3,8 @@
     "effects": [
         {
             "type": "Visual",
-            "duration": 0.6,
-            "queue_delay": 0.6,
+            "duration": 1.8,
+            "queue_delay": 1.8,
             "parent": "Target",
             "follow": true,
             "radius": 0.03,
