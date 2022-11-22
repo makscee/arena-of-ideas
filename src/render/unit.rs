@@ -276,7 +276,7 @@ impl Render {
 
         draw_2d::Text::unit(
             self.geng.default_font().clone(),
-            format!("{}#{}", unit.unit_type, unit.id),
+            unit.unit_type.to_string(),
             text_color,
         )
         .fit_into(name_aabb)
