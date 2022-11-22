@@ -1,0 +1,71 @@
+[
+  [
+    {
+      "path": "shaders/clan_shaders/square.glsl",
+      "parameters": {
+        "u_size": 0.33,
+        "u_outline": 0,
+        "u_index_offset": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "u_rotation": 0.0,
+        "u_count": 1,
+        "u_outline_thickness": 0.0,
+        "u_offset": {
+          "x": 0.0,
+          "y": 0.8
+        },
+        "u_fill": 1
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ],
+  [
+    {
+      "path": "shaders/clan_shaders/square.glsl",
+      "parameters": {
+        "u_size": 0.48,
+        "u_outline": 0,
+        "u_index_offset": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "u_rotation": 0.0,
+        "u_count": 1,
+        "u_outline_thickness": 0.0,
+        "u_offset": {
+          "x": 0.0,
+          "y": 0.69
+        },
+        "u_fill": 1
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ],
+  [
+    {
+      "path": "shaders/clan_shaders/square.glsl",
+      "parameters": {
+        "u_size": 0.51,
+        "u_outline": 2,
+        "u_index_offset": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "u_rotation": 0.0,
+        "u_count": 1,
+        "u_outline_thickness": 0.1,
+        "u_offset": {
+          "x": 0.0,
+          "y": 0.69
+        },
+        "u_fill": 1
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ]
+]
