@@ -416,7 +416,7 @@ impl geng::State for Game {
                         r32(1.5),
                         Some(Rgba::try_from("#a52600").unwrap()),
                     );
-                    self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.0);
+                    self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.5);
                     self.logic.model.in_battle = true;
                     let round = self
                         .logic
