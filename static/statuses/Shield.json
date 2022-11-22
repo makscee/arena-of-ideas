@@ -91,6 +91,10 @@
                         }
                     },
                     {
+                        "type": "Sound",
+                        "name": "shield.ogg"
+                    },
+                    {
                         "preset": "effects/vfx_attach_status.json"
                     }
                 ]
