@@ -49,6 +49,7 @@ impl Logic {
                 size,
                 self.model.next_id,
                 &self.model.statuses,
+                &mut self.effects,
             );
         }
 

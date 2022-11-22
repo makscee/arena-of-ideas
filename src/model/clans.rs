@@ -45,16 +45,28 @@ impl ClanFilter {
 impl ClanEffect {
     /// Checks the filters (factions and clans) and applies the
     /// effects if the constraints are met.
-    fn apply(&self, unit: &mut Unit, next_id: Id, statuses: &Statuses) {
+    fn apply(&self, unit: &mut Unit, statuses: &Statuses, orchestrator: &mut EffectOrchestrator) {
         if !self.filter.check(unit) {
             return;
         }
-        unit.all_statuses.extend(self.statuses.iter().map(|status| {
-            status
-                .get(statuses)
-                .clone()
-                .attach(unit.id, unit.id, next_id)
-        }));
+        for status in self.statuses.iter() {
+            let color = status.get(statuses).color;
+            orchestrator.push_back(
+                EffectContext {
+                    queue_id: Some("Spawn".to_owned()),
+                    owner: unit.id,
+                    creator: unit.id,
+                    target: unit.id,
+                    vars: default(),
+                    status_id: None,
+                    color,
+                },
+                Effect::AttachStatus(Box::new(AttachStatusEffect {
+                    status: status.clone(),
+                    vars: default(),
+                })),
+            )
+        }
     }
 }
 
@@ -78,6 +90,7 @@ impl Clan {
         party_members: usize,
         id: Id,
         statuses: &Statuses,
+        orchestrator: &mut EffectOrchestrator,
     ) {
         let effects = match effects.get(self) {
             Some(effects) => effects,
@@ -91,7 +104,7 @@ impl Clan {
             .filter(|effect| effect.activate <= party_members)
             .sorted_by_key(|effect| effect.activate);
         for effect in effects.rev() {
-            effect.apply(unit, id, statuses);
+            effect.apply(unit, statuses, orchestrator);
         }
     }
 }

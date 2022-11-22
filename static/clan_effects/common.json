@@ -12,6 +12,7 @@
                 "stacking": {
                     "type": "Independent"
                 },
+                "hidden": true,
                 "listeners": [
                     {
                         "triggers": [
@@ -70,6 +71,7 @@
                 "stacking": {
                     "type": "Independent"
                 },
+                "hidden": true,
                 "listeners": [
                     {
                         "triggers": [
