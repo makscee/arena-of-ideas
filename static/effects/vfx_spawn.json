@@ -2,6 +2,10 @@
     "type": "List",
     "effects": [
         {
+            "type": "Sound",
+            "name": "spawn.ogg"
+        },
+        {
             "type": "Visual",
             "duration": 1.8,
             "queue_delay": 1.8,
