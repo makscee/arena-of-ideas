@@ -169,8 +169,8 @@ impl UnitStats {
 
     fn merge_unit(&mut self, stats: UnitStats) {
         //Add +1/+1 instead of merge stats
-        self.health += 1;
-        self.attack += 1;
+        self.health += stats.stacks;
+        self.attack += stats.stacks;
     }
 }
 
