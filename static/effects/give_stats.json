@@ -48,7 +48,7 @@
                 },
                 {
                     "type": "Message",
-                    "text": "+Stats"
+                    "text": "+{Value}/+{Value}"
                 },
                 {
                     "preset": "effects/vfx_stats_gain.json"
