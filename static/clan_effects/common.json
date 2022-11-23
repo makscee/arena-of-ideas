@@ -32,27 +32,6 @@
                                 }
                             ]
                         }
-                    },
-                    {
-                        "triggers": [
-                            {
-                                "type": "DamageTaken",
-                                "damage_type": "Crit"
-                            }
-                        ],
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "Sound",
-                                    "name": "face_hit.ogg"
-                                },
-                                {
-                                    "preset": "effects/vfx_injured_particles.json",
-                                    "color": "#fd8008"
-                                }
-                            ]
-                        }
                     }
                 ]
             }

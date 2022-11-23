@@ -8,6 +8,7 @@ mod apply_gained;
 mod attach_status;
 mod change_context;
 mod change_context_status;
+mod change_queue;
 mod change_stat;
 mod change_target;
 mod custom_trigger;
@@ -38,6 +39,7 @@ pub use apply_gained::*;
 pub use attach_status::*;
 pub use change_context::*;
 pub use change_context_status::*;
+pub use change_queue::*;
 pub use change_stat::*;
 pub use change_target::*;
 pub use custom_trigger::*;
@@ -92,6 +94,7 @@ pub enum Effect {
     CustomTrigger(Box<CustomTriggerEffect>),
     Sound(Box<SoundEffect>),
     Panel(Box<PanelEffect>),
+    ChangeQueueId(Box<ChangeQueueIdEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -126,6 +129,7 @@ pub enum RawEffect {
     CustomTrigger(Box<CustomTriggerEffect>),
     Sound(Box<SoundEffect>),
     Panel(Box<PanelEffect>),
+    ChangeQueueId(Box<ChangeQueueIdEffect>),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -197,6 +201,7 @@ impl std::fmt::Debug for Effect {
             Self::PositionTween(effect) => effect.fmt(f),
             Self::Sound(effect) => effect.fmt(f),
             Self::Panel(effect) => effect.fmt(f),
+            Self::ChangeQueueId(effect) => effect.fmt(f),
         }
     }
 }
@@ -233,6 +238,7 @@ impl From<RawEffect> for Effect {
             RawEffect::PositionTween(effect) => Self::PositionTween(effect),
             RawEffect::Sound(effect) => Self::Sound(effect),
             RawEffect::Panel(effect) => Self::Panel(effect),
+            RawEffect::ChangeQueueId(effect) => Self::ChangeQueueId(effect),
         }
     }
 }
@@ -301,6 +307,7 @@ impl Effect {
             Effect::PositionTween(effect) => &mut **effect,
             Effect::Sound(effect) => &mut **effect,
             Effect::Panel(effect) => &mut **effect,
+            Effect::ChangeQueueId(effect) => &mut **effect,
         }
     }
     pub fn as_box(self) -> Box<dyn EffectImpl> {
@@ -334,6 +341,7 @@ impl Effect {
             Effect::PositionTween(effect) => effect,
             Effect::Sound(effect) => effect,
             Effect::Panel(effect) => effect,
+            Effect::ChangeQueueId(effect) => effect,
         }
     }
     pub fn walk_mut(&mut self, mut f: &mut dyn FnMut(&mut Effect)) {

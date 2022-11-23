@@ -186,7 +186,7 @@ impl EffectImpl for DamageEffect {
                 })
             })
         {
-            logic.effects.push_back(
+            logic.effects.push_front(
                 EffectContext {
                     owner: target_unit.id,
                     creator: context.owner,
