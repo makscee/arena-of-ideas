@@ -97,6 +97,7 @@ impl EffectImpl for TurnEffect {
                 TurnPhase::PostStrike => logic.effects.push_front(
                     {
                         let mut context = context.clone();
+                        context.queue_id = Some(format!("Action#{}", unit.id));
                         context.owner = unit.id;
                         context.creator = unit.id;
                         context.target = units
