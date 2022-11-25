@@ -75,6 +75,24 @@
 		},
 		{
 			"type": "cargo",
+			"command": "build",
+			"args": [
+				"--release"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Build",
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"LOG": "warn",
+				"CARGO_MANIFEST_DIR": "."
+			}
+		},
+		{
+			"type": "cargo",
 			"command": "run",
 			"args": [
 				"--",

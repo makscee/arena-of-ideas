@@ -9,7 +9,7 @@ impl SoundController {
     pub fn new(sounds: Sounds) -> Self {
         Self {
             sounds,
-            enabled: false,
+            enabled: true,
         }
     }
 
