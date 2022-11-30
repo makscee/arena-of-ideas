@@ -381,7 +381,7 @@ impl geng::State for Game {
                     cx,
                     &self.logic.sound_controller,
                     &mut self.logic.model.transition,
-                    &self.assets.options.clan_configs,
+                    &self.assets.clans,
                     &self.logic.model.config.clans,
                     &self.logic.model.lives,
                     &self.logic.model.round,
@@ -529,7 +529,7 @@ fn main() {
                             .expect("Failed to load assets");
 
                         for status in assets.statuses.values_mut() {
-                            let color = status.get_color(&assets.options);
+                            let color = status.get_color(&assets.clans);
                             status.status.color = color;
                         }
                         let config = <Config as geng::LoadAsset>::load(&geng, &config_path)

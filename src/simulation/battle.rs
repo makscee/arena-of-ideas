@@ -1,5 +1,5 @@
 use crate::{
-    assets::Sounds,
+    assets::{Sounds, ClanConfigs},
     model::{Position, MAX_LIVES},
     shop::Shop,
 };
@@ -29,7 +29,7 @@ pub struct BattleResult {
 impl Battle {
     pub fn new(
         config: Config,
-        clan_effects: ClanEffects,
+        clans: ClanConfigs,
         statuses: Statuses,
         round: GameRound,
         units_templates: UnitTemplates,
@@ -44,7 +44,7 @@ impl Battle {
             model: Model::new(
                 config,
                 units_templates,
-                clan_effects,
+                clans,
                 statuses,
                 0,
                 rounds,

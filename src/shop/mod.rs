@@ -48,7 +48,7 @@ impl Shop {
 
         Self {
             tier,
-            money: 6,
+            money: 60,
             stock,
             drag_controller: DragController::new(),
             case: default(),
@@ -143,7 +143,7 @@ impl Shop {
         }
         if self.toggle_clans_info {
             for (clan, config) in clan_configs.iter() {
-                if config.description.len() < 2 {
+                if config.descriptions.len() < 2 {
                     continue;
                 }
                 let members = *clan_members.get(clan).unwrap_or(&0);
@@ -157,7 +157,7 @@ impl Shop {
                     )
                     .boxed(),
                 );
-                for (i, text) in config.description.iter().enumerate() {
+                for (i, text) in config.descriptions.iter().enumerate() {
                     let activation_size = CLAN_BONUS_ACTIVATION_SIZE[i];
                     let color: Rgba<f32> = match activation_size <= members {
                         true => config.color,
