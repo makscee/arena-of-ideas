@@ -144,9 +144,6 @@ pub struct Aura {
     /// If specified, the aura affects only units in that radius.
     /// Otherwise, affects all units
     pub radius: Option<Coord>,
-    /// Filter units by clans
-    #[serde(default)]
-    pub filter: ClanFilter,
     /// Additional conditional filter for units
     #[serde(default)]
     pub condition: Condition,
@@ -338,11 +335,10 @@ impl Aura {
     /// Whether aura is applicable to the target
     pub fn is_applicable(&self, unit: &Unit, target: &Unit) -> bool {
         if let Some(radius) = self.radius {
-            if unit.position.distance(&target.position) > radius {
-                return false;
-            }
+            unit.position.distance(&target.position) <= radius
+        } else {
+            false
         }
-        self.filter.check(target)
     }
 }
 

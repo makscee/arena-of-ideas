@@ -8,45 +8,35 @@
     ],
     "effects": [
         {
-            "activate": 3,
-            "filter": {
-                "Player": null
-            },
-            "statuses": [
-                {
-                    "name": "ShieldFrontOnStart",
-                    "type": "Status",
-                    "stacking": {
-                        "type": "Independent"
+            "type": "If",
+            "condition": {
+                "type": "And",
+                "conditions": [
+                    {
+                        "type": "Position",
+                        "who": "Owner",
+                        "position": 0
                     },
-                    "hidden": true,
-                    "listeners": [
-                        {
-                            "triggers": [
-                                {
-                                    "type": "Init"
-                                }
-                            ],
-                            "effect": {
-                                "type": "If",
-                                "condition": {
-                                    "type": "Position",
-                                    "who": "Owner",
-                                    "position": 0
-                                },
-                                "then": {
-                                    "type": "AttachStatus",
-                                    "who": "Owner",
-                                    "status": "Shield"
-                                },
-                                "else": {
-                                    "type": "Noop"
-                                }
-                            }
-                        }
-                    ]
-                }
-            ]
+                    {
+                        "type": "ClanSize",
+                        "clan": "Protectors",
+                        "count": 3
+                    },
+                    {
+                        "type": "Faction",
+                        "who": "Owner",
+                        "faction": "Player"
+                    }
+                ]
+            },
+            "then": {
+                "type": "AttachStatus",
+                "who": "Owner",
+                "status": "Shield"
+            },
+            "else": {
+                "type": "Noop"
+            }
         }
     ]
 }

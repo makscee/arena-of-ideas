@@ -63,16 +63,18 @@
                             "type": "DetectDeath",
                             "condition": {
                                 "type": "And",
-                                "a": {
-                                    "type": "UnitHasStatus",
-                                    "who": "Target",
-                                    "status": "Shield"
-                                },
-                                "b": {
-                                    "type": "Faction",
-                                    "who": "Target",
-                                    "faction": "Player"
-                                }
+                                "conditions": [
+                                    {
+                                        "type": "UnitHasStatus",
+                                        "who": "Target",
+                                        "status": "Shield"
+                                    },
+                                    {
+                                        "type": "Faction",
+                                        "who": "Target",
+                                        "faction": "Player"
+                                    }
+                                ]
                             }
                         }
                     ],

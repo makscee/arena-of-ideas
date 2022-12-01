@@ -27,40 +27,17 @@ impl Logic {
 
     pub fn apply_clan_effects(&mut self, unit: &mut Unit) {
         for (clan, config) in &self.model.clans.map {
-            let mut size = 0;
-            match unit.faction {
-                Faction::Player => {
-                    if let Some(members) = self.model.config.clans.get(&clan) {
-                        size = *members;
-                    }
-                }
-                Faction::Enemy => {
-                    if let Some(members) = self.model.config.clans.get(&clan) {
-                        size = *members;
-                    } else if let Some(members) = self.model.config.enemy_clans.get(&clan) {
-                        size = *members;
-                    }
-                }
-            }
-
             config.effects.iter().for_each(|effect| {
-                effect.get_check(unit, size).iter().for_each(|status| {
-                    let vars = self.model.vars.clone();
-                    let context = EffectContext {
-                        owner: unit.id,
-                        creator: unit.id,
-                        target: unit.id,
-                        vars: vars.clone(),
-                        status_id: None,
-                        color: config.color,
-                        queue_id: Some("Spawn".to_owned()),
-                    };
-                    let effect = Effect::AttachStatus(Box::new(AttachStatusEffect::new(
-                        status.clone(),
-                        vars,
-                    )));
-                    self.effects.push_back(context.clone(), effect);
-                });
+                let context = EffectContext {
+                    owner: unit.id,
+                    creator: unit.id,
+                    target: unit.id,
+                    vars: self.model.vars.clone(),
+                    status_id: None,
+                    color: config.color,
+                    queue_id: Some("Spawn".to_owned()),
+                };
+                self.effects.push_back(context.clone(), effect.clone());
             });
         }
     }

@@ -18,7 +18,7 @@ use std::time::Instant;
 use std::{collections::BTreeMap, collections::VecDeque, path::PathBuf};
 
 use crate::{
-    assets::{self, Assets, ClanEffects, Config, GameRound, KeyMapping, Statuses},
+    assets::{self, Assets, Config, GameRound, KeyMapping, Statuses},
     logic::{Events, Logic},
     model::MAX_TIER,
     model::{Faction, Model, Unit, UnitTemplate, UnitTemplates, UnitType},

@@ -3,72 +3,16 @@
     "color": "#fecc66",
     "effects": [
         {
-            "activate": 0,
-            "filter": {
-                "Player": null,
-                "Enemy": null
-            },
-            "statuses": [
-                {
-                    "name": "VfxInjure",
-                    "type": "Status",
-                    "stacking": {
-                        "type": "Independent"
-                    },
-                    "hidden": true,
-                    "listeners": [
-                        {
-                            "triggers": [
-                                {
-                                    "type": "DamageTaken"
-                                }
-                            ],
-                            "effect": {
-                                "type": "List",
-                                "effects": [
-                                    {
-                                        "type": "Sound",
-                                        "name": "face_hit.ogg"
-                                    },
-                                    {
-                                        "preset": "effects/vfx_injured_particles.json"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            ]
+            "type": "AttachStatus",
+            "status": "VfxInjure"
         },
         {
-            "activate": 0,
-            "filter": {
-                "Player": null,
-                "Enemy": null
-            },
-            "statuses": [
-                {
-                    "name": "VfxDeath",
-                    "type": "Status",
-                    "stacking": {
-                        "type": "Independent"
-                    },
-                    "hidden": true,
-                    "listeners": [
-                        {
-                            "triggers": [
-                                {
-                                    "type": "Death"
-                                }
-                            ],
-                            "effect": {
-                                "preset": "effects/vfx_death_particles.json"
-                            }
-                        }
-                    ]
-                },
-                "InjureHealTint"
-            ]
+            "type": "AttachStatus",
+            "status": "VfxDeath"
+        },
+        {
+            "type": "AttachStatus",
+            "status": "InjureHealTint"
         }
     ]
 }
