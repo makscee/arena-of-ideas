@@ -182,11 +182,9 @@ impl geng::State for Game {
                         self.logic.model.calculate_clan_members();
                     }
                     for (text, color, position) in self.logic.model.shop.new_messages.iter() {
-                        MessageEffect::create(
-                            &mut self.logic.effects,
-                            text.clone(),
-                            color.clone(),
-                            position.clone(),
+                        self.logic.effects.push_front(
+                            EffectContext::empty(),
+                            MessageEffect::create(text.clone(), color.clone(), position.clone()),
                         );
                     }
                     self.logic.model.shop.new_messages.clear();
@@ -410,13 +408,16 @@ impl geng::State for Game {
             match self.state {
                 GameState::Shop => {
                     self.state = GameState::Battle;
-                    Panel::create(
-                        &mut self.logic.effects,
-                        "Battle Begin".to_owned(),
-                        r32(1.5),
-                        Some(Rgba::try_from("#a52600").unwrap()),
+                    let mut context = EffectContext::empty();
+                    context.queue_id = Some("Spawn".to_owned());
+                    self.logic.effects.push_back(
+                        context,
+                        Panel::create(
+                            "Battle Begin".to_owned(),
+                            r32(1.5),
+                            Some(Rgba::try_from("#a52600").unwrap()),
+                        ),
                     );
-                    self.logic.effects.add_delay_by_id("Spawn".to_owned(), 1.5);
                     self.logic.model.in_battle = true;
                     let round = self
                         .logic

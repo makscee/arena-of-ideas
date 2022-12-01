@@ -11,20 +11,12 @@ pub struct Panel {
 }
 
 impl Panel {
-    pub fn create(
-        effects: &mut EffectOrchestrator,
-        text: String,
-        duration: RealImpl<f32>,
-        color: Option<Rgba<f32>>,
-    ) {
-        effects.push_front(
-            EffectContext::empty(),
-            Effect::Panel(Box::new(PanelEffect {
-                duration,
-                text,
-                queue_delay: duration,
-                color,
-            })),
-        );
+    pub fn create(text: String, duration: RealImpl<f32>, color: Option<Rgba<f32>>) -> Effect {
+        Effect::Panel(Box::new(PanelEffect {
+            duration,
+            text,
+            queue_delay: duration,
+            color,
+        }))
     }
 }

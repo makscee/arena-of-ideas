@@ -11,20 +11,12 @@ pub struct MessageEffect {
 }
 
 impl MessageEffect {
-    pub fn create(
-        effects: &mut EffectOrchestrator,
-        text: String,
-        color: Option<Rgba<f32>>,
-        position: Position,
-    ) {
-        effects.push_front(
-            EffectContext::empty(),
-            Effect::Message(Box::new(MessageEffect {
-                text,
-                color,
-                position: Some(position),
-            })),
-        );
+    pub fn create(text: String, color: Option<Rgba<f32>>, position: Position) -> Effect {
+        Effect::Message(Box::new(MessageEffect {
+            text,
+            color,
+            position: Some(position),
+        }))
     }
 }
 

@@ -53,7 +53,7 @@ impl Logic {
                         vars: vars.clone(),
                         status_id: None,
                         color: config.color,
-                        queue_id: Some("Clan".to_owned()),
+                        queue_id: Some("Spawn".to_owned()),
                     };
                     let effect = Effect::AttachStatus(Box::new(AttachStatusEffect::new(
                         status.clone(),

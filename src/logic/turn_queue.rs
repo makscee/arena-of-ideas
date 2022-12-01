@@ -17,24 +17,23 @@ impl Logic {
             if self.model.lives <= 0 {
                 return;
             }
-            if victory {
+            let effect = if victory {
                 self.sound_controller.win();
                 Panel::create(
-                    &mut self.effects,
                     "Victory".to_owned(),
                     r32(2.0),
                     Some(Rgba::try_from("#23ff40").unwrap()),
-                );
+                )
             } else {
                 self.model.lives -= 1;
                 self.sound_controller.lose();
                 Panel::create(
-                    &mut self.effects,
                     "Defeat".to_owned(),
                     r32(2.0),
                     Some(Rgba::try_from("#7c0000").unwrap()),
-                );
-            }
+                )
+            };
+            self.effects.push_front(EffectContext::empty(), effect);
             self.model.in_battle = false;
             return;
         }
