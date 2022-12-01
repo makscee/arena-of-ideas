@@ -63,25 +63,27 @@
                         "type": "If",
                         "condition": {
                             "type": "And",
-                            "a": {
-                                "type": "More",
-                                "a": {
-                                    "type": "StatusCount",
-                                    "status": "Shield"
+                            "conditions": [
+                                {
+                                    "type": "More",
+                                    "a": {
+                                        "type": "StatusCount",
+                                        "status": "Shield"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
                                 },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 1
+                                {
+                                    "type": "Not",
+                                    "condition": {
+                                        "type": "ClanSize",
+                                        "clan": "Protectors",
+                                        "count": 5
+                                    }
                                 }
-                            },
-                            "b": {
-                                "type": "Not",
-                                "condition": {
-                                    "type": "ClanSize",
-                                    "clan": "Protectors",
-                                    "count": 5
-                                }
-                            }
+                            ]
                         },
                         "then": {
                             "type": "RemoveStatus"

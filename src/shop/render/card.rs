@@ -120,46 +120,6 @@ impl CardRender {
             .draw_2d(&self.geng, framebuffer, camera);
         }
 
-        // Clans
-        let mut selected_clan = None;
-        {
-            let clans = template.clans.iter().sorted().collect::<Vec<_>>();
-            let size = clan_aabb.height();
-            let clan_size = vec2(size, size);
-            let mut position = clan_aabb.top_left() + vec2(size, -size) / 2.0;
-            for clan in clans {
-                let clan_config = self.assets.options.clan_configs.get(&clan);
-                let mut clan_color = Rgba::BLACK;
-                if let Some(clan_config) = clan_config {
-                    clan_color = clan_config.color;
-                }
-
-                let text_color = Rgba::WHITE;
-                let text = format!("{:?}", clan)
-                    .chars()
-                    .next()
-                    .unwrap_or('?')
-                    .to_uppercase()
-                    .to_string();
-                draw_2d::Ellipse::circle(position, size / 2.0, clan_color).draw_2d(
-                    &self.geng,
-                    framebuffer,
-                    camera,
-                );
-                draw_2d::Text::unit(&**self.geng.default_font(), text, text_color)
-                    .fit_into(AABB::point(position).extend_uniform(size / 2.0 / 2.0.sqrt()))
-                    .draw_2d(&self.geng, framebuffer, camera);
-                let mouse_pos = self.geng.window().mouse_pos().map(|x| x as f32);
-                if AABB::point(position)
-                    .extend_uniform(size / 2.0)
-                    .contains(mouse_pos)
-                {
-                    selected_clan = Some(*clan);
-                }
-                position.x += size;
-            }
-        }
-
         // Name
         draw_2d::Text::unit(
             &**self.geng.default_font(),

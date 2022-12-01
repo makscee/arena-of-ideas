@@ -18,7 +18,7 @@ impl Render {
         let clan_colors: Vec<Rgba<f32>> = unit
             .clans
             .iter()
-            .map(|clan| self.assets.options.clan_configs[clan].color)
+            .map(|clan| self.assets.clans[clan].color)
             .collect();
 
         // Actual render
@@ -134,7 +134,7 @@ impl Render {
                             self.assets.get_render(config.render.as_ref().unwrap()),
                             status.time,
                             status.status.duration,
-                            config.get_color(&self.assets.options),
+                            config.get_color(&self.assets.clans),
                         )
                     })
             })
@@ -297,7 +297,7 @@ impl Render {
         let aabb = AABB::point(unit.render.render_position.map(|x| x.as_f32()))
             .extend_uniform(0.5)
             .translate(vec2(0.0, -1.5));
-        let clan_color = self.assets.options.clan_configs[&unit.clans[0]]
+        let clan_color = self.assets.clans[&unit.clans[0]]
             .color
             .clone();
         draw_2d::Quad::new(aabb, clan_color).draw_2d(&self.geng, framebuffer, camera);

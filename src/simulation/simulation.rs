@@ -15,13 +15,15 @@ use crate::Config;
 use crate::GameRound;
 use crate::MAX_LIVES;
 
+use self::assets::ClanConfigs;
+
 pub use super::*;
 
 pub struct Simulation<'a> {
     progress: &'a mut ProgressTracker,
     variant: Box<dyn SimulationVariant>,
     config: Config,
-    clan_effects: ClanEffects,
+    clans: ClanConfigs,
     statuses: Statuses,
     units: UnitTemplates,
 }
@@ -30,7 +32,7 @@ impl<'a> Simulation<'a> {
     pub fn new(
         progress: &'a mut ProgressTracker,
         config: Config,
-        clan_effects: ClanEffects,
+        clans: ClanConfigs,
         statuses: Statuses,
         units: UnitTemplates,
         simulation_type: SimulationType,
@@ -85,7 +87,7 @@ impl<'a> Simulation<'a> {
             progress,
             variant,
             config,
-            clan_effects,
+            clans,
             statuses,
             units,
         }
@@ -120,7 +122,7 @@ impl<'a> Simulation<'a> {
                                 enemy_clans: battle.enemy_clans.clone(),
                                 ..self.config.clone()
                             },
-                            self.clan_effects.clone(),
+                            self.clans.clone(),
                             self.statuses.clone(),
                             battle.round.clone(),
                             self.units.clone(),

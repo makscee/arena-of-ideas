@@ -78,7 +78,7 @@ pub struct Model {
     pub round: usize,
     pub rounds: Vec<GameRound>,
     pub unit_templates: UnitTemplates,
-    pub clan_effects: ClanEffects,
+    pub clans: ClanConfigs,
     pub statuses: Statuses,
     pub transition: bool,
     pub in_battle: bool,
@@ -96,7 +96,7 @@ impl Model {
     pub fn new(
         config: Config,
         unit_templates: UnitTemplates,
-        clan_effects: ClanEffects,
+        clans: ClanConfigs,
         statuses: Statuses,
         round: usize,
         rounds: Vec<GameRound>,
@@ -111,7 +111,7 @@ impl Model {
             units: Collection::new(),
             dead_units: Collection::new(),
             unit_templates,
-            clan_effects,
+            clans,
             statuses,
             transition: false,
             in_battle: false,
@@ -212,18 +212,16 @@ impl Model {
                 let who = self.get_who(*who, &context);
                 who.faction == *faction
             }
-            Condition::And { a, b } => {
-                Self::check_condition(self, &*a, context)
-                    && Self::check_condition(self, &*b, context)
-            }
+            Condition::And { conditions } => conditions
+                .iter()
+                .all(|condition| Self::check_condition(self, condition, context)),
             Condition::Position { who, position } => {
                 let who = self.get_who(*who, &context);
                 who.position.x == *position
             }
-            Condition::Or { a, b } => {
-                Self::check_condition(self, &*a, context)
-                    || Self::check_condition(self, &*b, context)
-            }
+            Condition::Or { conditions } => conditions
+                .iter()
+                .any(|condition| Self::check_condition(self, condition, context)),
         }
     }
 

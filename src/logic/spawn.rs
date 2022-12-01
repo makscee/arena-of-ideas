@@ -25,35 +25,24 @@ impl Logic {
         unit
     }
 
-    pub fn apply_spawn_effects(&mut self, unit: &mut Unit) {
-        for (clan, _) in &self.model.clan_effects.map {
-            let mut size = 0;
-            match unit.faction {
-                Faction::Player => {
-                    if let Some(members) = self.model.config.clans.get(&clan) {
-                        size = *members;
-                    }
-                }
-                Faction::Enemy => {
-                    if let Some(members) = self.model.config.clans.get(&clan) {
-                        size = *members;
-                    } else if let Some(members) = self.model.config.enemy_clans.get(&clan) {
-                        size = *members;
-                    }
-                }
-            }
-
-            clan.apply_effects(
-                unit,
-                &self.model.clan_effects,
-                size,
-                self.model.next_id,
-                &self.model.statuses,
-                &mut self.effects,
-            );
+    pub fn apply_clan_effects(&mut self, unit: &mut Unit) {
+        for (clan, config) in &self.model.clans.map {
+            config.effects.iter().for_each(|effect| {
+                let context = EffectContext {
+                    owner: unit.id,
+                    creator: unit.id,
+                    target: unit.id,
+                    vars: self.model.vars.clone(),
+                    status_id: None,
+                    color: config.color,
+                    queue_id: Some("Spawn".to_owned()),
+                };
+                self.effects.push_back(context.clone(), effect.clone());
+            });
         }
+    }
 
-        // On spawn effects
+    pub fn apply_spawn_effects(&mut self, unit: &mut Unit) {
         for (effect, trigger, vars, status_id, status_color) in unit
             .all_statuses
             .iter()
@@ -88,6 +77,7 @@ impl Logic {
                 .for_each(|unit| unit.position.x += 1);
         }
         self.apply_spawn_effects(&mut unit);
+        self.apply_clan_effects(&mut unit);
         self.model.units.insert(unit);
         id
     }

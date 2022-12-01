@@ -22,6 +22,12 @@ pub struct AttachStatusEffect {
     pub vars: HashMap<VarName, i32>,
 }
 
+impl AttachStatusEffect {
+    pub fn new(status: StatusRef, vars: HashMap<VarName, i32>) -> Self {
+        Self { status, vars }
+    }
+}
+
 impl EffectContainer for AttachStatusEffect {
     fn walk_effects_mut(&mut self, _f: &mut dyn FnMut(&mut Effect)) {}
 }

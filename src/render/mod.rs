@@ -252,8 +252,7 @@ impl Render {
                     .find_map(|config| {
                         Some(config.color.unwrap_or_else(|| {
                             self.assets
-                                .options
-                                .clan_configs
+                                .clans
                                 .get(&config.clan_origin)
                                 .unwrap_or_else(|| {
                                     panic!("Failed to find clan ({}) color", config.clan_origin)
@@ -395,7 +394,7 @@ impl Render {
             )
             .draw_2d(&self.geng, framebuffer, &self.camera);
 
-            let color = config.get_color(&self.assets.options);
+            let color = config.get_color(&self.assets.clans);
             let font = self.geng.default_font().clone();
             if stacks > 1 {
                 status.push_str(&format!(" ({stacks})"));
@@ -523,8 +522,7 @@ impl Render {
 
                     let color = config.color.unwrap_or_else(|| {
                         assets
-                            .options
-                            .clan_configs
+                            .clans
                             .get(&config.clan_origin)
                             .unwrap_or_else(|| {
                                 panic!("Failed to find clan ({}) color", config.clan_origin)

@@ -9,17 +9,18 @@ use once_cell::sync::Lazy;
 #[derive(Deserialize, geng::Assets)]
 #[asset(json)]
 pub struct Options {
-    pub clan_configs: HashMap<Clan, ClanConfig>,
     pub keys_mapping: Vec<KeyMapping>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClanConfig {
+    pub clan: Clan,
     pub color: Rgba<f32>,
     #[serde(default)]
     pub ability: String,
     #[serde(default)]
-    pub description: Vec<String>,
+    pub descriptions: Vec<String>,
+    pub effects: Vec<Effect>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -51,10 +52,9 @@ impl StatusConfig {
         Clan::Common
     }
 
-    pub fn get_color(&self, options: &Options) -> Rgba<f32> {
+    pub fn get_color(&self, clans: &ClanConfigs) -> Rgba<f32> {
         self.color.unwrap_or_else(|| {
-            options
-                .clan_configs
+            clans
                 .get(&self.clan_origin)
                 .unwrap_or_else(|| panic!("Failed to find clan ({}) color", self.clan_origin))
                 .color
@@ -105,7 +105,8 @@ pub struct Assets {
     #[asset(load_with = "load_postfx_render(geng, &base_path)")]
     pub postfx_render: PostfxProgram,
     pub damage_types: DamageTypes,
-    pub clans: ClanEffects,
+    #[asset(path = "clans/")]
+    pub clans: ClanConfigs,
     pub options: Options,
     pub textures: Textures,
     pub shaders: Shaders,
@@ -279,6 +280,13 @@ pub struct Sounds {
     pub map: HashMap<String, Sound>,
 }
 
+#[derive(Deref, DerefMut, Default, Clone)]
+pub struct ClanConfigs {
+    #[deref]
+    #[deref_mut]
+    pub map: HashMap<Clan, ClanConfig>,
+}
+
 #[derive(Deref, DerefMut)]
 pub struct Effects {
     #[deref]
@@ -296,12 +304,6 @@ pub struct Config {
     #[serde(default)]
     pub enemy_clans: HashMap<Clan, usize>,
     pub fov: f32,
-}
-
-#[derive(Clone, Deref)]
-pub struct ClanEffects {
-    #[deref]
-    pub map: HashMap<Clan, Vec<ClanEffect>>,
 }
 
 #[derive(Clone, Deref, DerefMut)]
@@ -518,39 +520,6 @@ impl geng::LoadAsset for Statuses {
     const DEFAULT_EXT: Option<&'static str> = None;
 }
 
-impl geng::LoadAsset for ClanEffects {
-    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
-        let geng = geng.clone();
-        let path = path.to_owned();
-        async move {
-            let base_path = path.parent().unwrap().join("clan_effects");
-            let path = base_path.join("_list.json");
-            let json = <String as geng::LoadAsset>::load(&geng, &path)
-                .await
-                .context(format!("Failed to load list of clan effects from {path:?}"))?;
-            let paths: HashMap<Clan, std::path::PathBuf> = serde_json::from_str(&json).context(
-                format!("Failed to parse list of clan effects from {path:?}"),
-            )?;
-            let mut map = HashMap::new();
-            for (clan, path) in paths {
-                let path = base_path.join(path);
-                let json = <String as geng::LoadAsset>::load(&geng, &path)
-                    .await
-                    .context(format!(
-                        "Failed to load clan ({clan:?}) effects from {path:?}"
-                    ))?;
-                let effects: Vec<ClanEffect> = serde_json::from_str(&json)
-                    .context(format!("Failed to parse clan effects from {path:?}"))?;
-                map.insert(clan, effects);
-            }
-            Ok(Self { map })
-        }
-        .boxed_local()
-    }
-
-    const DEFAULT_EXT: Option<&'static str> = None;
-}
-
 impl geng::LoadAsset for Shaders {
     fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
         let geng = geng.clone();
@@ -596,6 +565,32 @@ impl geng::LoadAsset for Sounds {
     }
 
     const DEFAULT_EXT: Option<&'static str> = Some(".ogg");
+}
+
+impl geng::LoadAsset for ClanConfigs {
+    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        let path = path.to_owned();
+        async move {
+            let mut map = HashMap::new();
+            let clan_paths = fs::read_dir(path).unwrap();
+
+            for path in clan_paths {
+                match path {
+                    Ok(path) => {
+                        let json = <String as geng::LoadAsset>::load(&geng, &path.path()).await?;
+                        let clan_config: ClanConfig = serde_json::from_str(&json)?;
+                        map.insert(clan_config.clan, clan_config);
+                    }
+                    Err(_) => error!("Cant load config: {:?}", path),
+                }
+            }
+            Ok(Self { map })
+        }
+        .boxed_local()
+    }
+
+    const DEFAULT_EXT: Option<&'static str> = Some(".json");
 }
 
 impl geng::LoadAsset for Textures {

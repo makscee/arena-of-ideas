@@ -46,12 +46,10 @@ pub enum Condition {
         faction: Faction,
     },
     And {
-        a: Box<Condition>,
-        b: Box<Condition>,
+        conditions: Vec<Box<Condition>>,
     },
     Or {
-        a: Box<Condition>,
-        b: Box<Condition>,
+        conditions: Vec<Box<Condition>>,
     },
     Position {
         who: Who,
