@@ -64,20 +64,20 @@ impl EffectImpl for AttachStatusEffect {
 
         status.vars.extend(effect.vars.into_iter());
         if !status.is_inited {
-            for (effect, trigger, mut vars, status_id, status_color) in
-                status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
+            for trigger_effect in status
+                .trigger()
+                .filter(|effect| matches!(effect.trigger, StatusTrigger::Init))
             {
+                let mut vars = trigger_effect.vars.clone();
+                vars.extend(context.vars.clone());
                 logic.effects.push_front(
                     EffectContext {
-                        vars: {
-                            vars.extend(context.vars.clone());
-                            vars
-                        },
-                        color: status_color,
-                        status_id: Some(status_id),
+                        vars,
+                        color: trigger_effect.status_color,
+                        status_id: Some(trigger_effect.status_id),
                         ..context.clone()
                     },
-                    effect,
+                    trigger_effect.effect,
                 )
             }
             status.is_inited = true;
@@ -106,61 +106,51 @@ impl Logic {
         status_name: &StatusName,
     ) {
         let target = self.model.get_who(Who::Target, &context);
-        for (effect, trigger, mut vars, status_id, status_color) in
-            target.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| match trigger {
-                    StatusTrigger::SelfDetectAttach {
-                        status_name: detect,
-                        status_action,
-                    } => detect == status_name && status_action == &StatusAction::Add,
-                    _ => false,
-                })
-            })
-        {
+        for trigger_effect in target.trigger().filter(|effect| match &effect.trigger {
+            StatusTrigger::SelfDetectAttach {
+                status_name: detect,
+                status_action,
+            } => detect == status_name && status_action == &StatusAction::Add,
+            _ => false,
+        }) {
+            let mut vars = trigger_effect.vars.clone();
+            vars.extend(context.vars.clone());
             self.effects.push_back(
                 EffectContext {
-                    vars: {
-                        vars.extend(context.vars.clone());
-                        vars
-                    },
+                    vars,
                     status_id: Some(attached_status_id),
-                    color: status_color,
+                    color: trigger_effect.status_color,
                     ..context.clone()
                 },
-                effect,
+                trigger_effect.effect,
             );
         }
 
         for other in &self.model.units {
-            for (effect, trigger, mut vars, status_id, status_color) in
-                other.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::DetectAttach {
-                            status_name: detect,
-                            filter,
-                            status_action,
-                        } => {
-                            other.id != target.id
-                                && detect == status_name
-                                && status_action == &StatusAction::Add
-                                && filter.matches(target.faction, other.faction)
-                        }
-                        _ => false,
-                    })
-                })
-            {
+            for trigger_effect in other.trigger().filter(|effect| match &effect.trigger {
+                StatusTrigger::DetectAttach {
+                    status_name: detect,
+                    filter,
+                    status_action,
+                } => {
+                    other.id != target.id
+                        && detect == status_name
+                        && status_action == &StatusAction::Add
+                        && filter.matches(target.faction, other.faction)
+                }
+                _ => false,
+            }) {
+                let mut vars = trigger_effect.vars.clone();
+                vars.extend(context.vars.clone());
                 self.effects.push_back(
                     EffectContext {
                         owner: other.id,
-                        vars: {
-                            vars.extend(context.vars.clone());
-                            vars
-                        },
+                        vars,
                         status_id: Some(attached_status_id),
-                        color: status_color,
+                        color: trigger_effect.status_color,
                         ..context.clone()
                     },
-                    effect,
+                    trigger_effect.effect,
                 );
             }
         }

@@ -11,33 +11,29 @@ impl Logic {
         let unit = self.model.units.get(&id).unwrap();
 
         for other in self.model.units.iter().filter(|other| other.id != unit.id) {
-            for (effect, trigger, vars, status_id, color) in
-                other.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::Scavenge { who, range, clan } => {
-                            who.matches(other.faction, unit.faction)
-                                && clan.map(|clan| unit.clans.contains(&clan)).unwrap_or(true)
-                                && distance_between_units(other, unit) > *range
-                        }
-                        StatusTrigger::DetectDeath { condition } => {
-                            self.model.check_condition(condition, &context)
-                        }
-                        _ => false,
-                    })
-                })
-            {
+            for trigger_effect in other.trigger().filter(|effect| match &effect.trigger {
+                StatusTrigger::Scavenge { who, range, clan } => {
+                    who.matches(other.faction, unit.faction)
+                        && clan.map(|clan| unit.clans.contains(&clan)).unwrap_or(true)
+                        && distance_between_units(other, unit) > *range
+                }
+                StatusTrigger::DetectDeath { condition } => {
+                    self.model.check_condition(&condition, &context)
+                }
+                _ => false,
+            }) {
                 self.effects.push_back(
                     EffectContext {
                         owner: other.id,
                         creator: unit.id,
                         target: unit.id,
-                        status_id: Some(status_id),
+                        status_id: Some(trigger_effect.status_id),
                         vars: context.vars.clone(),
                         queue_id: context.queue_id.clone(),
-                        color,
+                        color: trigger_effect.status_color,
                         ..context
                     },
-                    effect,
+                    trigger_effect.effect,
                 )
             }
         }
@@ -48,21 +44,20 @@ impl Logic {
             let unit = self.model.units.get(&id).unwrap();
             if unit.permanent_stats.health <= 0 {
                 self.model.dead_units.insert(unit.clone());
-                for (effect, trigger, vars, status_id, color) in
-                    unit.all_statuses.iter().flat_map(|status| {
-                        status.trigger(|trigger| matches!(trigger, StatusTrigger::Death))
-                    })
+                for trigger_effect in unit
+                    .trigger()
+                    .filter(|effect| matches!(effect.trigger, StatusTrigger::Death))
                 {
                     let context = EffectContext {
                         owner: unit.id,
                         creator: unit.id,
                         target: unit.id,
-                        vars,
-                        status_id: Some(status_id),
-                        color,
+                        vars: trigger_effect.vars,
+                        status_id: Some(trigger_effect.status_id),
+                        color: trigger_effect.status_color,
                         queue_id: None,
                     };
-                    self.effects.push_back(context, effect);
+                    self.effects.push_back(context, trigger_effect.effect);
                 }
                 let unit_position = unit.clone().position;
                 self.update_positions(unit_position);

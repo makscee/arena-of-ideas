@@ -24,36 +24,29 @@ impl EffectImpl for CustomTriggerEffect {
             {
                 continue;
             }
-            for (effect, trigger, mut vars, status_id, status_color) in unit
-                .all_statuses
-                .iter()
-                .filter(|status| {
-                    if let Some(status_id) = context.status_id {
-                        status.id == status_id
-                    } else {
-                        true
-                    }
-                })
-                .flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::Custom { name } => *name == effect.name,
-                        _ => false,
-                    })
-                })
-            {
+            for trigger_effect in unit.trigger().filter(|event| {
+                let status_match = if let Some(status_id) = context.status_id {
+                    event.status_id == status_id
+                } else {
+                    true
+                };
+                match &event.trigger {
+                    StatusTrigger::Custom { name } if status_match => name == &effect.name,
+                    _ => false,
+                }
+            }) {
+                let mut vars = trigger_effect.vars.clone();
+                vars.extend(context.vars.clone());
                 logic.effects.push_back(
                     EffectContext {
                         creator: context.owner,
                         owner: unit.id,
-                        vars: {
-                            vars.extend(context.vars.clone());
-                            vars
-                        },
+                        vars,
                         status_id: None,
-                        color: status_color,
+                        color: trigger_effect.status_color,
                         ..context.clone()
                     },
-                    effect,
+                    trigger_effect.effect,
                 )
             }
         }

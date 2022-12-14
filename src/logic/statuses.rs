@@ -83,20 +83,21 @@ impl Logic {
             .sort_by(|a, b| a.status.order.cmp(&b.status.order));
         for status in &mut unit.all_statuses {
             if !status.is_inited {
-                for (effect, trigger, vars, status_id, status_color) in
-                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Init))
+                for trigger_effect in status
+                    .trigger()
+                    .filter(|trigger_effect| matches!(trigger_effect.trigger, StatusTrigger::Init))
                 {
                     self.effects.push_front(
                         EffectContext {
                             owner: unit.id,
                             creator: status.creator,
                             target: unit.id,
-                            vars,
-                            status_id: Some(status_id),
-                            color: status_color,
+                            vars: trigger_effect.vars,
+                            status_id: Some(trigger_effect.status_id),
+                            color: trigger_effect.status_color,
                             queue_id: None,
                         },
-                        effect,
+                        trigger_effect.effect,
                     );
                 }
                 status.is_inited = true;
@@ -106,20 +107,21 @@ impl Logic {
             }
             if Self::is_status_expired(status) {
                 expired.push((status.owner, status.id, status.status.name.clone()));
-                for (effect, trigger, vars, status_id, status_color) in
-                    status.trigger(|trigger| matches!(trigger, StatusTrigger::Break))
+                for trigger_effect in status
+                    .trigger()
+                    .filter(|effect| matches!(effect.trigger, StatusTrigger::Break))
                 {
                     self.effects.push_back(
                         EffectContext {
                             owner: unit.id,
                             creator: unit.id,
                             target: unit.id,
-                            vars,
-                            status_id: Some(status_id),
-                            color: status_color,
+                            vars: trigger_effect.vars,
+                            status_id: Some(trigger_effect.status_id),
+                            color: trigger_effect.status_color,
                             queue_id: None,
                         },
-                        effect,
+                        trigger_effect.effect,
                     );
                 }
             }
@@ -156,59 +158,51 @@ impl Logic {
                 .expect("Failed to find unit by id"),
             UnitRef::Ref(unit) => unit,
         };
-        for (effect, trigger, vars, status_id, status_color) in
-            unit.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| match trigger {
-                    StatusTrigger::SelfDetectAttach {
-                        status_name: name,
-                        status_action: StatusAction::Remove,
-                    } => status_name == name,
-                    _ => false,
-                })
-            })
-        {
+        for trigger_effect in unit.trigger().filter(|effect| match &effect.trigger {
+            StatusTrigger::SelfDetectAttach {
+                status_name: name,
+                status_action: StatusAction::Remove,
+            } => status_name == name,
+            _ => false,
+        }) {
             self.effects.push_back(
                 EffectContext {
                     creator: creator_id,
                     owner: unit.id,
                     target: unit.id,
-                    vars,
+                    vars: trigger_effect.vars,
                     status_id: Some(status_id),
-                    color: status_color,
+                    color: trigger_effect.status_color,
                     queue_id: None,
                 },
-                effect,
+                trigger_effect.effect,
             );
         }
 
         for other in &self.model.units {
-            for (effect, trigger, vars, status_id, status_color) in
-                other.all_statuses.iter().flat_map(|status| {
-                    status.trigger(|trigger| match trigger {
-                        StatusTrigger::DetectAttach {
-                            status_name: name,
-                            filter,
-                            status_action: StatusAction::Remove,
-                        } => {
-                            other.id != unit.id
-                                && status_name == name
-                                && filter.matches(unit.faction, other.faction)
-                        }
-                        _ => false,
-                    })
-                })
-            {
+            for trigger_effect in other.trigger().filter(|effect| match &effect.trigger {
+                StatusTrigger::DetectAttach {
+                    status_name: name,
+                    filter,
+                    status_action: StatusAction::Remove,
+                } => {
+                    other.id != unit.id
+                        && status_name == name
+                        && filter.matches(unit.faction, other.faction)
+                }
+                _ => false,
+            }) {
                 self.effects.push_back(
                     EffectContext {
                         creator: creator_id,
                         owner: other.id,
                         target: unit.id,
-                        vars,
+                        vars: trigger_effect.vars,
                         status_id: Some(status_id),
-                        color: status_color,
+                        color: trigger_effect.status_color,
                         queue_id: None,
                     },
-                    effect,
+                    trigger_effect.effect,
                 )
             }
         }
