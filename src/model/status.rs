@@ -193,6 +193,14 @@ pub enum StatusEffect {
     Modifier(StatusModifier),
 }
 
+pub struct TriggerEffect {
+    pub status_id: Id,
+    pub status_color: Rgba<f32>,
+    pub effect: Effect,
+    pub trigger: StatusTrigger,
+    pub vars: HashMap<VarName, i32>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Status {
     /// The name is used when comparing two statuses for equality for a stack
@@ -244,6 +252,24 @@ pub struct AttachedStatus {
     /// Variables that persist for the lifetime of the status
     pub vars: HashMap<VarName, i32>,
     pub id: Id,
+}
+
+impl TriggerEffect {
+    pub fn new(
+        status_id: Id,
+        effect: Effect,
+        trigger: StatusTrigger,
+        vars: HashMap<VarName, i32>,
+        status_color: Rgba<f32>,
+    ) -> Self {
+        Self {
+            status_id,
+            effect,
+            trigger,
+            vars,
+            status_color,
+        }
+    }
 }
 
 impl StatusRef {
@@ -309,24 +335,17 @@ impl Status {
 impl AttachedStatus {
     /// Reacts to the trigger and returns the relevant effects
     /// according to the status listeners
-    pub fn trigger<'a>(
-        &'a self,
-        mut filter: impl FnMut(&StatusTrigger) -> bool + 'a,
-    ) -> impl Iterator<Item = (Effect, StatusTrigger, HashMap<VarName, i32>, Id, Rgba<f32>)> + 'a
-    {
-        self.status.listeners.iter().filter_map(move |listener| {
-            let trigger = listener.triggers.iter().find(|trigger| filter(&trigger));
-            if trigger.is_some() {
-                Some((
-                    listener.effect.clone(),
-                    trigger.unwrap().clone(),
-                    self.vars.clone(),
+    pub fn trigger<'a>(&'a self) -> impl Iterator<Item = TriggerEffect> + 'a {
+        self.status.listeners.iter().flat_map(move |listener| {
+            listener.triggers.iter().map(|trigger| {
+                TriggerEffect::new(
                     self.id,
+                    listener.effect.clone(),
+                    trigger.clone(),
+                    self.vars.clone(),
                     self.status.color,
-                ))
-            } else {
-                None
-            }
+                )
+            })
         })
     }
 }

@@ -43,21 +43,20 @@ impl Logic {
     }
 
     pub fn apply_spawn_effects(&mut self, unit: &mut Unit) {
-        for (effect, trigger, vars, status_id, status_color) in unit
-            .all_statuses
-            .iter()
-            .flat_map(|status| status.trigger(|trigger| matches!(trigger, StatusTrigger::Spawn)))
+        for trigger_effect in unit
+            .trigger()
+            .filter(|effect| matches!(effect.trigger, StatusTrigger::Spawn))
         {
             let context = EffectContext {
                 owner: unit.id,
                 creator: unit.id,
                 target: unit.id,
-                vars,
-                status_id: Some(status_id),
-                color: status_color,
+                vars: trigger_effect.vars,
+                status_id: Some(trigger_effect.status_id),
+                color: trigger_effect.status_color,
                 queue_id: Some("Spawn".to_owned()),
             };
-            self.effects.push_back(context, effect);
+            self.effects.push_back(context, trigger_effect.effect);
         }
     }
 

@@ -13,22 +13,20 @@ impl EffectImpl for ApplyGainedEffect {
         let effect = *self;
         let owner = logic.model.get_who(Who::Owner, &context);
         // TODO: remove these statuses immediately after application
-        for (effect, trigger, mut vars, status_id, status_color) in
-            owner.all_statuses.iter().flat_map(|status| {
-                status.trigger(|trigger| matches!(trigger, StatusTrigger::GainedEffect))
-            })
+        for trigger_effect in owner
+            .trigger()
+            .filter(|effect| matches!(effect.trigger, StatusTrigger::GainedEffect))
         {
+            let mut vars = trigger_effect.vars.clone();
+            vars.extend(context.vars.clone());
             logic.effects.push_front(
                 EffectContext {
-                    vars: {
-                        vars.extend(context.vars.clone());
-                        vars
-                    },
-                    status_id: Some(status_id),
-                    color: status_color,
+                    vars,
+                    status_id: Some(trigger_effect.status_id),
+                    color: trigger_effect.status_color,
                     ..context.clone()
                 },
-                effect,
+                trigger_effect.effect,
             )
         }
     }
