@@ -1,6 +1,6 @@
 {
     "name": "Devotee",
-    "description": "+{Value} ATK for each ally with Shield",
+    "description": "Before attack: +{Value} ATK for each hero with Shield",
     "attack": 1,
     "health": 4,
     "tier": 2,
@@ -19,9 +19,7 @@
                 {
                     "triggers": [
                         {
-                            "type": "DetectAttach",
-                            "status_name": "Shield",
-                            "filter": "Allies"
+                            "type": "PreStrike"
                         }
                     ],
                     "effect": {
@@ -30,62 +28,15 @@
                         "effect": {
                             "preset": "effects/give_atk.json",
                             "value": {
-                                "type": "Var",
-                                "name": "Value"
-                            }
-                        }
-                    }
-                },
-                {
-                    "triggers": [
-                        {
-                            "type": "DetectAttach",
-                            "status_name": "Shield",
-                            "filter": "Allies",
-                            "status_action": "Remove"
-                        }
-                    ],
-                    "effect": {
-                        "type": "ChangeContext",
-                        "target": "Owner",
-                        "effect": {
-                            "preset": "effects/lose_atk.json",
-                            "value": {
-                                "type": "Var",
-                                "name": "Value"
-                            }
-                        }
-                    }
-                },
-                {
-                    "triggers": [
-                        {
-                            "type": "DetectDeath",
-                            "condition": {
-                                "type": "And",
-                                "conditions": [
-                                    {
-                                        "type": "UnitHasStatus",
-                                        "who": "Target",
-                                        "status": "Shield"
-                                    },
-                                    {
-                                        "type": "Faction",
-                                        "who": "Target",
-                                        "faction": "Player"
-                                    }
-                                ]
-                            }
-                        }
-                    ],
-                    "effect": {
-                        "type": "ChangeContext",
-                        "target": "Owner",
-                        "effect": {
-                            "preset": "effects/lose_atk.json",
-                            "value": {
-                                "type": "Var",
-                                "name": "Value"
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Var",
+                                    "name": "Value"
+                                },
+                                "b": {
+                                    "type": "UnitsInRange",
+                                    "status": "Shield"
+                                }
                             }
                         }
                     }

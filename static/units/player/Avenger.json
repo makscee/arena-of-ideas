@@ -1,6 +1,6 @@
 {
     "name": "Avenger",
-    "description": "Take DMG: launch Magic Missile {Value} times",
+    "description": "Before attack: launch Magic Missile {Value} times",
     "attack": 1,
     "health": 3,
     "tier": 1,
@@ -22,7 +22,7 @@
                 {
                     "triggers": [
                         {
-                            "type": "DamageTaken"
+                            "type": "PreStrike"
                         }
                     ],
                     "effect": {

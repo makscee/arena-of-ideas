@@ -1,6 +1,6 @@
 {
     "name": "Mage",
-    "description": "Start of Battle: cast Magic Missile {Value} times",
+    "description": "Before attack: cast Magic Missile {Value} times",
     "attack": 1,
     "health": 1,
     "tier": 1,
@@ -13,7 +13,7 @@
     "radius": 0.4,
     "statuses": [
         {
-            "name": "MissileOnStart",
+            "name": "MissileBeforeStrike",
             "type": "Status",
             "stacking": {
                 "type": "Independent"
@@ -22,7 +22,7 @@
                 {
                     "triggers": [
                         {
-                            "type": "Init"
+                            "type": "PreStrike"
                         }
                     ],
                     "effect": {
