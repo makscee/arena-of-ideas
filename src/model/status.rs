@@ -101,6 +101,10 @@ pub enum StatusTrigger {
     Action,
     /// Triggered the moment unit's cooldown decreases
     CooldownTick,
+    /// Triggered the moment before unit attacks
+    PreStrike,
+    /// Triggered the moment after unit attacks
+    PostStrike,
 }
 
 impl fmt::Display for StatusTrigger {

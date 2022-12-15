@@ -124,11 +124,7 @@ impl Model {
             time_modifier: time_scale,
             lives,
             team: vec![],
-            phase: PhaseModel {
-                enemy: 0,
-                player: 0,
-                turn_phase: TurnPhase::None,
-            },
+            phase: PhaseModel::default(),
             shop,
         }
     }
@@ -149,14 +145,14 @@ impl Model {
             .expect(&format!("Can't find {}#{}", who, who_id))
     }
 
-    pub fn get(&self, id: Id, context: &EffectContext) -> &Unit {
+    pub fn get(&self, id: Id) -> &Unit {
         self.units
             .get(&id)
             .or(self.dead_units.get(&id))
             .expect(&format!("Can't find Unit#{}", id))
     }
 
-    pub fn get_mut(&mut self, id: Id, context: &EffectContext) -> &mut Unit {
+    pub fn get_mut(&mut self, id: Id) -> &mut Unit {
         self.units
             .get_mut(&id)
             .or(self.dead_units.get_mut(&id))
@@ -244,6 +240,16 @@ impl TickModel {
         Self {
             tick_time: Time::ZERO,
             tick_num,
+        }
+    }
+}
+
+impl PhaseModel {
+    pub fn default() -> Self {
+        Self {
+            enemy: 0,
+            player: 0,
+            turn_phase: TurnPhase::None,
         }
     }
 }

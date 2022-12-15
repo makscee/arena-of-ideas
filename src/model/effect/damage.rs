@@ -205,21 +205,16 @@ impl EffectImpl for DamageEffect {
         let killed = old_hp > 0 && target_unit.stats.health <= 0;
         let owner_unit = logic.model.get_who(Who::Owner, &context);
 
-        for trigger_effect in owner_unit.all_statuses.iter().flat_map(|status| {
-            status
-                .trigger()
-                .into_iter()
-                .filter(|event| match &event.trigger {
-                    StatusTrigger::DamageDealt {
-                        damage_type,
-                        except,
-                    } => {
-                        !effect.types.contains(&except.clone().unwrap_or_default())
-                            && (damage_type.is_none()
-                                || effect.types.contains(&damage_type.clone().unwrap()))
-                    }
-                    _ => false,
-                })
+        for trigger_effect in owner_unit.trigger().filter(|event| match &event.trigger {
+            StatusTrigger::DamageDealt {
+                damage_type,
+                except,
+            } => {
+                !effect.types.contains(&except.clone().unwrap_or_default())
+                    && (damage_type.is_none()
+                        || effect.types.contains(&damage_type.clone().unwrap()))
+            }
+            _ => false,
         }) {
             let mut vars = trigger_effect.vars.clone();
             vars.insert(VarName::DamageIncoming, damage);
@@ -254,21 +249,16 @@ impl EffectImpl for DamageEffect {
         // Kill trigger
 
         if killed {
-            for trigger_effect in owner_unit.all_statuses.iter().flat_map(|status| {
-                status
-                    .trigger()
-                    .into_iter()
-                    .filter(|event| match &event.trigger {
-                        StatusTrigger::Kill {
-                            damage_type,
-                            except,
-                        } => {
-                            !effect.types.contains(&except.clone().unwrap_or_default())
-                                && (damage_type.is_none()
-                                    || effect.types.contains(&damage_type.clone().unwrap()))
-                        }
-                        _ => false,
-                    })
+            for trigger_effect in owner_unit.trigger().filter(|event| match &event.trigger {
+                StatusTrigger::Kill {
+                    damage_type,
+                    except,
+                } => {
+                    !effect.types.contains(&except.clone().unwrap_or_default())
+                        && (damage_type.is_none()
+                            || effect.types.contains(&damage_type.clone().unwrap()))
+                }
+                _ => false,
             }) {
                 let mut vars = trigger_effect.vars.clone();
                 vars.insert(VarName::DamageIncoming, damage);

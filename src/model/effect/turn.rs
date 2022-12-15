@@ -61,8 +61,8 @@ impl EffectImpl for TurnEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let units = vec![
-            logic.model.get(effect.player, &context),
-            logic.model.get(effect.enemy, &context),
+            logic.model.get(effect.player),
+            logic.model.get(effect.enemy),
         ];
         let prev_phase = match effect.phase {
             TurnPhase::None => None,

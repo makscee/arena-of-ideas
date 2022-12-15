@@ -26,7 +26,7 @@ impl EffectContainer for PositionTweenEffect {
 impl EffectImpl for PositionTweenEffect {
     fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
         let mut effect = *self.clone();
-        let mut target = logic.model.get_mut(effect.target, &context);
+        let mut target = logic.model.get_mut(effect.target);
         if effect.start_position.is_none() {
             effect.start_position = Some(target.position.to_world());
         }
