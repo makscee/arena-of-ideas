@@ -59,9 +59,23 @@ impl Logic {
                     .id;
                 self.model.phase.turn_phase = TurnPhase::PreStrike;
             }
-            TurnPhase::PreStrike => self.model.phase.turn_phase = TurnPhase::Strike,
+            TurnPhase::PreStrike => {
+                self.trigger_event(self.model.phase.player, |trigger_effect| {
+                    matches!(trigger_effect.trigger, StatusTrigger::PreStrike)
+                });
+                self.trigger_event(self.model.phase.enemy, |trigger_effect| {
+                    matches!(trigger_effect.trigger, StatusTrigger::PreStrike)
+                });
+                self.model.phase.turn_phase = TurnPhase::Strike;
+            }
             TurnPhase::Strike => self.model.phase.turn_phase = TurnPhase::PostStrike,
             TurnPhase::PostStrike => {
+                self.trigger_event(self.model.phase.player, |trigger_effect| {
+                    matches!(trigger_effect.trigger, StatusTrigger::PostStrike)
+                });
+                self.trigger_event(self.model.phase.enemy, |trigger_effect| {
+                    matches!(trigger_effect.trigger, StatusTrigger::PostStrike)
+                });
                 self.model.phase.turn_phase = TurnPhase::None;
                 self.effects
                     .add_delay_by_id("Turn".to_owned(), TurnPhase::None.duration().as_f32());
@@ -86,6 +100,31 @@ impl Logic {
             },
             effect,
         )
+    }
+
+    fn trigger_event<F>(&mut self, unit_id: Id, filter: F)
+    where
+        F: Fn(&TriggerEffect) -> bool,
+    {
+        let unit = self.model.get(unit_id);
+        if unit.stats.health <= 0 {
+            return;
+        }
+        for trigger_effect in unit.trigger().filter(filter) {
+            let vars = trigger_effect.vars.clone();
+            self.effects.push_back(
+                EffectContext {
+                    queue_id: Some("Turn".to_owned()),
+                    owner: unit.id,
+                    creator: unit.id,
+                    target: unit.id,
+                    vars,
+                    status_id: Some(trigger_effect.status_id),
+                    color: trigger_effect.status_color,
+                },
+                trigger_effect.effect,
+            )
+        }
     }
 
     pub fn check_end(&mut self) -> Option<bool> {

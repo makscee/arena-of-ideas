@@ -431,6 +431,7 @@ impl geng::State for Game {
                     if !self.custom {
                         self.logic.model.calculate_clan_members();
                     }
+                    self.logic.model.phase = PhaseModel::default();
                     self.logic.model.units.clear();
                     self.logic.init_round(round);
                     self.logic.sound_controller.start();
