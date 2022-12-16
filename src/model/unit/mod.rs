@@ -114,6 +114,10 @@ impl Unit {
         }
     }
 
+    pub fn trigger<'a>(&'a self) -> impl Iterator<Item = TriggerEffect> + 'a {
+        self.all_statuses.iter().flat_map(|status| status.trigger())
+    }
+
     pub fn merge(&mut self, unit: Unit) -> bool {
         if unit.unit_type == self.unit_type {
             if self.stats.do_stack(unit.stats)
