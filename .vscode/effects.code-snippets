@@ -373,5 +373,16 @@
 			"}"
 		],
 		"description": "Message"
+	},
+	"Stat Value": {
+		"prefix": "stat_value",
+		"body": [
+			"{",
+			"    \"type\": \"FindStat\",",
+			"    \"who\": \"Target\",",
+			"    \"stat\": \"BaseDamage\"",
+			"}"
+		],
+		"description": "Stat Value"
 	}
 }
