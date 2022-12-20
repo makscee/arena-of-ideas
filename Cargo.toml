@@ -20,3 +20,4 @@ enum-utils = "0.1.2"
 # Temp workaround until update in geng, as this issue is already fixed upstream
 # https://github.com/jdm/tinyfiledialogs-rs/issues/36
 tinyfiledialogs = { git = "https://github.com/kuviman/tinyfiledialogs-rs", branch = "fix-cross" }
+geng = { git = "https://github.com/kuviman/geng", branch = "main" }
