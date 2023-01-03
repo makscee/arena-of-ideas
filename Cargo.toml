@@ -6,13 +6,13 @@ edition = "2021"
 [dependencies]
 geng = "0.14.0"
 serde = "1"
-resvg = "0.22"
-usvg = "0.22"
-tiny-skia = "0.6"
-notify = "4.0.17" # File watch
+resvg = "0.28.0"
+usvg = "0.28.0"
+tiny-skia = "0.8.2"
+notify = "5.0.0" # File watch
 regex = "1.5.6"
 chrono = "0.4"
-tween = "1.0.0"
+tween = "2.0.0"
 strfmt = "0.2.2"
 enum-utils = "0.1.2"
 
