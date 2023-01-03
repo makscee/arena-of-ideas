@@ -1,9 +1,0 @@
-{
-    "simulations": [
-        {
-            "type": "Balance",
-            "unit": ".*3.*[^+]$",
-            "repeats": 5
-        }
-    ]
-}
