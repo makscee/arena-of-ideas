@@ -13,3 +13,9 @@ pub struct View {
     pub queue: VisualQueue,
     pub camera: Camera2d,
 }
+
+impl View {
+    pub fn draw(framebuffer: &mut ugli::Framebuffer) {
+        
+    }
+}

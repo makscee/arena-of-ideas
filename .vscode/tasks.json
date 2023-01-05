@@ -18,63 +18,6 @@
 		},
 		{
 			"type": "cargo",
-			"command": "run",
-			"args": [
-				"--",
-				"custom-game",
-				"--config",
-				"local_configs/custom_config.json"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Custom Game",
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"LOG": "debug"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"args": [
-				"--release",
-				"--",
-				"simulate",
-				"local_configs/simulation_config.json"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Simulation",
-			"group": {
-				"kind": "build"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"args": [
-				"--release",
-				"--",
-				"walkthrough",
-				"local_configs/walkthrough_config.json"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Walkthrough",
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"LOG": "warn"
-			}
-		},
-		{
-			"type": "cargo",
 			"command": "build",
 			"args": [
 				"--release"
@@ -89,56 +32,6 @@
 			"env": {
 				"LOG": "warn",
 				"CARGO_MANIFEST_DIR": "."
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"args": [
-				"--",
-				"hero-editor"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Hero Editor",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"args": [
-				"--",
-				"shader",
-				"shader_editor_configs/default.json"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Shader Editor",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"args": [
-				"--",
-				"shader",
-				"shader_editor_configs/blob.json"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Shader Editor Blob",
-			"group": {
-				"kind": "build",
-				"isDefault": true
 			}
 		}
 	]

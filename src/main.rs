@@ -2,6 +2,7 @@ mod assets;
 mod game;
 mod logic;
 mod model;
+mod state;
 mod view;
 
 use std::collections::*;
@@ -11,6 +12,8 @@ use game::Game;
 use geng::{prelude::*, *};
 use logic::*;
 use model::*;
+use state::Battle;
+use ugli::*;
 use view::*;
 
 type Id = i64;
@@ -57,7 +60,8 @@ fn main() {
         },
         camera,
     };
-    let state = StateManager::new();
+    let mut state = StateManager::new();
+    state.push(Box::new(Battle {}));
     let model = Model {
         units: Collection::new(),
         player_team: Team {
@@ -79,5 +83,5 @@ fn main() {
         state,
         model,
     };
-    geng::run(&geng, game);
+    geng::run(&geng, game.state);
 }

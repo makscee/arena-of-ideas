@@ -7,55 +7,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug custom game",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=arena-of-ideas",
-                    "--package=arena-of-ideas",
-                ],
-                "filter": {
-                    "name": "arena-of-ideas",
-                    "kind": "bin"
-                }
-            },
-            "args": [
-                "custom-game",
-                "--config",
-                "local_configs/custom_config.json"
-            ],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "CARGO_MANIFEST_DIR": "."
-            }
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug walkthrough",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=arena-of-ideas",
-                    "--package=arena-of-ideas",
-                ],
-                "filter": {
-                    "name": "arena-of-ideas",
-                    "kind": "bin"
-                }
-            },
-            "args": [
-                "walkthrough",
-                "local_configs/walkthrough_config.json"
-            ],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "CARGO_MANIFEST_DIR": "."
-            }
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug game",
             "cargo": {
                 "args": [
