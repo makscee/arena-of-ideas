@@ -4,10 +4,12 @@ mod effect;
 mod node;
 mod queue;
 
-use effect::*;
-use node::*;
-use queue::*;
+pub use effect::*;
+pub use geng::Camera2d;
+pub use node::*;
+pub use queue::*;
 
 pub struct View {
     pub queue: VisualQueue,
+    pub camera: Camera2d,
 }
