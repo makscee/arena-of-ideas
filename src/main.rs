@@ -60,8 +60,6 @@ fn main() {
         },
         camera,
     };
-    let mut state = StateManager::new();
-    state.push(Box::new(Battle {}));
     let model = Model {
         units: Collection::new(),
         player_team: Team {
@@ -75,7 +73,8 @@ fn main() {
     geng::setup_panic_handler();
     let geng = setup_geng();
 
-    let game = Game {
+    let mut state = StateManager::new();
+    let mut game = Game {
         geng: geng.clone(),
         logic,
         assets,
@@ -83,5 +82,10 @@ fn main() {
         state,
         model,
     };
+    game.state.push(Box::new(Battle {
+        model: Rc::new(game.model),
+        view: Rc::new(game.view),
+        logic: Rc::new(game.logic),
+    }));
     geng::run(&geng, game.state);
 }

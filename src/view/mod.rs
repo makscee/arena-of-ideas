@@ -15,7 +15,7 @@ pub struct View {
 }
 
 impl View {
-    pub fn draw(framebuffer: &mut ugli::Framebuffer) {
-        
+    pub fn draw(&self, framebuffer: &mut ugli::Framebuffer) {
+        clear(framebuffer, Some(Rgba::MAGENTA), None, None);
     }
 }

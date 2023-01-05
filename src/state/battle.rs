@@ -1,6 +1,10 @@
 use super::*;
 
-pub struct Battle {}
+pub struct Battle {
+    pub model: Rc<Model>,
+    pub view: Rc<View>,
+    pub logic: Rc<Logic>,
+}
 
 impl State for Battle {
     fn update(&mut self, delta_time: f64) {}
@@ -14,5 +18,6 @@ impl State for Battle {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         clear(framebuffer, Some(Rgba::WHITE), None, None);
+        self.view.draw(framebuffer);
     }
 }
