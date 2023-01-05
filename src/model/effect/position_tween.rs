@@ -34,13 +34,13 @@ impl EffectImpl for PositionTweenEffect {
         let start_pos = effect.start_position.unwrap();
         let tween_t = r32(match effect.tween {
             Tween::Linear => {
-                Linear::new(0.0..=1.0, effect.duration.as_f32()).run(effect.t.as_f32())
+                Tweener::linear(0.0, 1.0, effect.duration.as_f32()).move_to(effect.t.as_f32())
             }
             Tween::CircIn => {
-                CircIn::new(0.0..=1.0, effect.duration.as_f32()).run(effect.t.as_f32())
+                Tweener::circ_in(0.0, 1.0, effect.duration.as_f32()).move_to(effect.t.as_f32())
             }
             Tween::CircOut => {
-                CircOut::new(0.0..=1.0, effect.duration.as_f32()).run(effect.t.as_f32())
+                Tweener::circ_out(0.0, 1.0, effect.duration.as_f32()).move_to(effect.t.as_f32())
             }
         });
         target.render.render_position = start_pos + (effect.position - start_pos) * tween_t;
