@@ -12,7 +12,7 @@ use game::Game;
 use geng::{prelude::*, *};
 use logic::*;
 use model::*;
-use state::Battle;
+use state::*;
 use ugli::*;
 use view::*;
 
@@ -73,7 +73,7 @@ fn main() {
     geng::setup_panic_handler();
     let geng = setup_geng();
 
-    let mut state = StateManager::new();
+    let state = StateManager::new();
     let mut game = Game {
         geng: geng.clone(),
         logic,
@@ -82,10 +82,11 @@ fn main() {
         state,
         model,
     };
-    game.state.push(Box::new(Battle {
+    game.state.push(Box::new(MainMenu {
         model: Rc::new(game.model),
         view: Rc::new(game.view),
         logic: Rc::new(game.logic),
+        transition: false,
     }));
     geng::run(&geng, game.state);
 }

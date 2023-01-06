@@ -17,7 +17,7 @@ impl State for Battle {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        clear(framebuffer, Some(Rgba::WHITE), None, None);
+        clear(framebuffer, Some(Rgba::BLUE), None, None);
         self.view.draw(framebuffer);
     }
 }
