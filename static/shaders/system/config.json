@@ -1,0 +1,8 @@
+{
+    "field": {
+        "path": "field_1.glsl",
+        "parameters": {},
+        "vertices": 2,
+        "instances": 1
+    }
+}

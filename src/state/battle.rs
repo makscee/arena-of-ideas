@@ -4,6 +4,7 @@ pub struct Battle {
     pub model: Rc<Model>,
     pub view: Rc<View>,
     pub logic: Rc<Logic>,
+    pub assets: Rc<Assets>,
 }
 
 impl State for Battle {

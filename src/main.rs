@@ -37,29 +37,20 @@ fn setup_geng() -> Geng {
 
 fn main() {
     logger::init().unwrap();
+    geng::setup_panic_handler();
+    let geng = setup_geng();
 
     let logic = Logic {
         queue: LogicQueue {
             nodes: VecDeque::new(),
         },
     };
-    let assets = Assets {
-        units: vec![],
-        clans: vec![],
-        rounds: vec![],
-    };
-    let camera = geng::Camera2d {
-        center: vec2(0.0, 0.0),
-        rotation: 0.0,
-        fov: 5.0,
-    };
-    let view = View {
-        queue: VisualQueue {
-            nodes: VecDeque::new(),
-            persistent_nodes: vec![],
-        },
-        camera,
-    };
+    let assets = Rc::new(
+        futures::executor::block_on(<Assets as geng::LoadAsset>::load(&geng, &static_path()))
+            .unwrap(),
+    );
+
+    let view = View::new(geng.clone(), assets.clone());
     let model = Model {
         units: Collection::new(),
         player_team: Team {
@@ -70,14 +61,11 @@ fn main() {
         },
     };
 
-    geng::setup_panic_handler();
-    let geng = setup_geng();
-
     let state = StateManager::new();
     let mut game = Game {
         geng: geng.clone(),
         logic,
-        assets,
+        assets: assets.clone(),
         view,
         state,
         model,
@@ -86,6 +74,7 @@ fn main() {
         model: Rc::new(game.model),
         view: Rc::new(game.view),
         logic: Rc::new(game.logic),
+        assets: game.assets,
         transition: false,
     }));
     geng::run(&geng, game.state);
