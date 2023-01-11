@@ -9,4 +9,5 @@ pub use program::*;
 #[derive(Deserialize)]
 pub struct SystemShaders {
     pub field: ShaderProgram,
+    pub unit: ShaderProgram,
 }

@@ -36,5 +36,11 @@ async fn load_system_shaders(
         .context(format!("Failed to load {path}"))?;
     system_shaders.field.program = Some(Rc::new(program));
 
+    let path = system_shaders.unit.path.clone();
+    let program = <ugli::Program as geng::LoadAsset>::load(&geng, &base_path.join(path.clone()))
+        .await
+        .context(format!("Failed to load {path}"))?;
+    system_shaders.unit.program = Some(Rc::new(program));
+
     Ok::<_, anyhow::Error>(system_shaders)
 }
