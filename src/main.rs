@@ -53,6 +53,9 @@ fn main() {
     );
 
     let view = View::new(geng.clone(), assets.clone());
+
+    // geng::run(&geng, ShaderEditState::new(&geng, assets, Rc::new(view)));
+
     let model = Model {
         units: Collection::new(),
         player_team: Team {
