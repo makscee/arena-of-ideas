@@ -1,7 +1,16 @@
 {
     "field": {
-        "path": "field_1.glsl",
+        "path": "field.glsl",
         "parameters": {},
+        "vertices": 2,
+        "instances": 1
+    },
+    "unit": {
+        "path": "unit.glsl",
+        "parameters": {
+            "u_size": 1.0,
+            "u_color": "#000000"
+        },
         "vertices": 2,
         "instances": 1
     }
