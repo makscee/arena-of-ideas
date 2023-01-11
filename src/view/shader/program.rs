@@ -1,10 +1,14 @@
+use std::path::PathBuf;
+
 use super::*;
 
 use serde::*;
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, geng::Assets)]
+#[asset(json)]
+#[serde(deny_unknown_fields)]
 pub struct ShaderProgram {
-    pub path: String,
+    pub path: PathBuf,
     #[serde(skip)]
     pub program: Option<Rc<ugli::Program>>,
     pub parameters: ShaderParameters,
@@ -32,6 +36,14 @@ impl ShaderProgram {
         });
 
         ugli::VertexBuffer::new_dynamic(geng.ugli(), vertices)
+    }
+
+    pub async fn load(&mut self, geng: &Geng) {
+        let program = <Program as geng::LoadAsset>::load(geng, &static_path().join(&self.path))
+            .await
+            .context("Failed to load shader program")
+            .expect("Failed to load shader program");
+        self.program = Some(Rc::new(program));
     }
 }
 

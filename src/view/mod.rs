@@ -41,8 +41,7 @@ impl View {
         self.draw_field(framebuffer);
     }
 
-    fn draw_field(&self, framebuffer: &mut ugli::Framebuffer) {
-        let shader_program = &self.assets.system_shaders.field;
+    pub fn draw_shader(&self, framebuffer: &mut ugli::Framebuffer, shader_program: &ShaderProgram) {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
             ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
         instances_arr.resize(shader_program.instances, Instance {});
@@ -70,5 +69,9 @@ impl View {
                 ..default()
             },
         );
+    }
+
+    fn draw_field(&self, framebuffer: &mut ugli::Framebuffer) {
+        self.draw_shader(framebuffer, &self.assets.system_shaders.field);
     }
 }

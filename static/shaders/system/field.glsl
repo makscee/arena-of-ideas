@@ -1,3 +1,5 @@
+uniform vec4 u_color;
+
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
 attribute vec2 a_pos;

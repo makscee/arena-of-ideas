@@ -1,12 +1,12 @@
 {
     "field": {
-        "path": "field.glsl",
+        "path": "shaders/system/field.glsl",
         "parameters": {},
         "vertices": 2,
         "instances": 1
     },
     "unit": {
-        "path": "unit.glsl",
+        "path": "shaders/system/unit.glsl",
         "parameters": {
             "u_size": 1.0,
             "u_color": "#000000"
