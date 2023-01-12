@@ -3,6 +3,7 @@ use crate::assets::load_shader_library;
 use super::*;
 
 use geng::prelude::*;
+use geng::ui::*;
 use std::{path::PathBuf, sync::mpsc::Receiver};
 
 use notify::{DebouncedEvent, RecommendedWatcher, Watcher};
@@ -123,5 +124,31 @@ impl geng::State for ShaderEditState {
         ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
 
         self.view.draw_shader(framebuffer, &self.shader);
+    }
+
+    fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {
+        (
+            Text::new(
+                "<Current shader>",
+                cx.geng().default_font(),
+                40.0,
+                Rgba::WHITE,
+            )
+            .padding_horizontal(16.0)
+            .center(),
+            Text::new(
+                self.shader.path.to_str().unwrap(),
+                cx.geng().default_font(),
+                40.0,
+                Rgba::WHITE,
+            )
+            .padding_horizontal(16.0)
+            .center(),
+        )
+            .column()
+            .background_color(Rgba::try_from("#1491d477").unwrap())
+            .uniform_padding(16.0)
+            .align(vec2(0.0, 1.0))
+            .boxed()
     }
 }
