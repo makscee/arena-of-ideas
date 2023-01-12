@@ -1,4 +1,4 @@
-use crate::assets::load_shader_library;
+use crate::assets::*;
 
 use super::*;
 
@@ -12,13 +12,15 @@ type Time = R32;
 
 pub struct ShaderEditState {
     geng: Geng,
-    assets: Rc<Assets>,
     view: Rc<View>,
     time: Time,
-    shader: ShaderProgram,
+    shaders_list: Vec<ShaderProgram>,
+    shader_index: usize,
     receiver: Receiver<DebouncedEvent>,
     watcher: RecommendedWatcher,
     watched_list: Vec<PathBuf>,
+    shader_library: Vec<PathBuf>,
+    system_shaders: SystemShaders,
 }
 
 impl ShaderEditState {
@@ -32,25 +34,39 @@ impl ShaderEditState {
         let mut state = Self {
             geng: geng.clone(),
             time: Time::ZERO,
-            shader: assets.system_shaders.unit.clone(),
             watched_list: default(),
             watcher,
-            assets,
+            shaders_list: default(),
+            shader_index: 0,
             view,
             receiver: rx,
+            system_shaders: assets.clone().system_shaders.clone(),
+            shader_library: default(),
         };
-        state.reload_list();
+
+        state.move_shaders_to_list();
+        state.reload_watched_list();
         state.watch_all();
         state
+    }
+
+    fn get_current_shader(&self) -> &ShaderProgram {
+        &self.shaders_list[self.shader_index]
+    }
+
+    fn switch_shader(&mut self, delta: i32) {
+        self.shader_index = ((self.shader_index + self.shaders_list.len()) as i32 + delta) as usize
+            % self.shaders_list.len();
+        self.reload_watch();
     }
 
     fn handle_notify(&mut self, event: notify::DebouncedEvent) {
         debug!("Notify event: {event:?}");
         match event {
-            DebouncedEvent::NoticeWrite(path)
-            // | DebouncedEvent::Write(path)
-            | DebouncedEvent::Create(path) => self.reload_watch(),
-            DebouncedEvent::NoticeRemove(path) => {
+            DebouncedEvent::NoticeWrite(_path)
+            // | DebouncedEvent::Write(_path)
+            | DebouncedEvent::Create(_path) => self.reload_watch(),
+            DebouncedEvent::NoticeRemove(_path) => {
                 // (Neo)vim writes the file by removing and recreating it,
                 // hence this hack
                 // self.switch_watch(&path, &path);
@@ -83,25 +99,42 @@ impl ShaderEditState {
         }
     }
 
-    fn reload_list(&mut self) {
+    fn reload_watched_list(&mut self) {
         self.watched_list.clear();
         self.watched_list
-            .push(static_path().join(self.shader.path.clone()));
-        self.watched_list.extend(self.assets.shader_library.clone());
+            .push(static_path().join(self.get_current_shader().path.clone()));
+        self.watched_list
+            .push(static_path().join("shaders/system/config.json"));
+        self.watched_list.extend(self.shader_library.clone());
     }
 
     fn reload_watch(&mut self) {
-        // Stop watching old shader if the path has changed
         self.unwatch_all();
         self.reload_shader_library();
-        futures::executor::block_on(self.shader.load(&self.geng));
-        self.reload_list();
+        self.reload_system_shaders();
+        self.move_shaders_to_list();
+        futures::executor::block_on(self.shaders_list[self.shader_index].load(&self.geng));
+        self.reload_watched_list();
         self.watch_all();
     }
 
-    fn reload_shader_library(&self) {
-        futures::executor::block_on(load_shader_library(&self.geng, &static_path()))
-            .expect("Failed to reload shader library");
+    fn move_shaders_to_list(&mut self) {
+        self.shaders_list = vec![
+            self.system_shaders.unit.clone(),
+            self.system_shaders.field.clone(),
+        ];
+    }
+
+    fn reload_shader_library(&mut self) {
+        self.shader_library =
+            futures::executor::block_on(load_shader_library(&self.geng, &static_path()))
+                .expect("Failed to reload shader library");
+    }
+
+    fn reload_system_shaders(&mut self) {
+        self.system_shaders =
+            futures::executor::block_on(load_system_shaders(&self.geng, &static_path()))
+                .expect("Failed to reload system shaders library");
     }
 }
 
@@ -123,7 +156,8 @@ impl geng::State for ShaderEditState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
 
-        self.view.draw_shader(framebuffer, &self.shader);
+        self.view
+            .draw_shader(framebuffer, &self.get_current_shader());
     }
 
     fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {
@@ -137,7 +171,7 @@ impl geng::State for ShaderEditState {
             .padding_horizontal(16.0)
             .center(),
             Text::new(
-                self.shader.path.to_str().unwrap(),
+                self.get_current_shader().path.to_str().unwrap(),
                 cx.geng().default_font(),
                 40.0,
                 Rgba::WHITE,
@@ -150,5 +184,16 @@ impl geng::State for ShaderEditState {
             .uniform_padding(16.0)
             .align(vec2(0.0, 1.0))
             .boxed()
+    }
+
+    fn handle_event(&mut self, event: Event) {
+        match event {
+            Event::KeyDown { key } => match key {
+                Key::Left => self.switch_shader(-1),
+                Key::Right => self.switch_shader(1),
+                _ => {}
+            },
+            _ => {}
+        }
     }
 }

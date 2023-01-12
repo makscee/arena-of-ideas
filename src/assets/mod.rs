@@ -23,7 +23,7 @@ pub struct Assets {
     pub system_shaders: SystemShaders,
 }
 
-async fn load_system_shaders(
+pub async fn load_system_shaders(
     geng: &Geng,
     base_path: &std::path::Path,
 ) -> anyhow::Result<SystemShaders> {
