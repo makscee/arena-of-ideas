@@ -54,36 +54,36 @@ fn main() {
 
     let view = View::new(geng.clone(), assets.clone());
 
-    // geng::run(
-    //     &geng,
-    //     ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
-    // );
+    geng::run(
+        &geng,
+        ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
+    );
 
-    let model = Model {
-        units: Collection::new(),
-        player_team: Team {
-            units: Collection::new(),
-        },
-        enemy_team: Team {
-            units: Collection::new(),
-        },
-    };
+    // let model = Model {
+    //     units: Collection::new(),
+    //     player_team: Team {
+    //         units: Collection::new(),
+    //     },
+    //     enemy_team: Team {
+    //         units: Collection::new(),
+    //     },
+    // };
 
-    let state = StateManager::new();
-    let mut game = Game {
-        geng: geng.clone(),
-        logic,
-        assets: assets.clone(),
-        view,
-        state,
-        model,
-    };
-    game.state.push(Box::new(MainMenu {
-        model: Rc::new(game.model),
-        view: Rc::new(game.view),
-        logic: Rc::new(game.logic),
-        assets: game.assets,
-        transition: false,
-    }));
-    geng::run(&geng, game.state);
+    // let state = StateManager::new();
+    // let mut game = Game {
+    //     geng: geng.clone(),
+    //     logic,
+    //     assets: assets.clone(),
+    //     view,
+    //     state,
+    //     model,
+    // };
+    // game.state.push(Box::new(MainMenu {
+    //     model: Rc::new(game.model),
+    //     view: Rc::new(game.view),
+    //     logic: Rc::new(game.logic),
+    //     assets: game.assets,
+    //     transition: false,
+    // }));
+    // geng::run(&geng, game.state);
 }
