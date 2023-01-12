@@ -4,16 +4,19 @@ mod effect;
 mod node;
 mod queue;
 mod shader;
+mod unit_render;
 
 pub use effect::*;
 pub use geng::Camera2d;
 pub use node::*;
 pub use queue::*;
 pub use shader::*;
+pub use unit_render::*;
 
 pub struct View {
-    pub queue: VisualQueue,
-    pub camera: Camera2d,
+    units: Collection<UnitRender>,
+    queue: VisualQueue,
+    camera: Camera2d,
     geng: Geng,
     assets: Rc<Assets>,
 }
@@ -30,6 +33,7 @@ impl View {
             fov: 5.0,
         };
         Self {
+            units: default(),
             queue,
             camera,
             geng,
@@ -37,8 +41,15 @@ impl View {
         }
     }
 
+    pub fn add_unit_to_render(&mut self, unit: Unit) {
+        self.units.insert(UnitRender::new_from_unit(unit));
+    }
+
     pub fn draw(&self, framebuffer: &mut ugli::Framebuffer) {
         self.draw_field(framebuffer);
+        self.units
+            .iter()
+            .for_each(|u| self.draw_unit(framebuffer, u));
     }
 
     pub fn draw_shader(&self, framebuffer: &mut ugli::Framebuffer, shader_program: &ShaderProgram) {
@@ -73,5 +84,12 @@ impl View {
 
     fn draw_field(&self, framebuffer: &mut ugli::Framebuffer) {
         self.draw_shader(framebuffer, &self.assets.system_shaders.field);
+    }
+
+    fn draw_unit(&self, framebuffer: &mut ugli::Framebuffer, unit_render: &UnitRender) {
+        self.draw_shader(framebuffer, &self.assets.system_shaders.unit);
+        for layer in &unit_render.layers {
+            self.draw_shader(framebuffer, layer);
+        }
     }
 }

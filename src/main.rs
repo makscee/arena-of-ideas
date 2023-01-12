@@ -22,6 +22,7 @@ type Id = i64;
 type Name = String;
 type Description = String;
 type Time = f32;
+type Position = Vec2<f32>;
 
 fn setup_geng() -> Geng {
     geng::setup_panic_handler();
@@ -52,38 +53,44 @@ fn main() {
             .unwrap(),
     );
 
-    let view = View::new(geng.clone(), assets.clone());
+    let mut view = View::new(geng.clone(), assets.clone());
+    view.add_unit_to_render(Unit {
+        id: 0,
+        name: "test".to_owned(),
+        stats: UnitStats {},
+        faction: Faction::Player,
+    });
 
-    geng::run(
-        &geng,
-        ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
-    );
+    // geng::run(
+    //     &geng,
+    //     ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
+    // );
 
-    // let model = Model {
-    //     units: Collection::new(),
-    //     player_team: Team {
-    //         units: Collection::new(),
-    //     },
-    //     enemy_team: Team {
-    //         units: Collection::new(),
-    //     },
-    // };
+    let model = Model {
+        units: Collection::new(),
+        player_team: Team {
+            units: Collection::new(),
+        },
+        enemy_team: Team {
+            units: Collection::new(),
+        },
+    };
 
-    // let state = StateManager::new();
-    // let mut game = Game {
-    //     geng: geng.clone(),
-    //     logic,
-    //     assets: assets.clone(),
-    //     view,
-    //     state,
-    //     model,
-    // };
-    // game.state.push(Box::new(MainMenu {
-    //     model: Rc::new(game.model),
-    //     view: Rc::new(game.view),
-    //     logic: Rc::new(game.logic),
-    //     assets: game.assets,
-    //     transition: false,
-    // }));
-    // geng::run(&geng, game.state);
+    let state = StateManager::new();
+    let mut game = Game {
+        geng: geng.clone(),
+        logic,
+        assets: assets.clone(),
+        view,
+        state,
+        model,
+    };
+    game.state.push(Box::new(MainMenu {
+        model: Rc::new(game.model),
+        view: Rc::new(game.view),
+        logic: Rc::new(game.logic),
+        assets: game.assets,
+        transition: false,
+    }));
+    geng::run(&geng, game.state);
 }
