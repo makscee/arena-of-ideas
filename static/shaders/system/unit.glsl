@@ -1,3 +1,5 @@
+#include <common.glsl>
+
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
 attribute vec2 a_pos;
@@ -17,10 +19,10 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
 
-uniform vec4 u_color;
-
 void main() {
     vec4 color = u_color;
+    color = vec4(0.6);
+    color = vec4(enemy_faction_color, 1);
     gl_FragColor = color;
 }
 #endif
