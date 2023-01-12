@@ -1,3 +1,5 @@
+use crate::assets::load_shader_library;
+
 use super::*;
 
 use geng::prelude::*;
@@ -20,10 +22,6 @@ pub struct ShaderEditState {
 
 impl ShaderEditState {
     pub fn new(geng: &Geng, assets: Rc<Assets>, view: Rc<View>) -> Self {
-        let mut watched_list = Vec::new();
-        watched_list.push(assets.system_shaders.unit.path.clone());
-        watched_list.extend(assets.shader_library.clone());
-
         // Setup watcher
         let (tx, rx) = std::sync::mpsc::channel();
         let watcher: RecommendedWatcher =
@@ -34,12 +32,13 @@ impl ShaderEditState {
             geng: geng.clone(),
             time: Time::ZERO,
             shader: assets.system_shaders.unit.clone(),
-            watched_list,
+            watched_list: default(),
             watcher,
             assets,
             view,
             receiver: rx,
         };
+        state.reload_list();
         state.watch_all();
         state
     }
@@ -48,8 +47,8 @@ impl ShaderEditState {
         debug!("Notify event: {event:?}");
         match event {
             DebouncedEvent::NoticeWrite(path)
-            | DebouncedEvent::Create(path)
-            | DebouncedEvent::Write(path) => self.reload_watch(),
+            // | DebouncedEvent::Write(path)
+            | DebouncedEvent::Create(path) => self.reload_watch(),
             DebouncedEvent::NoticeRemove(path) => {
                 // (Neo)vim writes the file by removing and recreating it,
                 // hence this hack
@@ -66,31 +65,11 @@ impl ShaderEditState {
         }
     }
 
-    fn switch_watch(
-        &mut self,
-        old_path: impl AsRef<std::path::Path>,
-        new_path: impl AsRef<std::path::Path>,
-    ) {
-        if let Err(error) = self.watcher.unwatch(old_path.as_ref()) {
-            error!(
-                "Failed to unwatch old shader path ({:?}): {error}",
-                old_path.as_ref()
-            );
-        }
-        if let Err(error) = self
-            .watcher
-            .watch(new_path.as_ref(), notify::RecursiveMode::NonRecursive)
-        {
-            error!(
-                "Failed to start watching shader on {:?}: {error}",
-                new_path.as_ref()
-            );
-        }
-    }
-
     fn unwatch_all(&mut self) {
         for path in self.watched_list.iter() {
-            self.watcher.unwatch(path);
+            if let Err(error) = self.watcher.unwatch(path) {
+                error!("Failed to unwatch shader path ({:?}): {error}", path);
+            }
         }
     }
 
@@ -106,16 +85,22 @@ impl ShaderEditState {
     fn reload_list(&mut self) {
         self.watched_list.clear();
         self.watched_list
-            .push(self.assets.system_shaders.unit.path.clone());
+            .push(static_path().join(self.shader.path.clone()));
         self.watched_list.extend(self.assets.shader_library.clone());
     }
 
     fn reload_watch(&mut self) {
         // Stop watching old shader if the path has changed
         self.unwatch_all();
+        self.reload_shader_library();
         futures::executor::block_on(self.shader.load(&self.geng));
         self.reload_list();
         self.watch_all();
+    }
+
+    fn reload_shader_library(&self) {
+        futures::executor::block_on(load_shader_library(&self.geng, &static_path()))
+            .expect("Failed to reload shader library");
     }
 }
 
