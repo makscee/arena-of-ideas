@@ -15,7 +15,7 @@ pub use unit_render::*;
 
 pub struct View {
     units: Collection<UnitRender>,
-    queue: VisualQueue,
+    pub queue: VisualQueue,
     camera: Camera2d,
     geng: Geng,
     assets: Rc<Assets>,
@@ -23,10 +23,7 @@ pub struct View {
 
 impl View {
     pub fn new(geng: Geng, assets: Rc<Assets>) -> Self {
-        let queue = VisualQueue {
-            nodes: VecDeque::new(),
-            persistent_nodes: vec![],
-        };
+        let queue = VisualQueue::new();
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
             rotation: 0.0,

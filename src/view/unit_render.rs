@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(HasId)]
+#[derive(Clone, HasId)]
 pub struct UnitRender {
     pub id: Id,
     pub faction: Faction,
