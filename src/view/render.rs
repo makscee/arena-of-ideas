@@ -3,7 +3,7 @@ use super::*;
 pub struct ViewRender {
     camera: Camera2d,
     geng: Geng,
-    assets: Rc<Assets>,
+    pub assets: Rc<Assets>,
 }
 
 impl ViewRender {

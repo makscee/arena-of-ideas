@@ -11,7 +11,13 @@ impl FieldVisualEffect {
 }
 
 impl VisualEffect for FieldVisualEffect {
-    fn draw(&self, render: &ViewRender, framebuffer: &mut ugli::Framebuffer, t: Time) {
+    fn draw(
+        &self,
+        render: &ViewRender,
+        framebuffer: &mut ugli::Framebuffer,
+        _t: Time,
+        _model: &VisualNodeModel,
+    ) {
         render.draw_shader(framebuffer, &self.shader);
     }
 
