@@ -73,4 +73,5 @@ pub use context::*;
 
 pub struct Logic {
     pub queue: LogicQueue,
+    pub model: Model,
 }

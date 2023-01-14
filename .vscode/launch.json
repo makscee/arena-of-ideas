@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug game",
+            "name": "Debug game 1",
             "cargo": {
                 "args": [
                     "build",
