@@ -1,18 +1,12 @@
 use super::*;
 
 pub struct MainMenu {
-    pub model: Rc<Model>,
-    pub view: Rc<View>,
-    pub logic: Rc<Logic>,
     pub assets: Rc<Assets>,
     pub transition: bool,
 }
 
 impl State for MainMenu {
-    fn update(&mut self, delta_time: f64) {}
-    fn fixed_update(&mut self, delta_time: f64) {}
-
-    fn handle_event(&mut self, event: geng::Event) {
+    fn handle_event(&mut self, event: Event, logic: &mut Logic) {
         match event {
             Event::KeyDown { key } => {
                 self.transition = true;
@@ -21,12 +15,9 @@ impl State for MainMenu {
         }
     }
 
-    fn transition(&mut self) -> Option<geng::Transition> {
+    fn transition(&mut self, logic: &mut Logic) -> Option<Transition> {
         if self.transition {
             Some(Transition::Switch(Box::new(Battle {
-                model: self.model.clone(),
-                view: self.view.clone(),
-                logic: self.logic.clone(),
                 assets: self.assets.clone(),
             })))
         } else {
@@ -34,7 +25,7 @@ impl State for MainMenu {
         }
     }
 
-    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer, view: &View, logic: &Logic) {
         clear(framebuffer, Some(Rgba::MAGENTA), None, None);
         // self.view.draw(framebuffer);
     }

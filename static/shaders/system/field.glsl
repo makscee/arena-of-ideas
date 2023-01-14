@@ -16,8 +16,10 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
+uniform vec4 u_color_1;
 
 void main() {
-    gl_FragColor = u_color;
+    vec4 color = mix(u_color, u_color_1, float(v_quad_pos.x < .0));
+    gl_FragColor = color;
 }
 #endif

@@ -10,4 +10,5 @@ pub use queue::*;
 
 pub struct Logic {
     pub queue: LogicQueue,
+    pub model: Model,
 }

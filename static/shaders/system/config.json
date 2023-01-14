@@ -2,7 +2,8 @@
     "field": {
         "path": "shaders/system/field.glsl",
         "parameters": {
-            "u_color": "#b59822"
+            "u_color": "#000000",
+            "u_color_1": "#ffffff"
         },
         "vertices": 2,
         "instances": 1

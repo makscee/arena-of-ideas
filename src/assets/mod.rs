@@ -34,7 +34,6 @@ pub async fn load_system_shaders(
         .context("Failed to load config.json for system shaders")?;
     let mut system_shaders: SystemShaders =
         serde_json::from_str(&json).context("Failed to parse config.json for system shaders")?;
-
     system_shaders.field.load(&geng).await;
     system_shaders.unit.load(&geng).await;
 

@@ -12,6 +12,7 @@ use game::Game;
 use geng::{prelude::*, *};
 use logic::*;
 use model::*;
+use state::StateManager;
 use state::*;
 use ugli::*;
 use view::*;
@@ -42,37 +43,20 @@ fn main() {
     let geng = setup_geng();
 
     let logic = Logic {
-        queue: LogicQueue {
-            nodes: VecDeque::new(),
-        },
+        queue: LogicQueue::new(),
+        model: Model::new(),
     };
     let assets = Rc::new(
         futures::executor::block_on(<Assets as geng::LoadAsset>::load(&geng, &static_path()))
             .unwrap(),
     );
 
-    let mut view = View::new(geng.clone(), assets.clone());
-    view.add_unit_to_render(Unit {
-        id: 0,
-        name: "test".to_owned(),
-        stats: UnitStats {},
-        faction: Faction::Player,
-    });
+    let view = View::new(geng.clone(), assets.clone());
 
     // geng::run(
     //     &geng,
     //     ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
     // );
-
-    let model = Model {
-        units: Collection::new(),
-        player_team: Team {
-            units: Collection::new(),
-        },
-        enemy_team: Team {
-            units: Collection::new(),
-        },
-    };
 
     let state = StateManager::new();
     let mut game = Game {
@@ -81,14 +65,11 @@ fn main() {
         assets: assets.clone(),
         view,
         state,
-        model,
     };
     game.state.push(Box::new(MainMenu {
-        model: Rc::new(game.model),
-        view: Rc::new(game.view),
-        logic: Rc::new(game.logic),
-        assets: game.assets,
+        assets: game.assets.clone(),
         transition: false,
     }));
-    geng::run(&geng, game.state);
+    debug!("geng run");
+    geng::run(&geng, game);
 }

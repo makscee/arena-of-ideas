@@ -157,6 +157,7 @@ impl geng::State for ShaderEditState {
         ugli::clear(framebuffer, Some(Rgba::WHITE), None, None);
 
         self.view
+            .render
             .draw_shader(framebuffer, &self.get_current_shader());
     }
 
