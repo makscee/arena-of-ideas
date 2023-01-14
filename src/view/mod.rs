@@ -35,6 +35,9 @@ impl View {
             .push(Box::new(FieldVisualEffect::new(
                 assets.system_shaders.field.clone(),
             )));
+        queue
+            .persistent_effects
+            .push(Box::new(UnitVisualEffect::new(0)));
         let render = ViewRender::new(camera, geng, assets);
         Self { queue, render }
     }

@@ -43,10 +43,10 @@ impl VisualNode {
         let t = self.get_t(timestamp);
         persistent_effects
             .iter()
-            .for_each(|e| e.draw(render, framebuffer, t));
+            .for_each(|e| e.draw(render, framebuffer, t, &self.model));
         self.effects
             .iter()
-            .for_each(|e| e.draw(render, framebuffer, t));
+            .for_each(|e| e.draw(render, framebuffer, t, &self.model));
     }
 
     fn get_t(&self, timestamp: Time) -> Time {
