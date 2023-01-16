@@ -22,27 +22,26 @@ impl ViewRender {
         let quad = shader_program.get_vertices(&self.geng);
         let framebuffer_size = framebuffer.size();
 
-        let program = shader_program
-            .program
-            .as_ref()
-            .expect("Shader program not loaded");
-        ugli::draw(
-            framebuffer,
-            &program,
-            ugli::DrawMode::TriangleStrip,
-            ugli::instanced(&quad, &instances_arr),
-            (
-                ugli::uniforms! {
-                    u_time: 0.0,
+        let program = shader_program.program.as_ref();
+        if let Some(program) = program {
+            ugli::draw(
+                framebuffer,
+                &program,
+                ugli::DrawMode::TriangleStrip,
+                ugli::instanced(&quad, &instances_arr),
+                (
+                    ugli::uniforms! {
+                        u_time: 0.0,
+                    },
+                    geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
+                    &shader_program.parameters,
+                ),
+                ugli::DrawParameters {
+                    blend_mode: Some(ugli::BlendMode::default()),
+                    ..default()
                 },
-                geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
-                &shader_program.parameters,
-            ),
-            ugli::DrawParameters {
-                blend_mode: Some(ugli::BlendMode::default()),
-                ..default()
-            },
-        );
+            );
+        }
     }
 
     fn draw_unit(&self, framebuffer: &mut ugli::Framebuffer, unit_render: &UnitRender) {
