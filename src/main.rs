@@ -66,9 +66,9 @@ fn main() {
         logic,
         assets: assets.clone(),
         view,
-        state,
+        state_manager: state,
     };
-    game.state.push(Box::new(MainMenu {
+    game.state_manager.push(Box::new(MainMenu {
         assets: game.assets.clone(),
         transition: false,
     }));

@@ -23,3 +23,14 @@ pub struct Unit {
     pub all_statuses: Vec<AttachedStatus>,
     pub vars: HashMap<VarName, Expr>,
 }
+
+impl Unit {
+    pub fn new(id: Id, name: Name, stats: UnitStats, faction: Faction) -> Self {
+        Self {
+            id,
+            name,
+            stats,
+            faction,
+        }
+    }
+}

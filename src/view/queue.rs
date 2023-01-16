@@ -30,12 +30,31 @@ impl VisualQueue {
             .binary_search_by_key(&r32(timestamp), |node| r32(node.timestamp))
         {
             Ok(index) => index,
-            Err(index) => index,
+            Err(index) => index - 1,
         };
         if let Some(node) = self.nodes.get(index) {
             node.clone()
         } else {
             VisualNode::empty()
         }
+    }
+
+    pub fn push_node(&mut self, model: VisualNodeModel, effects: Vec<Rc<dyn VisualEffect>>) {
+        let duration = effects
+            .iter()
+            .map(|e| e.get_duration())
+            .max_by(|x, y| x.partial_cmp(&y).unwrap())
+            .unwrap();
+        let node = VisualNode {
+            timestamp: self.nodes.last().map_or(0.0, |n| n.timestamp + n.duration),
+            duration,
+            effects,
+            model,
+        };
+        debug!(
+            "Add node on timestamp: {} duration: {}",
+            node.timestamp, node.duration
+        );
+        self.nodes.push(node);
     }
 }

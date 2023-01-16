@@ -16,10 +16,7 @@ impl VisualNode {
             timestamp,
             duration: -1.0,
             effects: default(),
-            model: VisualNodeModel {
-                units: default(),
-                timestamp,
-            },
+            model: VisualNodeModel { units: default() },
         }
     }
 
@@ -52,7 +49,10 @@ impl VisualNode {
     fn get_t(&self, timestamp: Time) -> Time {
         let t = timestamp - self.timestamp;
         if self.duration.is_sign_positive() && (t.is_sign_negative() || t > self.duration) {
-            panic!("Tried to draw node with timestamp out of bounds");
+            panic!(
+                "Tried to draw node with timestamp out of bounds duration: {} self.timestamp: {} timestamp: {}",
+                self.duration, self.timestamp, timestamp
+            );
         }
         t
     }
@@ -61,11 +61,10 @@ impl VisualNode {
 #[derive(Clone)]
 pub struct VisualNodeModel {
     pub units: Collection<UnitRender>,
-    pub timestamp: Time,
 }
 
 impl VisualNodeModel {
-    pub fn new(units: Collection<UnitRender>, timestamp: Time) -> Self {
-        Self { units, timestamp }
+    pub fn new(units: Collection<UnitRender>) -> Self {
+        Self { units }
     }
 }

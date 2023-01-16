@@ -15,7 +15,14 @@ impl ViewRender {
         }
     }
 
-    pub fn draw_shader(&self, framebuffer: &mut ugli::Framebuffer, shader_program: &ShaderProgram) {
+    pub fn draw_shader<U>(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        shader_program: &ShaderProgram,
+        uniforms: U,
+    ) where
+        U: Uniforms,
+    {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
             ugli::VertexBuffer::new_dynamic(self.geng.ugli(), Vec::new());
         instances_arr.resize(shader_program.instances, Instance {});
@@ -35,6 +42,7 @@ impl ViewRender {
                     },
                     geng::camera2d_uniforms(&self.camera, framebuffer_size.map(|x| x as f32)),
                     &shader_program.parameters,
+                    uniforms,
                 ),
                 ugli::DrawParameters {
                     blend_mode: Some(ugli::BlendMode::default()),
@@ -44,10 +52,14 @@ impl ViewRender {
         }
     }
 
-    fn draw_unit(&self, framebuffer: &mut ugli::Framebuffer, unit_render: &UnitRender) {
-        self.draw_shader(framebuffer, &self.assets.system_shaders.unit);
-        for layer in &unit_render.layers {
-            self.draw_shader(framebuffer, layer);
-        }
+    pub fn draw_unit(&self, framebuffer: &mut ugli::Framebuffer, unit_render: &UnitRender) {
+        self.draw_shader(
+            framebuffer,
+            &self.assets.system_shaders.unit,
+            uniforms!(u_unit_position: unit_render.position,),
+        );
+        // for layer in &unit_render.layers {
+        //     self.draw_shader(framebuffer, layer);
+        // }
     }
 }
