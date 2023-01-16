@@ -17,22 +17,26 @@ impl State for MainMenu {
 
     fn transition(&mut self, logic: &mut Logic, view: &mut View) -> Option<Transition> {
         if self.transition {
-            let battle = Battle {
-                assets: self.assets.clone(),
-            };
-            let mut battle_units = Collection::new();
-            battle_units.insert(Unit::new(
+            let mut units = Collection::new();
+            units.insert(Unit::new(
                 0,
-                "Test".to_owned(),
+                "Test Player".to_owned(),
                 UnitStats {},
                 Faction::Player,
             ));
-            Battle::start_simulation(battle_units, logic);
-            Battle::tick_simulation(logic, view);
-            Battle::tick_simulation(logic, view);
-            Battle::tick_simulation(logic, view);
-            Battle::tick_simulation(logic, view);
-            Battle::tick_simulation(logic, view);
+            units.insert(Unit::new(
+                1,
+                "Test Enemy".to_owned(),
+                UnitStats {},
+                Faction::Enemy,
+            ));
+            let mut battle = Battle::new(self.assets.clone(), units);
+            battle.tick_simulation(logic, view);
+            battle.tick_simulation(logic, view);
+            battle.tick_simulation(logic, view);
+            battle.tick_simulation(logic, view);
+            battle.tick_simulation(logic, view);
+            battle.tick_simulation(logic, view);
             Some(Transition::Switch(Box::new(battle)))
         } else {
             None

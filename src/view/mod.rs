@@ -37,7 +37,7 @@ impl View {
             )));
         queue
             .persistent_effects
-            .push(Box::new(UnitVisualEffect::new(0)));
+            .push(Box::new(DrawModelUnitsVisualEffect::new()));
         let render = ViewRender::new(camera, geng, assets);
         Self { queue, render }
     }

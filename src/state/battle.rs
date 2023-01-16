@@ -1,9 +1,22 @@
 use std::rc::Rc;
 
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
+/// Module & State for battle processing
+/// Provide units and simulate battle between them,
+/// processing Logic effects and producing queue of Visual effects
 pub struct Battle {
     pub assets: Rc<Assets>,
+    pub units: Collection<Unit>,
+    pub strikers: (Option<Id>, Option<Id>),
+}
+
+enum StrikePhase {
+    Charge,
+    Hit,
+    Release,
 }
 
 impl State for Battle {
@@ -18,27 +31,99 @@ impl State for Battle {
 }
 
 impl Battle {
-    pub fn new(assets: Rc<Assets>) -> Self {
-        Self { assets }
+    pub fn new(assets: Rc<Assets>, units: Collection<Unit>) -> Self {
+        Self {
+            assets,
+            units,
+            strikers: (None, None),
+        }
     }
 
-    // add units to model and initialize simulation
-    pub fn start_simulation(battle_units: Collection<Unit>, logic: &mut Logic) {
-        logic.model.battle_units = battle_units;
+    pub fn is_battle_over(&self) -> bool {
+        self.units.iter().unique_by(|unit| unit.faction).count() < 2
     }
 
-    pub fn tick_simulation(logic: &mut Logic, view: &mut View) {
+    fn get_new_striker(&self, faction: Faction) -> Id {
+        self.units
+            .iter()
+            .filter(|unit| unit.faction == faction)
+            .max_by(|x, y| x.slot.partial_cmp(&y.slot).unwrap())
+            .unwrap()
+            .id
+    }
+
+    fn process_strikers(&mut self) {
+        if self.strikers.0.is_none() {
+            self.strikers.0 = Some(self.get_new_striker(Faction::Player));
+        }
+        if self.strikers.1.is_none() {
+            self.strikers.1 = Some(self.get_new_striker(Faction::Enemy));
+        }
+    }
+
+    fn add_phase_node(&self, phase: StrikePhase, view: &mut View, model: &VisualNodeModel) {
+        match phase {
+            StrikePhase::Charge => view.queue.push_node(
+                model.clone(),
+                vec![
+                    Rc::new(AnimateUnitVisualEffect::new(
+                        self.strikers.0.unwrap(),
+                        vec2(-1.0, 0.0),
+                        vec2(-2.0, 0.0),
+                    )),
+                    Rc::new(AnimateUnitVisualEffect::new(
+                        self.strikers.1.unwrap(),
+                        vec2(1.0, 0.0),
+                        vec2(2.0, 0.0),
+                    )),
+                ],
+            ),
+            StrikePhase::Hit => view.queue.push_node(
+                model.clone(),
+                vec![
+                    Rc::new(AnimateUnitVisualEffect::new(
+                        self.strikers.0.unwrap(),
+                        vec2(-2.0, 0.0),
+                        vec2(0.0, 0.0),
+                    )),
+                    Rc::new(AnimateUnitVisualEffect::new(
+                        self.strikers.1.unwrap(),
+                        vec2(2.0, 0.0),
+                        vec2(0.0, 0.0),
+                    )),
+                ],
+            ),
+            StrikePhase::Release => view.queue.push_node(
+                model.clone(),
+                vec![
+                    Rc::new(AnimateUnitVisualEffect::new(
+                        self.strikers.0.unwrap(),
+                        vec2(0.0, 0.0),
+                        vec2(-1.0, 0.0),
+                    )),
+                    Rc::new(AnimateUnitVisualEffect::new(
+                        self.strikers.1.unwrap(),
+                        vec2(0.0, 0.0),
+                        vec2(1.0, 0.0),
+                    )),
+                ],
+            ),
+        };
+    }
+
+    /// continue simulation and produce 1 new VisualNode
+    pub fn tick_simulation(&mut self, logic: &mut Logic, view: &mut View) {
         let model = VisualNodeModel {
-            units: logic
-                .model
-                .battle_units
+            units: self
+                .units
                 .iter()
                 .map(|u| UnitRender::new_from_unit(u))
                 .collect(),
         };
-        let effects = AnimateUnitVisualEffect::new(0, vec2(0.0, 0.0), vec2(-1.0, 0.0));
-        view.queue.push_node(model.clone(), vec![Rc::new(effects)]);
-        let effects = AnimateUnitVisualEffect::new(0, vec2(-1.0, 0.0), vec2(0.0, 0.0));
-        view.queue.push_node(model.clone(), vec![Rc::new(effects)]);
+
+        self.process_strikers();
+        self.add_phase_node(StrikePhase::Charge, view, &model);
+        self.add_phase_node(StrikePhase::Hit, view, &model);
+        self.add_phase_node(StrikePhase::Release, view, &model);
     }
 }
