@@ -24,10 +24,10 @@ impl StateManager {
 }
 
 impl State for StateManager {
-    fn update(&mut self, delta_time: Time, logic: &mut Logic, view: &mut View) { 
+    fn update(&mut self, delta_time: Time, logic: &mut Logic, view: &mut View) {
         if let Some(state) = self.current_state() {
             state.update(delta_time, logic, view);
-            if let Some(transition) = state.transition(logic) {
+            if let Some(transition) = state.transition(logic, view) {
                 match transition {
                     Transition::Pop => self.pop(),
                     Transition::Push(state) => self.push(state),
@@ -44,13 +44,6 @@ impl State for StateManager {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer, view: &View, logic: &Logic) {
         if let Some(state) = self.current_state() {
             state.draw(framebuffer, view, logic);
-        }
-    }
-    fn transition(&mut self, logic: &mut Logic) -> Option<Transition> {
-        if self.stack.is_empty() {
-            Some(Transition::Pop)
-        } else {
-            None
         }
     }
     fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {

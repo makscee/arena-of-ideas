@@ -163,7 +163,7 @@ impl geng::State for ShaderEditState {
 
         self.view
             .render
-            .draw_shader(framebuffer, &self.get_current_shader());
+            .draw_shader(framebuffer, &self.get_current_shader(), uniforms!());
     }
 
     fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {

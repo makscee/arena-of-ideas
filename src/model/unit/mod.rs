@@ -15,3 +15,14 @@ pub struct Unit {
     pub stats: UnitStats,
     pub faction: Faction,
 }
+
+impl Unit {
+    pub fn new(id: Id, name: Name, stats: UnitStats, faction: Faction) -> Self {
+        Self {
+            id,
+            name,
+            stats,
+            faction,
+        }
+    }
+}

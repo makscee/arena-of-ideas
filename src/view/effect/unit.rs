@@ -16,9 +16,13 @@ impl VisualEffect for UnitVisualEffect {
         render: &ViewRender,
         framebuffer: &mut ugli::Framebuffer,
         _t: Time,
-        _model: &VisualNodeModel,
+        model: &VisualNodeModel,
     ) {
-        render.draw_shader(framebuffer, &render.assets.system_shaders.unit);
+        let unit = model.units.get(&self.id);
+        if let Some(unit) = unit {
+            debug!("unit position: {}", unit.position);
+            render.draw_unit(framebuffer, unit);
+        }
     }
 
     fn update(&self, model: &mut VisualNodeModel, t: Time) {

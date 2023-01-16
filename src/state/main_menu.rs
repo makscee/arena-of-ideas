@@ -15,11 +15,25 @@ impl State for MainMenu {
         }
     }
 
-    fn transition(&mut self, logic: &mut Logic) -> Option<Transition> {
+    fn transition(&mut self, logic: &mut Logic, view: &mut View) -> Option<Transition> {
         if self.transition {
-            Some(Transition::Switch(Box::new(Battle {
+            let battle = Battle {
                 assets: self.assets.clone(),
-            })))
+            };
+            let mut battle_units = Collection::new();
+            battle_units.insert(Unit::new(
+                0,
+                "Test".to_owned(),
+                UnitStats {},
+                Faction::Player,
+            ));
+            Battle::start_simulation(battle_units, logic);
+            Battle::tick_simulation(logic, view);
+            Battle::tick_simulation(logic, view);
+            Battle::tick_simulation(logic, view);
+            Battle::tick_simulation(logic, view);
+            Battle::tick_simulation(logic, view);
+            Some(Transition::Switch(Box::new(battle)))
         } else {
             None
         }

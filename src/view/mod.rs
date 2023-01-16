@@ -42,10 +42,6 @@ impl View {
         Self { queue, render }
     }
 
-    pub fn add_unit_to_render(&mut self, unit: Unit) {
-        todo!();
-    }
-
     pub fn draw(&self, framebuffer: &mut ugli::Framebuffer, game_time: Time) {
         self.queue.draw(&self.render, framebuffer, game_time);
     }

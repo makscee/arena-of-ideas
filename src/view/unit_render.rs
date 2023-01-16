@@ -9,10 +9,10 @@ pub struct UnitRender {
 }
 
 impl UnitRender {
-    pub fn new_from_unit(unit: Unit) -> Self {
+    pub fn new_from_unit(unit: &Unit) -> Self {
         Self {
             id: unit.id,
-            faction: unit.faction,
+            faction: unit.faction.clone(),
             position: Vec2::ZERO,
             layers: default(),
         }

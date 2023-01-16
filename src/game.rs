@@ -6,5 +6,5 @@ pub struct Game {
     pub logic: Logic,
     pub assets: Rc<Assets>,
     pub view: View,
-    pub state: StateManager,
+    pub state_manager: StateManager,
 }

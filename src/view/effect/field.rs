@@ -18,7 +18,7 @@ impl VisualEffect for FieldVisualEffect {
         _t: Time,
         _model: &VisualNodeModel,
     ) {
-        render.draw_shader(framebuffer, &self.shader);
+        render.draw_shader(framebuffer, &self.shader, uniforms!());
     }
 
     fn get_order(&self) -> i32 {

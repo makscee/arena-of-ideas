@@ -22,16 +22,13 @@ pub enum Transition {
 }
 
 pub trait State: 'static {
-    fn init(&mut self, logic: &mut Logic, view: &mut View) {
-        #![allow(unused_variables)]
-    }
     fn update(&mut self, delta_time: Time, logic: &mut Logic, view: &mut View) {
         #![allow(unused_variables)]
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer, view: &View, logic: &Logic) {
         #![allow(unused_variables)]
     }
-    fn transition(&mut self, logic: &mut Logic) -> Option<Transition> {
+    fn transition(&mut self, logic: &mut Logic, view: &mut View) -> Option<Transition> {
         None
     }
     fn handle_event(&mut self, event: Event, logic: &mut Logic) {
