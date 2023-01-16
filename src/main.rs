@@ -55,23 +55,22 @@ fn main() {
 
     let view = View::new(geng.clone(), assets.clone());
 
-    // geng::run(
-    //     &geng,
-    //     ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
-    // );
+    geng::run(
+        &geng,
+        ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
+    );
 
-    let state = StateManager::new();
-    let mut game = Game {
-        geng: geng.clone(),
-        logic,
-        assets: assets.clone(),
-        view,
-        state,
-    };
-    game.state.push(Box::new(MainMenu {
-        assets: game.assets.clone(),
-        transition: false,
-    }));
-    debug!("geng run");
-    geng::run(&geng, game);
+    // let state = StateManager::new();
+    // let mut game = Game {
+    //     geng: geng.clone(),
+    //     logic,
+    //     assets: assets.clone(),
+    //     view,
+    //     state,
+    // };
+    // game.state.push(Box::new(MainMenu {
+    //     assets: game.assets.clone(),
+    //     transition: false,
+    // }));
+    // geng::run(&geng, game);
 }
