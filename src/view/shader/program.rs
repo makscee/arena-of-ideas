@@ -40,14 +40,11 @@ impl ShaderProgram {
 
     pub async fn load(&mut self, geng: &Geng) {
         let path = &static_path().join(&self.path);
-        let program = <Program as geng::LoadAsset>::load(geng, path)
-            .await
-            .context("Failed to load shader program")
-            .expect(&format!(
-                "Failed to load shader program {}",
-                path.to_str().unwrap()
-            ));
-        self.program = Some(Rc::new(program));
+        let program = <Program as geng::LoadAsset>::load(geng, path).await;
+        match program {
+            Ok(result) => self.program = Some(Rc::new(result)),
+            Err(error) => error!("Shader load error: {}", error),
+        }
     }
 }
 

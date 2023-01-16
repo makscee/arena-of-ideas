@@ -132,9 +132,14 @@ impl ShaderEditState {
     }
 
     fn reload_system_shaders(&mut self) {
-        self.system_shaders =
-            futures::executor::block_on(load_system_shaders(&self.geng, &static_path()))
-                .expect("Failed to reload system shaders library");
+        match futures::executor::block_on(load_system_shaders(&self.geng, &static_path())) {
+            Ok(list) => {
+                self.system_shaders = list;
+            }
+            Err(error) => {
+                error!("Failed to load system shaders {}", error);
+            }
+        };
     }
 }
 

@@ -12,7 +12,8 @@
         "path": "shaders/system/unit.glsl",
         "parameters": {
             "u_size": 1.0,
-            "u_color": "#000000"
+            "u_parent_faction": 1.0,
+            "u_padding": 1.0
         },
         "vertices": 2,
         "instances": 1
