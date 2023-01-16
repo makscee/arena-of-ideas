@@ -13,6 +13,7 @@ pub struct Unit {
     pub id: Id,
     pub name: Name,
     pub stats: UnitStats,
+    pub slot: i32,
     pub faction: Faction,
 }
 
@@ -23,6 +24,7 @@ impl Unit {
             name,
             stats,
             faction,
+            slot: 0,
         }
     }
 }

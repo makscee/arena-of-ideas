@@ -1,16 +1,14 @@
 use super::*;
 
-pub struct UnitVisualEffect {
-    pub id: Id,
-}
+pub struct DrawModelUnitsVisualEffect {}
 
-impl UnitVisualEffect {
-    pub fn new(id: Id) -> Self {
-        Self { id }
+impl DrawModelUnitsVisualEffect {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl VisualEffect for UnitVisualEffect {
+impl VisualEffect for DrawModelUnitsVisualEffect {
     fn draw(
         &self,
         render: &ViewRender,
@@ -18,11 +16,10 @@ impl VisualEffect for UnitVisualEffect {
         _t: Time,
         model: &VisualNodeModel,
     ) {
-        let unit = model.units.get(&self.id);
-        if let Some(unit) = unit {
-            debug!("unit position: {}", unit.position);
-            render.draw_unit(framebuffer, unit);
-        }
+        model
+            .units
+            .iter()
+            .for_each(|unit| render.draw_unit(framebuffer, unit));
     }
 
     fn update(&self, model: &mut VisualNodeModel, t: Time) {
