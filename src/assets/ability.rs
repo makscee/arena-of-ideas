@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Ability {
     pub name: Name,
     pub description: Description,

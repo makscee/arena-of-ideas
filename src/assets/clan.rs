@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Clan {
     pub name: Name,
     pub color: Rgba<f32>,
