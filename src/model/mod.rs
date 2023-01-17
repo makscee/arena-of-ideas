@@ -26,9 +26,6 @@ impl Model {
             game_time: 0.0,
         }
     }
-}
-
-impl Model {
     pub fn get_who(&self, who: Who, context: &EffectContext) -> &Unit {
         let who_id = context.get_id(who);
         self.units
