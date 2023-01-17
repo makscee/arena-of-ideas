@@ -14,12 +14,9 @@ pub use unit_template::*;
 
 #[derive(geng::Assets)]
 pub struct Assets {
-    #[asset(path = "units/_list.json", load_with = "load_units(geng, &base_path)")]
-    pub units: Vec<UnitTemplate>,
-    #[asset(path = "clans/_list.json", load_with = "load_clans(geng, &base_path)")]
-    pub clans: Vec<Clan>,
-    #[asset(path = "rounds/round*.json", range = "1..=10")]
-    pub rounds: Vec<Round>,
+    // todo: fix
+    // #[asset(path = "units/_list.json", load_with = "load_units(geng, &base_path)")]
+    // pub units: Vec<UnitTemplate>,
     #[asset(load_with = "load_shader_library(geng, &base_path)")]
     pub shader_library: Vec<PathBuf>,
     #[asset(load_with = "load_system_shaders(geng, &base_path)")]
@@ -38,9 +35,9 @@ async fn load_units(geng: &Geng, base_path: &std::path::Path) -> anyhow::Result<
 
         let path = base_path.join(path).join("_render.json");
         let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-        let clan_renders: Vec<Vec<ShaderConfig>> =
+        let layers: Vec<ShaderProgram> =
             serde_json::from_str(&json).context(format!("Failed to parse from {path:?}"))?;
-        asset.clan_renders = clan_renders;
+        asset.layers = layers;
         result.push(asset);
     }
     Ok(result)

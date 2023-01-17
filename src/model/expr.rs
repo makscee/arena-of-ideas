@@ -39,24 +39,15 @@ pub enum Expr {
         value: Box<Expr>,
         result: Box<Expr>,
     },
-    UnitsInRange {
-        max_distance: Option<Coord>,
-        faction: Option<Faction>,
-        status: Option<StatusName>,
-        clan: Option<Clan>,
-    },
     If {
         condition: Box<Condition>,
         then: Box<Expr>,
         r#else: Box<Expr>,
     },
-    StatusCount {
-        status: StatusName,
-    },
 }
 
 impl Expr {
-    pub fn calculate(&self, context: &EffectContext, model: &Model) -> i32 {
+    pub fn calculate(&self, context: &LogicEffectContext, model: &Model) -> i32 {
         match self {
             Self::Const { value } => *value,
             Self::Var { name } => {
@@ -86,33 +77,6 @@ impl Expr {
                     .insert(name.clone(), value.calculate(&context, model));
                 result.calculate(&context, model)
             }
-            Self::UnitsInRange {
-                max_distance,
-                faction,
-                status,
-                clan,
-            } => {
-                let owner = model.get_who(Who::Owner, &context);
-                model
-                    .units
-                    .iter()
-                    .filter(|unit| match faction {
-                        Some(f) => unit.faction == *f,
-                        None => true,
-                    })
-                    .filter(|unit| match max_distance {
-                        Some(distance) => owner.position.distance(&unit.position) < *distance,
-                        None => true,
-                    })
-                    .filter(|unit| match status {
-                        Some(status_name) => unit
-                            .all_statuses
-                            .iter()
-                            .any(|unit_status| unit_status.status.name == *status_name),
-                        None => true,
-                    })
-                    .count() as i32
-            }
             Self::If {
                 condition,
                 then,
@@ -124,12 +88,6 @@ impl Expr {
                     r#else.calculate(&context, model)
                 }
             }
-            Self::StatusCount { status } => model
-                .get_who(Who::Target, &context)
-                .all_statuses
-                .iter()
-                .filter(|s| s.status.name == *status)
-                .count() as i32,
         }
     }
 }

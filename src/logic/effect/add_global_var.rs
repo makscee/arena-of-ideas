@@ -9,9 +9,13 @@ pub struct AddGlobalVarEffect {
 }
 
 impl EffectImpl for AddGlobalVarEffect {
-    fn process(self: Box<Self>, mut context: EffectContext, logic: &mut Logic) {
+    fn process(self: Box<Self>, mut context: LogicEffectContext, logic: &mut Logic) {
         let effect = *self;
         let value = effect.value.calculate(&context, &logic.model);
         logic.model.vars.insert(effect.name, value);
     }
+}
+
+impl EffectContainer for AddGlobalVarEffect {
+    fn walk_effects_mut(&mut self, _f: &mut dyn FnMut(&mut LogicEffect)) {}
 }

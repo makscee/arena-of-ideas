@@ -1,4 +1,4 @@
-use crate::assets::{Clan};
+use crate::assets::Clan;
 
 use super::*;
 
@@ -6,57 +6,21 @@ use super::*;
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum Condition {
     Always,
-    Not {
-        condition: Box<Condition>,
-    },
-    UnitHasStatus {
-        who: Who,
-        #[serde(rename = "status")]
-        status_type: StatusName,
-    },
-    InRange {
-        max_distance: Coord,
-    },
-    Chance {
-        percent: Expr,
-    },
-    Equal {
-        a: Box<Expr>,
-        b: Box<Expr>,
-    },
-    Less {
-        a: Box<Expr>,
-        b: Box<Expr>,
-    },
-    More {
-        a: Box<Expr>,
-        b: Box<Expr>,
-    },
-    ClanSize {
-        clan: Clan,
-        count: usize,
-    },
-    HasClan {
-        who: Who,
-        clan: Clan,
-    },
-    HasVar {
-        name: VarName,
-    },
-    Faction {
-        who: Who,
-        faction: Faction,
-    },
-    And {
-        conditions: Vec<Box<Condition>>,
-    },
-    Or {
-        conditions: Vec<Box<Condition>>,
-    },
-    Position {
-        who: Who,
-        position: i64,
-    },
+    Not { condition: Box<Condition> },
+    // UnitHasStatus {
+    //     who: Who,
+    //     #[serde(rename = "status")]
+    //     status_type: StatusName,
+    // },
+    Chance { percent: Expr },
+    Equal { a: Box<Expr>, b: Box<Expr> },
+    Less { a: Box<Expr>, b: Box<Expr> },
+    More { a: Box<Expr>, b: Box<Expr> },
+    HasClan { who: Who, clan: Clan },
+    HasVar { name: VarName },
+    Faction { who: Who, faction: Faction },
+    And { conditions: Vec<Box<Condition>> },
+    Or { conditions: Vec<Box<Condition>> },
 }
 
 impl Default for Condition {

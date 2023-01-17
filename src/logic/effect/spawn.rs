@@ -2,19 +2,19 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SpawnEffect {
-    pub unit_type: UnitType,
+    // pub unit_type: UnitType,
     #[serde(default)]
     pub switch_faction: bool,
     #[serde(default)]
-    pub after_effect: Effect,
+    pub after_effect: LogicEffect,
 }
 
 impl EffectContainer for SpawnEffect {
-    fn walk_effects_mut(&mut self, _f: &mut dyn FnMut(&mut Effect)) {}
+    fn walk_effects_mut(&mut self, _f: &mut dyn FnMut(&mut LogicEffect)) {}
 }
 
 impl EffectImpl for SpawnEffect {
-    fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
+    fn process(self: Box<Self>, context: LogicEffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let owner = logic.model.get_who(Who::Owner, &context);
         let mut faction = owner.faction;
@@ -26,17 +26,18 @@ impl EffectImpl for SpawnEffect {
             }
         }
         let target = logic.model.get_who(Who::Target, &context);
-        let mut position = target.position;
-        position.side = faction;
-        let new_id = logic.spawn_by_type(&effect.unit_type, position);
+        // todo: reimplement
+        // let mut position = target.position;
+        // position.side = faction;
+        // let new_id = logic.spawn_by_type(&effect.unit_type, position);
 
-        logic.effects.push_front(
-            {
-                let mut context = context.clone();
-                context.target = new_id;
-                context
-            },
-            effect.after_effect.clone(),
-        )
+        // logic.effects.push_front(
+        //     {
+        //         let mut context = context.clone();
+        //         context.target = new_id;
+        //         context
+        //     },
+        //     effect.after_effect.clone(),
+        // )
     }
 }

@@ -1,17 +1,15 @@
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct EffectContext {
-    pub queue_id: Option<String>,
+pub struct LogicEffectContext {
     pub owner: Id,
     pub creator: Id,
     pub target: Id,
     pub vars: HashMap<VarName, i32>,
-    pub status_id: Option<Id>,
     pub color: Rgba<f32>,
 }
 
-impl EffectContext {
+impl LogicEffectContext {
     pub fn get_id(&self, who: Who) -> Id {
         match who {
             Who::Owner => self.owner,

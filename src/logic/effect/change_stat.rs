@@ -19,17 +19,17 @@ pub struct ChangeStatEffect {
 }
 
 impl EffectContainer for ChangeStatEffect {
-    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {}
+    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut LogicEffect)) {}
 }
 
 impl EffectImpl for ChangeStatEffect {
-    fn process(self: Box<Self>, context: EffectContext, logic: &mut Logic) {
+    fn process(self: Box<Self>, context: LogicEffectContext, logic: &mut Logic) {
         let effect = *self;
         let value = effect.value.calculate(&context, &logic.model);
         let mut target = logic.model.get_who_mut(effect.who, &context);
         let change_value = value - target.stats.get_mut(effect.stat).clone();
         *target.stats.get_mut(effect.stat) = value;
-        *target.permanent_stats.get_mut(effect.stat) = value;
+        // *target.permanent_stats.get_mut(effect.stat) = value;
 
         // todo: fix
         // if effect.permanent && target.shop_unit.is_some() {

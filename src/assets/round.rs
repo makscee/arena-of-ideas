@@ -3,8 +3,7 @@ use super::*;
 #[derive(Deserialize, Clone)]
 pub struct Round {
     pub name: String,
-    pub statuses: Vec<Status>,
-    pub enemies: Vec<String>
+    pub enemies: Vec<String>,
 }
 
 impl geng::LoadAsset for Round {

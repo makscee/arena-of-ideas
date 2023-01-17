@@ -7,7 +7,7 @@ mod view;
 
 use std::collections::*;
 
-use assets::Assets;
+use assets::*;
 use game::Game;
 use geng::{prelude::*, *};
 use logic::*;
@@ -16,7 +16,6 @@ use state::StateManager;
 use state::*;
 use ugli::*;
 use view::*;
-
 
 type Coord = i64;
 type Id = i64;

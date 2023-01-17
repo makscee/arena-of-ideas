@@ -18,18 +18,8 @@ impl State for MainMenu {
     fn transition(&mut self, logic: &mut Logic, view: &mut View) -> Option<Transition> {
         if self.transition {
             let mut units = Collection::new();
-            units.insert(Unit::new(
-                0,
-                "Test Player".to_owned(),
-                UnitStats {},
-                Faction::Player,
-            ));
-            units.insert(Unit::new(
-                1,
-                "Test Enemy".to_owned(),
-                UnitStats {},
-                Faction::Enemy,
-            ));
+            units.insert(Unit::new_test(0, Faction::Player));
+            units.insert(Unit::new_test(1, Faction::Enemy));
             let mut battle = Battle::new(self.assets.clone(), units);
             battle.tick_simulation(logic, view);
             battle.tick_simulation(logic, view);

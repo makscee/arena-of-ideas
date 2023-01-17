@@ -5,12 +5,10 @@ use super::*;
 mod faction;
 mod stats;
 mod team;
-mod position;
 
 pub use faction::*;
 pub use stats::*;
 pub use team::*;
-pub use position::*;
 
 #[derive(Serialize, Deserialize, HasId, Clone)]
 pub struct Unit {
@@ -19,20 +17,44 @@ pub struct Unit {
     pub stats: UnitStats,
     pub slot: i32,
     pub faction: Faction,
-    pub position: Position,
     pub clans: Vec<Clan>,
-    pub all_statuses: Vec<AttachedStatus>,
     pub vars: HashMap<VarName, Expr>,
 }
 
 impl Unit {
-    pub fn new(id: Id, name: Name, stats: UnitStats, faction: Faction) -> Self {
+    pub fn new(
+        id: Id,
+        name: Name,
+        stats: UnitStats,
+        slot: i32,
+        faction: Faction,
+        clans: Vec<Clan>,
+        vars: HashMap<VarName, Expr>,
+    ) -> Self {
         Self {
             id,
             name,
             stats,
+            slot,
             faction,
-            slot: 0,
+            clans,
+            vars,
+        }
+    }
+
+    pub fn new_test(id: Id, faction: Faction) -> Self {
+        Self {
+            id,
+            name: format!("Test#{}", id),
+            stats: UnitStats {
+                health: 1,
+                attack: 1,
+                stacks: 1,
+            },
+            slot: 1,
+            faction,
+            clans: default(),
+            vars: default(),
         }
     }
 }

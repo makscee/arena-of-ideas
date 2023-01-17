@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightedEffect {
     pub weight: f32,
-    pub effect: Effect,
+    pub effect: LogicEffect,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -13,7 +13,7 @@ pub struct RandomEffect {
 }
 
 impl EffectContainer for RandomEffect {
-    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut Effect)) {
+    fn walk_effects_mut(&mut self, f: &mut dyn FnMut(&mut LogicEffect)) {
         for choice in &mut self.choices {
             choice.effect.walk_mut(f);
         }
@@ -21,7 +21,7 @@ impl EffectContainer for RandomEffect {
 }
 
 impl EffectImpl for RandomEffect {
-    fn process(self: Box<Self>, context: EffectContext, logic: &mut logic::Logic) {
+    fn process(self: Box<Self>, context: LogicEffectContext, logic: &mut logic::Logic) {
         let effect = *self;
         let effect = effect
             .choices
@@ -29,6 +29,7 @@ impl EffectImpl for RandomEffect {
             .unwrap()
             .effect
             .clone();
-        logic.effects.push_front(context, effect);
+        // todo: use new queue
+        // logic.effects.push_front(context, effect);
     }
 }
