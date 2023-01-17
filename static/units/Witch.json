@@ -1,0 +1,57 @@
+{
+    "name": "Witch",
+    "description": "After enemy hit by Magic Missile: give +{Value} ATK to ally",
+    "attack": 2,
+    "health": 2,
+    "tier": 2,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Wizards"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "ATKOnMissiles",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageHits",
+                            "damage_type": "MagicMissile"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeTarget",
+                        "filter": "Allies",
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "preset": "effects/give_atk.json",
+                            "value": {
+                                "type": "Var",
+                                "name": "Value"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
+    }
+}

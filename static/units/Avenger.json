@@ -1,0 +1,49 @@
+{
+    "name": "Avenger",
+    "description": "Before attack: launch Magic Missile {Value} times",
+    "attack": 1,
+    "health": 3,
+    "tier": 1,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Wizards"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "MissileOnTakeDMG",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "PreStrike"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/abilities/magic_missile.json",
+                        "value": {
+                            "type": "Var",
+                            "name": "Value"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
+    }
+}

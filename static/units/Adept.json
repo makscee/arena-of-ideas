@@ -1,0 +1,50 @@
+{
+    "name": "Adept",
+    "description": "Gain Shield: gain +{Value}/+{Value}",
+    "attack": 2,
+    "health": 2,
+    "tier": 2,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "GainShieldGiveStats",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "status_name": "Shield",
+                            "type": "SelfDetectAttach"
+                        }
+                    ],
+                    "effect": {
+                        "preset": "effects/give_stats.json",
+                        "value": {
+                            "type": "Var",
+                            "name": "Value"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
+    }
+}

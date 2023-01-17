@@ -1,0 +1,71 @@
+[
+  [
+    {
+      "path": "shaders/clan_shaders/triangle.glsl",
+      "parameters": {
+        "u_count": 2,
+        "u_rotation": 0.5,
+        "u_offset": {
+          "x": -0.35,
+          "y": 0.42
+        },
+        "u_size": 0.23,
+        "u_index_offset": {
+          "x": 0.72,
+          "y": 0.0
+        },
+        "u_outline": 0,
+        "u_fill": 1,
+        "u_outline_thickness": 0.0
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ],
+  [
+    {
+      "path": "shaders/clan_shaders/triangle.glsl",
+      "parameters": {
+        "u_count": 2,
+        "u_rotation": 0.5,
+        "u_offset": {
+          "x": -0.35,
+          "y": 0.35
+        },
+        "u_size": 0.32,
+        "u_index_offset": {
+          "x": 0.72,
+          "y": 0.0
+        },
+        "u_outline": 0,
+        "u_fill": 1,
+        "u_outline_thickness": 0.0
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ],
+  [
+    {
+      "path": "shaders/clan_shaders/triangle.glsl",
+      "parameters": {
+        "u_count": 2,
+        "u_rotation": 0.5,
+        "u_offset": {
+          "x": -0.35,
+          "y": 0.26
+        },
+        "u_size": 0.37,
+        "u_index_offset": {
+          "x": 0.72,
+          "y": 0.0
+        },
+        "u_outline": 2,
+        "u_fill": 1,
+        "u_outline_thickness": 0.1
+      },
+      "vertices": 0,
+      "instances": 0
+    }
+  ]
+]

@@ -1,0 +1,48 @@
+{
+    "name": "Guru",
+    "description": "Start of Battle: give Shield to 2 adjacent allies",
+    "attack": 1,
+    "health": 1,
+    "tier": 2,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Protectors"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "DetectShieldGiveStats",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "Spawn"
+                        }
+                    ],
+                    "effect": {
+                        "type": "AddTargets",
+                        "replace": true,
+                        "condition": {
+                            "type": "InRange",
+                            "max_distance": 1
+                        },
+                        "additional_targets": 2,
+                        "effect": {
+                            "type": "AttachStatus",
+                            "status": "Shield"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    }
+}

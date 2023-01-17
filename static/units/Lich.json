@@ -1,0 +1,54 @@
+{
+    "name": "Lich",
+    "description": "After enemy hit by Magic Missile: gain +{Value}/+{Value}",
+    "attack": 4,
+    "health": 5,
+    "tier": 3,
+    "action": {
+        "preset": "effects/melee_hit.json"
+    },
+    "clans": [
+        "Wizards"
+    ],
+    "radius": 0.4,
+    "statuses": [
+        {
+            "name": "MissileOnMissiles",
+            "type": "Status",
+            "stacking": {
+                "type": "Independent"
+            },
+            "listeners": [
+                {
+                    "triggers": [
+                        {
+                            "type": "DamageHits",
+                            "damage_type": "MagicMissile"
+                        }
+                    ],
+                    "effect": {
+                        "type": "ChangeContext",
+                        "target": "Owner",
+                        "effect": {
+                            "preset": "effects/give_stats.json",
+                            "value": {
+                                "type": "Var",
+                                "name": "Value"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
+    }
+}
