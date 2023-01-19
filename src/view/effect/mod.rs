@@ -2,11 +2,11 @@ use super::*;
 
 mod animate_unit;
 mod field;
-mod unit;
+mod draw_model_units;
 
 pub use animate_unit::*;
 pub use field::*;
-pub use unit::*;
+pub use draw_model_units::*;
 
 pub trait VisualEffect {
     fn draw(

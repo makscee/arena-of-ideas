@@ -7,6 +7,7 @@ pub struct UnitStats {
     pub health: i32,
     pub attack: i32,
     pub stacks: i32,
+    pub radius: f32,
 }
 
 impl UnitStats {
@@ -15,6 +16,7 @@ impl UnitStats {
             health: template.health,
             attack: template.attack,
             stacks: 1,
+            radius: 0.25,
         }
     }
 

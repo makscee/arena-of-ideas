@@ -5,6 +5,7 @@ pub struct UnitRender {
     pub id: Id,
     pub faction: Faction,
     pub position: Position,
+    pub stats: UnitStats,
     pub layers: Vec<ShaderProgram>,
 }
 
@@ -14,6 +15,7 @@ impl UnitRender {
             id: unit.id,
             faction: unit.faction.clone(),
             position: Vec2::ZERO,
+            stats: unit.stats.clone(),
             layers: default(),
         }
     }

@@ -56,7 +56,9 @@ impl ViewRender {
         self.draw_shader(
             framebuffer,
             &self.assets.system_shaders.unit,
-            uniforms!(u_unit_position: unit_render.position,
+            uniforms!(
+            u_unit_position: unit_render.position,
+            u_unit_radius: unit_render.stats.radius,
             u_parent_faction: match unit_render.faction {
                 Faction::Player => 1.0,
                 Faction::Enemy => -1.0,

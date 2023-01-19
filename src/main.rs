@@ -17,7 +17,6 @@ use state::*;
 use ugli::*;
 use view::*;
 
-type Coord = i64;
 type Id = i64;
 type Name = String;
 type Description = String;

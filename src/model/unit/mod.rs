@@ -50,6 +50,7 @@ impl Unit {
                 health: 1,
                 attack: 1,
                 stacks: 1,
+                radius: 0.25,
             },
             slot: 1,
             faction,

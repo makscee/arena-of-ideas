@@ -61,53 +61,90 @@ impl Battle {
         }
     }
 
-    fn add_phase_node(&self, phase: StrikePhase, view: &mut View, model: &VisualNodeModel) {
+    fn get_striker_units(&self) -> (&Unit, &Unit) {
+        (
+            self.units.get(&self.strikers.0.unwrap()).unwrap(),
+            self.units.get(&self.strikers.0.unwrap()).unwrap(),
+        )
+    }
+
+    fn get_phase_time(phase: StrikePhase) -> Time {
         match phase {
-            StrikePhase::Charge => view.queue.push_node(
-                model.clone(),
-                vec![
-                    Rc::new(AnimateUnitVisualEffect::new(
-                        self.strikers.0.unwrap(),
-                        vec2(-1.0, 0.0),
-                        vec2(-2.0, 0.0),
-                    )),
-                    Rc::new(AnimateUnitVisualEffect::new(
-                        self.strikers.1.unwrap(),
-                        vec2(1.0, 0.0),
-                        vec2(2.0, 0.0),
-                    )),
-                ],
-            ),
-            StrikePhase::Hit => view.queue.push_node(
-                model.clone(),
-                vec![
-                    Rc::new(AnimateUnitVisualEffect::new(
-                        self.strikers.0.unwrap(),
-                        vec2(-2.0, 0.0),
-                        vec2(0.0, 0.0),
-                    )),
-                    Rc::new(AnimateUnitVisualEffect::new(
-                        self.strikers.1.unwrap(),
-                        vec2(2.0, 0.0),
-                        vec2(0.0, 0.0),
-                    )),
-                ],
-            ),
-            StrikePhase::Release => view.queue.push_node(
-                model.clone(),
-                vec![
-                    Rc::new(AnimateUnitVisualEffect::new(
-                        self.strikers.0.unwrap(),
-                        vec2(0.0, 0.0),
-                        vec2(-1.0, 0.0),
-                    )),
-                    Rc::new(AnimateUnitVisualEffect::new(
-                        self.strikers.1.unwrap(),
-                        vec2(0.0, 0.0),
-                        vec2(1.0, 0.0),
-                    )),
-                ],
-            ),
+            StrikePhase::Charge => 1.0,
+            StrikePhase::Hit => 0.1,
+            StrikePhase::Release => 0.7,
+        }
+    }
+
+    fn add_phase_node(&self, phase: StrikePhase, view: &mut View, model: &VisualNodeModel) {
+        let strikers = self.get_striker_units();
+        match phase {
+            StrikePhase::Charge => {
+                let time = Self::get_phase_time(phase);
+                view.queue.push_node(
+                    model.clone(),
+                    vec![
+                        Rc::new(AnimateUnitVisualEffect::new(
+                            self.strikers.0.unwrap(),
+                            vec2(-1.0, 0.0),
+                            vec2(-2.0, 0.0),
+                            time,
+                            AnimateTween::QuartInOut,
+                        )),
+                        Rc::new(AnimateUnitVisualEffect::new(
+                            self.strikers.1.unwrap(),
+                            vec2(1.0, 0.0),
+                            vec2(2.0, 0.0),
+                            time,
+                            AnimateTween::QuartInOut,
+                        )),
+                    ],
+                );
+            }
+            StrikePhase::Hit => {
+                let time = Self::get_phase_time(phase);
+                view.queue.push_node(
+                    model.clone(),
+                    vec![
+                        Rc::new(AnimateUnitVisualEffect::new(
+                            self.strikers.0.unwrap(),
+                            vec2(-2.0, 0.0),
+                            vec2(-strikers.0.stats.radius, 0.0),
+                            time,
+                            AnimateTween::Linear,
+                        )),
+                        Rc::new(AnimateUnitVisualEffect::new(
+                            self.strikers.1.unwrap(),
+                            vec2(2.0, 0.0),
+                            vec2(strikers.1.stats.radius, 0.0),
+                            time,
+                            AnimateTween::Linear,
+                        )),
+                    ],
+                );
+            }
+            StrikePhase::Release => {
+                let time = Self::get_phase_time(phase);
+                view.queue.push_node(
+                    model.clone(),
+                    vec![
+                        Rc::new(AnimateUnitVisualEffect::new(
+                            self.strikers.0.unwrap(),
+                            vec2(-strikers.0.stats.radius, 0.0),
+                            vec2(-1.0, 0.0),
+                            time,
+                            AnimateTween::QuartOut,
+                        )),
+                        Rc::new(AnimateUnitVisualEffect::new(
+                            self.strikers.1.unwrap(),
+                            vec2(strikers.1.stats.radius, 0.0),
+                            vec2(1.0, 0.0),
+                            time,
+                            AnimateTween::QuartOut,
+                        )),
+                    ],
+                );
+            }
         };
     }
 
