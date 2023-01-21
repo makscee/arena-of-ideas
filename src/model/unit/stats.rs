@@ -1,25 +1,19 @@
-use crate::assets::UnitTemplate;
-
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnitStats {
     pub health: i32,
     pub attack: i32,
+    #[serde(default = "default_stacks")]
     pub stacks: i32,
     pub radius: f32,
 }
 
-impl UnitStats {
-    pub fn new(template: &UnitTemplate) -> Self {
-        Self {
-            health: template.health,
-            attack: template.attack,
-            stacks: 1,
-            radius: 0.25,
-        }
-    }
+fn default_stacks() -> i32 {
+    1
+}
 
+impl UnitStats {
     pub fn get(&self, stat: UnitStat) -> i32 {
         match stat {
             UnitStat::Health => self.health,

@@ -1,0 +1,25 @@
+{
+    "name": "Adept",
+    "description": "Gain Shield: gain +{Value}/+{Value}",
+    "stats": {
+        "health": 2,
+        "attack": 2
+    },
+    "tier": 2,
+    "clans": [
+        "Protectors"
+    ],
+    "statuses": [
+        
+    ],
+    "render": {
+        "path": "shaders/default_circle_hero.glsl"
+    },
+    "vars": {
+        "Value": {
+            "type": "FindStat",
+            "stat": "Level",
+            "who": "Owner"
+        }
+    }
+}

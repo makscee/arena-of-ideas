@@ -1,3 +1,5 @@
+use geng::prelude::rand::thread_rng;
+
 use super::*;
 
 pub struct MainMenu {
@@ -17,16 +19,27 @@ impl State for MainMenu {
 
     fn transition(&mut self, logic: &mut Logic, view: &mut View) -> Option<Transition> {
         if self.transition {
-            let mut units = Collection::new();
-            units.insert(Unit::new_test(0, Faction::Player));
-            units.insert(Unit::new_test(1, Faction::Enemy));
+            let mut units = vec![];
+            let mut rng = thread_rng();
+            let unit = self
+                .assets
+                .units
+                .values()
+                .filter(|unit| unit.tier > 0)
+                .choose(&mut rng)
+                .expect("Units not initialized")
+                .clone();
+            //Add player units
+            units.push(unit.faction(Faction::Player));
+            //Add enemy units
+            self.assets.rounds[0].enemies.iter().for_each(|enemy| {
+                let enemy = self.assets.units.get(enemy).expect("Cant find enemy unit");
+                units.push(enemy.clone().faction(Faction::Enemy));
+            });
             let mut battle = Battle::new(self.assets.clone(), units);
-            battle.tick_simulation(logic, view);
-            battle.tick_simulation(logic, view);
-            battle.tick_simulation(logic, view);
-            battle.tick_simulation(logic, view);
-            battle.tick_simulation(logic, view);
-            battle.tick_simulation(logic, view);
+            while battle.is_battle_over() {
+                battle.tick_simulation(logic, view);
+            }
             Some(Transition::Switch(Box::new(battle)))
         } else {
             None

@@ -78,7 +78,7 @@ impl Model {
             Condition::More { a, b } => a.calculate(&context, self) > b.calculate(&context, self),
             Condition::HasClan { who, clan } => {
                 let who = self.get_who(*who, &context);
-                who.clans.iter().contains(clan)
+                who.clans.iter().contains(&clan.name)
             }
             Condition::HasVar { name } => context.vars.contains_key(name),
             Condition::Faction { who, faction } => {
