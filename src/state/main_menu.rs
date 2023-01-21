@@ -19,7 +19,7 @@ impl State for MainMenu {
 
     fn transition(&mut self, logic: &mut Logic, view: &mut View) -> Option<Transition> {
         if self.transition {
-            let mut units = vec![];
+            let mut units = Collection::new();
             let mut rng = thread_rng();
             let unit = self
                 .assets
@@ -30,11 +30,11 @@ impl State for MainMenu {
                 .expect("Units not initialized")
                 .clone();
             //Add player units
-            units.push(unit.faction(Faction::Player));
+            units.insert(unit.id(1).faction(Faction::Player));
             //Add enemy units
             self.assets.rounds[0].enemies.iter().for_each(|enemy| {
                 let enemy = self.assets.units.get(enemy).expect("Cant find enemy unit");
-                units.push(enemy.clone().faction(Faction::Enemy));
+                units.insert(enemy.clone().id(2).faction(Faction::Enemy));
             });
             let mut battle = Battle::new(self.assets.clone(), units);
             while battle.is_battle_over() {

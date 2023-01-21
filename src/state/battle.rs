@@ -9,7 +9,7 @@ use super::*;
 /// processing Logic effects and producing queue of Visual effects
 pub struct Battle {
     pub assets: Rc<Assets>,
-    pub units: Vec<Unit>,
+    pub units: Collection<Unit>,
     pub strikers: (Option<Id>, Option<Id>),
 }
 
@@ -31,7 +31,7 @@ impl State for Battle {
 }
 
 impl Battle {
-    pub fn new(assets: Rc<Assets>, units: Vec<Unit>) -> Self {
+    pub fn new(assets: Rc<Assets>, units: Collection<Unit>) -> Self {
         Self {
             assets,
             units,

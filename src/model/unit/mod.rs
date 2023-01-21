@@ -46,4 +46,9 @@ impl Unit {
         self.faction = faction;
         self
     }
+
+    pub fn id(mut self, id: Id) -> Self {
+        self.id = id;
+        self
+    }
 }

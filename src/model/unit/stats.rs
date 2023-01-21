@@ -6,11 +6,16 @@ pub struct UnitStats {
     pub attack: i32,
     #[serde(default = "default_stacks")]
     pub stacks: i32,
+    #[serde(default = "default_radius")]
     pub radius: f32,
 }
 
 fn default_stacks() -> i32 {
     1
+}
+
+fn default_radius() -> f32 {
+    0.4
 }
 
 impl UnitStats {
