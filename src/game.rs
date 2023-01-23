@@ -3,15 +3,15 @@ use super::*;
 pub struct Game {
     geng: Geng,
     world: World,
-    resources: Resources,
+    assets: Assets,
 }
 
 impl Game {
-    pub fn new(geng: Geng, world: World, resources: Resources) -> Self {
+    pub fn new(geng: Geng, world: World, assets: Assets) -> Self {
         Self {
             geng,
             world,
-            resources,
+            assets,
         }
     }
 }
@@ -37,5 +37,6 @@ impl State for Game {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         GameStateSystem::draw(&self.world, framebuffer);
+        ShaderSystem::draw(&self.world, &self.geng, &self.assets, framebuffer);
     }
 }

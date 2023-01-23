@@ -3,8 +3,9 @@ use super::*;
 pub struct GameStateSystem {}
 
 impl GameStateSystem {
-    pub fn update(world: &mut World, delta_time: Time) {
+    pub fn update(world: &mut World, _delta_time: Time) {
         let state = Self::get_state(world);
+
         match state {
             GameState::MainMenu => {}
             GameState::Game => {}
@@ -15,20 +16,19 @@ impl GameStateSystem {
         let state = Self::get_state(world);
         match state {
             GameState::MainMenu => {
-                clear(framebuffer, Some(Rgba::GRAY), None, None);
+                ugli::clear(framebuffer, Some(Rgba::GRAY), None, None);
             }
             GameState::Game => {
-                clear(framebuffer, Some(Rgba::RED), None, None);
+                ugli::clear(framebuffer, Some(Rgba::RED), None, None);
             }
         }
     }
 
     pub fn handle_event(world: &mut World, event: Event) {
-        let mut state = Self::get_mut_state(world);
+        let state = Self::get_mut_state(world);
         match state {
             GameState::MainMenu => match event {
-                Event::KeyDown { key } => {
-                    debug!("change state");
+                Event::KeyDown { key: _ } => {
                     *state = GameState::Game;
                 }
                 _ => {}

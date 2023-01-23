@@ -1,7 +1,7 @@
 use super::*;
 
 mod game_state_system;
+mod shader_system;
 
 pub use game_state_system::*;
-
-pub struct Systems {}
+pub use shader_system::*;
