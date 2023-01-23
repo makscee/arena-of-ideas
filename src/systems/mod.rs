@@ -1,7 +1,7 @@
 use super::*;
 
-pub struct EcsRenderUnits {}
+mod game_state_system;
 
-impl EcsRenderUnits {
-    pub fn process() {}
-}
+pub use game_state_system::*;
+
+pub struct Systems {}

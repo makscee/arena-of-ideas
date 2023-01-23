@@ -1,35 +1,19 @@
-mod assets;
+use geng::{prelude::*, *};
+
 mod components;
 mod game;
-mod logic;
-mod model;
-mod state;
 mod systems;
-mod view;
 
-use std::collections::*;
-use std::path::PathBuf;
-
-use assets::*;
 use components::*;
-use game::Game;
-use geng::{prelude::*, *};
+use game::*;
 use legion::Read;
 use legion::Write;
 use legion::*;
-use logic::*;
-use model::*;
-use state::StateManager;
-use state::*;
 use systems::*;
 use ugli::*;
-use view::*;
 
 type Id = i64;
-type Name = String;
-type Description = String;
 type Time = f32;
-type Position = Vec2<f32>;
 
 fn setup_geng() -> Geng {
     geng::setup_panic_handler();
@@ -50,65 +34,42 @@ fn main() {
     geng::setup_panic_handler();
     let geng = setup_geng();
 
-    let logic = Logic {
-        queue: LogicQueue::new(),
-        model: Model::new(),
-    };
-    let assets = Rc::new(
-        futures::executor::block_on(<Assets as geng::LoadAsset>::load(&geng, &static_path()))
-            .unwrap(),
-    );
-
-    let view = View::new(geng.clone(), assets.clone());
-
     // geng::run(
     //     &geng,
     //     ShaderEditState::new(&geng, assets.clone(), Rc::new(view)),
     // );
-
-    let state = StateManager::new();
-
     let mut world = World::default();
-    world.push((
-        EcsPosition { x: 0.0, y: 0.0 },
-        EcsShaderProgram {
-            shader: SystemShader::Unit,
-            parameters: default(),
-            vertices: default(),
-            instances: default(),
-        },
-    ));
+    // world.push((
+    //     EcsPosition { x: 0.0, y: 0.0 },
+    //     EcsShaderProgram {
+    //         shader: SystemShader::Unit,
+    //         parameters: default(),
+    //         vertices: default(),
+    //         instances: default(),
+    //     },
+    // ));
 
-    #[system(for_each)]
-    fn draw_units(
-        pos: &EcsPosition,
-        shader: &EcsShaderProgram,
-        #[resource] system_shaders: &SystemShaders,
-    ) {
-        debug!("draw_units called");
-    }
+    // #[system(for_each)]
+    // fn draw_units(
+    //     pos: &EcsPosition,
+    //     shader: &EcsShaderProgram,
+    //     #[resource] system_shaders: &SystemShaders,
+    // ) {
+    //     debug!("draw_units called");
+    // }
 
-    let schedule = Schedule::builder()
-        .add_thread_local(draw_units_system())
-        .build();
+    // let schedule = Schedule::builder()
+    //     .add_thread_local(draw_units_system())
+    //     .build();
 
     let mut resources = Resources::default();
-    resources.insert(assets.system_shaders.clone());
+    world.push((GameState::MainMenu,));
+    // resources.insert(assets.system_shaders.clone());
 
-    let mut game = Game {
-        geng: geng.clone(),
-        logic,
-        assets: assets.clone(),
-        state_manager: state,
-        view,
-        schedule,
-        world,
-        resources,
-    };
-
-    game.state_manager.push(Box::new(MainMenu {
-        assets: game.assets.clone(),
-        transition: false,
-    }));
+    // game.state_manager.push(Box::new(MainMenu {
+    //     assets: game.assets.clone(),
+    //     transition: false,
+    // }));
+    let game = Game::new(geng.clone(), world, resources);
     geng::run(&geng, game);
 }
