@@ -1,5 +1,5 @@
 {
-    "field": {
+    "Field": {
         "path": "shaders/system/field.glsl",
         "parameters": {
             "u_color": "#000000",
@@ -8,7 +8,7 @@
         "vertices": 2,
         "instances": 1
     },
-    "unit": {
+    "Unit": {
         "path": "shaders/system/unit.glsl",
         "parameters": {
             "u_size": 1.0,

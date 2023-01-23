@@ -33,7 +33,12 @@ impl View {
         queue
             .persistent_effects
             .push(Box::new(FieldVisualEffect::new(
-                assets.system_shaders.field.clone(),
+                assets
+                    .system_shaders
+                    .map
+                    .get(&SystemShader::Field)
+                    .unwrap()
+                    .clone(),
             )));
         queue
             .persistent_effects

@@ -120,8 +120,16 @@ impl ShaderEditState {
 
     fn move_shaders_to_list(&mut self) {
         self.shaders_list = vec![
-            self.system_shaders.unit.clone(),
-            self.system_shaders.field.clone(),
+            self.system_shaders
+                .map
+                .get(&SystemShader::Unit)
+                .unwrap()
+                .clone(),
+            self.system_shaders
+                .map
+                .get(&SystemShader::Field)
+                .unwrap()
+                .clone(),
         ];
     }
 

@@ -4,6 +4,7 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as Time;
         self.logic.model.game_time += delta_time;
+
         self.state_manager
             .update(delta_time, &mut self.logic, &mut self.view);
     }
@@ -23,7 +24,10 @@ impl geng::State for Game {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.state_manager
-            .draw(framebuffer, &mut self.view, &mut self.logic);
+        // self.resources.insert(framebuffer);
+        // self.schedule.execute(&mut self.world, &mut self.resources);
+        // self.resources.remove::<ugli::Framebuffer>();
+        // self.state_manager
+        //     .draw(framebuffer, &mut self.view, &mut self.logic);
     }
 }

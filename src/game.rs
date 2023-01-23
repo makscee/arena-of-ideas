@@ -7,4 +7,7 @@ pub struct Game {
     pub assets: Rc<Assets>,
     pub view: View,
     pub state_manager: StateManager,
+    pub schedule: Schedule,
+    pub world: World,
+    pub resources: Resources,
 }

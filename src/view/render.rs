@@ -55,7 +55,12 @@ impl ViewRender {
     pub fn draw_unit(&self, framebuffer: &mut ugli::Framebuffer, unit_render: &UnitRender) {
         self.draw_shader(
             framebuffer,
-            &self.assets.system_shaders.unit,
+            &self
+                .assets
+                .system_shaders
+                .map
+                .get(&SystemShader::Unit)
+                .unwrap(),
             uniforms!(
             u_unit_position: unit_render.position,
             u_unit_radius: unit_render.stats.radius,

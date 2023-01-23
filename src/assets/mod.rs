@@ -66,10 +66,22 @@ pub async fn load_system_shaders(
     let json = <String as geng::LoadAsset>::load(geng, &base_path.join("config.json"))
         .await
         .context("Failed to load config.json for system shaders")?;
-    let mut system_shaders: SystemShaders =
+    let mut system_shaders: SystemShaders = SystemShaders { map: default() };
+    system_shaders.map =
         serde_json::from_str(&json).context("Failed to parse config.json for system shaders")?;
-    system_shaders.field.load(&geng).await;
-    system_shaders.unit.load(&geng).await;
+    system_shaders
+        .map
+        .get_mut(&SystemShader::Field)
+        .unwrap()
+        .load(&geng)
+        .await;
+
+    system_shaders
+        .map
+        .get_mut(&SystemShader::Unit)
+        .unwrap()
+        .load(&geng)
+        .await;
 
     Ok::<_, anyhow::Error>(system_shaders)
 }

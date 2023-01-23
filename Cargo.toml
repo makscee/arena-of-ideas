@@ -15,6 +15,7 @@ chrono = "0.4"
 tween = "2.0.0"
 strfmt = "0.2.2"
 enum-utils = "0.1.2"
+legion = {version = "0.4.0", parallel = false}
 
 [patch.crates-io]
 # Temp workaround until update in geng, as this issue is already fixed upstream

@@ -8,6 +8,11 @@ pub use program::*;
 
 #[derive(Deserialize, Clone)]
 pub struct SystemShaders {
-    pub field: ShaderProgram,
-    pub unit: ShaderProgram,
+    pub map: HashMap<SystemShader, ShaderProgram>,
+}
+
+#[derive(Deserialize, Eq, PartialEq, Hash, Clone)]
+pub enum SystemShader {
+    Field,
+    Unit,
 }
