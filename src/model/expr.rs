@@ -1,10 +1,11 @@
-use crate::assets::Clan;
 use condition::Condition;
 
 use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, enum_utils::FromStr)]
-pub enum VarName {}
+pub enum VarName {
+    Value,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", deny_unknown_fields)]

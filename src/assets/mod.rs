@@ -5,40 +5,38 @@ use super::*;
 mod ability;
 mod clan;
 mod round;
-mod unit_template;
 
 pub use ability::*;
 pub use clan::*;
 pub use round::*;
-pub use unit_template::*;
 
 #[derive(geng::Assets)]
 pub struct Assets {
-    // todo: fix
-    // #[asset(path = "units/_list.json", load_with = "load_units(geng, &base_path)")]
-    // pub units: Vec<UnitTemplate>,
+    #[asset(load_with = "load_units(geng, &base_path)")]
+    pub units: HashMap<String, Unit>,
+    #[asset(path = "rounds/round*.json", range = "1..=1")]
+    pub rounds: Vec<Round>,
     #[asset(load_with = "load_shader_library(geng, &base_path)")]
     pub shader_library: Vec<PathBuf>,
     #[asset(load_with = "load_system_shaders(geng, &base_path)")]
     pub system_shaders: SystemShaders,
 }
 
-async fn load_units(geng: &Geng, base_path: &std::path::Path) -> anyhow::Result<Vec<UnitTemplate>> {
-    let json = <String as geng::LoadAsset>::load(&geng, &base_path).await?;
+async fn load_units(
+    geng: &Geng,
+    base_path: &std::path::Path,
+) -> anyhow::Result<HashMap<String, Unit>> {
+    let base_path = base_path.join("units");
+    let json = <String as geng::LoadAsset>::load(&geng, &base_path.join("_list.json")).await?;
     let paths: Vec<String> = serde_json::from_str(&json)?;
-    let mut result: Vec<UnitTemplate> = vec![];
+    let mut result: HashMap<String, Unit> = hashmap![];
     for path in paths {
-        let path = base_path.join(path).join(".json");
+        let path = base_path.join(format!("{}.json", path));
         let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-        let mut asset: UnitTemplate =
+        let mut asset: Unit =
             serde_json::from_str(&json).context(format!("Failed to parse from {path:?}"))?;
 
-        let path = base_path.join(path).join("_render.json");
-        let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-        let layers: Vec<ShaderProgram> =
-            serde_json::from_str(&json).context(format!("Failed to parse from {path:?}"))?;
-        asset.layers = layers;
-        result.push(asset);
+        result.insert(asset.name.clone(), asset);
     }
     Ok(result)
 }

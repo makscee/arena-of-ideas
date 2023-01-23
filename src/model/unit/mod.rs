@@ -10,52 +10,45 @@ pub use faction::*;
 pub use stats::*;
 pub use team::*;
 
-#[derive(Serialize, Deserialize, HasId, Clone)]
+#[derive(Deserialize, HasId, Clone)]
 pub struct Unit {
+    #[serde(skip)]
     pub id: Id,
-    pub name: Name,
-    pub stats: UnitStats,
+    #[serde(skip)]
     pub slot: i32,
+    #[serde(skip)]
     pub faction: Faction,
-    pub clans: Vec<Clan>,
+    pub name: Name,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub tier: i32,
+    pub stats: UnitStats,
+    // #[serde(default)]
+    // pub statuses: Vec<Status>,
+    // #[serde(default)]
+    // pub action: Effect,
+    #[serde(default)]
+    pub clans: Vec<String>,
+    #[serde(default = "default_renders")]
+    pub layers: Vec<ShaderProgram>,
+    #[serde(default)]
     pub vars: HashMap<VarName, Expr>,
 }
 
+fn default_renders() -> Vec<ShaderProgram> {
+    let result: Vec<ShaderProgram> = vec![];
+    result
+}
+
 impl Unit {
-    pub fn new(
-        id: Id,
-        name: Name,
-        stats: UnitStats,
-        slot: i32,
-        faction: Faction,
-        clans: Vec<Clan>,
-        vars: HashMap<VarName, Expr>,
-    ) -> Self {
-        Self {
-            id,
-            name,
-            stats,
-            slot,
-            faction,
-            clans,
-            vars,
-        }
+    pub fn faction(mut self, faction: Faction) -> Self {
+        self.faction = faction;
+        self
     }
 
-    pub fn new_test(id: Id, faction: Faction) -> Self {
-        Self {
-            id,
-            name: format!("Test#{}", id),
-            stats: UnitStats {
-                health: 1,
-                attack: 1,
-                stacks: 1,
-                radius: 0.25,
-            },
-            slot: 1,
-            faction,
-            clans: default(),
-            vars: default(),
-        }
+    pub fn id(mut self, id: Id) -> Self {
+        self.id = id;
+        self
     }
 }
