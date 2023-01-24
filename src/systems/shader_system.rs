@@ -1,3 +1,5 @@
+use std::collections::hash_map::Entry;
+
 use geng::prelude::itertools::Itertools;
 
 use super::*;
@@ -7,7 +9,12 @@ pub struct ShaderSystem {}
 impl System for ShaderSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
 
-    fn draw(&self, world: &legion::World, resources: &Resources, framebuffer: &mut Framebuffer) {
+    fn draw(
+        &self,
+        world: &legion::World,
+        resources: &Resources,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
         Self::draw_all_shaders(world, resources, framebuffer);
     }
 }
@@ -20,20 +27,22 @@ impl ShaderSystem {
     pub fn draw_all_shaders(
         world: &legion::World,
         resources: &Resources,
-        framebuffer: &mut Framebuffer,
+        framebuffer: &mut ugli::Framebuffer,
     ) {
         let shaders = <&Shader>::query()
             .iter(world)
             .sorted_by_key(|s| s.order)
             .collect_vec();
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<&Shader>> = HashMap::default();
-        let empty_vec: Vec<&Shader> = Vec::new();
-        shaders.into_iter().for_each(|s| {
-            shaders_by_layer
-                .get_mut(&s.layer)
-                .get_or_insert(&mut empty_vec.clone())
-                .push(s)
-        });
+        let emtpy_vec: Vec<&Shader> = Vec::new();
+        for shader in shaders {
+            let layer = &shader.layer;
+            let vec = match shaders_by_layer.entry(layer.clone()) {
+                Entry::Occupied(o) => o.into_mut(),
+                Entry::Vacant(v) => v.insert(emtpy_vec.clone()),
+            };
+            vec.push(shader);
+        }
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
             shaders.iter().for_each(|shader| {
                 Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!())
@@ -52,7 +61,9 @@ impl ShaderSystem {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
             ugli::VertexBuffer::new_dynamic(resources.geng.ugli(), Vec::new());
         instances_arr.resize(shader.parameters.instances, Instance {});
-        let program = resources.shader_programs.get_program(&shader.path);
+        let program = resources
+            .shader_programs
+            .get_program(&static_path().join(&shader.path));
         let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
         ugli::draw(
             framebuffer,

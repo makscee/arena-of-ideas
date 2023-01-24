@@ -19,7 +19,12 @@ impl System for GameStateSystem {
         self.transition();
     }
 
-    fn draw(&self, world: &legion::World, resources: &Resources, framebuffer: &mut Framebuffer) {
+    fn draw(
+        &self,
+        world: &legion::World,
+        resources: &Resources,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
         match self.current {
             GameState::MainMenu => {
                 ugli::clear(framebuffer, Some(Rgba::BLUE), None, None);
@@ -54,5 +59,7 @@ impl GameStateSystem {
             GameState::MainMenu => {}
             GameState::Game => {}
         }
+
+        self.current = self.transition.clone();
     }
 }

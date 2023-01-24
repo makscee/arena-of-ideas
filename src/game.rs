@@ -7,10 +7,14 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(world: legion::World, resources: Resources) -> Self {
+    pub fn new(world: legion::World, mut resources: Resources) -> Self {
+        let mut fws = FileWatcherSystem::new();
+        resources.load(&mut fws);
+
         let mut systems: Vec<Box<dyn System>> = Vec::default();
         systems.push(Box::new(GameStateSystem::new(GameState::MainMenu)));
         systems.push(Box::new(ShaderSystem::new()));
+        systems.push(Box::new(fws));
 
         Self {
             world,
@@ -28,7 +32,6 @@ impl State for Game {
         self.systems
             .iter_mut()
             .for_each(|s| s.update(&mut self.world, &mut self.resources));
-
         self.resources.down_key = None;
     }
 

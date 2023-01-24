@@ -17,7 +17,7 @@ pub struct Resources {
 
 impl Resources {
     pub fn new(geng: &Geng) -> Self {
-        let shader_programs = ShaderPrograms::new(&geng);
+        let shader_programs = ShaderPrograms::new();
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
             rotation: 0.0,
@@ -32,5 +32,32 @@ impl Resources {
             game_time: default(),
             delta_time: default(),
         }
+    }
+
+    pub fn load(&mut self, fws: &mut FileWatcherSystem) {
+        self.load_shader_programs(fws);
+    }
+
+    fn load_shader_programs(&mut self, fws: &mut FileWatcherSystem) {
+        let list = futures::executor::block_on(ShaderPrograms::load_shaders_list(&self.geng));
+        for file in list {
+            fws.load_and_watch_file(
+                self,
+                &static_path().join(file),
+                Box::new(Self::load_shader_program),
+            );
+        }
+    }
+
+    fn load_shader_program(resources: &mut Resources, file: &PathBuf) {
+        let program = futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
+            &resources.geng,
+            &static_path().join(file),
+        ))
+        .expect(&format!("Failed to load shader {:?}", file));
+        debug!("Load shader program {:?}", file);
+        resources
+            .shader_programs
+            .insert_program(file.clone(), program)
     }
 }

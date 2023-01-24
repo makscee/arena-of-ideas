@@ -36,11 +36,19 @@ fn main() {
 
     world.push((GameState::MainMenu,));
 
+    //push field
+    world.push((Shader {
+        path: PathBuf::try_from("shaders/system/field.glsl").unwrap(),
+        parameters: ShaderParameters::new(),
+        layer: ShaderLayer::Background,
+        order: 0,
+    },));
+
     //push unit
     world.push((
         Position(Vec2::ZERO),
         Shader {
-            path: PathBuf::try_from("system/unit.glsl").unwrap(),
+            path: PathBuf::try_from("shaders/system/unit.glsl").unwrap(),
             parameters: ShaderParameters::new(),
             layer: ShaderLayer::Unit,
             order: 0,
