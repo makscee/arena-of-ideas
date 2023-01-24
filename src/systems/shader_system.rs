@@ -4,28 +4,56 @@ use super::*;
 
 pub struct ShaderSystem {}
 
+impl System for ShaderSystem {
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
+
+    fn draw(&self, world: &legion::World, resources: &Resources, framebuffer: &mut Framebuffer) {
+        Self::draw_all_shaders(world, resources, framebuffer);
+    }
+}
+
 impl ShaderSystem {
-    pub fn draw(world: &World, geng: &Geng, assets: &Assets, framebuffer: &mut ugli::Framebuffer) {
-        let shaders = <&Shader>::query().iter(world).collect_vec();
-        shaders.iter().for_each(|shader| {
-            Self::draw_shader(shader, &geng, framebuffer, assets, ugli::uniforms!())
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn draw_all_shaders(
+        world: &legion::World,
+        resources: &Resources,
+        framebuffer: &mut Framebuffer,
+    ) {
+        let shaders = <&Shader>::query()
+            .iter(world)
+            .sorted_by_key(|s| s.order)
+            .collect_vec();
+        let mut shaders_by_layer: HashMap<ShaderLayer, Vec<&Shader>> = HashMap::default();
+        let empty_vec: Vec<&Shader> = Vec::new();
+        shaders.into_iter().for_each(|s| {
+            shaders_by_layer
+                .get_mut(&s.layer)
+                .get_or_insert(&mut empty_vec.clone())
+                .push(s)
         });
+        for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
+            shaders.iter().for_each(|shader| {
+                Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!())
+            })
+        }
     }
 
     fn draw_shader<U>(
         shader: &Shader,
-        geng: &Geng,
         framebuffer: &mut ugli::Framebuffer,
-        assets: &Assets,
+        resources: &Resources,
         uniforms: U,
     ) where
         U: ugli::Uniforms,
     {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
-            ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
+            ugli::VertexBuffer::new_dynamic(resources.geng.ugli(), Vec::new());
         instances_arr.resize(shader.parameters.instances, Instance {});
-        let program = assets.shader_programs.get_program(&shader.path);
-        let quad = Self::get_quad(shader.parameters.vertices, &geng);
+        let program = resources.shader_programs.get_program(&shader.path);
+        let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
         ugli::draw(
             framebuffer,
             &program,
@@ -35,7 +63,7 @@ impl ShaderSystem {
                 ugli::uniforms! {
                     u_time: 0.0,
                 },
-                geng::camera2d_uniforms(&assets.camera, framebuffer.size().map(|x| x as f32)),
+                geng::camera2d_uniforms(&resources.camera, framebuffer.size().map(|x| x as f32)),
                 &shader.parameters,
                 uniforms,
             ),
@@ -66,8 +94,6 @@ impl ShaderSystem {
 
         ugli::VertexBuffer::new_dynamic(geng.ugli(), vertices)
     }
-
-    pub fn load_shaders(world: &mut World) {}
 }
 
 #[derive(ugli::Vertex, Debug, Clone)]

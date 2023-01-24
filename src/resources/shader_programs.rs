@@ -3,7 +3,7 @@ use geng::prelude::itertools::Itertools;
 use super::*;
 
 /// Load and store shader programs
-pub struct ShaderPrograms(pub HashMap<PathBuf, ugli::Program>);
+pub struct ShaderPrograms(HashMap<PathBuf, ugli::Program>);
 
 impl ShaderPrograms {
     pub fn new(geng: &Geng) -> Self {

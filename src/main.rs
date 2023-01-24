@@ -1,14 +1,14 @@
 use geng::{prelude::*, *};
 
-mod assets;
 mod components;
 mod game;
+mod resources;
 mod systems;
 
-use assets::*;
 use components::*;
 use game::*;
-use legion::*;
+use legion::query::*;
+use resources::Resources;
 use std::path::PathBuf;
 use systems::*;
 
@@ -32,7 +32,7 @@ fn main() {
     logger::init().unwrap();
     geng::setup_panic_handler();
     let geng = setup_geng();
-    let mut world = World::default();
+    let mut world = legion::World::default();
 
     world.push((GameState::MainMenu,));
 
@@ -42,10 +42,12 @@ fn main() {
         Shader {
             path: PathBuf::try_from("system/unit.glsl").unwrap(),
             parameters: ShaderParameters::new(),
+            layer: ShaderLayer::Unit,
+            order: 0,
         },
     ));
 
-    let assets = Assets::new(&geng);
-    let game = Game::new(geng.clone(), world, assets);
+    let resources = Resources::new(&geng);
+    let game = Game::new(world, resources);
     geng::run(&geng, game);
 }

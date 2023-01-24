@@ -4,6 +4,16 @@ use super::*;
 pub struct Shader {
     pub path: PathBuf, // full path
     pub parameters: ShaderParameters,
+    pub layer: ShaderLayer,
+    pub order: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ShaderLayer {
+    Background,
+    Unit,
+    Vfx,
+    UI,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
