@@ -8,13 +8,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(world: legion::World, mut resources: Resources) -> Self {
-        let mut fws = FileWatcherSystem::new();
-        resources.load(&mut fws);
-
-        let mut systems: Vec<Box<dyn System>> = Vec::default();
-        systems.push(Box::new(GameStateSystem::new(GameState::MainMenu)));
-        systems.push(Box::new(ShaderSystem::new()));
-        systems.push(Box::new(fws));
+        let systems = Game::create_active_systems(&mut resources);
 
         Self {
             world,
