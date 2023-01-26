@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 mod shader_programs;
@@ -10,6 +12,8 @@ pub struct Resources {
 
     pub game_time: Time,
     pub delta_time: Time,
+    pub effects_storage: HashMap<PathBuf, Box<dyn Effect>>,
+    pub action_queue: VecDeque<Action>,
 
     pub camera: Camera2d,
     pub geng: Geng,
@@ -31,6 +35,8 @@ impl Resources {
             geng: geng.clone(),
             game_time: default(),
             delta_time: default(),
+            action_queue: default(),
+            effects_storage: default(),
         }
     }
 

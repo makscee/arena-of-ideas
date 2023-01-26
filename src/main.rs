@@ -5,6 +5,7 @@ mod game;
 mod resources;
 mod systems;
 
+use anyhow::{Context, Error, Result};
 use components::*;
 use game::*;
 use legion::query::*;
@@ -45,7 +46,7 @@ fn main() {
     },));
 
     //push unit
-    world.push((
+    let unit = world.push((
         Position(Vec2::ZERO),
         Shader {
             path: PathBuf::try_from("shaders/system/unit.glsl").unwrap(),
@@ -53,9 +54,26 @@ fn main() {
             layer: ShaderLayer::Unit,
             order: 0,
         },
+        HpComponent { current: 3, max: 3 },
     ));
 
-    let resources = Resources::new(&geng);
+    let mut resources = Resources::new(&geng);
+
+    let damage_effect = AttackEffect::DealDamage { value: Some(2) };
+    let damage_effect_key = PathBuf::try_from("damage effect").unwrap();
+    resources
+        .effects_storage
+        .insert(damage_effect_key.clone(), Box::new(damage_effect));
+
+    resources.action_queue.push_back(Action {
+        context: ContextComponent {
+            owner: unit,
+            target: unit,
+            creator: unit,
+        },
+        effect_key: damage_effect_key,
+    });
+
     let game = Game::new(world, resources);
     geng::run(&geng, game);
 }
