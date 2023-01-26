@@ -7,7 +7,7 @@ use super::*;
 pub struct ShaderSystem {}
 
 impl System for ShaderSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
+    fn update(&mut self, _world: &mut legion::World, _resources: &mut Resources) {}
 
     fn draw(
         &self,

@@ -15,7 +15,7 @@ impl Effect for AttackEffect {
         context: &ContextComponent,
         resources: &mut Resources,
         world: &mut legion::World,
-        effect_key: &PathBuf,
+        effect_key: &EffectKey,
     ) -> Result<(), Error> {
         match self {
             AttackEffect::DealDamage { value } => {

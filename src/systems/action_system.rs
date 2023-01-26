@@ -24,14 +24,16 @@ impl System for ActionSystem {
 
     fn draw(
         &self,
-        world: &legion::World,
-        resources: &Resources,
-        framebuffer: &mut ugli::Framebuffer,
+        _world: &legion::World,
+        _resources: &Resources,
+        _framebuffer: &mut ugli::Framebuffer,
     ) {
     }
 }
 
 pub struct Action {
     pub context: ContextComponent,
-    pub effect_key: PathBuf,
+    pub effect_key: EffectKey,
 }
+
+pub type EffectKey = PathBuf;

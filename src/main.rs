@@ -75,5 +75,5 @@ fn main() {
     });
 
     let game = Game::new(world, resources);
-    geng::run(&geng, game);
+    // geng::run(&geng, game);
 }

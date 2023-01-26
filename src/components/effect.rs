@@ -10,17 +10,3 @@ pub trait Effect {
         effect_key: &PathBuf,
     ) -> Result<(), Error>;
 }
-
-// pub struct EffectComponent {
-//     pub effect: Box<dyn Effect + Send + Sync>,
-// }
-
-// impl EffectComponent {
-// pub fn process(
-//     &self,
-//     context: &mut ContextComponent,
-//     resources: &mut Resources,
-// ) -> Result<(), Error> {
-//     self.effect.process(context, resources)
-// }
-// }

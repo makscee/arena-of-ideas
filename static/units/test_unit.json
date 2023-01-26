@@ -1,0 +1,9 @@
+{
+    "Hp": {
+        "max": 3,
+        "current": 3
+    },
+    "Attack": {
+        "value": 2
+    }
+}

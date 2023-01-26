@@ -21,17 +21,4 @@ impl ShaderPrograms {
     pub fn insert_program(&mut self, file: PathBuf, program: ugli::Program) {
         self.0.insert(file, program);
     }
-
-    pub async fn load_shaders_list(geng: &Geng) -> Vec<PathBuf> {
-        let list =
-            <String as geng::LoadAsset>::load(&geng, &static_path().join("shaders/_list.json"))
-                .await
-                .expect("Failed to load shaders list");
-        let list: Vec<String> = serde_json::from_str(&list).expect("Failed to parse shaders list");
-        let list = list
-            .iter()
-            .map(|path| PathBuf::try_from(path).unwrap())
-            .collect_vec();
-        list
-    }
 }

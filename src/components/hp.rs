@@ -25,9 +25,9 @@ impl Effect for HpEffect {
     fn process(
         &self,
         context: &ContextComponent,
-        resources: &mut Resources,
+        _resources: &mut Resources,
         world: &mut legion::World,
-        effect_key: &PathBuf,
+        _effect_key: &PathBuf,
     ) -> Result<(), Error> {
         match self {
             HpEffect::TakeDamage { value } => {

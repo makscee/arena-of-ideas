@@ -3,12 +3,14 @@ use self::time_system::TimeSystem;
 use super::*;
 
 mod action_system;
+mod deserialisation_system;
 mod file_watcher_system;
 mod game_state_system;
 mod shader_system;
 mod time_system;
 
 pub use action_system::*;
+pub use deserialisation_system::*;
 pub use file_watcher_system::*;
 pub use game_state_system::*;
 pub use shader_system::*;
