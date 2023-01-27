@@ -55,6 +55,7 @@ fn main() {
             order: 0,
         },
         HpComponent { current: 3, max: 3 },
+        Component::Hp { max: 3 },
     ));
 
     let mut resources = Resources::new(&geng);

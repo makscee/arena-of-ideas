@@ -8,11 +8,9 @@ pub struct HpComponent {
     pub max: Hp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum HpEffect {
     TakeDamage { value: Hp },
-    // TakeHeal { value: Hp },
-    // ChangeMax { delta: Hp },
 }
 
 impl fmt::Display for HpEffect {
@@ -36,28 +34,8 @@ impl Effect for HpEffect {
                     .context("Can't find target")?
                     .get_component_mut::<HpComponent>()?
                     .current -= value;
-                debug!("take dmg {}", value);
-                // resources.action_queue.push_front(Action {
-                //     context: context.clone(),
-                //     effect_key,
-                // });
                 Ok(())
-            } // HpEffect::TakeHeal { value } => {
-              //     world
-              //         .entry(context.target)
-              //         .context("Target not found")?
-              //         .get_component_mut::<HpComponent>()?
-              //         .current += value;
-              //     Ok(())
-              // }
-              // HpEffect::ChangeMax { delta } => {
-              //     world
-              //         .entry(context.target)
-              //         .context("Target not found")?
-              //         .get_component_mut::<HpComponent>()?
-              //         .max += delta;
-              //     Ok(())
-              // }
+            }
         }
     }
 }

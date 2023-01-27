@@ -91,9 +91,6 @@ impl Resources {
         ));
         list.iter()
             .for_each(|file| Self::load_unit_template(&self.geng, file));
-
-        // debug!("component: {}", templates[0].0[0]);
-        // debug!("component: {}", templates[0].0);
     }
 
     fn load_unit_template(geng: &Geng, file: &PathBuf) {

@@ -26,6 +26,11 @@ pub enum Component {
     Attack { value: Hp },
 }
 
+#[derive(Deserialize, Debug)]
+pub enum Trigger {
+    Init(EffectKey),
+}
+
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)

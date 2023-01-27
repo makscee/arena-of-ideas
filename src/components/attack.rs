@@ -4,7 +4,7 @@ pub struct AttackComponent {
     pub value: Hp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum AttackEffect {
     DealDamage { value: Option<Hp> },
 }
