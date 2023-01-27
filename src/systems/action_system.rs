@@ -11,15 +11,11 @@ impl ActionSystem {
 impl System for ActionSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let Some(action) = resources.action_queue.pop_front() else { return };
-        let effect = resources
-            .effects_storage
-            .remove(&action.effect_key)
-            .expect("Effect not loaded");
-        match effect.process(&action.context, resources, world, &action.effect_key) {
+        debug!("Procession action: {:?}", action.effect);
+        match action.effect.process(&action.context, world, resources) {
             Ok(_) => {}
-            Err(error) => error!("Effect process error: {}", error),
+            Err(error) => error!("Effect proectss error: {}", error),
         }
-        resources.effects_storage.insert(action.effect_key, effect);
     }
 
     fn draw(
@@ -32,8 +28,12 @@ impl System for ActionSystem {
 }
 
 pub struct Action {
-    pub context: ContextComponent,
-    pub effect_key: EffectKey,
+    pub context: Context,
+    pub effect: Effect,
 }
 
-pub type EffectKey = PathBuf;
+impl Action {
+    pub fn new(context: Context, effect: Effect) -> Self {
+        Self { context, effect }
+    }
+}

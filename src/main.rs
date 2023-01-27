@@ -5,11 +5,11 @@ mod game;
 mod resources;
 mod systems;
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Error, Result};
 use components::*;
 use game::*;
 use legion::query::*;
-use resources::Resources;
+use resources::{Resources, *};
 use std::path::PathBuf;
 use systems::*;
 
@@ -59,22 +59,15 @@ fn main() {
     ));
 
     let mut resources = Resources::new(&geng);
-
-    let damage_effect = AttackEffect::DealDamage { value: Some(2) };
-    let damage_effect_key = PathBuf::try_from("damage effect").unwrap();
-    resources
-        .effects_storage
-        .insert(damage_effect_key.clone(), Box::new(damage_effect));
-
-    resources.action_queue.push_back(Action {
-        context: ContextComponent {
+    resources.action_queue.push_back(Action::new(
+        Context {
             owner: unit,
             target: unit,
             creator: unit,
         },
-        effect_key: damage_effect_key,
-    });
+        Effect::DealDamage { value: 1 },
+    ));
 
     let game = Game::new(world, resources);
-    // geng::run(&geng, game);
+    geng::run(&geng, game);
 }

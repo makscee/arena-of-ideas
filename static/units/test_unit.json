@@ -1,9 +1,27 @@
-{
-    "Hp": {
-        "max": 3,
-        "current": 3
+[
+    {
+        "component": "Hp",
+        "max": 3
     },
-    "Attack": {
+    {
+        "component": "Attack",
         "value": 2
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": [
+            {
+                "name": "Shield",
+                "triggers": [
+                    {
+                        "type": "AfterTakeDamage",
+                        "effect": {
+                            "type": "DealDamage",
+                            "value": 2
+                        }
+                    }
+                ]
+            }
+        ]
     }
-}
+]

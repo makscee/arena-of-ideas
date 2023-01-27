@@ -7,8 +7,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(world: legion::World, mut resources: Resources) -> Self {
+    pub fn new(mut world: legion::World, mut resources: Resources) -> Self {
         let systems = Game::create_active_systems(&mut resources);
+        Game::init_world(&mut resources, &mut world);
 
         Self {
             world,

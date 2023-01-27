@@ -2,9 +2,16 @@ use std::collections::VecDeque;
 
 use super::*;
 
+mod effect;
 mod shader_programs;
+mod status;
+mod trigger;
 
+pub use effect::*;
+use geng::prelude::itertools::Itertools;
 pub use shader_programs::*;
+pub use status::*;
+pub use trigger::*;
 
 pub struct Resources {
     pub shader_programs: ShaderPrograms,
@@ -12,8 +19,11 @@ pub struct Resources {
 
     pub game_time: Time,
     pub delta_time: Time,
-    pub effects_storage: HashMap<EffectKey, Box<dyn Effect>>,
+    pub defined_statuses: HashMap<String, Status>, // key = status name
+    pub active_statuses: HashMap<legion::Entity, HashMap<String, Context>>, // entity -> status name -> context
     pub action_queue: VecDeque<Action>,
+
+    pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
     pub camera: Camera2d,
     pub geng: Geng,
@@ -37,7 +47,9 @@ impl Resources {
             game_time: default(),
             delta_time: default(),
             action_queue: default(),
-            effects_storage: default(),
+            defined_statuses: default(),
+            active_statuses: default(),
+            unit_templates: default(),
         }
     }
 
@@ -89,28 +101,21 @@ impl Resources {
             &self.geng,
             PathBuf::try_from("units/_list.json").unwrap(),
         ));
-        list.iter()
-            .for_each(|file| Self::load_unit_template(&self.geng, file));
+        self.unit_templates.extend(
+            list.iter()
+                .map(|file| (file.clone(), Self::load_unit_template(&self.geng, file))),
+        );
     }
 
-    fn load_unit_template(geng: &Geng, file: &PathBuf) {
-        debug!("{:?}", file);
+    fn load_unit_template(geng: &Geng, file: &PathBuf) -> UnitTemplate {
         let json = futures::executor::block_on(<String as geng::LoadAsset>::load(
             geng,
             &static_path().join(file),
         ))
         .expect("Failed to load unit");
-        let json_value: serde_json::Value =
-            serde_json::from_str(&json).expect("Failed to parse unit");
-        for entry in json_value.as_object().unwrap().iter() {
-            let mut map = serde_json::map::Map::new();
-            map.insert(entry.0.clone(), entry.1.clone());
-            let entry = serde_json::Value::Object(map);
-            let component: Component = serde_json::from_value(entry).unwrap();
-            dbg!(component);
-        }
+        serde_json::from_str(&json).expect("Failed to parse UnitTemplate")
     }
 }
 
-#[derive(Deserialize)]
-pub struct UnitTemplate(Vec<Component>);
+#[derive(Deserialize, Debug)]
+pub struct UnitTemplate(pub Vec<Component>);
