@@ -1,19 +1,23 @@
-pub use super::*;
+use super::*;
 
 mod attack;
 mod context;
+mod flags;
 mod game_state;
 mod hp;
 mod position;
 mod shader;
+mod unit;
 mod vars;
 
 pub use attack::*;
 pub use context::*;
+pub use flags::*;
 pub use game_state::*;
 pub use hp::*;
 pub use position::*;
 pub use shader::*;
+pub use unit::*;
 pub use vars::*;
 
 /// Components that can be deserialized from json
@@ -46,16 +50,16 @@ impl Component {
                     .active_statuses
                     .remove(entity)
                     .unwrap_or_default();
+                let context = Context {
+                    owner: entity.clone(),
+                    target: entity.clone(),
+                    creator: entity.clone(),
+                };
                 for status in statuses.into_iter() {
                     all_statuses
                         .defined_statuses
                         .insert(status.name.clone(), status.clone());
-                    let context = Context {
-                        owner: entity.clone(),
-                        target: entity.clone(),
-                        creator: entity.clone(),
-                    };
-                    entity_statuses.insert(status.name.clone(), context);
+                    entity_statuses.insert(status.name.clone(), context.clone());
                 }
                 all_statuses
                     .active_statuses

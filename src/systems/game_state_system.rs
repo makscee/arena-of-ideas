@@ -13,7 +13,41 @@ impl System for GameStateSystem {
                     self.transition = GameState::Game;
                 }
             }
-            GameState::Game => {}
+            GameState::Game => {
+                let units = <&UnitComponent>::query().iter(world).collect_vec();
+                if units.len() > 1 && resources.action_queue.is_empty() {
+                    let context = Context {
+                        owner: units[0].entity,
+                        target: units[1].entity,
+                        creator: units[0].entity,
+                    };
+                    resources
+                        .action_queue
+                        .push_back(Action::new(context, Effect::Damage { value: 1 }));
+                    let context = Context {
+                        owner: units[1].entity,
+                        target: units[0].entity,
+                        creator: units[1].entity,
+                    };
+                    resources
+                        .action_queue
+                        .push_back(Action::new(context, Effect::Damage { value: 1 }));
+                }
+
+                let dead_units = <(&UnitComponent, &HpComponent)>::query()
+                    .iter(world)
+                    .filter_map(|(unit, hp)| match hp.current <= 0 {
+                        true => Some(unit.entity),
+                        false => None,
+                    })
+                    .collect_vec();
+                if !dead_units.is_empty() {
+                    dbg!(dead_units.clone());
+                    dead_units.iter().for_each(|entity| {
+                        world.remove(*entity);
+                    });
+                }
+            }
         }
 
         self.transition();

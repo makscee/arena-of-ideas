@@ -44,14 +44,36 @@ impl Game {
             .values()
             .map(|template| template.create_unit_entity(world, &mut resources.statuses))
             .collect_vec();
-        let unit = entities[0];
-        let context = Context {
-            owner: unit,
-            target: unit,
-            creator: unit,
-        };
-        resources
-            .action_queue
-            .push_back(Action::new(context.clone(), Effect::Damage { value: 1 }));
+        Self::init_statuses(resources);
+    }
+
+    fn init_statuses(resources: &mut Resources) {
+        let statuses = resources
+            .statuses
+            .active_statuses
+            .iter()
+            .map(|(entity, map)| {
+                (
+                    entity.clone(),
+                    map.keys().map(|name| name.clone()).collect_vec(),
+                )
+            })
+            .collect_vec();
+        statuses.iter().for_each(|(entity, statuses)| {
+            statuses.iter().for_each(|status| {
+                Event::Init {
+                    status: status.to_string(),
+                }
+                .send(
+                    &Context {
+                        owner: *entity,
+                        target: *entity,
+                        creator: *entity,
+                    },
+                    resources,
+                )
+                .expect("Error on status Init");
+            })
+        })
     }
 }

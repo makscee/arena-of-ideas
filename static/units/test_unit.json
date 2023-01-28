@@ -12,15 +12,34 @@
         "statuses": [
             {
                 "name": "Shield",
-                "triggers": [
-                    {
-                        "type": "BeforeIncomingDamage",
-                        "effect": {
-                            "type": "Debug",
-                            "message": "BeforeIncomingDamage caught by Shield"
+                "trigger": {
+                    "type": "List",
+                    "triggers": [
+                        {
+                            "type": "Init",
+                            "effect": {
+                                "type": "AddFlag",
+                                "flag": "DamageImmune"
+                            }
+                        },
+                        {
+                            "type": "AfterIncomingDamage",
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "RemoveFlag",
+                                        "flag": "DamageImmune"
+                                    },
+                                    {
+                                        "type": "RemoveStatus",
+                                        "status": "Shield"
+                                    }
+                                ]
+                            }
                         }
-                    }
-                ]
+                    ]
+                }
             }
         ]
     }

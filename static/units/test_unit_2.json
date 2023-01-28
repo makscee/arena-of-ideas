@@ -1,0 +1,10 @@
+[
+    {
+        "component": "Hp",
+        "max": 5
+    },
+    {
+        "component": "Attack",
+        "value": 2
+    }
+]

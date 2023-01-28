@@ -11,7 +11,10 @@ impl ActionSystem {
 impl System for ActionSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let Some(action) = resources.action_queue.pop_front() else { return };
-        debug!("Procession action: {:?}", action.effect);
+        debug!(
+            "Procession action: {:?} context: {:?}",
+            action.effect, action.context
+        );
         match action.effect.process(&action.context, world, resources) {
             Ok(_) => {}
             Err(error) => error!("Effect proectss error: {}", error),
