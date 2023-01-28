@@ -3,29 +3,29 @@ use std::collections::VecDeque;
 use super::*;
 
 mod effect;
+mod event;
 mod shader_programs;
 mod status;
 mod trigger;
 
 pub use effect::*;
-use geng::prelude::itertools::Itertools;
+pub use event::*;
 pub use shader_programs::*;
 pub use status::*;
 pub use trigger::*;
 
 pub struct Resources {
     pub shader_programs: ShaderPrograms,
-    pub down_key: Option<Key>,
+    pub down_key: Option<geng::Key>,
 
     pub game_time: Time,
     pub delta_time: Time,
-    pub defined_statuses: HashMap<String, Status>, // key = status name
-    pub active_statuses: HashMap<legion::Entity, HashMap<String, Context>>, // entity -> status name -> context
+    pub statuses: Statuses,
     pub action_queue: VecDeque<Action>,
 
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
-    pub camera: Camera2d,
+    pub camera: geng::Camera2d,
     pub geng: Geng,
 }
 
@@ -47,8 +47,7 @@ impl Resources {
             game_time: default(),
             delta_time: default(),
             action_queue: default(),
-            defined_statuses: default(),
-            active_statuses: default(),
+            statuses: default(),
             unit_templates: default(),
         }
     }
@@ -119,3 +118,18 @@ impl Resources {
 
 #[derive(Deserialize, Debug)]
 pub struct UnitTemplate(pub Vec<Component>);
+
+impl UnitTemplate {
+    pub fn create_unit_entity(
+        &self,
+        world: &mut legion::World,
+        statuses: &mut Statuses,
+    ) -> legion::Entity {
+        let entity = world.push((Position(Vec2::ZERO),));
+        let mut entry = world.entry(entity).unwrap();
+        self.0
+            .iter()
+            .for_each(|component| component.add_to_entry(&mut entry, &entity, statuses));
+        entity
+    }
+}

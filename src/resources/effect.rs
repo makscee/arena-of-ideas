@@ -1,12 +1,12 @@
-use legion::EntityStore;
-
 use super::*;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
-    DealDamage { value: Hp },
+    Damage { value: Hp },
     Repeat { count: usize, effect: Box<Effect> },
+    Debug { message: String },
+    Noop,
 }
 
 impl Effect {
@@ -17,7 +17,8 @@ impl Effect {
         resources: &mut Resources,
     ) -> Result<(), Error> {
         match self {
-            Effect::DealDamage { value } => {
+            Effect::Damage { value } => {
+                Event::BeforeIncomingDamage.send(context, resources)?;
                 world
                     .entry(context.target)
                     .context("Failed to get Target")?
@@ -31,6 +32,8 @@ impl Effect {
                         .push_front(Action::new(context.clone(), effect.deref().clone()));
                 }
             }
+            Effect::Debug { message } => debug!("Debug effect: {}", message),
+            Effect::Noop => {}
         }
         Ok(())
     }

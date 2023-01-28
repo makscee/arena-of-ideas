@@ -36,16 +36,20 @@ impl Component {
         &self,
         entry: &mut legion::world::Entry,
         entity: &legion::Entity,
-        defined_statuses: &mut HashMap<String, Status>,
-        active_statuses: &mut HashMap<legion::Entity, HashMap<String, Context>>,
+        all_statuses: &mut Statuses,
     ) {
         match self {
             Component::Hp { max } => entry.add_component(HpComponent::new(*max)),
             Component::Attack { value } => entry.add_component(AttackComponent::new(*value)),
             Component::StatusContainer { statuses } => {
-                let mut entity_statuses = active_statuses.remove(entity).unwrap_or_default();
+                let mut entity_statuses = all_statuses
+                    .active_statuses
+                    .remove(entity)
+                    .unwrap_or_default();
                 for status in statuses.into_iter() {
-                    defined_statuses.insert(status.name.clone(), status.clone());
+                    all_statuses
+                        .defined_statuses
+                        .insert(status.name.clone(), status.clone());
                     let context = Context {
                         owner: entity.clone(),
                         target: entity.clone(),
@@ -53,7 +57,9 @@ impl Component {
                     };
                     entity_statuses.insert(status.name.clone(), context);
                 }
-                active_statuses.insert(entity.clone(), entity_statuses);
+                all_statuses
+                    .active_statuses
+                    .insert(entity.clone(), entity_statuses);
             }
         }
     }

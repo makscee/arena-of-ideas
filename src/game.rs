@@ -19,7 +19,7 @@ impl Game {
     }
 }
 
-impl State for Game {
+impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         self.resources.delta_time = delta_time as Time;
         self.resources.game_time += self.resources.delta_time;
@@ -30,9 +30,9 @@ impl State for Game {
         self.resources.down_key = None;
     }
 
-    fn handle_event(&mut self, event: Event) {
+    fn handle_event(&mut self, event: geng::Event) {
         match event {
-            Event::KeyDown { key } => {
+            geng::Event::KeyDown { key } => {
                 self.resources.down_key = Some(key);
             }
             _ => {}

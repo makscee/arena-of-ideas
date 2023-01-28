@@ -39,21 +39,19 @@ impl Game {
     }
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
-        Self::create_units_from_templates(resources, world);
-    }
-
-    pub fn create_units_from_templates(resources: &mut Resources, world: &mut legion::World) {
-        for template in resources.unit_templates.values() {
-            let entity = world.push((Position(Vec2::ZERO),));
-            let mut entry = world.entry(entity).unwrap();
-            template.0.iter().for_each(|component| {
-                component.add_to_entry(
-                    &mut entry,
-                    &entity,
-                    &mut resources.defined_statuses,
-                    &mut resources.active_statuses,
-                )
-            });
-        }
+        let entities = resources
+            .unit_templates
+            .values()
+            .map(|template| template.create_unit_entity(world, &mut resources.statuses))
+            .collect_vec();
+        let unit = entities[0];
+        let context = Context {
+            owner: unit,
+            target: unit,
+            creator: unit,
+        };
+        resources
+            .action_queue
+            .push_back(Action::new(context.clone(), Effect::Damage { value: 1 }));
     }
 }

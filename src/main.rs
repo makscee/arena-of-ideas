@@ -1,4 +1,5 @@
-use geng::{prelude::*, *};
+use geng::prelude::*;
+use geng::ui;
 
 mod components;
 mod game;
@@ -35,8 +36,6 @@ fn main() {
     let geng = setup_geng();
     let mut world = legion::World::default();
 
-    world.push((GameState::MainMenu,));
-
     //push field
     world.push((Shader {
         path: PathBuf::try_from("shaders/system/field.glsl").unwrap(),
@@ -45,29 +44,7 @@ fn main() {
         order: 0,
     },));
 
-    //push unit
-    let unit = world.push((
-        Position(Vec2::ZERO),
-        Shader {
-            path: PathBuf::try_from("shaders/system/unit.glsl").unwrap(),
-            parameters: ShaderParameters::new(),
-            layer: ShaderLayer::Unit,
-            order: 0,
-        },
-        HpComponent { current: 3, max: 3 },
-        Component::Hp { max: 3 },
-    ));
-
-    let mut resources = Resources::new(&geng);
-    resources.action_queue.push_back(Action::new(
-        Context {
-            owner: unit,
-            target: unit,
-            creator: unit,
-        },
-        Effect::DealDamage { value: 1 },
-    ));
-
+    let resources = Resources::new(&geng);
     let game = Game::new(world, resources);
     geng::run(&geng, game);
 }

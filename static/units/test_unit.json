@@ -14,10 +14,10 @@
                 "name": "Shield",
                 "triggers": [
                     {
-                        "type": "AfterTakeDamage",
+                        "type": "BeforeIncomingDamage",
                         "effect": {
-                            "type": "DealDamage",
-                            "value": 2
+                            "type": "Debug",
+                            "message": "BeforeIncomingDamage caught by Shield"
                         }
                     }
                 ]
