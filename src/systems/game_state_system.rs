@@ -20,6 +20,8 @@ impl System for GameStateSystem {
                         owner: units[0].entity,
                         target: units[1].entity,
                         creator: units[0].entity,
+                        vars: default(),
+                        status: default(),
                     };
                     resources
                         .action_queue
@@ -28,17 +30,26 @@ impl System for GameStateSystem {
                         owner: units[1].entity,
                         target: units[0].entity,
                         creator: units[1].entity,
+                        vars: default(),
+                        status: default(),
                     };
                     resources
                         .action_queue
                         .push_back(Action::new(context, Effect::Damage { value: 1 }));
                 }
 
-                let dead_units = <(&UnitComponent, &HpComponent)>::query()
+                let dead_units = <(&UnitComponent, &HpComponent, &Context)>::query()
                     .iter(world)
-                    .filter_map(|(unit, hp)| match hp.current <= 0 {
-                        true => Some(unit.entity),
-                        false => None,
+                    .filter_map(|(unit, hp, context)| {
+                        match hp
+                            .current
+                            .get(&context.vars)
+                            .expect("Cant find hp for unit")
+                            <= 0
+                        {
+                            true => Some(unit.entity),
+                            false => None,
+                        }
                     })
                     .collect_vec();
                 if !dead_units.is_empty() {

@@ -128,10 +128,21 @@ impl UnitTemplate {
         let entity = world.push((Position::default(), FlagsComponent::default()));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(UnitComponent { entity });
-        self.0
-            .iter()
-            .for_each(|component| component.add_to_entry(&mut entry, &entity, statuses));
-        debug!("Unit#{:?} created {:?}", entity, self.0);
+        let mut context = Context {
+            owner: entity,
+            target: entity,
+            creator: entity,
+            vars: default(),
+            status: default(),
+        };
+        self.0.iter().for_each(|component| {
+            component.add_to_entry(&mut entry, &entity, statuses, &mut context)
+        });
+        debug!(
+            "Unit#{:?} created. Template: {:?} Context: {:?}",
+            entity, self.0, context
+        );
+        entry.add_component(context);
         entity
     }
 }

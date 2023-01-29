@@ -18,8 +18,18 @@
                         {
                             "type": "Init",
                             "effect": {
-                                "type": "AddFlag",
-                                "flag": "DamageImmune"
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "AddFlag",
+                                        "flag": "DamageImmune"
+                                    },
+                                    {
+                                        "type": "AddVarInt",
+                                        "name": "Test",
+                                        "value": 999
+                                    }
+                                ]
                             }
                         },
                         {

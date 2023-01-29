@@ -52,26 +52,14 @@ impl Game {
             .statuses
             .active_statuses
             .iter()
-            .map(|(entity, map)| {
-                (
-                    entity.clone(),
-                    map.keys().map(|name| name.clone()).collect_vec(),
-                )
-            })
+            .map(|(entity, map)| (entity.clone(), map.clone()))
             .collect_vec();
-        statuses.iter().for_each(|(entity, statuses)| {
-            statuses.iter().for_each(|status| {
+        statuses.iter().for_each(|(_entity, statuses)| {
+            statuses.iter().for_each(|(status, context)| {
                 Event::Init {
                     status: status.to_string(),
                 }
-                .send(
-                    &Context {
-                        owner: *entity,
-                        target: *entity,
-                        creator: *entity,
-                    },
-                    resources,
-                )
+                .send(&context.clone(), resources)
                 .expect("Error on status Init");
             })
         })

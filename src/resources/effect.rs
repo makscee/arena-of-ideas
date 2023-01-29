@@ -11,18 +11,19 @@ pub enum Effect {
     RemoveFlag { flag: Flag },
     RemoveStatus { status: String },
     Noop,
+    AddVarInt { name: VarName, value: i32 },
 }
 
 impl Effect {
     pub fn process(
         &self,
-        context: &Context,
+        mut context: Context,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> Result<(), Error> {
+    ) -> Result<Context, Error> {
         match self {
             Effect::Damage { value } => {
-                Event::BeforeIncomingDamage.send(context, resources)?;
+                Event::BeforeIncomingDamage.send(&context, resources)?;
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
@@ -32,14 +33,18 @@ impl Effect {
                 {
                     debug!("Damage Immune");
                 } else {
-                    target.get_component_mut::<HpComponent>()?.current -= value;
+                    let target_context = target.get_component::<Context>()?;
+                    context.vars = target_context.vars.extend(&context.vars);
+                    let new_hp = target
+                        .get_component_mut::<HpComponent>()?
+                        .current
+                        .change(&mut context.vars, -value)?;
+                    debug!(
+                        "Target#{:?} took {} damage, new hp: {}",
+                        context.target, value, new_hp
+                    );
                 }
-                debug!(
-                    "Damage effect. Target#{:?} current hp after: {}",
-                    context.target,
-                    target.get_component::<HpComponent>()?.current
-                );
-                Event::AfterIncomingDamage.send(context, resources)?;
+                Event::AfterIncomingDamage.send(&context, resources)?;
             }
             Effect::Repeat { count, effect } => {
                 for _ in 0..*count {
@@ -77,7 +82,10 @@ impl Effect {
                     .context("Tried to remove absent status")?
                     .remove(status);
             }
+            Effect::AddVarInt { name, value } => {
+                context.vars.set_int(name.clone(), *value);
+            }
         }
-        Ok(())
+        Ok(context)
     }
 }
