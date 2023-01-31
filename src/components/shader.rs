@@ -1,7 +1,7 @@
 use super::*;
 
 /// Component to link to a shader program with specific parameters
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Shader {
     pub path: PathBuf, // full path
     pub parameters: ShaderParameters,
@@ -21,7 +21,7 @@ pub enum ShaderLayer {
 pub struct ShaderParameters {
     pub vertices: usize,
     pub instances: usize,
-    pub parameters: HashMap<String, ShaderParameter>,
+    pub uniforms: ShaderUniforms,
 }
 
 impl Default for ShaderParameters {
@@ -29,7 +29,7 @@ impl Default for ShaderParameters {
         Self {
             vertices: 3,
             instances: 1,
-            parameters: default(),
+            uniforms: default(),
         }
     }
 }
@@ -39,53 +39,47 @@ impl ugli::Uniforms for ShaderParameters {
     where
         C: ugli::UniformVisitor,
     {
-        for (name, value) in &self.parameters {
+        for (name, value) in &self.uniforms.0 {
             visitor.visit(name, value);
         }
     }
 }
 
-impl ShaderParameters {
+impl ShaderUniforms {
+    pub fn merge(&self, other: &ShaderUniforms) -> Self {
+        let mut result: ShaderUniforms = self.clone();
+        other
+            .0
+            .iter()
+            .for_each(|(key, value)| result.insert(key.clone(), value.clone()));
+        result
+    }
+
     pub fn mix(a: &Self, b: &Self, t: f32) -> Self {
-        let mut result: ShaderParameters = default();
-        result.instances = a.instances + (b.instances - a.instances) * t as usize;
-        result.vertices = a.vertices + (b.vertices - a.vertices) * t as usize;
-        for (key, value) in a.parameters.iter() {
+        let mut result: ShaderUniforms = default();
+        for (key, value) in a.0.iter() {
             let a = value;
-            let b = b
-                .parameters
-                .get(key)
-                .expect(&format!("Parameter {} absent in B", key));
+            let b = b.get(key).expect(&format!("Parameter {} absent in B", key));
             match (a, b) {
-                (ShaderParameter::Int(a), ShaderParameter::Int(b)) => {
-                    result
-                        .parameters
-                        .insert(key.clone(), ShaderParameter::Int(a + (b - a) * t as i32));
+                (ShaderUniform::Int(a), ShaderUniform::Int(b)) => {
+                    result.insert(key.clone(), ShaderUniform::Int(a + (b - a) * t as i32));
                 }
-                (ShaderParameter::Float(a), ShaderParameter::Float(b)) => {
-                    result
-                        .parameters
-                        .insert(key.clone(), ShaderParameter::Float(a + (b - a) * t));
+                (ShaderUniform::Float(a), ShaderUniform::Float(b)) => {
+                    result.insert(key.clone(), ShaderUniform::Float(a + (b - a) * t));
                 }
-                (ShaderParameter::Vec2(a), ShaderParameter::Vec2(b)) => {
-                    result
-                        .parameters
-                        .insert(key.clone(), ShaderParameter::Vec2(*a + (*b - *a) * t));
+                (ShaderUniform::Vec2(a), ShaderUniform::Vec2(b)) => {
+                    result.insert(key.clone(), ShaderUniform::Vec2(*a + (*b - *a) * t));
                 }
-                (ShaderParameter::Vec3(a), ShaderParameter::Vec3(b)) => {
-                    result
-                        .parameters
-                        .insert(key.clone(), ShaderParameter::Vec3(*a + (*b - *a) * t));
+                (ShaderUniform::Vec3(a), ShaderUniform::Vec3(b)) => {
+                    result.insert(key.clone(), ShaderUniform::Vec3(*a + (*b - *a) * t));
                 }
-                (ShaderParameter::Vec4(a), ShaderParameter::Vec4(b)) => {
-                    result
-                        .parameters
-                        .insert(key.clone(), ShaderParameter::Vec4(*a + (*b - *a) * t));
+                (ShaderUniform::Vec4(a), ShaderUniform::Vec4(b)) => {
+                    result.insert(key.clone(), ShaderUniform::Vec4(*a + (*b - *a) * t));
                 }
-                (ShaderParameter::Color(a), ShaderParameter::Color(b)) => {
-                    result.parameters.insert(
+                (ShaderUniform::Color(a), ShaderUniform::Color(b)) => {
+                    result.insert(
                         key.clone(),
-                        ShaderParameter::Color(Rgba::new(
+                        ShaderUniform::Color(Rgba::new(
                             a.r + (b.r - a.r) * t,
                             a.g + (b.g - a.g) * t,
                             a.b + (b.b - a.b) * t,
@@ -104,9 +98,27 @@ impl ShaderParameters {
     }
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ShaderUniforms(HashMap<String, ShaderUniform>);
+
+impl ShaderUniforms {
+    pub fn insert(&mut self, key: String, value: ShaderUniform) {
+        self.0.insert(key, value);
+    }
+    pub fn get(&self, key: &String) -> Option<&ShaderUniform> {
+        self.0.get(key)
+    }
+}
+
+impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
+    fn from(value: HashMap<String, ShaderUniform>) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
-pub enum ShaderParameter {
+pub enum ShaderUniform {
     Int(i32),
     Float(f32),
     Vec2(Vec2<f32>),
@@ -115,7 +127,7 @@ pub enum ShaderParameter {
     Color(Rgba<f32>),
 }
 
-impl ugli::Uniform for ShaderParameter {
+impl ugli::Uniform for ShaderUniform {
     fn apply(&self, gl: &ugli::raw::Context, info: &ugli::UniformInfo) {
         match self {
             Self::Int(value) => value.apply(gl, info),

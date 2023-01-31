@@ -24,9 +24,21 @@ pub use vars::*;
 #[derive(Deserialize, Debug)]
 #[serde(tag = "component")]
 pub enum Component {
-    Hp { max: Hp },
-    Attack { value: Hp },
-    StatusContainer { statuses: Vec<Status> },
+    Hp {
+        max: Hp,
+    },
+    Attack {
+        value: Hp,
+    },
+    StatusContainer {
+        statuses: Vec<Status>,
+    },
+    Shader {
+        path: PathBuf,
+        parameters: Option<ShaderParameters>,
+        layer: Option<ShaderLayer>,
+        order: Option<i32>,
+    },
 }
 
 impl fmt::Display for Component {
@@ -74,6 +86,17 @@ impl Component {
                     .active_statuses
                     .insert(entity.clone(), entity_statuses);
             }
+            Component::Shader {
+                path,
+                parameters,
+                layer,
+                order,
+            } => entry.add_component(Shader {
+                path: static_path().join(path),
+                parameters: parameters.clone().unwrap_or_default(),
+                layer: layer.clone().unwrap_or(ShaderLayer::Unit),
+                order: order.unwrap_or_default(),
+            }),
         }
     }
 }

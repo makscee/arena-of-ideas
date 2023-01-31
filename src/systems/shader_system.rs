@@ -29,14 +29,13 @@ impl ShaderSystem {
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let visual_queue_shaders = resources.visual_queue.get_shaders();
-        let shaders = <&Shader>::query()
-            .iter(world)
-            .chain(visual_queue_shaders.iter())
-            .sorted_by_key(|s| s.order)
-            .collect_vec();
-        let mut shaders_by_layer: HashMap<ShaderLayer, Vec<&Shader>> = HashMap::default();
-        let emtpy_vec: Vec<&Shader> = Vec::new();
+        let mut entity_shaders = HashMap::default();
+        for (unit, shader) in <(&UnitComponent, &Shader)>::query().iter(world) {
+            entity_shaders.insert(unit.entity, shader.clone());
+        }
+        let shaders = resources.visual_queue.get_shaders(entity_shaders);
+        let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
+        let emtpy_vec: Vec<Shader> = Vec::new();
         for shader in shaders {
             let layer = &shader.layer;
             let vec = match shaders_by_layer.entry(layer.clone()) {

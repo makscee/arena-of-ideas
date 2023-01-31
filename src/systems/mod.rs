@@ -54,22 +54,30 @@ impl Game {
                 duration: 1.0,
                 r#type: VisualEffectType::ShaderAnimation {
                     program: PathBuf::try_from("shaders/vfx/circle.glsl").unwrap(),
-                    from: ShaderParameters {
-                        parameters: hashmap! {
-                            "u_color".to_string() => ShaderParameter::Color(Rgba::RED),
-                            "u_scale".to_string() => ShaderParameter::Float(1.5),
-                            "u_position".to_string() => ShaderParameter::Vec2(vec2(-0.8, 0.0)),
-                        },
-                        ..default()
-                    },
-                    to: ShaderParameters {
-                        parameters: hashmap! {
-                            "u_color".to_string() => ShaderParameter::Color(Rgba::MAGENTA),
-                            "u_scale".to_string() => ShaderParameter::Float(0.5),
-                            "u_position".to_string() => ShaderParameter::Vec2(vec2(0.5, 0.0)),
-                        },
-                        ..default()
-                    },
+                    parameters: default(),
+                    from: hashmap! {
+                            "u_color".to_string() => ShaderUniform::Color(Rgba::RED),
+                            "u_scale".to_string() => ShaderUniform::Float(0.3),
+                            "u_position".to_string() => ShaderUniform::Vec2(vec2(-0.8, 0.0)),
+
+                    }
+                    .into(),
+                    to: hashmap! {
+                        "u_color".to_string() => ShaderUniform::Color(Rgba::MAGENTA),
+                        "u_scale".to_string() => ShaderUniform::Float(0.1),
+                        "u_position".to_string() => ShaderUniform::Vec2(vec2(0.5, 0.0)),
+                    }
+                    .into(),
+                },
+            });
+            resources.visual_queue.add_effect(VisualEffect {
+                duration: 1.5,
+                r#type: VisualEffectType::EntityShaderAnimation {
+                    entity: entities[0],
+                    from: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(0.0,0.0))}
+                        .into(),
+                    to: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(0.0,1.0))}
+                        .into(),
                 },
             });
             resources.visual_queue.next_node();
@@ -77,22 +85,20 @@ impl Game {
                 duration: 1.0,
                 r#type: VisualEffectType::ShaderAnimation {
                     program: PathBuf::try_from("shaders/vfx/circle.glsl").unwrap(),
-                    to: ShaderParameters {
-                        parameters: hashmap! {
-                            "u_color".to_string() => ShaderParameter::Color(Rgba::RED),
-                            "u_scale".to_string() => ShaderParameter::Float(1.5),
-                            "u_position".to_string() => ShaderParameter::Vec2(vec2(-0.8, 0.0)),
-                        },
-                        ..default()
-                    },
-                    from: ShaderParameters {
-                        parameters: hashmap! {
-                            "u_color".to_string() => ShaderParameter::Color(Rgba::MAGENTA),
-                            "u_scale".to_string() => ShaderParameter::Float(0.5),
-                            "u_position".to_string() => ShaderParameter::Vec2(vec2(0.5, 0.0)),
-                        },
-                        ..default()
-                    },
+                    parameters: default(),
+                    to: hashmap! {
+                            "u_color".to_string() => ShaderUniform::Color(Rgba::RED),
+                            "u_scale".to_string() => ShaderUniform::Float(0.3),
+                            "u_position".to_string() => ShaderUniform::Vec2(vec2(-0.8, 0.0)),
+
+                    }
+                    .into(),
+                    from: hashmap! {
+                        "u_color".to_string() => ShaderUniform::Color(Rgba::MAGENTA),
+                        "u_scale".to_string() => ShaderUniform::Float(0.1),
+                        "u_position".to_string() => ShaderUniform::Vec2(vec2(0.5, 0.0)),
+                    }
+                    .into(),
                 },
             });
             resources.visual_queue.next_node();

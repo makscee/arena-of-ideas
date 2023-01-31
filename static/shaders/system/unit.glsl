@@ -7,13 +7,12 @@ uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 
 uniform float u_padding;
-uniform float u_size;
-uniform vec2 u_unit_position = vec2(0);
-uniform float u_unit_radius = 1;
+uniform vec2 u_position = vec2(0);
+uniform float u_scale = 1;
 
 void main() {
     v_quad_pos = a_pos * (1.0 + u_padding);
-    vec2 pos = v_quad_pos * 1.0 * u_unit_radius + u_unit_position;
+    vec2 pos = v_quad_pos * 1.0 * u_scale + u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -34,6 +33,9 @@ void main() {
     // float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, len), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, len));
     // vec4 color = vec4(parent_faction_color, alpha);
     // gl_FragColor = color;
+    if(length(v_quad_pos) > 1.) {
+        discard;
+    }
     gl_FragColor = vec4(0.5);
 }
 #endif

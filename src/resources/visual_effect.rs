@@ -10,20 +10,47 @@ pub struct VisualEffect {
 pub enum VisualEffectType {
     ShaderAnimation {
         program: PathBuf,
-        from: ShaderParameters,
-        to: ShaderParameters,
+        parameters: ShaderParameters,
+        from: ShaderUniforms,
+        to: ShaderUniforms,
+    },
+    EntityShaderAnimation {
+        entity: legion::Entity,
+        from: ShaderUniforms,
+        to: ShaderUniforms,
     },
 }
 
 impl VisualEffectType {
-    pub fn process(&self, t: f32) -> Option<Shader> {
+    pub fn process(
+        &self,
+        t: f32,
+        entity_shaders: &mut HashMap<legion::Entity, Shader>,
+    ) -> Option<Shader> {
         match self {
-            VisualEffectType::ShaderAnimation { program, from, to } => Some(Shader {
+            VisualEffectType::ShaderAnimation {
+                program,
+                parameters,
+                from,
+                to,
+            } => Some(Shader {
                 path: static_path().join(program),
-                parameters: ShaderParameters::mix(from, to, t),
+                parameters: ShaderParameters {
+                    uniforms: parameters.uniforms.merge(&ShaderUniforms::mix(from, to, t)),
+                    ..*parameters
+                },
                 layer: ShaderLayer::Vfx,
                 order: default(),
             }),
+            VisualEffectType::EntityShaderAnimation { entity, from, to } => {
+                if let Some(shader) = entity_shaders.get_mut(entity) {
+                    shader.parameters.uniforms = shader
+                        .parameters
+                        .uniforms
+                        .merge(&ShaderUniforms::mix(from, to, t));
+                }
+                None
+            }
         }
     }
 }

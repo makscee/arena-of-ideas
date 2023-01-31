@@ -38,7 +38,6 @@ impl System for ActionSystem {
                         .and_then(|entry| entry.get_mut(&name))
                     {
                         status_context.vars.override_self(&context.vars);
-                        dbg!(status_context);
                     }
                 }
             }

@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 pub struct VisualQueue {
@@ -33,14 +35,18 @@ impl VisualQueue {
         node.effects.push(effect);
     }
 
-    pub fn get_shaders(&self) -> Vec<Shader> {
+    pub fn get_shaders(&self, mut entity_shaders: HashMap<legion::Entity, Shader>) -> Vec<Shader> {
         let node = self.get_node_at_ts(self.current_ts);
         let time = self.current_ts - node.start;
         let mut shaders: Vec<Shader> = default();
         for effect in node.effects.iter() {
-            shaders.extend(effect.r#type.process(time / effect.duration));
+            shaders.extend(
+                effect
+                    .r#type
+                    .process(time / effect.duration, &mut entity_shaders),
+            );
         }
-        shaders
+        [entity_shaders.into_values().collect_vec(), shaders].concat()
     }
 
     fn get_node_at_ts(&self, ts: Time) -> &VisualNode {

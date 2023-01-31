@@ -8,6 +8,10 @@
         "value": 2
     },
     {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl"
+    },
+    {
         "component": "StatusContainer",
         "statuses": [
             {

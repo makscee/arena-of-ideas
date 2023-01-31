@@ -53,7 +53,6 @@ impl System for GameStateSystem {
                     })
                     .collect_vec();
                 if !dead_units.is_empty() {
-                    dbg!(dead_units.clone());
                     dead_units.iter().for_each(|entity| {
                         world.remove(*entity);
                     });
