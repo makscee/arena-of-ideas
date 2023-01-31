@@ -8,7 +8,7 @@ pub struct Shader {
     pub order: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ShaderLayer {
     Background,
     Unit,
@@ -16,7 +16,7 @@ pub enum ShaderLayer {
     UI,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct ShaderParameters {
     pub vertices: usize,
     pub instances: usize,
@@ -44,7 +44,66 @@ impl ugli::Uniforms for ShaderParameters {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+impl ShaderParameters {
+    pub fn mix(a: &Self, b: &Self, t: f32) -> Self {
+        let mut result = Self::new();
+        result.instances = (a.instances + b.instances) * t as usize;
+        result.vertices = (a.vertices + b.vertices) * t as usize;
+        for (key, value) in a.parameters.iter() {
+            let a = value;
+            let b = b
+                .parameters
+                .get(key)
+                .expect(&format!("Parameter {} absent in B", key));
+            match (a, b) {
+                (ShaderParameter::Int(a), ShaderParameter::Int(b)) => {
+                    result
+                        .parameters
+                        .insert(key.clone(), ShaderParameter::Int((a + b) * t as i32));
+                }
+                (ShaderParameter::Float(a), ShaderParameter::Float(b)) => {
+                    result
+                        .parameters
+                        .insert(key.clone(), ShaderParameter::Float((a + b) * t));
+                }
+                (ShaderParameter::Vec2(a), ShaderParameter::Vec2(b)) => {
+                    result
+                        .parameters
+                        .insert(key.clone(), ShaderParameter::Vec2((*a + *b) * t));
+                }
+                (ShaderParameter::Vec3(a), ShaderParameter::Vec3(b)) => {
+                    result
+                        .parameters
+                        .insert(key.clone(), ShaderParameter::Vec3((*a + *b) * t));
+                }
+                (ShaderParameter::Vec4(a), ShaderParameter::Vec4(b)) => {
+                    result
+                        .parameters
+                        .insert(key.clone(), ShaderParameter::Vec4((*a + *b) * t));
+                }
+                (ShaderParameter::Color(a), ShaderParameter::Color(b)) => {
+                    result.parameters.insert(
+                        key.clone(),
+                        ShaderParameter::Color(Rgba::new(
+                            (a.r + b.r) * t,
+                            (a.g + b.g) * t,
+                            (a.b + b.b) * t,
+                            (a.a + b.a) * t,
+                        )),
+                    );
+                }
+                _ => panic!(
+                    "Failed to mix: not matching parameter types: {:?} {:?}",
+                    a, b
+                ),
+            }
+        }
+
+        result
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum ShaderParameter {
     Int(i32),

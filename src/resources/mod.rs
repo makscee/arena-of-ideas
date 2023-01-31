@@ -7,12 +7,14 @@ mod event;
 mod shader_programs;
 mod status;
 mod trigger;
+mod visual_effect;
 
 pub use effect::*;
 pub use event::*;
 pub use shader_programs::*;
 pub use status::*;
 pub use trigger::*;
+pub use visual_effect::*;
 
 pub struct Resources {
     pub shader_programs: ShaderPrograms,
