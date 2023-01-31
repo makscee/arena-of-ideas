@@ -38,8 +38,8 @@ fn main() {
 
     //push field
     world.push((Shader {
-        path: PathBuf::try_from("shaders/system/field.glsl").unwrap(),
-        parameters: ShaderParameters::new(),
+        path: static_path().join("shaders/system/field.glsl"),
+        parameters: default(),
         layer: ShaderLayer::Background,
         order: 0,
     },));

@@ -1,6 +1,7 @@
 use super::*;
 
 /// Component to link to a shader program with specific parameters
+#[derive(Debug)]
 pub struct Shader {
     pub path: PathBuf, // full path
     pub parameters: ShaderParameters,
@@ -16,17 +17,17 @@ pub enum ShaderLayer {
     UI,
 }
 
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ShaderParameters {
     pub vertices: usize,
     pub instances: usize,
     pub parameters: HashMap<String, ShaderParameter>,
 }
 
-impl ShaderParameters {
-    pub fn new() -> Self {
+impl Default for ShaderParameters {
+    fn default() -> Self {
         Self {
-            vertices: 2,
+            vertices: 3,
             instances: 1,
             parameters: default(),
         }
@@ -46,9 +47,9 @@ impl ugli::Uniforms for ShaderParameters {
 
 impl ShaderParameters {
     pub fn mix(a: &Self, b: &Self, t: f32) -> Self {
-        let mut result = Self::new();
-        result.instances = (a.instances + b.instances) * t as usize;
-        result.vertices = (a.vertices + b.vertices) * t as usize;
+        let mut result: ShaderParameters = default();
+        result.instances = a.instances + (b.instances - a.instances) * t as usize;
+        result.vertices = a.vertices + (b.vertices - a.vertices) * t as usize;
         for (key, value) in a.parameters.iter() {
             let a = value;
             let b = b
@@ -59,36 +60,36 @@ impl ShaderParameters {
                 (ShaderParameter::Int(a), ShaderParameter::Int(b)) => {
                     result
                         .parameters
-                        .insert(key.clone(), ShaderParameter::Int((a + b) * t as i32));
+                        .insert(key.clone(), ShaderParameter::Int(a + (b - a) * t as i32));
                 }
                 (ShaderParameter::Float(a), ShaderParameter::Float(b)) => {
                     result
                         .parameters
-                        .insert(key.clone(), ShaderParameter::Float((a + b) * t));
+                        .insert(key.clone(), ShaderParameter::Float(a + (b - a) * t));
                 }
                 (ShaderParameter::Vec2(a), ShaderParameter::Vec2(b)) => {
                     result
                         .parameters
-                        .insert(key.clone(), ShaderParameter::Vec2((*a + *b) * t));
+                        .insert(key.clone(), ShaderParameter::Vec2(*a + (*b - *a) * t));
                 }
                 (ShaderParameter::Vec3(a), ShaderParameter::Vec3(b)) => {
                     result
                         .parameters
-                        .insert(key.clone(), ShaderParameter::Vec3((*a + *b) * t));
+                        .insert(key.clone(), ShaderParameter::Vec3(*a + (*b - *a) * t));
                 }
                 (ShaderParameter::Vec4(a), ShaderParameter::Vec4(b)) => {
                     result
                         .parameters
-                        .insert(key.clone(), ShaderParameter::Vec4((*a + *b) * t));
+                        .insert(key.clone(), ShaderParameter::Vec4(*a + (*b - *a) * t));
                 }
                 (ShaderParameter::Color(a), ShaderParameter::Color(b)) => {
                     result.parameters.insert(
                         key.clone(),
                         ShaderParameter::Color(Rgba::new(
-                            (a.r + b.r) * t,
-                            (a.g + b.g) * t,
-                            (a.b + b.b) * t,
-                            (a.a + b.a) * t,
+                            a.r + (b.r - a.r) * t,
+                            a.g + (b.g - a.g) * t,
+                            a.b + (b.b - a.b) * t,
+                            a.a + (b.a - a.a) * t,
                         )),
                     );
                 }

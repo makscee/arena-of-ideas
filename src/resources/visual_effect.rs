@@ -1,10 +1,12 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct VisualEffect {
     pub duration: Time,
     pub r#type: VisualEffectType,
 }
 
+#[derive(Clone)]
 pub enum VisualEffectType {
     ShaderAnimation {
         program: PathBuf,
@@ -14,10 +16,10 @@ pub enum VisualEffectType {
 }
 
 impl VisualEffectType {
-    pub fn process(&self, t: f32, resources: &Resources) -> Option<Shader> {
+    pub fn process(&self, t: f32) -> Option<Shader> {
         match self {
             VisualEffectType::ShaderAnimation { program, from, to } => Some(Shader {
-                path: program.clone(),
+                path: static_path().join(program),
                 parameters: ShaderParameters::mix(from, to, t),
                 layer: ShaderLayer::Vfx,
                 order: default(),

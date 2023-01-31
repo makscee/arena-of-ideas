@@ -29,8 +29,10 @@ impl ShaderSystem {
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
+        let visual_queue_shaders = resources.visual_queue.get_shaders();
         let shaders = <&Shader>::query()
             .iter(world)
+            .chain(visual_queue_shaders.iter())
             .sorted_by_key(|s| s.order)
             .collect_vec();
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<&Shader>> = HashMap::default();
@@ -45,7 +47,14 @@ impl ShaderSystem {
         }
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
             shaders.iter().for_each(|shader| {
-                Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!())
+                Self::draw_shader(
+                    shader,
+                    framebuffer,
+                    resources,
+                    ugli::uniforms!(
+                        u_game_time: resources.game_time,
+                    ),
+                )
             })
         }
     }
@@ -71,9 +80,6 @@ impl ShaderSystem {
             ugli::DrawMode::TriangleStrip,
             ugli::instanced(&quad, &instances_arr),
             (
-                ugli::uniforms! {
-                    u_time: 0.0,
-                },
                 geng::camera2d_uniforms(&resources.camera, framebuffer.size().map(|x| x as f32)),
                 &shader.parameters,
                 uniforms,
