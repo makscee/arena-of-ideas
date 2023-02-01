@@ -1,0 +1,12 @@
+{
+    "field": {
+        "path": "shaders/system/field.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color_1": "#000000",
+                "u_color_2": "#ffffff"
+            }
+        },
+        "layer": "Background"
+    }
+}

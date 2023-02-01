@@ -48,7 +48,10 @@ impl Game {
             .map(|template| template.create_unit_entity(world, &mut resources.statuses))
             .collect_vec();
         Self::init_statuses(resources);
+        Self::init_field(resources, world);
 
+
+        // test effects
         for _ in 0..10 {
             resources.visual_queue.add_effect(VisualEffect {
                 duration: 1.0,
@@ -121,5 +124,14 @@ impl Game {
                 .expect("Error on status Init");
             })
         })
+    }
+
+    fn init_field(resources: &mut Resources, world: &mut legion::World) {
+        let shader = resources.options.field.clone();
+        let entity = world.push((shader,));
+        world
+            .entry(entity)
+            .unwrap()
+            .add_component((EntityComponent { entity }));
     }
 }

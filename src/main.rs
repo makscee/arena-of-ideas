@@ -10,7 +10,6 @@ use anyhow::{Error, Result};
 use components::*;
 use game::*;
 use legion::query::*;
-use legion::EntityStore;
 use resources::{Resources, *};
 use std::path::PathBuf;
 use systems::*;
@@ -36,19 +35,6 @@ fn main() {
     geng::setup_panic_handler();
     let geng = setup_geng();
     let mut world = legion::World::default();
-
-    //push field
-    let entity = world.push((Shader {
-        path: static_path().join("shaders/system/field.glsl"),
-        parameters: default(),
-        layer: ShaderLayer::Background,
-        order: 0,
-    },));
-    world
-        .entry(entity)
-        .unwrap()
-        .add_component(EntityComponent { entity });
-
     let resources = Resources::new(&geng);
     let game = Game::new(world, resources);
     geng::run(&geng, game);

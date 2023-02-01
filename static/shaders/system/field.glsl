@@ -17,9 +17,12 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 v_quad_pos;
 uniform vec4 u_color_1;
+uniform vec4 u_color_2;
+uniform float u_game_time;
 
 void main() {
-    vec4 color = mix(u_color, u_color_1, float(v_quad_pos.x < .0));
-    gl_FragColor = vec4(1);
+    float t = smoothstep(-0.02, 0.02, v_quad_pos.y * sin(u_game_time * 2.) * .03 - v_quad_pos.x);
+    vec4 color = mix(u_color_1, u_color_2, t);
+    gl_FragColor = color;
 }
 #endif

@@ -1,11 +1,12 @@
 use super::*;
 
 /// Component to link to a shader program with specific parameters
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Shader {
     pub path: PathBuf, // full path
     pub parameters: ShaderParameters,
     pub layer: ShaderLayer,
+    #[serde(default)]
     pub order: i32,
 }
 
@@ -19,9 +20,19 @@ pub enum ShaderLayer {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ShaderParameters {
+    #[serde(default = "vertices_default")]
     pub vertices: usize,
+    #[serde(default = "instances_default")]
     pub instances: usize,
     pub uniforms: ShaderUniforms,
+}
+
+fn vertices_default() -> usize {
+    3
+}
+
+fn instances_default() -> usize {
+    1
 }
 
 impl Default for ShaderParameters {

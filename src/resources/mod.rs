@@ -4,6 +4,7 @@ use super::*;
 
 mod effect;
 mod event;
+mod options;
 mod shader_programs;
 mod status;
 mod trigger;
@@ -12,6 +13,7 @@ mod visual_queue;
 
 pub use effect::*;
 pub use event::*;
+pub use options::*;
 pub use shader_programs::*;
 pub use status::*;
 pub use trigger::*;
@@ -19,6 +21,8 @@ pub use visual_effect::*;
 pub use visual_queue::*;
 
 pub struct Resources {
+    pub options: Options,
+
     pub shader_programs: ShaderPrograms,
     pub down_key: Option<geng::Key>,
 
@@ -44,6 +48,13 @@ impl Resources {
             fov: 5.0,
         };
 
+        // todo: load all Resources as geng::Assets
+        let options = futures::executor::block_on(<Options as geng::LoadAsset>::load(
+            geng,
+            &static_path().join("options.json"),
+        ))
+        .unwrap();
+
         Self {
             shader_programs,
             camera,
@@ -55,6 +66,7 @@ impl Resources {
             statuses: default(),
             unit_templates: default(),
             visual_queue: default(),
+            options,
         }
     }
 
@@ -107,12 +119,18 @@ impl Resources {
         let program = futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
             &resources.geng,
             &static_path().join(file),
-        ))
-        .expect(&format!("Failed to load shader {:?}", file));
-        debug!("Load shader program {:?}", file);
-        resources
-            .shader_programs
-            .insert_program(file.clone(), program)
+        ));
+        match program {
+            Ok(program) => {
+                debug!("Load shader program {:?}", file);
+                resources
+                    .shader_programs
+                    .insert_program(file.clone(), program)
+            }
+            Err(error) => {
+                error!("Failed to load shader program {:?} {}", file, error);
+            }
+        }
     }
 
     fn load_shader_library_program(resources: &mut Resources, file: &PathBuf) {
