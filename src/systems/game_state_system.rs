@@ -14,7 +14,7 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Game => {
-                let units = <&UnitComponent>::query().iter(world).collect_vec();
+                let units = <&EntityComponent>::query().iter(world).collect_vec();
                 if units.len() > 1 && resources.action_queue.is_empty() {
                     let context = Context {
                         owner: units[0].entity,
@@ -38,7 +38,7 @@ impl System for GameStateSystem {
                         .push_back(Action::new(context, Effect::Damage { value: 1 }));
                 }
 
-                let dead_units = <(&UnitComponent, &HpComponent, &Context)>::query()
+                let dead_units = <(&EntityComponent, &HpComponent, &Context)>::query()
                     .iter(world)
                     .filter_map(|(unit, hp, context)| {
                         match hp

@@ -160,7 +160,7 @@ impl UnitTemplate {
     ) -> legion::Entity {
         let entity = world.push((Position::default(), FlagsComponent::default()));
         let mut entry = world.entry(entity).unwrap();
-        entry.add_component(UnitComponent { entity });
+        entry.add_component(EntityComponent { entity });
         let mut context = Context {
             owner: entity,
             target: entity,

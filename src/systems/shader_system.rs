@@ -30,7 +30,7 @@ impl ShaderSystem {
         framebuffer: &mut ugli::Framebuffer,
     ) {
         let mut entity_shaders = HashMap::default();
-        for (unit, shader) in <(&UnitComponent, &Shader)>::query().iter(world) {
+        for (unit, shader) in <(&EntityComponent, &Shader)>::query().iter(world) {
             entity_shaders.insert(unit.entity, shader.clone());
         }
         let shaders = resources.visual_queue.get_shaders(entity_shaders);

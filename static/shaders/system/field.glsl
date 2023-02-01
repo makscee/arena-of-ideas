@@ -20,6 +20,6 @@ uniform vec4 u_color_1;
 
 void main() {
     vec4 color = mix(u_color, u_color_1, float(v_quad_pos.x < .0));
-    gl_FragColor = vec4(color);
+    gl_FragColor = vec4(1);
 }
 #endif

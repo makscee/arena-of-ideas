@@ -10,6 +10,7 @@ use anyhow::{Error, Result};
 use components::*;
 use game::*;
 use legion::query::*;
+use legion::EntityStore;
 use resources::{Resources, *};
 use std::path::PathBuf;
 use systems::*;
@@ -37,12 +38,16 @@ fn main() {
     let mut world = legion::World::default();
 
     //push field
-    world.push((Shader {
+    let entity = world.push((Shader {
         path: static_path().join("shaders/system/field.glsl"),
         parameters: default(),
         layer: ShaderLayer::Background,
         order: 0,
     },));
+    world
+        .entry(entity)
+        .unwrap()
+        .add_component(EntityComponent { entity });
 
     let resources = Resources::new(&geng);
     let game = Game::new(world, resources);
