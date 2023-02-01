@@ -1,4 +1,4 @@
-// #include <common.glsl>
+#include <common.glsl>
 
 #ifdef VERTEX_SHADER
 out vec2 v_quad_pos;
@@ -19,7 +19,7 @@ in vec2 v_quad_pos;
 uniform vec4 u_color_1;
 
 void main() {
-    // vec4 color = mix(u_color, u_color_1, float(v_quad_pos.x < .0));
-    gl_FragColor = vec4(1);
+    vec4 color = mix(u_color, u_color_1, float(v_quad_pos.x < .0));
+    gl_FragColor = vec4(color);
 }
 #endif

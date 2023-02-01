@@ -76,6 +76,20 @@ impl Resources {
     }
 
     fn load_shader_programs(&mut self, fws: &mut FileWatcherSystem) {
+        // load & watch shader library
+        let list = futures::executor::block_on(Self::load_list(
+            &self.geng,
+            PathBuf::try_from("shaders/library/_list.json").unwrap(),
+        ));
+        for file in list {
+            fws.load_and_watch_file(
+                self,
+                &static_path().join(file),
+                Box::new(Self::load_shader_library_program),
+            );
+        }
+
+        // load & watch regular shaders
         let list = futures::executor::block_on(Self::load_list(
             &self.geng,
             PathBuf::try_from("shaders/_list.json").unwrap(),
@@ -99,6 +113,19 @@ impl Resources {
         resources
             .shader_programs
             .insert_program(file.clone(), program)
+    }
+
+    fn load_shader_library_program(resources: &mut Resources, file: &PathBuf) {
+        let program = &futures::executor::block_on(<String as geng::LoadAsset>::load(
+            &resources.geng,
+            &static_path().join(file),
+        ))
+        .expect(&format!("Failed to load shader {:?}", file));
+        debug!("Load shader library program {:?}", file);
+        resources
+            .geng
+            .shader_lib()
+            .add(file.file_name().unwrap().to_str().unwrap(), program);
     }
 
     fn load_unit_templates(&mut self) {
