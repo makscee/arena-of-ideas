@@ -7,7 +7,9 @@ use super::*;
 pub struct ShaderSystem {}
 
 impl System for ShaderSystem {
-    fn update(&mut self, _world: &mut legion::World, _resources: &mut Resources) {}
+    fn update(&mut self, world: &mut legion::World, _resources: &mut Resources) {
+        Self::refresh_contexts(world);
+    }
 
     fn draw(
         &self,
@@ -24,14 +26,34 @@ impl ShaderSystem {
         Self {}
     }
 
+    fn refresh_contexts(world: &mut legion::World) {
+        <(&mut Context, &HpComponent)>::query()
+            .iter_mut(world)
+            .for_each(|(context, component)| component.extend_vars(&mut context.vars));
+        <(&mut Context, &Position)>::query()
+            .iter_mut(world)
+            .for_each(|(context, component)| component.extend_vars(&mut context.vars));
+        <(&mut Context, &Faction)>::query()
+            .iter_mut(world)
+            .for_each(|(context, component)| component.extend_vars(&mut context.vars));
+    }
+
     pub fn draw_all_shaders(
         world: &legion::World,
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         let mut entity_shaders = HashMap::default();
-        for (unit, shader) in <(&EntityComponent, &Shader)>::query().iter(world) {
-            entity_shaders.insert(unit.entity, shader.clone());
+        for (entity, shader) in <(&EntityComponent, &Shader)>::query().iter(world) {
+            entity_shaders.insert(entity.entity, shader.clone());
+        }
+        for (entity, context, _) in <(&EntityComponent, &Context, &Shader)>::query().iter(world) {
+            if let Some(shader) = entity_shaders.get_mut(&entity.entity) {
+                shader.parameters.uniforms = shader
+                    .parameters
+                    .uniforms
+                    .merge(&context.vars.clone().into());
+            }
         }
         let shaders = resources.visual_queue.get_shaders(entity_shaders);
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();

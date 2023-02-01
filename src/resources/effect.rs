@@ -17,10 +17,10 @@ pub enum Effect {
 impl Effect {
     pub fn process(
         &self,
-        mut context: Context,
+        context: Context,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> Result<Context, Error> {
+    ) -> Result<(), Error> {
         match self {
             Effect::Damage { value } => {
                 Event::BeforeIncomingDamage.send(&context, resources)?;
@@ -33,16 +33,12 @@ impl Effect {
                 {
                     debug!("Damage Immune");
                 } else {
-                    let target_context = target.get_component::<Context>()?;
-                    context.vars = target_context.vars.extend(&context.vars);
-                    let new_hp = target
-                        .get_component_mut::<HpComponent>()?
-                        .current
-                        .change(&mut context.vars, -value)?;
+                    target.get_component_mut::<HpComponent>()?.current -= value;
                     debug!(
-                        "Target#{:?} took {} damage, new hp: {}",
-                        context.target, value, new_hp
-                    );
+                        "Entity#{:?} damage taken, new hp: {}",
+                        context.target,
+                        target.get_component::<HpComponent>()?.current
+                    )
                 }
                 Event::AfterIncomingDamage.send(&context, resources)?;
             }
@@ -83,9 +79,14 @@ impl Effect {
                     .remove(status);
             }
             Effect::AddVarInt { name, value } => {
-                context.vars.set_int(name.clone(), *value);
+                world
+                    .entry(context.target)
+                    .context("Failed to get Target")?
+                    .get_component_mut::<Context>()?
+                    .vars
+                    .insert(name.clone(), Var::Int(*value));
             }
         }
-        Ok(context)
+        Ok(())
     }
 }

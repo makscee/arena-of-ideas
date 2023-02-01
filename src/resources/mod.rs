@@ -175,8 +175,14 @@ impl UnitTemplate {
         &self,
         world: &mut legion::World,
         statuses: &mut Statuses,
+        faction: Faction,
     ) -> legion::Entity {
-        let entity = world.push((Position::default(), FlagsComponent::default()));
+        let entity = world.push((
+            Position::default(),
+            FlagsComponent::default(),
+            faction.clone(),
+            UnitComponent {},
+        ));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });
         let mut context = Context {

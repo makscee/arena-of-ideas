@@ -42,70 +42,85 @@ impl Game {
     }
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
-        let entities = resources
-            .unit_templates
-            .values()
-            .map(|template| template.create_unit_entity(world, &mut resources.statuses))
-            .collect_vec();
-        Self::init_statuses(resources);
         Self::init_field(resources, world);
-
+        Self::init_units(resources, world);
+        Self::init_statuses(resources);
 
         // test effects
-        for _ in 0..10 {
-            resources.visual_queue.add_effect(VisualEffect {
-                duration: 1.0,
-                r#type: VisualEffectType::ShaderAnimation {
-                    program: PathBuf::try_from("shaders/vfx/circle.glsl").unwrap(),
-                    parameters: default(),
-                    from: hashmap! {
-                            "u_color".to_string() => ShaderUniform::Color(Rgba::RED),
-                            "u_scale".to_string() => ShaderUniform::Float(0.3),
-                            "u_position".to_string() => ShaderUniform::Vec2(vec2(-0.8, 0.0)),
+        // for _ in 0..10 {
+        // resources.visual_queue.add_effect(VisualEffect {
+        //     duration: 1.0,
+        //     r#type: VisualEffectType::ShaderAnimation {
+        //         program: PathBuf::try_from("shaders/vfx/circle.glsl").unwrap(),
+        //         parameters: default(),
+        //         from: hashmap! {
+        //                 "u_color".to_string() => ShaderUniform::Color(Rgba::RED),
+        //                 "u_scale".to_string() => ShaderUniform::Float(0.3),
+        //                 "u_position".to_string() => ShaderUniform::Vec2(vec2(-0.8, 0.0)),
 
-                    }
-                    .into(),
-                    to: hashmap! {
-                        "u_color".to_string() => ShaderUniform::Color(Rgba::MAGENTA),
-                        "u_scale".to_string() => ShaderUniform::Float(0.1),
-                        "u_position".to_string() => ShaderUniform::Vec2(vec2(0.5, 0.0)),
-                    }
-                    .into(),
-                },
-            });
-            resources.visual_queue.add_effect(VisualEffect {
-                duration: 1.5,
-                r#type: VisualEffectType::EntityShaderAnimation {
-                    entity: entities[0],
-                    from: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(0.0,0.0))}
-                        .into(),
-                    to: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(0.0,1.0))}
-                        .into(),
-                },
-            });
-            resources.visual_queue.next_node();
-            resources.visual_queue.add_effect(VisualEffect {
-                duration: 1.0,
-                r#type: VisualEffectType::ShaderAnimation {
-                    program: PathBuf::try_from("shaders/vfx/circle.glsl").unwrap(),
-                    parameters: default(),
-                    to: hashmap! {
-                            "u_color".to_string() => ShaderUniform::Color(Rgba::RED),
-                            "u_scale".to_string() => ShaderUniform::Float(0.3),
-                            "u_position".to_string() => ShaderUniform::Vec2(vec2(-0.8, 0.0)),
+        //         }
+        //         .into(),
+        //         to: hashmap! {
+        //             "u_color".to_string() => ShaderUniform::Color(Rgba::MAGENTA),
+        //             "u_scale".to_string() => ShaderUniform::Float(0.1),
+        //             "u_position".to_string() => ShaderUniform::Vec2(vec2(0.5, 0.0)),
+        //         }
+        //         .into(),
+        //     },
+        // });
+        // resources.visual_queue.add_effect(VisualEffect {
+        //     duration: 1.5,
+        //     r#type: VisualEffectType::EntityShaderAnimation {
+        //         entity: entities[0],
+        //         from: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(0.0,0.0))}
+        //             .into(),
+        //         to: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(0.0,1.0))}
+        //             .into(),
+        //     },
+        // });
+        // resources.visual_queue.next_node();
+        // resources.visual_queue.add_effect(VisualEffect {
+        //     duration: 1.0,
+        //     r#type: VisualEffectType::ShaderAnimation {
+        //         program: PathBuf::try_from("shaders/vfx/circle.glsl").unwrap(),
+        //         parameters: default(),
+        //         to: hashmap! {
+        //                 "u_color".to_string() => ShaderUniform::Color(Rgba::RED),
+        //                 "u_scale".to_string() => ShaderUniform::Float(0.3),
+        //                 "u_position".to_string() => ShaderUniform::Vec2(vec2(-0.8, 0.0)),
 
-                    }
-                    .into(),
-                    from: hashmap! {
-                        "u_color".to_string() => ShaderUniform::Color(Rgba::MAGENTA),
-                        "u_scale".to_string() => ShaderUniform::Float(0.1),
-                        "u_position".to_string() => ShaderUniform::Vec2(vec2(0.5, 0.0)),
-                    }
-                    .into(),
-                },
-            });
-            resources.visual_queue.next_node();
-        }
+        //         }
+        //         .into(),
+        //         from: hashmap! {
+        //             "u_color".to_string() => ShaderUniform::Color(Rgba::MAGENTA),
+        //             "u_scale".to_string() => ShaderUniform::Float(0.1),
+        //             "u_position".to_string() => ShaderUniform::Vec2(vec2(0.5, 0.0)),
+        //         }
+        //         .into(),
+        //     },
+        // });
+        // resources.visual_queue.next_node();
+        // }
+    }
+
+    fn init_units(resources: &mut Resources, world: &mut legion::World) {
+        let left = resources.unit_templates.values().collect_vec()[0].create_unit_entity(
+            world,
+            &mut resources.statuses,
+            Faction::Light,
+        );
+        let mut left = world.entry(left).unwrap();
+        left.get_component_mut::<Position>().unwrap().0 = vec2(-1.0, 0.0);
+
+        let right = resources.unit_templates.values().collect_vec()[0].create_unit_entity(
+            world,
+            &mut resources.statuses,
+            Faction::Dark,
+        );
+        let mut right = world.entry(right).unwrap();
+        right.get_component_mut::<Position>().unwrap().0 = vec2(1.0, 0.0);
+        right.get_component_mut::<HpComponent>().unwrap().current = 10;
+        right.get_component_mut::<HpComponent>().unwrap().max = 10;
     }
 
     fn init_statuses(resources: &mut Resources) {

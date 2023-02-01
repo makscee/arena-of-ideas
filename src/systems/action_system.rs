@@ -19,28 +19,7 @@ impl System for ActionSystem {
             .effect
             .process(action.context.clone(), world, resources)
         {
-            Ok(context) => {
-                if let Some(mut target) = world.entry(context.target) {
-                    target
-                        .get_component_mut::<Context>()
-                        .expect(&format!(
-                            "No Context component on Target#{:?}",
-                            context.target
-                        ))
-                        .vars
-                        .update_self(&context.vars);
-                }
-                if let Some((name, entity)) = context.status {
-                    if let Some(status_context) = resources
-                        .statuses
-                        .active_statuses
-                        .get_mut(&entity)
-                        .and_then(|entry| entry.get_mut(&name))
-                    {
-                        status_context.vars.override_self(&context.vars);
-                    }
-                }
-            }
+            Ok(_) => {}
             Err(error) => error!("Effect proectss error: {}", error),
         }
     }

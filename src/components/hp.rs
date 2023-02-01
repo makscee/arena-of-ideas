@@ -2,19 +2,19 @@ use super::*;
 
 pub type Hp = i32;
 pub struct HpComponent {
-    pub current: VarInt,
-    pub max: VarInt,
+    pub current: Hp,
+    pub max: Hp,
 }
 
 impl HpComponent {
     pub fn new(context: &mut Context, max: Hp) -> Self {
-        let current_var = VarInt::new(VarName::Hp_current);
-        let max_var = VarInt::new(VarName::Hp_max);
-        max_var.set(&mut context.vars, max);
-        current_var.set(&mut context.vars, max);
-        Self {
-            current: current_var,
-            max: max_var,
-        }
+        Self { current: max, max }
+    }
+}
+
+impl VarsProvider for HpComponent {
+    fn extend_vars(&self, vars: &mut Vars) {
+        vars.insert(VarName::Hp_current, Var::Int(self.current));
+        vars.insert(VarName::Hp_max, Var::Int(self.max));
     }
 }

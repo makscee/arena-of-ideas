@@ -3,21 +3,25 @@ use super::*;
 mod attack;
 mod context;
 mod entity;
+mod faction;
 mod flags;
 mod game_state;
 mod hp;
 mod position;
 mod shader;
+mod unit;
 mod vars;
 
 pub use attack::*;
 pub use context::*;
 pub use entity::*;
+pub use faction::*;
 pub use flags::*;
 pub use game_state::*;
 pub use hp::*;
 pub use position::*;
 pub use shader::*;
+pub use unit::*;
 pub use vars::*;
 
 /// Components that can be deserialized from json
