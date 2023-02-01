@@ -1,10 +1,14 @@
 [
     {
         "component": "Hp",
-        "max": 5
+        "max": 10
     },
     {
         "component": "Attack",
-        "value": 2
+        "value": 3
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl"
     }
 ]

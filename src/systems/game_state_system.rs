@@ -14,45 +14,7 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Game => {
-                let units = <(&UnitComponent, &EntityComponent)>::query()
-                    .iter(world)
-                    .collect_vec();
-                if units.len() > 1 && resources.action_queue.is_empty() {
-                    let context = Context {
-                        owner: units[0].1.entity,
-                        target: units[1].1.entity,
-                        creator: units[0].1.entity,
-                        vars: default(),
-                        status: default(),
-                    };
-                    resources
-                        .action_queue
-                        .push_back(Action::new(context, Effect::Damage { value: 1 }));
-                    let context = Context {
-                        owner: units[1].1.entity,
-                        target: units[0].1.entity,
-                        creator: units[1].1.entity,
-                        vars: default(),
-                        status: default(),
-                    };
-                    resources
-                        .action_queue
-                        .push_back(Action::new(context, Effect::Damage { value: 1 }));
-                }
-
-                let dead_units = <(&EntityComponent, &HpComponent)>::query()
-                    .iter(world)
-                    .filter_map(|(unit, hp)| match hp.current <= 0 {
-                        true => Some(unit.entity),
-                        false => None,
-                    })
-                    .collect_vec();
-                if !dead_units.is_empty() {
-                    dead_units.iter().for_each(|entity| {
-                        debug!("Entity#{:?} dead", entity);
-                        world.remove(*entity);
-                    });
-                }
+                BattleSystem::tick(world, resources);
             }
         }
 

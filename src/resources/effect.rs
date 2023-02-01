@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
-    Damage { value: Hp },
+    Damage { value: Option<Hp> },
     Repeat { count: usize, effect: Box<Effect> },
     List { effects: Vec<Box<Effect>> },
     Debug { message: String },
@@ -27,6 +27,14 @@ impl Effect {
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
+                let value = match value {
+                    Some(v) => *v,
+                    None => target
+                        .get_component::<AttackComponent>()
+                        .context("Failed to get Attack component")?
+                        .value
+                        .clone(),
+                };
                 if target
                     .get_component::<FlagsComponent>()?
                     .has_flag(&Flag::DamageImmune)

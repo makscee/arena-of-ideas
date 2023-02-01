@@ -3,6 +3,7 @@ use self::time_system::TimeSystem;
 use super::*;
 
 mod action_system;
+mod battle_system;
 mod file_watcher_system;
 mod game_state_system;
 mod shader_system;
@@ -10,6 +11,7 @@ mod time_system;
 mod visual_queue_system;
 
 pub use action_system::*;
+pub use battle_system::*;
 pub use file_watcher_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
@@ -112,15 +114,13 @@ impl Game {
         let mut left = world.entry(left).unwrap();
         left.get_component_mut::<Position>().unwrap().0 = vec2(-1.0, 0.0);
 
-        let right = resources.unit_templates.values().collect_vec()[0].create_unit_entity(
+        let right = resources.unit_templates.values().collect_vec()[1].create_unit_entity(
             world,
             &mut resources.statuses,
             Faction::Dark,
         );
         let mut right = world.entry(right).unwrap();
         right.get_component_mut::<Position>().unwrap().0 = vec2(1.0, 0.0);
-        right.get_component_mut::<HpComponent>().unwrap().current = 10;
-        right.get_component_mut::<HpComponent>().unwrap().max = 10;
     }
 
     fn init_statuses(resources: &mut Resources) {

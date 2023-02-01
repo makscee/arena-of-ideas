@@ -1,11 +1,11 @@
 [
     {
         "component": "Hp",
-        "max": 3
+        "max": 5
     },
     {
         "component": "Attack",
-        "value": 2
+        "value": 1
     },
     {
         "component": "Shader",

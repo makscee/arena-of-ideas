@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, PartialEq)]
 pub enum Faction {
     Light,
     Dark,
