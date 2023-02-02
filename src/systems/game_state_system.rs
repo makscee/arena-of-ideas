@@ -13,12 +13,10 @@ impl System for GameStateSystem {
                     self.transition = GameState::Game;
                 }
             }
-            GameState::Game => {
-                BattleSystem::tick(world, resources);
-            }
+            GameState::Game => {}
         }
 
-        self.transition();
+        self.transition(world, resources);
     }
 
     fn draw(
@@ -46,7 +44,7 @@ impl GameStateSystem {
         }
     }
 
-    fn transition(&mut self) {
+    fn transition(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if self.current == self.transition {
             return;
         }
@@ -59,7 +57,11 @@ impl GameStateSystem {
         //transition to
         match self.transition {
             GameState::MainMenu => {}
-            GameState::Game => {}
+            GameState::Game => {
+                BattleSystem::init_battle(world, resources);
+                while BattleSystem::tick(world, resources) {}
+                BattleSystem::finish_battle(world);
+            }
         }
 
         self.current = self.transition.clone();

@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use super::*;
 
+mod cassette;
 mod effect;
 mod event;
 mod options;
@@ -9,8 +10,8 @@ mod shader_programs;
 mod status;
 mod trigger;
 mod visual_effect;
-mod visual_queue;
 
+pub use cassette::*;
 pub use effect::*;
 pub use event::*;
 pub use options::*;
@@ -18,7 +19,6 @@ pub use shader_programs::*;
 pub use status::*;
 pub use trigger::*;
 pub use visual_effect::*;
-pub use visual_queue::*;
 
 pub struct Resources {
     pub options: Options,
@@ -30,7 +30,7 @@ pub struct Resources {
     pub delta_time: Time,
     pub statuses: Statuses,
     pub action_queue: VecDeque<Action>,
-    pub visual_queue: VisualQueue,
+    pub cassette: Cassette,
 
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
@@ -65,7 +65,7 @@ impl Resources {
             action_queue: default(),
             statuses: default(),
             unit_templates: default(),
-            visual_queue: default(),
+            cassette: default(),
             options,
         }
     }

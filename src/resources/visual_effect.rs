@@ -1,12 +1,12 @@
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VisualEffect {
     pub duration: Time,
     pub r#type: VisualEffectType,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum VisualEffectType {
     ShaderAnimation {
         program: PathBuf,
@@ -18,6 +18,10 @@ pub enum VisualEffectType {
         entity: legion::Entity,
         from: ShaderUniforms,
         to: ShaderUniforms,
+    },
+    EntityShaderConst {
+        entity: legion::Entity,
+        uniforms: ShaderUniforms,
     },
 }
 
@@ -48,6 +52,12 @@ impl VisualEffectType {
                         .parameters
                         .uniforms
                         .merge(&ShaderUniforms::mix(from, to, t));
+                }
+                None
+            }
+            VisualEffectType::EntityShaderConst { entity, uniforms } => {
+                if let Some(shader) = entity_shaders.get_mut(entity) {
+                    shader.parameters.uniforms = shader.parameters.uniforms.merge(&uniforms);
                 }
                 None
             }

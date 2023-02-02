@@ -1,15 +1,14 @@
 use std::collections::hash_map::Entry;
 
 use geng::prelude::itertools::Itertools;
+use legion::EntityStore;
 
 use super::*;
 
 pub struct ShaderSystem {}
 
 impl System for ShaderSystem {
-    fn update(&mut self, world: &mut legion::World, _resources: &mut Resources) {
-        Self::refresh_contexts(world);
-    }
+    fn update(&mut self, world: &mut legion::World, _resources: &mut Resources) {}
 
     fn draw(
         &self,
@@ -26,16 +25,20 @@ impl ShaderSystem {
         Self {}
     }
 
-    fn refresh_contexts(world: &mut legion::World) {
-        <(&mut Context, &HpComponent)>::query()
-            .iter_mut(world)
-            .for_each(|(context, component)| component.extend_vars(&mut context.vars));
-        <(&mut Context, &Position)>::query()
-            .iter_mut(world)
-            .for_each(|(context, component)| component.extend_vars(&mut context.vars));
-        <(&mut Context, &Faction)>::query()
-            .iter_mut(world)
-            .for_each(|(context, component)| component.extend_vars(&mut context.vars));
+    /// Get Shader component and merge Context into it's vars if any
+    pub fn get_entity_shader(world: &legion::World, entity: legion::Entity) -> Shader {
+        let mut shader = world
+            .entry_ref(entity)
+            .expect("Failed to find Entry")
+            .get_component::<Shader>()
+            .unwrap()
+            .clone();
+        let context = Context::construct_context(&entity, world);
+        shader.parameters.uniforms = shader
+            .parameters
+            .uniforms
+            .merge(&context.vars.clone().into());
+        shader
     }
 
     pub fn draw_all_shaders(
@@ -43,19 +46,12 @@ impl ShaderSystem {
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        let mut entity_shaders = HashMap::default();
-        for (entity, shader) in <(&EntityComponent, &Shader)>::query().iter(world) {
-            entity_shaders.insert(entity.entity, shader.clone());
-        }
-        for (entity, context, _) in <(&EntityComponent, &Context, &Shader)>::query().iter(world) {
-            if let Some(shader) = entity_shaders.get_mut(&entity.entity) {
-                shader.parameters.uniforms = shader
-                    .parameters
-                    .uniforms
-                    .merge(&context.vars.clone().into());
-            }
-        }
-        let shaders = resources.visual_queue.get_shaders(entity_shaders);
+        // Get all Shader components from World for drawing
+        let world_shaders = <(&Shader, &EntityComponent)>::query()
+            .iter(world)
+            .map(|(_, entity)| Self::get_entity_shader(world, entity.entity))
+            .collect_vec();
+        let shaders = [world_shaders, resources.cassette.get_shaders()].concat();
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
         let emtpy_vec: Vec<Shader> = Vec::new();
         for shader in shaders {

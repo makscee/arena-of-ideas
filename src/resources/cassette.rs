@@ -1,0 +1,109 @@
+use geng::prelude::itertools::Itertools;
+
+use super::*;
+
+pub struct Cassette {
+    pub current_ts: Time,
+    queue: Vec<CassetteNode>,
+    pub node_template: CassetteNode, // any new node will be cloned from this
+}
+
+impl Default for Cassette {
+    fn default() -> Self {
+        Self {
+            current_ts: default(),
+            queue: vec![default()],
+            node_template: default(),
+        }
+    }
+}
+
+impl Cassette {
+    pub fn close_node(&mut self) {
+        let node = self.queue.last().unwrap();
+        let start = node.start + node.duration;
+        if node.duration == 0.0 {
+            self.queue.pop();
+        }
+        let mut new_node = self.node_template.clone();
+        new_node.start = start;
+        self.queue.push(new_node);
+    }
+
+    pub fn add_effect(&mut self, effect: VisualEffect) {
+        self.queue.last_mut().unwrap().add_effect(effect);
+    }
+
+    pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
+        self.queue
+            .last_mut()
+            .unwrap()
+            .add_entity_shader(entity, shader);
+    }
+
+    pub fn get_shaders(&self) -> Vec<Shader> {
+        let node = self.get_node_at_ts(self.current_ts);
+        let time = self.current_ts - node.start;
+        let mut shaders: Vec<Shader> = default();
+        let mut entity_shaders = node.entity_shaders.clone();
+        for effect in node.effects.iter() {
+            if effect.duration > 0.0 && time > effect.duration {
+                continue;
+            }
+            shaders.extend(
+                effect
+                    .r#type
+                    .process(time / effect.duration, &mut entity_shaders),
+            );
+        }
+        [entity_shaders.into_values().collect_vec(), shaders].concat()
+    }
+
+    pub fn length(&self) -> Time {
+        let last = self.queue.last().unwrap();
+        last.start + last.duration
+    }
+
+    fn get_node_at_ts(&self, ts: Time) -> &CassetteNode {
+        let index = match self
+            .queue
+            .binary_search_by_key(&r32(ts), |node| r32(node.start))
+        {
+            Ok(index) => index,
+            Err(index) => index - 1,
+        };
+        if let Some(node) = self.queue.get(index) {
+            node
+        } else {
+            &self.queue.last().unwrap()
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+
+pub struct CassetteNode {
+    start: Time,
+    duration: Time,
+    entity_shaders: HashMap<legion::Entity, Shader>,
+    effects: Vec<VisualEffect>,
+}
+
+impl CassetteNode {
+    pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
+        self.entity_shaders.insert(entity, shader);
+    }
+    pub fn add_effect(&mut self, effect: VisualEffect) {
+        self.duration = self.duration.max(effect.duration);
+        self.effects.push(effect);
+    }
+    pub fn clear(&mut self) {
+        self.start = default();
+        self.duration = default();
+        self.entity_shaders.clear();
+        self.effects.clear();
+    }
+    pub fn clear_entities(&mut self) {
+        self.entity_shaders.clear();
+    }
+}
