@@ -56,12 +56,24 @@ impl Cassette {
                     .process(time / effect.duration, &mut entity_shaders),
             );
         }
-        [entity_shaders.into_values().collect_vec(), shaders].concat()
+        let mut shaders = [entity_shaders.into_values().collect_vec(), shaders].concat();
+        shaders.iter_mut().for_each(|shader| {
+            shader
+                .parameters
+                .uniforms
+                .insert("u_game_time".to_string(), ShaderUniform::Float(self.head))
+        });
+
+        shaders
     }
 
     pub fn length(&self) -> Time {
         let last = self.queue.last().unwrap();
         last.start + last.duration
+    }
+
+    pub fn last_start(&self) -> Time {
+        self.queue.last().unwrap().start
     }
 
     pub fn get_skip_ts(&self, from_ts: Time, right: bool) -> Time {

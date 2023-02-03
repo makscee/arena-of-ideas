@@ -1,23 +1,16 @@
 uniform vec4 u_color;
-uniform vec4 u_clan_color_1 = vec4(0.250, 0, 0.501, 1);
-uniform vec4 u_clan_color_2 = vec4(0.117, 0.564, 1, 1);
-uniform vec4 u_clan_color_3 = vec4(0.501, 0, 0.250, 1);
-uniform int u_clan_count = 3;
 uniform int u_faction = -1;
+uniform float u_game_time;
 
-float clanCountF;
-vec3 colors[3];
-vec3 parent_faction_color;
-vec3 parent_enemy_faction_color;
 vec3 faction_color;
 
 void commonInit() {
     faction_color = mix(vec3(0), vec3(1), (1. + float(u_faction)) * .5);
 }
 
-vec4 getColor() {
-    return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color.rgb) > 0));
-}
+// vec4 getColor() {
+//     return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color.rgb) > 0));
+// }
 
 vec4 alphaBlend(vec4 c1, vec4 c2) {
     return vec4(mix(c1.rgb, c2.rgb, c2.a), clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
@@ -62,29 +55,29 @@ float vecAngle(vec2 v) {
     return (r + float(v.x > 0.) * (PI - r) * 2.);
 }
 
-vec3 mixColors(float t) {
-    t += float(t < 0.);
-    int colorInd = int(t * clanCountF);
-    vec3 c1 = colors[colorInd];
-    vec3 c2 = colors[(colorInd + 1) % u_clan_count];
-    return mix(c1, c2, t * clanCountF - float(colorInd));
-}
+// vec3 mixColors(float t) {
+//     t += float(t < 0.);
+//     int colorInd = int(t * clanCountF);
+//     vec3 c1 = colors[colorInd];
+//     vec3 c2 = colors[(colorInd + 1) % u_clan_count];
+//     return mix(c1, c2, t * clanCountF - float(colorInd));
+// }
 
-vec3 mix3Colors(float t, vec3 colors[3]) {
-    t += float(t < 0.);
-    int colorInd = int(t * 3);
-    vec3 c1 = colors[colorInd];
-    vec3 c2 = colors[(colorInd + 1) % 3];
-    return mix(c1, c2, t * 3 - float(colorInd));
-}
+// vec3 mix3Colors(float t, vec3 colors[3]) {
+//     t += float(t < 0.);
+//     int colorInd = int(t * 3);
+//     vec3 c1 = colors[colorInd];
+//     vec3 c2 = colors[(colorInd + 1) % 3];
+//     return mix(c1, c2, t * 3 - float(colorInd));
+// }
 
-vec3 mix2Colors(float t, vec3 colors[2]) {
-    t += float(t < 0.);
-    int colorInd = int(t * 2);
-    vec3 c1 = colors[colorInd];
-    vec3 c2 = colors[(colorInd + 1) % 3];
-    return mix(c1, c2, t * 2 - float(colorInd));
-}
+// vec3 mix2Colors(float t, vec3 colors[2]) {
+//     t += float(t < 0.);
+//     int colorInd = int(t * 2);
+//     vec3 c1 = colors[colorInd];
+//     vec3 c2 = colors[(colorInd + 1) % 3];
+//     return mix(c1, c2, t * 2 - float(colorInd));
+// }
 
 vec3 hueShift(vec3 color, float hueAdjust) // hue in radians
 {

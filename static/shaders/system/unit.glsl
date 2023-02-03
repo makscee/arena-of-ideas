@@ -23,22 +23,25 @@ in vec2 v_quad_pos;
 
 uniform int u_hp_current;
 uniform int u_hp_max;
+uniform float u_hp_last_dmg;
 
 const float THICKNESS = 0.04;
-const float SPREAD = 0.1;
-const float GLOW = 0.2;
+const float SPREAD = 0.2;
+const float GLOW = 0.3;
 
 void main() {
-    float len = abs(1. - length(v_quad_pos));
-    float hp_part = float(u_hp_current) / float(u_hp_max);
+    float len = length(v_quad_pos) - 1.;
     if(len > THICKNESS + SPREAD)
         discard;
-    if(len < THICKNESS * .5 && (v_quad_pos.y + 1.) * .5 > hp_part) {
-        discard;
-    }
+    float hp_part = float(u_hp_current) / float(u_hp_max);
+    float dmg_t = (1. - u_game_time + u_hp_last_dmg) * 2. - 1.;
+    dmg_t = dmg_t * dmg_t * dmg_t;
     commonInit();
-    float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, len), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, len));
+    float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
     vec4 color = vec4(faction_color, alpha);
+    if(dmg_t > 0. && len < 0.) {
+        color = alphaBlend(color, vec4(faction_color.rgb, dmg_t));
+    }
     gl_FragColor = color;
 }
 #endif

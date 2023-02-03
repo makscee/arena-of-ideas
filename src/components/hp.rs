@@ -23,7 +23,7 @@ impl HpComponent {
 
     pub fn set_current(&mut self, current: Hp, resources: &Resources) {
         if current < self.current {
-            self.last_dmg = resources.game_time;
+            self.last_dmg = resources.cassette.last_start();
         }
         self.current = current;
     }

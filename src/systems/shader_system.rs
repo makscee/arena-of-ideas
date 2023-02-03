@@ -64,14 +64,7 @@ impl ShaderSystem {
         }
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
             shaders.iter().for_each(|shader| {
-                Self::draw_shader(
-                    shader,
-                    framebuffer,
-                    resources,
-                    ugli::uniforms!(
-                        u_game_time: resources.game_time,
-                    ),
-                )
+                Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!())
             })
         }
     }
