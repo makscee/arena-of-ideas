@@ -45,7 +45,7 @@ impl Resources {
         let camera = geng::Camera2d {
             center: vec2(0.0, 0.0),
             rotation: 0.0,
-            fov: 5.0,
+            fov: 10.0,
         };
 
         // todo: load all Resources as geng::Assets
