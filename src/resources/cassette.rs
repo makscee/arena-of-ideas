@@ -64,9 +64,9 @@ impl Cassette {
         last.start + last.duration
     }
 
-    pub fn get_skip_ts(&self, current_ts: Time, right: bool) -> Time {
+    pub fn get_skip_ts(&self, from_ts: Time, right: bool) -> Time {
         let node = self.get_node_at_ts(
-            current_ts
+            from_ts
                 + match right {
                     true => 0.001,
                     false => -0.001,

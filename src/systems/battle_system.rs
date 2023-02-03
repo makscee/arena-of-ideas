@@ -129,7 +129,7 @@ impl BattleSystem {
 
             let dead_units = <(&EntityComponent, &HpComponent)>::query()
                 .iter(world)
-                .filter_map(|(unit, hp)| match hp.current <= 0 {
+                .filter_map(|(unit, hp)| match hp.current() <= 0 {
                     true => Some(unit.entity),
                     false => None,
                 })

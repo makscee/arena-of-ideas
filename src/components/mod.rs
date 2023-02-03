@@ -60,7 +60,7 @@ impl Component {
         context: &mut Context,
     ) {
         match self {
-            Component::Hp { max } => entry.add_component(HpComponent::new(context, *max)),
+            Component::Hp { max } => entry.add_component(HpComponent::new(*max)),
             Component::Attack { value } => entry.add_component(AttackComponent::new(*value)),
             Component::StatusContainer { statuses } => {
                 let mut entity_statuses = all_statuses

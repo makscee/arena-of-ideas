@@ -41,11 +41,13 @@ impl Effect {
                 {
                     debug!("Damage Immune");
                 } else {
-                    target.get_component_mut::<HpComponent>()?.current -= value;
+                    let hp = target.get_component_mut::<HpComponent>()?;
+                    hp.set_current(hp.current() - value, resources);
                     debug!(
-                        "Entity#{:?} damage taken, new hp: {}",
+                        "Entity#{:?} {} damage taken, new hp: {}",
                         context.target,
-                        target.get_component::<HpComponent>()?.current
+                        value,
+                        hp.current()
                     )
                 }
                 Event::AfterIncomingDamage.send(&context, resources)?;

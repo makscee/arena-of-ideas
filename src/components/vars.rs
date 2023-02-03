@@ -3,11 +3,28 @@ use super::*;
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum VarName {
     Damage,
-    Hp_max,
-    Hp_current,
+    HpMax,
+    HpCurrent,
+    HpLastDmg,
     Position,
     Test,
     Faction,
+}
+
+impl VarName {
+    fn convert_to_uniform(&self) -> String {
+        let mut name = "u".to_string();
+        for c in self.to_string().chars() {
+            if c.is_uppercase() {
+                name.push('_');
+                name.extend(c.to_lowercase());
+            } else {
+                name.push(c);
+            }
+        }
+
+        name
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -35,7 +52,7 @@ impl From<Vars> for ShaderUniforms {
     fn from(value: Vars) -> Self {
         let mut map: HashMap<String, ShaderUniform> = default();
         value.0.iter().for_each(|(name, value)| {
-            let name = "u_".to_owned() + &name.to_string().to_lowercase();
+            let name = name.convert_to_uniform();
             match value {
                 Var::Int(v) => {
                     map.insert(name, ShaderUniform::Int(*v));
