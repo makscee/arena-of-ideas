@@ -3,7 +3,7 @@ use geng::prelude::itertools::Itertools;
 use super::*;
 
 pub struct Cassette {
-    pub current_ts: Time,
+    pub head: Time,
     queue: Vec<CassetteNode>,
     pub node_template: CassetteNode, // any new node will be cloned from this
 }
@@ -11,7 +11,7 @@ pub struct Cassette {
 impl Default for Cassette {
     fn default() -> Self {
         Self {
-            current_ts: default(),
+            head: default(),
             queue: vec![default()],
             node_template: default(),
         }
@@ -42,8 +42,8 @@ impl Cassette {
     }
 
     pub fn get_shaders(&self) -> Vec<Shader> {
-        let node = self.get_node_at_ts(self.current_ts);
-        let time = self.current_ts - node.start;
+        let node = self.get_node_at_ts(self.head);
+        let time = self.head - node.start;
         let mut shaders: Vec<Shader> = default();
         let mut entity_shaders = node.entity_shaders.clone();
         for effect in node.effects.iter() {
@@ -62,6 +62,21 @@ impl Cassette {
     pub fn length(&self) -> Time {
         let last = self.queue.last().unwrap();
         last.start + last.duration
+    }
+
+    pub fn get_skip_ts(&self, current_ts: Time, right: bool) -> Time {
+        let node = self.get_node_at_ts(
+            current_ts
+                + match right {
+                    true => 0.001,
+                    false => -0.001,
+                },
+        );
+        if right {
+            node.start + node.duration
+        } else {
+            node.start
+        }
     }
 
     fn get_node_at_ts(&self, ts: Time) -> &CassetteNode {
