@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Deserialize)]
 pub struct Options {
+    pub fov: f32,
     pub field: Shader,
 }
 

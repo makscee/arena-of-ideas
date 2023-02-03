@@ -42,11 +42,6 @@ pub struct Resources {
 impl Resources {
     pub fn new(geng: &Geng) -> Self {
         let shader_programs = ShaderPrograms::new();
-        let camera = geng::Camera2d {
-            center: vec2(0.0, 0.0),
-            rotation: 0.0,
-            fov: 10.0,
-        };
 
         // todo: load all Resources as geng::Assets
         let options = futures::executor::block_on(<Options as geng::LoadAsset>::load(
@@ -54,6 +49,11 @@ impl Resources {
             &static_path().join("options.json"),
         ))
         .unwrap();
+        let camera = geng::Camera2d {
+            center: vec2(0.0, 0.0),
+            rotation: 0.0,
+            fov: options.fov,
+        };
 
         Self {
             shader_programs,

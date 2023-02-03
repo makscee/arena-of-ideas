@@ -1,4 +1,5 @@
 {
+    "fov": 12.0,
     "field": {
         "path": "shaders/system/field.glsl",
         "parameters": {
