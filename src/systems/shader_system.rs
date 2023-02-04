@@ -57,7 +57,7 @@ impl ShaderSystem {
             .map(|(_, entity)| Self::get_entity_shader(world, entity.entity))
             .collect_vec();
         let shaders = [
-            world_shaders,
+            // world_shaders,
             resources.cassette.get_shaders(),
             vec![resources.options.stats.clone()],
         ]
@@ -86,6 +86,7 @@ impl ShaderSystem {
     }
 
     fn get_text_texture(&self, text: &String, resources: &Resources) -> ugli::Texture {
+        let text = &"Test test test test".to_string();
         let font = resources.geng.default_font();
         let ugli = resources.geng.ugli();
         let mut texture = ugli::Texture::new_uninitialized(

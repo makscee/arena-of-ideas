@@ -27,7 +27,7 @@ impl System for GameStateSystem {
     ) {
         match self.current {
             GameState::MainMenu => {
-                ugli::clear(framebuffer, Some(Rgba::BLUE), None, None);
+                ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
             }
             GameState::Game => {
                 ugli::clear(framebuffer, Some(Rgba::RED), None, None);
