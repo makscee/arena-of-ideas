@@ -35,7 +35,7 @@ impl Game {
 
         let mut systems: Vec<Box<dyn System>> = Vec::default();
         systems.push(Box::new(GameStateSystem::new(GameState::MainMenu)));
-        systems.push(Box::new(ShaderSystem::new()));
+        systems.push(Box::new(ShaderSystem::new(&resources.geng)));
         systems.push(Box::new(fws));
         systems.push(Box::new(TimeSystem::new()));
         systems.push(Box::new(ActionSystem::new()));
