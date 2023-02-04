@@ -30,6 +30,10 @@ fn setup_geng() -> Geng {
     geng
 }
 
+fn static_path() -> PathBuf {
+    run_dir().join("static")
+}
+
 fn main() {
     logger::init().unwrap();
     geng::setup_panic_handler();

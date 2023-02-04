@@ -142,9 +142,9 @@ impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
 pub enum ShaderUniform {
     Int(i32),
     Float(f32),
-    Vec2(Vec2<f32>),
-    Vec3(Vec3<f32>),
-    Vec4(Vec4<f32>),
+    Vec2(vec2<f32>),
+    Vec3(vec3<f32>),
+    Vec4(vec4<f32>),
     Color(Rgba<f32>),
     String(String),
 }

@@ -1,6 +1,6 @@
 use super::*;
 
-pub struct Position(pub Vec2<f32>);
+pub struct Position(pub vec2<f32>);
 
 impl VarsProvider for Position {
     fn extend_vars(&self, vars: &mut Vars) {
@@ -10,6 +10,6 @@ impl VarsProvider for Position {
 
 impl Default for Position {
     fn default() -> Self {
-        Self(Vec2::ZERO)
+        Self(vec2::ZERO)
     }
 }

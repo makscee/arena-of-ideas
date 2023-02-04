@@ -75,8 +75,11 @@ impl ShaderSystem {
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
             shaders.iter().for_each(|shader| {
                 if let Some((key, value)) = shader.parameters.uniforms.find_string() {
-                    let uniforms =
-                        &ugli::uniforms!(u_text_texture: self.get_text_texture(&value, resources));
+                    let texture = self.get_text_texture(&value, resources);
+                    let uniforms = &ugli::uniforms!(
+                        u_texture_size: texture.size().map(|x| x as f32),
+                        u_text_texture: texture,
+                    );
                     Self::draw_shader(shader, framebuffer, resources, uniforms);
                 } else {
                     Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!());
@@ -86,16 +89,20 @@ impl ShaderSystem {
     }
 
     fn get_text_texture(&self, text: &String, resources: &Resources) -> ugli::Texture {
-        let text = &"Test test test test".to_string();
+        let text = &"69".to_string();
         let font = resources.geng.default_font();
         let ugli = resources.geng.ugli();
-        let mut texture = ugli::Texture::new_uninitialized(
-            ugli,
-            (font.measure_bounding_box(text).unwrap().size() * 100.0).map(|x| x as usize),
-        );
+        let text_bb = font.measure_bounding_box(text).unwrap();
+        let mut texture =
+            ugli::Texture::new_uninitialized(ugli, (text_bb.size() * 500.0).map(|x| x as usize));
         let framebuffer =
             &mut ugli::Framebuffer::new_color(ugli, ugli::ColorAttachment::Texture(&mut texture));
-        ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_WHITE), None, None);
+        ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_BLACK), None, None);
+        let camera = geng::Camera2d {
+            center: text_bb.center(),
+            rotation: 0.0,
+            fov: 1.0,
+        };
         font.draw_with(text, |glyphs, atlas| {
             ugli::draw(
                 framebuffer,
@@ -104,7 +111,7 @@ impl ShaderSystem {
                 ugli::instanced(
                     &ugli::VertexBuffer::new_dynamic(
                         ugli,
-                        AABB::point(Vec2::ZERO)
+                        Aabb2::point(vec2::ZERO)
                             .extend_positive(vec2(1.0, 1.0))
                             .corners()
                             .into_iter()
@@ -117,10 +124,7 @@ impl ShaderSystem {
                     ugli::uniforms! {
                         u_texture: atlas,
                     },
-                    geng::camera2d_uniforms(
-                        &resources.camera,
-                        framebuffer.size().map(|x| x as f32),
-                    ),
+                    geng::camera2d_uniforms(&camera, framebuffer.size().map(|x| x as f32)),
                 ),
                 ugli::DrawParameters {
                     blend_mode: Some(ugli::BlendMode::default()),
