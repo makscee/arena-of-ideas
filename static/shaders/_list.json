@@ -1,5 +1,6 @@
 [
     "shaders/system/unit.glsl",
     "shaders/system/field.glsl",
+    "shaders/system/stats.glsl",
     "shaders/vfx/circle.glsl"
 ]

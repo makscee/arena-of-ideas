@@ -4,6 +4,7 @@ use super::*;
 pub struct Options {
     pub fov: f32,
     pub field: Shader,
+    pub stats: Shader,
 }
 
 impl geng::LoadAsset for Options {

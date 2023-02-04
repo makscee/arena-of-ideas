@@ -4,6 +4,7 @@ use super::*;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Shader {
     pub path: PathBuf, // full path
+    #[serde(default)]
     pub parameters: ShaderParameters,
     pub layer: ShaderLayer,
     #[serde(default)]
@@ -119,6 +120,15 @@ impl ShaderUniforms {
     pub fn get(&self, key: &String) -> Option<&ShaderUniform> {
         self.0.get(key)
     }
+    pub fn find_string(&self) -> Option<(String, String)> {
+        for (key, value) in self.0.iter() {
+            match value {
+                ShaderUniform::String(value) => return Some((key.to_string(), value.to_string())),
+                _ => {}
+            }
+        }
+        None
+    }
 }
 
 impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
@@ -136,6 +146,7 @@ pub enum ShaderUniform {
     Vec3(Vec3<f32>),
     Vec4(Vec4<f32>),
     Color(Rgba<f32>),
+    String(String),
 }
 
 impl ugli::Uniform for ShaderUniform {
@@ -147,6 +158,7 @@ impl ugli::Uniform for ShaderUniform {
             Self::Vec3(value) => value.apply(gl, info),
             Self::Vec4(value) => value.apply(gl, info),
             Self::Color(value) => value.apply(gl, info),
+            Self::String(_) => {}
         }
     }
 }

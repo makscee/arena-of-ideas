@@ -9,5 +9,14 @@
             }
         },
         "layer": "Background"
+    },
+    "stats": {
+        "path": "shaders/system/stats.glsl",
+        "parameters": {
+            "uniforms": {
+                "text": "test"
+            }
+        },
+        "layer": "UI"
     }
 }
