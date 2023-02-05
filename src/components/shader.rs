@@ -138,6 +138,16 @@ impl ShaderUniforms {
     }
 }
 
+impl From<HashMap<&str, ShaderUniform>> for ShaderUniforms {
+    fn from(value: HashMap<&str, ShaderUniform>) -> Self {
+        Self(HashMap::from_iter(
+            value
+                .into_iter()
+                .map(|(key, value)| (key.to_string(), value)),
+        ))
+    }
+}
+
 impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
     fn from(value: HashMap<String, ShaderUniform>) -> Self {
         Self(value)

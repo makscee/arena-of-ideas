@@ -19,5 +19,16 @@
             }
         },
         "layer": "UI"
+    },
+    "strike": {
+        "path": "shaders/system/strike.glsl",
+        "parameters": {
+            "instances": 3000,
+            "uniforms": {
+                "u_scale": 0.1,
+                "u_trail_count": 51
+            }
+        },
+        "layer": "Vfx"
     }
 }

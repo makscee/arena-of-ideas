@@ -1,10 +1,11 @@
 use super::*;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Options {
     pub fov: f32,
     pub field: Shader,
     pub stats: Shader,
+    pub strike: Shader,
 }
 
 impl geng::LoadAsset for Options {

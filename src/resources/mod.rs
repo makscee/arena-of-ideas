@@ -73,6 +73,11 @@ impl Resources {
     pub fn load(&mut self, fws: &mut FileWatcherSystem) {
         self.load_shader_programs(fws);
         self.load_unit_templates();
+        fws.load_and_watch_file(
+            self,
+            &static_path().join("options.json"),
+            Box::new(Self::load_options),
+        );
     }
 
     pub async fn load_list(geng: &Geng, path: PathBuf) -> Vec<PathBuf> {
@@ -118,7 +123,7 @@ impl Resources {
     fn load_shader_program(resources: &mut Resources, file: &PathBuf) {
         let program = futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
             &resources.geng,
-            &static_path().join(file),
+            &file,
         ));
         match program {
             Ok(program) => {
@@ -134,11 +139,9 @@ impl Resources {
     }
 
     fn load_shader_library_program(resources: &mut Resources, file: &PathBuf) {
-        let program = &futures::executor::block_on(<String as geng::LoadAsset>::load(
-            &resources.geng,
-            &static_path().join(file),
-        ))
-        .expect(&format!("Failed to load shader {:?}", file));
+        let program =
+            &futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, &file))
+                .expect(&format!("Failed to load shader {:?}", file));
         debug!("Load shader library program {:?}", file);
         resources
             .geng
@@ -164,6 +167,13 @@ impl Resources {
         ))
         .expect("Failed to load unit");
         serde_json::from_str(&json).expect("Failed to parse UnitTemplate")
+    }
+
+    fn load_options(resources: &mut Resources, file: &PathBuf) {
+        resources.options =
+            futures::executor::block_on(<Options as geng::LoadAsset>::load(&resources.geng, &file))
+                .unwrap();
+        dbg!(&resources.options);
     }
 }
 

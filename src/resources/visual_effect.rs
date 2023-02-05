@@ -139,6 +139,7 @@ pub enum EasingType {
     QuartOut,
     QuartIn,
     QuartInOut,
+    CubicIn,
 }
 
 impl EasingType {
@@ -148,6 +149,7 @@ impl EasingType {
             EasingType::QuartOut => tween::Tweener::quart_out(0.0, 1.0, 1.0).move_to(t),
             EasingType::QuartIn => tween::Tweener::quart_in(0.0, 1.0, 1.0).move_to(t),
             EasingType::QuartInOut => tween::Tweener::quart_in_out(0.0, 1.0, 1.0).move_to(t),
+            EasingType::CubicIn => tween::Tweener::cubic_in(0.0, 1.0, 1.0).move_to(t),
         }
     }
 }

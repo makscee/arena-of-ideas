@@ -13,7 +13,12 @@ impl System for GameStateSystem {
                     self.transition = GameState::Game;
                 }
             }
-            GameState::Game => {}
+            GameState::Game => {
+                if resources.down_key == Some(geng::Key::R) {
+                    resources.cassette.clear();
+                    BattleSystem::run_battle(world, resources);
+                }
+            }
         }
 
         self.transition(world, resources);
@@ -58,9 +63,7 @@ impl GameStateSystem {
         match self.transition {
             GameState::MainMenu => {}
             GameState::Game => {
-                BattleSystem::init_battle(world, resources);
-                while BattleSystem::tick(world, resources) {}
-                BattleSystem::finish_battle(world);
+                BattleSystem::run_battle(world, resources);
             }
         }
 

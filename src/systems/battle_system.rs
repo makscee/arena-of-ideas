@@ -1,8 +1,16 @@
+use legion::EntityStore;
+
 use super::*;
 
 pub struct BattleSystem {}
 
 impl BattleSystem {
+    pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
+        Self::init_battle(world, resources);
+        while Self::tick(world, resources) {}
+        Self::finish_battle(world);
+    }
+
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_units(resources, world);
         Self::init_statuses(resources);
@@ -77,34 +85,66 @@ impl BattleSystem {
                 right_entity,
                 ShaderSystem::get_entity_shader(world, right_entity).clone(),
             );
-            resources.cassette.node_template.add_effects(StatsUiSystem::get_visual_effects(world, resources));
+            resources
+                .cassette
+                .node_template
+                .add_effects(StatsUiSystem::get_visual_effects(world, resources));
             resources.cassette.close_node();
 
-            Self::add_strike_animation(&mut resources.cassette, StrikePhase::Charge, left_entity, Faction::Light);
-            Self::add_strike_animation(&mut resources.cassette, StrikePhase::Charge, right_entity, Faction::Dark);
-            resources.cassette.close_node();
-            
-            Self::add_strike_animation(&mut resources.cassette, StrikePhase::Release, left_entity, Faction::Light);
-            Self::add_strike_animation(&mut resources.cassette, StrikePhase::Release, right_entity, Faction::Dark);
-            resources.cassette.node_template.add_effect(VisualEffect::new(
-                0.0,
-                VisualEffectType::EntityShaderConst {
-                    entity: left_entity,
-                    uniforms:
-                        hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(-1.0,0.0))}
-                            .into(),
-                },-15
-            ));
-            resources.cassette.node_template.add_effect(VisualEffect::new(
-                0.0,
-                VisualEffectType::EntityShaderConst {
-                    entity: right_entity,
-                    uniforms:
-                        hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(1.0,0.0))}
-                            .into(),
-                },
-                -15)
+            Self::add_strike_animation(
+                &mut resources.cassette,
+                StrikePhase::Charge,
+                left_entity,
+                Faction::Light,
             );
+            Self::add_strike_animation(
+                &mut resources.cassette,
+                StrikePhase::Charge,
+                right_entity,
+                Faction::Dark,
+            );
+            resources.cassette.close_node();
+
+            Self::add_strike_animation(
+                &mut resources.cassette,
+                StrikePhase::Release,
+                left_entity,
+                Faction::Light,
+            );
+            Self::add_strike_animation(
+                &mut resources.cassette,
+                StrikePhase::Release,
+                right_entity,
+                Faction::Dark,
+            );
+            resources
+                .cassette
+                .node_template
+                .add_effect(VisualEffect::new(
+                    0.0,
+                    VisualEffectType::EntityShaderConst {
+                        entity: left_entity,
+                        uniforms: hashmap! {
+                            "u_position" => ShaderUniform::Vec2(vec2(-1.0,0.0))
+                        }
+                        .into(),
+                    },
+                    -15,
+                ));
+            resources
+                .cassette
+                .node_template
+                .add_effect(VisualEffect::new(
+                    0.0,
+                    VisualEffectType::EntityShaderConst {
+                        entity: right_entity,
+                        uniforms: hashmap! {
+                            "u_position" => ShaderUniform::Vec2(vec2(1.0,0.0))
+                        }
+                        .into(),
+                    },
+                    -15,
+                ));
             resources.cassette.close_node();
 
             let context = Context {
@@ -129,20 +169,6 @@ impl BattleSystem {
                 .push_back(Action::new(context, Effect::Damage { value: None }));
             while ActionSystem::tick(world, resources) {}
 
-            let dead_units = <(&EntityComponent, &HpComponent)>::query()
-                .iter(world)
-                .filter_map(|(unit, hp)| match hp.current() <= 0 {
-                    true => Some(unit.entity),
-                    false => None,
-                })
-                .collect_vec();
-            if !dead_units.is_empty() {
-                dead_units.iter().for_each(|entity| {
-                    debug!("Entity#{:?} dead", entity);
-                    world.remove(*entity);
-                });
-            }
-
             resources.cassette.node_template.clear_entities();
             if world.contains(left_entity) {
                 resources.cassette.node_template.add_entity_shader(
@@ -157,14 +183,79 @@ impl BattleSystem {
                 );
             }
             resources.cassette.close_node();
-            
-            Self::add_strike_animation(&mut resources.cassette, StrikePhase::Retract, left_entity, Faction::Light);
-            Self::add_strike_animation(&mut resources.cassette, StrikePhase::Retract, right_entity, Faction::Dark);
+            Self::add_strike_vfx(world, resources, left_entity, right_entity);
+            resources.cassette.close_node();
+
+            Self::add_strike_animation(
+                &mut resources.cassette,
+                StrikePhase::Retract,
+                left_entity,
+                Faction::Light,
+            );
+            Self::add_strike_animation(
+                &mut resources.cassette,
+                StrikePhase::Retract,
+                right_entity,
+                Faction::Dark,
+            );
             resources.cassette.node_template.clear();
             resources.cassette.close_node();
+
+            let dead_units = <(&EntityComponent, &HpComponent)>::query()
+                .iter(world)
+                .filter_map(|(unit, hp)| match hp.current() <= 0 {
+                    true => Some(unit.entity),
+                    false => None,
+                })
+                .collect_vec();
+            if !dead_units.is_empty() {
+                dead_units.iter().for_each(|entity| {
+                    debug!("Entity#{:?} dead", entity);
+                    world.remove(*entity);
+                });
+            }
             return true;
         }
         return false;
+    }
+
+    fn add_strike_vfx(
+        world: &legion::World,
+        resources: &mut Resources,
+        left: legion::Entity,
+        right: legion::Entity,
+    ) {
+        let left_position = world
+            .entry_ref(left)
+            .expect("Left striker not found")
+            .get_component::<Position>()
+            .unwrap()
+            .0;
+        let right_position = world
+            .entry_ref(right)
+            .expect("Right striker not found")
+            .get_component::<Position>()
+            .unwrap()
+            .0;
+        let position = left_position + (right_position - left_position) * 0.5;
+        resources.cassette.add_effect(VisualEffect {
+            duration: 0.5,
+            r#type: VisualEffectType::ShaderAnimation {
+                shader: resources.options.strike.clone(),
+                from: hashmap! {
+                    "u_time" => ShaderUniform::Float(0.0),
+                    "u_position" => ShaderUniform::Vec2(position),
+                }
+                .into(),
+                to: hashmap! {
+                    "u_time" => ShaderUniform::Float(1.0),
+                    "u_position" => ShaderUniform::Vec2(position),
+                }
+                .into(),
+                easing: EasingType::Linear,
+            },
+            order: 0,
+        })
     }
 
     fn add_strike_animation(
@@ -178,44 +269,53 @@ impl BattleSystem {
             Faction::Dark => 1.0,
         };
         match phase {
-            StrikePhase::Charge => 
-                cassette.add_effect(VisualEffect::new(
-                    1.5,
-                     VisualEffectType::EntityShaderAnimation {
-                        entity,
-                        from:
-                            hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(1.5, 0.0) * faction_mul)}
-                                .into(),
-                        to: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(4.5, 0.0) * faction_mul)}
-                            .into(),
-                            easing: EasingType::QuartInOut,
-                    },-10)
-                ),
-            StrikePhase::Release => 
-            cassette.add_effect(VisualEffect::new(
-                0.1,
-                 VisualEffectType::EntityShaderAnimation {
-                     entity,
-                     from:
-                        hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(4.5, 0.0) * faction_mul)}
-                            .into(),
-                    to: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(1.0, 0.0) * faction_mul)}
-                        .into(),
-                        easing: EasingType::Linear,
-                },-10
-            )),
-            StrikePhase::Retract => 
-            cassette.add_effect(VisualEffect::new(
-                0.25,
-                 VisualEffectType::EntityShaderAnimation {
+            StrikePhase::Charge => cassette.add_effect(VisualEffect::new(
+                1.5,
+                VisualEffectType::EntityShaderAnimation {
                     entity,
-                    from:
-                        hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(1.0, 0.0) * faction_mul)}
-                            .into(),
-                    to: hashmap! {"u_position".to_string() => ShaderUniform::Vec2(vec2(1.5, 0.0) * faction_mul)}
-                        .into(),
-                        easing: EasingType::QuartOut,
-                }, -10
+                    from: hashmap! {
+                        "u_position" => ShaderUniform::Vec2(vec2(1.5, 0.0) * faction_mul),
+                    }
+                    .into(),
+                    to: hashmap! {
+                        "u_position" => ShaderUniform::Vec2(vec2(4.5, 0.0) * faction_mul),
+                    }
+                    .into(),
+                    easing: EasingType::QuartInOut,
+                },
+                -10,
+            )),
+            StrikePhase::Release => cassette.add_effect(VisualEffect::new(
+                0.1,
+                VisualEffectType::EntityShaderAnimation {
+                    entity,
+                    from: hashmap! {
+                        "u_position" => ShaderUniform::Vec2(vec2(4.5, 0.0) * faction_mul),
+                    }
+                    .into(),
+                    to: hashmap! {
+                        "u_position" => ShaderUniform::Vec2(vec2(1.0, 0.0) * faction_mul),
+                    }
+                    .into(),
+                    easing: EasingType::Linear,
+                },
+                -10,
+            )),
+            StrikePhase::Retract => cassette.add_effect(VisualEffect::new(
+                0.25,
+                VisualEffectType::EntityShaderAnimation {
+                    entity,
+                    from: hashmap! {
+                        "u_position" => ShaderUniform::Vec2(vec2(1.0, 0.0) * faction_mul),
+                    }
+                    .into(),
+                    to: hashmap! {
+                        "u_position" => ShaderUniform::Vec2(vec2(1.5, 0.0) * faction_mul),
+                    }
+                    .into(),
+                    easing: EasingType::QuartOut,
+                },
+                -10,
             )),
         };
     }

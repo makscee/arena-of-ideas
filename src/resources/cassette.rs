@@ -91,6 +91,12 @@ impl Cassette {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.queue = vec![default()];
+        self.head = 0.0;
+        self.node_template.clear();
+    }
+
     fn get_node_at_ts(&self, ts: Time) -> &CassetteNode {
         let index = match self
             .queue

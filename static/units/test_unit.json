@@ -1,7 +1,7 @@
 [
     {
         "component": "Hp",
-        "max": 5000
+        "max": 500
     },
     {
         "component": "Attack",
