@@ -56,12 +56,7 @@ impl ShaderSystem {
             .iter(world)
             .map(|(_, entity)| Self::get_entity_shader(world, entity.entity))
             .collect_vec();
-        let shaders = [
-            // world_shaders,
-            resources.cassette.get_shaders(),
-            vec![resources.options.stats.clone()],
-        ]
-        .concat();
+        let shaders = [world_shaders, resources.cassette.get_shaders()].concat();
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
         let emtpy_vec: Vec<Shader> = Vec::new();
         for shader in shaders {
@@ -74,16 +69,16 @@ impl ShaderSystem {
         }
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
             shaders.iter().for_each(|shader| {
-                if let Some((key, value)) = shader.parameters.uniforms.find_string() {
-                    let texture = self.get_text_texture(&value, resources);
-                    let uniforms = &ugli::uniforms!(
-                        u_texture_size: texture.size().map(|x| x as f32),
-                        u_text_texture: texture,
-                    );
-                    Self::draw_shader(shader, framebuffer, resources, uniforms);
-                } else {
-                    Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!());
-                }
+                // if let Some((key, value)) = shader.parameters.uniforms.find_string() {
+                //     let texture = self.get_text_texture(&value, resources);
+                //     let uniforms = &ugli::uniforms!(
+                //         u_texture_size: texture.size().map(|x| x as f32),
+                //         u_text_texture: texture,
+                //     );
+                //     Self::draw_shader(shader, framebuffer, resources, uniforms);
+                // } else {
+                Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!());
+                // }
             })
         }
     }

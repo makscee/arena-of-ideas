@@ -4,13 +4,23 @@ use super::*;
 pub struct VisualEffect {
     pub duration: Time,
     pub r#type: VisualEffectType,
+    pub order: i32,
+}
+
+impl VisualEffect {
+    pub fn new(duration: Time, r#type: VisualEffectType, order: i32) -> Self {
+        Self {
+            duration,
+            r#type,
+            order,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 pub enum VisualEffectType {
     ShaderAnimation {
-        program: PathBuf,
-        parameters: ShaderParameters,
+        shader: Shader,
         from: ShaderUniforms,
         to: ShaderUniforms,
         easing: EasingType,
@@ -25,6 +35,17 @@ pub enum VisualEffectType {
         entity: legion::Entity,
         uniforms: ShaderUniforms,
     },
+    EntityExtraShaderAnimation {
+        entity: legion::Entity,
+        shader: Shader,
+        from: ShaderUniforms,
+        to: ShaderUniforms,
+        easing: EasingType,
+    },
+    EntityExtraShaderConst {
+        entity: legion::Entity,
+        shader: Shader,
+    },
 }
 
 impl VisualEffectType {
@@ -35,23 +56,21 @@ impl VisualEffectType {
     ) -> Option<Shader> {
         match self {
             VisualEffectType::ShaderAnimation {
-                program,
-                parameters,
+                shader,
                 from,
                 to,
                 easing,
             } => Some(Shader {
-                path: static_path().join(program),
+                path: static_path().join(&shader.path),
                 parameters: ShaderParameters {
-                    uniforms: parameters.uniforms.merge(&ShaderUniforms::mix(
+                    uniforms: shader.parameters.uniforms.merge(&ShaderUniforms::mix(
                         from,
                         to,
                         easing.f(t),
                     )),
-                    ..*parameters
+                    ..shader.parameters
                 },
-                layer: ShaderLayer::Vfx,
-                order: default(),
+                ..*shader
             }),
             VisualEffectType::EntityShaderAnimation {
                 entity,
@@ -72,6 +91,43 @@ impl VisualEffectType {
                     shader.parameters.uniforms = shader.parameters.uniforms.merge(&uniforms);
                 }
                 None
+            }
+            VisualEffectType::EntityExtraShaderAnimation {
+                entity,
+                shader,
+                from,
+                to,
+                easing,
+            } => match entity_shaders.get(entity) {
+                Some(entity_shader) => Some(Shader {
+                    path: static_path().join(&shader.path),
+                    parameters: ShaderParameters {
+                        uniforms: entity_shader
+                            .parameters
+                            .uniforms
+                            .merge(&shader.parameters.uniforms)
+                            .merge(&ShaderUniforms::mix(from, to, easing.f(t))),
+                        ..shader.parameters
+                    },
+                    ..*shader
+                }),
+                _ => None,
+            },
+            VisualEffectType::EntityExtraShaderConst { entity, shader } => {
+                match entity_shaders.get(entity) {
+                    Some(entity_shader) => Some(Shader {
+                        path: static_path().join(&shader.path),
+                        parameters: ShaderParameters {
+                            uniforms: entity_shader
+                                .parameters
+                                .uniforms
+                                .merge(&shader.parameters.uniforms),
+                            ..shader.parameters
+                        },
+                        ..*shader
+                    }),
+                    _ => None,
+                }
             }
         }
     }

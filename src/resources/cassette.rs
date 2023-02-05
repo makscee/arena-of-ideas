@@ -46,7 +46,7 @@ impl Cassette {
         let time = self.head - node.start;
         let mut shaders: Vec<Shader> = default();
         let mut entity_shaders = node.entity_shaders.clone();
-        for effect in node.effects.iter() {
+        for effect in node.effects.iter().sorted_by_key(|x| x.order) {
             if effect.duration > 0.0 && time > effect.duration {
                 continue;
             }
@@ -123,6 +123,11 @@ impl CassetteNode {
     pub fn add_effect(&mut self, effect: VisualEffect) {
         self.duration = self.duration.max(effect.duration);
         self.effects.push(effect);
+    }
+    pub fn add_effects(&mut self, effect: Vec<VisualEffect>) {
+        effect
+            .into_iter()
+            .for_each(|effect| self.add_effect(effect))
     }
     pub fn clear(&mut self) {
         self.start = default();

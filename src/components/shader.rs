@@ -11,7 +11,14 @@ pub struct Shader {
     pub order: i32,
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+impl Shader {
+    pub fn set_uniform(mut self, key: &str, value: ShaderUniform) -> Shader {
+        self.parameters.uniforms.insert(String::from(key), value);
+        self
+    }
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
 pub enum ShaderLayer {
     Background,
     Unit,
@@ -56,6 +63,9 @@ impl ugli::Uniforms for ShaderParameters {
         }
     }
 }
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ShaderUniforms(HashMap<String, ShaderUniform>);
 
 impl ShaderUniforms {
     pub fn merge(&self, other: &ShaderUniforms) -> Self {
@@ -109,9 +119,6 @@ impl ShaderUniforms {
         result
     }
 }
-
-#[derive(Debug, Clone, Deserialize, Default)]
-pub struct ShaderUniforms(HashMap<String, ShaderUniform>);
 
 impl ShaderUniforms {
     pub fn insert(&mut self, key: String, value: ShaderUniform) {

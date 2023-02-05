@@ -14,7 +14,8 @@
         "path": "shaders/system/stats.glsl",
         "parameters": {
             "uniforms": {
-                "text": "test"
+                "text": "test",
+                "u_scale": 0.3
             }
         },
         "layer": "UI"

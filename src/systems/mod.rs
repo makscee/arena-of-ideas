@@ -8,6 +8,7 @@ mod cassette_player_system;
 mod file_watcher_system;
 mod game_state_system;
 mod shader_system;
+mod stats_ui_system;
 mod time_system;
 
 pub use action_system::*;
@@ -17,6 +18,7 @@ pub use file_watcher_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
 pub use shader_system::*;
+pub use stats_ui_system::*;
 
 pub trait System {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources);
