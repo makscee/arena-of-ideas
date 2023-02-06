@@ -98,6 +98,7 @@ impl Cassette {
     }
 
     fn get_node_at_ts(&self, ts: Time) -> &CassetteNode {
+        let ts = ts.clamp(0.0, self.length());
         let index = match self
             .queue
             .binary_search_by_key(&r32(ts), |node| r32(node.start))

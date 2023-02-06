@@ -77,7 +77,12 @@ impl ShaderSystem {
                 //     );
                 //     Self::draw_shader(shader, framebuffer, resources, uniforms);
                 // } else {
-                Self::draw_shader(shader, framebuffer, resources, ugli::uniforms!());
+                Self::draw_shader(
+                    shader,
+                    framebuffer,
+                    resources,
+                    ugli::uniforms!(u_global_time: resources.game_time),
+                );
                 // }
             })
         }

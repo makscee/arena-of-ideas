@@ -1,6 +1,7 @@
 uniform vec4 u_color;
 uniform int u_faction = -1;
 uniform float u_game_time;
+uniform float u_global_time;
 
 vec3 faction_color;
 
