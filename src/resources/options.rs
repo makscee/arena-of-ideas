@@ -5,6 +5,8 @@ pub struct Options {
     pub fov: f32,
     pub field: Shader,
     pub stats: Shader,
+    pub stats_attack_color: Rgba<f32>,
+    pub stats_hp_color: Rgba<f32>,
     pub strike: Shader,
 }
 

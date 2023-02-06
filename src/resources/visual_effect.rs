@@ -35,6 +35,7 @@ pub enum VisualEffectType {
         entity: legion::Entity,
         uniforms: ShaderUniforms,
     },
+    /// Draw extra shader using and animating uniforms of existing Shader of Entity
     EntityExtraShaderAnimation {
         entity: legion::Entity,
         shader: Shader,
@@ -42,6 +43,7 @@ pub enum VisualEffectType {
         to: ShaderUniforms,
         easing: EasingType,
     },
+    /// Draw extra shader using uniforms of existing Shader of Entity
     EntityExtraShaderConst {
         entity: legion::Entity,
         shader: Shader,

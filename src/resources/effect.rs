@@ -1,3 +1,5 @@
+use legion::EntityStore;
+
 use super::*;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -24,17 +26,19 @@ impl Effect {
         match self {
             Effect::Damage { value } => {
                 Event::BeforeIncomingDamage.send(&context, resources)?;
+                let value = match value {
+                    Some(v) => *v,
+                    None => world
+                        .entry_ref(context.owner)
+                        .context("Filed to get Owner")?
+                        .get_component::<AttackComponent>()
+                        .context("Failed to get Attack component")?
+                        .value()
+                        .clone(),
+                };
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
-                let value = match value {
-                    Some(v) => *v,
-                    None => target
-                        .get_component::<AttackComponent>()
-                        .context("Failed to get Attack component")?
-                        .value
-                        .clone(),
-                };
                 if target
                     .get_component::<FlagsComponent>()?
                     .has_flag(&Flag::DamageImmune)

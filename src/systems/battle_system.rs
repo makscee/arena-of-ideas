@@ -7,7 +7,10 @@ pub struct BattleSystem {}
 impl BattleSystem {
     pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_battle(world, resources);
-        while Self::tick(world, resources) {}
+        let mut ticks = 0;
+        while Self::tick(world, resources) && ticks < 100 {
+            ticks += 1;
+        }
         Self::finish_battle(world);
     }
 
@@ -77,18 +80,7 @@ impl BattleSystem {
             let right_entity = right.unwrap().1.entity;
 
             resources.cassette.node_template.clear();
-            resources.cassette.node_template.add_entity_shader(
-                left_entity,
-                ShaderSystem::get_entity_shader(world, left_entity).clone(),
-            );
-            resources.cassette.node_template.add_entity_shader(
-                right_entity,
-                ShaderSystem::get_entity_shader(world, right_entity).clone(),
-            );
-            resources
-                .cassette
-                .node_template
-                .add_effects(StatsUiSystem::get_visual_effects(world, resources));
+            UnitComponent::add_all_units_to_node_template(world, resources);
             resources.cassette.close_node();
 
             Self::add_strike_animation(
@@ -167,21 +159,14 @@ impl BattleSystem {
             resources
                 .action_queue
                 .push_back(Action::new(context, Effect::Damage { value: None }));
-            while ActionSystem::tick(world, resources) {}
+            let mut ticks = 0;
+            while ActionSystem::tick(world, resources) && ticks < 1000 {
+                ticks += 1;
+            }
 
             resources.cassette.node_template.clear_entities();
-            if world.contains(left_entity) {
-                resources.cassette.node_template.add_entity_shader(
-                    left_entity,
-                    ShaderSystem::get_entity_shader(world, left_entity).clone(),
-                );
-            }
-            if world.contains(right_entity) {
-                resources.cassette.node_template.add_entity_shader(
-                    right_entity,
-                    ShaderSystem::get_entity_shader(world, right_entity).clone(),
-                );
-            }
+            UnitComponent::add_all_units_to_node_template(world, resources);
+            resources.cassette.close_node();
             resources.cassette.close_node();
             Self::add_strike_vfx(world, resources, left_entity, right_entity);
             resources.cassette.close_node();

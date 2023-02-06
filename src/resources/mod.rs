@@ -35,6 +35,7 @@ pub struct Resources {
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
     pub camera: geng::Camera2d,
+    pub font: geng::font::Ttf,
     pub geng: Geng,
 }
 
@@ -54,10 +55,20 @@ impl Resources {
             rotation: 0.0,
             fov: options.fov,
         };
+        let font = geng::font::Ttf::new(
+            geng,
+            include_bytes!("../../static/font/default.ttf"),
+            geng::font::ttf::Options {
+                pixel_size: 64.0,
+                max_distance: 0.25,
+            },
+        )
+        .unwrap();
 
         Self {
             shader_programs,
             camera,
+            font,
             down_key: default(),
             geng: geng.clone(),
             game_time: default(),
