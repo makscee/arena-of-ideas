@@ -138,8 +138,8 @@ impl CassetteNode {
             .into_iter()
             .for_each(|effect| self.add_effect_by_key(key, effect))
     }
-    pub fn add_effects(&mut self, effect: Vec<VisualEffect>) {
-        effect
+    pub fn add_effects(&mut self, effects: Vec<VisualEffect>) {
+        effects
             .into_iter()
             .for_each(|effect| self.add_effect(effect))
     }

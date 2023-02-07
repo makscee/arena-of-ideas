@@ -53,6 +53,15 @@
                             }
                         }
                     ]
+                },
+                "shader": {
+                    "path": "shaders/status/default_status.glsl",
+                    "layer": "Vfx",
+                    "parameters": {
+                        "uniforms": {
+                            "u_color": "#d2830c"
+                        }
+                    }
                 }
             }
         ]

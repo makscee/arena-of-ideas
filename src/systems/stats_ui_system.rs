@@ -2,16 +2,16 @@ use super::*;
 
 pub struct StatsUiSystem {}
 
-const TEMPLATE_EFFECTS_KEY: &str = "stats";
+const STATS_EFFECTS_KEY: &str = "stats";
 
 impl StatsUiSystem {
     pub fn add_all_units_stats_to_node_template(world: &legion::World, resources: &mut Resources) {
         resources
             .cassette
             .node_template
-            .clear_key(TEMPLATE_EFFECTS_KEY);
+            .clear_key(STATS_EFFECTS_KEY);
         resources.cassette.node_template.add_effects_by_key(
-            TEMPLATE_EFFECTS_KEY,
+            STATS_EFFECTS_KEY,
             <(&HpComponent, &EntityComponent, &Shader)>::query()
                 .iter(world)
                 .map(|(hp, entity, _)| {
@@ -44,7 +44,7 @@ impl StatsUiSystem {
                 .collect_vec(),
         );
         resources.cassette.node_template.add_effects_by_key(
-            TEMPLATE_EFFECTS_KEY,
+            STATS_EFFECTS_KEY,
             <(&AttackComponent, &EntityComponent, &Shader)>::query()
                 .iter(world)
                 .map(|(attack, entity, _)| {
