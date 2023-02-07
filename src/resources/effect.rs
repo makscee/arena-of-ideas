@@ -36,6 +36,7 @@ impl Effect {
                         .value()
                         .clone(),
                 };
+                let mut text = format!("-{}", value);
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
@@ -44,6 +45,8 @@ impl Effect {
                     .has_flag(&Flag::DamageImmune)
                 {
                     debug!("Damage Immune");
+                    text = "Immune".to_string();
+                    
                 } else {
                     let hp = target.get_component_mut::<HpComponent>()?;
                     hp.set_current(hp.current() - value, resources);
@@ -54,6 +57,30 @@ impl Effect {
                         hp.current()
                     )
                 }
+                resources.cassette.add_effect(VisualEffect {
+                    duration: 1.0,
+                    r#type: VisualEffectType::ShaderAnimation {
+                        shader: resources
+                            .options
+                            .text
+                            .clone()
+                            .set_uniform("u_text", ShaderUniform::String(text))
+                            .set_uniform(
+                                "u_position",
+                                ShaderUniform::Vec2(target.get_component::<Position>().unwrap().0),
+                            ),
+                        from: hashmap! {
+                            "u_time" => ShaderUniform::Float(0.0),
+                        }
+                        .into(),
+                        to: hashmap! {
+                            "u_time" => ShaderUniform::Float(1.0),
+                        }
+                        .into(),
+                        easing: EasingType::Linear,
+                    },
+                    order: 0,
+                });
                 Event::AfterIncomingDamage.send(&context, resources)?;
             }
             Effect::Repeat { count, effect } => {

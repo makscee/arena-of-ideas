@@ -37,5 +37,16 @@
             }
         },
         "layer": "Vfx"
+    },
+    "text": {
+        "path": "shaders/vfx/text.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_text_color": "#ffffff",
+                "u_outline_color": "#8d0000",
+                "u_scale": 0.9
+            }
+        },
+        "layer": "UI"
     }
 }

@@ -65,7 +65,10 @@ impl ShaderSystem {
         }
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
             for shader in shaders.iter() {
-                let uniforms = ugli::uniforms!(u_global_time: resources.game_time);
+                let uniforms = ugli::uniforms!(
+                    u_global_time: resources.game_time,
+                    u_game_time: resources.cassette.head,
+                );
                 if let Some((key, value)) = shader.parameters.uniforms.find_string() {
                     if let Some(texture) = self.get_text_texture(&value, resources) {
                         Self::draw_shader(

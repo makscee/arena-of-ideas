@@ -17,6 +17,7 @@ impl BattleSystem {
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_units(resources, world);
         Self::init_statuses(resources);
+        while ActionSystem::tick(world, resources) {}
     }
 
     pub fn finish_battle(world: &mut legion::World) {
@@ -165,9 +166,8 @@ impl BattleSystem {
             }
 
             resources.cassette.node_template.clear_entities();
-            UnitComponent::add_all_units_to_node_template(world, resources);
-            resources.cassette.close_node();
-            resources.cassette.close_node();
+            UnitComponent::add_all_units_to_node_template(world, resources); // get changes (like stats) after ActionSystem execution
+            resources.cassette.merge_template_into_last(); // merge this changes into last node, to display changed HP alongside any extra effects from ActionSystem
             Self::add_strike_vfx(world, resources, left_entity, right_entity);
             resources.cassette.close_node();
 

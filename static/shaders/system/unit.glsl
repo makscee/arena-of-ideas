@@ -2,7 +2,7 @@
 uniform vec2 u_position = vec2(0);
 
 #ifdef VERTEX_SHADER
-out vec2 v_quad_pos;
+out vec2 uv;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
@@ -11,15 +11,15 @@ uniform float u_padding = 1;
 uniform float u_scale = 1;
 
 void main() {
-    v_quad_pos = a_pos * (1.0 + u_padding);
-    vec2 pos = v_quad_pos * 1.0 * u_scale + u_position;
+    uv = a_pos * (1.0 + u_padding);
+    vec2 pos = uv * 1.0 * u_scale + u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
 #endif
 
 #ifdef FRAGMENT_SHADER
-in vec2 v_quad_pos;
+in vec2 uv;
 
 uniform int u_hp_current;
 uniform int u_hp_max;
@@ -31,7 +31,7 @@ const float GLOW = 0.3;
 const float DMG_T_DURATION = 3;
 
 void main() {
-    float len = length(v_quad_pos) - 1.;
+    float len = length(uv) - 1.;
     if(len > THICKNESS + SPREAD)
         discard;
     float hp_part = float(u_hp_current) / float(u_hp_max);
@@ -41,7 +41,9 @@ void main() {
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
     vec4 color = vec4(faction_color, alpha);
     if(dmg_t > 0. && len < 0.) {
-        color = alphaBlend(color, vec4(N22(u_position + vec2(floor(len * (sin(u_game_time * .5) * 10)))).xxx, dmg_t));
+        vec2 v = floor(uv * 8 * (0.5 + dmg_t));
+        float r = N22(v + vec2(floor(u_global_time * 20) / 20)).x;
+        color = alphaBlend(color, vec4(r, r, r, dmg_t));
     }
     gl_FragColor = color;
 }

@@ -30,6 +30,11 @@ impl Cassette {
         self.queue.push(new_node);
     }
 
+    pub fn merge_template_into_last(&mut self) {
+        let node = self.queue.last_mut().unwrap();
+        node.merge(&self.node_template);
+    }
+
     pub fn add_effect(&mut self, effect: VisualEffect) {
         self.queue.last_mut().unwrap().add_effect(effect);
     }
@@ -56,15 +61,7 @@ impl Cassette {
                     .process(time / effect.duration, &mut entity_shaders),
             );
         }
-        let mut shaders = [entity_shaders.into_values().collect_vec(), shaders].concat();
-        shaders.iter_mut().for_each(|shader| {
-            shader
-                .parameters
-                .uniforms
-                .insert("u_game_time".to_string(), ShaderUniform::Float(self.head))
-        });
-
-        shaders
+        [entity_shaders.into_values().collect_vec(), shaders].concat()
     }
 
     pub fn length(&self) -> Time {
@@ -157,5 +154,15 @@ impl CassetteNode {
     }
     pub fn clear_entities(&mut self) {
         self.entity_shaders.clear();
+    }
+    pub fn merge(&mut self, node: &CassetteNode) {
+        self.duration = self.duration.max(node.duration);
+        for (key, effects) in node.effects.iter() {
+            let mut vec = self.effects.get_mut(key).cloned().unwrap_or_default();
+            vec.extend(effects.clone().into_iter());
+            self.effects.insert(key.clone(), vec);
+        }
+        self.entity_shaders
+            .extend(node.entity_shaders.clone().into_iter());
     }
 }
