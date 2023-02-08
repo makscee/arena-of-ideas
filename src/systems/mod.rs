@@ -33,18 +33,33 @@ pub trait System {
 }
 
 impl Game {
-    pub fn create_active_systems(resources: &mut Resources) -> Vec<Box<dyn System>> {
+    pub fn create_systems(resources: &mut Resources) -> Vec<Box<dyn System>> {
         let mut fws = FileWatcherSystem::new();
         resources.load(&mut fws);
 
-        let mut systems: Vec<Box<dyn System>> = Vec::default();
-        systems.push(Box::new(GameStateSystem::new(GameState::MainMenu)));
-        systems.push(Box::new(ShaderSystem::new(&resources.geng)));
-        systems.push(Box::new(fws));
-        systems.push(Box::new(TimeSystem::new()));
-        systems.push(Box::new(ActionSystem::new()));
-        systems.push(Box::new(CassettePlayerSystem::new()));
-        systems
+        let mut global_systems: Vec<Box<dyn System>> = Vec::default();
+        let mut game_state = GameStateSystem::new(GameState::MainMenu);
+        game_state.add_systems(GameState::MainMenu, vec![]);
+        game_state.add_systems(
+            GameState::Battle,
+            vec![
+                Box::new(CassettePlayerSystem::new()),
+                Box::new(ActionSystem::new()),
+            ],
+        );
+        game_state.add_systems(
+            GameState::Shop,
+            vec![
+                Box::new(CassettePlayerSystem::new()),
+                Box::new(ActionSystem::new()),
+            ],
+        );
+
+        global_systems.push(Box::new(game_state));
+        global_systems.push(Box::new(ShaderSystem::new(&resources.geng)));
+        global_systems.push(Box::new(fws));
+        global_systems.push(Box::new(TimeSystem::new()));
+        global_systems
     }
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
