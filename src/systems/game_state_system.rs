@@ -17,12 +17,12 @@ impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         match self.current {
             GameState::MainMenu => {
-                if resources.down_key.is_some() {
+                if !resources.down_keys.is_empty() {
                     self.transition = GameState::Battle;
                 }
             }
             GameState::Battle => {
-                if resources.down_key == Some(geng::Key::R) {
+                if resources.down_keys.contains(&geng::Key::R) {
                     resources.cassette.clear();
                     BattleSystem::run_battle(world, resources);
                 }
@@ -54,6 +54,31 @@ impl System for GameStateSystem {
                     .for_each(|system| system.draw(world, resources, framebuffer)),
             )
         });
+    }
+
+    fn ui<'a>(
+        &'a mut self,
+        cx: &'a ui::Controller,
+        resources: &Resources,
+    ) -> Box<dyn ui::Widget + 'a> {
+        if let Some(widgets) = self
+            .systems
+            .get_mut(&self.current)
+            .and_then(|systems| {
+                Some(
+                    systems
+                        .iter_mut()
+                        .map(|system| system.ui(cx, resources))
+                        .collect_vec(),
+                )
+            })
+            .and_then(|widgets| Some(widgets))
+        {
+            if !widgets.is_empty() {
+                return Box::new(geng::ui::stack(widgets));
+            }
+        }
+        Box::new(ui::Void)
     }
 }
 

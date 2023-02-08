@@ -30,6 +30,14 @@ pub trait System {
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
     );
+    fn ui<'a>(
+        &'a mut self,
+        cx: &'a ui::Controller,
+        resources: &Resources,
+    ) -> Box<dyn ui::Widget + 'a> {
+        #![allow(unused_variables)]
+        Box::new(ui::Void)
+    }
 }
 
 impl Game {

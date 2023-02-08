@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, rc::Rc};
 
 use super::*;
 
@@ -24,7 +24,8 @@ pub struct Resources {
     pub options: Options,
 
     pub shader_programs: ShaderPrograms,
-    pub down_key: Option<geng::Key>,
+    pub down_keys: HashSet<geng::Key>,
+    pub pressed_keys: HashSet<geng::Key>,
 
     pub game_time: Time,
     pub delta_time: Time,
@@ -35,7 +36,7 @@ pub struct Resources {
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
     pub camera: geng::Camera2d,
-    pub font: geng::font::Ttf,
+    pub font: Rc<geng::font::Ttf>,
     pub geng: Geng,
 }
 
@@ -68,8 +69,9 @@ impl Resources {
         Self {
             shader_programs,
             camera,
-            font,
-            down_key: default(),
+            font: Rc::new(font),
+            down_keys: default(),
+            pressed_keys: default(),
             geng: geng.clone(),
             game_time: default(),
             delta_time: default(),

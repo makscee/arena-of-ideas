@@ -11,6 +11,8 @@ impl BattleSystem {
         while Self::tick(world, resources) && ticks < 100 {
             ticks += 1;
         }
+        resources.cassette.node_template.clear();
+        UnitComponent::add_all_units_to_node_template(world, resources);
         Self::finish_battle(world);
     }
 
@@ -183,7 +185,6 @@ impl BattleSystem {
                 right_entity,
                 Faction::Dark,
             );
-            resources.cassette.node_template.clear();
             resources.cassette.close_node();
 
             let dead_units = <(&EntityComponent, &HpComponent)>::query()
