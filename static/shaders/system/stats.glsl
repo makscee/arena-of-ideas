@@ -13,7 +13,7 @@ uniform float u_offset;
 
 void main() {
     uv = a_pos * (1.0 + u_padding);
-    vec2 pos = uv * 1.0 * u_scale + u_position + rotateCW(vec2(0, -1), PI * .25 * u_offset);
+    vec2 pos = uv * 1.0 * u_scale + u_position + rotateCW(vec2(0, -1), PI * .27 * u_offset) * .9;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -36,7 +36,7 @@ uniform int u_value_modified;
 
 const float BORDER = 0.08;
 const float TEXT_INSIDE = 0.5;
-const float TEXT_BORDER = 0.4;
+const float TEXT_BORDER = 0.37;
 const float AA = 0.05;
 const float CHANGE_T_DURATION = 1.0;
 

@@ -7,6 +7,7 @@ mod battle_system;
 mod cassette_player_system;
 mod file_watcher_system;
 mod game_state_system;
+mod name_system;
 mod shader_system;
 mod stats_ui_system;
 mod time_system;
@@ -17,6 +18,7 @@ pub use cassette_player_system::*;
 pub use file_watcher_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
+pub use name_system::*;
 pub use shader_system::*;
 pub use stats_ui_system::*;
 

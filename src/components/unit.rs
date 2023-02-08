@@ -39,6 +39,7 @@ impl UnitComponent {
                         .collect_vec(),
                 )
             });
-        StatsUiSystem::add_all_units_stats_to_node_template(world, resources);
+        StatsUiSystem::fill_node_template(world, resources);
+        NameSystem::fill_node_template(world, resources);
     }
 }

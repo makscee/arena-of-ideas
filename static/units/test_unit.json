@@ -1,5 +1,9 @@
 [
     {
+        "component": "Name",
+        "name": "Test Unit"
+    },
+    {
         "component": "Hp",
         "max": 500
     },

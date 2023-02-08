@@ -9,6 +9,7 @@ pub struct Options {
     pub stats_hp_color: Rgba<f32>,
     pub strike: Shader,
     pub text: Shader,
+    pub name: Shader,
 }
 
 impl geng::LoadAsset for Options {

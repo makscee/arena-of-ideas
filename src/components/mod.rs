@@ -7,6 +7,7 @@ mod faction;
 mod flags;
 mod game_state;
 mod hp;
+mod name;
 mod position;
 mod shader;
 mod unit;
@@ -19,6 +20,7 @@ pub use faction::*;
 pub use flags::*;
 pub use game_state::*;
 pub use hp::*;
+pub use name::*;
 pub use position::*;
 pub use shader::*;
 pub use unit::*;
@@ -28,6 +30,9 @@ pub use vars::*;
 #[derive(Deserialize, Debug)]
 #[serde(tag = "component")]
 pub enum Component {
+    Name {
+        name: String,
+    },
     Hp {
         max: Hp,
     },
@@ -101,6 +106,7 @@ impl Component {
                 layer: layer.clone().unwrap_or(ShaderLayer::Unit),
                 order: order.unwrap_or_default(),
             }),
+            Component::Name { name } => entry.add_component(Name::new(name)),
         }
     }
 }
