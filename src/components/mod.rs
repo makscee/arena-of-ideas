@@ -97,7 +97,7 @@ impl Component {
                 layer,
                 order,
             } => entry.add_component(Shader {
-                path: static_path().join(path),
+                path: path.clone(),
                 parameters: parameters.clone().unwrap_or_default(),
                 layer: layer.clone().unwrap_or(ShaderLayer::Unit),
                 order: order.unwrap_or_default(),

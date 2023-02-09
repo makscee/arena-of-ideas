@@ -12,7 +12,7 @@ pub enum StatType {
 impl StatsUiSystem {
     pub fn get_all_shaders(
         world: &legion::World,
-        resources: &Resources,
+        options: &Options,
         stat: StatType,
     ) -> Vec<(legion::Entity, Shader)> {
         match stat {
@@ -21,8 +21,7 @@ impl StatsUiSystem {
                 .map(|(hp, entity, shader)| {
                     (
                         entity.entity,
-                        resources
-                            .options
+                        options
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(1.0))
@@ -34,7 +33,7 @@ impl StatsUiSystem {
                             )
                             .set_uniform(
                                 "u_circle_color",
-                                ShaderUniform::Color(resources.options.stats_hp_color),
+                                ShaderUniform::Color(options.stats_hp_color),
                             ),
                     )
                 })
@@ -44,8 +43,7 @@ impl StatsUiSystem {
                 .map(|(attack, entity, shader)| {
                     (
                         entity.entity,
-                        resources
-                            .options
+                        options
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(-1.0))
@@ -63,7 +61,7 @@ impl StatsUiSystem {
                             )
                             .set_uniform(
                                 "u_circle_color",
-                                ShaderUniform::Color(resources.options.stats_attack_color),
+                                ShaderUniform::Color(options.stats_attack_color),
                             ),
                     )
                 })
@@ -71,14 +69,15 @@ impl StatsUiSystem {
         }
     }
 
-    pub fn fill_node_template(world: &legion::World, resources: &mut Resources) {
-        resources
-            .cassette
-            .node_template
-            .clear_key(STATS_EFFECTS_KEY);
-        let effects = Self::get_all_shaders(world, resources, StatType::Hp)
+    pub fn fill_node_template(
+        world: &legion::World,
+        options: &Options,
+        node_template: &mut CassetteNode,
+    ) {
+        node_template.clear_key(STATS_EFFECTS_KEY);
+        let effects = Self::get_all_shaders(world, options, StatType::Hp)
             .into_iter()
-            .chain(Self::get_all_shaders(world, resources, StatType::Attack))
+            .chain(Self::get_all_shaders(world, options, StatType::Attack))
             .map(|(entity, shader)| {
                 VisualEffect::new(
                     0.0,
@@ -87,9 +86,6 @@ impl StatsUiSystem {
                 )
             })
             .collect_vec();
-        resources
-            .cassette
-            .node_template
-            .add_effects_by_key(STATS_EFFECTS_KEY, effects);
+        node_template.add_effects_by_key(STATS_EFFECTS_KEY, effects);
     }
 }

@@ -8,7 +8,9 @@ use super::*;
 pub struct ShaderSystem {}
 
 impl System for ShaderSystem {
-    fn update(&mut self, world: &mut legion::World, _resources: &mut Resources) {}
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        resources.frame_shaders.clear();
+    }
 
     fn draw(
         &self,
@@ -21,7 +23,7 @@ impl System for ShaderSystem {
 }
 
 impl ShaderSystem {
-    pub fn new(geng: &Geng) -> Self {
+    pub fn new() -> Self {
         Self {}
     }
 
@@ -52,7 +54,13 @@ impl ShaderSystem {
             .iter(world)
             .map(|(_, entity)| Self::get_entity_shader(world, entity.entity))
             .collect_vec();
-        let shaders = [world_shaders, resources.cassette.get_shaders()].concat();
+
+        let shaders = [
+            world_shaders,
+            resources.cassette.get_shaders(),
+            resources.frame_shaders.clone(),
+        ]
+        .concat();
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
         let emtpy_vec: Vec<Shader> = Vec::new();
         for shader in shaders {
@@ -70,7 +78,7 @@ impl ShaderSystem {
                     u_game_time: resources.cassette.head,
                 );
                 if let Some((key, value)) = shader.parameters.uniforms.find_string() {
-                    if let Some(texture) = self.get_text_texture(&value, resources) {
+                    if let Some(texture) = Self::get_text_texture(&value, resources) {
                         Self::draw_shader(
                             shader,
                             framebuffer,
@@ -91,7 +99,7 @@ impl ShaderSystem {
         }
     }
 
-    fn get_text_texture(&self, text: &String, resources: &Resources) -> Option<ugli::Texture> {
+    fn get_text_texture(text: &String, resources: &Resources) -> Option<ugli::Texture> {
         resources.font.create_text_sdf(text, 64.0)
     }
 

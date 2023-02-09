@@ -12,7 +12,12 @@ impl BattleSystem {
             ticks += 1;
         }
         resources.cassette.node_template.clear();
-        UnitComponent::add_all_units_to_node_template(world, resources);
+        UnitComponent::add_all_units_to_node_template(
+            world,
+            &resources.options,
+            &resources.statuses,
+            &mut resources.cassette.node_template,
+        );
         Self::finish_battle(world);
     }
 
@@ -46,7 +51,7 @@ impl BattleSystem {
                 .values()
                 .choose(&mut rng)
                 .unwrap()
-                .create_unit_entity(world, &mut resources.statuses, faction, slot);
+                .create_unit_entity(world, &mut resources.statuses, faction, slot, vec2::ZERO);
         }
     }
 
@@ -134,7 +139,12 @@ impl BattleSystem {
             .iter()
             .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
         if left.is_some() && right.is_some() {
-            UnitComponent::add_all_units_to_node_template(world, resources);
+            UnitComponent::add_all_units_to_node_template(
+                world,
+                &resources.options,
+                &resources.statuses,
+                &mut resources.cassette.node_template,
+            );
             resources.cassette.merge_template_into_last();
             resources.cassette.close_node();
             let left_entity = left.unwrap().1.entity;
@@ -222,7 +232,12 @@ impl BattleSystem {
                 ticks += 1;
             }
 
-            UnitComponent::add_all_units_to_node_template(world, resources); // get changes (like stats) after ActionSystem execution
+            UnitComponent::add_all_units_to_node_template(
+                world,
+                &resources.options,
+                &resources.statuses,
+                &mut resources.cassette.node_template,
+            ); // get changes (like stats) after ActionSystem execution
             resources.cassette.merge_template_into_last(); // merge this changes into last node, to display changed HP alongside any extra effects from ActionSystem
             Self::add_strike_vfx(world, resources, left_entity, right_entity);
             resources.cassette.close_node();

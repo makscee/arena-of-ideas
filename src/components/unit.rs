@@ -31,22 +31,23 @@ impl UnitComponent {
         Self { slot, faction }
     }
 
-    pub fn add_all_units_to_node_template(world: &legion::World, resources: &mut Resources) {
-        resources
-            .cassette
-            .node_template
-            .clear_key(STATUSES_EFFECTS_KEY);
+    pub fn add_all_units_to_node_template(
+        world: &legion::World,
+        options: &Options,
+        statuses: &Statuses,
+        node_template: &mut CassetteNode,
+    ) {
+        node_template.clear_key(STATUSES_EFFECTS_KEY);
         <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .for_each(|(unit, entity)| {
-                resources.cassette.node_template.add_entity_shader(
+                node_template.add_entity_shader(
                     entity.entity,
                     ShaderSystem::get_entity_shader(world, entity.entity).clone(),
                 );
-                resources.cassette.node_template.add_effects_by_key(
+                node_template.add_effects_by_key(
                     STATUSES_EFFECTS_KEY,
-                    resources
-                        .statuses
+                    statuses
                         .get_entity_shaders(&entity.entity)
                         .into_iter()
                         .map(|shader| {
@@ -62,7 +63,7 @@ impl UnitComponent {
                         .collect_vec(),
                 )
             });
-        StatsUiSystem::fill_node_template(world, resources);
-        NameSystem::fill_node_template(world, resources);
+        StatsUiSystem::fill_node_template(world, options, node_template);
+        NameSystem::fill_node_template(world, options, node_template);
     }
 }

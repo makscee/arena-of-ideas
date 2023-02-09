@@ -7,6 +7,7 @@ mod effect;
 mod event;
 mod options;
 mod shader_programs;
+mod shop;
 mod status;
 mod trigger;
 mod visual_effect;
@@ -16,6 +17,7 @@ pub use effect::*;
 pub use event::*;
 pub use options::*;
 pub use shader_programs::*;
+pub use shop::*;
 pub use status::*;
 pub use trigger::*;
 pub use visual_effect::*;
@@ -32,6 +34,8 @@ pub struct Resources {
     pub statuses: Statuses,
     pub action_queue: VecDeque<Action>,
     pub cassette: Cassette,
+    pub shop: Shop,
+    pub frame_shaders: Vec<Shader>,
 
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
@@ -79,6 +83,8 @@ impl Resources {
             statuses: default(),
             unit_templates: default(),
             cassette: default(),
+            shop: default(),
+            frame_shaders: default(),
             options,
         }
     }
@@ -86,6 +92,7 @@ impl Resources {
     pub fn load(&mut self, fws: &mut FileWatcherSystem) {
         self.load_shader_programs(fws);
         self.load_unit_templates();
+        self.shop.load(&self.unit_templates);
         fws.load_and_watch_file(
             self,
             &static_path().join("options.json"),
@@ -200,9 +207,10 @@ impl UnitTemplate {
         statuses: &mut Statuses,
         faction: Faction,
         slot: usize,
+        position: vec2<f32>,
     ) -> legion::Entity {
         let entity = world.push((
-            Position::default(),
+            Position(position),
             FlagsComponent::default(),
             faction.clone(),
             UnitComponent { faction, slot },

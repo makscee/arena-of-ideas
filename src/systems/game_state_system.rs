@@ -18,7 +18,7 @@ impl System for GameStateSystem {
         match self.current {
             GameState::MainMenu => {
                 if !resources.down_keys.is_empty() {
-                    self.transition = GameState::Battle;
+                    self.transition = GameState::Shop;
                 }
             }
             GameState::Battle => {
@@ -46,7 +46,6 @@ impl System for GameStateSystem {
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.systems.get(&self.current).and_then(|systems| {
             Some(
                 systems
@@ -114,7 +113,9 @@ impl GameStateSystem {
             GameState::Battle => {
                 BattleSystem::run_battle(world, resources);
             }
-            GameState::Shop => {}
+            GameState::Shop => {
+                ShopSystem::refresh(resources);
+            }
         }
 
         self.current = self.transition.clone();

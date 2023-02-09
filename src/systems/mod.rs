@@ -9,6 +9,7 @@ mod file_watcher_system;
 mod game_state_system;
 mod name_system;
 mod shader_system;
+mod shop_system;
 mod stats_ui_system;
 mod time_system;
 
@@ -20,6 +21,7 @@ pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
 pub use name_system::*;
 pub use shader_system::*;
+pub use shop_system::*;
 pub use stats_ui_system::*;
 
 pub trait System {
@@ -62,13 +64,14 @@ impl Game {
             vec![
                 Box::new(CassettePlayerSystem::new()),
                 Box::new(ActionSystem::new()),
+                Box::new(ShopSystem::new()),
             ],
         );
 
-        global_systems.push(Box::new(TimeSystem::new()));
-        global_systems.push(Box::new(game_state));
         global_systems.push(Box::new(fws));
-        global_systems.push(Box::new(ShaderSystem::new(&resources.geng)));
+        global_systems.push(Box::new(TimeSystem::new()));
+        global_systems.push(Box::new(ShaderSystem::new()));
+        global_systems.push(Box::new(game_state));
         global_systems
     }
 

@@ -60,6 +60,7 @@ impl geng::State for Game {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.systems
             .iter()
             .for_each(|s| s.draw(&self.world, &self.resources, framebuffer));
