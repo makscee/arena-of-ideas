@@ -46,7 +46,6 @@ impl Effect {
                 {
                     debug!("Damage Immune");
                     text = "Immune".to_string();
-                    
                 } else {
                     let hp = target.get_component_mut::<HpComponent>()?;
                     hp.set_current(hp.current() - value, resources);

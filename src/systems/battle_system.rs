@@ -70,16 +70,59 @@ impl BattleSystem {
         })
     }
 
+    fn get_unit_position(unit: &UnitComponent) -> vec2<f32> {
+        let faction_mul: vec2<f32> = vec2(
+            match unit.faction {
+                Faction::Light => -1.0,
+                Faction::Dark => 1.0,
+            },
+            1.0,
+        );
+        return match unit.slot == 1 {
+            true => vec2(1.5, 0.0),
+            false => vec2((unit.slot as f32 - 1.0) * 2.5, -4.0),
+        } * faction_mul;
+    }
+
+    fn get_position_change_animation(
+        entity: legion::Entity,
+        from: vec2<f32>,
+        to: vec2<f32>,
+    ) -> VisualEffect {
+        VisualEffect {
+            duration: 0.5,
+            r#type: VisualEffectType::EntityShaderAnimation {
+                entity,
+                from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
+                to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
+                easing: EasingType::CubicIn,
+            },
+            order: 0,
+        }
+    }
+
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
+        resources.cassette.node_template.clear();
+        resources.cassette.close_node();
         let mut current_slot = hashmap! {Faction::Light => 0usize, Faction::Dark => 0usize};
-        <(&mut UnitComponent, &mut Position)>::query()
+        <(&mut UnitComponent, &mut Position, &EntityComponent)>::query()
             .iter_mut(world)
-            .sorted_by_key(|(unit, _)| unit.slot)
-            .for_each(|(unit, position)| {
+            .sorted_by_key(|(unit, _, _)| unit.slot)
+            .for_each(|(unit, position, entity)| {
                 let slot = current_slot.get_mut(&unit.faction).unwrap();
                 *slot = *slot + 1;
                 unit.slot = *slot;
-                position.update_from_slot_faction(*slot, &unit.faction);
+                let new_position = Self::get_unit_position(unit);
+                if new_position != position.0 {
+                    resources
+                        .cassette
+                        .add_effect(Self::get_position_change_animation(
+                            entity.entity,
+                            position.0,
+                            new_position,
+                        ))
+                }
+                position.0 = new_position;
             });
         let units = <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
@@ -91,12 +134,11 @@ impl BattleSystem {
             .iter()
             .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
         if left.is_some() && right.is_some() {
+            UnitComponent::add_all_units_to_node_template(world, resources);
+            resources.cassette.merge_template_into_last();
+            resources.cassette.close_node();
             let left_entity = left.unwrap().1.entity;
             let right_entity = right.unwrap().1.entity;
-
-            resources.cassette.node_template.clear();
-            UnitComponent::add_all_units_to_node_template(world, resources);
-            resources.cassette.close_node();
 
             Self::add_strike_animation(
                 &mut resources.cassette,

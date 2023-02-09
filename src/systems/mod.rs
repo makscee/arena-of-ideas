@@ -29,7 +29,9 @@ pub trait System {
         world: &legion::World,
         resources: &Resources,
         framebuffer: &mut ugli::Framebuffer,
-    );
+    ) {
+        #![allow(unused_variables)]
+    }
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
@@ -63,10 +65,10 @@ impl Game {
             ],
         );
 
-        global_systems.push(Box::new(game_state));
-        global_systems.push(Box::new(ShaderSystem::new(&resources.geng)));
-        global_systems.push(Box::new(fws));
         global_systems.push(Box::new(TimeSystem::new()));
+        global_systems.push(Box::new(game_state));
+        global_systems.push(Box::new(fws));
+        global_systems.push(Box::new(ShaderSystem::new(&resources.geng)));
         global_systems
     }
 
