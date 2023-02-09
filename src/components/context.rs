@@ -25,13 +25,13 @@ impl Context {
                 status: None,
             })
             .clone();
+        if let Some(component) = entry.get_component::<UnitComponent>().ok() {
+            component.extend_vars(&mut context.vars);
+        }
         if let Some(component) = entry.get_component::<Position>().ok() {
             component.extend_vars(&mut context.vars);
         }
         if let Some(component) = entry.get_component::<HpComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<Faction>().ok() {
             component.extend_vars(&mut context.vars);
         }
 

@@ -3,11 +3,34 @@ use geng::prelude::itertools::Itertools;
 use super::*;
 
 #[derive(Debug)]
-pub struct UnitComponent {}
+pub struct UnitComponent {
+    pub slot: usize,
+    pub faction: Faction,
+}
+
+#[derive(Clone, Deserialize, Debug, PartialEq, Eq, Hash)]
+pub enum Faction {
+    Light,
+    Dark,
+}
+
+impl VarsProvider for UnitComponent {
+    fn extend_vars(&self, vars: &mut Vars) {
+        let faction_val = match self.faction {
+            Faction::Light => -1,
+            Faction::Dark => 1,
+        };
+        vars.insert(VarName::Faction, Var::Int(faction_val));
+    }
+}
 
 const STATUSES_EFFECTS_KEY: &str = "statuses";
 
 impl UnitComponent {
+    pub fn new(slot: usize, faction: Faction) -> Self {
+        Self { slot, faction }
+    }
+
     pub fn add_all_units_to_node_template(world: &legion::World, resources: &mut Resources) {
         resources
             .cassette

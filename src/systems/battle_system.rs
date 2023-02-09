@@ -17,6 +17,7 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
+        Self::create_units(7, resources, world);
         Self::init_units(resources, world);
         Self::init_statuses(resources);
         while ActionSystem::tick(world, resources) {}
@@ -32,23 +33,24 @@ impl BattleSystem {
         });
     }
 
-    fn init_units(resources: &mut Resources, world: &mut legion::World) {
-        let left = resources.unit_templates.values().collect_vec()[0].create_unit_entity(
-            world,
-            &mut resources.statuses,
-            Faction::Light,
-        );
-        let mut left = world.entry(left).unwrap();
-        left.get_component_mut::<Position>().unwrap().0 = vec2(-1.5, 0.0);
-
-        let right = resources.unit_templates.values().collect_vec()[1].create_unit_entity(
-            world,
-            &mut resources.statuses,
-            Faction::Dark,
-        );
-        let mut right = world.entry(right).unwrap();
-        right.get_component_mut::<Position>().unwrap().0 = vec2(1.5, 0.0);
+    fn create_units(count: usize, resources: &mut Resources, world: &mut legion::World) {
+        for i in 0..count {
+            let faction = match i % 2 == 0 {
+                true => Faction::Light,
+                false => Faction::Dark,
+            };
+            let slot = i + 1 - i % 2;
+            let mut rng = rand::thread_rng();
+            resources
+                .unit_templates
+                .values()
+                .choose(&mut rng)
+                .unwrap()
+                .create_unit_entity(world, &mut resources.statuses, faction, slot);
+        }
     }
+
+    fn init_units(resources: &mut Resources, world: &mut legion::World) {}
 
     fn init_statuses(resources: &mut Resources) {
         let statuses = resources
@@ -69,16 +71,26 @@ impl BattleSystem {
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
-        let units = <(&UnitComponent, &EntityComponent, &Faction)>::query()
+        let mut current_slot = hashmap! {Faction::Light => 0usize, Faction::Dark => 0usize};
+        <(&mut UnitComponent, &mut Position)>::query()
+            .iter_mut(world)
+            .sorted_by_key(|(unit, _)| unit.slot)
+            .for_each(|(unit, position)| {
+                let slot = current_slot.get_mut(&unit.faction).unwrap();
+                *slot = *slot + 1;
+                unit.slot = *slot;
+                position.update_from_slot_faction(*slot, &unit.faction);
+            });
+        let units = <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .collect_vec();
         let left = units
             .iter()
-            .find(|(_, _, faction)| **faction == Faction::Light);
+            .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Light);
         let right = units
             .iter()
-            .find(|(_, _, faction)| **faction == Faction::Dark);
-        if left.is_some() && right.is_some() && units.len() > 1 {
+            .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
+        if left.is_some() && right.is_some() {
             let left_entity = left.unwrap().1.entity;
             let right_entity = right.unwrap().1.entity;
 

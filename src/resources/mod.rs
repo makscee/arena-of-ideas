@@ -199,12 +199,13 @@ impl UnitTemplate {
         world: &mut legion::World,
         statuses: &mut Statuses,
         faction: Faction,
+        slot: usize,
     ) -> legion::Entity {
         let entity = world.push((
             Position::default(),
             FlagsComponent::default(),
             faction.clone(),
-            UnitComponent {},
+            UnitComponent { faction, slot },
         ));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });
