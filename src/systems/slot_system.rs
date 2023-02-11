@@ -1,3 +1,5 @@
+use legion::EntityStore;
+
 use super::*;
 
 pub struct SlotSystem {}
@@ -41,6 +43,18 @@ impl SlotSystem {
 
     pub fn get_unit_position(unit: &UnitComponent) -> vec2<f32> {
         Self::get_position(unit.slot, &unit.faction)
+    }
+
+    pub fn put_unit_into_slot(entity: legion::Entity, world: &mut legion::World) {
+        let entry = world.entry(entity).unwrap();
+        let unit = entry.get_component::<UnitComponent>().unwrap();
+        let (slot, faction) = (unit.slot, unit.faction);
+        world
+            .entry_mut(entity)
+            .unwrap()
+            .get_component_mut::<Position>()
+            .unwrap()
+            .0 = Self::get_position(slot, &faction)
     }
 
     fn clear_world(world: &mut legion::World) {

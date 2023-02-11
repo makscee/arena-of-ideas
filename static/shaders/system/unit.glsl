@@ -39,7 +39,8 @@ void main() {
     dmg_t = dmg_t * dmg_t * dmg_t;
     commonInit();
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
-    vec4 color = vec4(faction_color, alpha);
+    float field = get_field_value(u_position + uv);
+    vec4 color = vec4(mix(dark_faction_color, light_faction_color, field), alpha);
     if(dmg_t > 0. && len < 0.) {
         vec2 v = floor(uv * 8 * (0.5 + dmg_t));
         float r = N22(v + vec2(floor(u_global_time * 20) / 20)).x;

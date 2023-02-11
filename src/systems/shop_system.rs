@@ -57,6 +57,17 @@ impl ShopSystem {
                 > 0.0
             {
                 world.remove(sell_candidate);
+            } else {
+                if let Some(slot) = SlotSystem::get_mouse_slot(&Faction::Team, resources.mouse_pos)
+                {
+                    world
+                        .entry_mut(sell_candidate)
+                        .unwrap()
+                        .get_component_mut::<UnitComponent>()
+                        .unwrap()
+                        .slot = slot;
+                }
+                SlotSystem::put_unit_into_slot(sell_candidate, world);
             }
             self.sell_candidate = None;
         } else if let Some(buy_candidate) = self.buy_candidate {
@@ -76,7 +87,7 @@ impl ShopSystem {
     pub fn clear(world: &mut legion::World, resources: &mut Resources) {
         <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
-            .filter_map(|(unit, entity)| match unit.faction == Faction::Dark {
+            .filter_map(|(unit, entity)| match unit.faction == Faction::Shop {
                 true => Some(entity.entity),
                 false => None,
             })

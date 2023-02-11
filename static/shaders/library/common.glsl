@@ -4,9 +4,13 @@ uniform float u_game_time;
 uniform float u_global_time;
 
 vec3 faction_color;
+vec3 op_faction_color;
+vec3 light_faction_color = vec3(0);
+vec3 dark_faction_color = vec3(1);
 
 void commonInit() {
     faction_color = mix(vec3(0), vec3(1), (1. + float(u_faction)) * .5);
+    op_faction_color = 1. - faction_color;
 }
 
 // vec4 getColor() {
@@ -227,4 +231,8 @@ float fbm(vec2 p) {
     p *= m * 2.04;
     f /= 0.9375;
     return f;
+}
+
+float get_field_value(vec2 position) {
+    return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }

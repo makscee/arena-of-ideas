@@ -20,7 +20,7 @@ uniform vec4 u_color_1;
 uniform vec4 u_color_2;
 
 void main() {
-    float t = smoothstep(-0.7, 0.7, v_quad_pos.y * .4 - v_quad_pos.x + (fbm(v_quad_pos.yy + vec2(u_game_time * .3, 0)) - .5) * 2.);
+    float t = get_field_value(v_quad_pos);
     vec4 color = mix(u_color_1, u_color_2, t);
     gl_FragColor = color;
 }
