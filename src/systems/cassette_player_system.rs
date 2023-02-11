@@ -7,10 +7,8 @@ pub struct CassettePlayerSystem {
 }
 
 impl CassettePlayerSystem {
-    pub fn new() -> Self {
-        Self {
-            mode: PlayMode::Play,
-        }
+    pub fn new(mode: PlayMode) -> Self {
+        Self { mode }
     }
 }
 
@@ -19,18 +17,22 @@ const REWIND_SPEED: f32 = 5.0;
 impl System for CassettePlayerSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         resources.cassette.head = match self.mode {
-            PlayMode::Play => resources.cassette.head + resources.delta_time,
+            PlayMode::Play | PlayMode::Hidden => resources.cassette.head + resources.delta_time,
             PlayMode::Stop => resources.cassette.head,
             PlayMode::Rewind { ts } => {
                 resources.cassette.head
                     + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED
             }
         };
+        if self.mode == PlayMode::Hidden {
+            return;
+        }
 
         if resources.down_keys.contains(&geng::Key::Space) {
             self.mode = match self.mode {
                 PlayMode::Play => PlayMode::Stop,
                 PlayMode::Stop | PlayMode::Rewind { .. } => PlayMode::Play,
+                _ => panic!("Wrong Play Mode"),
             };
         }
         if resources.pressed_keys.contains(&geng::Key::Left)
@@ -48,18 +50,11 @@ impl System for CassettePlayerSystem {
                     }
 
                     PlayMode::Rewind { ts } => ts + resources.delta_time * direction * REWIND_SPEED,
+                    _ => panic!("Wrong Play Mode"),
                 }
                 .clamp(0.0, resources.cassette.length()),
             };
         }
-    }
-
-    fn draw(
-        &self,
-        world: &legion::World,
-        resources: &Resources,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
     }
 
     fn ui<'a>(
@@ -67,6 +62,9 @@ impl System for CassettePlayerSystem {
         cx: &'a ui::Controller,
         resources: &Resources,
     ) -> Box<dyn ui::Widget + 'a> {
+        if self.mode == PlayMode::Hidden {
+            return Box::new(ui::Void);
+        }
         Box::new(
             (
                 Text::new(
@@ -90,11 +88,12 @@ impl System for CassettePlayerSystem {
     }
 }
 
-#[derive(Clone, Copy)]
-enum PlayMode {
+#[derive(Clone, Copy, PartialEq)]
+pub enum PlayMode {
     Play,
     Stop,
     Rewind { ts: Time },
+    Hidden,
 }
 
 impl Display for PlayMode {
@@ -106,6 +105,7 @@ impl Display for PlayMode {
                 PlayMode::Play => "Play",
                 PlayMode::Stop => "Stop",
                 PlayMode::Rewind { .. } => "Rewind",
+                PlayMode::Hidden => "Hidden",
             }
         )
     }

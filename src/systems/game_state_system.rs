@@ -114,7 +114,7 @@ impl GameStateSystem {
                 BattleSystem::run_battle(world, resources);
             }
             GameState::Shop => {
-                ShopSystem::refresh(resources);
+                ShopSystem::refresh(world, resources);
             }
         }
 

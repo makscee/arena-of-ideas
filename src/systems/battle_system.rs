@@ -17,6 +17,7 @@ impl BattleSystem {
             &resources.options,
             &resources.statuses,
             &mut resources.cassette.node_template,
+            hashset! {Faction::Dark, Faction::Light},
         );
         Self::finish_battle(world);
     }
@@ -80,6 +81,8 @@ impl BattleSystem {
             match unit.faction {
                 Faction::Light => -1.0,
                 Faction::Dark => 1.0,
+                Faction::Team => -1.0,
+                Faction::Shop => 1.0,
             },
             1.0,
         );
@@ -144,6 +147,7 @@ impl BattleSystem {
                 &resources.options,
                 &resources.statuses,
                 &mut resources.cassette.node_template,
+                hashset! {Faction::Light, Faction::Dark},
             );
             resources.cassette.merge_template_into_last();
             resources.cassette.close_node();
@@ -237,6 +241,7 @@ impl BattleSystem {
                 &resources.options,
                 &resources.statuses,
                 &mut resources.cassette.node_template,
+                hashset! {Faction::Light, Faction::Dark},
             ); // get changes (like stats) after ActionSystem execution
             resources.cassette.merge_template_into_last(); // merge this changes into last node, to display changed HP alongside any extra effects from ActionSystem
             Self::add_strike_vfx(world, resources, left_entity, right_entity);
@@ -322,6 +327,7 @@ impl BattleSystem {
         let faction_mul = match faction {
             Faction::Light => -1.0,
             Faction::Dark => 1.0,
+            _ => panic!("Wrong faction"),
         };
         match phase {
             StrikePhase::Charge => cassette.add_effect(VisualEffect::new(

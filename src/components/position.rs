@@ -24,6 +24,8 @@ impl Position {
             match faction {
                 Faction::Light => -1.0,
                 Faction::Dark => 1.0,
+                Faction::Team => -1.0,
+                Faction::Shop => 1.0,
             },
             1.0,
         );

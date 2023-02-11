@@ -7,14 +7,15 @@ pub struct ShopSystem {}
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if resources.down_keys.contains(&geng::Key::R) {
-            Self::refresh(resources);
+            Self::refresh(world, resources);
         }
         resources.cassette.node_template.clear();
         UnitComponent::add_all_units_to_node_template(
-            &resources.shop.world,
+            &world,
             &resources.options,
             &resources.statuses,
             &mut resources.cassette.node_template,
+            hashset! {Faction::Shop, Faction::Team},
         );
     }
 }
@@ -24,9 +25,9 @@ impl ShopSystem {
         Self {}
     }
 
-    pub fn clear(resources: &mut Resources) {
+    pub fn clear(world: &mut legion::World, resources: &mut Resources) {
         <(&UnitComponent, &EntityComponent)>::query()
-            .iter(&resources.shop.world)
+            .iter(world)
             .filter_map(|(unit, entity)| match unit.faction == Faction::Dark {
                 true => Some(entity.entity),
                 false => None,
@@ -34,20 +35,21 @@ impl ShopSystem {
             .collect_vec()
             .iter()
             .for_each(|entity| {
-                resources.shop.world.remove(*entity);
+                world.remove(*entity);
             });
     }
 
     fn get_unit_position(faction: &Faction, slot: usize) -> vec2<f32> {
         vec2(slot as f32, 0.0)
             * match faction {
-                Faction::Light => -2.5,
-                Faction::Dark => 2.5,
+                Faction::Team => -2.5,
+                Faction::Shop => 2.5,
+                _ => panic!("Wrong faction"),
             }
     }
 
-    pub fn refresh(resources: &mut Resources) {
-        Self::clear(resources);
+    pub fn refresh(world: &mut legion::World, resources: &mut Resources) {
+        Self::clear(world, resources);
 
         let items = resources.shop.pool.iter().collect_vec();
         let dist2 = WeightedIndex::new(items.iter().map(|item| *item.1)).unwrap();
@@ -58,11 +60,11 @@ impl ShopSystem {
                 .get(path)
                 .expect(&format!("Failed to find Unit Template: {:?}", path));
             template.create_unit_entity(
-                &mut resources.shop.world,
+                world,
                 &mut resources.statuses,
-                Faction::Dark,
+                Faction::Shop,
                 slot,
-                Self::get_unit_position(&Faction::Dark, slot),
+                Self::get_unit_position(&Faction::Shop, slot),
             );
         }
     }

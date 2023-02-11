@@ -12,6 +12,8 @@ pub struct UnitComponent {
 pub enum Faction {
     Light,
     Dark,
+    Team,
+    Shop,
 }
 
 impl VarsProvider for UnitComponent {
@@ -19,6 +21,8 @@ impl VarsProvider for UnitComponent {
         let faction_val = match self.faction {
             Faction::Light => -1,
             Faction::Dark => 1,
+            Faction::Team => -2,
+            Faction::Shop => 2,
         };
         vars.insert(VarName::Faction, Var::Int(faction_val));
     }
@@ -36,10 +40,12 @@ impl UnitComponent {
         options: &Options,
         statuses: &Statuses,
         node_template: &mut CassetteNode,
+        factions: HashSet<Faction>,
     ) {
         node_template.clear_key(STATUSES_EFFECTS_KEY);
         <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
+            .filter(|(unit, _)| factions.contains(&unit.faction))
             .for_each(|(unit, entity)| {
                 node_template.add_entity_shader(
                     entity.entity,

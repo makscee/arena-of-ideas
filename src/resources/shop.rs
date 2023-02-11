@@ -2,15 +2,11 @@ use super::*;
 
 pub struct Shop {
     pub pool: HashMap<PathBuf, usize>,
-    pub world: legion::World,
 }
 
 impl Default for Shop {
     fn default() -> Self {
-        Self {
-            pool: default(),
-            world: default(),
-        }
+        Self { pool: default() }
     }
 }
 
