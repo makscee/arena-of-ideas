@@ -115,11 +115,6 @@ impl GameStateSystem {
             }
             GameState::Shop => {
                 ShopSystem::refresh(world, resources);
-                SlotSystem::add_slot_shaders(
-                    world,
-                    resources,
-                    hashset! {Faction::Shop,Faction::Team},
-                );
             }
         }
 

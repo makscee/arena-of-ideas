@@ -70,17 +70,28 @@ impl ShopSystem {
                 SlotSystem::put_unit_into_slot(sell_candidate, world);
             }
             self.sell_candidate = None;
+            SlotSystem::refresh_slot_shaders(
+                world,
+                resources,
+                hashset! {Faction::Shop,Faction::Team},
+            );
         } else if let Some(buy_candidate) = self.buy_candidate {
             let mut entry = world.entry_mut(buy_candidate).unwrap();
             if let Some(slot) = SlotSystem::get_mouse_slot(&Faction::Team, resources.mouse_pos) {
-                entry.get_component_mut::<Position>().unwrap().0 =
-                    SlotSystem::get_position(slot, &Faction::Team);
-                entry.get_component_mut::<UnitComponent>().unwrap().faction = Faction::Team;
+                let unit = entry.get_component_mut::<UnitComponent>().unwrap();
+                unit.faction = Faction::Team;
+                unit.slot = slot;
+                SlotSystem::put_unit_into_slot(buy_candidate, world);
             } else {
                 entry.get_component_mut::<Position>().unwrap().0 =
                     SlotSystem::get_unit_position(entry.get_component::<UnitComponent>().unwrap());
             }
             self.buy_candidate = None;
+            SlotSystem::refresh_slot_shaders(
+                world,
+                resources,
+                hashset! {Faction::Shop,Faction::Team},
+            );
         }
     }
 
@@ -117,5 +128,6 @@ impl ShopSystem {
                 SlotSystem::get_position(slot, &Faction::Shop),
             );
         }
+        SlotSystem::refresh_slot_shaders(world, resources, hashset! {Faction::Shop,Faction::Team});
     }
 }

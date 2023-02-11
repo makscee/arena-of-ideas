@@ -68,7 +68,7 @@ impl SlotSystem {
             });
     }
 
-    pub fn add_slot_shaders(
+    pub fn refresh_slot_shaders(
         world: &mut legion::World,
         resources: &Resources,
         factions: HashSet<Faction>,
