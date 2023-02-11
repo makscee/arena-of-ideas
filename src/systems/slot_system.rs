@@ -30,6 +30,15 @@ impl SlotSystem {
         }
     }
 
+    pub fn get_mouse_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
+        for slot in 1..=SLOTS_COUNT {
+            if (Self::get_position(slot, faction) - mouse_pos).len() < UNIT_RADIUS {
+                return Some(slot);
+            }
+        }
+        None
+    }
+
     pub fn get_unit_position(unit: &UnitComponent) -> vec2<f32> {
         Self::get_position(unit.slot, &unit.faction)
     }

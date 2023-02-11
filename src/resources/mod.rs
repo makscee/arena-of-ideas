@@ -39,6 +39,7 @@ pub struct Resources {
     pub cassette: Cassette,
     pub shop: Shop,
     pub frame_shaders: Vec<Shader>,
+    pub dragged_entity: Option<legion::Entity>,
 
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
@@ -92,6 +93,7 @@ impl Resources {
             down_mouse_buttons: default(),
             pressed_mouse_buttons: default(),
             mouse_pos: vec2::ZERO,
+            dragged_entity: default(),
         }
     }
 

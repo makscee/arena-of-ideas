@@ -1,12 +1,10 @@
 use super::*;
 
-pub struct DragSystem {
-    dragged: Option<legion::Entity>,
-}
+pub struct DragSystem {}
 
 impl DragSystem {
     pub fn new() -> Self {
-        Self { dragged: None }
+        Self {}
     }
 
     fn get_hovered_unit(world: &legion::World, resources: &Resources) -> Option<legion::Entity> {
@@ -29,17 +27,17 @@ impl System for DragSystem {
             .contains(&geng::MouseButton::Left)
         {
             if let Some(dragged) = Self::get_hovered_unit(world, resources) {
-                self.dragged = Some(dragged);
+                resources.dragged_entity = Some(dragged);
             }
         }
-        if self.dragged.is_some()
+        if resources.dragged_entity.is_some()
             && !resources
                 .pressed_mouse_buttons
                 .contains(&geng::MouseButton::Left)
         {
-            self.dragged = None;
+            resources.dragged_entity = None;
         }
-        if let Some(dragged) = self.dragged {
+        if let Some(dragged) = resources.dragged_entity {
             world
                 .entry(dragged)
                 .unwrap()
