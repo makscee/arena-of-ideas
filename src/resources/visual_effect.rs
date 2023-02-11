@@ -63,7 +63,7 @@ impl VisualEffectType {
                 to,
                 easing,
             } => Some(Shader {
-                path: static_path().join(&shader.path),
+                path: shader.path.clone(),
                 parameters: ShaderParameters {
                     uniforms: shader.parameters.uniforms.merge(&ShaderUniforms::mix(
                         from,
@@ -102,7 +102,7 @@ impl VisualEffectType {
                 easing,
             } => match entity_shaders.get(entity) {
                 Some(entity_shader) => Some(Shader {
-                    path: static_path().join(&shader.path),
+                    path: shader.path.clone(),
                     parameters: ShaderParameters {
                         uniforms: entity_shader
                             .parameters
@@ -118,7 +118,7 @@ impl VisualEffectType {
             VisualEffectType::EntityExtraShaderConst { entity, shader } => {
                 match entity_shaders.get(entity) {
                     Some(entity_shader) => Some(Shader {
-                        path: static_path().join(&shader.path),
+                        path: shader.path.clone(),
                         parameters: ShaderParameters {
                             uniforms: entity_shader
                                 .parameters

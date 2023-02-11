@@ -8,6 +8,8 @@ pub struct UnitComponent {
     pub faction: Faction,
 }
 
+pub const UNIT_RADIUS: f32 = 1.0;
+
 #[derive(Clone, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub enum Faction {
     Light,

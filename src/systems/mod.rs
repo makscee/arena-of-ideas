@@ -5,6 +5,7 @@ use super::*;
 mod action_system;
 mod battle_system;
 mod cassette_player_system;
+mod drag_system;
 mod file_watcher_system;
 mod game_state_system;
 mod name_system;
@@ -16,6 +17,7 @@ mod time_system;
 pub use action_system::*;
 pub use battle_system::*;
 pub use cassette_player_system::*;
+pub use drag_system::*;
 pub use file_watcher_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
@@ -65,6 +67,7 @@ impl Game {
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
                 Box::new(ActionSystem::new()),
                 Box::new(ShopSystem::new()),
+                Box::new(DragSystem::new()),
             ],
         );
 

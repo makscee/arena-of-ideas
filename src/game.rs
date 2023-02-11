@@ -30,6 +30,7 @@ impl geng::State for Game {
             .iter_mut()
             .for_each(|s| s.update(&mut self.world, &mut self.resources));
         self.resources.down_keys.clear();
+        self.resources.down_mouse_buttons.clear();
     }
 
     fn handle_event(&mut self, event: geng::Event) {
@@ -41,6 +42,15 @@ impl geng::State for Game {
 
             geng::Event::KeyUp { key } => {
                 self.resources.pressed_keys.remove(&key);
+            }
+
+            geng::Event::MouseDown { position, button } => {
+                self.resources.down_mouse_buttons.insert(button);
+                self.resources.pressed_mouse_buttons.insert(button);
+            }
+
+            geng::Event::MouseUp { position, button } => {
+                self.resources.pressed_mouse_buttons.remove(&button);
             }
 
             _ => {}
@@ -60,6 +70,10 @@ impl geng::State for Game {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        self.resources.mouse_pos = self.resources.camera.screen_to_world(
+            framebuffer.size().map(|x| x as f32),
+            self.resources.geng.window().mouse_pos().map(|x| x as f32),
+        );
         ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.systems
             .iter()

@@ -28,6 +28,9 @@ pub struct Resources {
     pub shader_programs: ShaderPrograms,
     pub down_keys: HashSet<geng::Key>,
     pub pressed_keys: HashSet<geng::Key>,
+    pub down_mouse_buttons: HashSet<geng::MouseButton>,
+    pub pressed_mouse_buttons: HashSet<geng::MouseButton>,
+    pub mouse_pos: vec2<f32>,
 
     pub game_time: Time,
     pub delta_time: Time,
@@ -86,6 +89,9 @@ impl Resources {
             shop: default(),
             frame_shaders: default(),
             options,
+            down_mouse_buttons: default(),
+            pressed_mouse_buttons: default(),
+            mouse_pos: vec2::ZERO,
         }
     }
 
