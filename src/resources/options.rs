@@ -10,6 +10,8 @@ pub struct Options {
     pub strike: Shader,
     pub text: Shader,
     pub name: Shader,
+    pub slot: Shader,
+    pub faction_colors: HashMap<Faction, Rgba<f32>>,
 }
 
 impl geng::LoadAsset for Options {

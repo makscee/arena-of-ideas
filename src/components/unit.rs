@@ -10,12 +10,18 @@ pub struct UnitComponent {
 
 pub const UNIT_RADIUS: f32 = 1.0;
 
-#[derive(Clone, Deserialize, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub enum Faction {
     Light,
     Dark,
     Team,
     Shop,
+}
+
+impl Faction {
+    pub fn color(&self, options: &Options) -> Rgba<f32> {
+        *options.faction_colors.get(self).unwrap()
+    }
 }
 
 impl VarsProvider for UnitComponent {

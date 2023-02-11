@@ -8,6 +8,7 @@ mod hp;
 mod name;
 mod position;
 mod shader;
+mod slot;
 mod unit;
 mod vars;
 
@@ -19,6 +20,7 @@ pub use hp::*;
 pub use name::*;
 pub use position::*;
 pub use shader::*;
+pub use slot::*;
 pub use unit::*;
 pub use vars::*;
 

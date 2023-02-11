@@ -11,6 +11,7 @@ mod game_state_system;
 mod name_system;
 mod shader_system;
 mod shop_system;
+mod slot_system;
 mod stats_ui_system;
 mod time_system;
 
@@ -24,6 +25,7 @@ use geng::prelude::itertools::Itertools;
 pub use name_system::*;
 pub use shader_system::*;
 pub use shop_system::*;
+pub use slot_system::*;
 pub use stats_ui_system::*;
 
 pub trait System {
@@ -59,6 +61,7 @@ impl Game {
             vec![
                 Box::new(CassettePlayerSystem::new(PlayMode::Play)),
                 Box::new(ActionSystem::new()),
+                Box::new(SlotSystem::new()),
             ],
         );
         game_state.add_systems(
@@ -68,6 +71,7 @@ impl Game {
                 Box::new(ActionSystem::new()),
                 Box::new(ShopSystem::new()),
                 Box::new(DragSystem::new()),
+                Box::new(SlotSystem::new()),
             ],
         );
 

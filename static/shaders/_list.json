@@ -4,6 +4,7 @@
     "shaders/system/stats.glsl",
     "shaders/system/name.glsl",
     "shaders/system/strike.glsl",
+    "shaders/system/slot.glsl",
     "shaders/vfx/circle.glsl",
     "shaders/vfx/text.glsl",
     "shaders/status/default_status.glsl"

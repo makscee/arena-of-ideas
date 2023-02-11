@@ -42,6 +42,12 @@
     },
     "stats_attack_color": "#ffc400",
     "stats_hp_color": "#d20505",
+    "faction_colors": {
+        "Dark": "#ffffff",
+        "Light": "#000000",
+        "Shop": "#ffffff",
+        "Team": "#000000"
+    },
     "strike": {
         "path": "shaders/system/strike.glsl",
         "parameters": {
@@ -61,6 +67,13 @@
                 "u_outline_color": "#8d0000",
                 "u_scale": 0.9
             }
+        },
+        "layer": "UI"
+    },
+    "slot": {
+        "path": "shaders/system/slot.glsl",
+        "parameters": {
+            "uniforms": {}
         },
         "layer": "UI"
     }

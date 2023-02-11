@@ -39,15 +39,6 @@ impl ShopSystem {
             });
     }
 
-    fn get_unit_position(faction: &Faction, slot: usize) -> vec2<f32> {
-        vec2(slot as f32, 0.0)
-            * match faction {
-                Faction::Team => -2.5,
-                Faction::Shop => 2.5,
-                _ => panic!("Wrong faction"),
-            }
-    }
-
     pub fn refresh(world: &mut legion::World, resources: &mut Resources) {
         Self::clear(world, resources);
 
@@ -64,7 +55,7 @@ impl ShopSystem {
                 &mut resources.statuses,
                 Faction::Shop,
                 slot,
-                Self::get_unit_position(&Faction::Shop, slot),
+                SlotSystem::get_position(slot, &Faction::Shop),
             );
         }
     }

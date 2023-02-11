@@ -76,22 +76,6 @@ impl BattleSystem {
         })
     }
 
-    fn get_unit_position(unit: &UnitComponent) -> vec2<f32> {
-        let faction_mul: vec2<f32> = vec2(
-            match unit.faction {
-                Faction::Light => -1.0,
-                Faction::Dark => 1.0,
-                Faction::Team => -1.0,
-                Faction::Shop => 1.0,
-            },
-            1.0,
-        );
-        return match unit.slot == 1 {
-            true => vec2(1.5, 0.0),
-            false => vec2((unit.slot as f32 - 1.0) * 2.5, -4.0),
-        } * faction_mul;
-    }
-
     fn get_position_change_animation(
         entity: legion::Entity,
         from: vec2<f32>,
@@ -120,7 +104,7 @@ impl BattleSystem {
                 let slot = current_slot.get_mut(&unit.faction).unwrap();
                 *slot = *slot + 1;
                 unit.slot = *slot;
-                let new_position = Self::get_unit_position(unit);
+                let new_position = SlotSystem::get_unit_position(unit);
                 if new_position != position.0 {
                     resources
                         .cassette
