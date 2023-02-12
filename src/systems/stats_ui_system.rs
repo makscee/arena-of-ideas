@@ -18,10 +18,9 @@ impl StatsUiSystem {
         match stat {
             StatType::Hp => <(&HpComponent, &EntityComponent, &Shader)>::query()
                 .iter(world)
-                .map(|(hp, entity, shader)| {
-                    (
-                        entity.entity,
-                        options
+                .map(|(hp, entity, unit_shader)| {
+                    (entity.entity, {
+                        let mut shader = options
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(1.0))
@@ -34,16 +33,20 @@ impl StatsUiSystem {
                             .set_uniform(
                                 "u_circle_color",
                                 ShaderUniform::Color(options.stats_hp_color),
-                            ),
-                    )
+                            );
+                        shader.parameters.uniforms = shader
+                            .parameters
+                            .uniforms
+                            .merge(&unit_shader.parameters.uniforms);
+                        shader
+                    })
                 })
                 .collect_vec(),
             StatType::Attack => <(&AttackComponent, &EntityComponent, &Shader)>::query()
                 .iter(world)
-                .map(|(attack, entity, shader)| {
-                    (
-                        entity.entity,
-                        options
+                .map(|(attack, entity, unit_shader)| {
+                    (entity.entity, {
+                        let mut shader = options
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(-1.0))
@@ -62,8 +65,13 @@ impl StatsUiSystem {
                             .set_uniform(
                                 "u_circle_color",
                                 ShaderUniform::Color(options.stats_attack_color),
-                            ),
-                    )
+                            );
+                        shader.parameters.uniforms = shader
+                            .parameters
+                            .uniforms
+                            .merge(&unit_shader.parameters.uniforms);
+                        shader
+                    })
                 })
                 .collect_vec(),
         }

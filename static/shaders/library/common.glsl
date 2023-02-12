@@ -1,11 +1,12 @@
 uniform vec4 u_color;
-uniform int u_faction = -1;
+uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
 
 vec3 light_color = vec3(1);
 vec3 dark_color = vec3(0);
 vec3 base_color;
+vec3 field_color;
 
 /// Noise
 float hash(float n) {
@@ -41,9 +42,14 @@ float get_field_value(vec2 position) {
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }
 
+vec2 get_card_uv(vec2 uv, float card) {
+    return mix(uv, uv * 2 - vec2(0, 2.5), card);
+}
+
 void commonInit(vec2 position) {
     float field = get_field_value(position);
     base_color = mix(light_color, dark_color, field);
+    field_color = mix(light_color, dark_color, 1 - field);
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2) {
@@ -211,10 +217,10 @@ float triangleSDF(vec2 uv, float size, float rotation) {
     return d;
 }
 
-float squareSDF(vec2 uv, float size, float rotation) {
+float rectangle_sdf(vec2 uv, vec2 size, float rotation) {
     uv = rotateCW(uv, rotation * PI * 2);
-    float dx = distance1d(uv.x, size);
-    float dy = distance1d(uv.y, size);
+    float dx = distance1d(uv.x, size.x);
+    float dy = distance1d(uv.y, size.y);
 
     float d = max(dx, dy);
     if(sign(dx) > 0.0 && sign(dy) > 0.0) {
@@ -222,6 +228,10 @@ float squareSDF(vec2 uv, float size, float rotation) {
         d = max(d, corner_distance);
     }
     return d;
+}
+
+float squareSDF(vec2 uv, float size, float rotation) {
+    return rectangle_sdf(uv, vec2(size, size), rotation);
 }
 
 float squareSDF(vec2 uv, float size) {

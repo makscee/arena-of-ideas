@@ -27,12 +27,16 @@ impl Faction {
 impl VarsProvider for UnitComponent {
     fn extend_vars(&self, vars: &mut Vars) {
         let faction_val = match self.faction {
-            Faction::Light => -1,
-            Faction::Dark => 1,
-            Faction::Team => -2,
-            Faction::Shop => 2,
+            Faction::Dark => 0.0,
+            Faction::Light => 1.0,
+            Faction::Team => 2.0,
+            Faction::Shop => 3.0,
         };
-        vars.insert(VarName::Faction, Var::Int(faction_val));
+        vars.insert(VarName::Faction, Var::Float(faction_val));
+        vars.insert(
+            VarName::Card,
+            Var::Float((self.faction == Faction::Shop) as i32 as f32),
+        );
     }
 }
 

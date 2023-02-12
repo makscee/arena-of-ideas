@@ -1,5 +1,6 @@
 #include <common.glsl>
 
+uniform float u_card;
 #ifdef VERTEX_SHADER
 out vec2 uv;
 attribute vec2 a_pos;
@@ -13,7 +14,7 @@ uniform float u_offset;
 
 void main() {
     uv = a_pos * (1.0 + u_padding);
-    vec2 pos = uv * 1.0 * u_scale + u_position + rotateCW(vec2(0, -1), PI * .27 * u_offset) * .9;
+    vec2 pos = uv * 1.0 * u_scale + u_position + rotateCW(vec2(0, -1), PI * .27 * u_offset) * .9 * (1 + u_card * .3);
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -45,6 +46,7 @@ vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color) {
 }
 
 void main() {
+    vec2 uv = uv / (1 + u_card * .2);
     float dist = length(uv);
     vec4 color = vec4(0);
     color = alphaBlend(color, vec4(u_outline_color.rgb, smoothstep(BORDER + AA, BORDER - AA, abs(1 - dist))));

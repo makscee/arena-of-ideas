@@ -9,6 +9,7 @@ pub enum VarName {
     Position,
     Test,
     Faction,
+    Card,
 }
 
 impl VarName {
