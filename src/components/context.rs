@@ -34,6 +34,9 @@ impl Context {
         if let Some(component) = entry.get_component::<HpComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
+        if let Some(component) = entry.get_component::<Description>().ok() {
+            component.extend_vars(&mut context.vars);
+        }
 
         context
     }

@@ -3,6 +3,9 @@ uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
 
+uniform sampler2D u_text_texture;
+uniform vec2 u_texture_size;
+
 vec3 light_color = vec3(1);
 vec3 dark_color = vec3(0);
 vec3 base_color;
@@ -40,6 +43,16 @@ float fbm(vec2 p) {
 
 float get_field_value(vec2 position) {
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
+}
+
+const float TEXT_AA = 0.05;
+vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color, float text_border, float text_inside) {
+    return mix(mix(vec4(0), outline_color, smoothstep(text_border - TEXT_AA, text_border + TEXT_AA, sdf)), text_color, smoothstep(text_inside - TEXT_AA, text_inside + TEXT_AA, sdf));
+}
+
+float get_text_sdf(vec2 uv) {
+    vec2 text_uv = uv * .5 + .5;
+    return texture2D(u_text_texture, text_uv).x;
 }
 
 vec2 get_card_uv(vec2 uv, float card) {

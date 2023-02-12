@@ -22,8 +22,6 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
-uniform sampler2D u_text_texture;
-uniform vec2 u_texture_size;
 
 uniform vec4 u_text_color_default;
 uniform vec4 u_text_color_decreased;
@@ -41,10 +39,6 @@ const float TEXT_BORDER = 0.37;
 const float AA = 0.05;
 const float CHANGE_T_DURATION = 1.0;
 
-vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color) {
-    return mix(mix(vec4(0), outline_color, smoothstep(TEXT_BORDER - AA, TEXT_BORDER + AA, sdf)), text_color, smoothstep(TEXT_INSIDE - AA, TEXT_INSIDE + AA, sdf));
-}
-
 void main() {
     vec2 uv = uv / (1 + u_card * .2);
     float dist = length(uv);
@@ -60,9 +54,8 @@ void main() {
     float change_t = (CHANGE_T_DURATION - u_game_time + u_last_change) / CHANGE_T_DURATION;
     change_t *= change_t * change_t;
     float text_scale = max(u_text_scale, u_text_scale * (1 + change_t));
-    vec2 text_uv = uv / vec2(min(1, u_texture_size.x / u_texture_size.y), 1);
-    float sdf = texture2D(u_text_texture, text_uv / text_scale * .5 + .5).x;
-    text_color = get_text_color(sdf, text_color, u_outline_color);
+    float sdf = get_text_sdf(uv / text_scale * vec2(1, u_texture_size.x / u_texture_size.y));
+    text_color = get_text_color(sdf, text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);
 }
 #endif

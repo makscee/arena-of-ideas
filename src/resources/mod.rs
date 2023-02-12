@@ -206,7 +206,7 @@ impl Resources {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct UnitTemplate(pub Vec<Component>);
+pub struct UnitTemplate(pub Vec<SerializedComponent>);
 
 impl UnitTemplate {
     pub fn create_unit_entity(

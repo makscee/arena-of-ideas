@@ -1,7 +1,11 @@
 [
     {
         "component": "Name",
-        "name": "Test Unit"
+        "name": "Paladin"
+    },
+    {
+        "component": "Description",
+        "text": "Has Shield"
     },
     {
         "component": "Hp",

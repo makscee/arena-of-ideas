@@ -24,7 +24,7 @@ impl StatsUiSystem {
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(1.0))
-                            .set_uniform("u_hp", ShaderUniform::String(hp.current().to_string()))
+                            .set_uniform("u_text", ShaderUniform::String(hp.current().to_string()))
                             .set_uniform("u_last_change", ShaderUniform::Float(hp.last_change))
                             .set_uniform(
                                 "u_value_modified",
@@ -34,10 +34,10 @@ impl StatsUiSystem {
                                 "u_circle_color",
                                 ShaderUniform::Color(options.stats_hp_color),
                             );
-                        shader.parameters.uniforms = shader
+                        shader.parameters.uniforms = unit_shader
                             .parameters
                             .uniforms
-                            .merge(&unit_shader.parameters.uniforms);
+                            .merge(&shader.parameters.uniforms);
                         shader
                     })
                 })
@@ -51,7 +51,7 @@ impl StatsUiSystem {
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(-1.0))
                             .set_uniform(
-                                "u_attack",
+                                "u_text",
                                 ShaderUniform::String(attack.value().to_string()),
                             )
                             .set_uniform(
@@ -66,10 +66,10 @@ impl StatsUiSystem {
                                 "u_circle_color",
                                 ShaderUniform::Color(options.stats_attack_color),
                             );
-                        shader.parameters.uniforms = shader
+                        shader.parameters.uniforms = unit_shader
                             .parameters
                             .uniforms
-                            .merge(&unit_shader.parameters.uniforms);
+                            .merge(&shader.parameters.uniforms);
                         shader
                     })
                 })

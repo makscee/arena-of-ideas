@@ -10,6 +10,7 @@ pub enum VarName {
     Test,
     Faction,
     Card,
+    Description,
 }
 
 impl VarName {
@@ -61,7 +62,10 @@ impl From<Vars> for ShaderUniforms {
                 Var::Float(v) => {
                     map.insert(name, ShaderUniform::Float(*v));
                 }
-                Var::String(_) => {}
+                Var::String(text) => {
+                    // only one texture can be passed per shader
+                    map.insert("u_text".to_owned(), ShaderUniform::String(text.clone()));
+                }
                 Var::Vec2(v) => {
                     map.insert(name, ShaderUniform::Vec2(*v));
                 }
@@ -83,8 +87,6 @@ impl From<Vars> for ShaderUniforms {
 impl fmt::Display for VarName {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
-        // or, alternatively:
-        // fmt::Debug::fmt(self, f)
     }
 }
 

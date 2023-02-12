@@ -17,7 +17,7 @@ impl NameSystem {
                     options
                         .name
                         .clone()
-                        .set_uniform("u_name", ShaderUniform::String(name.0.clone())),
+                        .set_uniform("u_text", ShaderUniform::String(name.0.clone())),
                 )
             })
             .collect_vec()

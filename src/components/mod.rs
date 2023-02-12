@@ -2,6 +2,7 @@ use super::*;
 
 mod attack;
 mod context;
+mod description;
 mod entity;
 mod flags;
 mod hp;
@@ -14,6 +15,7 @@ mod vars;
 
 pub use attack::*;
 pub use context::*;
+pub use description::*;
 pub use entity::*;
 pub use flags::*;
 pub use hp::*;
@@ -27,9 +29,12 @@ pub use vars::*;
 /// Components that can be deserialized from json
 #[derive(Deserialize, Debug)]
 #[serde(tag = "component")]
-pub enum Component {
+pub enum SerializedComponent {
     Name {
         name: String,
+    },
+    Description {
+        text: String,
     },
     Hp {
         max: Hp,
@@ -48,13 +53,13 @@ pub enum Component {
     },
 }
 
-impl fmt::Display for Component {
+impl fmt::Display for SerializedComponent {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
-impl Component {
+impl SerializedComponent {
     pub fn add_to_entry(
         &self,
         entry: &mut legion::world::Entry,
@@ -63,20 +68,15 @@ impl Component {
         context: &mut Context,
     ) {
         match self {
-            Component::Hp { max } => entry.add_component(HpComponent::new(*max)),
-            Component::Attack { value } => entry.add_component(AttackComponent::new(*value)),
-            Component::StatusContainer { statuses } => {
+            SerializedComponent::Hp { max } => entry.add_component(HpComponent::new(*max)),
+            SerializedComponent::Attack { value } => {
+                entry.add_component(AttackComponent::new(*value))
+            }
+            SerializedComponent::StatusContainer { statuses } => {
                 let mut entity_statuses = all_statuses
                     .active_statuses
                     .remove(entity)
                     .unwrap_or_default();
-                let context = Context {
-                    owner: entity.clone(),
-                    target: entity.clone(),
-                    creator: entity.clone(),
-                    vars: default(),
-                    status: default(),
-                };
                 for status in statuses.into_iter() {
                     all_statuses
                         .defined_statuses
@@ -93,7 +93,7 @@ impl Component {
                     .active_statuses
                     .insert(entity.clone(), entity_statuses);
             }
-            Component::Shader {
+            SerializedComponent::Shader {
                 path,
                 parameters,
                 layer,
@@ -104,7 +104,10 @@ impl Component {
                 layer: layer.clone().unwrap_or(ShaderLayer::Unit),
                 order: order.unwrap_or_default(),
             }),
-            Component::Name { name } => entry.add_component(Name::new(name)),
+            SerializedComponent::Name { name } => entry.add_component(Name::new(name)),
+            SerializedComponent::Description { text } => {
+                entry.add_component(Description::new(text))
+            }
         }
     }
 }

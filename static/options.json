@@ -1,5 +1,5 @@
 {
-    "fov": 15.0,
+    "fov": 10.0,
     "field": {
         "path": "shaders/system/field.glsl",
         "parameters": {
@@ -15,7 +15,7 @@
         "parameters": {
             "uniforms": {
                 "u_scale": 0.25,
-                "u_text_scale": 1.6,
+                "u_text_scale": 1.1,
                 "u_text_color_default": "#ffffff",
                 "u_text_color_decreased": "#ff0000",
                 "u_text_color_increased": "#26d000",
