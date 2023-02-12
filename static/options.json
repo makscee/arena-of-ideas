@@ -20,7 +20,8 @@
                 "u_text_color_decreased": "#ff0000",
                 "u_text_color_increased": "#26d000",
                 "u_outline_color": "#000000",
-                "u_circle_color": "#c00909"
+                "u_circle_color": "#c00909",
+                "u_font": 0
             }
         },
         "layer": "UI"
@@ -30,11 +31,12 @@
         "parameters": {
             "uniforms": {
                 "u_text_color": "#ffffff",
-                "u_outline_color": "#464646",
-                "u_scale": 0.17,
+                "u_outline_color": "#212121",
+                "u_font": 1,
+                "u_scale": 0.22,
                 "u_offset": [
                     0.0,
-                    -1.0
+                    -0.9
                 ]
             }
         },

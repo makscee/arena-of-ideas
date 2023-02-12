@@ -69,13 +69,13 @@ impl System for CassettePlayerSystem {
             (
                 Text::new(
                     format!("{:.2}", resources.cassette.head),
-                    resources.font.clone(),
+                    resources.fonts[1].clone(),
                     64.0,
                     Rgba::BLACK,
                 ),
                 Text::new(
                     format!("Mode {}", self.mode),
-                    resources.font.clone(),
+                    resources.fonts[1].clone(),
                     32.0,
                     Rgba::BLACK,
                 ),

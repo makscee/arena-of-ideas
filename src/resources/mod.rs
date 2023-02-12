@@ -44,7 +44,7 @@ pub struct Resources {
     pub unit_templates: HashMap<PathBuf, UnitTemplate>,
 
     pub camera: geng::Camera2d,
-    pub font: Rc<geng::font::Ttf>,
+    pub fonts: Vec<Rc<geng::font::Ttf>>,
     pub geng: Geng,
 }
 
@@ -64,20 +64,35 @@ impl Resources {
             rotation: 0.0,
             fov: options.fov,
         };
-        let font = geng::font::Ttf::new(
-            geng,
-            include_bytes!("../../static/font/default.ttf"),
-            geng::font::ttf::Options {
-                pixel_size: 64.0,
-                max_distance: 0.25,
-            },
-        )
-        .unwrap();
+        let fonts = vec![
+            Rc::new(
+                geng::font::Ttf::new(
+                    geng,
+                    include_bytes!("../../static/font/stats.ttf"),
+                    geng::font::ttf::Options {
+                        pixel_size: 64.0,
+                        max_distance: 0.25,
+                    },
+                )
+                .unwrap(),
+            ),
+            Rc::new(
+                geng::font::Ttf::new(
+                    geng,
+                    include_bytes!("../../static/font/description.ttf"),
+                    geng::font::ttf::Options {
+                        pixel_size: 64.0,
+                        max_distance: 0.25,
+                    },
+                )
+                .unwrap(),
+            ),
+        ];
 
         Self {
             shader_programs,
             camera,
-            font: Rc::new(font),
+            fonts,
             down_keys: default(),
             pressed_keys: default(),
             geng: geng.clone(),

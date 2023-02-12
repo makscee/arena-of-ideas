@@ -78,7 +78,14 @@ impl ShaderSystem {
                     u_game_time: resources.cassette.head,
                 );
                 if let Some((key, value)) = shader.parameters.uniforms.find_string() {
-                    if let Some(texture) = Self::get_text_texture(&value, resources) {
+                    let font_index = match shader.parameters.uniforms.get(&"u_font".to_owned()) {
+                        Some(uniform) => match uniform {
+                            ShaderUniform::Int(value) => *value as usize,
+                            _ => 0,
+                        },
+                        None => 0usize,
+                    };
+                    if let Some(texture) = Self::get_text_texture(&value, resources, font_index) {
                         Self::draw_shader(
                             shader,
                             framebuffer,
@@ -99,8 +106,12 @@ impl ShaderSystem {
         }
     }
 
-    fn get_text_texture(text: &String, resources: &Resources) -> Option<ugli::Texture> {
-        resources.font.create_text_sdf(text, 64.0)
+    fn get_text_texture(
+        text: &String,
+        resources: &Resources,
+        font: usize,
+    ) -> Option<ugli::Texture> {
+        resources.fonts[font].create_text_sdf(text, 64.0)
     }
 
     fn draw_shader<U>(

@@ -26,8 +26,8 @@ in vec2 uv;
 uniform vec4 u_text_color;
 uniform vec4 u_outline_color;
 
-const float TEXT_INSIDE = 0.58;
-const float TEXT_BORDER = 0.25;
+const float TEXT_INSIDE = 0.45;
+const float TEXT_BORDER = 0.15;
 
 void main() {
     vec4 color = vec4(0);

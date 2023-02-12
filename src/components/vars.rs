@@ -11,6 +11,7 @@ pub enum VarName {
     Faction,
     Card,
     Description,
+    Font,
 }
 
 impl VarName {
