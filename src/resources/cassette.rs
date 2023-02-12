@@ -20,9 +20,10 @@ impl Default for Cassette {
 
 impl Cassette {
     pub fn close_node(&mut self) {
-        let node = self.queue.last().unwrap();
-        let start = node.start + node.duration;
+        let node = self.queue.last_mut().unwrap();
+        let start = (node.start + node.duration).max(self.head);
         if node.duration == 0.0 {
+            node.start = start;
             self.queue.pop();
         }
         let mut new_node = self.node_template.clone();
@@ -37,6 +38,13 @@ impl Cassette {
 
     pub fn add_effect(&mut self, effect: VisualEffect) {
         self.queue.last_mut().unwrap().add_effect(effect);
+    }
+
+    pub fn add_effect_by_key(&mut self, key: &str, effect: VisualEffect) {
+        self.queue
+            .last_mut()
+            .unwrap()
+            .add_effect_by_key(key, effect);
     }
 
     pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
@@ -164,7 +172,8 @@ impl CassetteNode {
             vec.extend(effects.clone().into_iter());
             self.effects.insert(key.clone(), vec);
         }
-        self.entity_shaders
-            .extend(node.entity_shaders.clone().into_iter());
+        node.entity_shaders.iter().for_each(|(entity, shader)| {
+            self.entity_shaders.insert(*entity, shader.clone());
+        });
     }
 }

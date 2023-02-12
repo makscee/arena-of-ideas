@@ -39,7 +39,7 @@ const float TEXT_BORDER = 0.25;
 
 vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec2 uv = uv - CARD_OFFSET;
-    float card_sdf = rectangle_sdf(uv, CARD_SIZE, 0);
+    float card_sdf = rectangle_sdf(uv, CARD_SIZE * mix(3, 1, u_card), 0);
     commonInit(u_position + uv);
     vec4 color = vec4(0);
     vec4 border_color = vec4(base_color, abs(card_sdf) < CARD_BORDER || (abs(uv.y) < CARD_BORDER * .5 && card_sdf < 0));

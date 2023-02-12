@@ -51,6 +51,7 @@ impl ShaderSystem {
     ) {
         // Get all Shader components from World for drawing
         let world_shaders = <(&Shader, &EntityComponent)>::query()
+            .filter(!component::<UnitComponent>())
             .iter(world)
             .map(|(_, entity)| Self::get_entity_shader(world, entity.entity))
             .collect_vec();

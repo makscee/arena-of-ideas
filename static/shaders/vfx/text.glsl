@@ -1,5 +1,4 @@
 #include <common.glsl>
-uniform vec2 u_texture_size;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -25,7 +24,6 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
-uniform sampler2D u_text_texture;
 
 uniform vec4 u_text_color;
 uniform vec4 u_outline_color;
@@ -34,16 +32,11 @@ const float TEXT_INSIDE = 0.5;
 const float TEXT_BORDER = 0.35;
 const float AA = 0.03;
 
-vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color) {
-    return mix(mix(vec4(0), outline_color, smoothstep(TEXT_BORDER - AA, TEXT_BORDER + AA, sdf)), text_color, smoothstep(TEXT_INSIDE - AA, TEXT_INSIDE + AA, sdf));
-}
-
 void main() {
     vec4 color = vec4(0);
     vec2 text_uv = uv / vec2(min(1, u_texture_size.x / u_texture_size.y), 1);
-    float sdf = texture2D(u_text_texture, text_uv * .5 + .5).x;
-    vec4 outline_color = u_outline_color;
-    vec4 text_color = get_text_color(sdf, u_text_color, outline_color);
+    float sdf = get_text_sdf(text_uv);
+    vec4 text_color = get_text_color(sdf, u_text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);
 }
 #endif
