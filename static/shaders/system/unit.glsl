@@ -37,10 +37,9 @@ void main() {
     float hp_part = float(u_hp_current) / float(u_hp_max);
     float dmg_t = (DMG_T_DURATION - u_game_time + u_hp_last_dmg) / DMG_T_DURATION;
     dmg_t = dmg_t * dmg_t * dmg_t;
-    commonInit();
+    commonInit(u_position + uv);
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
-    float field = get_field_value(u_position + uv);
-    vec4 color = vec4(mix(dark_faction_color, light_faction_color, field), alpha);
+    vec4 color = vec4(base_color, alpha);
     if(dmg_t > 0. && len < 0.) {
         vec2 v = floor(uv * 8 * (0.5 + dmg_t));
         float r = N22(v + vec2(floor(u_global_time * 20) / 20)).x;

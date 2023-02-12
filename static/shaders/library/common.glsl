@@ -3,19 +3,48 @@ uniform int u_faction = -1;
 uniform float u_game_time;
 uniform float u_global_time;
 
-vec3 faction_color;
-vec3 op_faction_color;
-vec3 light_faction_color = vec3(0);
-vec3 dark_faction_color = vec3(1);
+vec3 light_color = vec3(1);
+vec3 dark_color = vec3(0);
+vec3 base_color;
 
-void commonInit() {
-    faction_color = mix(vec3(0), vec3(1), (1. + float(u_faction)) * .5);
-    op_faction_color = 1. - faction_color;
+/// Noise
+float hash(float n) {
+    return fract(sin(n) * 75728.5453123);
 }
 
-// vec4 getColor() {
-//     return mix(vec4(parent_faction_color, 1), u_color, float(length(u_color.rgb) > 0));
-// }
+float noise(in vec2 x) {
+    vec2 p = floor(x);
+    vec2 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    float n = p.x + p.y * 57.0;
+    return mix(mix(hash(n + 0.0), hash(n + 1.0), f.x), mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y);
+}
+
+/// FBM
+mat2 m = mat2(0.6, 0.6, -0.6, 0.8);
+float fbm(vec2 p) {
+
+    float f = 0.0;
+    f += 0.5000 * noise(p);
+    p *= m * 2.02;
+    f += 0.2500 * noise(p);
+    p *= m * 2.03;
+    f += 0.1250 * noise(p);
+    p *= m * 2.01;
+    f += 0.0625 * noise(p);
+    p *= m * 2.04;
+    f /= 0.9375;
+    return f;
+}
+
+float get_field_value(vec2 position) {
+    return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
+}
+
+void commonInit(vec2 position) {
+    float field = get_field_value(position);
+    base_color = mix(light_color, dark_color, field);
+}
 
 vec4 alphaBlend(vec4 c1, vec4 c2) {
     return vec4(mix(c1.rgb, c2.rgb, c2.a), clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
@@ -201,38 +230,4 @@ float squareSDF(vec2 uv, float size) {
 
 float circleSDF(vec2 uv, float radius) {
     return length(uv) - radius;
-}
-
-/// Noise
-float hash(float n) {
-    return fract(sin(n) * 75728.5453123);
-}
-
-float noise(in vec2 x) {
-    vec2 p = floor(x);
-    vec2 f = fract(x);
-    f = f * f * (3.0 - 2.0 * f);
-    float n = p.x + p.y * 57.0;
-    return mix(mix(hash(n + 0.0), hash(n + 1.0), f.x), mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y);
-}
-
-/// FBM
-mat2 m = mat2(0.6, 0.6, -0.6, 0.8);
-float fbm(vec2 p) {
-
-    float f = 0.0;
-    f += 0.5000 * noise(p);
-    p *= m * 2.02;
-    f += 0.2500 * noise(p);
-    p *= m * 2.03;
-    f += 0.1250 * noise(p);
-    p *= m * 2.01;
-    f += 0.0625 * noise(p);
-    p *= m * 2.04;
-    f /= 0.9375;
-    return f;
-}
-
-float get_field_value(vec2 position) {
-    return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }
