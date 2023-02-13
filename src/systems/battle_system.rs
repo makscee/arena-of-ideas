@@ -23,6 +23,7 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
+        SlotSystem::refresh_slot_shaders(world, resources, hashset![Faction::Dark, Faction::Light]);
         Self::create_enemies(3, resources, world);
         Self::create_team(resources, world);
         Self::init_statuses(resources);
