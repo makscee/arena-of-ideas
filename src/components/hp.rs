@@ -1,6 +1,7 @@
 use super::*;
 
 pub type Hp = i32;
+#[derive(Clone)]
 pub struct HpComponent {
     current: Hp,
     pub max: Hp,

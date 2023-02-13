@@ -85,7 +85,7 @@ impl ShopSystem {
             if world
                 .entry(sell_candidate)
                 .unwrap()
-                .get_component::<Position>()
+                .get_component::<PositionComponent>()
                 .unwrap()
                 .0
                 .x
@@ -121,7 +121,7 @@ impl ShopSystem {
             } else {
                 let position =
                     SlotSystem::get_unit_position(entry.get_component::<UnitComponent>().unwrap());
-                entry.get_component_mut::<Position>().unwrap().0 = position;
+                entry.get_component_mut::<PositionComponent>().unwrap().0 = position;
                 resources.cassette.close_node();
                 resources.cassette.merge_template_into_last();
                 resources.cassette.add_effect(VisualEffect {

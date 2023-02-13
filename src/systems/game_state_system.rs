@@ -27,7 +27,11 @@ impl System for GameStateSystem {
                     BattleSystem::run_battle(world, resources);
                 }
             }
-            GameState::Shop => {}
+            GameState::Shop => {
+                if resources.down_keys.contains(&geng::Key::Space) {
+                    self.transition = GameState::Battle;
+                }
+            }
         }
         self.systems.get_mut(&self.current).and_then(|systems| {
             Some(

@@ -28,13 +28,13 @@ impl Context {
         if let Some(component) = entry.get_component::<UnitComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
-        if let Some(component) = entry.get_component::<Position>().ok() {
+        if let Some(component) = entry.get_component::<PositionComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
         if let Some(component) = entry.get_component::<HpComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
-        if let Some(component) = entry.get_component::<Description>().ok() {
+        if let Some(component) = entry.get_component::<DescriptionComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
 

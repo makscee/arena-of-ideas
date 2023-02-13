@@ -8,7 +8,7 @@ impl DragSystem {
     }
 
     fn get_hovered_unit(world: &legion::World, resources: &Resources) -> Option<legion::Entity> {
-        <(&Position, &EntityComponent, &UnitComponent)>::query()
+        <(&PositionComponent, &EntityComponent, &UnitComponent)>::query()
             .iter(world)
             .find_map(|(position, entity, _)| {
                 if (resources.mouse_pos - position.0).len() < UNIT_RADIUS {
@@ -41,7 +41,7 @@ impl System for DragSystem {
             world
                 .entry(dragged)
                 .unwrap()
-                .get_component_mut::<Position>()
+                .get_component_mut::<PositionComponent>()
                 .unwrap()
                 .0 = resources.mouse_pos;
         }

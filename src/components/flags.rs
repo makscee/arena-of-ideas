@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct FlagsComponent(HashSet<Flag>);
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash, Clone)]

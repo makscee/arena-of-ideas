@@ -1,8 +1,9 @@
 use super::*;
 
-pub struct Name(pub String);
+#[derive(Clone)]
+pub struct NameComponent(pub String);
 
-impl Name {
+impl NameComponent {
     pub fn new(name: &str) -> Self {
         Self(name.to_string())
     }

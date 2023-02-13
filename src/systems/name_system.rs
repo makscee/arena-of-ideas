@@ -9,7 +9,7 @@ impl NameSystem {
         world: &legion::World,
         options: &Options,
     ) -> Vec<(legion::Entity, Shader)> {
-        <(&EntityComponent, &Name, &Shader)>::query()
+        <(&EntityComponent, &NameComponent, &Shader)>::query()
             .iter(world)
             .map(|(entity, name, shader)| {
                 (

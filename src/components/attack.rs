@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct AttackComponent {
     value: Hp,
     initial_value: Hp,

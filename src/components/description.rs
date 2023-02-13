@@ -1,10 +1,11 @@
 use super::*;
 
-pub struct Description {
+#[derive(Clone)]
+pub struct DescriptionComponent {
     pub text: String,
 }
 
-impl Description {
+impl DescriptionComponent {
     pub fn new(text: &str) -> Self {
         Self {
             text: text.to_string(),
@@ -12,7 +13,7 @@ impl Description {
     }
 }
 
-impl VarsProvider for Description {
+impl VarsProvider for DescriptionComponent {
     fn extend_vars(&self, vars: &mut Vars) {
         vars.insert(VarName::Description, Var::String(self.text.clone()));
         vars.insert(VarName::Font, Var::Int(1));

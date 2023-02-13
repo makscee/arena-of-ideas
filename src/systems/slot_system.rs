@@ -52,7 +52,7 @@ impl SlotSystem {
         world
             .entry_mut(entity)
             .unwrap()
-            .get_component_mut::<Position>()
+            .get_component_mut::<PositionComponent>()
             .unwrap()
             .0 = Self::get_position(slot, &faction)
     }
@@ -82,7 +82,7 @@ impl SlotSystem {
         for slot in 1..=SLOTS_COUNT {
             factions.iter().for_each(|faction| {
                 let entity = world.push((
-                    Position(Self::get_position(slot, faction)),
+                    PositionComponent(Self::get_position(slot, faction)),
                     resources
                         .options
                         .slot

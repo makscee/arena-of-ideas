@@ -73,25 +73,9 @@ impl SerializedComponent {
                 entry.add_component(AttackComponent::new(*value))
             }
             SerializedComponent::StatusContainer { statuses } => {
-                let mut entity_statuses = all_statuses
-                    .active_statuses
-                    .remove(entity)
-                    .unwrap_or_default();
-                for status in statuses.into_iter() {
-                    all_statuses
-                        .defined_statuses
-                        .insert(status.name.clone(), status.clone());
-                    entity_statuses.insert(
-                        status.name.clone(),
-                        Context {
-                            status: Some((status.name.clone(), entity.clone())),
-                            ..context.clone()
-                        },
-                    );
-                }
-                all_statuses
-                    .active_statuses
-                    .insert(entity.clone(), entity_statuses);
+                statuses.into_iter().for_each(|status| {
+                    all_statuses.add_and_define_entity_status(entity, &status, context.clone())
+                });
             }
             SerializedComponent::Shader {
                 path,
@@ -104,9 +88,9 @@ impl SerializedComponent {
                 layer: layer.clone().unwrap_or(ShaderLayer::Unit),
                 order: order.unwrap_or_default(),
             }),
-            SerializedComponent::Name { name } => entry.add_component(Name::new(name)),
+            SerializedComponent::Name { name } => entry.add_component(NameComponent::new(name)),
             SerializedComponent::Description { text } => {
-                entry.add_component(Description::new(text))
+                entry.add_component(DescriptionComponent::new(text))
             }
         }
     }

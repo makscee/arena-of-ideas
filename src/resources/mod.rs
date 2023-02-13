@@ -233,7 +233,7 @@ impl UnitTemplate {
         position: vec2<f32>,
     ) -> legion::Entity {
         let entity = world.push((
-            Position(position),
+            PositionComponent(position),
             FlagsComponent::default(),
             faction.clone(),
             UnitComponent { faction, slot },

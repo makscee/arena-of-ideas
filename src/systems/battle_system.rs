@@ -23,8 +23,8 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
-        Self::create_units(7, resources, world);
-        Self::init_units(resources, world);
+        Self::create_enemies(3, resources, world);
+        Self::create_team(resources, world);
         Self::init_statuses(resources);
         while ActionSystem::tick(world, resources) {}
     }
@@ -39,25 +39,42 @@ impl BattleSystem {
         });
     }
 
-    fn create_units(count: usize, resources: &mut Resources, world: &mut legion::World) {
-        for i in 0..count {
-            let faction = match i % 2 == 0 {
-                true => Faction::Light,
-                false => Faction::Dark,
-            };
-            let slot = i + 1 - i % 2;
+    fn create_enemies(count: usize, resources: &mut Resources, world: &mut legion::World) {
+        for slot in 1..=count {
             let mut rng = rand::thread_rng();
             resources
                 .unit_templates
                 .values()
                 .choose(&mut rng)
                 .unwrap()
-                .create_unit_entity(world, &mut resources.statuses, faction, slot, vec2::ZERO);
+                .create_unit_entity(
+                    world,
+                    &mut resources.statuses,
+                    Faction::Dark,
+                    slot,
+                    vec2::ZERO,
+                );
         }
     }
 
-    fn init_units(resources: &mut Resources, world: &mut legion::World) {}
+    fn create_team(resources: &mut Resources, world: &mut legion::World) {
+        <(&UnitComponent, &EntityComponent)>::query()
+            .iter(world)
+            .filter_map(|(unit, entity)| {
+                if unit.faction == Faction::Team {
+                    Some(entity.entity)
+                } else {
+                    None
+                }
+            })
+            .collect_vec()
+            .iter()
+            .for_each(|entity| {
+                UnitComponent::duplicate_unit(*entity, world, resources, Faction::Light)
+            });
+    }
 
+    /// Send Init trigger to all active statuses
     fn init_statuses(resources: &mut Resources) {
         let statuses = resources
             .statuses
@@ -97,24 +114,25 @@ impl BattleSystem {
         resources.cassette.node_template.clear();
         resources.cassette.close_node();
         let mut current_slot = hashmap! {Faction::Light => 0usize, Faction::Dark => 0usize};
-        <(&mut UnitComponent, &mut Position, &EntityComponent)>::query()
+        <(&mut UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
             .iter_mut(world)
             .sorted_by_key(|(unit, _, _)| unit.slot)
             .for_each(|(unit, position, entity)| {
-                let slot = current_slot.get_mut(&unit.faction).unwrap();
-                *slot = *slot + 1;
-                unit.slot = *slot;
-                let new_position = SlotSystem::get_unit_position(unit);
-                if new_position != position.0 {
-                    resources
-                        .cassette
-                        .add_effect(Self::get_position_change_animation(
-                            entity.entity,
-                            position.0,
-                            new_position,
-                        ))
+                if let Some(slot) = current_slot.get_mut(&unit.faction) {
+                    *slot = *slot + 1;
+                    unit.slot = *slot;
+                    let new_position = SlotSystem::get_unit_position(unit);
+                    if new_position != position.0 {
+                        resources
+                            .cassette
+                            .add_effect(Self::get_position_change_animation(
+                                entity.entity,
+                                position.0,
+                                new_position,
+                            ))
+                    }
+                    position.0 = new_position;
                 }
-                position.0 = new_position;
             });
         let units = <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
@@ -272,13 +290,13 @@ impl BattleSystem {
         let left_position = world
             .entry_ref(left)
             .expect("Left striker not found")
-            .get_component::<Position>()
+            .get_component::<PositionComponent>()
             .unwrap()
             .0;
         let right_position = world
             .entry_ref(right)
             .expect("Right striker not found")
-            .get_component::<Position>()
+            .get_component::<PositionComponent>()
             .unwrap()
             .0;
         let position = left_position + (right_position - left_position) * 0.5;

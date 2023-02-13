@@ -66,7 +66,9 @@ impl Effect {
                             .set_uniform("u_text", ShaderUniform::String(text))
                             .set_uniform(
                                 "u_position",
-                                ShaderUniform::Vec2(target.get_component::<Position>().unwrap().0),
+                                ShaderUniform::Vec2(
+                                    target.get_component::<PositionComponent>().unwrap().0,
+                                ),
                             ),
                         from: hashmap! {
                             "u_time" => ShaderUniform::Float(0.0),
