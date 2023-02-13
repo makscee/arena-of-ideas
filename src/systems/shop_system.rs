@@ -6,8 +6,8 @@ use super::*;
 const GRAB_ANIMATION_DURATION: Time = 0.2;
 
 pub struct ShopSystem {
-    pub buy_candidate: Option<legion::Entity>,
-    pub sell_candidate: Option<legion::Entity>,
+    buy_candidate: Option<legion::Entity>,
+    sell_candidate: Option<legion::Entity>,
 }
 
 impl System for ShopSystem {
@@ -62,6 +62,13 @@ impl ShopSystem {
                         },
                         order: -2,
                     });
+                    if let Some(slot) =
+                        SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
+                    {
+                        resources.cassette.close_node();
+                        SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team});
+                        resources.cassette.close_node();
+                    }
                     if self.buy_candidate.is_none() {
                         self.buy_candidate = Some(dragged);
                         resources.cassette.close_node();
@@ -93,7 +100,8 @@ impl ShopSystem {
             {
                 world.remove(sell_candidate);
             } else {
-                if let Some(slot) = SlotSystem::get_mouse_slot(&Faction::Team, resources.mouse_pos)
+                if let Some(slot) =
+                    SlotSystem::get_hovered_slot(&Faction::Team, resources.mouse_pos)
                 {
                     world
                         .entry_mut(sell_candidate)
@@ -112,7 +120,9 @@ impl ShopSystem {
             );
         } else if let Some(buy_candidate) = self.buy_candidate {
             let mut entry = world.entry_mut(buy_candidate).unwrap();
-            if let Some(slot) = SlotSystem::get_mouse_slot(&Faction::Team, resources.mouse_pos) {
+            if let Some(slot) =
+                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
+            {
                 let unit = entry.get_component_mut::<UnitComponent>().unwrap();
                 unit.faction = Faction::Team;
                 unit.slot = slot;

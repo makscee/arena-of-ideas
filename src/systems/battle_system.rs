@@ -94,47 +94,11 @@ impl BattleSystem {
         })
     }
 
-    fn get_position_change_animation(
-        entity: legion::Entity,
-        from: vec2<f32>,
-        to: vec2<f32>,
-    ) -> VisualEffect {
-        VisualEffect {
-            duration: 0.5,
-            r#type: VisualEffectType::EntityShaderAnimation {
-                entity,
-                from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
-                to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
-                easing: EasingType::CubicIn,
-            },
-            order: 0,
-        }
-    }
-
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
         resources.cassette.node_template.clear();
         resources.cassette.close_node();
-        let mut current_slot = hashmap! {Faction::Light => 0usize, Faction::Dark => 0usize};
-        <(&mut UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
-            .iter_mut(world)
-            .sorted_by_key(|(unit, _, _)| unit.slot)
-            .for_each(|(unit, position, entity)| {
-                if let Some(slot) = current_slot.get_mut(&unit.faction) {
-                    *slot = *slot + 1;
-                    unit.slot = *slot;
-                    let new_position = SlotSystem::get_unit_position(unit);
-                    if new_position != position.0 {
-                        resources
-                            .cassette
-                            .add_effect(Self::get_position_change_animation(
-                                entity.entity,
-                                position.0,
-                                new_position,
-                            ))
-                    }
-                    position.0 = new_position;
-                }
-            });
+
+        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Light, Faction::Dark});
         let units = <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .collect_vec();

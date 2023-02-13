@@ -32,9 +32,20 @@ impl SlotSystem {
         }
     }
 
-    pub fn get_mouse_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
+    pub fn get_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
         for slot in 1..=SLOTS_COUNT {
-            if (Self::get_position(slot, faction) - mouse_pos).len() < UNIT_RADIUS {
+            let slot_pos = Self::get_position(slot, faction);
+            if (slot_pos - mouse_pos).len() < UNIT_RADIUS {
+                return Some(slot);
+            }
+        }
+        None
+    }
+
+    pub fn get_horizontal_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
+        for slot in 1..=SLOTS_COUNT {
+            let slot_pos = Self::get_position(slot, faction);
+            if (mouse_pos.x - slot_pos.x).abs() < UNIT_RADIUS {
                 return Some(slot);
             }
         }
@@ -105,6 +116,64 @@ impl SlotSystem {
                     .unwrap()
                     .add_component(EntityComponent { entity });
             })
+        }
+    }
+
+    pub fn make_gap(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        gap_slot: usize,
+        factions: HashSet<Faction>,
+    ) {
+        let mut current_slot: HashMap<&Faction, usize> =
+            HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
+        <(&mut UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
+            .iter_mut(world)
+            .sorted_by_key(|(unit, _, _)| unit.slot)
+            .for_each(|(unit, position, entity)| {
+                if let Some(slot) = current_slot.get_mut(&unit.faction) {
+                    *slot = *slot + 1;
+                    if *slot == gap_slot {
+                        *slot = *slot + 1;
+                    }
+                    unit.slot = *slot;
+                    let new_position = SlotSystem::get_unit_position(unit);
+                    if new_position != position.0 {
+                        resources
+                            .cassette
+                            .add_effect(Self::get_position_change_animation(
+                                entity.entity,
+                                position.0,
+                                new_position,
+                            ))
+                    }
+                    position.0 = new_position;
+                }
+            });
+    }
+
+    pub fn fill_gaps(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        factions: HashSet<Faction>,
+    ) {
+        Self::make_gap(world, resources, SLOTS_COUNT + 1, factions);
+    }
+
+    fn get_position_change_animation(
+        entity: legion::Entity,
+        from: vec2<f32>,
+        to: vec2<f32>,
+    ) -> VisualEffect {
+        VisualEffect {
+            duration: 0.1,
+            r#type: VisualEffectType::EntityShaderAnimation {
+                entity,
+                from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
+                to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
+                easing: EasingType::Linear,
+            },
+            order: -20,
         }
     }
 }
