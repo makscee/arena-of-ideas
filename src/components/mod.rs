@@ -52,6 +52,7 @@ pub enum SerializedComponent {
         parameters: Option<ShaderParameters>,
         layer: Option<ShaderLayer>,
         order: Option<i32>,
+        chain: Option<Box<SerializedComponent>>,
     },
 }
 
@@ -84,17 +85,34 @@ impl SerializedComponent {
                 parameters,
                 layer,
                 order,
-            } => entry.add_component(Shader {
-                path: path.clone(),
-                parameters: parameters.clone().unwrap_or_default(),
-                layer: layer.clone().unwrap_or(ShaderLayer::Unit),
-                order: order.unwrap_or_default(),
-                chain: None,
-            }),
+                chain,
+            } => entry.add_component(*Self::get_shader(self).unwrap()),
+
             SerializedComponent::Name { name } => entry.add_component(NameComponent::new(name)),
             SerializedComponent::Description { text } => {
                 entry.add_component(DescriptionComponent::new(text))
             }
+        }
+    }
+
+    fn get_shader(component: &SerializedComponent) -> Option<Box<Shader>> {
+        match component {
+            SerializedComponent::Shader {
+                path,
+                parameters,
+                layer,
+                order,
+                chain,
+            } => Some(Box::new(Shader {
+                path: path.clone(),
+                parameters: parameters.clone().unwrap_or_default(),
+                layer: layer.clone().unwrap_or(ShaderLayer::Unit),
+                order: order.unwrap_or_default(),
+                chain: chain
+                    .as_ref()
+                    .and_then(|component| Self::get_shader(&**component)),
+            })),
+            _ => None,
         }
     }
 }

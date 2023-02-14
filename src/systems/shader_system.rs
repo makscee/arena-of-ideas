@@ -126,25 +126,38 @@ impl ShaderSystem {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
             ugli::VertexBuffer::new_dynamic(resources.geng.ugli(), Vec::new());
         instances_arr.resize(shader.parameters.instances, Instance {});
-        let program = resources
-            .shader_programs
-            .get_program(&static_path().join(&shader.path));
-        let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
-        ugli::draw(
-            framebuffer,
-            &program,
-            ugli::DrawMode::TriangleStrip,
-            ugli::instanced(&quad, &instances_arr),
-            (
+        let mut chain = Some(Box::new(shader.clone()));
+        let shader_uniforms = &mut default::<ShaderUniforms>();
+
+        while let Some(shader) = chain {
+            let program = resources
+                .shader_programs
+                .get_program(&static_path().join(&shader.path));
+            shader_uniforms.merge_mut(&shader.parameters.uniforms);
+            let parameters = ShaderParameters {
+                uniforms: shader_uniforms.clone(),
+                ..shader.parameters.clone()
+            };
+
+            let uniforms = (
                 geng::camera2d_uniforms(&resources.camera, framebuffer.size().map(|x| x as f32)),
-                &shader.parameters,
+                parameters,
+                &uniforms,
+            );
+            let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
+            ugli::draw(
+                framebuffer,
+                &program,
+                ugli::DrawMode::TriangleStrip,
+                ugli::instanced(&quad, &instances_arr),
                 uniforms,
-            ),
-            ugli::DrawParameters {
-                blend_mode: Some(ugli::BlendMode::straight_alpha()),
-                ..default()
-            },
-        );
+                ugli::DrawParameters {
+                    blend_mode: Some(ugli::BlendMode::straight_alpha()),
+                    ..default()
+                },
+            );
+            chain = shader.chain.clone();
+        }
     }
 
     pub fn get_quad(vertices: usize, geng: &Geng) -> ugli::VertexBuffer<draw_2d::Vertex> {

@@ -78,6 +78,14 @@ impl ShaderUniforms {
         result
     }
 
+    pub fn merge_mut(&mut self, other: &ShaderUniforms) -> &mut Self {
+        other
+            .0
+            .iter()
+            .for_each(|(key, value)| self.insert(key.clone(), value.clone()));
+        self
+    }
+
     pub fn mix(a: &Self, b: &Self, t: f32) -> Self {
         let mut result: ShaderUniforms = default();
         for (key, value) in a.0.iter() {
