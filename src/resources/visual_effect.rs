@@ -62,18 +62,18 @@ impl VisualEffectType {
                 from,
                 to,
                 easing,
-            } => Some(Shader {
-                path: shader.path.clone(),
-                parameters: ShaderParameters {
+            } => {
+                let mut shader = shader.clone();
+                shader.parameters = ShaderParameters {
                     uniforms: shader.parameters.uniforms.merge(&ShaderUniforms::mix(
                         from,
                         to,
                         easing.f(t),
                     )),
                     ..shader.parameters
-                },
-                ..*shader
-            }),
+                };
+                Some(shader)
+            }
             VisualEffectType::EntityShaderAnimation {
                 entity,
                 from,
@@ -101,33 +101,33 @@ impl VisualEffectType {
                 to,
                 easing,
             } => match entity_shaders.get(entity) {
-                Some(entity_shader) => Some(Shader {
-                    path: shader.path.clone(),
-                    parameters: ShaderParameters {
+                Some(entity_shader) => {
+                    let mut shader = shader.clone();
+                    shader.parameters = ShaderParameters {
                         uniforms: entity_shader
                             .parameters
                             .uniforms
                             .merge(&shader.parameters.uniforms)
                             .merge(&ShaderUniforms::mix(from, to, easing.f(t))),
                         ..shader.parameters
-                    },
-                    ..*shader
-                }),
+                    };
+                    Some(shader)
+                }
                 _ => None,
             },
             VisualEffectType::EntityExtraShaderConst { entity, shader } => {
                 match entity_shaders.get(entity) {
-                    Some(entity_shader) => Some(Shader {
-                        path: shader.path.clone(),
-                        parameters: ShaderParameters {
+                    Some(entity_shader) => {
+                        let mut shader = shader.clone();
+                        shader.parameters = ShaderParameters {
                             uniforms: entity_shader
                                 .parameters
                                 .uniforms
                                 .merge(&shader.parameters.uniforms),
                             ..shader.parameters
-                        },
-                        ..*shader
-                    }),
+                        };
+                        Some(shader)
+                    }
                     _ => None,
                 }
             }

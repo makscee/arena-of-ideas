@@ -28,6 +28,10 @@ impl System for DragSystem {
         {
             if let Some(dragged) = Self::get_hovered_unit(world, resources) {
                 resources.dragged_entity = Some(dragged);
+                world
+                    .entry(dragged)
+                    .unwrap()
+                    .add_component(DragComponent {});
             }
         }
         if resources.dragged_entity.is_some()
@@ -35,6 +39,10 @@ impl System for DragSystem {
                 .pressed_mouse_buttons
                 .contains(&geng::MouseButton::Left)
         {
+            world
+                .entry(resources.dragged_entity.unwrap())
+                .unwrap()
+                .remove_component::<DragComponent>();
             resources.dragged_entity = None;
         }
         if let Some(dragged) = resources.dragged_entity {

@@ -12,7 +12,7 @@ impl BattleSystem {
             ticks += 1;
         }
         resources.cassette.node_template.clear();
-        UnitComponent::add_all_units_to_node_template(
+        UnitComponent::draw_all_units_to_cassette_node(
             world,
             &resources.options,
             &resources.statuses,
@@ -109,7 +109,7 @@ impl BattleSystem {
             .iter()
             .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
         if left.is_some() && right.is_some() {
-            UnitComponent::add_all_units_to_node_template(
+            UnitComponent::draw_all_units_to_cassette_node(
                 world,
                 &resources.options,
                 &resources.statuses,
@@ -203,7 +203,7 @@ impl BattleSystem {
                 ticks += 1;
             }
 
-            UnitComponent::add_all_units_to_node_template(
+            UnitComponent::draw_all_units_to_cassette_node(
                 world,
                 &resources.options,
                 &resources.statuses,

@@ -6,6 +6,7 @@ pub struct Cassette {
     pub head: Time,
     queue: Vec<CassetteNode>,
     pub node_template: CassetteNode, // any new node will be cloned from this
+    pub parallel_node: CassetteNode,
 }
 
 impl Default for Cassette {
@@ -14,6 +15,7 @@ impl Default for Cassette {
             head: default(),
             queue: vec![default()],
             node_template: default(),
+            parallel_node: default(),
         }
     }
 }
@@ -55,7 +57,7 @@ impl Cassette {
     }
 
     pub fn get_shaders(&self) -> Vec<Shader> {
-        let node = self.get_node_at_ts(self.head);
+        let node = self.get_node_at_ts(self.head).merge(&self.parallel_node);
         let time = self.head - node.start;
         let mut shaders: Vec<Shader> = default();
         let mut entity_shaders = node.entity_shaders.clone();
@@ -165,15 +167,15 @@ impl CassetteNode {
     pub fn clear_entities(&mut self) {
         self.entity_shaders.clear();
     }
-    pub fn merge(&mut self, node: &CassetteNode) {
-        self.duration = self.duration.max(node.duration);
-        for (key, effects) in node.effects.iter() {
-            let mut vec = self.effects.get_mut(key).cloned().unwrap_or_default();
-            vec.extend(effects.clone().into_iter());
-            self.effects.insert(key.clone(), vec);
+    pub fn merge(&self, other: &CassetteNode) -> CassetteNode {
+        let mut node = self.clone();
+        node.duration = node.duration.max(node.duration);
+        for (key, effects) in other.effects.iter() {
+            node.effects.insert(key.clone(), effects.clone());
         }
-        node.entity_shaders.iter().for_each(|(entity, shader)| {
-            self.entity_shaders.insert(*entity, shader.clone());
+        other.entity_shaders.iter().for_each(|(entity, shader)| {
+            node.entity_shaders.insert(*entity, shader.clone());
         });
+        node
     }
 }

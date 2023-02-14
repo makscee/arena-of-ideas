@@ -32,6 +32,10 @@ impl SlotSystem {
         }
     }
 
+    pub fn get_unit_position(unit: &UnitComponent) -> vec2<f32> {
+        Self::get_position(unit.slot, &unit.faction)
+    }
+
     pub fn get_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
         for slot in 1..=SLOTS_COUNT {
             let slot_pos = Self::get_position(slot, faction);
@@ -50,10 +54,6 @@ impl SlotSystem {
             }
         }
         None
-    }
-
-    pub fn get_unit_position(unit: &UnitComponent) -> vec2<f32> {
-        Self::get_position(unit.slot, &unit.faction)
     }
 
     pub fn put_unit_into_slot(entity: legion::Entity, world: &mut legion::World) {
@@ -128,6 +128,7 @@ impl SlotSystem {
         let mut current_slot: HashMap<&Faction, usize> =
             HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
         <(&mut UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
+            .filter(!component::<DragComponent>())
             .iter_mut(world)
             .sorted_by_key(|(unit, _, _)| unit.slot)
             .for_each(|(unit, position, entity)| {

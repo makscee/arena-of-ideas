@@ -3,6 +3,7 @@ use super::*;
 mod attack;
 mod context;
 mod description;
+mod drag;
 mod entity;
 mod flags;
 mod hp;
@@ -16,6 +17,7 @@ mod vars;
 pub use attack::*;
 pub use context::*;
 pub use description::*;
+pub use drag::*;
 pub use entity::*;
 pub use flags::*;
 pub use hp::*;
@@ -87,6 +89,7 @@ impl SerializedComponent {
                 parameters: parameters.clone().unwrap_or_default(),
                 layer: layer.clone().unwrap_or(ShaderLayer::Unit),
                 order: order.unwrap_or_default(),
+                chain: None,
             }),
             SerializedComponent::Name { name } => entry.add_component(NameComponent::new(name)),
             SerializedComponent::Description { text } => {

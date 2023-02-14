@@ -48,23 +48,26 @@ impl UnitComponent {
         Self { slot, faction }
     }
 
-    pub fn add_all_units_to_node_template(
+    pub fn draw_all_units_to_cassette_node(
         world: &legion::World,
         options: &Options,
         statuses: &Statuses,
-        node_template: &mut CassetteNode,
+        node: &mut CassetteNode,
         factions: HashSet<Faction>,
     ) {
-        node_template.clear_key(STATUSES_EFFECTS_KEY);
-        <(&UnitComponent, &EntityComponent)>::query()
+        node.clear_key(STATUSES_EFFECTS_KEY);
+        <(&UnitComponent, &EntityComponent, &Shader)>::query()
             .iter(world)
-            .filter(|(unit, _)| factions.contains(&unit.faction))
-            .for_each(|(unit, entity)| {
-                node_template.add_entity_shader(
+            .filter(|(unit, _, _)| factions.contains(&unit.faction))
+            .for_each(|(unit, entity, shader)| {
+                // Render units
+                node.add_entity_shader(
                     entity.entity,
                     ShaderSystem::get_entity_shader(world, entity.entity).clone(),
                 );
-                node_template.add_effects_by_key(
+
+                // Render statuses
+                node.add_effects_by_key(
                     STATUSES_EFFECTS_KEY,
                     statuses
                         .get_entity_shaders(&entity.entity)
@@ -82,8 +85,8 @@ impl UnitComponent {
                         .collect_vec(),
                 )
             });
-        StatsUiSystem::fill_node_template(world, options, node_template);
-        NameSystem::fill_node_template(world, options, node_template);
+        StatsUiSystem::fill_cassette_node(world, options, node);
+        NameSystem::fill_cassette_node(world, options, node);
     }
 
     pub fn duplicate_unit(

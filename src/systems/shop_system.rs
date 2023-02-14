@@ -3,7 +3,7 @@ use legion::EntityStore;
 
 use super::*;
 
-const GRAB_ANIMATION_DURATION: Time = 0.2;
+const GRAB_ANIMATION_DURATION: Time = 0.3;
 
 pub struct ShopSystem {
     buy_candidate: Option<legion::Entity>,
@@ -15,8 +15,8 @@ impl System for ShopSystem {
         if resources.down_keys.contains(&geng::Key::R) {
             Self::refresh(world, resources);
         }
-        Self::refresh_node_template(world, resources);
         self.handle_drag(world, resources);
+        Self::refresh_cassette(world, resources);
     }
 }
 
@@ -28,19 +28,26 @@ impl ShopSystem {
         }
     }
 
-    fn refresh_node_template(world: &mut legion::World, resources: &mut Resources) {
-        resources.cassette.node_template.clear();
-        UnitComponent::add_all_units_to_node_template(
+    fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
+        resources.cassette.parallel_node.clear_entities();
+        UnitComponent::draw_all_units_to_cassette_node(
             &world,
             &resources.options,
             &resources.statuses,
-            &mut resources.cassette.node_template,
+            &mut resources.cassette.parallel_node,
             hashset! {Faction::Shop, Faction::Team},
         );
     }
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if let Some(dragged) = resources.dragged_entity {
+            if let Some(slot) =
+                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
+            {
+                resources.cassette.close_node();
+                SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team});
+                resources.cassette.close_node();
+            }
             match world
                 .entry(dragged)
                 .unwrap()
@@ -54,25 +61,20 @@ impl ShopSystem {
                     }
                 }
                 Faction::Shop => {
-                    resources.cassette.node_template.add_effect(VisualEffect {
-                        duration: 0.0,
-                        r#type: VisualEffectType::EntityShaderConst {
-                            entity: dragged,
-                            uniforms: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
+                    resources.cassette.parallel_node.add_effect_by_key(
+                        "card_fix",
+                        VisualEffect {
+                            duration: 0.0,
+                            r#type: VisualEffectType::EntityShaderConst {
+                                entity: dragged,
+                                uniforms: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
+                            },
+                            order: -2,
                         },
-                        order: -2,
-                    });
-                    if let Some(slot) =
-                        SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
-                    {
-                        resources.cassette.close_node();
-                        SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team});
-                        resources.cassette.close_node();
-                    }
+                    );
                     if self.buy_candidate.is_none() {
                         self.buy_candidate = Some(dragged);
                         resources.cassette.close_node();
-                        resources.cassette.merge_template_into_last();
                         resources.cassette.add_effect(VisualEffect {
                             duration: GRAB_ANIMATION_DURATION,
                             r#type: VisualEffectType::EntityShaderAnimation {
@@ -101,7 +103,7 @@ impl ShopSystem {
                 world.remove(sell_candidate);
             } else {
                 if let Some(slot) =
-                    SlotSystem::get_hovered_slot(&Faction::Team, resources.mouse_pos)
+                    SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
                 {
                     world
                         .entry_mut(sell_candidate)
@@ -127,13 +129,12 @@ impl ShopSystem {
                 unit.faction = Faction::Team;
                 unit.slot = slot;
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
-                Self::refresh_node_template(world, resources);
+                Self::refresh_cassette(world, resources);
             } else {
                 let position =
                     SlotSystem::get_unit_position(entry.get_component::<UnitComponent>().unwrap());
                 entry.get_component_mut::<PositionComponent>().unwrap().0 = position;
                 resources.cassette.close_node();
-                resources.cassette.merge_template_into_last();
                 resources.cassette.add_effect(VisualEffect {
                     duration: GRAB_ANIMATION_DURATION,
                     r#type: VisualEffectType::EntityShaderAnimation {
@@ -154,6 +155,7 @@ impl ShopSystem {
                 });
                 resources.cassette.close_node();
             }
+            resources.cassette.parallel_node.clear_key("card_fix");
             self.buy_candidate = None;
             SlotSystem::refresh_slot_shaders(
                 world,

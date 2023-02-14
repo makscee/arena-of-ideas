@@ -3,12 +3,13 @@ use super::*;
 /// Component to link to a shader program with specific parameters
 #[derive(Debug, Clone, Deserialize)]
 pub struct Shader {
-    pub path: PathBuf, // full path
+    pub path: PathBuf, // static path
     #[serde(default)]
     pub parameters: ShaderParameters,
     pub layer: ShaderLayer,
     #[serde(default)]
     pub order: i32,
+    pub chain: Option<Box<Shader>>,
 }
 
 impl Shader {
