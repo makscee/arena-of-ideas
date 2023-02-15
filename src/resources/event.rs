@@ -11,7 +11,7 @@ impl Event {
         match self {
             Event::BeforeIncomingDamage | Event::AfterIncomingDamage => {
                 resources
-                    .statuses
+                    .status_pool
                     .active_statuses
                     .get(&context.target)
                     .unwrap_or(&HashMap::default())
@@ -19,7 +19,7 @@ impl Event {
                     .map(|(status_name, status_context)| {
                         (
                             &resources
-                                .statuses
+                                .status_pool
                                 .defined_statuses
                                 .get(status_name)
                                 .expect("Failed to find defined status")
@@ -37,7 +37,7 @@ impl Event {
             }
             Event::Init { status } => {
                 resources
-                    .statuses
+                    .status_pool
                     .defined_statuses
                     .get(status)
                     .context("Failed to find defined status for initialization")?

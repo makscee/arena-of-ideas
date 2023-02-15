@@ -1,0 +1,53 @@
+{
+    "name": "Robots",
+    "color": "#379291ff",
+    "abilities": {
+        "Shield": {
+            "effect": {
+                "type": "AttachStatus",
+                "name": "Shield"
+            }
+        }
+    },
+    "statuses": {
+        "Shield": {
+            "trigger": {
+                "type": "List",
+                "triggers": [
+                    {
+                        "type": "Init",
+                        "effect": {
+                            "type": "AddFlag",
+                            "flag": "DamageImmune"
+                        }
+                    },
+                    {
+                        "type": "AfterIncomingDamage",
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "RemoveFlag",
+                                    "flag": "DamageImmune"
+                                },
+                                {
+                                    "type": "RemoveStatus",
+                                    "status": "Shield"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "layer": "Vfx",
+                "parameters": {
+                    "uniforms": {
+                        "u_color": "#d2830c"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -14,6 +14,8 @@ pub enum Effect {
     RemoveStatus { status: String },
     Noop,
     AddVarInt { name: VarName, value: i32 },
+    AttachStatus { name: String },
+    UseAbility { house: HouseName, name: String },
 }
 
 impl Effect {
@@ -114,7 +116,7 @@ impl Effect {
             }
             Effect::RemoveStatus { status } => {
                 resources
-                    .statuses
+                    .status_pool
                     .active_statuses
                     .get_mut(&context.target)
                     .context("Tried to remove absent status")?
@@ -127,6 +129,35 @@ impl Effect {
                     .get_component_mut::<Context>()?
                     .vars
                     .insert(name.clone(), Var::Int(*value));
+            }
+            Effect::AttachStatus { name } => {
+                StatusPool::add_entity_status(&context.target, name, context.clone(), resources);
+            }
+            Effect::UseAbility { name, house } => {
+                if !world
+                    .entry(context.owner)
+                    .context("Failed to get Owner")?
+                    .get_component::<HouseComponent>()?
+                    .houses
+                    .contains(house)
+                {
+                    panic!(
+                        "Tried to use {} while not being a member of the {:?}",
+                        name, house
+                    );
+                }
+                resources.action_queue.push_back(Action {
+                    context,
+                    effect: resources
+                        .houses
+                        .get(house)
+                        .expect(&format!("Failed to get House: {:?}", house))
+                        .abilities
+                        .get(name)
+                        .unwrap()
+                        .effect
+                        .clone(),
+                });
             }
         }
         Ok(())

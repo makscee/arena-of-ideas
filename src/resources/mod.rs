@@ -2,9 +2,11 @@ use std::{collections::VecDeque, rc::Rc};
 
 use super::*;
 
+mod ability;
 mod cassette;
 mod effect;
 mod event;
+mod house;
 mod options;
 mod shader_programs;
 mod shop;
@@ -12,9 +14,11 @@ mod status;
 mod trigger;
 mod visual_effect;
 
+pub use ability::*;
 pub use cassette::*;
 pub use effect::*;
 pub use event::*;
+pub use house::*;
 pub use options::*;
 pub use shader_programs::*;
 pub use shop::*;
@@ -34,14 +38,15 @@ pub struct Resources {
 
     pub game_time: Time,
     pub delta_time: Time,
-    pub statuses: Statuses,
+    pub status_pool: StatusPool,
     pub action_queue: VecDeque<Action>,
     pub cassette: Cassette,
     pub shop: Shop,
     pub frame_shaders: Vec<Shader>,
     pub dragged_entity: Option<legion::Entity>,
 
-    pub unit_templates: HashMap<PathBuf, UnitTemplate>,
+    pub unit_templates: UnitTemplatesPool,
+    pub houses: HashMap<HouseName, House>,
 
     pub camera: geng::Camera2d,
     pub fonts: Vec<Rc<geng::font::Ttf>>,
@@ -99,7 +104,7 @@ impl Resources {
             game_time: default(),
             delta_time: default(),
             action_queue: default(),
-            statuses: default(),
+            status_pool: default(),
             unit_templates: default(),
             cassette: default(),
             shop: default(),
@@ -109,12 +114,14 @@ impl Resources {
             pressed_mouse_buttons: default(),
             mouse_pos: vec2::ZERO,
             dragged_entity: default(),
+            houses: default(),
         }
     }
 
     pub fn load(&mut self, fws: &mut FileWatcherSystem) {
         self.load_shader_programs(fws);
-        self.load_unit_templates();
+        self.load_houses(fws);
+        self.load_unit_templates(fws);
         self.shop.load(&self.unit_templates);
         fws.load_and_watch_file(
             self,
@@ -192,24 +199,31 @@ impl Resources {
             .add(file.file_name().unwrap().to_str().unwrap(), program);
     }
 
-    fn load_unit_templates(&mut self) {
+    fn load_unit_templates(&mut self, fws: &mut FileWatcherSystem) {
         let list = futures::executor::block_on(Self::load_list(
             &self.geng,
             PathBuf::try_from("units/_list.json").unwrap(),
         ));
-        self.unit_templates.extend(
-            list.iter()
-                .map(|file| (file.clone(), Self::load_unit_template(&self.geng, file))),
-        );
+
+        for file in list {
+            fws.load_and_watch_file(
+                self,
+                &static_path().join(file),
+                Box::new(Self::load_unit_template),
+            );
+        }
     }
 
-    fn load_unit_template(geng: &Geng, file: &PathBuf) -> UnitTemplate {
+    fn load_unit_template(resources: &mut Resources, file: &PathBuf) {
         let json = futures::executor::block_on(<String as geng::LoadAsset>::load(
-            geng,
+            &resources.geng,
             &static_path().join(file),
         ))
         .expect("Failed to load unit");
-        serde_json::from_str(&json).expect("Failed to parse UnitTemplate")
+        let template = serde_json::from_str(&json).expect("Failed to parse UnitTemplate");
+        resources
+            .unit_templates
+            .define_template(file.clone(), template);
     }
 
     fn load_options(resources: &mut Resources, file: &PathBuf) {
@@ -218,20 +232,58 @@ impl Resources {
                 .unwrap();
         dbg!(&resources.options);
     }
+
+    fn load_houses(&mut self, fws: &mut FileWatcherSystem) {
+        let list = futures::executor::block_on(Self::load_list(
+            &self.geng,
+            PathBuf::try_from("houses/_list.json").unwrap(),
+        ));
+        for file in list {
+            fws.load_and_watch_file(self, &static_path().join(file), Box::new(Self::load_house));
+        }
+    }
+
+    fn load_house(resources: &mut Resources, file: &PathBuf) {
+        let json = futures::executor::block_on(<String as geng::LoadAsset>::load(
+            &resources.geng,
+            &static_path().join(file),
+        ))
+        .expect("Failed to load unit");
+        let house: House = serde_json::from_str(&json)
+            .expect(&format!("Failed to parse UnitTemplate: {:?}", file));
+        resources.houses.insert(house.name, house.clone());
+        house.statuses.iter().for_each(|(name, status)| {
+            resources
+                .status_pool
+                .define_status(name.clone(), status.clone())
+        });
+    }
 }
 
-#[derive(Deserialize, Debug)]
-pub struct UnitTemplate(pub Vec<SerializedComponent>);
+#[derive(Default)]
+pub struct UnitTemplatesPool {
+    pub templates: HashMap<PathBuf, UnitTemplate>,
+}
 
-impl UnitTemplate {
+impl UnitTemplatesPool {
+    pub fn define_template(&mut self, path: PathBuf, template: UnitTemplate) {
+        self.templates.insert(path, template);
+    }
+
     pub fn create_unit_entity(
-        &self,
+        path: &PathBuf,
+        resources: &mut Resources,
         world: &mut legion::World,
-        statuses: &mut Statuses,
         faction: Faction,
         slot: usize,
         position: vec2<f32>,
     ) -> legion::Entity {
+        let template = resources
+            .unit_templates
+            .templates
+            .get(path)
+            .expect(&format!("Template not found: {:?}", path))
+            .clone();
         let entity = world.push((
             PositionComponent(position),
             FlagsComponent::default(),
@@ -247,14 +299,17 @@ impl UnitTemplate {
             vars: default(),
             status: default(),
         };
-        self.0.iter().for_each(|component| {
-            component.add_to_entry(&mut entry, &entity, statuses, &mut context)
+        template.0.iter().for_each(|component| {
+            component.add_to_entry(resources, path, &mut entry, &entity, &mut context)
         });
         debug!(
             "Unit#{:?} created. Template: {:?} Context: {:?}",
-            entity, self.0, context
+            entity, template.0, context
         );
         entry.add_component(context);
         entity
     }
 }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct UnitTemplate(pub Vec<SerializedComponent>);

@@ -15,7 +15,7 @@ impl BattleSystem {
         UnitComponent::draw_all_units_to_cassette_node(
             world,
             &resources.options,
-            &resources.statuses,
+            &resources.status_pool,
             &mut resources.cassette.node_template,
             hashset! {Faction::Dark, Faction::Light},
         );
@@ -43,18 +43,20 @@ impl BattleSystem {
     fn create_enemies(count: usize, resources: &mut Resources, world: &mut legion::World) {
         for slot in 1..=count {
             let mut rng = rand::thread_rng();
-            resources
-                .unit_templates
-                .values()
-                .choose(&mut rng)
-                .unwrap()
-                .create_unit_entity(
-                    world,
-                    &mut resources.statuses,
-                    Faction::Dark,
-                    slot,
-                    vec2::ZERO,
-                );
+            UnitTemplatesPool::create_unit_entity(
+                &resources
+                    .unit_templates
+                    .templates
+                    .keys()
+                    .choose(&mut rng)
+                    .unwrap()
+                    .clone(),
+                resources,
+                world,
+                Faction::Dark,
+                slot,
+                vec2::ZERO,
+            );
         }
     }
 
@@ -78,7 +80,7 @@ impl BattleSystem {
     /// Send Init trigger to all active statuses
     fn init_statuses(resources: &mut Resources) {
         let statuses = resources
-            .statuses
+            .status_pool
             .active_statuses
             .iter()
             .map(|(entity, map)| (entity.clone(), map.clone()))
@@ -112,7 +114,7 @@ impl BattleSystem {
             UnitComponent::draw_all_units_to_cassette_node(
                 world,
                 &resources.options,
-                &resources.statuses,
+                &resources.status_pool,
                 &mut resources.cassette.node_template,
                 hashset! {Faction::Light, Faction::Dark},
             );
@@ -206,7 +208,7 @@ impl BattleSystem {
             UnitComponent::draw_all_units_to_cassette_node(
                 world,
                 &resources.options,
-                &resources.statuses,
+                &resources.status_pool,
                 &mut resources.cassette.node_template,
                 hashset! {Faction::Light, Faction::Dark},
             ); // get changes (like stats) after ActionSystem execution

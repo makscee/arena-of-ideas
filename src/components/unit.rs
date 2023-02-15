@@ -51,7 +51,7 @@ impl UnitComponent {
     pub fn draw_all_units_to_cassette_node(
         world: &legion::World,
         options: &Options,
-        statuses: &Statuses,
+        statuses: &StatusPool,
         node: &mut CassetteNode,
         factions: HashSet<Faction>,
     ) {
@@ -143,9 +143,9 @@ impl UnitComponent {
         Self::clone_component::<DescriptionComponent>(original_entity, new_entity, world);
 
         // // Statuses
-        if let Some(statuses) = resources.statuses.active_statuses.get(&original_entity) {
+        if let Some(statuses) = resources.status_pool.active_statuses.get(&original_entity) {
             statuses.clone().iter().for_each(|(name, context)| {
-                resources.statuses.add_entity_status(
+                StatusPool::add_entity_status(
                     &new_entity,
                     name,
                     Context {
@@ -153,6 +153,7 @@ impl UnitComponent {
                         target: new_entity,
                         ..context.clone()
                     },
+                    resources,
                 )
             });
         }

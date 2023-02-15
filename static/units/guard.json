@@ -1,0 +1,53 @@
+[
+    {
+        "component": "Name",
+        "name": "Guard"
+    },
+    {
+        "component": "House",
+        "houses": [
+            "Robots"
+        ]
+    },
+    {
+        "component": "Description",
+        "text": "Gain Shield at the start of Battle"
+    },
+    {
+        "component": "Hp",
+        "max": 1
+    },
+    {
+        "component": "Attack",
+        "value": 3
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "layer": "Unit",
+        "chain": {
+            "component": "Shader",
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#b32603"
+                }
+            }
+        }
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "GetShield": {
+                "trigger": {
+                    "type": "Init",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Robots",
+                        "name": "Shield"
+                    }
+                }
+            }
+        }
+    }
+]

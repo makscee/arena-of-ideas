@@ -107,7 +107,9 @@ impl GameStateSystem {
         // transition from
         match self.current {
             GameState::MainMenu => {}
-            GameState::Shop => {}
+            GameState::Shop => {
+                resources.cassette.parallel_node.clear();
+            }
             GameState::Battle => {}
         }
 

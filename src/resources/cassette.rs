@@ -35,7 +35,7 @@ impl Cassette {
 
     pub fn merge_template_into_last(&mut self) {
         let node = self.queue.last_mut().unwrap();
-        node.merge(&self.node_template);
+        node.merge_mut(&self.node_template);
     }
 
     pub fn add_effect(&mut self, effect: VisualEffect) {
@@ -102,6 +102,7 @@ impl Cassette {
         self.queue = vec![default()];
         self.head = 0.0;
         self.node_template.clear();
+        self.parallel_node.clear();
     }
 
     fn get_node_at_ts(&self, ts: Time) -> &CassetteNode {
@@ -132,6 +133,8 @@ pub struct CassetteNode {
     effects: HashMap<String, Vec<VisualEffect>>,
 }
 
+const DEFAULT_KEY: &str = "default";
+
 impl CassetteNode {
     pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
         self.entity_shaders.insert(entity, shader);
@@ -143,7 +146,7 @@ impl CassetteNode {
         self.effects.insert(key.to_string(), vec);
     }
     pub fn add_effect(&mut self, effect: VisualEffect) {
-        self.add_effect_by_key("default", effect);
+        self.add_effect_by_key(DEFAULT_KEY, effect);
     }
     pub fn add_effects_by_key(&mut self, key: &str, effect: Vec<VisualEffect>) {
         effect
@@ -169,13 +172,23 @@ impl CassetteNode {
     }
     pub fn merge(&self, other: &CassetteNode) -> CassetteNode {
         let mut node = self.clone();
+        node.merge_mut(other);
+        node
+    }
+    pub fn merge_mut(&mut self, other: &CassetteNode) {
+        let mut node = self;
         node.duration = node.duration.max(node.duration);
-        for (key, effects) in other.effects.iter() {
-            node.effects.insert(key.clone(), effects.clone());
+        for (key, other_effects) in other.effects.iter() {
+            if key == DEFAULT_KEY {
+                let mut effects = node.effects.remove(key).unwrap_or_default();
+                effects.extend(other_effects.iter().cloned());
+                node.effects.insert(key.clone(), effects);
+            } else {
+                node.effects.insert(key.clone(), other_effects.clone());
+            }
         }
         other.entity_shaders.iter().for_each(|(entity, shader)| {
             node.entity_shaders.insert(*entity, shader.clone());
         });
-        node
     }
 }

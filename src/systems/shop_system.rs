@@ -33,7 +33,7 @@ impl ShopSystem {
         UnitComponent::draw_all_units_to_cassette_node(
             &world,
             &resources.options,
-            &resources.statuses,
+            &resources.status_pool,
             &mut resources.cassette.parallel_node,
             hashset! {Faction::Shop, Faction::Team},
         );
@@ -182,17 +182,19 @@ impl ShopSystem {
     pub fn refresh(world: &mut legion::World, resources: &mut Resources) {
         Self::clear(world, resources);
 
-        let items = resources.shop.pool.iter().collect_vec();
-        let dist2 = WeightedIndex::new(items.iter().map(|item| *item.1)).unwrap();
+        let items = resources
+            .shop
+            .pool
+            .iter()
+            .map(|(path, size)| (path.clone(), *size))
+            .collect_vec();
+        let dist2 = WeightedIndex::new(items.iter().map(|item| item.1)).unwrap();
         for slot in 1..5 {
-            let path = items[dist2.sample(&mut thread_rng())].0;
-            let template = resources
-                .unit_templates
-                .get(path)
-                .expect(&format!("Failed to find Unit Template: {:?}", path));
-            template.create_unit_entity(
+            let path = &items[dist2.sample(&mut thread_rng())].0;
+            UnitTemplatesPool::create_unit_entity(
+                path,
+                resources,
                 world,
-                &mut resources.statuses,
                 Faction::Shop,
                 slot,
                 SlotSystem::get_position(slot, &Faction::Shop),

@@ -4,18 +4,17 @@ use super::*;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Status {
-    pub name: String,
     pub trigger: Trigger,
     pub shader: Option<Shader>,
 }
 
 #[derive(Default, Debug)]
-pub struct Statuses {
+pub struct StatusPool {
     pub defined_statuses: HashMap<String, Status>, // key = status name
     pub active_statuses: HashMap<legion::Entity, HashMap<String, Context>>, // entity -> status name -> context
 }
 
-impl Statuses {
+impl StatusPool {
     pub fn get_entity_shaders(&self, entity: &legion::Entity) -> Vec<Shader> {
         self.active_statuses
             .get(entity)
@@ -26,30 +25,37 @@ impl Statuses {
     }
 
     pub fn add_entity_status(
-        &mut self,
         entity: &legion::Entity,
         status_name: &str,
         context: Context,
+        resources: &mut Resources,
     ) {
-        let mut statuses = self.active_statuses.remove(entity).unwrap_or_default();
+        let mut statuses = resources
+            .status_pool
+            .active_statuses
+            .remove(entity)
+            .unwrap_or_default();
         statuses.insert(
             status_name.to_string(),
             Context {
                 status: Some((status_name.to_string(), entity.clone())),
-                ..context
+                ..context.clone()
             },
         );
-        self.active_statuses.insert(*entity, statuses);
+        resources
+            .status_pool
+            .active_statuses
+            .insert(*entity, statuses);
+
+        {
+            Event::Init {
+                status: status_name.to_string(),
+            }
+        }
+        .send(&context, resources);
     }
 
-    pub fn add_and_define_entity_status(
-        &mut self,
-        entity: &legion::Entity,
-        status: &Status,
-        context: Context,
-    ) {
-        self.add_entity_status(entity, &status.name, context);
-        self.defined_statuses
-            .insert(status.name.clone(), status.clone());
+    pub fn define_status(&mut self, name: String, status: Status) {
+        self.defined_statuses.insert(name, status);
     }
 }

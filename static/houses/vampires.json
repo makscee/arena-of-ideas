@@ -1,0 +1,12 @@
+{
+    "name": "Vampires",
+    "color": "#7f0000ff",
+    "abilities": {
+        "Devour": {
+            "effect": {
+                "type": "Noop"
+            }
+        }
+    },
+    "statuses": {}
+}

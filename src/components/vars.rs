@@ -42,7 +42,7 @@ pub enum Var {
     Color(Rgba<f32>),
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
 pub struct Vars(HashMap<VarName, Var>);
 
 impl Vars {

@@ -11,7 +11,7 @@ impl Default for Shop {
 }
 
 impl Shop {
-    pub fn load(&mut self, templates: &HashMap<PathBuf, UnitTemplate>) {
-        self.pool = HashMap::from_iter(templates.keys().map(|path| (path.clone(), 3)));
+    pub fn load(&mut self, pool: &UnitTemplatesPool) {
+        self.pool = HashMap::from_iter(pool.templates.keys().map(|path| (path.clone(), 3)));
     }
 }
