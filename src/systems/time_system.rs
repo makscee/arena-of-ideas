@@ -15,15 +15,7 @@ impl TimeSystem {
 }
 
 impl System for TimeSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
         self.game_time += resources.delta_time;
-    }
-
-    fn draw(
-        &self,
-        world: &legion::World,
-        resources: &Resources,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
     }
 }

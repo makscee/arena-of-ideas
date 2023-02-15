@@ -65,7 +65,7 @@ impl Effect {
                             .options
                             .text
                             .clone()
-                            .set_uniform("u_text", ShaderUniform::String(text))
+                            .set_uniform("u_text", ShaderUniform::String((0, text)))
                             .set_uniform(
                                 "u_position",
                                 ShaderUniform::Vec2(
@@ -131,7 +131,12 @@ impl Effect {
                     .insert(name.clone(), Var::Int(*value));
             }
             Effect::AttachStatus { name } => {
-                StatusPool::add_entity_status(&context.target, name, context.clone(), resources);
+                return StatusPool::add_entity_status(
+                    &context.target,
+                    name,
+                    context.clone(),
+                    resources,
+                );
             }
             Effect::UseAbility { name, house } => {
                 if !world
@@ -151,10 +156,10 @@ impl Effect {
                     effect: resources
                         .houses
                         .get(house)
-                        .expect(&format!("Failed to get House: {:?}", house))
+                        .context("Failed to get House")?
                         .abilities
                         .get(name)
-                        .unwrap()
+                        .context("Failed to get Ability")?
                         .effect
                         .clone(),
                 });

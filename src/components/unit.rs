@@ -59,7 +59,7 @@ impl UnitComponent {
         <(&UnitComponent, &EntityComponent, &Shader)>::query()
             .iter(world)
             .filter(|(unit, _, _)| factions.contains(&unit.faction))
-            .for_each(|(unit, entity, shader)| {
+            .for_each(|(_, entity, _)| {
                 // Render units
                 node.add_entity_shader(
                     entity.entity,
@@ -144,8 +144,8 @@ impl UnitComponent {
 
         // // Statuses
         if let Some(statuses) = resources.status_pool.active_statuses.get(&original_entity) {
-            statuses.clone().iter().for_each(|(name, context)| {
-                StatusPool::add_entity_status(
+            statuses.clone().iter().for_each(
+                |(name, context)| match StatusPool::add_entity_status(
                     &new_entity,
                     name,
                     Context {
@@ -154,8 +154,11 @@ impl UnitComponent {
                         ..context.clone()
                     },
                     resources,
-                )
-            });
+                ) {
+                    Err(error) => error!("Add Status error: {}", error),
+                    _ => {}
+                },
+            );
         }
     }
 

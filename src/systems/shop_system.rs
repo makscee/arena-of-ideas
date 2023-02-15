@@ -165,7 +165,7 @@ impl ShopSystem {
         }
     }
 
-    pub fn clear(world: &mut legion::World, resources: &mut Resources) {
+    pub fn clear(world: &mut legion::World, _resources: &mut Resources) {
         <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .filter_map(|(unit, entity)| match unit.faction == Faction::Shop {

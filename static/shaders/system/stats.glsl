@@ -23,6 +23,9 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 
+uniform sampler2D u_text;
+uniform vec2 u_text_size;
+
 uniform vec4 u_text_color_default;
 uniform vec4 u_text_color_decreased;
 uniform vec4 u_text_color_increased;
@@ -54,7 +57,7 @@ void main() {
     float change_t = (CHANGE_T_DURATION - u_game_time + u_last_change) / CHANGE_T_DURATION;
     change_t *= change_t * change_t;
     float text_scale = max(u_text_scale, u_text_scale * (1 + change_t));
-    float sdf = get_text_sdf(uv / text_scale * vec2(1, u_texture_size.x / u_texture_size.y));
+    float sdf = get_text_sdf(uv / text_scale * vec2(1, u_text_size.x / u_text_size.y * .5), u_text);
     text_color = get_text_color(sdf, text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);
 }

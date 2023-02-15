@@ -47,7 +47,7 @@ impl System for GameStateSystem {
     fn draw(
         &self,
         world: &legion::World,
-        resources: &Resources,
+        resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         self.systems.get(&self.current).and_then(|systems| {
@@ -62,7 +62,7 @@ impl System for GameStateSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        resources: &Resources,
+        resources: &mut Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         if let Some(widgets) = self
             .systems

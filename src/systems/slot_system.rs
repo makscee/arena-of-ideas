@@ -180,5 +180,5 @@ impl SlotSystem {
 }
 
 impl System for SlotSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
+    fn update(&mut self, _world: &mut legion::World, _resources: &mut Resources) {}
 }

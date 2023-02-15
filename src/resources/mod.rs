@@ -6,6 +6,7 @@ mod ability;
 mod cassette;
 mod effect;
 mod event;
+mod fonts;
 mod house;
 mod options;
 mod shader_programs;
@@ -18,6 +19,7 @@ pub use ability::*;
 pub use cassette::*;
 pub use effect::*;
 pub use event::*;
+pub use fonts::*;
 pub use house::*;
 pub use options::*;
 pub use shader_programs::*;
@@ -49,7 +51,7 @@ pub struct Resources {
     pub houses: HashMap<HouseName, House>,
 
     pub camera: geng::Camera2d,
-    pub fonts: Vec<Rc<geng::font::Ttf>>,
+    pub fonts: Fonts,
     pub geng: Geng,
 }
 
@@ -97,7 +99,7 @@ impl Resources {
         Self {
             shader_programs,
             camera,
-            fonts,
+            fonts: Fonts::new(fonts),
             down_keys: default(),
             pressed_keys: default(),
             geng: geng.clone(),

@@ -79,12 +79,4 @@ impl System for FileWatcherSystem {
             }
         }
     }
-
-    fn draw(
-        &self,
-        _world: &legion::World,
-        _resources: &Resources,
-        _framebuffer: &mut ugli::Framebuffer,
-    ) {
-    }
 }

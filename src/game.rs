@@ -44,12 +44,18 @@ impl geng::State for Game {
                 self.resources.pressed_keys.remove(&key);
             }
 
-            geng::Event::MouseDown { position, button } => {
+            geng::Event::MouseDown {
+                position: _,
+                button,
+            } => {
                 self.resources.down_mouse_buttons.insert(button);
                 self.resources.pressed_mouse_buttons.insert(button);
             }
 
-            geng::Event::MouseUp { position, button } => {
+            geng::Event::MouseUp {
+                position: _,
+                button,
+            } => {
                 self.resources.pressed_mouse_buttons.remove(&button);
             }
 
@@ -61,7 +67,7 @@ impl geng::State for Game {
         let widgets = self
             .systems
             .iter_mut()
-            .map(|system| system.ui(cx, &self.resources))
+            .map(|system| system.ui(cx, &mut self.resources))
             .collect_vec();
         if widgets.is_empty() {
             return Box::new(ui::Void);
@@ -77,6 +83,6 @@ impl geng::State for Game {
         ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.systems
             .iter()
-            .for_each(|s| s.draw(&self.world, &self.resources, framebuffer));
+            .for_each(|s| s.draw(&self.world, &mut self.resources, framebuffer));
     }
 }

@@ -11,13 +11,13 @@ impl NameSystem {
     ) -> Vec<(legion::Entity, Shader)> {
         <(&EntityComponent, &NameComponent, &Shader)>::query()
             .iter(world)
-            .map(|(entity, name, shader)| {
+            .map(|(entity, name, _)| {
                 (
                     entity.entity,
                     options
                         .name
                         .clone()
-                        .set_uniform("u_text", ShaderUniform::String(name.0.clone())),
+                        .set_uniform("u_name", ShaderUniform::String((1, name.0.clone()))),
                 )
             })
             .collect_vec()

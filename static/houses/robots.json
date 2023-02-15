@@ -11,6 +11,8 @@
     },
     "statuses": {
         "Shield": {
+            "description": "Negate one instance\nof incoming damage",
+            "color": "#d2830c",
             "trigger": {
                 "type": "List",
                 "triggers": [
@@ -41,12 +43,7 @@
             },
             "shader": {
                 "path": "shaders/status/default_status.glsl",
-                "layer": "Vfx",
-                "parameters": {
-                    "uniforms": {
-                        "u_color": "#d2830c"
-                    }
-                }
+                "layer": "Vfx"
             }
         }
     }

@@ -1,6 +1,6 @@
 use std::collections::hash_map::Entry;
 
-use geng::prelude::itertools::Itertools;
+use geng::prelude::{itertools::Itertools, ugli::SingleUniform};
 use legion::EntityStore;
 
 use super::*;
@@ -8,14 +8,14 @@ use super::*;
 pub struct ShaderSystem {}
 
 impl System for ShaderSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
         resources.frame_shaders.clear();
     }
 
     fn draw(
         &self,
         world: &legion::World,
-        resources: &Resources,
+        resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         self.draw_all_shaders(world, resources, framebuffer);
@@ -46,7 +46,7 @@ impl ShaderSystem {
     pub fn draw_all_shaders(
         &self,
         world: &legion::World,
-        resources: &Resources,
+        resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         // Get all Shader components from World for drawing
@@ -78,61 +78,64 @@ impl ShaderSystem {
                     u_global_time: resources.game_time,
                     u_game_time: resources.cassette.head,
                 );
-                if let Some((key, value)) = shader.parameters.uniforms.find_string() {
-                    let font_index = match shader.parameters.uniforms.get(&"u_font".to_owned()) {
-                        Some(uniform) => match uniform {
-                            ShaderUniform::Int(value) => *value as usize,
-                            _ => 0,
-                        },
-                        None => 0usize,
-                    };
-                    if let Some(texture) = Self::get_text_texture(&value, resources, font_index) {
-                        Self::draw_shader(
-                            shader,
-                            framebuffer,
-                            resources,
-                            (
-                                uniforms,
-                                ugli::uniforms!(
-                                    u_texture_size: texture.size().map(|x| x as f32),
-                                    u_text_texture: texture,
-                                ),
-                            ),
-                        );
-                        continue;
-                    }
+                let texts = shader
+                    .parameters
+                    .uniforms
+                    .0
+                    .iter()
+                    .filter_map(|(key, uniform)| match uniform {
+                        ShaderUniform::String((font, text)) => {
+                            Some((*font, text, key, format!("{}_size", key)))
+                        }
+                        _ => None,
+                    })
+                    .collect_vec();
+                resources.fonts.load_textures(
+                    texts
+                        .iter()
+                        .map(|(font, text, _, _)| (*font, *text))
+                        .collect_vec(),
+                );
+                let mut texture_uniforms = SingleUniformVec::default();
+                let mut texture_size_uniforms = SingleUniformVec::default();
+                for (font, text, key, size_key) in texts.iter() {
+                    let texture = resources.fonts.get_texture(*font, text);
+                    texture_uniforms.0.push(SingleUniform::new(key, texture));
+                    texture_size_uniforms.0.push(SingleUniform::new(
+                        &size_key,
+                        texture.and_then(|texture| Some(texture.size().map(|x| x as f32))),
+                    ));
                 }
-                Self::draw_shader(shader, framebuffer, resources, uniforms);
+                Self::draw_shader(
+                    shader,
+                    framebuffer,
+                    &resources.geng,
+                    &resources.camera,
+                    &resources.shader_programs,
+                    (texture_uniforms, texture_size_uniforms, uniforms),
+                );
             }
         }
-    }
-
-    fn get_text_texture(
-        text: &String,
-        resources: &Resources,
-        font: usize,
-    ) -> Option<ugli::Texture> {
-        resources.fonts[font].create_text_sdf(text, 64.0)
     }
 
     fn draw_shader<U>(
         shader: &Shader,
         framebuffer: &mut ugli::Framebuffer,
-        resources: &Resources,
+        geng: &Geng,
+        camera: &geng::Camera2d,
+        shader_programs: &ShaderPrograms,
         uniforms: U,
     ) where
         U: ugli::Uniforms,
     {
         let mut instances_arr: ugli::VertexBuffer<Instance> =
-            ugli::VertexBuffer::new_dynamic(resources.geng.ugli(), Vec::new());
+            ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
         instances_arr.resize(shader.parameters.instances, Instance {});
         let mut chain = Some(Box::new(shader.clone()));
         let shader_uniforms = &mut default::<ShaderUniforms>();
 
         while let Some(shader) = chain {
-            let program = resources
-                .shader_programs
-                .get_program(&static_path().join(&shader.path));
+            let program = shader_programs.get_program(&static_path().join(&shader.path));
             shader_uniforms.merge_mut(&shader.parameters.uniforms);
             let parameters = ShaderParameters {
                 uniforms: shader_uniforms.clone(),
@@ -140,11 +143,11 @@ impl ShaderSystem {
             };
 
             let uniforms = (
-                geng::camera2d_uniforms(&resources.camera, framebuffer.size().map(|x| x as f32)),
+                geng::camera2d_uniforms(camera, framebuffer.size().map(|x| x as f32)),
                 parameters,
                 &uniforms,
             );
-            let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
+            let quad = Self::get_quad(shader.parameters.vertices, &geng);
             ugli::draw(
                 framebuffer,
                 &program,

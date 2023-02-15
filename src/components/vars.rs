@@ -11,7 +11,6 @@ pub enum VarName {
     Faction,
     Card,
     Description,
-    Font,
 }
 
 impl VarName {
@@ -35,7 +34,7 @@ impl VarName {
 pub enum Var {
     Int(i32),
     Float(f32),
-    String(String),
+    String((usize, String)),
     Vec2(vec2<f32>),
     Vec3(vec3<f32>),
     Vec4(vec4<f32>),
@@ -64,8 +63,7 @@ impl From<Vars> for ShaderUniforms {
                     map.insert(name, ShaderUniform::Float(*v));
                 }
                 Var::String(text) => {
-                    // only one texture can be passed per shader
-                    map.insert("u_text".to_owned(), ShaderUniform::String(text.clone()));
+                    map.insert(name, ShaderUniform::String(text.clone()));
                 }
                 Var::Vec2(v) => {
                     map.insert(name, ShaderUniform::Vec2(*v));

@@ -66,7 +66,7 @@ impl ugli::Uniforms for ShaderParameters {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
-pub struct ShaderUniforms(HashMap<String, ShaderUniform>);
+pub struct ShaderUniforms(pub HashMap<String, ShaderUniform>);
 
 impl ShaderUniforms {
     pub fn merge(&self, other: &ShaderUniforms) -> Self {
@@ -127,23 +127,13 @@ impl ShaderUniforms {
 
         result
     }
-}
 
-impl ShaderUniforms {
     pub fn insert(&mut self, key: String, value: ShaderUniform) {
         self.0.insert(key, value);
     }
+
     pub fn get(&self, key: &String) -> Option<&ShaderUniform> {
         self.0.get(key)
-    }
-    pub fn find_string(&self) -> Option<(String, String)> {
-        for (key, value) in self.0.iter() {
-            match value {
-                ShaderUniform::String(value) => return Some((key.to_string(), value.to_string())),
-                _ => {}
-            }
-        }
-        None
     }
 }
 
@@ -172,7 +162,7 @@ pub enum ShaderUniform {
     Vec3(vec3<f32>),
     Vec4(vec4<f32>),
     Color(Rgba<f32>),
-    String(String),
+    String((usize, String)),
 }
 
 impl ugli::Uniform for ShaderUniform {
@@ -186,5 +176,19 @@ impl ugli::Uniform for ShaderUniform {
             Self::Color(value) => value.apply(gl, info),
             Self::String(_) => {}
         }
+    }
+}
+
+#[derive(Default)]
+pub struct SingleUniformVec<'a, U: ugli::Uniform>(pub Vec<ugli::SingleUniform<'a, U>>);
+
+impl<'a, U: ugli::Uniform> ugli::Uniforms for SingleUniformVec<'a, U> {
+    fn walk_uniforms<C>(&self, visitor: &mut C)
+    where
+        C: ugli::UniformVisitor,
+    {
+        self.0
+            .iter()
+            .for_each(|uniform| uniform.walk_uniforms(visitor));
     }
 }

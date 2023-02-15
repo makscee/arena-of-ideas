@@ -28,14 +28,6 @@ impl System for ActionSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         Self::tick(world, resources);
     }
-
-    fn draw(
-        &self,
-        _world: &legion::World,
-        _resources: &Resources,
-        _framebuffer: &mut ugli::Framebuffer,
-    ) {
-    }
 }
 
 pub struct Action {

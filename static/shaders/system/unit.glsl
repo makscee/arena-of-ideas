@@ -24,6 +24,8 @@ in vec2 uv;
 uniform int u_hp_current;
 uniform int u_hp_max;
 uniform float u_hp_last_dmg;
+uniform sampler2D u_description;
+uniform vec2 u_description_size;
 
 const float THICKNESS = 0.04;
 const float SPREAD = 0.2;
@@ -44,9 +46,9 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec4 color = vec4(0);
     vec4 border_color = vec4(base_color, abs(card_sdf) < CARD_BORDER || (abs(uv.y) < CARD_BORDER * .5 && card_sdf < 0));
 
-    vec2 text_uv = (uv * 1.2 + vec2(0, .5)) * vec2(1, u_texture_size.x / u_texture_size.y);
+    vec2 text_uv = (uv * 1.2 + vec2(0, .5)) * vec2(1, u_description_size.x / u_description_size.y);
     // return vec4(abs(text_uv.x) < 1 && abs(text_uv.y) < 1);
-    float text_sdf = get_text_sdf(text_uv);
+    float text_sdf = get_text_sdf(text_uv, u_description);
     vec3 text_base_color = vec3(1);
     vec4 text_color = get_text_color(text_sdf, vec4(text_base_color, 1), vec4(text_base_color, .4), TEXT_BORDER, TEXT_INSIDE);
     color = alphaBlend(color, unit_color);

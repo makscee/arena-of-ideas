@@ -33,7 +33,7 @@ pub trait System {
     fn draw(
         &self,
         world: &legion::World,
-        resources: &Resources,
+        resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
         #![allow(unused_variables)]
@@ -41,7 +41,7 @@ pub trait System {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        resources: &Resources,
+        resources: &mut Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         #![allow(unused_variables)]
         Box::new(ui::Void)
@@ -92,6 +92,6 @@ impl Game {
         world
             .entry(entity)
             .unwrap()
-            .add_component((EntityComponent { entity }));
+            .add_component(EntityComponent { entity });
     }
 }

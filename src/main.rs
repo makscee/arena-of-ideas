@@ -38,7 +38,7 @@ fn main() {
     logger::init().unwrap();
     geng::setup_panic_handler();
     let geng = setup_geng();
-    let mut world = legion::World::default();
+    let world = legion::World::default();
     let resources = Resources::new(&geng);
     let game = Game::new(world, resources);
     geng::run(&geng, game);

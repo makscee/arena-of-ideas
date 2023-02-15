@@ -15,7 +15,6 @@ impl DescriptionComponent {
 
 impl VarsProvider for DescriptionComponent {
     fn extend_vars(&self, vars: &mut Vars) {
-        vars.insert(VarName::Description, Var::String(self.text.clone()));
-        vars.insert(VarName::Font, Var::Int(1));
+        vars.insert(VarName::Description, Var::String((1, self.text.clone())));
     }
 }

@@ -15,7 +15,7 @@ impl CassettePlayerSystem {
 const REWIND_SPEED: f32 = 5.0;
 
 impl System for CassettePlayerSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
         resources.cassette.head = match self.mode {
             PlayMode::Play | PlayMode::Hidden => resources.cassette.head + resources.delta_time,
             PlayMode::Stop => resources.cassette.head,
@@ -60,7 +60,7 @@ impl System for CassettePlayerSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        resources: &Resources,
+        resources: &mut Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         if self.mode == PlayMode::Hidden {
             return Box::new(ui::Void);
@@ -69,14 +69,14 @@ impl System for CassettePlayerSystem {
             (
                 Text::new(
                     format!("{:.2}", resources.cassette.head),
-                    resources.fonts[0].clone(),
+                    resources.fonts.get_font(0),
                     64.0,
                     Rgba::BLACK,
                 ),
                 Text::new(
                     format!("Mode {}", self.mode),
-                    resources.fonts[0].clone(),
-                    32.0,
+                    resources.fonts.get_font(0),
+                    64.0,
                     Rgba::BLACK,
                 ),
             )
