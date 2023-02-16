@@ -9,7 +9,7 @@ pub struct UnitComponent {
     pub faction: Faction,
 }
 
-pub const UNIT_RADIUS: f32 = 1.0;
+pub const DEFAULT_UNIT_RADIUS: f32 = 1.0;
 
 #[derive(Clone, Copy, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub enum Faction {

@@ -19,13 +19,6 @@ void main() {
 #endif
 
 #ifdef FRAGMENT_SHADER
-in vec2 uv;
-
-uniform int u_hp_current;
-uniform int u_hp_max;
-uniform float u_hp_last_dmg;
-uniform sampler2D u_description;
-uniform vec2 u_description_size;
 
 const float THICKNESS = 0.04;
 const float SPREAD = 0.2;
@@ -38,6 +31,15 @@ const float CARD_BORDER = 0.07;
 const float CARD_AA = 0.1;
 const float TEXT_INSIDE = 0.5;
 const float TEXT_BORDER = 0.25;
+
+in vec2 uv;
+
+uniform int u_hp_current;
+uniform int u_hp_max;
+uniform float u_hp_last_dmg;
+uniform sampler2D u_description;
+uniform vec2 u_description_size;
+uniform float u_hovered = 0;
 
 vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec2 uv = uv - CARD_OFFSET;
@@ -73,6 +75,6 @@ void main() {
         float r = N22(v + vec2(floor(u_global_time * 20) / 20)).x;
         color = alphaBlend(color, vec4(r, r, r, dmg_t));
     }
-    gl_FragColor = draw_card(color, uv);
+    gl_FragColor = draw_card(color * (1 + u_hovered), uv);
 }
 #endif

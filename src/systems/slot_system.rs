@@ -39,7 +39,7 @@ impl SlotSystem {
     pub fn get_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
         for slot in 1..=SLOTS_COUNT {
             let slot_pos = Self::get_position(slot, faction);
-            if (slot_pos - mouse_pos).len() < UNIT_RADIUS {
+            if (slot_pos - mouse_pos).len() < DEFAULT_UNIT_RADIUS {
                 return Some(slot);
             }
         }
@@ -49,7 +49,7 @@ impl SlotSystem {
     pub fn get_horizontal_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
         for slot in 1..=SLOTS_COUNT {
             let slot_pos = Self::get_position(slot, faction);
-            if (mouse_pos.x - slot_pos.x).abs() < UNIT_RADIUS {
+            if (mouse_pos.x - slot_pos.x).abs() < DEFAULT_UNIT_RADIUS {
                 return Some(slot);
             }
         }

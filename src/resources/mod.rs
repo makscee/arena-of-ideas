@@ -46,6 +46,7 @@ pub struct Resources {
     pub shop: Shop,
     pub frame_shaders: Vec<Shader>,
     pub dragged_entity: Option<legion::Entity>,
+    pub hovered_entity: Option<legion::Entity>,
 
     pub unit_templates: UnitTemplatesPool,
     pub houses: HashMap<HouseName, House>,
@@ -116,6 +117,7 @@ impl Resources {
             pressed_mouse_buttons: default(),
             mouse_pos: vec2::ZERO,
             dragged_entity: default(),
+            hovered_entity: default(),
             houses: default(),
         }
     }
@@ -288,6 +290,7 @@ impl UnitTemplatesPool {
             .clone();
         let entity = world.push((
             PositionComponent(position),
+            RadiusComponent(1.0),
             FlagsComponent::default(),
             faction.clone(),
             UnitComponent { faction, slot },

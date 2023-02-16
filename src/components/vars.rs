@@ -7,10 +7,12 @@ pub enum VarName {
     HpCurrent,
     HpLastDmg,
     Position,
+    Radius,
     Test,
     Faction,
     Card,
     Description,
+    Hovered,
 }
 
 impl VarName {

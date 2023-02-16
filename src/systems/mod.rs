@@ -5,9 +5,9 @@ use super::*;
 mod action_system;
 mod battle_system;
 mod cassette_player_system;
-mod drag_system;
 mod file_watcher_system;
 mod game_state_system;
+mod mouse_system;
 mod name_system;
 mod shader_system;
 mod shop_system;
@@ -18,10 +18,10 @@ mod time_system;
 pub use action_system::*;
 pub use battle_system::*;
 pub use cassette_player_system::*;
-pub use drag_system::*;
 pub use file_watcher_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
+pub use mouse_system::*;
 pub use name_system::*;
 pub use shader_system::*;
 pub use shop_system::*;
@@ -70,7 +70,7 @@ impl Game {
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
                 Box::new(ActionSystem::new()),
                 Box::new(ShopSystem::new()),
-                Box::new(DragSystem::new()),
+                Box::new(MouseSystem::new()),
                 Box::new(SlotSystem::new()),
             ],
         );
