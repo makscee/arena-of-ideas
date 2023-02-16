@@ -40,6 +40,9 @@ impl Context {
         if let Some(component) = entry.get_component::<HoverComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
+        if let Some(component) = entry.get_component::<HouseComponent>().ok() {
+            component.extend_vars(&mut context.vars);
+        }
 
         context
     }

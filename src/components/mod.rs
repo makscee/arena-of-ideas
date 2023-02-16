@@ -118,7 +118,7 @@ impl SerializedComponent {
                 entry.add_component(DescriptionComponent::new(text))
             }
             SerializedComponent::House { houses } => {
-                entry.add_component(HouseComponent::new(houses.clone()))
+                entry.add_component(HouseComponent::new(houses.clone(), &resources))
             }
         }
     }

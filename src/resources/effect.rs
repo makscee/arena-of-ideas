@@ -144,7 +144,7 @@ impl Effect {
                     .context("Failed to get Owner")?
                     .get_component::<HouseComponent>()?
                     .houses
-                    .contains(house)
+                    .contains_key(house)
                 {
                     panic!(
                         "Tried to use {} while not being a member of the {:?}",

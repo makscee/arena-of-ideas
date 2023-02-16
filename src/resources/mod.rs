@@ -253,14 +253,16 @@ impl Resources {
             &static_path().join(file),
         ))
         .expect("Failed to load unit");
-        let house: House = serde_json::from_str(&json)
-            .expect(&format!("Failed to parse UnitTemplate: {:?}", file));
-        resources.houses.insert(house.name, house.clone());
+        let house: House =
+            serde_json::from_str(&json).expect(&format!("Failed to parse House: {:?}", file));
         house.statuses.iter().for_each(|(name, status)| {
-            resources
-                .status_pool
-                .define_status(name.clone(), status.clone())
+            let mut status = status.clone();
+            if status.color.is_none() {
+                status.color = Some(house.color);
+            }
+            resources.status_pool.define_status(name.clone(), status)
         });
+        resources.houses.insert(house.name, house);
     }
 }
 

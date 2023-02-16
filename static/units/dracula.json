@@ -1,21 +1,21 @@
 [
     {
         "component": "Name",
-        "name": "Guard"
+        "name": "Dracula"
     },
     {
         "component": "House",
         "houses": [
-            "Robots"
+            "Vampires"
         ]
     },
     {
         "component": "Description",
-        "text": "Gain Shield\nat the start of Battle"
+        "text": "On Attack\n50% Vampirism"
     },
     {
         "component": "Hp",
-        "max": 1
+        "max": 6
     },
     {
         "component": "Attack",
@@ -30,24 +30,13 @@
             "path": "shaders/vfx/circle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_color": "#fff3b5"
+                    "u_color": "#9d0000"
                 }
             }
         }
     },
     {
         "component": "StatusContainer",
-        "statuses": {
-            "GetShield": {
-                "trigger": {
-                    "type": "Init",
-                    "effect": {
-                        "type": "UseAbility",
-                        "house": "Robots",
-                        "name": "Shield"
-                    }
-                }
-            }
-        }
+        "statuses": {}
     }
 ]

@@ -13,6 +13,9 @@ pub enum VarName {
     Card,
     Description,
     Hovered,
+    HouseColor1,
+    HouseColor2,
+    HouseColor3,
 }
 
 impl VarName {

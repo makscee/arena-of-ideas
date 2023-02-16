@@ -12,7 +12,6 @@
     "statuses": {
         "Shield": {
             "description": "Negate one instance\nof incoming damage",
-            "color": "#d2830c",
             "trigger": {
                 "type": "List",
                 "triggers": [

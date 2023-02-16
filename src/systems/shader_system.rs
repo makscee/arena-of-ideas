@@ -73,7 +73,7 @@ impl ShaderSystem {
             vec.push(shader);
         }
         for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
-            for shader in shaders.iter() {
+            for shader in shaders.iter().sorted_by_key(|shader| shader.order) {
                 let uniforms = ugli::uniforms!(
                     u_global_time: resources.game_time,
                     u_game_time: resources.cassette.head,

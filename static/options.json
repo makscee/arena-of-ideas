@@ -39,7 +39,8 @@
                 ]
             }
         },
-        "layer": "Unit"
+        "layer": "Unit",
+        "order": 10
     },
     "stats_attack_color": "#ffc400",
     "stats_hp_color": "#d20505",
