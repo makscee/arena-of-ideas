@@ -6,6 +6,7 @@ pub struct Shader {
     pub path: PathBuf, // static path
     #[serde(default)]
     pub parameters: ShaderParameters,
+    #[serde(default)]
     pub layer: ShaderLayer,
     #[serde(default)]
     pub order: i32,
@@ -25,6 +26,12 @@ pub enum ShaderLayer {
     Unit,
     Vfx,
     UI,
+}
+
+impl Default for ShaderLayer {
+    fn default() -> Self {
+        ShaderLayer::UI
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

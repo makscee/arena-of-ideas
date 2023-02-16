@@ -24,7 +24,7 @@
                 "u_font": 0
             }
         },
-        "layer": "UI"
+        "layer": "Unit"
     },
     "name": {
         "path": "shaders/system/name.glsl",
@@ -39,7 +39,7 @@
                 ]
             }
         },
-        "layer": "UI"
+        "layer": "Unit"
     },
     "stats_attack_color": "#ffc400",
     "stats_hp_color": "#d20505",
@@ -76,6 +76,10 @@
         "parameters": {
             "uniforms": {}
         },
+        "layer": "Unit"
+    },
+    "status_description": {
+        "path": "shaders/status/description.glsl",
         "layer": "UI"
     }
 }

@@ -29,7 +29,7 @@ const vec2 CARD_SIZE = vec2(1.0, 1.5);
 const vec2 CARD_OFFSET = vec2(0, 0.6);
 const float CARD_BORDER = 0.07;
 const float CARD_AA = 0.1;
-const float TEXT_INSIDE = 0.5;
+const float TEXT_INSIDE = 0.45;
 const float TEXT_BORDER = 0.25;
 
 in vec2 uv;
@@ -44,14 +44,14 @@ uniform float u_hovered = 0;
 vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec2 uv = uv - CARD_OFFSET;
     float card_sdf = rectangle_sdf(uv, CARD_SIZE * mix(3, 1, u_card), 0);
-    commonInit(u_position + uv);
+    commonInit(u_position + uv * CARD_SIZE);
     vec4 color = vec4(0);
     vec4 border_color = vec4(base_color, abs(card_sdf) < CARD_BORDER || (abs(uv.y) < CARD_BORDER * .5 && card_sdf < 0));
 
     vec2 text_uv = (uv * 1.2 + vec2(0, .5)) * vec2(1, u_description_size.x / u_description_size.y);
     // return vec4(abs(text_uv.x) < 1 && abs(text_uv.y) < 1);
     float text_sdf = get_text_sdf(text_uv, u_description);
-    vec3 text_base_color = vec3(1);
+    vec3 text_base_color = base_color;
     vec4 text_color = get_text_color(text_sdf, vec4(text_base_color, 1), vec4(text_base_color, .4), TEXT_BORDER, TEXT_INSIDE);
     color = alphaBlend(color, unit_color);
     color = alphaBlend(color, border_color);

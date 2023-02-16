@@ -11,6 +11,7 @@ pub struct Options {
     pub text: Shader,
     pub name: Shader,
     pub slot: Shader,
+    pub status_description: Shader,
     pub faction_colors: HashMap<Faction, Rgba<f32>>,
 }
 

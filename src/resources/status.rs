@@ -17,12 +17,34 @@ pub struct StatusPool {
 }
 
 impl StatusPool {
-    pub fn get_entity_shaders(&self, entity: &legion::Entity) -> Vec<Shader> {
+    pub fn get_entity_shaders(&self, entity: &legion::Entity, options: &Options) -> Vec<Shader> {
         self.active_statuses
             .get(entity)
             .unwrap_or(&default())
             .keys()
-            .filter_map(|key| self.defined_statuses.get(key).unwrap().shader.clone())
+            .map(|key| {
+                let status = self.defined_statuses.get(key).unwrap();
+                status
+                    .shader
+                    .clone()
+                    .into_iter()
+                    .chain(status.description.iter().map(|text| {
+                        options
+                            .status_description
+                            .clone()
+                            .set_uniform("u_description", ShaderUniform::String((1, text.clone())))
+                            .set_uniform("u_name", ShaderUniform::String((0, key.clone())))
+                            .set_uniform(
+                                "u_color",
+                                ShaderUniform::Color(match status.color {
+                                    Some(color) => color,
+                                    None => Rgba::BLACK,
+                                }),
+                            )
+                    }))
+                    .collect_vec()
+            })
+            .flatten()
             .collect_vec()
     }
 

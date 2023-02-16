@@ -7,5 +7,6 @@
     "shaders/system/slot.glsl",
     "shaders/vfx/circle.glsl",
     "shaders/vfx/text.glsl",
-    "shaders/status/default_status.glsl"
+    "shaders/status/default_status.glsl",
+    "shaders/status/description.glsl"
 ]

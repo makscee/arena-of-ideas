@@ -70,7 +70,7 @@ impl UnitComponent {
                 node.add_effects_by_key(
                     STATUSES_EFFECTS_KEY,
                     statuses
-                        .get_entity_shaders(&entity.entity)
+                        .get_entity_shaders(&entity.entity, options)
                         .into_iter()
                         .map(|shader| {
                             VisualEffect::new(
