@@ -3,11 +3,12 @@ use legion::EntityStore;
 
 use super::*;
 
-const GRAB_ANIMATION_DURATION: Time = 0.3;
+const GRAB_ANIMATION_DURATION: Time = 0.15;
 
 pub struct ShopSystem {
     buy_candidate: Option<legion::Entity>,
     sell_candidate: Option<legion::Entity>,
+    hovered_team: Option<legion::Entity>,
 }
 
 impl System for ShopSystem {
@@ -15,6 +16,7 @@ impl System for ShopSystem {
         if resources.down_keys.contains(&geng::Key::R) {
             Self::refresh(world, resources);
         }
+        self.handle_hover(world, resources);
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
     }
@@ -25,6 +27,7 @@ impl ShopSystem {
         Self {
             buy_candidate: default(),
             sell_candidate: default(),
+            hovered_team: default(),
         }
     }
 
@@ -39,12 +42,67 @@ impl ShopSystem {
         );
     }
 
+    fn handle_hover(&mut self, world: &legion::World, resources: &mut Resources) {
+        let hovered = resources.hovered_entity.or(resources.dragged_entity);
+        if self.hovered_team == hovered {
+            return;
+        }
+        if let Some(entry) = hovered.and_then(|entity| world.entry_ref(entity).ok()) {
+            let hovered = hovered.unwrap();
+            if entry.get_component::<UnitComponent>().unwrap().faction == Faction::Team {
+                resources.cassette.close_node();
+                resources.cassette.head = resources.cassette.last_start();
+                resources.cassette.add_effect(VisualEffect {
+                    duration: GRAB_ANIMATION_DURATION,
+                    r#type: VisualEffectType::EntityShaderAnimation {
+                        entity: hovered,
+                        from: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
+                        to: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
+                        easing: EasingType::Linear,
+                    },
+                    order: -1,
+                });
+                resources.cassette.parallel_node.add_effect_by_key(
+                    "hover_card_fix",
+                    VisualEffect {
+                        duration: 0.0,
+                        r#type: VisualEffectType::EntityShaderConst {
+                            entity: hovered,
+                            uniforms: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
+                        },
+                        order: -2,
+                    },
+                );
+                resources.cassette.close_node();
+                self.hovered_team = Some(hovered);
+            }
+        }
+        if hovered.is_none() && self.hovered_team.is_some() {
+            resources.cassette.parallel_node.clear_key("hover_card_fix");
+            resources.cassette.close_node();
+            let hovered = self.hovered_team.unwrap();
+            resources.cassette.add_effect(VisualEffect {
+                duration: GRAB_ANIMATION_DURATION,
+                r#type: VisualEffectType::EntityShaderAnimation {
+                    entity: hovered,
+                    from: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
+                    to: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
+                    easing: EasingType::Linear,
+                },
+                order: -1,
+            });
+            resources.cassette.close_node();
+            self.hovered_team = None;
+        }
+    }
+
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if let Some(dragged) = resources.dragged_entity {
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
             {
                 resources.cassette.close_node();
+                resources.cassette.head = resources.cassette.last_start();
                 SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team});
                 resources.cassette.close_node();
             }
@@ -61,31 +119,8 @@ impl ShopSystem {
                     }
                 }
                 Faction::Shop => {
-                    resources.cassette.parallel_node.add_effect_by_key(
-                        "card_fix",
-                        VisualEffect {
-                            duration: 0.0,
-                            r#type: VisualEffectType::EntityShaderConst {
-                                entity: dragged,
-                                uniforms: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
-                            },
-                            order: -2,
-                        },
-                    );
                     if self.buy_candidate.is_none() {
                         self.buy_candidate = Some(dragged);
-                        resources.cassette.close_node();
-                        resources.cassette.add_effect(VisualEffect {
-                            duration: GRAB_ANIMATION_DURATION,
-                            r#type: VisualEffectType::EntityShaderAnimation {
-                                entity: dragged,
-                                from: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                                to: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
-                                easing: EasingType::Linear,
-                            },
-                            order: -1,
-                        });
-                        resources.cassette.close_node();
                     }
                 }
                 _ => panic!("Wrong faction"),
@@ -130,32 +165,23 @@ impl ShopSystem {
                 unit.slot = slot;
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
                 Self::refresh_cassette(world, resources);
+                self.hovered_team = Some(buy_candidate);
+                resources.cassette.parallel_node.add_effect_by_key(
+                    "hover_card_fix",
+                    VisualEffect {
+                        duration: 0.0,
+                        r#type: VisualEffectType::EntityShaderConst {
+                            entity: buy_candidate,
+                            uniforms: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
+                        },
+                        order: -2,
+                    },
+                );
             } else {
                 let position =
                     SlotSystem::get_unit_position(entry.get_component::<UnitComponent>().unwrap());
                 entry.get_component_mut::<PositionComponent>().unwrap().0 = position;
-                resources.cassette.close_node();
-                resources.cassette.add_effect(VisualEffect {
-                    duration: GRAB_ANIMATION_DURATION,
-                    r#type: VisualEffectType::EntityShaderAnimation {
-                        entity: buy_candidate,
-                        from: hashmap! {
-                            "u_card" => ShaderUniform::Float(0.0),
-                            "u_position" => ShaderUniform::Vec2(position),
-                        }
-                        .into(),
-                        to: hashmap! {
-                            "u_card" => ShaderUniform::Float(1.0),
-                            "u_position" => ShaderUniform::Vec2(position),
-                        }
-                        .into(),
-                        easing: EasingType::Linear,
-                    },
-                    order: -1,
-                });
-                resources.cassette.close_node();
             }
-            resources.cassette.parallel_node.clear_key("card_fix");
             self.buy_candidate = None;
             SlotSystem::refresh_slot_shaders(
                 world,

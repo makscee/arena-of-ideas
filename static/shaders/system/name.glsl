@@ -7,7 +7,7 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 
-uniform float u_padding = 1;
+uniform float u_padding = 0;
 uniform vec2 u_position = vec2(0);
 uniform vec2 u_offset = vec2(0);
 uniform float u_scale = 1;

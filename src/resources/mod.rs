@@ -78,7 +78,7 @@ impl Resources {
                     geng,
                     include_bytes!("../../static/font/stats.ttf"),
                     geng::font::ttf::Options {
-                        pixel_size: 64.0,
+                        pixel_size: 32.0,
                         max_distance: 0.25,
                     },
                 )
@@ -89,7 +89,7 @@ impl Resources {
                     geng,
                     include_bytes!("../../static/font/description.ttf"),
                     geng::font::ttf::Options {
-                        pixel_size: 64.0,
+                        pixel_size: 32.0,
                         max_distance: 0.25,
                     },
                 )
