@@ -21,7 +21,10 @@ impl geng::LoadAsset for House {
         let path = path.to_owned();
         async move {
             let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            let house: House = serde_json::from_str(&json)?;
+            let mut house: House = serde_json::from_str(&json)?;
+            house.statuses.iter_mut().for_each(|(_, status)| {
+                status.color = Some(house.color);
+            });
             Ok(house)
         }
         .boxed_local()

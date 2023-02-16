@@ -42,11 +42,10 @@ impl MouseSystem {
         }
         if resources.hovered_entity != hovered {
             resources.hovered_entity.and_then(|entity| {
-                world
-                    .entry(entity)
-                    .unwrap()
-                    .remove_component::<HoverComponent>();
-                Some(())
+                world.entry(entity).and_then(|mut entry| {
+                    entry.remove_component::<HoverComponent>();
+                    Some(())
+                })
             });
             resources.hovered_entity = hovered;
         }

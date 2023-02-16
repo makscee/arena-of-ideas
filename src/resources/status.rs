@@ -57,7 +57,15 @@ impl StatusPool {
         .send(&context, resources)
     }
 
-    pub fn define_status(&mut self, name: String, status: Status) {
+    pub fn define_status(&mut self, name: String, mut status: Status) {
+        if status.shader.is_some() && status.color.is_some() {
+            if let Some(ref mut shader) = status.shader {
+                shader.parameters.uniforms.insert(
+                    "u_color".to_string(),
+                    ShaderUniform::Color(status.color.unwrap()),
+                );
+            }
+        }
         self.defined_statuses.insert(name, status);
     }
 }
