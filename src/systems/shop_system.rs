@@ -102,7 +102,6 @@ impl ShopSystem {
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
             {
                 resources.cassette.close_node();
-                resources.cassette.head = resources.cassette.last_start();
                 SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team});
                 resources.cassette.close_node();
             }
