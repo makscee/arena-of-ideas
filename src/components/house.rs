@@ -2,6 +2,7 @@ use geng::prelude::itertools::Itertools;
 
 use super::*;
 
+#[derive(Default, Clone)]
 pub struct HouseComponent {
     pub houses: HashMap<HouseName, Rgba<f32>>,
 }

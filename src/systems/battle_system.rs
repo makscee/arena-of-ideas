@@ -24,7 +24,7 @@ impl BattleSystem {
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
         SlotSystem::refresh_slot_shaders(world, resources, hashset![Faction::Dark, Faction::Light]);
-        Self::create_enemies(3, resources, world);
+        Self::create_enemies(resources, world);
         Self::create_team(resources, world);
         Self::init_statuses(resources);
         while ActionSystem::tick(world, resources) {}
@@ -33,31 +33,20 @@ impl BattleSystem {
     pub fn finish_battle(world: &mut legion::World) {
         let unit_entitites = <(&EntityComponent, &UnitComponent)>::query()
             .iter(world)
-            .map(|(entity, _)| entity.entity.clone())
+            .filter_map(|(entity, unit)| {
+                match unit.faction == Faction::Light || unit.faction == Faction::Dark {
+                    true => Some(entity.entity.clone()),
+                    false => None,
+                }
+            })
             .collect_vec();
         unit_entitites.iter().for_each(|entity| {
             world.remove(*entity);
         });
     }
 
-    fn create_enemies(count: usize, resources: &mut Resources, world: &mut legion::World) {
-        for slot in 1..=count {
-            let mut rng = rand::thread_rng();
-            UnitTemplatesPool::create_unit_entity(
-                &resources
-                    .unit_templates
-                    .templates
-                    .keys()
-                    .choose(&mut rng)
-                    .unwrap()
-                    .clone(),
-                resources,
-                world,
-                Faction::Dark,
-                slot,
-                vec2::ZERO,
-            );
-        }
+    fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
+        Rounds::load(world, resources);
     }
 
     fn create_team(resources: &mut Resources, world: &mut legion::World) {

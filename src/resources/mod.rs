@@ -9,6 +9,7 @@ mod event;
 mod fonts;
 mod house;
 mod options;
+mod rounds;
 mod shader_programs;
 mod shop;
 mod status;
@@ -22,6 +23,7 @@ pub use event::*;
 pub use fonts::*;
 pub use house::*;
 pub use options::*;
+pub use rounds::*;
 pub use shader_programs::*;
 pub use shop::*;
 pub use status::*;
@@ -49,6 +51,7 @@ pub struct Resources {
     pub hovered_entity: Option<legion::Entity>,
 
     pub unit_templates: UnitTemplatesPool,
+    pub rounds: Rounds,
     pub houses: HashMap<HouseName, House>,
 
     pub camera: geng::Camera2d,
@@ -119,6 +122,7 @@ impl Resources {
             dragged_entity: default(),
             hovered_entity: default(),
             houses: default(),
+            rounds: default(),
         }
     }
 
@@ -131,6 +135,11 @@ impl Resources {
             self,
             &static_path().join("options.json"),
             Box::new(Self::load_options),
+        );
+        fws.load_and_watch_file(
+            self,
+            &static_path().join("rounds.json"),
+            Box::new(Self::load_rounds),
         );
     }
 
@@ -219,11 +228,9 @@ impl Resources {
     }
 
     fn load_unit_template(resources: &mut Resources, file: &PathBuf) {
-        let json = futures::executor::block_on(<String as geng::LoadAsset>::load(
-            &resources.geng,
-            &static_path().join(file),
-        ))
-        .expect("Failed to load unit");
+        let json =
+            futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
+                .expect("Failed to load unit");
         let template = serde_json::from_str(&json).expect("Failed to parse UnitTemplate");
         resources
             .unit_templates
@@ -248,11 +255,9 @@ impl Resources {
     }
 
     fn load_house(resources: &mut Resources, file: &PathBuf) {
-        let json = futures::executor::block_on(<String as geng::LoadAsset>::load(
-            &resources.geng,
-            &static_path().join(file),
-        ))
-        .expect("Failed to load unit");
+        let json =
+            futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
+                .expect(&format!("Failed to load House {:?}", file));
         let house: House =
             serde_json::from_str(&json).expect(&format!("Failed to parse House: {:?}", file));
         house.statuses.iter().for_each(|(name, status)| {
@@ -264,9 +269,18 @@ impl Resources {
         });
         resources.houses.insert(house.name, house);
     }
+
+    fn load_rounds(resources: &mut Resources, file: &PathBuf) {
+        let json =
+            futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
+                .expect(&format!("Failed to load Rounds {:?}", file));
+        let rounds: Rounds =
+            serde_json::from_str(&json).expect(&format!("Failed to parse Rounds {:?}", file));
+        resources.rounds = rounds;
+    }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct UnitTemplatesPool {
     pub templates: HashMap<PathBuf, UnitTemplate>,
 }

@@ -26,6 +26,9 @@ impl System for GameStateSystem {
                     resources.cassette.clear();
                     BattleSystem::run_battle(world, resources);
                 }
+                if resources.cassette.head > resources.cassette.length() + 2.0 {
+                    self.transition = GameState::Shop;
+                }
             }
             GameState::Shop => {
                 if resources.down_keys.contains(&geng::Key::Space) {
@@ -110,7 +113,9 @@ impl GameStateSystem {
             GameState::Shop => {
                 resources.cassette.parallel_node.clear();
             }
-            GameState::Battle => {}
+            GameState::Battle => {
+                resources.cassette.clear();
+            }
         }
 
         //transition to

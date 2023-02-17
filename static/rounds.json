@@ -1,0 +1,16 @@
+{
+    "rounds": [
+        {
+            "enemies": [
+                "units/test_unit_2.json"
+            ]
+        },
+        {
+            "enemies": [
+                "units/test_unit_2.json",
+                "units/test_unit_2.json",
+                "units/test_unit_2.json"
+            ]
+        }
+    ]
+}

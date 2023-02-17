@@ -127,6 +127,10 @@ impl UnitComponent {
                 .get_component::<FlagsComponent>()
                 .unwrap()
                 .clone(),
+            original_entry
+                .get_component::<HouseComponent>()
+                .unwrap()
+                .clone(),
         ));
 
         let mut new_entry = world.entry(new_entity).unwrap();
