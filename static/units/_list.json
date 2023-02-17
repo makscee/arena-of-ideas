@@ -1,5 +1,6 @@
 [
     "units/guard.json",
     "units/dracula.json",
-    "units/test_unit_2.json"
+    "units/basic.json",
+    "units/grower.json"
 ]

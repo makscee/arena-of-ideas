@@ -24,6 +24,7 @@ impl System for GameStateSystem {
             GameState::Battle => {
                 if resources.down_keys.contains(&geng::Key::R) {
                     resources.cassette.clear();
+                    resources.rounds.next_round -= 1;
                     BattleSystem::run_battle(world, resources);
                 }
                 if resources.cassette.head > resources.cassette.length() + 2.0 {

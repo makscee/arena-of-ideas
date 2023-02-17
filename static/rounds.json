@@ -2,14 +2,13 @@
     "rounds": [
         {
             "enemies": [
-                "units/test_unit_2.json"
+                "units/grower.json"
             ]
         },
         {
             "enemies": [
-                "units/test_unit_2.json",
-                "units/test_unit_2.json",
-                "units/test_unit_2.json"
+                "units/grower.json",
+                "units/grower.json"
             ]
         }
     ]

@@ -7,6 +7,7 @@
     "shaders/system/slot.glsl",
     "shaders/vfx/circle.glsl",
     "shaders/vfx/text.glsl",
+    "shaders/vfx/particle_emitter.glsl",
     "shaders/status/default_status.glsl",
     "shaders/status/description.glsl"
 ]

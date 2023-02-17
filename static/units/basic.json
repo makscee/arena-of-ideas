@@ -1,7 +1,7 @@
 [
     {
         "component": "Name",
-        "name": "Test"
+        "name": "Basic"
     },
     {
         "component": "Hp",

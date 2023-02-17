@@ -128,9 +128,6 @@ impl ShaderSystem {
     ) where
         U: ugli::Uniforms,
     {
-        let mut instances_arr: ugli::VertexBuffer<Instance> =
-            ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
-        instances_arr.resize(shader.parameters.instances, Instance {});
         let mut chain = Some(Box::new(shader.clone()));
         let shader_uniforms = &mut default::<ShaderUniforms>();
 
@@ -142,6 +139,9 @@ impl ShaderSystem {
                 ..shader.parameters.clone()
             };
 
+            let mut instances_arr: ugli::VertexBuffer<Instance> =
+                ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
+            instances_arr.resize(shader.parameters.instances, Instance {});
             let uniforms = (
                 geng::camera2d_uniforms(camera, framebuffer.size().map(|x| x as f32)),
                 parameters,

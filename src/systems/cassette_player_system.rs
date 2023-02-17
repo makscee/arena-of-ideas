@@ -19,10 +19,9 @@ impl System for CassettePlayerSystem {
         resources.cassette.head = match self.mode {
             PlayMode::Play | PlayMode::Hidden => resources.cassette.head + resources.delta_time,
             PlayMode::Stop => resources.cassette.head,
-            PlayMode::Rewind { ts } => {
-                resources.cassette.head
-                    + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED
-            }
+            PlayMode::Rewind { ts } => (resources.cassette.head
+                + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED)
+                .clamp(0.0, resources.cassette.length()),
         };
         if self.mode == PlayMode::Hidden {
             return;
