@@ -282,12 +282,23 @@ impl Resources {
 
 #[derive(Default, Debug)]
 pub struct UnitTemplatesPool {
-    pub templates: HashMap<PathBuf, UnitTemplate>,
+    pub heroes: HashMap<PathBuf, UnitTemplate>,
+    pub enemies: HashMap<PathBuf, UnitTemplate>,
 }
 
 impl UnitTemplatesPool {
     pub fn define_template(&mut self, path: PathBuf, template: UnitTemplate) {
-        self.templates.insert(path, template);
+        match template.0.iter().any(|component| match component {
+            SerializedComponent::House { houses } => true,
+            _ => false,
+        }) {
+            true => {
+                self.heroes.insert(path, template);
+            }
+            false => {
+                self.enemies.insert(path, template);
+            }
+        }
     }
 
     pub fn create_unit_entity(
@@ -300,8 +311,9 @@ impl UnitTemplatesPool {
     ) -> legion::Entity {
         let template = resources
             .unit_templates
-            .templates
+            .heroes
             .get(path)
+            .or_else(|| resources.unit_templates.enemies.get(path))
             .expect(&format!("Template not found: {:?}", path))
             .clone();
         let entity = world.push((
