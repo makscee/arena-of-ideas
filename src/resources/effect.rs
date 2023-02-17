@@ -5,17 +5,44 @@ use super::*;
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Effect {
-    Damage { value: Option<Hp> },
-    Repeat { count: usize, effect: Box<Effect> },
-    List { effects: Vec<Box<Effect>> },
-    Debug { message: String },
-    AddFlag { flag: Flag },
-    RemoveFlag { flag: Flag },
-    RemoveStatus { status: String },
+    Damage {
+        value: Option<Hp>,
+    },
+    Repeat {
+        count: usize,
+        effect: Box<Effect>,
+    },
+    List {
+        effects: Vec<Box<Effect>>,
+    },
+    Debug {
+        message: String,
+    },
+    AddFlag {
+        flag: Flag,
+    },
+    RemoveFlag {
+        flag: Flag,
+    },
+    RemoveStatus {
+        status: String,
+    },
     Noop,
-    AddVarInt { name: VarName, value: i32 },
-    AttachStatus { name: String },
-    UseAbility { house: HouseName, name: String },
+    AddVarInt {
+        name: VarName,
+        value: i32,
+    },
+    AttachStatus {
+        name: String,
+    },
+    UseAbility {
+        house: HouseName,
+        name: String,
+    },
+    ChangeStat {
+        stat: StatType,
+        value: ExpressionInt,
+    },
 }
 
 impl Effect {
@@ -163,6 +190,20 @@ impl Effect {
                         .effect
                         .clone(),
                 });
+            }
+            Effect::ChangeStat { stat, value } => {
+                let value = value.calculate(&context, world, resources);
+                let mut target = world.entry(context.target).unwrap();
+                match stat {
+                    StatType::Hp => target
+                        .get_component_mut::<HpComponent>()
+                        .unwrap()
+                        .set_current(value, resources),
+                    StatType::Attack => target
+                        .get_component_mut::<AttackComponent>()
+                        .unwrap()
+                        .set_value(value, resources),
+                }
             }
         }
         Ok(())

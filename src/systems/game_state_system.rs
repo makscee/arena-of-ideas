@@ -112,7 +112,7 @@ impl GameStateSystem {
         match self.current {
             GameState::MainMenu => {}
             GameState::Shop => {
-                resources.cassette.parallel_node.clear();
+                resources.cassette.clear();
             }
             GameState::Battle => {
                 resources.cassette.clear();

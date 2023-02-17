@@ -21,7 +21,7 @@ impl System for CassettePlayerSystem {
             PlayMode::Stop => resources.cassette.head,
             PlayMode::Rewind { ts } => (resources.cassette.head
                 + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED)
-                .clamp(0.0, resources.cassette.length()),
+                .clamp(0.01, resources.cassette.length()),
         };
         if self.mode == PlayMode::Hidden {
             return;

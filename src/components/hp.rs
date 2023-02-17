@@ -23,7 +23,7 @@ impl HpComponent {
     }
 
     pub fn set_current(&mut self, current: Hp, resources: &Resources) {
-        if current != self.current {
+        if current < self.current {
             self.last_change = resources.cassette.last_start();
         }
         self.current = current;

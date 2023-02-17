@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VarName {
     Damage,
     HpMax,
@@ -16,6 +16,7 @@ pub enum VarName {
     HouseColor1,
     HouseColor2,
     HouseColor3,
+    RoundNumber,
 }
 
 impl VarName {
@@ -52,6 +53,34 @@ pub struct Vars(HashMap<VarName, Var>);
 impl Vars {
     pub fn insert(&mut self, name: VarName, var: Var) {
         self.0.insert(name, var);
+    }
+
+    pub fn get(&self, name: &VarName) -> &Var {
+        self.0
+            .get(name)
+            .expect(&format!("Failed to get var {}", name))
+    }
+
+    pub fn get_int(&self, name: &VarName) -> i32 {
+        match self.get(name) {
+            Var::Int(value) => *value,
+            _ => panic!("Wrong Var type {}", name),
+        }
+    }
+
+    pub fn get_float(&self, name: &VarName) -> f32 {
+        match self.get(name) {
+            Var::Float(value) => *value,
+            _ => panic!("Wrong Var type {}", name),
+        }
+    }
+
+    pub fn merge(&mut self, other: &Vars, force: bool) {
+        other.0.iter().for_each(|(key, value)| {
+            if force || !self.0.contains_key(key) {
+                self.0.insert(*key, value.clone());
+            }
+        });
     }
 }
 

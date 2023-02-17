@@ -16,6 +16,7 @@ mod shader;
 mod slot;
 mod unit;
 mod vars;
+mod world;
 
 pub use attack::*;
 pub use context::*;
@@ -33,6 +34,7 @@ pub use shader::*;
 pub use slot::*;
 pub use unit::*;
 pub use vars::*;
+pub use world::*;
 
 /// Components that can be deserialized from json
 #[derive(Deserialize, Debug, Clone)]

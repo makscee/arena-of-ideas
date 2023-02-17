@@ -12,6 +12,41 @@
         "value": 1
     },
     {
+        "component": "Description",
+        "text": "Stats are equal\nto Round number"
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "GetShield": {
+                "trigger": {
+                    "type": "Init",
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Hp",
+                                "value": {
+                                    "type": "Var",
+                                    "name": "RoundNumber"
+                                }
+                            },
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Attack",
+                                "value": {
+                                    "type": "Var",
+                                    "name": "RoundNumber"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    {
         "component": "Shader",
         "path": "shaders/system/unit.glsl",
         "chain": {

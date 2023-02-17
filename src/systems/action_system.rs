@@ -8,7 +8,11 @@ impl ActionSystem {
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
-        let Some(action) = resources.action_queue.pop_front() else { return false };
+        let Some(mut action) = resources.action_queue.pop_front() else { return false };
+        action
+            .context
+            .vars
+            .merge(WorldComponent::get_vars(world), false);
         debug!(
             "Procession action: {:?} context: {:?}",
             action.effect, action.context

@@ -83,21 +83,6 @@ impl Cassette {
         self.queue.last().unwrap().start
     }
 
-    pub fn get_skip_ts(&self, from_ts: Time, right: bool) -> Time {
-        let node = self.get_node_at_ts(
-            from_ts
-                + match right {
-                    true => 0.001,
-                    false => -0.001,
-                },
-        );
-        if right {
-            node.start + node.duration
-        } else {
-            node.start
-        }
-    }
-
     pub fn clear(&mut self) {
         self.queue = vec![default()];
         self.head = 0.0;

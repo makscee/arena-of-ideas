@@ -25,6 +25,9 @@ impl Context {
                 status: None,
             })
             .clone();
+        <(&WorldComponent, &Context)>::query()
+            .iter(world)
+            .for_each(|(_, world_context)| context.vars.merge(&world_context.vars, false));
         if let Some(component) = entry.get_component::<UnitComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }

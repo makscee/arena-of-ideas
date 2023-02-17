@@ -23,10 +23,14 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
+        WorldComponent::add_var(
+            world,
+            VarName::RoundNumber,
+            &Var::Int(resources.rounds.next_round as i32 + 1),
+        );
         SlotSystem::refresh_slot_shaders(world, resources, hashset![Faction::Dark, Faction::Light]);
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
-        Self::init_statuses(resources);
         while ActionSystem::tick(world, resources) {}
     }
 
@@ -64,25 +68,6 @@ impl BattleSystem {
             .for_each(|entity| {
                 UnitComponent::duplicate_unit(*entity, world, resources, Faction::Light)
             });
-    }
-
-    /// Send Init trigger to all active statuses
-    fn init_statuses(resources: &mut Resources) {
-        let statuses = resources
-            .status_pool
-            .active_statuses
-            .iter()
-            .map(|(entity, map)| (entity.clone(), map.clone()))
-            .collect_vec();
-        statuses.iter().for_each(|(_entity, statuses)| {
-            statuses.iter().for_each(|(status, context)| {
-                Event::Init {
-                    status: status.to_string(),
-                }
-                .send(&context.clone(), resources)
-                .expect("Error on status Init");
-            })
-        })
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
