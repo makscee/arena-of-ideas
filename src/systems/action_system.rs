@@ -12,7 +12,7 @@ impl ActionSystem {
         action
             .context
             .vars
-            .merge(WorldComponent::get_vars(world), false);
+            .merge(WorldSystem::get_vars(world), false);
         debug!(
             "Procession action: {:?} context: {:?}",
             action.effect, action.context

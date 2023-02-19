@@ -52,26 +52,26 @@ impl ShopSystem {
             if entry.get_component::<UnitComponent>().unwrap().faction == Faction::Team {
                 resources.cassette.close_node();
                 resources.cassette.head = resources.cassette.last_start();
-                resources.cassette.add_effect(VisualEffect {
-                    duration: GRAB_ANIMATION_DURATION,
-                    r#type: VisualEffectType::EntityShaderAnimation {
+                resources.cassette.add_effect(VisualEffect::new(
+                    GRAB_ANIMATION_DURATION,
+                    VisualEffectType::EntityShaderAnimation {
                         entity: hovered,
                         from: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
                         to: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
                         easing: EasingType::Linear,
                     },
-                    order: -1,
-                });
+                    -1,
+                ));
                 resources.cassette.parallel_node.add_effect_by_key(
                     "hover_card_fix",
-                    VisualEffect {
-                        duration: 0.0,
-                        r#type: VisualEffectType::EntityShaderConst {
+                    VisualEffect::new(
+                        0.0,
+                        VisualEffectType::EntityShaderConst {
                             entity: hovered,
                             uniforms: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
                         },
-                        order: -2,
-                    },
+                        -2,
+                    ),
                 );
                 resources.cassette.close_node();
                 self.hovered_team = Some(hovered);
@@ -81,16 +81,16 @@ impl ShopSystem {
             resources.cassette.parallel_node.clear_key("hover_card_fix");
             resources.cassette.close_node();
             let hovered = self.hovered_team.unwrap();
-            resources.cassette.add_effect(VisualEffect {
-                duration: GRAB_ANIMATION_DURATION,
-                r#type: VisualEffectType::EntityShaderAnimation {
+            resources.cassette.add_effect(VisualEffect::new(
+                GRAB_ANIMATION_DURATION,
+                VisualEffectType::EntityShaderAnimation {
                     entity: hovered,
                     from: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
                     to: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
                     easing: EasingType::Linear,
                 },
-                order: -1,
-            });
+                -1,
+            ));
             resources.cassette.close_node();
             self.hovered_team = None;
         }
@@ -167,14 +167,14 @@ impl ShopSystem {
                 self.hovered_team = Some(buy_candidate);
                 resources.cassette.parallel_node.add_effect_by_key(
                     "hover_card_fix",
-                    VisualEffect {
-                        duration: 0.0,
-                        r#type: VisualEffectType::EntityShaderConst {
+                    VisualEffect::new(
+                        0.0,
+                        VisualEffectType::EntityShaderConst {
                             entity: buy_candidate,
                             uniforms: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
                         },
-                        order: -2,
-                    },
+                        -2,
+                    ),
                 );
             } else {
                 let position =
@@ -191,17 +191,7 @@ impl ShopSystem {
     }
 
     pub fn clear(world: &mut legion::World, _resources: &mut Resources) {
-        <(&UnitComponent, &EntityComponent)>::query()
-            .iter(world)
-            .filter_map(|(unit, entity)| match unit.faction == Faction::Shop {
-                true => Some(entity.entity),
-                false => None,
-            })
-            .collect_vec()
-            .iter()
-            .for_each(|entity| {
-                world.remove(*entity);
-            });
+        WorldSystem::clear_factions(world, hashset! {Faction::Shop});
     }
 
     pub fn refresh(world: &mut legion::World, resources: &mut Resources) {

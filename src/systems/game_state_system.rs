@@ -11,15 +11,17 @@ pub enum GameState {
     MainMenu,
     Shop,
     Battle,
+    Gallery,
 }
 
 impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         match self.current {
             GameState::MainMenu => {
-                if !resources.down_keys.is_empty() {
-                    self.transition = GameState::Shop;
-                }
+                self.transition = GameState::Gallery;
+                // if !resources.down_keys.is_empty() {
+                //     self.transition = GameState::Gallery;
+                // }
             }
             GameState::Battle => {
                 if resources.down_keys.contains(&geng::Key::R) {
@@ -36,6 +38,7 @@ impl System for GameStateSystem {
                     self.transition = GameState::Battle;
                 }
             }
+            GameState::Gallery => {}
         }
         self.systems.get_mut(&self.current).and_then(|systems| {
             Some(
@@ -117,6 +120,11 @@ impl GameStateSystem {
             GameState::Battle => {
                 resources.cassette.clear();
             }
+            GameState::Gallery => {
+                resources.cassette.clear();
+                resources.camera.fov = resources.options.fov;
+                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Float(0.0))
+            }
         }
 
         //transition to
@@ -127,6 +135,9 @@ impl GameStateSystem {
             }
             GameState::Shop => {
                 ShopSystem::refresh(world, resources);
+            }
+            GameState::Gallery => {
+                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Float(20.0))
             }
         }
 

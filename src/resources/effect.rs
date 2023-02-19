@@ -85,9 +85,9 @@ impl Effect {
                         hp.current()
                     )
                 }
-                resources.cassette.add_effect(VisualEffect {
-                    duration: 1.0,
-                    r#type: VisualEffectType::ShaderAnimation {
+                resources.cassette.add_effect(VisualEffect::new(
+                    1.0,
+                    VisualEffectType::ShaderAnimation {
                         shader: resources
                             .options
                             .text
@@ -109,8 +109,8 @@ impl Effect {
                         .into(),
                         easing: EasingType::Linear,
                     },
-                    order: 0,
-                });
+                    0,
+                ));
                 Event::AfterIncomingDamage.send(&context, resources)?;
             }
             Effect::Repeat { count, effect } => {

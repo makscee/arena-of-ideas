@@ -17,6 +17,7 @@ pub enum Faction {
     Dark,
     Team,
     Shop,
+    Gallery,
 }
 
 impl Faction {
@@ -32,6 +33,7 @@ impl VarsProvider for UnitComponent {
             Faction::Light => 1.0,
             Faction::Team => 2.0,
             Faction::Shop => 3.0,
+            Faction::Gallery => 4.0,
         };
         vars.insert(VarName::Faction, Var::Float(faction_val));
         vars.insert(

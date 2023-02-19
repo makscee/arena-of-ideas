@@ -6,6 +6,7 @@ mod action_system;
 mod battle_system;
 mod cassette_player_system;
 mod file_watcher_system;
+mod gallery_system;
 mod game_state_system;
 mod mouse_system;
 mod name_system;
@@ -14,11 +15,13 @@ mod shop_system;
 mod slot_system;
 mod stats_ui_system;
 mod time_system;
+mod world_system;
 
 pub use action_system::*;
 pub use battle_system::*;
 pub use cassette_player_system::*;
 pub use file_watcher_system::*;
+pub use gallery_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
 pub use mouse_system::*;
@@ -27,6 +30,7 @@ pub use shader_system::*;
 pub use shop_system::*;
 pub use slot_system::*;
 pub use stats_ui_system::*;
+pub use world_system::*;
 
 pub trait System {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources);
@@ -74,36 +78,18 @@ impl Game {
                 Box::new(SlotSystem::new()),
             ],
         );
+        game_state.add_systems(
+            GameState::Gallery,
+            vec![
+                Box::new(GallerySystem::new()),
+                Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
+            ],
+        );
 
         global_systems.push(Box::new(fws));
         global_systems.push(Box::new(TimeSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));
         global_systems.push(Box::new(game_state));
         global_systems
-    }
-
-    pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
-        Self::init_field(resources, world);
-        let world_entity = world.push((WorldComponent {},));
-        let mut world_entry = world.entry(world_entity).unwrap();
-        world_entry.add_component(EntityComponent {
-            entity: world_entity,
-        });
-        world_entry.add_component(Context {
-            owner: world_entity,
-            target: world_entity,
-            creator: world_entity,
-            vars: default(),
-            status: default(),
-        });
-    }
-
-    fn init_field(resources: &mut Resources, world: &mut legion::World) {
-        let shader = resources.options.field.clone();
-        let entity = world.push((shader,));
-        world
-            .entry(entity)
-            .unwrap()
-            .add_component(EntityComponent { entity });
     }
 }

@@ -2,6 +2,7 @@ uniform vec4 u_color;
 uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
+uniform float u_field_position;
 
 vec3 light_color = vec3(1);
 vec3 dark_color = vec3(0);
@@ -39,6 +40,7 @@ float fbm(vec2 p) {
 }
 
 float get_field_value(vec2 position) {
+    position += vec2(0, u_field_position);
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }
 

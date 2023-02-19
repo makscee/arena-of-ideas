@@ -3,14 +3,20 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct VisualEffect {
     pub duration: Time,
+    pub delay: Time,
     pub r#type: VisualEffectType,
     pub order: i32,
 }
 
 impl VisualEffect {
     pub fn new(duration: Time, r#type: VisualEffectType, order: i32) -> Self {
+        Self::new_delayed(duration, 0.0, r#type, order)
+    }
+
+    pub fn new_delayed(duration: Time, delay: Time, r#type: VisualEffectType, order: i32) -> Self {
         Self {
             duration,
+            delay,
             r#type,
             order,
         }

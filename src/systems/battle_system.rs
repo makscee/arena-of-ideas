@@ -23,7 +23,7 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
-        WorldComponent::add_var(
+        WorldSystem::set_var(
             world,
             VarName::RoundNumber,
             &Var::Int(resources.rounds.next_round as i32 + 1),
@@ -35,18 +35,7 @@ impl BattleSystem {
     }
 
     pub fn finish_battle(world: &mut legion::World) {
-        let unit_entitites = <(&EntityComponent, &UnitComponent)>::query()
-            .iter(world)
-            .filter_map(|(entity, unit)| {
-                match unit.faction == Faction::Light || unit.faction == Faction::Dark {
-                    true => Some(entity.entity.clone()),
-                    false => None,
-                }
-            })
-            .collect_vec();
-        unit_entitites.iter().for_each(|entity| {
-            world.remove(*entity);
-        });
+        WorldSystem::clear_factions(world, hashset! {Faction::Light, Faction::Dark});
     }
 
     fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
@@ -241,9 +230,9 @@ impl BattleSystem {
             .unwrap()
             .0;
         let position = left_position + (right_position - left_position) * 0.5;
-        resources.cassette.add_effect(VisualEffect {
-            duration: 0.5,
-            r#type: VisualEffectType::ShaderAnimation {
+        resources.cassette.add_effect(VisualEffect::new(
+            0.5,
+            VisualEffectType::ShaderAnimation {
                 shader: resources.options.strike.clone(),
                 from: hashmap! {
                     "u_time" => ShaderUniform::Float(0.0),
@@ -257,8 +246,8 @@ impl BattleSystem {
                 .into(),
                 easing: EasingType::Linear,
             },
-            order: 0,
-        })
+            0,
+        ));
     }
 
     fn add_strike_animation(

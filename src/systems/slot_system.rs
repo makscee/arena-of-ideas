@@ -18,6 +18,7 @@ impl SlotSystem {
                 Faction::Dark => 1.0,
                 Faction::Team => -1.0,
                 Faction::Shop => 1.0,
+                Faction::Gallery => 0.0,
             },
             1.0,
         );
@@ -28,7 +29,9 @@ impl SlotSystem {
                     false => vec2((slot as f32 - 1.0) * 2.5, -4.0),
                 } * faction_mul
             }
-            Faction::Team | Faction::Shop => vec2(slot as f32, 0.0) * faction_mul * 2.5,
+            Faction::Team | Faction::Shop | Faction::Gallery => {
+                vec2(slot as f32, 0.0) * faction_mul * 2.5
+            }
         }
     }
 
@@ -166,16 +169,16 @@ impl SlotSystem {
         from: vec2<f32>,
         to: vec2<f32>,
     ) -> VisualEffect {
-        VisualEffect {
-            duration: 0.1,
-            r#type: VisualEffectType::EntityShaderAnimation {
+        VisualEffect::new(
+            0.1,
+            VisualEffectType::EntityShaderAnimation {
                 entity,
                 from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
                 to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
                 easing: EasingType::Linear,
             },
-            order: -20,
-        }
+            -20,
+        )
     }
 }
 

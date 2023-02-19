@@ -19,6 +19,33 @@ impl Game {
             systems,
         }
     }
+
+    pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
+        Self::init_field(resources, world);
+        let world_entity = world.push((WorldComponent {},));
+        let mut world_entry = world.entry(world_entity).unwrap();
+        world_entry.add_component(EntityComponent {
+            entity: world_entity,
+        });
+        let mut vars = Vars::default();
+        vars.insert(VarName::FieldPosition, Var::Float(0.0));
+        world_entry.add_component(Context {
+            owner: world_entity,
+            target: world_entity,
+            creator: world_entity,
+            vars,
+            status: default(),
+        });
+    }
+
+    fn init_field(resources: &mut Resources, world: &mut legion::World) {
+        let shader = resources.options.field.clone();
+        let entity = world.push((shader,));
+        world
+            .entry(entity)
+            .unwrap()
+            .add_component(EntityComponent { entity });
+    }
 }
 
 impl geng::State for Game {

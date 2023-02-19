@@ -62,7 +62,8 @@ impl Cassette {
         let mut shaders: Vec<Shader> = default();
         let mut entity_shaders = node.entity_shaders.clone();
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
-            if effect.duration > 0.0 && time > effect.duration {
+            let time = time - effect.delay;
+            if effect.duration > 0.0 && (time > effect.duration || time < 0.0) {
                 continue;
             }
             shaders.extend(
@@ -125,7 +126,7 @@ impl CassetteNode {
         self.entity_shaders.insert(entity, shader);
     }
     pub fn add_effect_by_key(&mut self, key: &str, effect: VisualEffect) {
-        self.duration = self.duration.max(effect.duration);
+        self.duration = self.duration.max(effect.duration + effect.delay);
         let mut vec = self.effects.remove(key).unwrap_or_default();
         vec.push(effect);
         self.effects.insert(key.to_string(), vec);
