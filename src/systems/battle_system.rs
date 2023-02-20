@@ -12,7 +12,7 @@ impl BattleSystem {
             ticks += 1;
         }
         resources.cassette.node_template.clear();
-        UnitComponent::draw_all_units_to_cassette_node(
+        UnitSystem::draw_all_units_to_cassette_node(
             world,
             &resources.options,
             &resources.status_pool,
@@ -55,7 +55,7 @@ impl BattleSystem {
             .collect_vec()
             .iter()
             .for_each(|entity| {
-                UnitComponent::duplicate_unit(*entity, world, resources, Faction::Light)
+                UnitSystem::duplicate_unit(*entity, world, resources, Faction::Light)
             });
     }
 
@@ -74,7 +74,7 @@ impl BattleSystem {
             .iter()
             .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
         if left.is_some() && right.is_some() {
-            UnitComponent::draw_all_units_to_cassette_node(
+            UnitSystem::draw_all_units_to_cassette_node(
                 world,
                 &resources.options,
                 &resources.status_pool,
@@ -168,7 +168,7 @@ impl BattleSystem {
                 ticks += 1;
             }
 
-            UnitComponent::draw_all_units_to_cassette_node(
+            UnitSystem::draw_all_units_to_cassette_node(
                 world,
                 &resources.options,
                 &resources.status_pool,

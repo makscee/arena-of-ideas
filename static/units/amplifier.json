@@ -1,0 +1,67 @@
+[
+    {
+        "component": "Name",
+        "name": "Amplifier"
+    },
+    {
+        "component": "House",
+        "houses": [
+            "Robots"
+        ]
+    },
+    {
+        "component": "Description",
+        "text": "On buy:\nShield has 1 more charge"
+    },
+    {
+        "component": "Hp",
+        "max": 1
+    },
+    {
+        "component": "Attack",
+        "value": 3
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "layer": "Unit",
+        "chain": {
+            "component": "Shader",
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#fff3b5"
+                }
+            }
+        }
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "GetShield": {
+                "trigger": {
+                    "type": "Buy",
+                    "effect": {
+                        "type": "SetAbilityVarInt",
+                        "house": "Robots",
+                        "ability": "Shield",
+                        "var": "Charges",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Const",
+                                "value": 1
+                            },
+                            "b": {
+                                "type": "AbilityVar",
+                                "house": "Robots",
+                                "ability": "Shield",
+                                "var": "Charges"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+]

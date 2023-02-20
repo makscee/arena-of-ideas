@@ -53,7 +53,7 @@ impl StatusPool {
         status_name: &str,
         context: Context,
         resources: &mut Resources,
-    ) -> Result<(), Error> {
+    ) {
         let mut statuses = resources
             .status_pool
             .active_statuses
@@ -76,7 +76,7 @@ impl StatusPool {
                 status: status_name.to_string(),
             }
         }
-        .send(&context, resources)
+        .send(&context, resources);
     }
 
     pub fn define_status(&mut self, name: String, mut status: Status) {

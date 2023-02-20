@@ -2,5 +2,6 @@
     "units/guard.json",
     "units/dracula.json",
     "units/basic.json",
+    "units/amplifier.json",
     "units/grower.json"
 ]

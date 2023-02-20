@@ -18,7 +18,7 @@ impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         match self.current {
             GameState::MainMenu => {
-                self.transition = GameState::Gallery;
+                self.transition = GameState::Shop;
                 // if !resources.down_keys.is_empty() {
                 //     self.transition = GameState::Gallery;
                 // }
@@ -37,8 +37,16 @@ impl System for GameStateSystem {
                 if resources.down_keys.contains(&geng::Key::Space) {
                     self.transition = GameState::Battle;
                 }
+
+                if resources.down_keys.contains(&geng::Key::G) {
+                    self.transition = GameState::Gallery;
+                }
             }
-            GameState::Gallery => {}
+            GameState::Gallery => {
+                if resources.down_keys.contains(&geng::Key::S) {
+                    self.transition = GameState::Shop;
+                }
+            }
         }
         self.systems.get_mut(&self.current).and_then(|systems| {
             Some(

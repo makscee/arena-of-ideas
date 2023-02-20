@@ -7,6 +7,8 @@ pub enum Trigger {
     BeforeIncomingDamage { effect: Effect },
     AfterIncomingDamage { effect: Effect },
     List { triggers: Vec<Box<Trigger>> },
+    Buy { effect: Effect },
+    Sell { effect: Effect },
 }
 
 impl Trigger {
@@ -35,6 +37,14 @@ impl Trigger {
                 Event::Init { status: _ } => self.fire(action_queue, context),
                 _ => {}
             },
+            Trigger::Buy { effect: _ } => match event {
+                Event::Buy => self.fire(action_queue, context),
+                _ => {}
+            },
+            Trigger::Sell { effect: _ } => match event {
+                Event::Sell => self.fire(action_queue, context),
+                _ => {}
+            },
         }
     }
 
@@ -42,10 +52,12 @@ impl Trigger {
         match self {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
-            | Trigger::Init { effect } => {
+            | Trigger::Init { effect }
+            | Trigger::Buy { effect }
+            | Trigger::Sell { effect } => {
                 action_queue.push_back(Action::new(context, effect.clone()))
             }
-            Trigger::List { triggers: _ } => todo!(),
+            Trigger::List { triggers: _ } => panic!("List should not fire"),
         }
     }
 }

@@ -15,6 +15,7 @@ mod shop_system;
 mod slot_system;
 mod stats_ui_system;
 mod time_system;
+mod unit_system;
 mod world_system;
 
 pub use action_system::*;
@@ -30,6 +31,7 @@ pub use shader_system::*;
 pub use shop_system::*;
 pub use slot_system::*;
 pub use stats_ui_system::*;
+pub use unit_system::*;
 pub use world_system::*;
 
 pub trait System {

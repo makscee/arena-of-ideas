@@ -83,7 +83,7 @@ impl GallerySystem {
                 ));
         }
         self.need_card_animation = false;
-        UnitComponent::draw_all_units_to_cassette_node(
+        UnitSystem::draw_all_units_to_cassette_node(
             world,
             &resources.options,
             &resources.status_pool,

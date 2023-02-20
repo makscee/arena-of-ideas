@@ -18,6 +18,8 @@ pub enum VarName {
     HouseColor3,
     RoundNumber,
     FieldPosition,
+    Charges,
+    Hits,
 }
 
 impl VarName {

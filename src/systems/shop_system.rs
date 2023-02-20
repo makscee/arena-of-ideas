@@ -1,5 +1,5 @@
 use geng::prelude::rand::distributions::{Distribution, WeightedIndex};
-use legion::EntityStore;
+use legion::{world::EntryMut, EntityStore};
 
 use super::*;
 
@@ -33,7 +33,7 @@ impl ShopSystem {
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
         resources.cassette.parallel_node.clear_entities();
-        UnitComponent::draw_all_units_to_cassette_node(
+        UnitSystem::draw_all_units_to_cassette_node(
             &world,
             &resources.options,
             &resources.status_pool,
@@ -155,13 +155,11 @@ impl ShopSystem {
                 hashset! {Faction::Shop,Faction::Team},
             );
         } else if let Some(buy_candidate) = self.buy_candidate {
-            let mut entry = world.entry_mut(buy_candidate).unwrap();
+            let mut entry: EntryMut = world.entry_mut(buy_candidate).unwrap();
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
             {
-                let unit = entry.get_component_mut::<UnitComponent>().unwrap();
-                unit.faction = Faction::Team;
-                unit.slot = slot;
+                Self::buy(&mut entry, buy_candidate, slot, resources);
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
                 Self::refresh_cassette(world, resources);
                 self.hovered_team = Some(buy_candidate);
@@ -188,6 +186,22 @@ impl ShopSystem {
                 hashset! {Faction::Shop,Faction::Team},
             );
         }
+    }
+
+    fn buy(entry: &mut EntryMut, entity: legion::Entity, slot: usize, resources: &mut Resources) {
+        let unit = entry.get_component_mut::<UnitComponent>().unwrap();
+        unit.faction = Faction::Team;
+        unit.slot = slot;
+        Event::Buy {}.send(
+            &Context {
+                owner: entity,
+                target: entity,
+                creator: entity,
+                vars: default(),
+                status: default(),
+            },
+            resources,
+        );
     }
 
     pub fn clear(world: &mut legion::World, _resources: &mut Resources) {

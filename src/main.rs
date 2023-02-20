@@ -10,6 +10,7 @@ use anyhow::{Error, Result};
 use components::*;
 use game::*;
 use legion::query::*;
+use legion::EntityStore;
 use resources::{Resources, *};
 use std::path::PathBuf;
 use systems::*;

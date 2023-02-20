@@ -16,6 +16,20 @@ impl WorldSystem {
         });
     }
 
+    pub fn collect_factions(
+        world: &legion::World,
+        factions: HashSet<Faction>,
+    ) -> HashMap<legion::Entity, UnitComponent> {
+        HashMap::from_iter(
+            <(&UnitComponent, &EntityComponent)>::query()
+                .iter(world)
+                .filter_map(|(unit, entity)| match factions.contains(&unit.faction) {
+                    true => Some((entity.entity, *unit)),
+                    false => None,
+                }),
+        )
+    }
+
     pub fn set_var(world: &mut legion::World, name: VarName, value: &Var) {
         <(&WorldComponent, &mut Context)>::query()
             .iter_mut(world)

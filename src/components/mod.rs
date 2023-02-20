@@ -100,15 +100,12 @@ impl SerializedComponent {
                     resources
                         .status_pool
                         .define_status(name.clone(), status.clone());
-                    match StatusPool::add_entity_status(
+                    StatusPool::add_entity_status(
                         entity,
                         name.as_str(),
                         context.clone(),
                         resources,
-                    ) {
-                        Err(error) => error!("Add Status error: {}", error),
-                        _ => {}
-                    };
+                    );
                 });
             }
             SerializedComponent::Shader { .. } => {
