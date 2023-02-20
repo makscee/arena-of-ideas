@@ -9,7 +9,8 @@
             },
             "vars": {
                 "Charges": 1,
-                "Hits": 0
+                "Hits": 0,
+                "Reflection": 0
             }
         }
     },
@@ -29,58 +30,88 @@
                     {
                         "type": "AfterIncomingDamage",
                         "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "LessInt",
-                                "a": {
-                                    "type": "Sum",
-                                    "a": {
-                                        "type": "StatusVar",
-                                        "status": "Shield",
-                                        "var": "Hits"
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "ChangeContext",
+                                    "target": {
+                                        "type": "Owner"
                                     },
-                                    "b": {
-                                        "type": "Const",
-                                        "value": 1
+                                    "owner": {
+                                        "type": "Target"
+                                    },
+                                    "effect": {
+                                        "type": "Damage",
+                                        "value": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "AbilityVar",
+                                                "house": "Robots",
+                                                "ability": "Shield",
+                                                "var": "Reflection"
+                                            },
+                                            "b": {
+                                                "type": "Var",
+                                                "var": "Damage"
+                                            }
+                                        }
                                     }
                                 },
-                                "b": {
-                                    "type": "AbilityVar",
-                                    "house": "Robots",
-                                    "ability": "Shield",
-                                    "var": "Charges"
-                                }
-                            },
-                            "then": {
-                                "type": "SetStatusVarInt",
-                                "status": "Shield",
-                                "var": "Hits",
-                                "value": {
-                                    "type": "Sum",
-                                    "a": {
-                                        "type": "Const",
-                                        "value": 1
+                                {
+                                    "type": "If",
+                                    "condition": {
+                                        "type": "LessInt",
+                                        "a": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "StatusVar",
+                                                "status": "Shield",
+                                                "var": "Hits"
+                                            },
+                                            "b": {
+                                                "type": "Const",
+                                                "value": 1
+                                            }
+                                        },
+                                        "b": {
+                                            "type": "AbilityVar",
+                                            "house": "Robots",
+                                            "ability": "Shield",
+                                            "var": "Charges"
+                                        }
                                     },
-                                    "b": {
-                                        "type": "StatusVar",
+                                    "then": {
+                                        "type": "SetStatusVarInt",
                                         "status": "Shield",
-                                        "var": "Hits"
+                                        "var": "Hits",
+                                        "value": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Const",
+                                                "value": 1
+                                            },
+                                            "b": {
+                                                "type": "StatusVar",
+                                                "status": "Shield",
+                                                "var": "Hits"
+                                            }
+                                        }
+                                    },
+                                    "else": {
+                                        "type": "List",
+                                        "effects": [
+                                            {
+                                                "type": "RemoveFlag",
+                                                "flag": "DamageImmune"
+                                            },
+                                            {
+                                                "type": "RemoveStatus",
+                                                "status": "Shield"
+                                            }
+                                        ]
                                     }
                                 }
-                            },
-                            "else": {
-                                "type": "List",
-                                "effects": [
-                                    {
-                                        "type": "RemoveFlag",
-                                        "flag": "DamageImmune"
-                                    },
-                                    {
-                                        "type": "RemoveStatus",
-                                        "status": "Shield"
-                                    }
-                                ]
-                            }
+                            ]
                         }
                     }
                 ]

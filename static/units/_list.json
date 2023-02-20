@@ -3,5 +3,6 @@
     "units/dracula.json",
     "units/basic.json",
     "units/amplifier.json",
+    "units/charger.json",
     "units/grower.json"
 ]

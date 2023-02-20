@@ -11,11 +11,15 @@ pub enum ExpressionInt {
         a: Box<ExpressionInt>,
         b: Box<ExpressionInt>,
     },
+    Mul {
+        a: Box<ExpressionInt>,
+        b: Box<ExpressionInt>,
+    },
     Const {
         value: i32,
     },
     Var {
-        name: VarName,
+        var: VarName,
     },
     AbilityVar {
         house: HouseName,
@@ -42,8 +46,11 @@ impl ExpressionInt {
             ExpressionInt::Sum { a, b } => {
                 a.calculate(context, world, resources) + b.calculate(context, world, resources)
             }
+            ExpressionInt::Mul { a, b } => {
+                a.calculate(context, world, resources) * b.calculate(context, world, resources)
+            }
             ExpressionInt::Const { value } => *value,
-            ExpressionInt::Var { name } => context.vars.get_int(name),
+            ExpressionInt::Var { var } => context.vars.get_int(var),
             ExpressionInt::Stat { stat } => {
                 let target = world.entry_ref(context.target).unwrap();
                 match stat {
@@ -98,7 +105,7 @@ impl ExpressionEntity {
         &self,
         context: &Context,
         world: &legion::World,
-        resources: &Resources,
+        _resources: &Resources,
     ) -> legion::Entity {
         match self {
             ExpressionEntity::World => {

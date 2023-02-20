@@ -2,9 +2,8 @@
     "rounds": [
         {
             "enemies": [
-                "units/grower.json",
-                "units/grower.json",
-                "units/grower.json",
+                "units/basic.json",
+                "units/basic.json",
                 "units/grower.json",
                 "units/grower.json"
             ]

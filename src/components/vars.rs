@@ -20,6 +20,7 @@ pub enum VarName {
     FieldPosition,
     Charges,
     Hits,
+    Reflection,
 }
 
 impl VarName {

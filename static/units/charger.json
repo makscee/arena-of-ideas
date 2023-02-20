@@ -1,0 +1,68 @@
+[
+    {
+        "component": "Name",
+        "name": "Charger"
+    },
+    {
+        "component": "House",
+        "houses": [
+            "Robots"
+        ]
+    },
+    {
+        "component": "Description",
+        "text": "On buy:\nShield reflects damage"
+    },
+    {
+        "component": "Hp",
+        "max": 1
+    },
+    {
+        "component": "Attack",
+        "value": 1
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "layer": "Unit",
+        "chain": {
+            "component": "Shader",
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#fff3b5"
+                }
+            }
+        }
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "ShieldAddReflect": {
+                "trigger": {
+                    "type": "Buy",
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "SetAbilityVarInt",
+                                "house": "Robots",
+                                "ability": "Shield",
+                                "var": "Reflection",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            {
+                                "type": "ShowText",
+                                "text": "++Shield Reflection",
+                                "color": "#00e9c6"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+]

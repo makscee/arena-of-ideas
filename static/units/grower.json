@@ -29,7 +29,7 @@
                                 "stat": "Hp",
                                 "value": {
                                     "type": "Var",
-                                    "name": "RoundNumber"
+                                    "var": "RoundNumber"
                                 }
                             },
                             {
@@ -37,7 +37,7 @@
                                 "stat": "Attack",
                                 "value": {
                                     "type": "Var",
-                                    "name": "RoundNumber"
+                                    "var": "RoundNumber"
                                 }
                             }
                         ]

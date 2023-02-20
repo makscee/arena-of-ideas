@@ -6,7 +6,7 @@ use super::*;
 #[serde(tag = "type")]
 pub enum Effect {
     Damage {
-        value: Option<Hp>,
+        value: Option<ExpressionInt>,
     },
     Repeat {
         count: usize,
@@ -54,8 +54,10 @@ pub enum Effect {
         stat: StatType,
         value: ExpressionInt,
     },
-    SetTarget {
-        entity: ExpressionEntity,
+    ChangeContext {
+        target: Option<ExpressionEntity>,
+        owner: Option<ExpressionEntity>,
+        creator: Option<ExpressionEntity>,
         effect: Box<Effect>,
     },
     If {
@@ -78,9 +80,9 @@ impl Effect {
     ) -> Result<(), Error> {
         match self {
             Effect::Damage { value } => {
-                Event::BeforeIncomingDamage.send(&context, resources);
+                let mut context = context.clone();
                 let value = match value {
-                    Some(v) => *v,
+                    Some(v) => v.calculate(&context, world, resources),
                     None => world
                         .entry_ref(context.owner)
                         .context("Filed to get Owner")?
@@ -89,6 +91,12 @@ impl Effect {
                         .value()
                         .clone(),
                 };
+                if value == 0 {
+                    debug!("Attempt to do zero damage, returning.");
+                    return Ok(());
+                }
+                context.vars.insert(VarName::Damage, Var::Int(value));
+                Event::BeforeIncomingDamage.send(&context, resources);
                 let mut text = format!("-{}", value);
                 let mut target = world
                     .entry(context.target)
@@ -232,15 +240,6 @@ impl Effect {
                         .set_value(value, resources),
                 }
             }
-            Effect::SetTarget { entity, effect } => {
-                resources.action_queue.push_front(Action::new(
-                    Context {
-                        target: entity.calculate(&context, world, resources),
-                        ..context.clone()
-                    },
-                    effect.deref().clone(),
-                ));
-            }
             Effect::SetAbilityVarInt {
                 house,
                 ability: ability_name,
@@ -333,6 +332,31 @@ impl Effect {
                 },
                 0,
             )),
+            Effect::ChangeContext {
+                target,
+                owner,
+                creator,
+                effect,
+            } => {
+                resources.action_queue.push_front(Action::new(
+                    Context {
+                        target: match target {
+                            Some(entity) => entity.calculate(&context, world, resources),
+                            None => context.target,
+                        },
+                        owner: match owner {
+                            Some(entity) => entity.calculate(&context, world, resources),
+                            None => context.target,
+                        },
+                        creator: match creator {
+                            Some(entity) => entity.calculate(&context, world, resources),
+                            None => context.target,
+                        },
+                        ..context.clone()
+                    },
+                    effect.deref().clone(),
+                ));
+            }
         }
         Ok(())
     }
