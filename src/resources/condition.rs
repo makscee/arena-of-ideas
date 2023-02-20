@@ -15,6 +15,7 @@ impl Condition {
         world: &legion::World,
         resources: &Resources,
     ) -> bool {
+        debug!("Calculating condition {:?} {:?}", self, context);
         match self {
             Condition::EqualsInt { a, b } => {
                 a.calculate(context, world, resources) == b.calculate(context, world, resources)

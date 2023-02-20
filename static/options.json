@@ -67,6 +67,10 @@
             "uniforms": {
                 "u_text_color": "#ffffff",
                 "u_outline_color": "#8d0000",
+                "u_offset": [
+                    0.0,
+                    1.0
+                ],
                 "u_scale": 0.9
             }
         },

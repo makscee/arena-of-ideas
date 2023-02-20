@@ -42,23 +42,33 @@
                 "trigger": {
                     "type": "Buy",
                     "effect": {
-                        "type": "SetAbilityVarInt",
-                        "house": "Robots",
-                        "ability": "Shield",
-                        "var": "Charges",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Const",
-                                "value": 1
-                            },
-                            "b": {
-                                "type": "AbilityVar",
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "SetAbilityVarInt",
                                 "house": "Robots",
                                 "ability": "Shield",
-                                "var": "Charges"
+                                "var": "Charges",
+                                "value": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Const",
+                                        "value": 1
+                                    },
+                                    "b": {
+                                        "type": "AbilityVar",
+                                        "house": "Robots",
+                                        "ability": "Shield",
+                                        "var": "Charges"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "ShowText",
+                                "text": "++Shield Charges",
+                                "color": "#00e9c6"
                             }
-                        }
+                        ]
                     }
                 }
             }

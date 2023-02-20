@@ -63,6 +63,10 @@ pub enum Effect {
         then: Box<Effect>,
         r#else: Box<Effect>,
     },
+    ShowText {
+        text: String,
+        color: Rgba<f32>,
+    },
 }
 
 impl Effect {
@@ -113,6 +117,10 @@ impl Effect {
                             .text
                             .clone()
                             .set_uniform("u_text", ShaderUniform::String((0, text)))
+                            .set_uniform("u_pivot", ShaderUniform::Float(3.0))
+                            .set_uniform("u_scale_over_t", ShaderUniform::Float(-0.9))
+                            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 5.0)))
+                            .set_uniform("u_gravity", ShaderUniform::Float(-5.0))
                             .set_uniform(
                                 "u_position",
                                 ShaderUniform::Vec2(
@@ -290,6 +298,41 @@ impl Effect {
                         .push_front(Action::new(context.clone(), r#else.deref().clone()));
                 }
             }
+            Effect::ShowText { text, color } => resources.cassette.add_effect(VisualEffect::new(
+                1.5,
+                VisualEffectType::ShaderAnimation {
+                    shader: resources
+                        .options
+                        .text
+                        .clone()
+                        .set_uniform("u_text", ShaderUniform::String((0, text.clone())))
+                        .set_uniform("u_outline_color", ShaderUniform::Color(*color))
+                        .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
+                        .set_uniform("u_scale", ShaderUniform::Float(0.4))
+                        .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 5.0)))
+                        .set_uniform(
+                            "u_position",
+                            ShaderUniform::Vec2(
+                                world
+                                    .entry_ref(context.target)
+                                    .context("Failed to get target")?
+                                    .get_component::<PositionComponent>()
+                                    .unwrap()
+                                    .0,
+                            ),
+                        ),
+                    from: hashmap! {
+                        "u_time" => ShaderUniform::Float(0.0),
+                    }
+                    .into(),
+                    to: hashmap! {
+                        "u_time" => ShaderUniform::Float(1.0),
+                    }
+                    .into(),
+                    easing: EasingType::Linear,
+                },
+                0,
+            )),
         }
         Ok(())
     }

@@ -51,17 +51,21 @@ impl ShopSystem {
             let hovered = hovered.unwrap();
             if entry.get_component::<UnitComponent>().unwrap().faction == Faction::Team {
                 resources.cassette.close_node();
-                resources.cassette.head = resources.cassette.last_start();
-                resources.cassette.add_effect(VisualEffect::new(
-                    GRAB_ANIMATION_DURATION,
-                    VisualEffectType::EntityShaderAnimation {
-                        entity: hovered,
-                        from: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
-                        to: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                        easing: EasingType::Linear,
-                    },
-                    -1,
-                ));
+                let delay = resources.cassette.head - resources.cassette.parallel_node.start();
+                resources
+                    .cassette
+                    .parallel_node
+                    .add_effect(VisualEffect::new_delayed(
+                        GRAB_ANIMATION_DURATION,
+                        delay,
+                        VisualEffectType::EntityShaderAnimation {
+                            entity: hovered,
+                            from: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
+                            to: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
+                            easing: EasingType::Linear,
+                        },
+                        -1,
+                    ));
                 resources.cassette.parallel_node.add_effect_by_key(
                     "hover_card_fix",
                     VisualEffect::new(
@@ -73,25 +77,27 @@ impl ShopSystem {
                         -2,
                     ),
                 );
-                resources.cassette.close_node();
                 self.hovered_team = Some(hovered);
             }
         }
         if hovered.is_none() && self.hovered_team.is_some() {
             resources.cassette.parallel_node.clear_key("hover_card_fix");
-            resources.cassette.close_node();
             let hovered = self.hovered_team.unwrap();
-            resources.cassette.add_effect(VisualEffect::new(
-                GRAB_ANIMATION_DURATION,
-                VisualEffectType::EntityShaderAnimation {
-                    entity: hovered,
-                    from: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                    to: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
-                    easing: EasingType::Linear,
-                },
-                -1,
-            ));
-            resources.cassette.close_node();
+            let delay = resources.cassette.head - resources.cassette.parallel_node.start();
+            resources
+                .cassette
+                .parallel_node
+                .add_effect(VisualEffect::new_delayed(
+                    GRAB_ANIMATION_DURATION,
+                    delay,
+                    VisualEffectType::EntityShaderAnimation {
+                        entity: hovered,
+                        from: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
+                        to: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
+                        easing: EasingType::Linear,
+                    },
+                    -1,
+                ));
             self.hovered_team = None;
         }
     }

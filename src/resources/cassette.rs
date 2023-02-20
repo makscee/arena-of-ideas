@@ -177,4 +177,7 @@ impl CassetteNode {
             node.entity_shaders.insert(*entity, shader.clone());
         });
     }
+    pub fn start(&self) -> Time {
+        self.start
+    }
 }
