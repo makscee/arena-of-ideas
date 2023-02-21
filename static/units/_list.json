@@ -2,10 +2,9 @@
     "units/guard.json",
     "units/ghoul.json",
     "units/abomination.json",
-    "units/basic.json",
     "units/amplifier.json",
     "units/charger.json",
-    "units/solid_grower.json",
-    "units/lard_grower.json",
-    "units/glass_grower.json"
+    "units/enemies/solid_grower.json",
+    "units/enemies/lard_grower.json",
+    "units/enemies/glass_grower.json"
 ]
