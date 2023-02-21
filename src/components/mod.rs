@@ -1,6 +1,7 @@
 use super::*;
 
 mod attack;
+mod attention;
 mod context;
 mod description;
 mod drag;
@@ -19,6 +20,7 @@ mod vars;
 mod world;
 
 pub use attack::*;
+pub use attention::*;
 pub use context::*;
 pub use description::*;
 pub use drag::*;

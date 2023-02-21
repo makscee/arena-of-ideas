@@ -1,5 +1,4 @@
-use geng::prelude::itertools::Itertools;
-
 use super::*;
-
-pub struct WorldComponent {}
+pub struct WorldComponent {
+    pub global_time: Time,
+}

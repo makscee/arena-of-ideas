@@ -8,13 +8,6 @@ pub struct Rounds {
 }
 
 impl Rounds {
-    pub fn new() -> Self {
-        Self {
-            next_round: default(),
-            rounds: default(),
-        }
-    }
-
     fn next(&mut self) -> &Round {
         let round = &self.rounds[self.next_round];
         self.next_round += 1;

@@ -293,7 +293,7 @@ pub struct UnitTemplatesPool {
 impl UnitTemplatesPool {
     pub fn define_template(&mut self, path: PathBuf, template: UnitTemplate) {
         match template.0.iter().any(|component| match component {
-            SerializedComponent::House { houses } => true,
+            SerializedComponent::House { houses: _ } => true,
             _ => false,
         }) {
             true => {
@@ -326,6 +326,7 @@ impl UnitTemplatesPool {
             FlagsComponent::default(),
             faction.clone(),
             UnitComponent { faction, slot },
+            AttentionComponent::default(),
         ));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });

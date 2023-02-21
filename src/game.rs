@@ -22,7 +22,7 @@ impl Game {
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
         Self::init_field(resources, world);
-        let world_entity = world.push((WorldComponent {},));
+        let world_entity = world.push((WorldComponent { global_time: 0.0 },));
         let mut world_entry = world.entry(world_entity).unwrap();
         world_entry.add_component(EntityComponent {
             entity: world_entity,

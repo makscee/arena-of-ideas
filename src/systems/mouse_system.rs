@@ -88,6 +88,21 @@ impl MouseSystem {
                 .0 = resources.mouse_pos;
         }
     }
+
+    fn update_attention(world: &mut legion::World, resources: &mut Resources) {
+        <(&UnitComponent, &mut AttentionComponent)>::query()
+            .filter(component::<DragComponent>() | component::<HoverComponent>())
+            .iter_mut(world)
+            .for_each(|(unit, attention)| {
+                attention.ts = (attention.ts + resources.delta_time).min(1.0)
+            });
+        <(&UnitComponent, &mut AttentionComponent)>::query()
+            .filter(!component::<DragComponent>() & !component::<HoverComponent>())
+            .iter_mut(world)
+            .for_each(|(unit, attention)| {
+                attention.ts = (attention.ts - resources.delta_time).max(0.0);
+            });
+    }
 }
 
 impl System for MouseSystem {
@@ -95,5 +110,6 @@ impl System for MouseSystem {
         let hovered = Self::get_hovered_unit(world, resources);
         Self::handle_hover(world, resources, hovered);
         Self::handle_drag(world, resources, hovered);
+        Self::update_attention(world, resources);
     }
 }

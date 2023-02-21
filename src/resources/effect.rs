@@ -88,13 +88,14 @@ impl Effect {
                 let mut context = context.clone();
                 let value = match value {
                     Some(v) => v.calculate(&context, world, resources),
-                    None => world
-                        .entry_ref(context.owner)
-                        .context("Filed to get Owner")?
-                        .get_component::<AttackComponent>()
-                        .context("Failed to get Attack component")?
-                        .value()
-                        .clone(),
+                    None => {
+                        world
+                            .entry_ref(context.owner)
+                            .context("Filed to get Owner")?
+                            .get_component::<AttackComponent>()
+                            .context("Failed to get Attack component")?
+                            .value
+                    }
                 };
                 if value == 0 {
                     debug!("Attempt to do zero damage, returning.");
@@ -114,12 +115,10 @@ impl Effect {
                     text = "Immune".to_string();
                 } else {
                     let hp = target.get_component_mut::<HpComponent>()?;
-                    hp.set_current(hp.current() - value, resources);
+                    hp.current -= value;
                     debug!(
                         "Entity#{:?} {} damage taken, new hp: {}",
-                        context.target,
-                        value,
-                        hp.current()
+                        context.target, value, hp.current
                     )
                 }
                 resources.cassette.add_effect(VisualEffect::new(
@@ -151,6 +150,22 @@ impl Effect {
                         easing: EasingType::Linear,
                     },
                     0,
+                ));
+                resources.cassette.add_effect(VisualEffect::new(
+                    1.0,
+                    VisualEffectType::EntityShaderAnimation {
+                        entity: context.target,
+                        from: hashmap! {
+                            "u_damage_taken" => ShaderUniform::Float(1.0),
+                        }
+                        .into(),
+                        to: hashmap! {
+                            "u_damage_taken" => ShaderUniform::Float(0.0),
+                        }
+                        .into(),
+                        easing: EasingType::Linear,
+                    },
+                    -1,
                 ));
                 Event::AfterIncomingDamage.send(&context, resources);
             }
@@ -243,14 +258,12 @@ impl Effect {
                     .unwrap_or(context.target);
                 let mut target = world.entry(target).unwrap();
                 match stat {
-                    StatType::Hp => target
-                        .get_component_mut::<HpComponent>()
-                        .unwrap()
-                        .set_current(value, resources),
-                    StatType::Attack => target
-                        .get_component_mut::<AttackComponent>()
-                        .unwrap()
-                        .set_value(value, resources),
+                    StatType::Hp => {
+                        target.get_component_mut::<HpComponent>().unwrap().current = value
+                    }
+                    StatType::Attack => {
+                        target.get_component_mut::<AttackComponent>().unwrap().value = value
+                    }
                 }
             }
             Effect::SetAbilityVarInt {

@@ -68,4 +68,12 @@ impl WorldSystem {
         }
         world.remove(entity)
     }
+
+    pub fn set_time(ts: Time, world: &mut legion::World) {
+        <&mut WorldComponent>::query().iter_mut(world).collect_vec()[0].global_time = ts;
+    }
+
+    pub fn get_time(world: &legion::World) -> Time {
+        <&WorldComponent>::query().iter(world).collect_vec()[0].global_time
+    }
 }

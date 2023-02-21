@@ -33,10 +33,6 @@ impl VarsProvider for UnitComponent {
             Faction::Gallery => 4.0,
         };
         vars.insert(VarName::Faction, Var::Float(faction_val));
-        vars.insert(
-            VarName::Card,
-            Var::Float((self.faction == Faction::Shop) as i32 as f32),
-        );
         vars.insert(VarName::Slot, Var::Int(self.slot as i32));
     }
 }

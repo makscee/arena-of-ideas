@@ -16,7 +16,6 @@ impl System for ShopSystem {
         if resources.down_keys.contains(&geng::Key::R) {
             Self::refresh(world, resources);
         }
-        self.handle_hover(world, resources);
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
     }
@@ -40,66 +39,6 @@ impl ShopSystem {
             &mut resources.cassette.parallel_node,
             hashset! {Faction::Shop, Faction::Team},
         );
-    }
-
-    fn handle_hover(&mut self, world: &legion::World, resources: &mut Resources) {
-        let hovered = resources.hovered_entity.or(resources.dragged_entity);
-        if self.hovered_team == hovered {
-            return;
-        }
-        if let Some(entry) = hovered.and_then(|entity| world.entry_ref(entity).ok()) {
-            let hovered = hovered.unwrap();
-            if entry.get_component::<UnitComponent>().unwrap().faction == Faction::Team {
-                resources.cassette.close_node();
-                let delay = resources.cassette.head - resources.cassette.parallel_node.start();
-                resources
-                    .cassette
-                    .parallel_node
-                    .add_effect(VisualEffect::new_delayed(
-                        GRAB_ANIMATION_DURATION,
-                        delay,
-                        VisualEffectType::EntityShaderAnimation {
-                            entity: hovered,
-                            from: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
-                            to: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                            easing: EasingType::Linear,
-                        },
-                        -1,
-                    ));
-                resources.cassette.parallel_node.add_effect_by_key(
-                    "hover_card_fix",
-                    VisualEffect::new(
-                        0.0,
-                        VisualEffectType::EntityShaderConst {
-                            entity: hovered,
-                            uniforms: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                        },
-                        -2,
-                    ),
-                );
-                self.hovered_team = Some(hovered);
-            }
-        }
-        if hovered.is_none() && self.hovered_team.is_some() {
-            resources.cassette.parallel_node.clear_key("hover_card_fix");
-            let hovered = self.hovered_team.unwrap();
-            let delay = resources.cassette.head - resources.cassette.parallel_node.start();
-            resources
-                .cassette
-                .parallel_node
-                .add_effect(VisualEffect::new_delayed(
-                    GRAB_ANIMATION_DURATION,
-                    delay,
-                    VisualEffectType::EntityShaderAnimation {
-                        entity: hovered,
-                        from: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                        to: hashmap! {"u_card" => ShaderUniform::Float(0.0)}.into(),
-                        easing: EasingType::Linear,
-                    },
-                    -1,
-                ));
-            self.hovered_team = None;
-        }
     }
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
@@ -168,17 +107,6 @@ impl ShopSystem {
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
                 Self::refresh_cassette(world, resources);
                 self.hovered_team = Some(buy_candidate);
-                resources.cassette.parallel_node.add_effect_by_key(
-                    "hover_card_fix",
-                    VisualEffect::new(
-                        0.0,
-                        VisualEffectType::EntityShaderConst {
-                            entity: buy_candidate,
-                            uniforms: hashmap! {"u_card" => ShaderUniform::Float(1.0)}.into(),
-                        },
-                        -2,
-                    ),
-                );
             } else {
                 let mut entry = world.entry_mut(buy_candidate).unwrap();
                 let position =

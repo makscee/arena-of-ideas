@@ -33,7 +33,7 @@ uniform vec4 u_outline_color;
 uniform vec4 u_circle_color;
 
 uniform float u_text_scale = 1;
-uniform float u_last_change;
+uniform float u_damage_taken = 0;
 uniform int u_value_modified;
 
 const float BORDER = 0.08;
@@ -54,9 +54,8 @@ void main() {
     } else if(u_value_modified > 0) {
         text_color = u_text_color_increased;
     }
-    float change_t = (CHANGE_T_DURATION - u_game_time + u_last_change) / CHANGE_T_DURATION;
-    change_t *= change_t * change_t;
-    float text_scale = max(u_text_scale, u_text_scale * (1 + change_t));
+
+    float text_scale = u_text_scale * (1 + u_damage_taken);
     float sdf = get_text_sdf(uv / text_scale * vec2(u_text_size.y / u_text_size.x, 1), u_text);
     text_color = get_text_color(sdf, text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);

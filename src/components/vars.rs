@@ -5,8 +5,6 @@ pub enum VarName {
     Damage,
     HpMax,
     HpCurrent,
-    HpLastDmg,
-    HpLastChange,
     Position,
     Radius,
     Test,

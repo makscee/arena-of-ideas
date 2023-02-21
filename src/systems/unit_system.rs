@@ -3,6 +3,7 @@ use super::*;
 pub struct UnitSystem {}
 
 const STATUSES_EFFECTS_KEY: &str = "statuses";
+const CARD_ANIMATION_DURATION: Time = 0.2;
 impl UnitSystem {
     pub fn draw_all_units_to_cassette_node(
         world: &legion::World,
@@ -87,6 +88,10 @@ impl UnitSystem {
                 .get_component::<HouseComponent>()
                 .unwrap()
                 .clone(),
+            original_entry
+                .get_component::<AttentionComponent>()
+                .unwrap()
+                .clone(),
         ));
 
         let mut new_entry = world.entry(new_entity).unwrap();
@@ -135,5 +140,23 @@ impl UnitSystem {
         {
             world.entry(clone_entity).unwrap().add_component(component);
         }
+    }
+
+    pub fn add_attention_vars(
+        unit: &UnitComponent,
+        entry: &legion::world::EntryRef,
+        vars: &mut Vars,
+    ) {
+        let card = match unit.faction == Faction::Shop {
+            true => 1.0,
+            false => {
+                let attention_ts = entry
+                    .get_component::<AttentionComponent>()
+                    .map_or(0.0, |component| component.ts);
+                (attention_ts / CARD_ANIMATION_DURATION).clamp(0.0, 1.0)
+            }
+        };
+
+        vars.insert(VarName::Card, Var::Float(card));
     }
 }

@@ -59,8 +59,8 @@ impl ExpressionInt {
                     .unwrap_or(context.target);
                 let target = world.entry_ref(target).unwrap();
                 match stat {
-                    StatType::Hp => target.get_component::<HpComponent>().unwrap().current(),
-                    StatType::Attack => target.get_component::<AttackComponent>().unwrap().value(),
+                    StatType::Hp => target.get_component::<HpComponent>().unwrap().current,
+                    StatType::Attack => target.get_component::<AttackComponent>().unwrap().value,
                 }
             }
             ExpressionInt::AbilityVar {

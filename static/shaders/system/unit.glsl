@@ -34,9 +34,7 @@ const float TEXT_BORDER = 0.25;
 
 in vec2 uv;
 
-uniform int u_hp_current;
-uniform int u_hp_max;
-uniform float u_hp_last_dmg;
+uniform float u_damage_taken;
 uniform sampler2D u_description;
 uniform vec2 u_description_size;
 uniform float u_hovered = 0;
@@ -65,9 +63,7 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
 void main() {
     vec2 uv = get_card_uv(uv, u_card);
     float len = length(uv) - 1.;
-    float hp_part = float(u_hp_current) / float(u_hp_max);
-    float dmg_t = (DMG_T_DURATION - u_game_time + u_hp_last_dmg) / DMG_T_DURATION;
-    dmg_t = dmg_t * dmg_t * dmg_t;
+    float dmg_t = u_damage_taken;
     commonInit(u_position + uv);
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
     vec4 color = vec4(base_color, alpha);

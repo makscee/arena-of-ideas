@@ -27,12 +27,11 @@ impl StatsUiSystem {
                             .set_uniform("u_offset", ShaderUniform::Float(1.0))
                             .set_uniform(
                                 "u_text",
-                                ShaderUniform::String((0, hp.current().to_string())),
+                                ShaderUniform::String((0, hp.current.to_string())),
                             )
-                            .set_uniform("u_last_change", ShaderUniform::Float(hp.last_change))
                             .set_uniform(
                                 "u_value_modified",
-                                ShaderUniform::Int(hp.current() - hp.max),
+                                ShaderUniform::Int(hp.current - hp.max),
                             )
                             .set_uniform(
                                 "u_circle_color",
@@ -56,16 +55,13 @@ impl StatsUiSystem {
                             .set_uniform("u_offset", ShaderUniform::Float(-1.0))
                             .set_uniform(
                                 "u_text",
-                                ShaderUniform::String((0, attack.value().to_string())),
-                            )
-                            .set_uniform(
-                                "u_last_change",
-                                ShaderUniform::Float(attack.last_change()),
+                                ShaderUniform::String((0, attack.value.to_string())),
                             )
                             .set_uniform(
                                 "u_value_modified",
-                                ShaderUniform::Int(attack.value() - attack.initial_value()),
+                                ShaderUniform::Int(attack.value - attack.initial_value),
                             )
+                            .set_uniform("u_damage_taken", ShaderUniform::Float(0.0))
                             .set_uniform(
                                 "u_circle_color",
                                 ShaderUniform::Color(options.stats_attack_color),

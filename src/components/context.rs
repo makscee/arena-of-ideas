@@ -1,5 +1,3 @@
-
-
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -30,6 +28,7 @@ impl Context {
             .for_each(|(_, world_context)| context.vars.merge(&world_context.vars, false));
         if let Some(component) = entry.get_component::<UnitComponent>().ok() {
             component.extend_vars(&mut context.vars);
+            UnitSystem::add_attention_vars(component, &entry, &mut context.vars);
         }
         if let Some(component) = entry.get_component::<PositionComponent>().ok() {
             component.extend_vars(&mut context.vars);
