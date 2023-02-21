@@ -1,10 +1,15 @@
 use legion::EntityStore;
 
 use super::*;
+use geng::ui::*;
 
 pub struct BattleSystem {}
 
 impl BattleSystem {
+    pub fn new() -> Self {
+        Self {}
+    }
+
     pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_battle(world, resources);
         let mut ticks = 0;
@@ -312,6 +317,29 @@ impl BattleSystem {
             )),
         };
     }
+}
+
+impl System for BattleSystem {
+    fn ui<'a>(
+        &'a mut self,
+        cx: &'a ui::Controller,
+        resources: &mut Resources,
+    ) -> Box<dyn ui::Widget + 'a> {
+        Box::new(
+            (Text::new(
+                format!("Round #{}", resources.rounds.next_round),
+                resources.fonts.get_font(0),
+                70.0,
+                Rgba::WHITE,
+            ),)
+                .column()
+                .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
+                .uniform_padding(32.0)
+                .align(vec2(1.0, 1.0)),
+        )
+    }
+
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
 }
 
 enum StrikePhase {

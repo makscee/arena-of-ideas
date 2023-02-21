@@ -68,6 +68,7 @@ impl Game {
                 Box::new(CassettePlayerSystem::new(PlayMode::Play)),
                 Box::new(ActionSystem::new()),
                 Box::new(SlotSystem::new()),
+                Box::new(BattleSystem::new()),
             ],
         );
         game_state.add_systems(

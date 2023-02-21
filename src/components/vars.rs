@@ -6,6 +6,7 @@ pub enum VarName {
     HpMax,
     HpCurrent,
     HpLastDmg,
+    HpLastChange,
     Position,
     Radius,
     Test,

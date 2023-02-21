@@ -7,6 +7,7 @@ pub struct HpComponent {
     pub max: Hp,
 
     pub last_change: Time,
+    pub last_dmg: Time,
 }
 
 impl HpComponent {
@@ -15,6 +16,7 @@ impl HpComponent {
             current: max,
             max,
             last_change: -100.0,
+            last_dmg: -100.0,
         }
     }
 
@@ -23,8 +25,9 @@ impl HpComponent {
     }
 
     pub fn set_current(&mut self, current: Hp, resources: &Resources) {
+        self.last_change = resources.cassette.last_start();
         if current < self.current {
-            self.last_change = resources.cassette.last_start();
+            self.last_dmg = resources.cassette.last_start();
         }
         self.current = current;
     }
@@ -34,6 +37,7 @@ impl VarsProvider for HpComponent {
     fn extend_vars(&self, vars: &mut Vars) {
         vars.insert(VarName::HpCurrent, Var::Int(self.current));
         vars.insert(VarName::HpMax, Var::Int(self.max));
-        vars.insert(VarName::HpLastDmg, Var::Float(self.last_change));
+        vars.insert(VarName::HpLastDmg, Var::Float(self.last_dmg));
+        vars.insert(VarName::HpLastChange, Var::Float(self.last_dmg));
     }
 }
