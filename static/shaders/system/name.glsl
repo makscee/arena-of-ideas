@@ -15,7 +15,7 @@ uniform float u_width = 0.7;
 
 void main() {
     uv = a_pos * (1.0 + u_padding);
-    vec2 rel = vec2(1, u_name_size.y / u_name_size.x / 0.5) * u_width;
+    vec2 rel = vec2(1, u_name_size.y / u_name_size.x) * u_width;
     vec2 pos = uv * rel * 1.0 * u_scale + u_position + u_offset;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);

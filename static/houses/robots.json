@@ -16,7 +16,7 @@
     },
     "statuses": {
         "Shield": {
-            "description": "Negate one instance\nof incoming damage",
+            "description": "Negate one\ninstance of\nincoming damage",
             "trigger": {
                 "type": "List",
                 "triggers": [

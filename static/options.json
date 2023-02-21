@@ -15,7 +15,7 @@
         "parameters": {
             "uniforms": {
                 "u_scale": 0.25,
-                "u_text_scale": 1.1,
+                "u_text_scale": 1.6,
                 "u_text_color_default": "#ffffff",
                 "u_text_color_decreased": "#ff0000",
                 "u_text_color_increased": "#26d000",
@@ -35,7 +35,7 @@
                 "u_font": 1,
                 "u_offset": [
                     0.0,
-                    -0.9
+                    -1.0
                 ]
             }
         },

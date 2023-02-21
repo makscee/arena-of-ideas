@@ -21,7 +21,7 @@ uniform float u_time;
 void main() {
     uv = a_pos * (1.0 + u_padding);
     t = u_time;
-    vec2 rel = vec2(u_text_size.x / u_text_size.y * .5, 1);
+    vec2 rel = vec2(u_text_size.x / u_text_size.y, 1);
     vec2 vel = normalize(u_position) * u_pivot + vec2(0, u_gravity * t);
     vec2 pos = uv * rel * 1.0 * (u_scale + u_scale_over_t * t) + u_position + u_offset + vel * t + u_position_over_t * t;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);

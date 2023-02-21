@@ -57,7 +57,7 @@ void main() {
     float change_t = (CHANGE_T_DURATION - u_game_time + u_last_change) / CHANGE_T_DURATION;
     change_t *= change_t * change_t;
     float text_scale = max(u_text_scale, u_text_scale * (1 + change_t));
-    float sdf = get_text_sdf(uv / text_scale * vec2(1, u_text_size.x / u_text_size.y * .5), u_text);
+    float sdf = get_text_sdf(uv / text_scale * vec2(u_text_size.y / u_text_size.x, 1), u_text);
     text_color = get_text_color(sdf, text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);
 }

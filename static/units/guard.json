@@ -15,7 +15,7 @@
     },
     {
         "component": "Hp",
-        "max": 1
+        "max": 19
     },
     {
         "component": "Attack",
