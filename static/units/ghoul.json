@@ -1,0 +1,92 @@
+[
+    {
+        "component": "Name",
+        "name": "Ghoul"
+    },
+    {
+        "component": "House",
+        "houses": [
+            "Vampires"
+        ]
+    },
+    {
+        "component": "Description",
+        "text": "On Buy:\nDevour\nally to the right"
+    },
+    {
+        "component": "Hp",
+        "max": 2
+    },
+    {
+        "component": "Attack",
+        "value": 2
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "layer": "Unit",
+        "chain": {
+            "component": "Shader",
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#9d0000"
+                }
+            }
+        }
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "DevourAlly": {
+                "trigger": {
+                    "type": "Buy",
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            }
+                        },
+                        "then": {
+                            "type": "ChangeContext",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": -1
+                                    }
+                                },
+                                "faction": "Team"
+                            },
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Vampires",
+                                "name": "Devour"
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                }
+            }
+        }
+    }
+]

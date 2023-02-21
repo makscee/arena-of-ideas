@@ -37,5 +37,6 @@ impl VarsProvider for UnitComponent {
             VarName::Card,
             Var::Float((self.faction == Faction::Shop) as i32 as f32),
         );
+        vars.insert(VarName::Slot, Var::Int(self.slot as i32));
     }
 }

@@ -4,7 +4,73 @@
     "abilities": {
         "Devour": {
             "effect": {
-                "type": "Noop"
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "ChangeStat",
+                        "stat": "Hp",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Stat",
+                                "stat": "Hp",
+                                "target": {
+                                    "type": "Target"
+                                }
+                            },
+                            "b": {
+                                "type": "Stat",
+                                "stat": "Hp",
+                                "target": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "type": "ChangeStat",
+                        "stat": "Attack",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Stat",
+                                "stat": "Attack",
+                                "target": {
+                                    "type": "Target"
+                                }
+                            },
+                            "b": {
+                                "type": "Stat",
+                                "stat": "Attack",
+                                "target": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "type": "Kill",
+                        "target": {
+                            "type": "Target"
+                        }
+                    },
+                    {
+                        "type": "ChangeContext",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "effect": {
+                            "type": "ShowText",
+                            "text": "Devour"
+                        }
+                    }
+                ]
             }
         }
     },

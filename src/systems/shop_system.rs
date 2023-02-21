@@ -140,7 +140,7 @@ impl ShopSystem {
                 .x
                 > 0.0
             {
-                world.remove(sell_candidate);
+                Self::sell(sell_candidate, resources, world);
             } else {
                 if let Some(slot) =
                     SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
@@ -158,14 +158,13 @@ impl ShopSystem {
             SlotSystem::refresh_slot_shaders(
                 world,
                 resources,
-                hashset! {Faction::Shop,Faction::Team},
+                hashset! {Faction::Shop, Faction::Team},
             );
         } else if let Some(buy_candidate) = self.buy_candidate {
-            let mut entry: EntryMut = world.entry_mut(buy_candidate).unwrap();
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
             {
-                Self::buy(&mut entry, buy_candidate, slot, resources);
+                Self::buy(buy_candidate, slot, resources, world);
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
                 Self::refresh_cassette(world, resources);
                 self.hovered_team = Some(buy_candidate);
@@ -181,6 +180,7 @@ impl ShopSystem {
                     ),
                 );
             } else {
+                let mut entry = world.entry_mut(buy_candidate).unwrap();
                 let position =
                     SlotSystem::get_unit_position(entry.get_component::<UnitComponent>().unwrap());
                 entry.get_component_mut::<PositionComponent>().unwrap().0 = position;
@@ -194,20 +194,22 @@ impl ShopSystem {
         }
     }
 
-    fn buy(entry: &mut EntryMut, entity: legion::Entity, slot: usize, resources: &mut Resources) {
+    fn buy(
+        entity: legion::Entity,
+        slot: usize,
+        resources: &mut Resources,
+        world: &mut legion::World,
+    ) {
+        let mut entry = world.entry_mut(entity).unwrap();
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
-        Event::Buy {}.send(
-            &Context {
-                owner: entity,
-                target: entity,
-                creator: entity,
-                vars: default(),
-                status: default(),
-            },
-            resources,
-        );
+        Event::Buy {}.send(&Context::construct_context(&entity, world), resources);
+    }
+
+    fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
+        Event::Sell {}.send(&Context::construct_context(&entity, world), resources);
+        world.remove(entity);
     }
 
     pub fn clear(world: &mut legion::World, _resources: &mut Resources) {

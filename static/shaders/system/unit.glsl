@@ -51,7 +51,7 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec3 mixed_color = mix(u_house_color1.rgb, base_color, smoothstep(.5, 1, -border_dist / CARD_BORDER));
     vec4 border_color = vec4(mixed_color, border_dist < 0);
 
-    vec2 text_uv = (uv * 1.2 + vec2(0, .5)) * vec2(1, u_description_size.x / u_description_size.y);
+    vec2 text_uv = (uv * 1.3 + vec2(0, 0.8)) * vec2(1.0, u_description_size.x / u_description_size.y);
     // return vec4(abs(text_uv.x) < 1 && abs(text_uv.y) < 1);
     float text_sdf = get_text_sdf(text_uv, u_description);
     vec3 text_base_color = base_color;

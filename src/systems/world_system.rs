@@ -51,4 +51,8 @@ impl WorldSystem {
             .1
             .vars
     }
+
+    pub fn kill(unit: legion::Entity, world: &mut legion::World) -> bool {
+        world.remove(unit)
+    }
 }

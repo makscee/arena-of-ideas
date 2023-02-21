@@ -18,6 +18,11 @@ impl Shader {
         self.parameters.uniforms.insert(String::from(key), value);
         self
     }
+
+    pub fn merge_uniforms(mut self, uniforms: &ShaderUniforms, force: bool) -> Shader {
+        self.parameters.uniforms.merge_mut(uniforms, force);
+        self
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
@@ -85,11 +90,12 @@ impl ShaderUniforms {
         result
     }
 
-    pub fn merge_mut(&mut self, other: &ShaderUniforms) -> &mut Self {
-        other
-            .0
-            .iter()
-            .for_each(|(key, value)| self.insert(key.clone(), value.clone()));
+    pub fn merge_mut(&mut self, other: &ShaderUniforms, force: bool) -> &mut Self {
+        other.0.iter().for_each(|(key, value)| {
+            if force || !self.0.contains_key(key) {
+                self.insert(key.clone(), value.clone());
+            }
+        });
         self
     }
 

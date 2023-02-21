@@ -3,9 +3,22 @@ use super::*;
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
 pub enum Condition {
-    EqualsInt { a: ExpressionInt, b: ExpressionInt },
-    LessInt { a: ExpressionInt, b: ExpressionInt },
-    MoreInt { a: ExpressionInt, b: ExpressionInt },
+    EqualsInt {
+        a: ExpressionInt,
+        b: ExpressionInt,
+    },
+    LessInt {
+        a: ExpressionInt,
+        b: ExpressionInt,
+    },
+    MoreInt {
+        a: ExpressionInt,
+        b: ExpressionInt,
+    },
+    SlotOccupied {
+        slot: ExpressionInt,
+        faction: Faction,
+    },
 }
 
 impl Condition {
@@ -26,6 +39,12 @@ impl Condition {
             Condition::MoreInt { a, b } => {
                 a.calculate(context, world, resources) > b.calculate(context, world, resources)
             }
+            Condition::SlotOccupied { slot, faction } => SlotSystem::find_unit_by_slot(
+                slot.calculate(context, world, resources) as usize,
+                faction,
+                world,
+            )
+            .is_some(),
         }
     }
 }

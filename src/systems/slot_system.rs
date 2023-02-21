@@ -59,6 +59,21 @@ impl SlotSystem {
         None
     }
 
+    pub fn find_unit_by_slot(
+        slot: usize,
+        faction: &Faction,
+        world: &legion::World,
+    ) -> Option<(legion::Entity, UnitComponent)> {
+        <(&EntityComponent, &UnitComponent)>::query()
+            .iter(world)
+            .find_map(
+                |(entity, unit)| match unit.faction == *faction && unit.slot == slot {
+                    true => Some((entity.entity, *unit)),
+                    false => None,
+                },
+            )
+    }
+
     pub fn put_unit_into_slot(entity: legion::Entity, world: &mut legion::World) {
         let entry = world.entry(entity).unwrap();
         let unit = entry.get_component::<UnitComponent>().unwrap();

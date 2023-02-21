@@ -11,6 +11,7 @@ pub enum VarName {
     Radius,
     Test,
     Faction,
+    Slot,
     Card,
     Description,
     Hovered,
@@ -69,6 +70,13 @@ impl Vars {
     pub fn get_int(&self, name: &VarName) -> i32 {
         match self.get(name) {
             Var::Int(value) => *value,
+            _ => panic!("Wrong Var type {}", name),
+        }
+    }
+
+    pub fn get_color(&self, name: &VarName) -> Rgba<f32> {
+        match self.get(name) {
+            Var::Color(value) => *value,
             _ => panic!("Wrong Var type {}", name),
         }
     }

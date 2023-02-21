@@ -133,7 +133,7 @@ impl ShaderSystem {
 
         while let Some(shader) = chain {
             let program = shader_programs.get_program(&static_path().join(&shader.path));
-            shader_uniforms.merge_mut(&shader.parameters.uniforms);
+            shader_uniforms.merge_mut(&shader.parameters.uniforms, true);
             let parameters = ShaderParameters {
                 uniforms: shader_uniforms.clone(),
                 ..shader.parameters.clone()

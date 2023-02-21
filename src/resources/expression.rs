@@ -32,6 +32,7 @@ pub enum ExpressionInt {
     },
     Stat {
         stat: StatType,
+        target: Option<ExpressionEntity>,
     },
 }
 
@@ -51,8 +52,12 @@ impl ExpressionInt {
             }
             ExpressionInt::Const { value } => *value,
             ExpressionInt::Var { var } => context.vars.get_int(var),
-            ExpressionInt::Stat { stat } => {
-                let target = world.entry_ref(context.target).unwrap();
+            ExpressionInt::Stat { stat, target } => {
+                let target = target
+                    .as_ref()
+                    .and_then(|target| Some(target.calculate(&context, world, resources)))
+                    .unwrap_or(context.target);
+                let target = world.entry_ref(target).unwrap();
                 match stat {
                     StatType::Hp => target.get_component::<HpComponent>().unwrap().current(),
                     StatType::Attack => target.get_component::<AttackComponent>().unwrap().value(),
@@ -97,7 +102,10 @@ pub enum ExpressionEntity {
     Target,
     Creator,
     Owner,
-    FindUnit { slot: usize, faction: Faction },
+    FindUnit {
+        slot: Box<ExpressionInt>,
+        faction: Faction,
+    },
 }
 
 impl ExpressionEntity {
@@ -105,7 +113,7 @@ impl ExpressionEntity {
         &self,
         context: &Context,
         world: &legion::World,
-        _resources: &Resources,
+        resources: &Resources,
     ) -> legion::Entity {
         match self {
             ExpressionEntity::World => {
@@ -120,9 +128,10 @@ impl ExpressionEntity {
             ExpressionEntity::Creator => context.creator,
             ExpressionEntity::Owner => context.owner,
             ExpressionEntity::FindUnit { slot, faction } => {
+                let slot = slot.calculate(context, world, resources) as usize;
                 WorldSystem::collect_factions(world, hashset! {*faction})
                     .into_iter()
-                    .find_map(|(entity, unit)| match unit.slot == *slot {
+                    .find_map(|(entity, unit)| match unit.slot == slot {
                         true => Some(entity),
                         false => None,
                     })

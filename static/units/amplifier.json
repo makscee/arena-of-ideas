@@ -11,7 +11,7 @@
     },
     {
         "component": "Description",
-        "text": "On buy:\nShield has 1 more charge"
+        "text": "Shield has\n1 more charge"
     },
     {
         "component": "Hp",
@@ -30,7 +30,7 @@
             "path": "shaders/vfx/circle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_color": "#fff3b5"
+                    "u_color": "#af079e"
                 }
             }
         }
@@ -40,36 +40,72 @@
         "statuses": {
             "GetShield": {
                 "trigger": {
-                    "type": "Buy",
-                    "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "SetAbilityVarInt",
-                                "house": "Robots",
-                                "ability": "Shield",
-                                "var": "Charges",
-                                "value": {
-                                    "type": "Sum",
-                                    "a": {
-                                        "type": "Const",
-                                        "value": 1
-                                    },
-                                    "b": {
-                                        "type": "AbilityVar",
+                    "type": "List",
+                    "triggers": [
+                        {
+                            "type": "Buy",
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "SetAbilityVarInt",
                                         "house": "Robots",
                                         "ability": "Shield",
-                                        "var": "Charges"
+                                        "var": "Charges",
+                                        "value": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Const",
+                                                "value": 1
+                                            },
+                                            "b": {
+                                                "type": "AbilityVar",
+                                                "house": "Robots",
+                                                "ability": "Shield",
+                                                "var": "Charges"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "ShowText",
+                                        "text": "++Shield Charges"
                                     }
-                                }
-                            },
-                            {
-                                "type": "ShowText",
-                                "text": "++Shield Charges",
-                                "color": "#00e9c6"
+                                ]
                             }
-                        ]
-                    }
+                        },
+                        {
+                            "type": "Sell",
+                            "effect": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "SetAbilityVarInt",
+                                        "house": "Robots",
+                                        "ability": "Shield",
+                                        "var": "Charges",
+                                        "value": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Const",
+                                                "value": -1
+                                            },
+                                            "b": {
+                                                "type": "AbilityVar",
+                                                "house": "Robots",
+                                                "ability": "Shield",
+                                                "var": "Charges"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "ShowText",
+                                        "text": "--Shield Charges",
+                                        "color": "#e70000"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 }
             }
         }

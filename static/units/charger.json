@@ -11,7 +11,7 @@
     },
     {
         "component": "Description",
-        "text": "On buy:\nShield reflects damage"
+        "text": "On buy:\nShield\nreflects damage"
     },
     {
         "component": "Hp",
@@ -30,7 +30,7 @@
             "path": "shaders/vfx/circle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_color": "#fff3b5"
+                    "u_color": "#00aacc"
                 }
             }
         }

@@ -4,7 +4,7 @@ pub struct StatsUiSystem {}
 
 const STATS_EFFECTS_KEY: &str = "stats";
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Deserialize, Eq, PartialEq, Debug)]
 pub enum StatType {
     Hp,
     Attack,

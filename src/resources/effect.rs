@@ -8,6 +8,10 @@ pub enum Effect {
     Damage {
         value: Option<ExpressionInt>,
     },
+    Kill {
+        target: ExpressionEntity,
+        then: Option<Box<Effect>>,
+    },
     Repeat {
         count: usize,
         effect: Box<Effect>,
@@ -52,6 +56,7 @@ pub enum Effect {
     },
     ChangeStat {
         stat: StatType,
+        target: Option<ExpressionEntity>,
         value: ExpressionInt,
     },
     ChangeContext {
@@ -67,7 +72,7 @@ pub enum Effect {
     },
     ShowText {
         text: String,
-        color: Rgba<f32>,
+        color: Option<Rgba<f32>>,
     },
 }
 
@@ -158,7 +163,7 @@ impl Effect {
             }
             Effect::Debug { message } => debug!("Debug effect: {}", message),
             Effect::Noop => {}
-            Effect::List { effects } => effects.iter().for_each(|effect| {
+            Effect::List { effects } => effects.iter().rev().for_each(|effect| {
                 resources
                     .action_queue
                     .push_front(Action::new(context.clone(), effect.deref().clone()))
@@ -226,9 +231,17 @@ impl Effect {
                     ability.effect.clone(),
                 ));
             }
-            Effect::ChangeStat { stat, value } => {
+            Effect::ChangeStat {
+                stat,
+                value,
+                target,
+            } => {
                 let value = value.calculate(&context, world, resources);
-                let mut target = world.entry(context.target).unwrap();
+                let target = target
+                    .as_ref()
+                    .and_then(|target| Some(target.calculate(&context, world, resources)))
+                    .unwrap_or(context.target);
+                let mut target = world.entry(target).unwrap();
                 match stat {
                     StatType::Hp => target
                         .get_component_mut::<HpComponent>()
@@ -298,28 +311,23 @@ impl Effect {
                 }
             }
             Effect::ShowText { text, color } => resources.cassette.add_effect(VisualEffect::new(
-                1.5,
+                2.0,
                 VisualEffectType::ShaderAnimation {
                     shader: resources
                         .options
                         .text
                         .clone()
+                        .merge_uniforms(&context.vars.clone().into(), false)
                         .set_uniform("u_text", ShaderUniform::String((0, text.clone())))
-                        .set_uniform("u_outline_color", ShaderUniform::Color(*color))
+                        .set_uniform(
+                            "u_outline_color",
+                            ShaderUniform::Color(
+                                color.unwrap_or(context.vars.get_color(&VarName::HouseColor1)),
+                            ),
+                        )
                         .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
                         .set_uniform("u_scale", ShaderUniform::Float(0.4))
-                        .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 5.0)))
-                        .set_uniform(
-                            "u_position",
-                            ShaderUniform::Vec2(
-                                world
-                                    .entry_ref(context.target)
-                                    .context("Failed to get target")?
-                                    .get_component::<PositionComponent>()
-                                    .unwrap()
-                                    .0,
-                            ),
-                        ),
+                        .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.0))),
                     from: hashmap! {
                         "u_time" => ShaderUniform::Float(0.0),
                     }
@@ -356,6 +364,19 @@ impl Effect {
                     },
                     effect.deref().clone(),
                 ));
+            }
+            Effect::Kill { target, then } => {
+                let context = Context {
+                    target: target.calculate(&context, world, resources),
+                    ..context.clone()
+                };
+                if WorldSystem::kill(context.target, world) {
+                    if let Some(effect) = then {
+                        resources
+                            .action_queue
+                            .push_front(Action::new(context, effect.deref().clone()));
+                    }
+                }
             }
         }
         Ok(())
