@@ -9,6 +9,7 @@ pub enum Trigger {
     List { triggers: Vec<Box<Trigger>> },
     Buy { effect: Effect },
     Sell { effect: Effect },
+    RemoveFromTeam { effect: Effect },
 }
 
 impl Trigger {
@@ -45,6 +46,10 @@ impl Trigger {
                 Event::Sell => self.fire(action_queue, context),
                 _ => {}
             },
+            Trigger::RemoveFromTeam { effect: _ } => match event {
+                Event::RemoveFromTeam => self.fire(action_queue, context),
+                _ => {}
+            },
         }
     }
 
@@ -53,6 +58,7 @@ impl Trigger {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
             | Trigger::Init { effect }
+            | Trigger::RemoveFromTeam { effect }
             | Trigger::Buy { effect }
             | Trigger::Sell { effect } => {
                 action_queue.push_back(Action::new(context, effect.clone()))

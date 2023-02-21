@@ -74,7 +74,7 @@
                             }
                         },
                         {
-                            "type": "Sell",
+                            "type": "RemoveFromTeam",
                             "effect": {
                                 "type": "List",
                                 "effects": [

@@ -52,7 +52,20 @@ impl WorldSystem {
             .vars
     }
 
-    pub fn kill(unit: legion::Entity, world: &mut legion::World) -> bool {
-        world.remove(unit)
+    pub fn kill(
+        entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> bool {
+        let unit = world
+            .entry_ref(entity)
+            .unwrap()
+            .get_component::<UnitComponent>()
+            .unwrap()
+            .clone();
+        if unit.faction == Faction::Team {
+            Event::RemoveFromTeam {}.send(&Context::construct_context(&entity, world), resources);
+        }
+        world.remove(entity)
     }
 }

@@ -209,7 +209,7 @@ impl ShopSystem {
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         Event::Sell {}.send(&Context::construct_context(&entity, world), resources);
-        world.remove(entity);
+        WorldSystem::kill(entity, world, resources);
     }
 
     pub fn clear(world: &mut legion::World, _resources: &mut Resources) {

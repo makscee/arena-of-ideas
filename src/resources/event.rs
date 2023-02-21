@@ -7,13 +7,18 @@ pub enum Event {
     AfterIncomingDamage,
     Buy,
     Sell,
+    RemoveFromTeam,
 }
 
 impl Event {
     pub fn send(&self, context: &Context, resources: &mut Resources) {
         debug!("Send event {:?} {:?}", self, context);
         match self {
-            Event::BeforeIncomingDamage | Event::AfterIncomingDamage | Event::Buy | Event::Sell => {
+            Event::BeforeIncomingDamage
+            | Event::AfterIncomingDamage
+            | Event::Buy
+            | Event::Sell
+            | Event::RemoveFromTeam => {
                 resources
                     .status_pool
                     .active_statuses

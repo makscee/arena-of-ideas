@@ -370,7 +370,7 @@ impl Effect {
                     target: target.calculate(&context, world, resources),
                     ..context.clone()
                 };
-                if WorldSystem::kill(context.target, world) {
+                if WorldSystem::kill(context.target, world, resources) {
                     if let Some(effect) = then {
                         resources
                             .action_queue
