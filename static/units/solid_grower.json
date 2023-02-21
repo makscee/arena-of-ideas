@@ -1,7 +1,7 @@
 [
     {
         "component": "Name",
-        "name": "Grower"
+        "name": "Solid Grower"
     },
     {
         "component": "Hp",
@@ -55,7 +55,7 @@
             "parameters": {
                 "instances": 5000,
                 "uniforms": {
-                    "u_start_color": "#c400c1",
+                    "u_start_color": "#fda816",
                     "u_end_color": "#e46e00",
                     "u_scale": 0.03,
                     "u_scale_over_t": -0.03,

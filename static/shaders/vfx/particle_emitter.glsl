@@ -25,7 +25,8 @@ void main() {
     vec2 vel = rotateCW((randVec(p_index + 1) - vec2(0.5)), p_t * PI);
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= 5;
-    vec2 pos = v_quad_pos * 1.0 * (u_scale + u_scale_over_t * p_t) + u_position + vel * p_t;
+    float scale = max(u_scale + u_scale_over_t * p_t, 0.0);
+    vec2 pos = v_quad_pos * scale + u_position + vel * p_t;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

@@ -4,5 +4,7 @@
     "units/basic.json",
     "units/amplifier.json",
     "units/charger.json",
-    "units/grower.json"
+    "units/solid_grower.json",
+    "units/lard_grower.json",
+    "units/glass_grower.json"
 ]

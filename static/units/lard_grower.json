@@ -1,0 +1,67 @@
+[
+    {
+        "component": "Name",
+        "name": "Lard Grower"
+    },
+    {
+        "component": "Hp",
+        "max": 1
+    },
+    {
+        "component": "Attack",
+        "value": 1
+    },
+    {
+        "component": "Description",
+        "text": "Hp are equal\nto Round number doubled"
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "GetShield": {
+                "trigger": {
+                    "type": "Init",
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ChangeStat",
+                                "stat": "Hp",
+                                "value": {
+                                    "type": "Mul",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "RoundNumber"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 2
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "chain": {
+            "component": "Shader",
+            "path": "shaders/vfx/particle_emitter.glsl",
+            "parameters": {
+                "instances": 5000,
+                "uniforms": {
+                    "u_start_color": "#00951bc3",
+                    "u_end_color": "#180083",
+                    "u_scale": 0.35,
+                    "u_scale_over_t": -0.45,
+                    "u_trail_count": 2,
+                    "u_lifetime": 5.0
+                }
+            }
+        }
+    }
+]
