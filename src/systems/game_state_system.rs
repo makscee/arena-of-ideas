@@ -77,6 +77,7 @@ impl System for GameStateSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
+        world: &mut legion::World,
         resources: &mut Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         if let Some(widgets) = self
@@ -86,7 +87,7 @@ impl System for GameStateSystem {
                 Some(
                     systems
                         .iter_mut()
-                        .map(|system| system.ui(cx, resources))
+                        .map(|system| system.ui(cx, world, resources))
                         .collect_vec(),
                 )
             })
@@ -144,7 +145,7 @@ impl GameStateSystem {
                 BattleSystem::run_battle(world, resources);
             }
             GameState::Shop => {
-                ShopSystem::refresh(world, resources);
+                ShopSystem::init(world, resources);
             }
             GameState::Gallery => {
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Float(20.0))

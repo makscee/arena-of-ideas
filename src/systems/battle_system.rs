@@ -323,6 +323,7 @@ impl System for BattleSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
+        world: &mut legion::World,
         resources: &mut Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         Box::new(

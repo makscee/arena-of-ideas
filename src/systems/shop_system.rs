@@ -1,9 +1,8 @@
 use geng::prelude::rand::distributions::{Distribution, WeightedIndex};
-use legion::{world::EntryMut, EntityStore};
+use geng::ui::*;
+use legion::EntityStore;
 
 use super::*;
-
-const GRAB_ANIMATION_DURATION: Time = 0.15;
 
 pub struct ShopSystem {
     buy_candidate: Option<legion::Entity>,
@@ -11,13 +10,51 @@ pub struct ShopSystem {
     hovered_team: Option<legion::Entity>,
 }
 
+const UNIT_COST: usize = 3;
+
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if resources.down_keys.contains(&geng::Key::R) {
-            Self::refresh(world, resources);
+            Self::reroll(world, resources);
         }
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
+    }
+
+    fn ui<'a>(
+        &'a mut self,
+        cx: &'a ui::Controller,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> Box<dyn ui::Widget + 'a> {
+        let reroll_btn = Button::new(cx, "Reroll (1G)");
+        if reroll_btn.was_clicked() && resources.shop.money > 0 {
+            resources.shop.money -= 1;
+            Self::reroll(world, resources);
+        }
+        Box::new(
+            (
+                Text::new(
+                    format!("Money: {}G", resources.shop.money),
+                    resources.fonts.get_font(1),
+                    70.0,
+                    Rgba::WHITE,
+                ),
+                reroll_btn
+                    .uniform_padding(16.0)
+                    .background_color(Rgba::try_from("#267ec7").unwrap()),
+                Text::new(
+                    format!("Buy: {}G", UNIT_COST),
+                    resources.fonts.get_font(1),
+                    40.0,
+                    Rgba::WHITE,
+                ),
+            )
+                .column()
+                .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
+                .uniform_padding(32.0)
+                .align(vec2(1.0, 1.0)),
+        )
     }
 }
 
@@ -100,9 +137,9 @@ impl ShopSystem {
                 hashset! {Faction::Shop, Faction::Team},
             );
         } else if let Some(buy_candidate) = self.buy_candidate {
-            if let Some(slot) =
-                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
-            {
+            let slot = SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos);
+            if resources.shop.money >= UNIT_COST && slot.is_some() {
+                let slot = slot.unwrap();
                 Self::buy(buy_candidate, slot, resources, world);
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
                 Self::refresh_cassette(world, resources);
@@ -128,6 +165,7 @@ impl ShopSystem {
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
+        resources.shop.money -= UNIT_COST;
         let mut entry = world.entry_mut(entity).unwrap();
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
@@ -144,7 +182,12 @@ impl ShopSystem {
         WorldSystem::clear_factions(world, hashset! {Faction::Shop});
     }
 
-    pub fn refresh(world: &mut legion::World, resources: &mut Resources) {
+    pub fn init(world: &mut legion::World, resources: &mut Resources) {
+        Self::reroll(world, resources);
+        resources.shop.money = (UNIT_COST + 1 + resources.rounds.next_round).min(10);
+    }
+
+    pub fn reroll(world: &mut legion::World, resources: &mut Resources) {
         Self::clear(world, resources);
 
         let items = resources

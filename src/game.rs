@@ -94,7 +94,7 @@ impl geng::State for Game {
         let widgets = self
             .systems
             .iter_mut()
-            .map(|system| system.ui(cx, &mut self.resources))
+            .map(|system| system.ui(cx, &mut self.world, &mut self.resources))
             .collect_vec();
         if widgets.is_empty() {
             return Box::new(ui::Void);

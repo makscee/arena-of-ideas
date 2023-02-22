@@ -2,11 +2,15 @@ use super::*;
 
 pub struct Shop {
     pub pool: HashMap<PathBuf, usize>,
+    pub money: usize,
 }
 
 impl Default for Shop {
     fn default() -> Self {
-        Self { pool: default() }
+        Self {
+            pool: default(),
+            money: default(),
+        }
     }
 }
 

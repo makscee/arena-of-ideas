@@ -41,6 +41,10 @@ fn main() {
     let geng = setup_geng();
     let world = legion::World::default();
     let resources = Resources::new(&geng);
+    let mut theme = geng.ui_theme();
+    theme.font = resources.fonts.get_font(1);
+    theme.hover_color = Rgba::BLACK;
+    geng.set_ui_theme(theme);
     let game = Game::new(world, resources);
     geng::run(&geng, game);
 }
