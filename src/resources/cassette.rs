@@ -6,7 +6,7 @@ pub struct Cassette {
     pub head: Time,
     queue: Vec<CassetteNode>,
     pub node_template: CassetteNode, // any new node will be cloned from this
-    pub parallel_node: CassetteNode,
+    pub parallel_node: CassetteNode, // this node is always rendered
 }
 
 impl Default for Cassette {
@@ -56,7 +56,7 @@ impl Cassette {
             .add_entity_shader(entity, shader);
     }
 
-    pub fn get_shaders(&self) -> Vec<Shader> {
+    pub fn get_shaders(&self, mouse_pos: vec2<f32>) -> Vec<Shader> {
         let node = self.get_node_at_ts(self.head).merge(&self.parallel_node);
         let time = self.head - node.start;
         let mut shaders: Vec<Shader> = default();
@@ -71,6 +71,35 @@ impl Cassette {
                     .r#type
                     .process(time / effect.duration, &mut entity_shaders),
             );
+        }
+        for (_, shader) in entity_shaders.iter_mut() {
+            let position = shader
+                .parameters
+                .uniforms
+                .get(&VarName::Position.convert_to_uniform())
+                .and_then(|x| match x {
+                    ShaderUniform::Vec2(v) => Some(v),
+                    _ => None,
+                });
+            let radius = shader
+                .parameters
+                .uniforms
+                .get(&VarName::Radius.convert_to_uniform())
+                .and_then(|x| match x {
+                    ShaderUniform::Float(v) => Some(v),
+                    _ => None,
+                });
+            if position.is_none() || radius.is_none() {
+                continue;
+            }
+            let position = position.unwrap();
+            let radius = radius.unwrap();
+            if (mouse_pos - *position).len() < *radius {
+                shader
+                    .parameters
+                    .uniforms
+                    .insert("u_hovered".to_string(), ShaderUniform::Float(1.0));
+            }
         }
         [entity_shaders.into_values().collect_vec(), shaders].concat()
     }

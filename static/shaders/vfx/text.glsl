@@ -45,8 +45,7 @@ const float AA = 0.03;
 
 void main() {
     vec4 color = vec4(0);
-    vec2 text_uv = uv / vec2(min(1, u_text_size.x / u_text_size.y), 1);
-    float sdf = get_text_sdf(text_uv, u_text);
+    float sdf = get_text_sdf(uv, u_text);
     vec4 text_color = get_text_color(sdf, u_text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     color = alphaBlend(color, text_color);
     color.a += u_alpha_over_t * t;

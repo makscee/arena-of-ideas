@@ -33,6 +33,9 @@ impl Context {
         if let Some(component) = entry.get_component::<PositionComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }
+        if let Some(component) = entry.get_component::<RadiusComponent>().ok() {
+            component.extend_vars(&mut context.vars);
+        }
         if let Some(component) = entry.get_component::<HpComponent>().ok() {
             component.extend_vars(&mut context.vars);
         }

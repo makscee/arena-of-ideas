@@ -1,5 +1,6 @@
 #include <common.glsl>
 uniform vec2 u_position = vec2(0);
+uniform float u_radius;
 uniform float u_card;
 
 #ifdef VERTEX_SHADER
@@ -12,7 +13,7 @@ uniform float u_padding = 1;
 
 void main() {
     uv = a_pos * (1.0 + u_padding + u_card);
-    vec2 pos = uv * 1.0 + u_position;
+    vec2 pos = uv * u_radius + u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

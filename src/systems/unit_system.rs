@@ -55,6 +55,8 @@ impl UnitSystem {
         let original_entry = world.entry_ref(original_entity).unwrap();
         let original_context = original_entry.get_component::<Context>().unwrap().clone();
         // Mandatory components
+        // For some reasoun it seems to be possible to init entity only with 8 components
+        // Any more mandatory components should be cloned down below
         let new_entity = world.push((
             {
                 let mut unit = original_entry
@@ -66,6 +68,10 @@ impl UnitSystem {
             },
             original_entry
                 .get_component::<PositionComponent>()
+                .unwrap()
+                .clone(),
+            original_entry
+                .get_component::<RadiusComponent>()
                 .unwrap()
                 .clone(),
             original_entry
@@ -86,10 +92,6 @@ impl UnitSystem {
                 .clone(),
             original_entry
                 .get_component::<HouseComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<AttentionComponent>()
                 .unwrap()
                 .clone(),
         ));

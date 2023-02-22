@@ -58,7 +58,7 @@ impl ShaderSystem {
 
         let shaders = [
             world_shaders,
-            resources.cassette.get_shaders(),
+            resources.cassette.get_shaders(resources.mouse_pos),
             resources.frame_shaders.clone(),
         ]
         .concat();

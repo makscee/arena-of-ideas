@@ -24,7 +24,7 @@ pub enum VarName {
 }
 
 impl VarName {
-    fn convert_to_uniform(&self) -> String {
+    pub fn convert_to_uniform(&self) -> String {
         let mut name = "u".to_string();
         for c in self.to_string().chars() {
             if c.is_uppercase() {
