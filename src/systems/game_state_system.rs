@@ -127,6 +127,7 @@ impl GameStateSystem {
             }
             GameState::Battle => {
                 resources.cassette.clear();
+                WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(0.0));
             }
             GameState::Gallery => {
                 resources.cassette.clear();
@@ -139,6 +140,7 @@ impl GameStateSystem {
         match self.transition {
             GameState::MainMenu => {}
             GameState::Battle => {
+                WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(1.0));
                 BattleSystem::run_battle(world, resources);
             }
             GameState::Shop => {

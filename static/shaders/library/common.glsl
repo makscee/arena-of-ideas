@@ -4,6 +4,10 @@ uniform float u_game_time;
 uniform float u_global_time;
 uniform float u_field_position;
 
+uniform float u_card;
+uniform float u_hovered = 0;
+uniform float u_is_battle;
+
 vec3 light_color = vec3(1);
 vec3 dark_color = vec3(0);
 vec3 base_color;
@@ -54,8 +58,12 @@ float get_text_sdf(vec2 uv, sampler2D sampler) {
     return texture2D(sampler, text_uv).x;
 }
 
+float get_card_value() {
+    return mix(u_card, u_hovered, u_is_battle);
+}
+
 vec2 get_card_uv(vec2 uv, float card) {
-    return mix(uv, uv * 2 - vec2(0, 2.5), card);
+    return mix(uv, uv * .5 + vec2(0, 1.5), card);
 }
 
 void commonInit(vec2 position) {

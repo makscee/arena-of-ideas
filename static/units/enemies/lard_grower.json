@@ -13,7 +13,7 @@
     },
     {
         "component": "Description",
-        "text": "Hp are equal\nto Round number doubled"
+        "text": "Hp is equal\nto Round\nnumber doubled"
     },
     {
         "component": "StatusContainer",

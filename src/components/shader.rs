@@ -145,7 +145,7 @@ impl ShaderUniforms {
         self.0.insert(key, value);
     }
 
-    pub fn get(&self, key: &String) -> Option<&ShaderUniform> {
+    pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
         self.0.get(key)
     }
 }

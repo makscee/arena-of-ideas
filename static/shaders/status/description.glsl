@@ -28,20 +28,17 @@ uniform vec2 u_description_size;
 uniform sampler2D u_name;
 uniform vec2 u_name_size;
 
-uniform float u_card;
-uniform float u_hovered;
-
 void main() {
-    vec2 uv = uv / (vec2(2) - u_card);
+    vec2 uv = uv / (vec2(2) - get_card_value());
     commonInit(u_position + u_offset + uv);
     float card_sdf = rectangle_sdf(uv, vec2(1, u_height), 0);
     vec4 color = vec4(field_color, card_sdf < 0);
     vec4 border_color = vec4(base_color.rgb, max(float(BORDER_THICKNESS - abs(card_sdf) > 0), float(BORDER_THICKNESS - abs(uv.y - 0.5) > 0 && card_sdf < 0)));
     vec2 name_uv = uv * vec2(1, u_name_size.x / u_name_size.y) + vec2(0, -u_height * 1.6);
     name_uv *= 1.2;
-    vec4 name_color = get_text_color(get_text_sdf(name_uv * 1.2, u_name), vec4(base_color, 1), u_color, .35, .55);
+    vec4 name_color = get_text_color(get_text_sdf(name_uv * 1.2, u_name), vec4(vec3(1), 1), u_color, .35, .55);
     vec2 description_uv = uv * vec2(1, u_description_size.x / u_description_size.y) + vec2(0, u_height * .1);
-    vec4 description_color = get_text_color(get_text_sdf(description_uv * 1.2, u_description), vec4(base_color, 1), vec4(vec3(0), 0.8), .35, .45);
+    vec4 description_color = get_text_color(get_text_sdf(description_uv * 1.2, u_description), vec4(vec3(1), 1), vec4(vec3(0), 0.8), .25, .5);
     color = alphaBlend(color, border_color);
     color = alphaBlend(color, name_color);
     color = alphaBlend(color, description_color);
