@@ -29,7 +29,8 @@ uniform sampler2D u_name;
 uniform vec2 u_name_size;
 
 void main() {
-    vec2 uv = uv / (vec2(2) - get_card_value());
+    float card = get_card_value();
+    vec2 uv = uv / (vec2(2) - card);
     commonInit(u_position + u_offset + uv);
     float card_sdf = rectangle_sdf(uv, vec2(1, u_height), 0);
     vec4 color = vec4(field_color, card_sdf < 0);
@@ -42,6 +43,6 @@ void main() {
     color = alphaBlend(color, border_color);
     color = alphaBlend(color, name_color);
     color = alphaBlend(color, description_color);
-    gl_FragColor = vec4(color.rgb, color.a * u_card * u_hovered);
+    gl_FragColor = vec4(color.rgb, color.a * card * u_hovered);
 }
 #endif

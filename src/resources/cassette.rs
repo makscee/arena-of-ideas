@@ -61,17 +61,24 @@ impl Cassette {
         let time = self.head - node.start;
         let mut shaders: Vec<Shader> = default();
         let mut entity_shaders = node.entity_shaders.clone();
+
+        // 1st phase: apply any changes to entity shaders uniforms
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
             let time = time - effect.delay;
             if effect.duration > 0.0 && (time > effect.duration || time < 0.0) {
                 continue;
             }
-            shaders.extend(
-                effect
-                    .r#type
-                    .process(time / effect.duration, &mut entity_shaders),
-            );
+            let effect_type = &effect.r#type;
+            match effect_type {
+                VisualEffectType::EntityShaderAnimation { .. }
+                | VisualEffectType::EntityShaderConst { .. } => {
+                    effect_type.process(time / effect.duration, &mut entity_shaders);
+                }
+                _ => {}
+            };
         }
+
+        // inject hovered info
         for (_, shader) in entity_shaders.iter_mut() {
             let position = shader
                 .parameters
@@ -100,6 +107,23 @@ impl Cassette {
                     .uniforms
                     .insert("u_hovered".to_string(), ShaderUniform::Float(1.0));
             }
+        }
+
+        // 2nd phase: apply any other shaders that might need updated entity shaders uniforms
+        for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
+            let time = time - effect.delay;
+            if effect.duration > 0.0 && (time > effect.duration || time < 0.0) {
+                continue;
+            }
+            let effect_type = &effect.r#type;
+            match effect_type {
+                VisualEffectType::EntityShaderAnimation { .. }
+                | VisualEffectType::EntityShaderConst { .. } => {}
+                _ => {
+                    shaders
+                        .extend(effect_type.process(time / effect.duration, &mut entity_shaders));
+                }
+            };
         }
         [entity_shaders.into_values().collect_vec(), shaders].concat()
     }
