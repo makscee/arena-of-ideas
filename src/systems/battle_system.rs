@@ -24,7 +24,6 @@ impl BattleSystem {
             &mut resources.cassette.node_template,
             hashset! {Faction::Dark, Faction::Light},
         );
-        Self::finish_battle(world);
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
@@ -39,8 +38,20 @@ impl BattleSystem {
         while ActionSystem::tick(world, resources) {}
     }
 
-    pub fn finish_battle(world: &mut legion::World) {
-        WorldSystem::clear_factions(world, hashset! {Faction::Light, Faction::Dark});
+    fn battle_won(world: &legion::World) -> bool {
+        <&UnitComponent>::query()
+            .iter(world)
+            .filter(|unit| unit.faction == Faction::Dark)
+            .count()
+            == 0
+    }
+
+    pub fn finish_battle(world: &mut legion::World, resources: &mut Resources) {
+        if !Self::battle_won(world) {
+            WorldSystem::clear_factions(world, hashset! {Faction::Team});
+            resources.rounds.next_round = 0;
+        }
+        WorldSystem::clear_factions(world, hashset! {Faction::Dark, Faction::Light});
     }
 
     fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
@@ -335,8 +346,7 @@ impl System for BattleSystem {
             ),)
                 .column()
                 .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
-                .uniform_padding(32.0)
-                .align(vec2(1.0, 1.0)),
+                .uniform_padding(32.0),
         )
     }
 

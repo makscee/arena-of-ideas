@@ -17,6 +17,9 @@ impl System for ShopSystem {
         if resources.down_keys.contains(&geng::Key::R) {
             Self::reroll(world, resources);
         }
+        if resources.down_keys.contains(&geng::Key::C) {
+            resources.shop.money += 10;
+        }
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
     }
@@ -34,6 +37,12 @@ impl System for ShopSystem {
         }
         Box::new(
             (
+                Text::new(
+                    format!("Round #{}", resources.rounds.next_round + 1),
+                    resources.fonts.get_font(0),
+                    70.0,
+                    Rgba::WHITE,
+                ),
                 Text::new(
                     format!("Money: {}G", resources.shop.money),
                     resources.fonts.get_font(1),
@@ -138,7 +147,10 @@ impl ShopSystem {
             );
         } else if let Some(buy_candidate) = self.buy_candidate {
             let slot = SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos);
-            if resources.shop.money >= UNIT_COST && slot.is_some() {
+            if resources.shop.money >= UNIT_COST
+                && slot.is_some()
+                && Self::team_count(world) < SLOTS_COUNT
+            {
                 let slot = slot.unwrap();
                 Self::buy(buy_candidate, slot, resources, world);
                 SlotSystem::put_unit_into_slot(buy_candidate, world);
@@ -151,12 +163,20 @@ impl ShopSystem {
                 entry.get_component_mut::<PositionComponent>().unwrap().0 = position;
             }
             self.buy_candidate = None;
+            SlotSystem::fill_gaps(world, resources, hashset! {Faction::Team});
             SlotSystem::refresh_slot_shaders(
                 world,
                 resources,
                 hashset! {Faction::Shop,Faction::Team},
             );
         }
+    }
+
+    fn team_count(world: &legion::World) -> usize {
+        <&UnitComponent>::query()
+            .iter(world)
+            .filter(|unit| unit.faction == Faction::Team)
+            .count()
     }
 
     fn buy(

@@ -81,9 +81,9 @@ impl System for CassettePlayerSystem {
                 ),
             )
                 .column()
+                .align(vec2(0.0, 0.0))
                 .fixed_size(vec2(200.0, 60.0))
-                .uniform_padding(16.0)
-                .align(vec2(0.0, 1.0)),
+                .uniform_padding(16.0),
         )
     }
 }

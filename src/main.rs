@@ -26,6 +26,7 @@ fn setup_geng() -> Geng {
             include_str!("fragment_prefix.glsl").to_owned(),
         )),
         target_ui_resolution: Some(vec2(1920.0, 1080.0)),
+        window_size: Some(vec2(1920, 1080)),
         ..default()
     });
     geng

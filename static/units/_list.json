@@ -5,6 +5,6 @@
     "units/amplifier.json",
     "units/charger.json",
     "units/enemies/solid_grower.json",
-    "units/enemies/lard_grower.json",
+    "units/enemies/fat_grower.json",
     "units/enemies/glass_grower.json"
 ]

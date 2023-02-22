@@ -2,14 +2,48 @@
     "rounds": [
         {
             "enemies": [
+                "units/enemies/solid_grower.json"
+            ]
+        },
+        {
+            "enemies": [
                 "units/enemies/solid_grower.json",
-                "units/enemies/lard_grower.json",
+                "units/enemies/fat_grower.json",
                 "units/enemies/glass_grower.json"
             ]
         },
         {
             "enemies": [
+                "units/enemies/solid_grower.json",
+                "units/enemies/solid_grower.json",
+                "units/enemies/solid_grower.json",
                 "units/enemies/solid_grower.json"
+            ]
+        },
+        {
+            "enemies": [
+                "units/enemies/glass_grower.json",
+                "units/enemies/fat_grower.json",
+                "units/enemies/glass_grower.json",
+                "units/enemies/solid_grower.json"
+            ]
+        },
+        {
+            "enemies": [
+                "units/enemies/solid_grower.json",
+                "units/enemies/solid_grower.json",
+                "units/enemies/solid_grower.json",
+                "units/enemies/solid_grower.json",
+                "units/enemies/solid_grower.json"
+            ]
+        },
+        {
+            "enemies": [
+                "units/enemies/fat_grower.json",
+                "units/enemies/fat_grower.json",
+                "units/enemies/fat_grower.json",
+                "units/enemies/fat_grower.json",
+                "units/enemies/fat_grower.json"
             ]
         }
     ]
