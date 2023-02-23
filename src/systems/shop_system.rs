@@ -217,7 +217,7 @@ impl ShopSystem {
             .map(|(path, size)| (path.clone(), *size))
             .collect_vec();
         let dist2 = WeightedIndex::new(items.iter().map(|item| item.1)).unwrap();
-        for slot in 1..5 {
+        for slot in 1..=SLOTS_COUNT {
             let path = &items[dist2.sample(&mut thread_rng())].0;
             UnitTemplatesPool::create_unit_entity(
                 path,
