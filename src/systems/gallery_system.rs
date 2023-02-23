@@ -98,6 +98,9 @@ impl System for GallerySystem {
         if self.paths.is_empty() {
             self.paths = Vec::from_iter(resources.unit_templates.heroes.keys().map(|p| p.clone()));
         }
+        if resources.reload_triggered {
+            self.need_redraw = true;
+        }
         if self.need_redraw {
             self.redraw_units(world, resources);
             self.need_redraw = false;
@@ -123,8 +126,8 @@ impl System for GallerySystem {
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,
-                &Var::Float(
-                    WorldSystem::get_var_float(world, &VarName::FieldPosition) * ZOOM_MULTIPLIER,
+                &Var::Vec2(
+                    WorldSystem::get_var_vec2(world, &VarName::FieldPosition) * ZOOM_MULTIPLIER,
                 ),
             )
         }
@@ -134,9 +137,17 @@ impl System for GallerySystem {
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,
-                &Var::Float(
-                    WorldSystem::get_var_float(world, &VarName::FieldPosition) / ZOOM_MULTIPLIER,
+                &Var::Vec2(
+                    WorldSystem::get_var_vec2(world, &VarName::FieldPosition) / ZOOM_MULTIPLIER,
                 ),
+            )
+        }
+        if resources.down_keys.contains(&geng::Key::C) {
+            self.need_redraw = true;
+            WorldSystem::set_var(
+                world,
+                VarName::FieldPosition,
+                &Var::Vec2(-1.0 * WorldSystem::get_var_vec2(world, &VarName::FieldPosition)),
             )
         }
 

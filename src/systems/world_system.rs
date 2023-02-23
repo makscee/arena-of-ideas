@@ -44,6 +44,14 @@ impl WorldSystem {
         }
     }
 
+    pub fn get_var_vec2(world: &legion::World, name: &VarName) -> vec2<f32> {
+        let var = Self::get_vars(world).get(name);
+        match var {
+            Var::Vec2(value) => *value,
+            _ => panic!("Wrong var type {:?}", var),
+        }
+    }
+
     pub fn get_vars(world: &legion::World) -> &Vars {
         &<(&WorldComponent, &Context)>::query()
             .iter(world)

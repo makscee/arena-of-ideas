@@ -28,7 +28,7 @@ impl Game {
             entity: world_entity,
         });
         let mut vars = Vars::default();
-        vars.insert(VarName::FieldPosition, Var::Float(0.0));
+        vars.insert(VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
         world_entry.add_component(Context {
             owner: world_entity,
             target: world_entity,

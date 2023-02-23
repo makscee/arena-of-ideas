@@ -134,7 +134,7 @@ impl GameStateSystem {
             GameState::Gallery => {
                 resources.cassette.clear();
                 resources.camera.fov = resources.options.fov;
-                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Float(0.0))
+                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)))
             }
         }
 
@@ -149,7 +149,8 @@ impl GameStateSystem {
                 ShopSystem::init(world, resources);
             }
             GameState::Gallery => {
-                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Float(20.0))
+                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 20.0)));
+                SlotSystem::clear_world(world);
             }
         }
 

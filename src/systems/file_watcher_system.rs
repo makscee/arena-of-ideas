@@ -63,6 +63,7 @@ impl FileWatcherSystem {
 
 impl System for FileWatcherSystem {
     fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
+        resources.reload_triggered = !self.to_reload.is_empty();
         self.to_reload.drain().for_each(|file| {
             self.files
                 .get_mut(&file)

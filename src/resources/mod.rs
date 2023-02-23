@@ -36,6 +36,7 @@ pub use visual_effect::*;
 
 pub struct Resources {
     pub options: Options,
+    pub reload_triggered: bool,
 
     pub shader_programs: ShaderPrograms,
     pub down_keys: HashSet<geng::Key>,
@@ -127,6 +128,7 @@ impl Resources {
             hovered_entity: default(),
             houses: default(),
             rounds: default(),
+            reload_triggered: default(),
         }
     }
 

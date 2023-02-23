@@ -86,7 +86,7 @@ impl SlotSystem {
             .0 = Self::get_position(slot, &faction)
     }
 
-    fn clear_world(world: &mut legion::World) {
+    pub fn clear_world(world: &mut legion::World) {
         <(&SlotComponent, &EntityComponent)>::query()
             .iter(world)
             .map(|(_, entity)| entity.entity)

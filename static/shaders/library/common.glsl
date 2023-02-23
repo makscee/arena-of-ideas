@@ -2,7 +2,7 @@ uniform vec4 u_color;
 uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
-uniform float u_field_position;
+uniform vec2 u_field_position;
 
 uniform float u_card;
 uniform float u_hovered = 0;
@@ -44,7 +44,7 @@ float fbm(vec2 p) {
 }
 
 float get_field_value(vec2 position) {
-    position += vec2(0, u_field_position);
+    position += u_field_position;
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }
 
@@ -63,7 +63,7 @@ float get_card_value() {
 }
 
 vec2 get_card_uv(vec2 uv, float card) {
-    return mix(uv, uv * .5 + vec2(0, 1.5), card);
+    return mix(uv, uv * 2 + vec2(0, -.7), card);
 }
 
 void commonInit(vec2 position) {
@@ -73,7 +73,7 @@ void commonInit(vec2 position) {
 }
 
 vec4 alphaBlend(vec4 c1, vec4 c2) {
-    return vec4(mix(c1.rgb, c2.rgb, c2.a), clamp(max(c1.a, c2.a) + c1.a * c2.a, 0., 1.));
+    return vec4(mix(c1.rgb, c2.rgb, c2.a), clamp(max(c1.a, c2.a), 0., 1.));
 }
 
 float luminance(vec4 color) {

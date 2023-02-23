@@ -40,6 +40,7 @@ impl ShaderSystem {
             .parameters
             .uniforms
             .merge(&context.vars.clone().into());
+
         shader
     }
 
@@ -128,23 +129,24 @@ impl ShaderSystem {
     ) where
         U: ugli::Uniforms,
     {
-        let mut chain = Some(Box::new(shader.clone()));
-        let shader_uniforms = &mut default::<ShaderUniforms>();
+        let mut chain = vec![(shader, shader.parameters.clone())];
+        while let Some(shader) = chain.last().unwrap().0.chain.as_deref() {
+            let mut parameters = shader.parameters.clone();
+            parameters
+                .uniforms
+                .merge_mut(&chain.last().unwrap().1.uniforms, true);
+            chain.push((shader, parameters));
+        }
 
-        while let Some(shader) = chain {
+        for (shader, parameters) in chain.into_iter().rev() {
             let program = shader_programs.get_program(&static_path().join(&shader.path));
-            shader_uniforms.merge_mut(&shader.parameters.uniforms, true);
-            let parameters = ShaderParameters {
-                uniforms: shader_uniforms.clone(),
-                ..shader.parameters.clone()
-            };
 
             let mut instances_arr: ugli::VertexBuffer<Instance> =
                 ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
             instances_arr.resize(shader.parameters.instances, Instance {});
             let uniforms = (
                 geng::camera2d_uniforms(camera, framebuffer.size().map(|x| x as f32)),
-                parameters,
+                parameters.clone(),
                 &uniforms,
             );
             let quad = Self::get_quad(shader.parameters.vertices, &geng);
@@ -159,7 +161,6 @@ impl ShaderSystem {
                     ..default()
                 },
             );
-            chain = shader.chain.clone();
         }
     }
 
