@@ -9,12 +9,14 @@ attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 
-uniform float u_padding = 1.1;
+uniform float u_padding = 0.3;
 
 void main() {
     card = get_card_value();
     uv = a_pos * (1.0 + u_padding);
-    vec2 pos = uv * u_radius + u_position;
+    vec2 pos = uv * u_radius;
+    pos *= (1 + u_hovered);
+    pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -24,11 +26,11 @@ void main() {
 
 const float THICKNESS = 0.04;
 const float SPREAD = 0.2;
-const float GLOW = 0.3;
+const float GLOW = 0.4;
 const float DMG_T_DURATION = 3;
 
 const vec2 CARD_SIZE = vec2(1.0, 1.5);
-const float CARD_BORDER = 0.1;
+const float CARD_BORDER = 0.07;
 const float CARD_AA = 0.1;
 const float TEXT_INSIDE = 0.5;
 const float TEXT_BORDER = 0.25;
@@ -49,7 +51,7 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     }
     commonInit(u_position + uv);
     float border_dist = min(abs(card_sdf) - CARD_BORDER, ((abs(uv.y) - CARD_BORDER) * float(card_sdf < 0)));
-    vec3 mixed_color = mix(u_house_color1.rgb, field_color, smoothstep(.5, 1, -border_dist / CARD_BORDER));
+    vec3 mixed_color = mix(u_house_color1.rgb, base_color, smoothstep(.3, 1, -border_dist / CARD_BORDER));
     vec4 border_color = vec4(mixed_color, border_dist < 0);
 
     vec2 text_uv = uv * 2 + vec2(0, 1.0);

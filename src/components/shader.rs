@@ -10,7 +10,7 @@ pub struct Shader {
     pub layer: ShaderLayer,
     #[serde(default)]
     pub order: i32,
-    pub chain: Option<Box<Shader>>,
+    pub chain: Option<Box<Vec<Shader>>>,
 }
 
 impl Shader {

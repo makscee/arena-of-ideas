@@ -17,30 +17,19 @@ impl UnitSystem {
             .iter(world)
             .filter(|(unit, _, _)| factions.contains(&unit.faction))
             .for_each(|(_, entity, _)| {
-                // Render units
-                node.add_entity_shader(
-                    entity.entity,
-                    ShaderSystem::get_entity_shader(world, entity.entity).clone(),
-                );
-
-                // Render statuses
-                node.add_effects_by_key(
-                    STATUSES_EFFECTS_KEY,
-                    statuses
-                        .get_entity_shaders(&entity.entity, options)
-                        .into_iter()
-                        .map(|shader| {
-                            VisualEffect::new(
-                                0.0,
-                                VisualEffectType::EntityExtraShaderConst {
-                                    entity: entity.entity,
-                                    shader,
-                                },
-                                0,
-                            )
-                        })
-                        .collect_vec(),
-                )
+                let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity).clone();
+                unit_shader.chain = Some(Box::new(
+                    [
+                        statuses.get_entity_shaders(&entity.entity, options),
+                        match unit_shader.chain {
+                            Some(chain) => chain.deref().clone(),
+                            None => vec![],
+                        },
+                    ]
+                    .concat(),
+                ));
+                // unit_shader.chain = Some(Box::new(chain));
+                node.add_entity_shader(entity.entity, unit_shader);
             });
         StatsUiSystem::fill_cassette_node(world, options, node);
         NameSystem::fill_cassette_node(world, options, node);

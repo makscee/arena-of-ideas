@@ -15,7 +15,9 @@ uniform float u_offset;
 void main() {
     uv = a_pos * (1.0 + u_padding);
     card = get_card_value();
-    vec2 pos = uv * 1.0 * u_scale + u_position + rotateCW(vec2(0, -1), PI * (.23 - card * .03) * u_offset) * 1.2 * (1 + card * .05);
+    vec2 pos = uv * 1.0 * u_scale + rotateCW(vec2(0, -1), PI * (.23 - card * .03) * u_offset) * 1.2 * (1 + card * .05);
+    pos *= (1 + u_hovered);
+    pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

@@ -1,4 +1,4 @@
-use std::collections::hash_map::Entry;
+use std::collections::{hash_map::Entry, vec_deque, VecDeque};
 
 use geng::prelude::{itertools::Itertools, ugli::SingleUniform};
 use legion::EntityStore;
@@ -129,15 +129,11 @@ impl ShaderSystem {
     ) where
         U: ugli::Uniforms,
     {
-        let mut chain = vec![(shader, shader.parameters.clone())];
-        while let Some(shader) = chain.last().unwrap().0.chain.as_deref() {
-            let mut parameters = shader.parameters.clone();
-            parameters
-                .uniforms
-                .merge_mut(&chain.last().unwrap().1.uniforms, true);
-            chain.push((shader, parameters));
+        let mut queue = VecDeque::from([(shader.clone(), shader.parameters.clone())]);
+        let mut chain: Vec<(Shader, ShaderParameters)> = default();
+        while let Some((shader, parameters)) = queue.pop_front() {
+            chain.extend(Self::flatten_shader_chain(shader, parameters))
         }
-
         for (shader, parameters) in chain.into_iter().rev() {
             let program = shader_programs.get_program(&static_path().join(&shader.path));
 
@@ -161,6 +157,39 @@ impl ShaderSystem {
                     ..default()
                 },
             );
+        }
+    }
+
+    fn flatten_shader_chain(
+        mut shader: Shader,
+        parameters: ShaderParameters,
+    ) -> Vec<(Shader, ShaderParameters)> {
+        match shader.chain {
+            Some(chain) => {
+                shader.chain = None;
+                [
+                    vec![(shader, parameters.clone())],
+                    chain
+                        .deref()
+                        .into_iter()
+                        .map(|shader| {
+                            Self::flatten_shader_chain(
+                                shader.clone(),
+                                ShaderParameters {
+                                    uniforms: shader
+                                        .parameters
+                                        .uniforms
+                                        .merge(&parameters.uniforms),
+                                    ..shader.parameters.clone()
+                                },
+                            )
+                        })
+                        .flatten()
+                        .collect_vec(),
+                ]
+                .concat()
+            }
+            None => vec![(shader, parameters)],
         }
     }
 

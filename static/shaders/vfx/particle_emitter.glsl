@@ -19,14 +19,14 @@ void main() {
     int trail_index = gl_InstanceID % u_trail_count;
     float trail_shift = 0.01 * trail_index;
     p_index = gl_InstanceID - trail_index;
-    float time = u_global_time + u_lifetime * rand(p_index);
+    float time = u_game_time + u_lifetime * rand(p_index);
     p_t = time / u_lifetime - floor(time / u_lifetime) - trail_shift;
     uv = a_pos;
     vec2 vel = rotateCW((randVec(p_index + 1) - vec2(0.5)), p_t * PI);
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= 5;
     float scale = max(u_scale + u_scale_over_t * p_t, 0.0);
-    vec2 pos = uv * scale + u_position + get_card_uv(vel * p_t, get_card_value());
+    vec2 pos = uv * scale + u_position - get_card_uv(vel * p_t, get_card_value());
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

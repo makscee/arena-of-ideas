@@ -48,20 +48,22 @@
     {
         "component": "Shader",
         "path": "shaders/system/unit.glsl",
-        "chain": {
-            "component": "Shader",
-            "path": "shaders/vfx/particle_emitter.glsl",
-            "parameters": {
-                "instances": 5000,
-                "uniforms": {
-                    "u_start_color": "#00951bc3",
-                    "u_end_color": "#180083",
-                    "u_scale": 0.35,
-                    "u_scale_over_t": -0.45,
-                    "u_trail_count": 2,
-                    "u_lifetime": 5.0
+        "chain": [
+            {
+                "component": "Shader",
+                "path": "shaders/vfx/particle_emitter.glsl",
+                "parameters": {
+                    "instances": 5000,
+                    "uniforms": {
+                        "u_start_color": "#00951bc3",
+                        "u_end_color": "#180083",
+                        "u_scale": 0.35,
+                        "u_scale_over_t": -0.45,
+                        "u_trail_count": 2,
+                        "u_lifetime": 5.0
+                    }
                 }
             }
-        }
+        ]
     }
 ]

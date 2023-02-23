@@ -25,15 +25,17 @@
         "component": "Shader",
         "path": "shaders/system/unit.glsl",
         "layer": "Unit",
-        "chain": {
-            "component": "Shader",
-            "path": "shaders/vfx/circle.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#9d0000"
+        "chain": [
+            {
+                "component": "Shader",
+                "path": "shaders/vfx/circle.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_color": "#9d0000"
+                    }
                 }
             }
-        }
+        ]
     },
     {
         "component": "StatusContainer",

@@ -1,9 +1,9 @@
 #include <common.glsl>
-const float BORDER_THICKNESS = 0.04;
+const float BORDER_THICKNESS = 0.025;
 
 uniform vec2 u_position = vec2(0);
-uniform vec2 u_offset = vec2(2, .5);
-uniform float u_height = 1.2;
+uniform vec2 u_offset = vec2(2, 0);
+uniform float u_height = 1.1;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -14,7 +14,9 @@ uniform float u_padding = 1;
 
 void main() {
     uv = a_pos * (1.0 + BORDER_THICKNESS + u_padding) * vec2(1, u_height);
-    vec2 pos = uv + u_position + u_offset;
+    vec2 pos = uv + u_offset;
+    pos *= (1 + u_hovered);
+    pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

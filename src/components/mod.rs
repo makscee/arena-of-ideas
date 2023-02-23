@@ -26,6 +26,7 @@ pub use description::*;
 pub use drag::*;
 pub use entity::*;
 pub use flags::*;
+use geng::prelude::itertools::Itertools;
 pub use house::*;
 pub use hover::*;
 pub use hp::*;
@@ -62,7 +63,7 @@ pub enum SerializedComponent {
         parameters: Option<ShaderParameters>,
         layer: Option<ShaderLayer>,
         order: Option<i32>,
-        chain: Option<Box<SerializedComponent>>,
+        chain: Option<Box<Vec<SerializedComponent>>>,
     },
     House {
         houses: Vec<HouseName>,
@@ -111,7 +112,7 @@ impl SerializedComponent {
                 });
             }
             SerializedComponent::Shader { .. } => {
-                entry.add_component(*Self::unpack_shader(self).unwrap())
+                entry.add_component(Self::unpack_shader(self).unwrap())
             }
 
             SerializedComponent::Name { name } => entry.add_component(NameComponent::new(name)),
@@ -124,7 +125,7 @@ impl SerializedComponent {
         }
     }
 
-    fn unpack_shader(component: &SerializedComponent) -> Option<Box<Shader>> {
+    fn unpack_shader(component: &SerializedComponent) -> Option<Shader> {
         match component {
             SerializedComponent::Shader {
                 path,
@@ -132,15 +133,27 @@ impl SerializedComponent {
                 layer,
                 order,
                 chain,
-            } => Some(Box::new(Shader {
-                path: path.clone(),
-                parameters: parameters.clone().unwrap_or_default(),
-                layer: layer.clone().unwrap_or(ShaderLayer::Unit),
-                order: order.unwrap_or_default(),
-                chain: chain
-                    .as_ref()
-                    .and_then(|component| Self::unpack_shader(&**component)),
-            })),
+            } => {
+                let chain = match chain {
+                    Some(chain) => {
+                        let chain = chain.deref();
+                        Some(Box::new(
+                            chain
+                                .iter()
+                                .map(|shader| Self::unpack_shader(shader).unwrap())
+                                .collect_vec(),
+                        ))
+                    }
+                    _ => None,
+                };
+                return Some(Shader {
+                    path: path.clone(),
+                    parameters: parameters.clone().unwrap_or_default(),
+                    layer: layer.clone().unwrap_or(ShaderLayer::Unit),
+                    order: order.unwrap_or_default(),
+                    chain,
+                });
+            }
             _ => None,
         }
     }

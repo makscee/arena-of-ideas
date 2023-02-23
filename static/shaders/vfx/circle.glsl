@@ -15,7 +15,9 @@ uniform float u_radius;
 void main() {
     card = get_card_value();
     uv = a_pos * (1.0 + u_padding);
-    vec2 pos = uv * u_radius + u_position;
+    vec2 pos = uv * u_radius;
+    pos *= (1 + u_hovered);
+    pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

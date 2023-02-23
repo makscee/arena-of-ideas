@@ -1,5 +1,6 @@
 #include <common.glsl>
 uniform vec2 u_name_size;
+uniform float u_radius;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -11,15 +12,17 @@ uniform float u_padding = 0;
 uniform vec2 u_position = vec2(0);
 uniform vec2 u_offset = vec2(0);
 uniform float u_scale = 1.0;
-uniform float u_height = 0.25;
-uniform float u_width = 0.65;
+uniform float u_height = 0.15;
+uniform float u_width = 0.6;
 
 void main() {
     uv = a_pos * (1.0 + u_padding);
     float card = get_card_value();
     vec2 rel = vec2(u_name_size.x / u_name_size.y, 1) * u_height;
     rel *= mix(1., u_width / rel.x, float(rel.x > u_width));
-    vec2 pos = uv * rel * 1.0 * u_scale + u_position + u_offset + card * vec2(0, -0.1);
+    vec2 pos = uv * rel * 1.0 * u_scale + u_offset + card * vec2(0, -0.1);
+    pos *= (1 + u_hovered);
+    pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

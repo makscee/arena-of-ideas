@@ -116,6 +116,22 @@ impl Effect {
                 } else {
                     let hp = target.get_component_mut::<HpComponent>()?;
                     hp.current -= value;
+                    resources.cassette.add_effect(VisualEffect::new(
+                        1.0,
+                        VisualEffectType::EntityShaderAnimation {
+                            entity: context.target,
+                            from: hashmap! {
+                                "u_damage_taken" => ShaderUniform::Float(1.0),
+                            }
+                            .into(),
+                            to: hashmap! {
+                                "u_damage_taken" => ShaderUniform::Float(0.0),
+                            }
+                            .into(),
+                            easing: EasingType::Linear,
+                        },
+                        -1,
+                    ));
                     debug!(
                         "Entity#{:?} {} damage taken, new hp: {}",
                         context.target, value, hp.current
@@ -150,22 +166,6 @@ impl Effect {
                         easing: EasingType::Linear,
                     },
                     0,
-                ));
-                resources.cassette.add_effect(VisualEffect::new(
-                    1.0,
-                    VisualEffectType::EntityShaderAnimation {
-                        entity: context.target,
-                        from: hashmap! {
-                            "u_damage_taken" => ShaderUniform::Float(1.0),
-                        }
-                        .into(),
-                        to: hashmap! {
-                            "u_damage_taken" => ShaderUniform::Float(0.0),
-                        }
-                        .into(),
-                        easing: EasingType::Linear,
-                    },
-                    -1,
                 ));
                 Event::AfterIncomingDamage.send(&context, resources);
             }
