@@ -20,7 +20,7 @@ impl UnitSystem {
                 let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity).clone();
                 unit_shader.chain = Some(Box::new(
                     [
-                        statuses.get_entity_shaders(&entity.entity, options),
+                        statuses.get_entity_shaders(&entity.entity),
                         match unit_shader.chain {
                             Some(chain) => chain.deref().clone(),
                             None => vec![],
@@ -30,6 +30,23 @@ impl UnitSystem {
                 ));
                 // unit_shader.chain = Some(Box::new(chain));
                 node.add_entity_shader(entity.entity, unit_shader);
+                statuses
+                    .get_description_shaders(&entity.entity, options)
+                    .into_iter()
+                    .for_each(|shader| {
+                        node.add_effect_by_key(
+                            STATUSES_EFFECTS_KEY,
+                            VisualEffect {
+                                duration: 0.0,
+                                delay: 0.0,
+                                r#type: VisualEffectType::EntityExtraShaderConst {
+                                    entity: entity.entity,
+                                    shader,
+                                },
+                                order: 30,
+                            },
+                        )
+                    });
             });
         StatsUiSystem::fill_cassette_node(world, options, node);
         NameSystem::fill_cassette_node(world, options, node);

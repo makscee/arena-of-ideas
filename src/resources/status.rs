@@ -17,18 +17,28 @@ pub struct StatusPool {
 }
 
 impl StatusPool {
-    pub fn get_entity_shaders(&self, entity: &legion::Entity, options: &Options) -> Vec<Shader> {
+    pub fn get_entity_shaders(&self, entity: &legion::Entity) -> Vec<Shader> {
         self.active_statuses
             .get(entity)
             .unwrap_or(&default())
             .keys()
-            .map(|key| {
+            .filter_map(|key| self.defined_statuses.get(key).unwrap().shader.clone())
+            .collect_vec()
+    }
+
+    pub fn get_description_shaders(
+        &self,
+        entity: &legion::Entity,
+        options: &Options,
+    ) -> Vec<Shader> {
+        self.active_statuses
+            .get(entity)
+            .unwrap_or(&default())
+            .keys()
+            .filter_map(|key| {
                 let status = self.defined_statuses.get(key).unwrap();
-                status
-                    .shader
-                    .clone()
-                    .into_iter()
-                    .chain(status.description.iter().map(|text| {
+                match &status.description {
+                    Some(text) => Some(
                         options
                             .status_description
                             .clone()
@@ -40,11 +50,11 @@ impl StatusPool {
                                     Some(color) => color,
                                     None => Rgba::BLACK,
                                 }),
-                            )
-                    }))
-                    .collect_vec()
+                            ),
+                    ),
+                    _ => None,
+                }
             })
-            .flatten()
             .collect_vec()
     }
 
