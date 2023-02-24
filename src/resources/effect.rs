@@ -76,6 +76,8 @@ pub enum Effect {
     },
 }
 
+const DAMAGE_TEXT_EFFECT_KEY: &str = "damage_text";
+
 impl Effect {
     pub fn process(
         &self,
@@ -137,36 +139,44 @@ impl Effect {
                         context.target, value, hp.current
                     )
                 }
-                resources.cassette.add_effect(VisualEffect::new(
-                    1.0,
-                    VisualEffectType::ShaderAnimation {
-                        shader: resources
-                            .options
-                            .text
-                            .clone()
-                            .set_uniform("u_text", ShaderUniform::String((0, text)))
-                            .set_uniform("u_pivot", ShaderUniform::Float(3.0))
-                            .set_uniform("u_scale_over_t", ShaderUniform::Float(-0.9))
-                            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 5.0)))
-                            .set_uniform("u_gravity", ShaderUniform::Float(-5.0))
-                            .set_uniform(
-                                "u_position",
-                                ShaderUniform::Vec2(
-                                    target.get_component::<PositionComponent>().unwrap().0,
+                let effect_key = format!("{}_{:?}", DAMAGE_TEXT_EFFECT_KEY, context.target);
+                resources.cassette.add_effect_by_key(
+                    &effect_key,
+                    VisualEffect::new_delayed(
+                        1.0,
+                        resources.cassette.get_key_count(&effect_key) as f32 * 0.1,
+                        VisualEffectType::ShaderAnimation {
+                            shader: resources
+                                .options
+                                .text
+                                .clone()
+                                .set_uniform("u_text", ShaderUniform::String((0, text)))
+                                .set_uniform("u_pivot", ShaderUniform::Float(3.0))
+                                .set_uniform("u_scale_over_t", ShaderUniform::Float(-0.9))
+                                .set_uniform(
+                                    "u_position_over_t",
+                                    ShaderUniform::Vec2(vec2(0.0, 5.0)),
+                                )
+                                .set_uniform("u_gravity", ShaderUniform::Float(-5.0))
+                                .set_uniform(
+                                    "u_position",
+                                    ShaderUniform::Vec2(
+                                        target.get_component::<PositionComponent>().unwrap().0,
+                                    ),
                                 ),
-                            ),
-                        from: hashmap! {
-                            "u_time" => ShaderUniform::Float(0.0),
-                        }
-                        .into(),
-                        to: hashmap! {
-                            "u_time" => ShaderUniform::Float(1.0),
-                        }
-                        .into(),
-                        easing: EasingType::Linear,
-                    },
-                    0,
-                ));
+                            from: hashmap! {
+                                "u_time" => ShaderUniform::Float(0.0),
+                            }
+                            .into(),
+                            to: hashmap! {
+                                "u_time" => ShaderUniform::Float(1.0),
+                            }
+                            .into(),
+                            easing: EasingType::Linear,
+                        },
+                        0,
+                    ),
+                );
                 Event::AfterIncomingDamage.send(&context, resources);
             }
             Effect::Repeat { count, effect } => {

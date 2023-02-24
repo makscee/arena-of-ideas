@@ -49,6 +49,10 @@ impl Cassette {
             .add_effect_by_key(key, effect);
     }
 
+    pub fn get_key_count(&self, key: &str) -> usize {
+        self.queue.last().unwrap().get_key_count(key)
+    }
+
     pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
         self.queue
             .last_mut()
@@ -196,6 +200,12 @@ impl CassetteNode {
         effects
             .into_iter()
             .for_each(|effect| self.add_effect(effect))
+    }
+    pub fn get_key_count(&self, key: &str) -> usize {
+        match self.effects.get(key).and_then(|v| Some(v.len())) {
+            Some(value) => value,
+            None => 0,
+        }
     }
     pub fn clear_key(&mut self, key: &str) {
         self.effects.remove(key);
