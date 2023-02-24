@@ -194,6 +194,7 @@ impl ShopSystem {
     }
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
+        resources.shop.money += 1;
         Event::Sell {}.send(&Context::construct_context(&entity, world), resources);
         WorldSystem::kill(entity, world, resources);
     }
