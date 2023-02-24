@@ -74,6 +74,10 @@ pub enum Effect {
         text: String,
         color: Option<Rgba<f32>>,
     },
+    Aoe {
+        factions: Vec<Faction>,
+        effect: Box<Effect>,
+    },
 }
 
 const DAMAGE_TEXT_EFFECT_KEY: &str = "damage_text";
@@ -400,6 +404,19 @@ impl Effect {
                             .push_front(Action::new(context, effect.deref().clone()));
                     }
                 }
+            }
+            Effect::Aoe { factions, effect } => {
+                WorldSystem::collect_factions(world, HashSet::from_iter(factions.clone()))
+                    .iter()
+                    .for_each(|(entity, _)| {
+                        resources.action_queue.push_front(Action::new(
+                            Context {
+                                target: *entity,
+                                ..context.clone()
+                            },
+                            effect.deref().clone(),
+                        ));
+                    })
             }
         }
         Ok(())

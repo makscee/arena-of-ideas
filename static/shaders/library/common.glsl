@@ -66,6 +66,10 @@ vec2 get_card_uv(vec2 uv, float card) {
     return mix(uv, uv * 2 + vec2(0, -.7), card);
 }
 
+vec2 get_card_pos(vec2 pos, float card) {
+    return mix(pos, (pos + vec2(0, .7)) / 2, card);
+}
+
 void commonInit(vec2 position) {
     float field = get_field_value(position);
     base_color = mix(light_color, dark_color, field);

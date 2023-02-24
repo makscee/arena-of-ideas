@@ -2,9 +2,7 @@
     "rounds": [
         {
             "enemies": [
-                "units/enemies/spit_grower.json",
-                "units/enemies/spit_grower.json",
-                "units/enemies/spit_grower.json"
+                "units/enemies/solid_grower.json"
             ]
         },
         {

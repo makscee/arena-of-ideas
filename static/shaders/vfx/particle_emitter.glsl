@@ -26,7 +26,7 @@ void main() {
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= 5;
     float scale = max(u_scale + u_scale_over_t * p_t, 0.0);
-    vec2 pos = uv * scale + u_position - get_card_uv(vel * p_t, get_card_value());
+    vec2 pos = uv * scale + u_position + get_card_pos(vel * p_t, get_card_value()) * (1 + u_hovered);
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -41,7 +41,7 @@ uniform vec4 u_start_color;
 uniform vec4 u_end_color;
 
 void main() {
-    float dist = length(uv);
+    float dist = length(uv * (1 + get_card_value() - u_hovered));
     if(dist > 1. || p_t < 0 || p_t > 1)
         discard;
     gl_FragColor = vec4(mix(u_start_color, u_end_color, p_t).rgb, 0.5);

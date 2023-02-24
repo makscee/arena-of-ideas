@@ -133,6 +133,7 @@ impl GameStateSystem {
             }
             GameState::Gallery => {
                 resources.cassette.clear();
+                resources.action_queue.clear();
                 resources.camera.fov = resources.options.fov;
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)))
             }

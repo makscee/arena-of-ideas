@@ -91,10 +91,20 @@ impl GallerySystem {
             hashset! {Faction::Gallery},
         );
     }
+
+    fn clear(&mut self) {
+        self.current_heroes = vec![1];
+        self.is_card = false;
+        self.need_redraw = true;
+        self.paths.clear();
+    }
 }
 
 impl System for GallerySystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        if resources.down_keys.contains(&geng::Key::Escape) {
+            self.clear();
+        }
         if self.paths.is_empty() {
             self.paths = Vec::from_iter(
                 resources
