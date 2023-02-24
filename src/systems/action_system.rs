@@ -7,6 +7,13 @@ impl ActionSystem {
         Self {}
     }
 
+    pub fn run_ticks(world: &mut legion::World, resources: &mut Resources) {
+        let mut ticks = 0;
+        while Self::tick(world, resources) && ticks < 1000 {
+            ticks += 1;
+        }
+    }
+
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
         let Some(mut action) = resources.action_queue.pop_front() else { return false };
         action

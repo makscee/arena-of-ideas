@@ -96,7 +96,14 @@ impl GallerySystem {
 impl System for GallerySystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if self.paths.is_empty() {
-            self.paths = Vec::from_iter(resources.unit_templates.heroes.keys().map(|p| p.clone()));
+            self.paths = Vec::from_iter(
+                resources
+                    .unit_templates
+                    .heroes
+                    .keys()
+                    .chain(resources.unit_templates.enemies.keys())
+                    .map(|p| p.clone()),
+            );
         }
         if resources.reload_triggered {
             self.need_redraw = true;

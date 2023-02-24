@@ -5,6 +5,7 @@ pub enum Event {
     Init { status: String },
     BeforeIncomingDamage,
     AfterIncomingDamage,
+    BeforeDeath,
     Buy,
     Sell,
     RemoveFromTeam,
@@ -16,6 +17,7 @@ impl Event {
         match self {
             Event::BeforeIncomingDamage
             | Event::AfterIncomingDamage
+            | Event::BeforeDeath
             | Event::Buy
             | Event::Sell
             | Event::RemoveFromTeam => {

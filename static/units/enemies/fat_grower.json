@@ -18,7 +18,7 @@
     {
         "component": "StatusContainer",
         "statuses": {
-            "GetShield": {
+            "GrowHp": {
                 "trigger": {
                     "type": "Init",
                     "effect": {

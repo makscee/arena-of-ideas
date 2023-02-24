@@ -106,6 +106,9 @@ pub enum ExpressionEntity {
         slot: Box<ExpressionInt>,
         faction: Faction,
     },
+    RandomUnit {
+        faction: Faction,
+    },
 }
 
 impl ExpressionEntity {
@@ -136,6 +139,16 @@ impl ExpressionEntity {
                         false => None,
                     })
                     .expect(&format!("No unit of {:?} found in {} slot", faction, slot))
+            }
+            ExpressionEntity::RandomUnit { faction } => {
+                <(&UnitComponent, &EntityComponent)>::query()
+                    .iter(world)
+                    .filter_map(|(unit, entity)| match unit.faction == *faction {
+                        true => Some(entity.entity),
+                        false => None,
+                    })
+                    .choose(&mut thread_rng())
+                    .expect(&format!("No units of {:?} found", faction))
             }
         }
     }

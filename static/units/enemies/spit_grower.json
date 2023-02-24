@@ -1,7 +1,7 @@
 [
     {
         "component": "Name",
-        "name": "Solid Grower"
+        "name": "Spit Grower"
     },
     {
         "component": "Hp",
@@ -13,25 +13,17 @@
     },
     {
         "component": "Description",
-        "text": "Stats are\nequal to\nRound number"
+        "text": "Attack is equal\nto Round number.\nBefore death\nAttack random enemy"
     },
     {
         "component": "StatusContainer",
         "statuses": {
-            "GrowStats": {
+            "GrowAttack": {
                 "trigger": {
                     "type": "Init",
                     "effect": {
                         "type": "List",
                         "effects": [
-                            {
-                                "type": "ChangeStat",
-                                "stat": "Hp",
-                                "value": {
-                                    "type": "Var",
-                                    "var": "RoundNumber"
-                                }
-                            },
                             {
                                 "type": "ChangeStat",
                                 "stat": "Attack",
@@ -41,6 +33,21 @@
                                 }
                             }
                         ]
+                    }
+                }
+            },
+            "Spit": {
+                "trigger": {
+                    "type": "BeforeDeath",
+                    "effect": {
+                        "type": "ChangeContext",
+                        "target": {
+                            "type": "RandomUnit",
+                            "faction": "Light"
+                        },
+                        "effect": {
+                            "type": "Damage"
+                        }
                     }
                 }
             }
@@ -56,12 +63,12 @@
                 "parameters": {
                     "instances": 5000,
                     "uniforms": {
-                        "u_start_color": "#fda816",
-                        "u_end_color": "#e46e00",
-                        "u_scale": 0.03,
-                        "u_scale_over_t": -0.03,
-                        "u_trail_count": 10,
-                        "u_lifetime": 2.0
+                        "u_start_color": "#ff0000",
+                        "u_end_color": "#1eff00",
+                        "u_scale": -0.02,
+                        "u_scale_over_t": 0.05,
+                        "u_trail_count": 20,
+                        "u_lifetime": 1.2
                     }
                 }
             }

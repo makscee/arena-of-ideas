@@ -6,6 +6,7 @@ pub enum Trigger {
     Init { effect: Effect },
     BeforeIncomingDamage { effect: Effect },
     AfterIncomingDamage { effect: Effect },
+    BeforeDeath { effect: Effect },
     List { triggers: Vec<Box<Trigger>> },
     Buy { effect: Effect },
     Sell { effect: Effect },
@@ -50,6 +51,10 @@ impl Trigger {
                 Event::RemoveFromTeam => self.fire(action_queue, context),
                 _ => {}
             },
+            Trigger::BeforeDeath { effect } => match event {
+                Event::BeforeDeath => self.fire(action_queue, context),
+                _ => {}
+            },
         }
     }
 
@@ -57,6 +62,7 @@ impl Trigger {
         match self {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
+            | Trigger::BeforeDeath { effect }
             | Trigger::Init { effect }
             | Trigger::RemoveFromTeam { effect }
             | Trigger::Buy { effect }

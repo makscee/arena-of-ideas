@@ -5,6 +5,7 @@ use geng::ui::*;
 
 pub struct BattleSystem {}
 
+const STRIKE_FREEZE_EFFECT_KEY: &str = "strike_freeze";
 impl BattleSystem {
     pub fn new() -> Self {
         Self {}
@@ -90,14 +91,7 @@ impl BattleSystem {
             .iter()
             .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
         if left.is_some() && right.is_some() {
-            UnitSystem::draw_all_units_to_cassette_node(
-                world,
-                &resources.options,
-                &resources.status_pool,
-                &mut resources.cassette.node_template,
-                hashset! {Faction::Light, Faction::Dark},
-            );
-            resources.cassette.merge_template_into_last();
+            Self::refresh_cassette(world, resources);
             resources.cassette.close_node();
             let left_entity = left.unwrap().1.entity;
             let right_entity = right.unwrap().1.entity;
@@ -129,10 +123,9 @@ impl BattleSystem {
                 Faction::Dark,
             );
             resources.cassette.node_template.clear();
-            resources
-                .cassette
-                .node_template
-                .add_effect(VisualEffect::new(
+            resources.cassette.node_template.add_effect_by_key(
+                STRIKE_FREEZE_EFFECT_KEY,
+                VisualEffect::new(
                     0.0,
                     VisualEffectType::EntityShaderConst {
                         entity: left_entity,
@@ -142,11 +135,11 @@ impl BattleSystem {
                         .into(),
                     },
                     -15,
-                ));
-            resources
-                .cassette
-                .node_template
-                .add_effect(VisualEffect::new(
+                ),
+            );
+            resources.cassette.node_template.add_effect_by_key(
+                STRIKE_FREEZE_EFFECT_KEY,
+                VisualEffect::new(
                     0.0,
                     VisualEffectType::EntityShaderConst {
                         entity: right_entity,
@@ -156,7 +149,8 @@ impl BattleSystem {
                         .into(),
                     },
                     -15,
-                ));
+                ),
+            );
             resources.cassette.close_node();
 
             let context = Context {
@@ -179,21 +173,16 @@ impl BattleSystem {
             resources
                 .action_queue
                 .push_back(Action::new(context, Effect::Damage { value: None }));
-            let mut ticks = 0;
-            while ActionSystem::tick(world, resources) && ticks < 1000 {
-                ticks += 1;
-            }
 
-            UnitSystem::draw_all_units_to_cassette_node(
-                world,
-                &resources.options,
-                &resources.status_pool,
-                &mut resources.cassette.node_template,
-                hashset! {Faction::Light, Faction::Dark},
-            ); // get changes (like stats) after ActionSystem execution
-            resources.cassette.merge_template_into_last(); // merge this changes into last node, to display changed HP alongside any extra effects from ActionSystem
+            ActionSystem::run_ticks(world, resources);
+
+            Self::refresh_cassette(world, resources);
             Self::add_strike_vfx(world, resources, left_entity, right_entity);
             resources.cassette.close_node();
+            resources
+                .cassette
+                .node_template
+                .clear_key(STRIKE_FREEZE_EFFECT_KEY);
 
             Self::add_strike_animation(
                 &mut resources.cassette,
@@ -209,22 +198,43 @@ impl BattleSystem {
             );
             resources.cassette.close_node();
 
-            let dead_units = <(&EntityComponent, &HpComponent)>::query()
+            while let Some(dead_unit) = <(&EntityComponent, &HpComponent)>::query()
                 .iter(world)
                 .filter_map(|(unit, hp)| match hp.current <= 0 {
                     true => Some(unit.entity),
                     false => None,
                 })
-                .collect_vec();
-            if !dead_units.is_empty() {
-                dead_units.iter().for_each(|entity| {
-                    debug!("Entity#{:?} dead", entity);
-                    world.remove(*entity);
-                });
+                .choose(&mut thread_rng())
+            {
+                debug!("Entity#{:?} dead", dead_unit);
+                Event::BeforeDeath {}.send(
+                    &Context {
+                        owner: dead_unit,
+                        target: dead_unit,
+                        creator: dead_unit,
+                        vars: default(),
+                        status: default(),
+                    },
+                    resources,
+                );
+                ActionSystem::run_ticks(world, resources);
+                Self::refresh_cassette(world, resources);
+                world.remove(dead_unit);
             }
             return true;
         }
         return false;
+    }
+
+    fn refresh_cassette(world: &legion::World, resources: &mut Resources) {
+        UnitSystem::draw_all_units_to_cassette_node(
+            world,
+            &resources.options,
+            &resources.status_pool,
+            &mut resources.cassette.node_template,
+            hashset! {Faction::Light, Faction::Dark},
+        );
+        resources.cassette.merge_template_into_last();
     }
 
     fn add_strike_vfx(
