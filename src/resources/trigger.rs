@@ -7,6 +7,7 @@ pub enum Trigger {
     BeforeIncomingDamage { effect: Effect },
     AfterIncomingDamage { effect: Effect },
     BeforeDeath { effect: Effect },
+    AfterBattle { effect: Effect },
     List { triggers: Vec<Box<Trigger>> },
     Buy { effect: Effect },
     Sell { effect: Effect },
@@ -22,12 +23,12 @@ impl Trigger {
         context: Context,
     ) {
         match self {
-            Trigger::BeforeIncomingDamage { effect: _ } => match event {
-                Event::BeforeIncomingDamage => self.fire(action_queue, context),
+            Trigger::BeforeIncomingDamage { .. } => match event {
+                Event::BeforeIncomingDamage { .. } => self.fire(action_queue, context),
                 _ => {}
             },
-            Trigger::AfterIncomingDamage { effect: _ } => match event {
-                Event::AfterIncomingDamage => self.fire(action_queue, context),
+            Trigger::AfterIncomingDamage { .. } => match event {
+                Event::AfterIncomingDamage { .. } => self.fire(action_queue, context),
                 _ => {}
             },
             Trigger::List { triggers } => {
@@ -35,24 +36,28 @@ impl Trigger {
                     .iter()
                     .for_each(|trigger| trigger.catch_event(event, action_queue, context.clone()));
             }
-            Trigger::Init { effect: _ } => match event {
-                Event::Init { status: _ } => self.fire(action_queue, context),
+            Trigger::Init { .. } => match event {
+                Event::Init { .. } => self.fire(action_queue, context),
                 _ => {}
             },
-            Trigger::Buy { effect: _ } => match event {
-                Event::Buy => self.fire(action_queue, context),
+            Trigger::Buy { .. } => match event {
+                Event::Buy { .. } => self.fire(action_queue, context),
                 _ => {}
             },
-            Trigger::Sell { effect: _ } => match event {
-                Event::Sell => self.fire(action_queue, context),
+            Trigger::Sell { .. } => match event {
+                Event::Sell { .. } => self.fire(action_queue, context),
                 _ => {}
             },
-            Trigger::RemoveFromTeam { effect: _ } => match event {
-                Event::RemoveFromTeam => self.fire(action_queue, context),
+            Trigger::RemoveFromTeam { .. } => match event {
+                Event::RemoveFromTeam { .. } => self.fire(action_queue, context),
                 _ => {}
             },
-            Trigger::BeforeDeath { effect } => match event {
-                Event::BeforeDeath => self.fire(action_queue, context),
+            Trigger::BeforeDeath { .. } => match event {
+                Event::BeforeDeath { .. } => self.fire(action_queue, context),
+                _ => {}
+            },
+            Trigger::AfterBattle { .. } => match event {
+                Event::AfterBattle { .. } => self.fire(action_queue, context),
                 _ => {}
             },
         }
@@ -63,6 +68,7 @@ impl Trigger {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
             | Trigger::BeforeDeath { effect }
+            | Trigger::AfterBattle { effect }
             | Trigger::Init { effect }
             | Trigger::RemoveFromTeam { effect }
             | Trigger::Buy { effect }

@@ -337,36 +337,38 @@ impl Effect {
                         .push_front(Action::new(context.clone(), r#else.deref().clone()));
                 }
             }
-            Effect::ShowText { text, color } => resources.cassette.add_effect(VisualEffect::new(
-                2.0,
-                VisualEffectType::ShaderAnimation {
-                    shader: resources
-                        .options
-                        .text
-                        .clone()
-                        .merge_uniforms(&context.vars.clone().into(), false)
-                        .set_uniform("u_text", ShaderUniform::String((0, text.clone())))
-                        .set_uniform(
-                            "u_outline_color",
-                            ShaderUniform::Color(
-                                color.unwrap_or(context.vars.get_color(&VarName::HouseColor1)),
-                            ),
-                        )
-                        .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
-                        .set_uniform("u_scale", ShaderUniform::Float(0.4))
-                        .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.0))),
-                    from: hashmap! {
-                        "u_time" => ShaderUniform::Float(0.0),
-                    }
-                    .into(),
-                    to: hashmap! {
-                        "u_time" => ShaderUniform::Float(1.0),
-                    }
-                    .into(),
-                    easing: EasingType::Linear,
-                },
-                0,
-            )),
+            Effect::ShowText { text, color } => {
+                resources.cassette.add_effect(VisualEffect::new(
+                    2.0,
+                    VisualEffectType::ShaderAnimation {
+                        shader: resources
+                            .options
+                            .text
+                            .clone()
+                            .merge_uniforms(&context.vars.clone().into(), false)
+                            .set_uniform("u_text", ShaderUniform::String((0, text.clone())))
+                            .set_uniform(
+                                "u_outline_color",
+                                ShaderUniform::Color(color.unwrap_or_else(|| {
+                                    context.vars.get_color(&VarName::HouseColor1)
+                                })),
+                            )
+                            .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
+                            .set_uniform("u_scale", ShaderUniform::Float(0.4))
+                            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.0))),
+                        from: hashmap! {
+                            "u_time" => ShaderUniform::Float(0.0),
+                        }
+                        .into(),
+                        to: hashmap! {
+                            "u_time" => ShaderUniform::Float(1.0),
+                        }
+                        .into(),
+                        easing: EasingType::Linear,
+                    },
+                    0,
+                ))
+            }
             Effect::ChangeContext {
                 target,
                 owner,

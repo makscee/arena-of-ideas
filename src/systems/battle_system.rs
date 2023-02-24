@@ -53,6 +53,7 @@ impl BattleSystem {
             resources.rounds.next_round = 0;
         }
         WorldSystem::clear_factions(world, hashset! {Faction::Dark, Faction::Light});
+        Event::AfterBattle.send(&WorldSystem::get_context(world), resources)
     }
 
     fn create_enemies(resources: &mut Resources, world: &mut legion::World) {

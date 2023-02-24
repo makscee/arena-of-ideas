@@ -6,6 +6,7 @@ pub enum Event {
     BeforeIncomingDamage,
     AfterIncomingDamage,
     BeforeDeath,
+    AfterBattle,
     Buy,
     Sell,
     RemoveFromTeam,
@@ -54,6 +55,31 @@ impl Event {
                     .expect("Failed to find defined status for initialization")
                     .trigger
                     .catch_event(self, &mut resources.action_queue, context.clone());
+            }
+            Event::AfterBattle => {
+                resources
+                    .status_pool
+                    .active_statuses
+                    .values()
+                    .map(|map| map.iter())
+                    .flatten()
+                    .map(|(status_name, status_context)| {
+                        (
+                            &resources
+                                .status_pool
+                                .defined_statuses
+                                .get(status_name)
+                                .expect("Failed to find defined status")
+                                .trigger,
+                            status_context,
+                        )
+                    })
+                    .for_each(|(trigger, status_context)| {
+                        trigger.catch_event(self, &mut resources.action_queue, {
+                            let context = status_context.clone();
+                            context
+                        })
+                    });
             }
         }
     }

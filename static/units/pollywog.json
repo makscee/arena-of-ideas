@@ -1,0 +1,62 @@
+[
+    {
+        "component": "Name",
+        "name": "Pollywog"
+    },
+    {
+        "component": "House",
+        "houses": [
+            "Dragons"
+        ]
+    },
+    {
+        "component": "Description",
+        "text": "Grow after\nevery Battle"
+    },
+    {
+        "component": "Hp",
+        "max": 1
+    },
+    {
+        "component": "Attack",
+        "value": 1
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "layer": "Unit",
+        "chain": [
+            {
+                "component": "Shader",
+                "path": "shaders/vfx/particle_emitter.glsl",
+                "parameters": {
+                    "instances": 3000,
+                    "uniforms": {
+                        "u_start_color": "#00ed3f",
+                        "u_end_color": "#000000",
+                        "u_scale": 0.3,
+                        "u_scale_over_t": -0.5,
+                        "u_velocity_over_t": 0.3,
+                        "u_trail_count": 10,
+                        "u_lifetime": 3.2
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "GrowAfterBattle": {
+                "trigger": {
+                    "type": "AfterBattle",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Dragons",
+                        "name": "Grow"
+                    }
+                }
+            }
+        }
+    }
+]

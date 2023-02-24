@@ -7,6 +7,51 @@
                 "type": "AttachStatus",
                 "name": "Rebirth"
             }
+        },
+        "Grow": {
+            "vars": {
+                "GrowAmount": 1
+            },
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "ChangeStat",
+                        "stat": "Hp",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "GrowAmount"
+                            },
+                            "b": {
+                                "type": "Stat",
+                                "stat": "Hp"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ChangeStat",
+                        "stat": "Attack",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "GrowAmount"
+                            },
+                            "b": {
+                                "type": "Stat",
+                                "stat": "Attack"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ShowText",
+                        "text": "Grow",
+                        "color": "#df9800ff"
+                    }
+                ]
+            }
         }
     },
     "statuses": {

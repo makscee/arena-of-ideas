@@ -30,6 +30,14 @@ impl WorldSystem {
         )
     }
 
+    pub fn get_context(world: &legion::World) -> Context {
+        <(&WorldComponent, &Context)>::query()
+            .iter(world)
+            .collect_vec()[0]
+            .1
+            .clone()
+    }
+
     pub fn set_var(world: &mut legion::World, name: VarName, value: &Var) {
         <(&WorldComponent, &mut Context)>::query()
             .iter_mut(world)

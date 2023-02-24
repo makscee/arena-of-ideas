@@ -22,6 +22,7 @@ pub enum VarName {
     Charges,
     Hits,
     Reflection,
+    GrowAmount,
 }
 
 impl VarName {
