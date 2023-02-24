@@ -1,0 +1,37 @@
+{
+    "name": "Dragons",
+    "color": "#df9800ff",
+    "abilities": {
+        "Rebirth": {
+            "effect": {
+                "type": "AttachStatus",
+                "name": "Rebirth"
+            }
+        }
+    },
+    "statuses": {
+        "Rebirth": {
+            "description": "Revive after death\nthen remove this status",
+            "trigger": {
+                "type": "BeforeDeath",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeStat",
+                            "stat": "Hp",
+                            "value": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        },
+                        {
+                            "type": "RemoveStatus",
+                            "name": "Rebirth"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -106,7 +106,7 @@
                                             },
                                             {
                                                 "type": "RemoveStatus",
-                                                "status": "Shield"
+                                                "name": "Shield"
                                             }
                                         ]
                                     }

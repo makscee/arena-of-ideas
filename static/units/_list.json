@@ -4,6 +4,7 @@
     "units/abomination.json",
     "units/amplifier.json",
     "units/charger.json",
+    "units/phoenix.json",
     "units/enemies/solid_grower.json",
     "units/enemies/fat_grower.json",
     "units/enemies/spit_grower.json",

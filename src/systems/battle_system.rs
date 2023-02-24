@@ -219,7 +219,16 @@ impl BattleSystem {
                 );
                 ActionSystem::run_ticks(world, resources);
                 Self::refresh_cassette(world, resources);
-                world.remove(dead_unit);
+                if world
+                    .entry(dead_unit)
+                    .unwrap()
+                    .get_component::<HpComponent>()
+                    .unwrap()
+                    .current
+                    <= 0
+                {
+                    world.remove(dead_unit);
+                }
             }
             return true;
         }

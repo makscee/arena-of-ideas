@@ -29,7 +29,7 @@ pub enum Effect {
         flag: Flag,
     },
     RemoveStatus {
-        status: String,
+        name: String,
     },
     Noop,
     SetVarInt {
@@ -211,7 +211,7 @@ impl Effect {
                     .get_component_mut::<FlagsComponent>()?
                     .remove_flag(flag);
             }
-            Effect::RemoveStatus { status } => {
+            Effect::RemoveStatus { name: status } => {
                 resources
                     .status_pool
                     .active_statuses
