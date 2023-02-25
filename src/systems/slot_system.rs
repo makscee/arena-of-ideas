@@ -74,6 +74,18 @@ impl SlotSystem {
             )
     }
 
+    pub fn put_factions_into_slots(factions: HashSet<Faction>, world: &mut legion::World) {
+        <(&EntityComponent, &UnitComponent)>::query()
+            .iter(world)
+            .filter_map(|(entity, unit)| match factions.contains(&unit.faction) {
+                true => Some(entity.entity),
+                false => None,
+            })
+            .collect_vec()
+            .into_iter()
+            .for_each(|entity| Self::put_unit_into_slot(entity, world));
+    }
+
     pub fn put_unit_into_slot(entity: legion::Entity, world: &mut legion::World) {
         let entry = world.entry(entity).unwrap();
         let unit = entry.get_component::<UnitComponent>().unwrap();

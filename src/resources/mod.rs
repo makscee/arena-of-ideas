@@ -54,10 +54,15 @@ pub struct Resources {
     pub frame_shaders: Vec<Shader>,
     pub dragged_entity: Option<legion::Entity>,
     pub hovered_entity: Option<legion::Entity>,
+    pub game_won: bool,
+    pub last_round: usize,
 
     pub unit_templates: UnitTemplatesPool,
     pub rounds: Rounds,
     pub houses: HashMap<HouseName, House>,
+
+    pub current_state: GameState,
+    pub transition_state: GameState,
 
     pub camera: geng::Camera2d,
     pub fonts: Fonts,
@@ -129,6 +134,10 @@ impl Resources {
             houses: default(),
             rounds: default(),
             reload_triggered: default(),
+            game_won: default(),
+            last_round: default(),
+            current_state: GameState::MainMenu,
+            transition_state: GameState::MainMenu,
         }
     }
 

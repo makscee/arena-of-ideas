@@ -7,6 +7,8 @@ pub struct Rounds {
     rounds: Vec<Round>,
 }
 
+pub const ROUNDS_COUNT: usize = 10;
+
 impl Rounds {
     fn next(&mut self) -> &Round {
         let round = &self.rounds[self.next_round];

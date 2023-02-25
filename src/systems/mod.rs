@@ -7,6 +7,7 @@ mod battle_system;
 mod cassette_player_system;
 mod file_watcher_system;
 mod gallery_system;
+mod game_over_system;
 mod game_state_system;
 mod mouse_system;
 mod name_system;
@@ -23,6 +24,7 @@ pub use battle_system::*;
 pub use cassette_player_system::*;
 pub use file_watcher_system::*;
 pub use gallery_system::*;
+pub use game_over_system::*;
 pub use game_state_system::*;
 use geng::prelude::itertools::Itertools;
 pub use mouse_system::*;
@@ -87,6 +89,14 @@ impl Game {
             vec![
                 Box::new(GallerySystem::new()),
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
+            ],
+        );
+        game_state.add_systems(
+            GameState::GameOver,
+            vec![
+                Box::new(GameOverSystem::new()),
+                Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
+                Box::new(SlotSystem::new()),
             ],
         );
 

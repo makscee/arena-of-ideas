@@ -1,8 +1,6 @@
 use super::*;
 
 pub struct GameStateSystem {
-    pub current: GameState,
-    pub transition: GameState,
     pub systems: HashMap<GameState, Vec<Box<dyn System>>>,
 }
 
@@ -12,13 +10,14 @@ pub enum GameState {
     Shop,
     Battle,
     Gallery,
+    GameOver,
 }
 
 impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        match self.current {
+        match resources.current_state {
             GameState::MainMenu => {
-                self.transition = GameState::Shop;
+                resources.transition_state = GameState::Shop;
                 // if !resources.down_keys.is_empty() {
                 //     self.transition = GameState::Gallery;
                 // }
@@ -30,31 +29,42 @@ impl System for GameStateSystem {
                     BattleSystem::run_battle(world, resources);
                 }
                 if resources.cassette.head > resources.cassette.length() + 2.0 {
-                    self.transition = GameState::Shop;
+                    BattleSystem::finish_battle(world, resources);
                 }
             }
             GameState::Shop => {
                 if resources.down_keys.contains(&geng::Key::Space) {
-                    self.transition = GameState::Battle;
+                    resources.transition_state = GameState::Battle;
                 }
 
                 if resources.down_keys.contains(&geng::Key::G) {
-                    self.transition = GameState::Gallery;
+                    resources.transition_state = GameState::Gallery;
+                }
+
+                if resources.down_keys.contains(&geng::Key::O) {
+                    resources.transition_state = GameState::GameOver;
                 }
             }
             GameState::Gallery => {
-                if resources.down_keys.contains(&geng::Key::S) {
-                    self.transition = GameState::Shop;
+                if resources.down_keys.contains(&geng::Key::Enter) {
+                    resources.transition_state = GameState::Shop;
+                }
+            }
+            GameState::GameOver => {
+                if resources.down_keys.contains(&geng::Key::Enter) {
+                    resources.transition_state = GameState::Shop;
                 }
             }
         }
-        self.systems.get_mut(&self.current).and_then(|systems| {
-            Some(
-                systems
-                    .iter_mut()
-                    .for_each(|system| system.update(world, resources)),
-            )
-        });
+        self.systems
+            .get_mut(&resources.current_state)
+            .and_then(|systems| {
+                Some(
+                    systems
+                        .iter_mut()
+                        .for_each(|system| system.update(world, resources)),
+                )
+            });
 
         self.transition(world, resources);
     }
@@ -65,13 +75,15 @@ impl System for GameStateSystem {
         resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        self.systems.get(&self.current).and_then(|systems| {
-            Some(
-                systems
-                    .iter()
-                    .for_each(|system| system.draw(world, resources, framebuffer)),
-            )
-        });
+        self.systems
+            .get(&resources.current_state)
+            .and_then(|systems| {
+                Some(
+                    systems
+                        .iter()
+                        .for_each(|system| system.draw(world, resources, framebuffer)),
+                )
+            });
     }
 
     fn ui<'a>(
@@ -82,7 +94,7 @@ impl System for GameStateSystem {
     ) -> Box<dyn ui::Widget + 'a> {
         if let Some(widgets) = self
             .systems
-            .get_mut(&self.current)
+            .get_mut(&resources.current_state)
             .and_then(|systems| {
                 Some(
                     systems
@@ -103,11 +115,7 @@ impl System for GameStateSystem {
 
 impl GameStateSystem {
     pub fn new(state: GameState) -> Self {
-        Self {
-            current: state.clone(),
-            transition: state.clone(),
-            systems: default(),
-        }
+        Self { systems: default() }
     }
 
     pub fn add_systems(&mut self, state: GameState, value: Vec<Box<dyn System>>) {
@@ -117,11 +125,11 @@ impl GameStateSystem {
     }
 
     fn transition(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if self.current == self.transition {
+        if resources.current_state == resources.transition_state {
             return;
         }
         // transition from
-        match self.current {
+        match resources.current_state {
             GameState::MainMenu => {}
             GameState::Shop => {
                 resources.cassette.clear();
@@ -129,7 +137,6 @@ impl GameStateSystem {
             GameState::Battle => {
                 resources.cassette.clear();
                 WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(0.0));
-                BattleSystem::finish_battle(world, resources);
             }
             GameState::Gallery => {
                 resources.cassette.clear();
@@ -137,10 +144,14 @@ impl GameStateSystem {
                 resources.camera.fov = resources.options.fov;
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)))
             }
+            GameState::GameOver => {
+                resources.camera.fov = resources.options.fov;
+                resources.camera.center = vec2::ZERO;
+            }
         }
 
         //transition to
-        match self.transition {
+        match resources.transition_state {
             GameState::MainMenu => {}
             GameState::Battle => {
                 WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(1.0));
@@ -153,8 +164,13 @@ impl GameStateSystem {
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 20.0)));
                 SlotSystem::clear_world(world);
             }
+            GameState::GameOver => {
+                resources.camera.fov = resources.options.fov * 0.5;
+                resources.camera.center = SlotSystem::get_position(3, &Faction::Team);
+                GameOverSystem::init(world, resources);
+            }
         }
 
-        self.current = self.transition.clone();
+        resources.current_state = resources.transition_state.clone();
     }
 }

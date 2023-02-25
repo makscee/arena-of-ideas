@@ -48,12 +48,19 @@ impl BattleSystem {
     }
 
     pub fn finish_battle(world: &mut legion::World, resources: &mut Resources) {
-        if !Self::battle_won(world) {
-            WorldSystem::clear_factions(world, hashset! {Faction::Team});
-            resources.rounds.next_round = 0;
+        resources.game_won = Self::battle_won(world);
+        resources.last_round = resources.rounds.next_round;
+        if !resources.game_won {
+            resources.transition_state = GameState::GameOver;
+        } else {
+            if resources.rounds.next_round == ROUNDS_COUNT {
+                resources.transition_state = GameState::GameOver;
+            } else {
+                resources.transition_state = GameState::Shop;
+                Event::AfterBattle.send(&WorldSystem::get_context(world), resources);
+            }
         }
         WorldSystem::clear_factions(world, hashset! {Faction::Dark, Faction::Light});
-        Event::AfterBattle.send(&WorldSystem::get_context(world), resources)
     }
 
     fn create_enemies(resources: &mut Resources, world: &mut legion::World) {

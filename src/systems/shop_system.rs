@@ -76,6 +76,12 @@ impl ShopSystem {
         }
     }
 
+    pub fn restart(world: &mut legion::World, resources: &mut Resources) {
+        resources.rounds.next_round = 0;
+        resources.shop.money = 4;
+        WorldSystem::clear_factions(world, hashset! {Faction::Team});
+    }
+
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
         resources.cassette.parallel_node.clear_entities();
         UnitSystem::draw_all_units_to_cassette_node(
