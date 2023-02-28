@@ -32,9 +32,8 @@ impl Game {
         world_entry.add_component(Context {
             owner: world_entity,
             target: world_entity,
-            creator: world_entity,
+            parent: None,
             vars,
-            status: default(),
         });
     }
 

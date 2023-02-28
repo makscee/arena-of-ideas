@@ -30,7 +30,7 @@ impl GallerySystem {
         let heroes = self.current_heroes.len();
         self.current_heroes[heroes - 1] = self.wanted_hero;
         resources.cassette.parallel_node.clear();
-        WorldSystem::clear_factions(world, hashset! {Faction::Gallery});
+        WorldSystem::clear_factions(world, &hashset! {Faction::Gallery});
         for (ind, template_ind) in self.current_heroes.iter().enumerate() {
             let template_key = self.paths[*template_ind].clone();
             let position = vec2(

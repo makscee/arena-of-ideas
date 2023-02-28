@@ -101,12 +101,12 @@ impl UnitSystem {
                 .unwrap()
                 .clone(),
         ));
-
+        let parent = WorldSystem::get_context(world).owner;
         let mut new_entry = world.entry(new_entity).unwrap();
         new_entry.add_component(EntityComponent { entity: new_entity });
         new_entry.add_component(Context {
             owner: new_entity,
-            creator: new_entity,
+            parent: Some(parent),
             target: new_entity,
             ..original_context
         });
@@ -119,11 +119,12 @@ impl UnitSystem {
         if let Some(statuses) = resources.status_pool.active_statuses.get(&original_entity) {
             statuses.clone().iter().for_each(|(name, context)| {
                 StatusPool::add_entity_status(
-                    &new_entity,
+                    new_entity,
                     name,
                     Context {
                         owner: new_entity,
                         target: new_entity,
+                        parent: Some(new_entity),
                         ..context.clone()
                     },
                     resources,
@@ -150,11 +151,7 @@ impl UnitSystem {
         }
     }
 
-    pub fn add_attention_vars(
-        unit: &UnitComponent,
-        entry: &legion::world::EntryRef,
-        vars: &mut Vars,
-    ) {
+    pub fn add_attention_vars(unit: &UnitComponent, entry: &legion::world::Entry, vars: &mut Vars) {
         let card = match unit.faction == Faction::Shop {
             true => 1.0,
             false => {

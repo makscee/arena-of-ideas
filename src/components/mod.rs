@@ -81,10 +81,11 @@ impl SerializedComponent {
         &self,
         resources: &mut Resources,
         path: &PathBuf,
-        entry: &mut legion::world::Entry,
-        entity: &legion::Entity,
-        context: &mut Context,
+        entity: legion::Entity,
+        context: &Context,
+        world: &mut legion::World,
     ) {
+        let mut entry = world.entry(entity).unwrap();
         match self {
             SerializedComponent::Hp { max } => entry.add_component(HpComponent::new(*max)),
             SerializedComponent::Attack { value } => {
@@ -105,8 +106,11 @@ impl SerializedComponent {
                         .define_status(name.clone(), status.clone());
                     StatusPool::add_entity_status(
                         entity,
-                        name.as_str(),
-                        context.clone(),
+                        &name,
+                        Context {
+                            parent: Some(context.owner),
+                            ..context.clone()
+                        },
                         resources,
                     );
                 });

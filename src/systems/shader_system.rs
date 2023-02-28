@@ -35,11 +35,15 @@ impl ShaderSystem {
             .get_component::<Shader>()
             .unwrap()
             .clone();
-        let context = Context::construct_context(&entity, world);
-        shader.parameters.uniforms = shader
-            .parameters
-            .uniforms
-            .merge(&context.vars.clone().into());
+        match ContextSystem::try_get_context(entity, world) {
+            Ok(context) => {
+                shader.parameters.uniforms = shader
+                    .parameters
+                    .uniforms
+                    .merge(&context.vars.clone().into())
+            }
+            Err(_) => {}
+        }
 
         shader
     }

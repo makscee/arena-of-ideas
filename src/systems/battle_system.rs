@@ -36,7 +36,8 @@ impl BattleSystem {
         SlotSystem::refresh_slot_shaders(world, resources, hashset![Faction::Dark, Faction::Light]);
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
-        while ActionSystem::tick(world, resources) {}
+        ContextSystem::refresh_all(world);
+        ActionSystem::run_ticks(world, resources);
     }
 
     fn battle_won(world: &legion::World) -> bool {
@@ -57,10 +58,11 @@ impl BattleSystem {
                 resources.transition_state = GameState::GameOver;
             } else {
                 resources.transition_state = GameState::Shop;
-                Event::AfterBattle.send(&WorldSystem::get_context(world), resources);
             }
         }
-        WorldSystem::clear_factions(world, hashset! {Faction::Dark, Faction::Light});
+        let factions = &hashset! {Faction::Dark, Faction::Light};
+        resources.status_pool.clear_factions(factions, world);
+        WorldSystem::clear_factions(world, factions);
     }
 
     fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
@@ -142,7 +144,7 @@ impl BattleSystem {
                         }
                         .into(),
                     },
-                    -15,
+                    15,
                 ),
             );
             resources.cassette.node_template.add_effect_by_key(
@@ -156,7 +158,7 @@ impl BattleSystem {
                         }
                         .into(),
                     },
-                    -15,
+                    15,
                 ),
             );
             resources.cassette.close_node();
@@ -164,19 +166,18 @@ impl BattleSystem {
             let context = Context {
                 owner: left_entity,
                 target: right_entity,
-                creator: left_entity,
-                vars: default(),
-                status: default(),
+                parent: Some(left_entity),
+                ..ContextSystem::get_context(left_entity, world)
             };
             resources
                 .action_queue
                 .push_back(Action::new(context, Effect::Damage { value: None }));
+
             let context = Context {
                 owner: right_entity,
                 target: left_entity,
-                creator: right_entity,
-                vars: default(),
-                status: default(),
+                parent: Some(right_entity),
+                ..ContextSystem::get_context(right_entity, world)
             };
             resources
                 .action_queue
@@ -215,16 +216,8 @@ impl BattleSystem {
                 .choose(&mut thread_rng())
             {
                 debug!("Entity#{:?} dead", dead_unit);
-                Event::BeforeDeath {}.send(
-                    &Context {
-                        owner: dead_unit,
-                        target: dead_unit,
-                        creator: dead_unit,
-                        vars: default(),
-                        status: default(),
-                    },
-                    resources,
-                );
+                let context = ContextSystem::get_context(dead_unit, world);
+                Event::BeforeDeath { context }.send(resources, world);
                 ActionSystem::run_ticks(world, resources);
                 Self::refresh_cassette(world, resources);
                 if world
@@ -235,7 +228,7 @@ impl BattleSystem {
                     .current
                     <= 0
                 {
-                    world.remove(dead_unit);
+                    WorldSystem::kill(dead_unit, world, resources);
                 }
             }
             return true;
@@ -319,7 +312,7 @@ impl BattleSystem {
                     .into(),
                     easing: EasingType::QuartInOut,
                 },
-                -10,
+                20,
             )),
             StrikePhase::Release => cassette.add_effect(VisualEffect::new(
                 0.1,
@@ -335,7 +328,7 @@ impl BattleSystem {
                     .into(),
                     easing: EasingType::Linear,
                 },
-                -10,
+                20,
             )),
             StrikePhase::Retract => cassette.add_effect(VisualEffect::new(
                 0.25,
@@ -351,7 +344,7 @@ impl BattleSystem {
                     .into(),
                     easing: EasingType::QuartOut,
                 },
-                -10,
+                20,
             )),
         };
     }

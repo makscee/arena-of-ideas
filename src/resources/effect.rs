@@ -62,7 +62,7 @@ pub enum Effect {
     ChangeContext {
         target: Option<ExpressionEntity>,
         owner: Option<ExpressionEntity>,
-        creator: Option<ExpressionEntity>,
+        parent: Option<ExpressionEntity>,
         effect: Box<Effect>,
     },
     If {
@@ -92,7 +92,7 @@ impl Effect {
         match self {
             Effect::Damage { value } => {
                 let mut context = context.clone();
-                let value = match value {
+                let mut value = match value {
                     Some(v) => v.calculate(&context, world, resources),
                     None => {
                         world
@@ -108,7 +108,14 @@ impl Effect {
                     return Ok(());
                 }
                 context.vars.insert(VarName::Damage, Var::Int(value));
-                Event::BeforeIncomingDamage.send(&context, resources);
+                context = Event::ModifyIncomingDamage { context }
+                    .send(resources, world)
+                    .unwrap();
+                value = context.vars.get_int(&VarName::Damage);
+                Event::BeforeIncomingDamage {
+                    context: context.clone(),
+                }
+                .send(resources, &world);
                 let mut text = format!("-{}", value);
                 let mut target = world
                     .entry(context.target)
@@ -181,7 +188,7 @@ impl Effect {
                         0,
                     ),
                 );
-                Event::AfterIncomingDamage.send(&context, resources);
+                Event::AfterIncomingDamage { context }.send(resources, world);
             }
             Effect::Repeat { count, effect } => {
                 for _ in 0..*count {
@@ -229,7 +236,7 @@ impl Effect {
                     .insert(name.clone(), Var::Int(value));
             }
             Effect::AttachStatus { name } => {
-                StatusPool::add_entity_status(&context.target, name, context.clone(), resources);
+                StatusPool::add_entity_status(context.target, name, context, resources);
             }
             Effect::UseAbility { name, house } => {
                 if !world
@@ -339,7 +346,7 @@ impl Effect {
             }
             Effect::ShowText { text, color } => {
                 resources.cassette.add_effect(VisualEffect::new(
-                    2.0,
+                    3.0,
                     VisualEffectType::ShaderAnimation {
                         shader: resources
                             .options
@@ -353,9 +360,9 @@ impl Effect {
                                     context.vars.get_color(&VarName::HouseColor1)
                                 })),
                             )
-                            .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
-                            .set_uniform("u_scale", ShaderUniform::Float(0.4))
-                            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.0))),
+                            .set_uniform("u_alpha_over_t", ShaderUniform::Float(-0.8))
+                            .set_uniform("u_scale", ShaderUniform::Float(0.5))
+                            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.5))),
                         from: hashmap! {
                             "u_time" => ShaderUniform::Float(0.0),
                         }
@@ -372,7 +379,7 @@ impl Effect {
             Effect::ChangeContext {
                 target,
                 owner,
-                creator,
+                parent,
                 effect,
             } => {
                 resources.action_queue.push_front(Action::new(
@@ -385,9 +392,9 @@ impl Effect {
                             Some(entity) => entity.calculate(&context, world, resources),
                             None => context.target,
                         },
-                        creator: match creator {
-                            Some(entity) => entity.calculate(&context, world, resources),
-                            None => context.target,
+                        parent: match parent {
+                            Some(entity) => Some(entity.calculate(&context, world, resources)),
+                            None => context.parent,
                         },
                         ..context.clone()
                     },
@@ -408,7 +415,7 @@ impl Effect {
                 }
             }
             Effect::Aoe { factions, effect } => {
-                WorldSystem::collect_factions(world, HashSet::from_iter(factions.clone()))
+                WorldSystem::collect_factions(world, &HashSet::from_iter(factions.clone()))
                     .iter()
                     .for_each(|(entity, _)| {
                         resources.action_queue.push_front(Action::new(

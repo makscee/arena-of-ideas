@@ -145,6 +145,13 @@ impl SlotSystem {
                     .entry(entity)
                     .unwrap()
                     .add_component(EntityComponent { entity });
+                let context = Context {
+                    owner: entity,
+                    target: entity,
+                    parent: Some(WorldSystem::get_context(world).owner),
+                    vars: default(),
+                };
+                world.entry(entity).unwrap().add_component(context);
             })
         }
     }
@@ -181,6 +188,7 @@ impl SlotSystem {
                     position.0 = new_position;
                 }
             });
+        ContextSystem::refresh_all(world);
     }
 
     pub fn fill_gaps(
@@ -204,7 +212,7 @@ impl SlotSystem {
                 to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
                 easing: EasingType::Linear,
             },
-            -20,
+            17,
         )
     }
 }

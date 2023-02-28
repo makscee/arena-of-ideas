@@ -15,11 +15,8 @@ impl ActionSystem {
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
-        let Some(mut action) = resources.action_queue.pop_front() else { return false };
-        action
-            .context
-            .vars
-            .merge(WorldSystem::get_vars(world), false);
+        StatusPool::init_new_statuses(world, resources);
+        let Some(action) = resources.action_queue.pop_front() else { return false };
         debug!(
             "Procession action: {:?} context: {:?}",
             action.effect, action.context
@@ -31,6 +28,7 @@ impl ActionSystem {
             Ok(_) => {}
             Err(error) => error!("Effect process error: {}", error),
         }
+        ContextSystem::refresh_all(world);
         true
     }
 }

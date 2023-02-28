@@ -79,7 +79,7 @@ impl ShopSystem {
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
         resources.rounds.next_round = 0;
         resources.shop.money = 4;
-        WorldSystem::clear_factions(world, hashset! {Faction::Team});
+        WorldSystem::clear_factions(world, &hashset! {Faction::Team});
     }
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
@@ -196,17 +196,25 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
-        Event::Buy {}.send(&Context::construct_context(&entity, world), resources);
+        Event::Buy {
+            context: ContextSystem::get_context(entity, world),
+        }
+        .send(resources, world);
     }
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         resources.shop.money += 1;
-        Event::Sell {}.send(&Context::construct_context(&entity, world), resources);
+        Event::Sell {
+            context: ContextSystem::get_context(entity, world),
+        }
+        .send(resources, world);
         WorldSystem::kill(entity, world, resources);
     }
 
-    pub fn clear(world: &mut legion::World, _resources: &mut Resources) {
-        WorldSystem::clear_factions(world, hashset! {Faction::Shop});
+    pub fn clear(world: &mut legion::World, resources: &mut Resources) {
+        let factions = &hashset! {Faction::Shop};
+        resources.status_pool.clear_factions(factions, world);
+        WorldSystem::clear_factions(world, factions);
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {

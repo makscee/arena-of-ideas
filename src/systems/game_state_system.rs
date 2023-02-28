@@ -133,10 +133,12 @@ impl GameStateSystem {
             GameState::MainMenu => {}
             GameState::Shop => {
                 resources.cassette.clear();
+                ShopSystem::clear(world, resources);
             }
             GameState::Battle => {
                 resources.cassette.clear();
                 WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(0.0));
+                Event::BattleOver.send(resources, world);
             }
             GameState::Gallery => {
                 resources.cassette.clear();

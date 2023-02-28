@@ -100,7 +100,7 @@ impl ExpressionInt {
 pub enum ExpressionEntity {
     World,
     Target,
-    Creator,
+    Parent,
     Owner,
     FindUnit {
         slot: Box<ExpressionInt>,
@@ -128,11 +128,11 @@ impl ExpressionEntity {
                     .entity
             }
             ExpressionEntity::Target => context.target,
-            ExpressionEntity::Creator => context.creator,
+            ExpressionEntity::Parent => context.parent.expect("Failed to get parent"),
             ExpressionEntity::Owner => context.owner,
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources) as usize;
-                WorldSystem::collect_factions(world, hashset! {*faction})
+                WorldSystem::collect_factions(world, &hashset! {*faction})
                     .into_iter()
                     .find_map(|(entity, unit)| match unit.slot == slot {
                         true => Some(entity),

@@ -5,6 +5,7 @@ use super::*;
 mod action_system;
 mod battle_system;
 mod cassette_player_system;
+mod context_system;
 mod file_watcher_system;
 mod gallery_system;
 mod game_over_system;
@@ -22,6 +23,7 @@ mod world_system;
 pub use action_system::*;
 pub use battle_system::*;
 pub use cassette_player_system::*;
+pub use context_system::*;
 pub use file_watcher_system::*;
 pub use gallery_system::*;
 pub use game_over_system::*;
@@ -102,6 +104,7 @@ impl Game {
 
         global_systems.push(Box::new(fws));
         global_systems.push(Box::new(TimeSystem::new()));
+        global_systems.push(Box::new(ContextSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));
         global_systems.push(Box::new(game_state));
         global_systems

@@ -4,6 +4,7 @@ use super::*;
 #[serde(tag = "type")]
 pub enum Trigger {
     Init { effect: Effect },
+    ModifyIncomingDamage { value: ExpressionInt },
     BeforeIncomingDamage { effect: Effect },
     AfterIncomingDamage { effect: Effect },
     BeforeDeath { effect: Effect },
@@ -57,9 +58,10 @@ impl Trigger {
                 _ => {}
             },
             Trigger::AfterBattle { .. } => match event {
-                Event::AfterBattle { .. } => self.fire(action_queue, context),
+                Event::BattleOver { .. } => self.fire(action_queue, context),
                 _ => {}
             },
+            Trigger::ModifyIncomingDamage { .. } => {}
         }
     }
 
@@ -73,9 +75,12 @@ impl Trigger {
             | Trigger::RemoveFromTeam { effect }
             | Trigger::Buy { effect }
             | Trigger::Sell { effect } => {
+                debug!("Caught trigger {:?}, {:?}", self, context);
                 action_queue.push_back(Action::new(context, effect.clone()))
             }
-            Trigger::List { triggers: _ } => panic!("List should not fire"),
+            Trigger::ModifyIncomingDamage { .. } | Trigger::List { .. } => {
+                panic!("Can't fire {:?}", self)
+            }
         }
     }
 }

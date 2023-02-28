@@ -3,7 +3,10 @@ use super::*;
 pub struct WorldSystem {}
 
 impl WorldSystem {
-    pub fn clear_factions(world: &mut legion::World, factions: HashSet<Faction>) {
+    pub fn clear_factions(
+        world: &mut legion::World,
+        factions: &HashSet<Faction>,
+    ) -> Vec<legion::Entity> {
         let unit_entitites = <(&EntityComponent, &UnitComponent)>::query()
             .iter(world)
             .filter_map(|(entity, unit)| match factions.contains(&unit.faction) {
@@ -14,11 +17,12 @@ impl WorldSystem {
         unit_entitites.iter().for_each(|entity| {
             world.remove(*entity);
         });
+        unit_entitites
     }
 
     pub fn collect_factions(
         world: &legion::World,
-        factions: HashSet<Faction>,
+        factions: &HashSet<Faction>,
     ) -> HashMap<legion::Entity, UnitComponent> {
         HashMap::from_iter(
             <(&UnitComponent, &EntityComponent)>::query()
@@ -80,8 +84,12 @@ impl WorldSystem {
             .unwrap()
             .clone();
         if unit.faction == Faction::Team {
-            Event::RemoveFromTeam {}.send(&Context::construct_context(&entity, world), resources);
+            Event::RemoveFromTeam {
+                context: ContextSystem::get_context(entity, world),
+            }
+            .send(resources, world);
         }
+        resources.status_pool.clear_entity(&entity);
         world.remove(entity)
     }
 

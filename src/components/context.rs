@@ -2,52 +2,25 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Context {
-    pub owner: legion::Entity,
-    pub target: legion::Entity,
-    pub creator: legion::Entity,
+    pub owner: legion::Entity,  // entity that has this context component
+    pub target: legion::Entity, // any entity
+    pub parent: Option<legion::Entity>, // World -> Unit -> Status
     pub vars: Vars,
-    pub status: Option<(String, legion::Entity)>,
 }
 
 impl Context {
-    /// Merge data from other entity components
-    pub fn construct_context(entity: &legion::Entity, world: &legion::World) -> Context {
-        let entry = world.entry_ref(*entity).expect("Unit entity not found");
-        let mut context = entry
-            .get_component::<Context>()
-            .unwrap_or(&Context {
-                owner: *entity,
-                target: *entity,
-                creator: *entity,
-                vars: default(),
-                status: None,
-            })
-            .clone();
-        <(&WorldComponent, &Context)>::query()
-            .iter(world)
-            .for_each(|(_, world_context)| context.vars.merge(&world_context.vars, false));
-        if let Some(component) = entry.get_component::<UnitComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-            UnitSystem::add_attention_vars(component, &entry, &mut context.vars);
+    pub fn merge_mut(mut self, other: &Context, force: bool) -> Context {
+        if force {
+            self.owner = other.owner;
+            self.target = other.target;
+            self.parent = other.parent;
         }
-        if let Some(component) = entry.get_component::<PositionComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<RadiusComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<HpComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<DescriptionComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<HoverComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<HouseComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        context
+        self.vars.merge(&other.vars, force);
+        self
+    }
+
+    pub fn merge(&self, other: &Context, force: bool) -> Context {
+        let context = self.clone();
+        context.merge_mut(other, force)
     }
 }

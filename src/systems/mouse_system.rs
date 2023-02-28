@@ -73,8 +73,9 @@ impl MouseSystem {
                 .pressed_mouse_buttons
                 .contains(&geng::MouseButton::Left)
         {
+            let dragged = resources.dragged_entity.unwrap();
             world
-                .entry(resources.dragged_entity.unwrap())
+                .entry(dragged)
                 .unwrap()
                 .remove_component::<DragComponent>();
             resources.dragged_entity = None;

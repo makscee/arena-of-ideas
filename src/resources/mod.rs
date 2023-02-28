@@ -339,23 +339,24 @@ impl UnitTemplatesPool {
             UnitComponent { faction, slot },
             AttentionComponent::default(),
         ));
+        let parent = WorldSystem::get_context(world).owner;
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });
-        let mut context = Context {
+        let context = Context {
             owner: entity,
             target: entity,
-            creator: entity,
+            parent: Some(parent),
             vars: default(),
-            status: default(),
         };
-        template.0.iter().for_each(|component| {
-            component.add_to_entry(resources, path, &mut entry, &entity, &mut context)
-        });
+        entry.add_component(context.clone());
+        template
+            .0
+            .iter()
+            .for_each(|component| component.add_to_entry(resources, path, entity, &context, world));
         debug!(
             "Unit#{:?} created. Template: {:?} Context: {:?}",
             entity, template.0, context
         );
-        entry.add_component(context);
         entity
     }
 }
