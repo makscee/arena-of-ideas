@@ -9,7 +9,7 @@ build:
     # Copy static files to executable folder
     - cp -R static target/aarch64-apple-darwin/release/
     # Create archive for macOS
-    - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz -C target/aarch64-apple-darwin/release .
+    - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz --exclude=deps --exclude=examples --exclude=incremental -C target/aarch64-apple-darwin/release .
   artifacts:
     paths:
       - .artifacts
