@@ -7,9 +7,9 @@ build:
     # macOS for Apple Silicon (M1)
     - cargo build --release --target=aarch64-apple-darwin
     # Copy static files to executable folder
-    - cp -R static target/release/
+    - cp -R static target/aarch64-apple-darwin/release/
     # Create archive for macOS
-    - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz -C target/release .
+    - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz -C target/aarch64-apple-darwin/release .
   artifacts:
     paths:
       - .artifacts
