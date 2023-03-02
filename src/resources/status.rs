@@ -147,6 +147,10 @@ impl StatusPool {
             .for_each(|(entity, _)| self.clear_entity(&entity));
     }
 
+    pub fn clear_all_active(&mut self) {
+        self.active_statuses.clear();
+    }
+
     pub fn clear_entity(&mut self, entity: &legion::Entity) {
         self.active_statuses.remove(entity);
     }

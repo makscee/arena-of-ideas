@@ -80,6 +80,7 @@ impl ShopSystem {
         resources.rounds.next_round = 0;
         resources.shop.money = 4;
         WorldSystem::clear_factions(world, &hashset! {Faction::Team});
+        resources.status_pool.clear_all_active();
     }
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
