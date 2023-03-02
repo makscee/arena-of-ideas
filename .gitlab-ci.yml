@@ -1,16 +1,15 @@
 build:
   stage: build
-  image: kuviman/geng
   before_script:
     - mkdir -p .artifacts
   script:
     - cargo test --release
-    # Linux
-    - cargo geng build --release
-    - tar -zcvf .artifacts/ArenaOfIdeas-linux.tar.gz -C target/geng .
-    # Windows
-    - cargo geng build --release --target x86_64-pc-windows-gnu
-    - (cd target/geng && zip -r - .) > .artifacts/ArenaOfIdeas-windows.zip
+    # macOS for Apple Silicon (M1)
+    - cargo build --release --target=aarch64-apple-darwin
+    # Copy static files to executable folder
+    - cp -R static target/aarch64-apple-darwin/release/
+    # Create archive for macOS
+    - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz --exclude=deps --exclude=examples --exclude=incremental -C target/aarch64-apple-darwin/release .
   artifacts:
     paths:
       - .artifacts
