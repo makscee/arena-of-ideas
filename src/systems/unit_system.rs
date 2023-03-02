@@ -9,6 +9,7 @@ impl UnitSystem {
         world: &legion::World,
         options: &Options,
         statuses: &StatusPool,
+        houses: &HashMap<HouseName, House>,
         node: &mut CassetteNode,
         factions: HashSet<Faction>,
     ) {
@@ -28,7 +29,6 @@ impl UnitSystem {
                     ]
                     .concat(),
                 ));
-                // unit_shader.chain = Some(Box::new(chain));
                 node.add_entity_shader(entity.entity, unit_shader);
                 statuses
                     .get_description_shaders(&entity.entity, options)
@@ -49,6 +49,7 @@ impl UnitSystem {
                     });
             });
         StatsUiSystem::fill_cassette_node(world, options, node);
+        HouseSystem::fill_cassette_node_with_descriptions(world, options, houses, node);
         NameSystem::fill_cassette_node(world, options, node);
     }
 

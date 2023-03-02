@@ -1,5 +1,6 @@
 use super::*;
 
+mod ability_description;
 mod attack;
 mod attention;
 mod context;
@@ -19,6 +20,7 @@ mod unit;
 mod vars;
 mod world;
 
+pub use ability_description::*;
 pub use attack::*;
 pub use attention::*;
 pub use context::*;
@@ -67,6 +69,9 @@ pub enum SerializedComponent {
     },
     House {
         houses: Vec<HouseName>,
+    },
+    AbilityDescription {
+        abilities: Vec<String>,
     },
 }
 
@@ -126,6 +131,9 @@ impl SerializedComponent {
             SerializedComponent::House { houses } => {
                 entry.add_component(HouseComponent::new(houses.clone(), &resources))
             }
+            SerializedComponent::AbilityDescription { abilities } => entry.add_component(
+                AbilityDescriptionComponent::new(abilities, &resources.houses),
+            ),
         }
     }
 

@@ -66,7 +66,7 @@ impl StatusPool {
                 match &status.description {
                     Some(text) => Some(
                         options
-                            .status_description
+                            .description_panel
                             .clone()
                             .set_uniform("u_description", ShaderUniform::String((1, text.clone())))
                             .set_uniform("u_name", ShaderUniform::String((0, key.clone())))

@@ -14,6 +14,12 @@
         "text": "On Buy:\nDevour\nally to the right"
     },
     {
+        "component": "AbilityDescription",
+        "abilities": [
+            "Devour"
+        ]
+    },
+    {
         "component": "Hp",
         "max": 1
     },

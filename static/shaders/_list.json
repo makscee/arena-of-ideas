@@ -9,5 +9,5 @@
     "shaders/vfx/text.glsl",
     "shaders/vfx/particle_emitter.glsl",
     "shaders/status/default_status.glsl",
-    "shaders/status/description.glsl"
+    "shaders/system/description_panel.glsl"
 ]

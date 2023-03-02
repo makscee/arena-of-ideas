@@ -31,6 +31,7 @@ impl GameOverSystem {
             world,
             &resources.options,
             &resources.status_pool,
+            &resources.houses,
             &mut resources.cassette.parallel_node,
             hashset! {Faction::Team},
         );

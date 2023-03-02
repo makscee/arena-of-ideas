@@ -6,12 +6,14 @@
             "effect": {
                 "type": "AttachStatus",
                 "name": "Rebirth"
-            }
+            },
+            "description": "Revive\nafter death"
         },
         "Grow": {
             "vars": {
                 "GrowAmount": 1
             },
+            "description": "Gain\n+1/+1",
             "effect": {
                 "type": "List",
                 "effects": [

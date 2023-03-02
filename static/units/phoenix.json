@@ -14,6 +14,12 @@
         "text": "Has Rebirth"
     },
     {
+        "component": "AbilityDescription",
+        "abilities": [
+            "Rebirth"
+        ]
+    },
+    {
         "component": "Hp",
         "max": 4
     },

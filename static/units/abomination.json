@@ -10,6 +10,12 @@
         ]
     },
     {
+        "component": "AbilityDescription",
+        "abilities": [
+            "Devour"
+        ]
+    },
+    {
         "component": "Description",
         "text": "On Buy:\nDevour\nadjacent allies"
     },

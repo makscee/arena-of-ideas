@@ -83,8 +83,8 @@
         },
         "layer": "Unit"
     },
-    "status_description": {
-        "path": "shaders/status/description.glsl",
+    "description_panel": {
+        "path": "shaders/system/description_panel.glsl",
         "layer": "UI"
     }
 }

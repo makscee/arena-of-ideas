@@ -14,6 +14,12 @@
         "text": "Grow after\nevery Battle"
     },
     {
+        "component": "AbilityDescription",
+        "abilities": [
+            "Grow"
+        ]
+    },
+    {
         "component": "Hp",
         "max": 1
     },

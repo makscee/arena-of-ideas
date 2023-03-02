@@ -7,6 +7,7 @@
                 "type": "AttachStatus",
                 "name": "Shield"
             },
+            "description": "Negate one\ninstance of\nincoming damage",
             "vars": {
                 "Charges": 1,
                 "Hits": 0,
