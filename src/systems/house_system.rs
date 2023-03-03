@@ -25,7 +25,7 @@ impl HouseSystem {
                             ShaderUniform::String((1, description.clone())),
                         )
                         .set_uniform("u_color", ShaderUniform::Color(house.color))
-                        .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, -2.5)))
+                        .set_uniform("u_offset", ShaderUniform::Vec2(vec2(1.3, 0.0)))
                 })
             })
             .collect_vec()

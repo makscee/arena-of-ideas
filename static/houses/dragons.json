@@ -7,13 +7,13 @@
                 "type": "AttachStatus",
                 "name": "Rebirth"
             },
-            "description": "Revive\nafter death"
+            "description": "Revive after death"
         },
         "Grow": {
             "vars": {
                 "GrowAmount": 1
             },
-            "description": "Gain\n+1/+1",
+            "description": "Gain +1/+1",
             "effect": {
                 "type": "List",
                 "effects": [
@@ -58,7 +58,7 @@
     },
     "statuses": {
         "Rebirth": {
-            "description": "Revive after death\nthen remove this status",
+            "description": "Revive after death\nthen remove\nthis status",
             "trigger": {
                 "type": "BeforeDeath",
                 "effect": {

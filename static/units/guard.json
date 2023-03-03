@@ -14,12 +14,6 @@
         "text": "Has Shield"
     },
     {
-        "component": "AbilityDescription",
-        "abilities": [
-            "Shield"
-        ]
-    },
-    {
         "component": "Hp",
         "max": 1
     },
