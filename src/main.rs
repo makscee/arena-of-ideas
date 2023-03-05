@@ -47,5 +47,5 @@ fn main() {
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
     let game = Game::new(world, resources);
-    geng::run(&geng, game);
+    geng.clone().run(game);
 }
