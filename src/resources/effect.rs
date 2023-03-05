@@ -121,7 +121,7 @@ impl Effect {
                 let mut text = format!("-{}", value);
                 let owner_position = world
                     .entry_ref(context.owner)
-                    .context("Failed to get Target")?
+                    .context("Failed to get owner")?
                     .get_component::<PositionComponent>()?
                     .0;
                 let mut target = world
@@ -386,6 +386,11 @@ impl Effect {
                 }
             }
             Effect::ShowText { text, color } => {
+                let target_position = world
+                    .entry_ref(context.target)
+                    .context("Failed to get target")?
+                    .get_component::<PositionComponent>()?
+                    .0;
                 resources.cassette.add_effect(VisualEffect::new(
                     3.0,
                     VisualEffectType::ShaderAnimation {
@@ -394,6 +399,7 @@ impl Effect {
                             .text
                             .clone()
                             .merge_uniforms(&context.vars.clone().into(), false)
+                            .set_uniform("u_position", ShaderUniform::Vec2(target_position))
                             .set_uniform("u_text", ShaderUniform::String((0, text.clone())))
                             .set_uniform(
                                 "u_outline_color",

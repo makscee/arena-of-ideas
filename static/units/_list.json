@@ -1,5 +1,6 @@
 [
     "units/guard.json",
+    "units/protector.json",
     "units/ghoul.json",
     "units/abomination.json",
     "units/amplifier.json",

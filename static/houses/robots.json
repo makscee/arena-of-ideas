@@ -4,8 +4,17 @@
     "abilities": {
         "Shield": {
             "effect": {
-                "type": "AttachStatus",
-                "name": "Shield"
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "ShowText",
+                        "text": "++Shield"
+                    },
+                    {
+                        "type": "AttachStatus",
+                        "name": "Shield"
+                    }
+                ]
             },
             "description": "Negate one\ninstance of\nincoming damage",
             "vars": {
