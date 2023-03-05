@@ -46,7 +46,7 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Gallery => {
-                if resources.down_keys.contains(&geng::Key::Enter) {
+                if resources.down_keys.contains(&geng::Key::G) {
                     resources.transition_state = GameState::Shop;
                 }
             }
@@ -144,7 +144,7 @@ impl GameStateSystem {
                 resources.cassette.clear();
                 resources.action_queue.clear();
                 resources.camera.fov = resources.options.fov;
-                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)))
+                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)));
             }
             GameState::GameOver => {
                 resources.camera.fov = resources.options.fov;

@@ -39,7 +39,7 @@ void main() {
     float card_sdf = rectangle_sdf(uv, vec2(1, u_height), 0);
     vec4 color = vec4(field_color, card_sdf < 0);
     float border_value = max(float(BORDER_THICKNESS - abs(card_sdf) > 0), float(BORDER_THICKNESS - abs(uv.y - 1 + NAME_HEIGHT) > 0 && card_sdf < 0));
-    float border_glow = (0.7 - card_sdf) * float(card_sdf < 0.4 && card_sdf > 0);
+    float border_glow = (.7 - card_sdf / .5) * float(card_sdf > 0);
     vec4 border_color = vec4(base_color.rgb, max(border_value, border_glow));
     vec2 name_uv = uv * vec2(u_name_size.y / u_name_size.x, 1) - vec2(0, 1 - NAME_HEIGHT * .5);
     name_uv /= NAME_HEIGHT;

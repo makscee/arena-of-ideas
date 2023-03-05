@@ -21,8 +21,8 @@ impl Game {
     }
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
-        Self::init_field(resources, world);
         let world_entity = world.push((WorldComponent { global_time: 0.0 },));
+        Self::init_field(resources, world, world_entity);
         let mut world_entry = world.entry(world_entity).unwrap();
         world_entry.add_component(EntityComponent {
             entity: world_entity,
@@ -37,13 +37,21 @@ impl Game {
         });
     }
 
-    fn init_field(resources: &mut Resources, world: &mut legion::World) {
+    fn init_field(
+        resources: &mut Resources,
+        world: &mut legion::World,
+        world_entity: legion::Entity,
+    ) {
         let shader = resources.options.field.clone();
         let entity = world.push((shader,));
-        world
-            .entry(entity)
-            .unwrap()
-            .add_component(EntityComponent { entity });
+        let mut entry = world.entry(entity).unwrap();
+        entry.add_component(EntityComponent { entity });
+        entry.add_component(Context {
+            owner: entity,
+            target: entity,
+            parent: Some(world_entity),
+            vars: default(),
+        })
     }
 }
 
