@@ -14,7 +14,7 @@ impl ContextSystem {
     }
 
     /// Merge data from other entity components
-    fn refresh_entity(entity: legion::Entity, world: &mut legion::World) {
+    pub fn refresh_entity(entity: legion::Entity, world: &mut legion::World) {
         let entry = world.entry(entity).expect("Unit entity not found");
         let mut context = Context {
             vars: default(),

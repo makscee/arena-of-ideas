@@ -177,6 +177,7 @@ impl ShopSystem {
                 resources,
                 hashset! {Faction::Shop,Faction::Team},
             );
+            ContextSystem::refresh_all(world);
         }
     }
 
@@ -198,6 +199,7 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
+        ContextSystem::refresh_entity(entity, world);
         Event::Buy {
             context: ContextSystem::get_context(entity, world),
         }
