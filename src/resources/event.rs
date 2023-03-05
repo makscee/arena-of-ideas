@@ -87,11 +87,14 @@ impl Event {
                     .iter()
                     .for_each(|(trigger, status_context)| match trigger {
                         Trigger::ModifyIncomingDamage { value } => {
-                            damage = value.calculate(
+                            damage = match value.calculate(
                                 &context.merge(status_context, false),
                                 world,
                                 resources,
-                            );
+                            ) {
+                                Ok(value) => value,
+                                Err(_) => damage,
+                            };
                             context.vars.insert(VarName::Damage, Var::Int(damage));
                         }
                         _ => {}

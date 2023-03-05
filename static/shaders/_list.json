@@ -8,6 +8,7 @@
     "shaders/vfx/circle.glsl",
     "shaders/vfx/text.glsl",
     "shaders/vfx/particle_emitter.glsl",
+    "shaders/vfx/curve.glsl",
     "shaders/status/default_status.glsl",
     "shaders/system/description_panel.glsl"
 ]

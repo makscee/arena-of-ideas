@@ -42,55 +42,57 @@ impl ExpressionInt {
         context: &Context,
         world: &legion::World,
         resources: &Resources,
-    ) -> i32 {
+    ) -> Result<i32, Error> {
         match self {
             ExpressionInt::Sum { a, b } => {
-                a.calculate(context, world, resources) + b.calculate(context, world, resources)
+                Ok(a.calculate(context, world, resources)?
+                    + b.calculate(context, world, resources)?)
             }
             ExpressionInt::Mul { a, b } => {
-                a.calculate(context, world, resources) * b.calculate(context, world, resources)
+                Ok(a.calculate(context, world, resources)?
+                    * b.calculate(context, world, resources)?)
             }
-            ExpressionInt::Const { value } => *value,
-            ExpressionInt::Var { var } => context.vars.get_int(var),
+            ExpressionInt::Const { value } => Ok(*value),
+            ExpressionInt::Var { var } => Ok(context.vars.get_int(var)),
             ExpressionInt::Stat { stat, target } => {
                 let target = target
                     .as_ref()
                     .and_then(|target| Some(target.calculate(&context, world, resources)))
-                    .unwrap_or(context.target);
-                let target = world.entry_ref(target).unwrap();
-                match stat {
+                    .unwrap_or(Ok(context.target));
+                let target = world.entry_ref(target?).unwrap();
+                Ok(match stat {
                     StatType::Hp => target.get_component::<HpComponent>().unwrap().current,
                     StatType::Attack => target.get_component::<AttackComponent>().unwrap().value,
-                }
+                })
             }
             ExpressionInt::AbilityVar {
                 house,
                 ability: ability_name,
                 var: var_name,
-            } => resources
+            } => Ok(resources
                 .houses
                 .get(house)
-                .expect(&format!("Failed to get {:?}", house))
+                .context(format!("Failed to get {:?}", house))?
                 .abilities
                 .get(ability_name)
-                .expect(&format!(
+                .context(format!(
                     "Failed to get Ability {} from {:?}",
                     ability_name, house
-                ))
+                ))?
                 .vars
-                .get_int(var_name),
-            ExpressionInt::StatusVar { status, var } => resources
+                .get_int(var_name)),
+            ExpressionInt::StatusVar { status, var } => Ok(resources
                 .status_pool
                 .active_statuses
                 .get(&context.target)
-                .expect(&format!("Failed to get target#{:?}", context.target))
+                .context(format!("Failed to get target#{:?}", context.target))?
                 .get(status)
-                .expect(&format!(
+                .context(format!(
                     "Failed to find status {} on {:?}",
                     status, context.target
-                ))
+                ))?
                 .vars
-                .get_int(var),
+                .get_int(var)),
         }
     }
 }
@@ -117,28 +119,26 @@ impl ExpressionEntity {
         context: &Context,
         world: &legion::World,
         resources: &Resources,
-    ) -> legion::Entity {
+    ) -> Result<legion::Entity, Error> {
         match self {
-            ExpressionEntity::World => {
-                <(&WorldComponent, &EntityComponent)>::query()
-                    .iter(world)
-                    .next()
-                    .unwrap()
-                    .1
-                    .entity
-            }
-            ExpressionEntity::Target => context.target,
-            ExpressionEntity::Parent => context.parent.expect("Failed to get parent"),
-            ExpressionEntity::Owner => context.owner,
+            ExpressionEntity::World => Ok(<(&WorldComponent, &EntityComponent)>::query()
+                .iter(world)
+                .next()
+                .unwrap()
+                .1
+                .entity),
+            ExpressionEntity::Target => Ok(context.target),
+            ExpressionEntity::Parent => context.parent.context("Failed to get parent"),
+            ExpressionEntity::Owner => Ok(context.owner),
             ExpressionEntity::FindUnit { slot, faction } => {
-                let slot = slot.calculate(context, world, resources) as usize;
+                let slot = slot.calculate(context, world, resources)? as usize;
                 WorldSystem::collect_factions(world, &hashset! {*faction})
                     .into_iter()
                     .find_map(|(entity, unit)| match unit.slot == slot {
                         true => Some(entity),
                         false => None,
                     })
-                    .expect(&format!("No unit of {:?} found in {} slot", faction, slot))
+                    .context(format!("No unit of {:?} found in {} slot", faction, slot))
             }
             ExpressionEntity::RandomUnit { faction } => {
                 <(&UnitComponent, &EntityComponent)>::query()
@@ -148,7 +148,7 @@ impl ExpressionEntity {
                         false => None,
                     })
                     .choose(&mut thread_rng())
-                    .expect(&format!("No units of {:?} found", faction))
+                    .context(format!("No units of {:?} found", faction))
             }
         }
     }

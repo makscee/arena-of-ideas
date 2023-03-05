@@ -27,24 +27,25 @@ impl Condition {
         context: &Context,
         world: &legion::World,
         resources: &Resources,
-    ) -> bool {
+    ) -> Result<bool, Error> {
         debug!("Calculating condition {:?} {:?}", self, context);
         match self {
-            Condition::EqualsInt { a, b } => {
-                a.calculate(context, world, resources) == b.calculate(context, world, resources)
-            }
+            Condition::EqualsInt { a, b } => Ok(a.calculate(context, world, resources)?
+                == b.calculate(context, world, resources)?),
             Condition::LessInt { a, b } => {
-                a.calculate(context, world, resources) < b.calculate(context, world, resources)
+                Ok(a.calculate(context, world, resources)?
+                    < b.calculate(context, world, resources)?)
             }
             Condition::MoreInt { a, b } => {
-                a.calculate(context, world, resources) > b.calculate(context, world, resources)
+                Ok(a.calculate(context, world, resources)?
+                    > b.calculate(context, world, resources)?)
             }
-            Condition::SlotOccupied { slot, faction } => SlotSystem::find_unit_by_slot(
-                slot.calculate(context, world, resources) as usize,
+            Condition::SlotOccupied { slot, faction } => Ok(SlotSystem::find_unit_by_slot(
+                slot.calculate(context, world, resources)? as usize,
                 faction,
                 world,
             )
-            .is_some(),
+            .is_some()),
         }
     }
 }

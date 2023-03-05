@@ -81,6 +81,8 @@ pub enum Effect {
 }
 
 const DAMAGE_TEXT_EFFECT_KEY: &str = "damage_text";
+const DAMAGE_CURVE_EFFECT_KEY: &str = "damage_curve";
+const MULTIPLE_DAMAGE_DELAY: Time = 0.2;
 
 impl Effect {
     pub fn process(
@@ -93,7 +95,7 @@ impl Effect {
             Effect::Damage { value } => {
                 let mut context = context.clone();
                 let mut value = match value {
-                    Some(v) => v.calculate(&context, world, resources),
+                    Some(v) => v.calculate(&context, world, resources)?,
                     None => {
                         world
                             .entry_ref(context.owner)
@@ -117,9 +119,17 @@ impl Effect {
                 }
                 .send(resources, &world);
                 let mut text = format!("-{}", value);
+                let owner_position = world
+                    .entry_ref(context.owner)
+                    .context("Failed to get Target")?
+                    .get_component::<PositionComponent>()?
+                    .0;
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
+                let effect_key = format!("{}_{:?}", DAMAGE_TEXT_EFFECT_KEY, context.owner);
+                let effect_delay =
+                    resources.cassette.get_key_count(&effect_key) as f32 * MULTIPLE_DAMAGE_DELAY;
                 if target
                     .get_component::<FlagsComponent>()?
                     .has_flag(&Flag::DamageImmune)
@@ -129,8 +139,9 @@ impl Effect {
                 } else {
                     let hp = target.get_component_mut::<HpComponent>()?;
                     hp.current -= value;
-                    resources.cassette.add_effect(VisualEffect::new(
+                    resources.cassette.add_effect(VisualEffect::new_delayed(
                         1.0,
+                        effect_delay,
                         VisualEffectType::EntityShaderAnimation {
                             entity: context.target,
                             from: hashmap! {
@@ -150,12 +161,11 @@ impl Effect {
                         context.target, value, hp.current
                     )
                 }
-                let effect_key = format!("{}_{:?}", DAMAGE_TEXT_EFFECT_KEY, context.target);
                 resources.cassette.add_effect_by_key(
                     &effect_key,
                     VisualEffect::new_delayed(
                         1.0,
-                        resources.cassette.get_key_count(&effect_key) as f32 * 0.1,
+                        effect_delay,
                         VisualEffectType::ShaderAnimation {
                             shader: resources
                                 .options
@@ -171,6 +181,37 @@ impl Effect {
                                 .set_uniform("u_gravity", ShaderUniform::Float(-5.0))
                                 .set_uniform(
                                     "u_position",
+                                    ShaderUniform::Vec2(
+                                        target.get_component::<PositionComponent>().unwrap().0,
+                                    ),
+                                ),
+                            from: hashmap! {
+                                "u_time" => ShaderUniform::Float(0.0),
+                            }
+                            .into(),
+                            to: hashmap! {
+                                "u_time" => ShaderUniform::Float(1.0),
+                            }
+                            .into(),
+                            easing: EasingType::Linear,
+                        },
+                        0,
+                    ),
+                );
+                let effect_key = format!("{}_{:?}", DAMAGE_CURVE_EFFECT_KEY, context.owner);
+                resources.cassette.add_effect_by_key(
+                    &effect_key,
+                    VisualEffect::new_delayed(
+                        1.0,
+                        effect_delay,
+                        VisualEffectType::ShaderAnimation {
+                            shader: resources
+                                .options
+                                .curve
+                                .clone()
+                                .set_uniform("u_position", ShaderUniform::Vec2(owner_position))
+                                .set_uniform(
+                                    "u_target_position",
                                     ShaderUniform::Vec2(
                                         target.get_component::<PositionComponent>().unwrap().0,
                                     ),
@@ -227,7 +268,7 @@ impl Effect {
                     .remove(status);
             }
             Effect::SetVarInt { name, value } => {
-                let value = value.calculate(&context, world, resources);
+                let value = value.calculate(&context, world, resources)?;
                 world
                     .entry(context.target)
                     .context("Failed to get Target")?
@@ -272,10 +313,10 @@ impl Effect {
                 value,
                 target,
             } => {
-                let value = value.calculate(&context, world, resources);
+                let value = value.calculate(&context, world, resources)?;
                 let target = target
                     .as_ref()
-                    .and_then(|target| Some(target.calculate(&context, world, resources)))
+                    .and_then(|target| target.calculate(&context, world, resources).ok())
                     .unwrap_or(context.target);
                 let mut target = world.entry(target).unwrap();
                 match stat {
@@ -293,7 +334,7 @@ impl Effect {
                 var: var_name,
                 value,
             } => {
-                let value = value.calculate(&context, world, resources);
+                let value = value.calculate(&context, world, resources)?;
                 debug!(
                     "Set ability {} var {:?} value {}",
                     ability_name, var_name, value
@@ -312,7 +353,7 @@ impl Effect {
                     .insert(*var_name, Var::Int(value));
             }
             Effect::SetStatusVarInt { status, var, value } => {
-                let value = value.calculate(&context, world, resources);
+                let value = value.calculate(&context, world, resources)?;
                 resources
                     .status_pool
                     .active_statuses
@@ -334,7 +375,7 @@ impl Effect {
                 then,
                 r#else,
             } => {
-                if condition.calculate(&context, world, resources) {
+                if condition.calculate(&context, world, resources)? {
                     resources
                         .action_queue
                         .push_front(Action::new(context.clone(), then.deref().clone()));
@@ -385,15 +426,15 @@ impl Effect {
                 resources.action_queue.push_front(Action::new(
                     Context {
                         target: match target {
-                            Some(entity) => entity.calculate(&context, world, resources),
+                            Some(entity) => entity.calculate(&context, world, resources)?,
                             None => context.target,
                         },
                         owner: match owner {
-                            Some(entity) => entity.calculate(&context, world, resources),
+                            Some(entity) => entity.calculate(&context, world, resources)?,
                             None => context.target,
                         },
                         parent: match parent {
-                            Some(entity) => Some(entity.calculate(&context, world, resources)),
+                            Some(entity) => Some(entity.calculate(&context, world, resources)?),
                             None => context.parent,
                         },
                         ..context.clone()
@@ -403,7 +444,7 @@ impl Effect {
             }
             Effect::Kill { target, then } => {
                 let context = Context {
-                    target: target.calculate(&context, world, resources),
+                    target: target.calculate(&context, world, resources)?,
                     ..context.clone()
                 };
                 if WorldSystem::kill(context.target, world, resources) {

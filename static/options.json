@@ -76,6 +76,16 @@
         },
         "layer": "UI"
     },
+    "curve": {
+        "path": "shaders/vfx/curve.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#8d0000"
+            },
+            "vertices": 1000
+        },
+        "layer": "UI"
+    },
     "slot": {
         "path": "shaders/system/slot.glsl",
         "parameters": {
