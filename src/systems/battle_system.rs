@@ -91,7 +91,7 @@ impl BattleSystem {
         resources.cassette.node_template.clear();
         resources.cassette.close_node();
 
-        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Light, Faction::Dark});
+        SlotSystem::fill_gaps(world, hashset! {Faction::Light, Faction::Dark});
         let units = <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .collect_vec();

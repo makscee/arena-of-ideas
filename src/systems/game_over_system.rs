@@ -36,7 +36,6 @@ impl GameOverSystem {
             hashset! {Faction::Team},
         );
         SlotSystem::clear_world(world);
-        SlotSystem::put_factions_into_slots(hashset! {Faction::Team}, world);
     }
 }
 

@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PositionComponent(pub vec2<f32>);
 
 impl VarsProvider for PositionComponent {

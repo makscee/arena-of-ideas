@@ -100,9 +100,7 @@ impl ShopSystem {
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
             {
-                resources.cassette.close_node();
-                SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team});
-                resources.cassette.close_node();
+                SlotSystem::make_gap(world, slot, hashset! {Faction::Team});
             }
             match world
                 .entry(dragged)
@@ -145,7 +143,6 @@ impl ShopSystem {
                         .unwrap()
                         .slot = slot;
                 }
-                SlotSystem::put_unit_into_slot(sell_candidate, world);
             }
             self.sell_candidate = None;
             SlotSystem::refresh_slot_shaders(
@@ -161,23 +158,17 @@ impl ShopSystem {
             {
                 let slot = slot.unwrap();
                 Self::buy(buy_candidate, slot, resources, world);
-                SlotSystem::put_unit_into_slot(buy_candidate, world);
-                Self::refresh_cassette(world, resources);
+                // Self::refresh_cassette(world, resources);
                 self.hovered_team = Some(buy_candidate);
-            } else {
-                let mut entry = world.entry_mut(buy_candidate).unwrap();
-                let position =
-                    SlotSystem::get_unit_position(entry.get_component::<UnitComponent>().unwrap());
-                entry.get_component_mut::<PositionComponent>().unwrap().0 = position;
             }
             self.buy_candidate = None;
-            SlotSystem::fill_gaps(world, resources, hashset! {Faction::Team});
+            SlotSystem::fill_gaps(world, hashset! {Faction::Team});
             SlotSystem::refresh_slot_shaders(
                 world,
                 resources,
                 hashset! {Faction::Shop,Faction::Team},
             );
-            ContextSystem::refresh_all(world);
+            // ContextSystem::refresh_all(world);
         }
     }
 

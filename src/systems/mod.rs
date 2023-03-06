@@ -72,26 +72,27 @@ impl Game {
         game_state.add_systems(
             GameState::Battle,
             vec![
+                Box::new(SlotSystem::new()),
                 Box::new(CassettePlayerSystem::new(PlayMode::Play)),
                 Box::new(ActionSystem::new()),
-                Box::new(SlotSystem::new()),
                 Box::new(BattleSystem::new()),
             ],
         );
         game_state.add_systems(
             GameState::Shop,
             vec![
+                Box::new(SlotSystem::new()),
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
                 Box::new(ActionSystem::new()),
                 Box::new(ShopSystem::new()),
                 Box::new(MouseSystem::new()),
-                Box::new(SlotSystem::new()),
             ],
         );
         game_state.add_systems(
             GameState::Gallery,
             vec![
                 Box::new(GallerySystem::new()),
+                Box::new(SlotSystem::new()),
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
             ],
         );

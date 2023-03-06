@@ -1,10 +1,10 @@
-use legion::EntityStore;
-
 use super::*;
 
 pub struct SlotSystem {}
 
 pub const SLOTS_COUNT: usize = 5;
+pub const PULL_FORCE: f32 = 7.0;
+pub const SHOP_POSITION: vec2<f32> = vec2(0.0, 2.0);
 
 impl SlotSystem {
     pub fn new() -> Self {
@@ -29,8 +29,10 @@ impl SlotSystem {
                     false => vec2((slot as f32 - 1.0) * 2.5, -4.0),
                 } * faction_mul
             }
-            Faction::Team | Faction::Shop | Faction::Gallery => {
-                vec2(slot as f32, 0.0) * faction_mul * 2.5
+            Faction::Team | Faction::Gallery => vec2(slot as f32, 0.0) * faction_mul * 2.5,
+            Faction::Shop => {
+                SHOP_POSITION
+                    + vec2(slot as f32 - SLOTS_COUNT as f32 / 2.0, 0.0) * faction_mul * 2.5
             }
         }
     }
@@ -72,30 +74,6 @@ impl SlotSystem {
                     false => None,
                 },
             )
-    }
-
-    pub fn put_factions_into_slots(factions: HashSet<Faction>, world: &mut legion::World) {
-        <(&EntityComponent, &UnitComponent)>::query()
-            .iter(world)
-            .filter_map(|(entity, unit)| match factions.contains(&unit.faction) {
-                true => Some(entity.entity),
-                false => None,
-            })
-            .collect_vec()
-            .into_iter()
-            .for_each(|entity| Self::put_unit_into_slot(entity, world));
-    }
-
-    pub fn put_unit_into_slot(entity: legion::Entity, world: &mut legion::World) {
-        let entry = world.entry(entity).unwrap();
-        let unit = entry.get_component::<UnitComponent>().unwrap();
-        let (slot, faction) = (unit.slot, unit.faction);
-        world
-            .entry_mut(entity)
-            .unwrap()
-            .get_component_mut::<PositionComponent>()
-            .unwrap()
-            .0 = Self::get_position(slot, &faction)
     }
 
     pub fn clear_world(world: &mut legion::World) {
@@ -156,67 +134,36 @@ impl SlotSystem {
         }
     }
 
-    pub fn make_gap(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        gap_slot: usize,
-        factions: HashSet<Faction>,
-    ) {
+    pub fn make_gap(world: &mut legion::World, gap_slot: usize, factions: HashSet<Faction>) {
         let mut current_slot: HashMap<&Faction, usize> =
             HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
-        <(&mut UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
+        <&mut UnitComponent>::query()
             .filter(!component::<DragComponent>())
             .iter_mut(world)
-            .sorted_by_key(|(unit, _, _)| unit.slot)
-            .for_each(|(unit, position, entity)| {
+            .sorted_by_key(|unit| unit.slot)
+            .for_each(|unit| {
                 if let Some(slot) = current_slot.get_mut(&unit.faction) {
                     *slot = *slot + 1;
                     if *slot == gap_slot {
                         *slot = *slot + 1;
                     }
                     unit.slot = *slot;
-                    let new_position = SlotSystem::get_unit_position(unit);
-                    if new_position != position.0 {
-                        resources
-                            .cassette
-                            .add_effect(Self::get_position_change_animation(
-                                entity.entity,
-                                position.0,
-                                new_position,
-                            ))
-                    }
-                    position.0 = new_position;
                 }
             });
-        ContextSystem::refresh_all(world);
     }
 
-    pub fn fill_gaps(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        factions: HashSet<Faction>,
-    ) {
-        Self::make_gap(world, resources, SLOTS_COUNT + 1, factions);
-    }
-
-    fn get_position_change_animation(
-        entity: legion::Entity,
-        from: vec2<f32>,
-        to: vec2<f32>,
-    ) -> VisualEffect {
-        VisualEffect::new(
-            0.1,
-            VisualEffectType::EntityShaderAnimation {
-                entity,
-                from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
-                to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
-                easing: EasingType::Linear,
-            },
-            17,
-        )
+    pub fn fill_gaps(world: &mut legion::World, factions: HashSet<Faction>) {
+        Self::make_gap(world, SLOTS_COUNT + 1, factions);
     }
 }
 
 impl System for SlotSystem {
-    fn update(&mut self, _world: &mut legion::World, _resources: &mut Resources) {}
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        <(&UnitComponent, &mut PositionComponent)>::query()
+            .iter_mut(world)
+            .for_each(|(unit, position)| {
+                let need_pos = Self::get_unit_position(unit);
+                position.0 += (need_pos - position.0) * PULL_FORCE * resources.delta_time;
+            })
+    }
 }
