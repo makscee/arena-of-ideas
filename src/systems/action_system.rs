@@ -15,6 +15,7 @@ impl ActionSystem {
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
+        ContextSystem::refresh_all(world);
         StatusPool::init_new_statuses(world, resources);
         let Some(action) = resources.action_queue.pop_front() else { return false };
         debug!(

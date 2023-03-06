@@ -4,7 +4,7 @@ pub struct SlotSystem {}
 
 pub const SLOTS_COUNT: usize = 5;
 pub const PULL_FORCE: f32 = 7.0;
-pub const SHOP_POSITION: vec2<f32> = vec2(0.0, 2.0);
+pub const SHOP_POSITION: vec2<f32> = vec2(0.0, 5.0);
 
 impl SlotSystem {
     pub fn new() -> Self {

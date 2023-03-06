@@ -90,7 +90,9 @@ impl WorldSystem {
             .send(resources, world);
         }
         resources.status_pool.clear_entity(&entity);
-        world.remove(entity)
+        let res = world.remove(entity);
+        SlotSystem::refresh_slot_shaders(world, resources, hashset! {unit.faction});
+        res
     }
 
     pub fn set_time(ts: Time, world: &mut legion::World) {

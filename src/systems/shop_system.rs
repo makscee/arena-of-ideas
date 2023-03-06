@@ -14,12 +14,6 @@ const UNIT_COST: usize = 3;
 
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if resources.down_keys.contains(&geng::Key::R) {
-            Self::reroll(world, resources);
-        }
-        if resources.down_keys.contains(&geng::Key::C) {
-            resources.shop.money += 10;
-        }
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
     }
@@ -158,17 +152,16 @@ impl ShopSystem {
             {
                 let slot = slot.unwrap();
                 Self::buy(buy_candidate, slot, resources, world);
-                // Self::refresh_cassette(world, resources);
                 self.hovered_team = Some(buy_candidate);
             }
             self.buy_candidate = None;
             SlotSystem::fill_gaps(world, hashset! {Faction::Team});
+            ContextSystem::refresh_all(world);
             SlotSystem::refresh_slot_shaders(
                 world,
                 resources,
                 hashset! {Faction::Shop,Faction::Team},
             );
-            // ContextSystem::refresh_all(world);
         }
     }
 

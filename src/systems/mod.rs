@@ -82,9 +82,9 @@ impl Game {
             GameState::Shop,
             vec![
                 Box::new(SlotSystem::new()),
+                Box::new(ShopSystem::new()),
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
                 Box::new(ActionSystem::new()),
-                Box::new(ShopSystem::new()),
                 Box::new(MouseSystem::new()),
             ],
         );

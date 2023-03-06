@@ -37,7 +37,6 @@ impl BattleSystem {
         SlotSystem::refresh_slot_shaders(world, resources, hashset![Faction::Dark, Faction::Light]);
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
-        ContextSystem::refresh_all(world);
         ActionSystem::run_ticks(world, resources);
     }
 

@@ -44,6 +44,12 @@ impl System for GameStateSystem {
                 if resources.down_keys.contains(&geng::Key::O) {
                     resources.transition_state = GameState::GameOver;
                 }
+                if resources.down_keys.contains(&geng::Key::R) {
+                    ShopSystem::restart(world, resources);
+                }
+                if resources.down_keys.contains(&geng::Key::C) {
+                    resources.shop.money += 100;
+                }
             }
             GameState::Gallery => {
                 if resources.down_keys.contains(&geng::Key::G) {
