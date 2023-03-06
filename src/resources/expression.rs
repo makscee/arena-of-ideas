@@ -132,7 +132,7 @@ impl ExpressionEntity {
             ExpressionEntity::Owner => Ok(context.owner),
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
-                WorldSystem::collect_factions(world, &hashset! {*faction})
+                UnitSystem::collect_factions(world, &hashset! {*faction})
                     .into_iter()
                     .find_map(|(entity, unit)| match unit.slot == slot {
                         true => Some(entity),

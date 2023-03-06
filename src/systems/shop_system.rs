@@ -73,8 +73,9 @@ impl ShopSystem {
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
         resources.rounds.next_round = 0;
         resources.shop.money = 4;
-        WorldSystem::clear_factions(world, &hashset! {Faction::Team});
+        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Team});
         resources.status_pool.clear_all_active();
+        Self::reroll(world, resources);
     }
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
@@ -90,11 +91,15 @@ impl ShopSystem {
     }
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        SlotSystem::set_hovered_slot(world, &Faction::Team, SLOTS_COUNT + 1);
         if let Some(dragged) = resources.dragged_entity {
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
             {
-                SlotSystem::make_gap(world, slot, hashset! {Faction::Team});
+                if SlotSystem::make_gap(world, slot, hashset! {Faction::Team}) {
+                    SlotSystem::refresh_slots_filled_uniform(world);
+                }
+                SlotSystem::set_hovered_slot(world, &Faction::Team, slot);
             }
             match world
                 .entry(dragged)
@@ -139,29 +144,22 @@ impl ShopSystem {
                 }
             }
             self.sell_candidate = None;
-            SlotSystem::refresh_slot_shaders(
-                world,
-                resources,
-                hashset! {Faction::Shop, Faction::Team},
-            );
+            SlotSystem::refresh_slots_filled_uniform(world);
         } else if let Some(buy_candidate) = self.buy_candidate {
             let slot = SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos);
             if resources.shop.money >= UNIT_COST
                 && slot.is_some()
+                && resources.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
                 && Self::team_count(world) < SLOTS_COUNT
             {
                 let slot = slot.unwrap();
                 Self::buy(buy_candidate, slot, resources, world);
+                // SlotSystem::fill_gaps(world, hashset! {Faction::Team});
+                SlotSystem::refresh_slots_filled_uniform(world);
+                ContextSystem::refresh_all(world);
                 self.hovered_team = Some(buy_candidate);
             }
             self.buy_candidate = None;
-            SlotSystem::fill_gaps(world, hashset! {Faction::Team});
-            ContextSystem::refresh_all(world);
-            SlotSystem::refresh_slot_shaders(
-                world,
-                resources,
-                hashset! {Faction::Shop,Faction::Team},
-            );
         }
     }
 
@@ -196,13 +194,12 @@ impl ShopSystem {
             context: ContextSystem::get_context(entity, world),
         }
         .send(resources, world);
-        WorldSystem::kill(entity, world, resources);
+        UnitSystem::kill(entity, world, resources);
     }
 
     pub fn clear(world: &mut legion::World, resources: &mut Resources) {
         let factions = &hashset! {Faction::Shop};
-        resources.status_pool.clear_factions(factions, world);
-        WorldSystem::clear_factions(world, factions);
+        UnitSystem::clear_factions(world, resources, factions);
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
@@ -231,6 +228,6 @@ impl ShopSystem {
                 SlotSystem::get_position(slot, &Faction::Shop),
             );
         }
-        SlotSystem::refresh_slot_shaders(world, resources, hashset! {Faction::Shop,Faction::Team});
+        SlotSystem::refresh_slots_filled_uniform(world);
     }
 }

@@ -35,7 +35,6 @@ impl GameOverSystem {
             &mut resources.cassette.parallel_node,
             hashset! {Faction::Team},
         );
-        SlotSystem::clear_world(world);
     }
 }
 

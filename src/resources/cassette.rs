@@ -20,6 +20,8 @@ impl Default for Cassette {
     }
 }
 
+const DEFAULT_EFFECT_KEY: &str = "default";
+
 impl Cassette {
     pub fn close_node(&mut self) {
         let node = self.queue.last_mut().unwrap();
@@ -39,14 +41,19 @@ impl Cassette {
     }
 
     pub fn add_effect(&mut self, effect: VisualEffect) {
-        self.queue.last_mut().unwrap().add_effect(effect);
+        self.add_effect_by_key(DEFAULT_EFFECT_KEY, effect);
     }
 
-    pub fn add_effect_by_key(&mut self, key: &str, effect: VisualEffect) {
-        self.queue
-            .last_mut()
-            .unwrap()
-            .add_effect_by_key(key, effect);
+    pub fn add_effect_by_key(&mut self, key: &str, mut effect: VisualEffect) {
+        let mut last = self.queue.last_mut().unwrap();
+        if self.head > last.start + last.duration {
+            self.close_node();
+            last = self.queue.last_mut().unwrap();
+        }
+        if self.head > last.start && self.head < last.start + last.duration {
+            effect.delay += self.head - last.start;
+        }
+        last.add_effect_by_key(key, effect);
     }
 
     pub fn get_key_count(&self, key: &str) -> usize {
@@ -60,11 +67,16 @@ impl Cassette {
             .add_entity_shader(entity, shader);
     }
 
-    pub fn get_shaders(&self, mouse_pos: vec2<f32>) -> Vec<Shader> {
+    pub fn get_shaders(
+        &self,
+        mouse_pos: vec2<f32>,
+        mut world_shaders: HashMap<legion::Entity, Shader>,
+    ) -> Vec<Shader> {
         let node = self.get_node_at_ts(self.head).merge(&self.parallel_node);
         let time = self.head - node.start;
         let mut shaders: Vec<Shader> = default();
-        let mut entity_shaders = node.entity_shaders.clone();
+        world_shaders.extend(node.entity_shaders.clone().into_iter());
+        let mut entity_shaders = world_shaders;
 
         // 1st phase: apply any changes to entity shaders uniforms
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
@@ -82,6 +94,7 @@ impl Cassette {
             };
         }
 
+        // todo: rework
         // inject hovered info
         for (_, shader) in entity_shaders.iter_mut() {
             let position = shader
@@ -176,8 +189,6 @@ pub struct CassetteNode {
     effects: HashMap<String, Vec<VisualEffect>>,
 }
 
-const DEFAULT_KEY: &str = "default";
-
 impl CassetteNode {
     pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
         self.entity_shaders.insert(entity, shader);
@@ -188,18 +199,10 @@ impl CassetteNode {
         vec.push(effect);
         self.effects.insert(key.to_string(), vec);
     }
-    pub fn add_effect(&mut self, effect: VisualEffect) {
-        self.add_effect_by_key(DEFAULT_KEY, effect);
-    }
-    pub fn add_effects_by_key(&mut self, key: &str, effect: Vec<VisualEffect>) {
-        effect
-            .into_iter()
-            .for_each(|effect| self.add_effect_by_key(key, effect))
-    }
-    pub fn add_effects(&mut self, effects: Vec<VisualEffect>) {
+    pub fn add_effects_by_key(&mut self, key: &str, effects: Vec<VisualEffect>) {
         effects
             .into_iter()
-            .for_each(|effect| self.add_effect(effect))
+            .for_each(|effect| self.add_effect_by_key(key, effect))
     }
     pub fn get_key_count(&self, key: &str) -> usize {
         match self.effects.get(key).and_then(|v| Some(v.len())) {
@@ -228,7 +231,7 @@ impl CassetteNode {
         let mut node = self;
         node.duration = node.duration.max(node.duration);
         for (key, other_effects) in other.effects.iter() {
-            if key == DEFAULT_KEY {
+            if key == DEFAULT_EFFECT_KEY {
                 let mut effects = node.effects.remove(key).unwrap_or_default();
                 effects.extend(other_effects.iter().cloned());
                 node.effects.insert(key.clone(), effects);

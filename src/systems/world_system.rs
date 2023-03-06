@@ -3,37 +3,6 @@ use super::*;
 pub struct WorldSystem {}
 
 impl WorldSystem {
-    pub fn clear_factions(
-        world: &mut legion::World,
-        factions: &HashSet<Faction>,
-    ) -> Vec<legion::Entity> {
-        let unit_entitites = <(&EntityComponent, &UnitComponent)>::query()
-            .iter(world)
-            .filter_map(|(entity, unit)| match factions.contains(&unit.faction) {
-                true => Some(entity.entity.clone()),
-                false => None,
-            })
-            .collect_vec();
-        unit_entitites.iter().for_each(|entity| {
-            world.remove(*entity);
-        });
-        unit_entitites
-    }
-
-    pub fn collect_factions(
-        world: &legion::World,
-        factions: &HashSet<Faction>,
-    ) -> HashMap<legion::Entity, UnitComponent> {
-        HashMap::from_iter(
-            <(&UnitComponent, &EntityComponent)>::query()
-                .iter(world)
-                .filter_map(|(unit, entity)| match factions.contains(&unit.faction) {
-                    true => Some((entity.entity, *unit)),
-                    false => None,
-                }),
-        )
-    }
-
     pub fn get_context(world: &legion::World) -> Context {
         <(&WorldComponent, &Context)>::query()
             .iter(world)
@@ -70,29 +39,6 @@ impl WorldSystem {
             .collect_vec()[0]
             .1
             .vars
-    }
-
-    pub fn kill(
-        entity: legion::Entity,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) -> bool {
-        let unit = world
-            .entry_ref(entity)
-            .unwrap()
-            .get_component::<UnitComponent>()
-            .unwrap()
-            .clone();
-        if unit.faction == Faction::Team {
-            Event::RemoveFromTeam {
-                context: ContextSystem::get_context(entity, world),
-            }
-            .send(resources, world);
-        }
-        resources.status_pool.clear_entity(&entity);
-        let res = world.remove(entity);
-        SlotSystem::refresh_slot_shaders(world, resources, hashset! {unit.faction});
-        res
     }
 
     pub fn set_time(ts: Time, world: &mut legion::World) {

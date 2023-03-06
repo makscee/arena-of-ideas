@@ -8,7 +8,8 @@
                 "u_color_2": "#ffffff"
             }
         },
-        "layer": "Background"
+        "layer": "Background",
+        "order": -1000
     },
     "stats": {
         "path": "shaders/system/stats.glsl",
@@ -47,8 +48,8 @@
     "faction_colors": {
         "Dark": "#ffffff",
         "Light": "#000000",
-        "Shop": "#ffffff",
-        "Team": "#000000"
+        "Shop": "#fbc000",
+        "Team": "#e70083"
     },
     "strike": {
         "path": "shaders/system/strike.glsl",
@@ -91,7 +92,7 @@
         "parameters": {
             "uniforms": {}
         },
-        "layer": "Unit"
+        "layer": "Background"
     },
     "description_panel": {
         "path": "shaders/system/description_panel.glsl",

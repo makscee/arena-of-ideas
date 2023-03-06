@@ -64,8 +64,7 @@
                             },
                             {
                                 "type": "ShowText",
-                                "text": "++Shield Reflection",
-                                "color": "#00e9c6"
+                                "text": "++Shield Reflection"
                             }
                         ]
                     }

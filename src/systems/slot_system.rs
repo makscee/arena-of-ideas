@@ -4,7 +4,10 @@ pub struct SlotSystem {}
 
 pub const SLOTS_COUNT: usize = 5;
 pub const PULL_FORCE: f32 = 7.0;
-pub const SHOP_POSITION: vec2<f32> = vec2(0.0, 5.0);
+pub const SHOP_POSITION: vec2<f32> = vec2(-30.0, 0.0);
+pub const TEAM_OFFSET: vec2<f32> = vec2(0.0, -3.0);
+pub const SHOP_CASE_OFFSET: vec2<f32> = vec2(0.0, 3.0);
+pub const BATTLEFIELD_POSITION: vec2<f32> = vec2(0.0, 0.0);
 
 impl SlotSystem {
     pub fn new() -> Self {
@@ -17,7 +20,7 @@ impl SlotSystem {
                 Faction::Light => -1.0,
                 Faction::Dark => 1.0,
                 Faction::Team => -1.0,
-                Faction::Shop => 1.0,
+                Faction::Shop => -1.0,
                 Faction::Gallery => 0.0,
             },
             1.0,
@@ -28,12 +31,19 @@ impl SlotSystem {
                     true => vec2(1.5, 0.0),
                     false => vec2((slot as f32 - 1.0) * 2.5, -4.0),
                 } * faction_mul
+                    + BATTLEFIELD_POSITION
             }
-            Faction::Team | Faction::Gallery => vec2(slot as f32, 0.0) * faction_mul * 2.5,
-            Faction::Shop => {
+            Faction::Team => {
                 SHOP_POSITION
+                    + TEAM_OFFSET
                     + vec2(slot as f32 - SLOTS_COUNT as f32 / 2.0, 0.0) * faction_mul * 2.5
             }
+            Faction::Shop => {
+                SHOP_POSITION
+                    + SHOP_CASE_OFFSET
+                    + vec2(slot as f32 - SLOTS_COUNT as f32 / 2.0, 0.0) * faction_mul * 2.5
+            }
+            Faction::Gallery => vec2::ZERO,
         }
     }
 
@@ -59,6 +69,18 @@ impl SlotSystem {
             }
         }
         None
+    }
+
+    pub fn get_slot_entity(world: &legion::World, faction: Faction, slot: usize) -> legion::Entity {
+        <(&SlotComponent, &EntityComponent)>::query()
+            .iter(world)
+            .find_map(|(slot_component, entity)| {
+                match slot_component.slot == slot && slot_component.faction == faction {
+                    true => Some(entity.entity),
+                    false => None,
+                }
+            })
+            .unwrap()
     }
 
     pub fn find_unit_by_slot(
@@ -87,56 +109,98 @@ impl SlotSystem {
             });
     }
 
-    pub fn refresh_slot_shaders(
+    pub fn create_slot_entities(
         world: &mut legion::World,
-        resources: &Resources,
+        options: &Options,
         factions: HashSet<Faction>,
     ) {
         Self::clear_world(world);
-        let filled_slots: HashSet<(Faction, usize)> = HashSet::from_iter(
-            <&UnitComponent>::query()
-                .iter(world)
-                .map(|unit| (unit.faction, unit.slot)),
-        );
         for slot in 1..=SLOTS_COUNT {
             factions.iter().for_each(|faction| {
                 let entity = world.push((
-                    PositionComponent(Self::get_position(slot, faction)),
-                    resources
-                        .options
+                    options
                         .slot
                         .clone()
+                        .set_uniform("u_color", ShaderUniform::Color(faction.color(&options)))
                         .set_uniform(
-                            "u_color",
-                            ShaderUniform::Color(faction.color(&resources.options)),
-                        )
-                        .set_uniform(
-                            "u_filled",
-                            ShaderUniform::Float(match filled_slots.contains(&(*faction, slot)) {
-                                true => 1.0,
-                                false => 0.0,
-                            }),
+                            "u_position",
+                            ShaderUniform::Vec2(Self::get_position(slot, faction)),
                         ),
-                    SlotComponent { slot },
+                    SlotComponent {
+                        slot,
+                        faction: *faction,
+                    },
                 ));
                 world
                     .entry(entity)
                     .unwrap()
                     .add_component(EntityComponent { entity });
-                let context = Context {
-                    owner: entity,
-                    target: entity,
-                    parent: Some(WorldSystem::get_context(world).owner),
-                    vars: default(),
-                };
-                world.entry(entity).unwrap().add_component(context);
+                debug!("Slot entity {:?}", entity);
             })
         }
+        Self::refresh_slots_filled_uniform(world);
     }
 
-    pub fn make_gap(world: &mut legion::World, gap_slot: usize, factions: HashSet<Faction>) {
+    pub fn refresh_slots_filled_uniform(world: &mut legion::World) {
+        let filled_slots = Self::get_filled_slots(world);
+        <(&SlotComponent, &mut Shader)>::query()
+            .iter_mut(world)
+            .for_each(|(slot, shader)| {
+                shader.parameters.uniforms.insert(
+                    "u_filled".to_string(),
+                    ShaderUniform::Float(match filled_slots.contains(&(slot.faction, slot.slot)) {
+                        true => 1.0,
+                        false => 0.0,
+                    }),
+                )
+            })
+    }
+
+    pub fn set_hovered_slot(world: &mut legion::World, faction: &Faction, slot: usize) {
+        <(&SlotComponent, &mut Shader)>::query()
+            .iter_mut(world)
+            .for_each(|(slot_component, shader)| {
+                shader.parameters.uniforms.insert(
+                    "u_hovered".to_string(),
+                    ShaderUniform::Float(
+                        match slot_component.slot == slot && slot_component.faction == *faction {
+                            true => 1.0,
+                            false => 0.0,
+                        },
+                    ),
+                )
+            })
+    }
+
+    pub fn get_slot_filled_visual_effects(world: &legion::World) -> Vec<VisualEffect> {
+        let filled_slots = Self::get_filled_slots(world);
+        <(&SlotComponent, &EntityComponent)>::query()
+            .iter(world)
+            .map(|(slot, entity)| {
+                VisualEffect::new(
+                    0.0,
+                    VisualEffectType::EntityShaderConst {
+                        entity: entity.entity,
+                        uniforms: hashmap! {"u_filled" => ShaderUniform::Float(match filled_slots.contains(&(slot.faction, slot.slot)) {
+                            true => 1.0,
+                            false => 0.0,
+                        })}
+                        .into(),
+                    },
+                    0,
+                )
+            })
+            .collect_vec()
+    }
+
+    pub fn make_gap(
+        world: &mut legion::World,
+        gap_slot: usize,
+        factions: HashSet<Faction>,
+    ) -> bool {
         let mut current_slot: HashMap<&Faction, usize> =
             HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
+        let mut changed = false;
         <&mut UnitComponent>::query()
             .filter(!component::<DragComponent>())
             .iter_mut(world)
@@ -147,13 +211,25 @@ impl SlotSystem {
                     if *slot == gap_slot {
                         *slot = *slot + 1;
                     }
-                    unit.slot = *slot;
+                    if unit.slot != *slot {
+                        changed = true;
+                        unit.slot = *slot;
+                    }
                 }
             });
+        changed
     }
 
     pub fn fill_gaps(world: &mut legion::World, factions: HashSet<Faction>) {
         Self::make_gap(world, SLOTS_COUNT + 1, factions);
+    }
+
+    fn get_filled_slots(world: &legion::World) -> HashSet<(Faction, usize)> {
+        HashSet::from_iter(
+            <&UnitComponent>::query()
+                .iter(world)
+                .map(|unit| (unit.faction, unit.slot)),
+        )
     }
 }
 

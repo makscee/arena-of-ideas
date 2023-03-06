@@ -1,4 +1,4 @@
-use std::collections::{hash_map::Entry, vec_deque, VecDeque};
+use std::collections::{hash_map::Entry, VecDeque};
 
 use geng::prelude::{itertools::Itertools, ugli::SingleUniform};
 use legion::EntityStore;
@@ -55,23 +55,23 @@ impl ShaderSystem {
         framebuffer: &mut ugli::Framebuffer,
     ) {
         // Get all Shader components from World for drawing
-        let world_shaders = <(&Shader, &EntityComponent)>::query()
-            .filter(!component::<UnitComponent>())
-            .iter(world)
-            .map(|(_, entity)| Self::get_entity_shader(world, entity.entity))
-            .collect_vec();
 
-        let shaders = [
-            world_shaders,
-            resources.cassette.get_shaders(resources.mouse_pos),
-            resources.frame_shaders.clone(),
-        ]
-        .concat();
+        let world_shaders: HashMap<legion::Entity, Shader> = HashMap::from_iter(
+            <&EntityComponent>::query()
+                .filter(!component::<UnitComponent>() & component::<Shader>())
+                .iter(world)
+                .map(|entity| (entity.entity, Self::get_entity_shader(world, entity.entity))),
+        );
+
+        let shaders = resources
+            .cassette
+            .get_shaders(resources.mouse_pos, world_shaders);
+
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
         let emtpy_vec: Vec<Shader> = Vec::new();
         for shader in shaders {
-            let layer = &shader.layer;
-            let vec = match shaders_by_layer.entry(layer.clone()) {
+            let layer = shader.layer;
+            let vec = match shaders_by_layer.entry(layer) {
                 Entry::Occupied(o) => o.into_mut(),
                 Entry::Vacant(v) => v.insert(emtpy_vec.clone()),
             };

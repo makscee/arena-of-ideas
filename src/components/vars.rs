@@ -23,6 +23,7 @@ pub enum VarName {
     Hits,
     Reflection,
     GrowAmount,
+    Color,
 }
 
 impl VarName {
@@ -67,6 +68,10 @@ impl Vars {
             .expect(&format!("Failed to get var {}", name))
     }
 
+    pub fn try_get(&self, name: &VarName) -> Option<&Var> {
+        self.0.get(name)
+    }
+
     pub fn get_int(&self, name: &VarName) -> i32 {
         match self.get(name) {
             Var::Int(value) => *value,
@@ -75,9 +80,17 @@ impl Vars {
     }
 
     pub fn get_color(&self, name: &VarName) -> Rgba<f32> {
-        match self.get(name) {
-            Var::Color(value) => *value,
-            _ => panic!("Wrong Var type {}", name),
+        self.try_get_color(name)
+            .expect(&format!("Failed to get var {}", name))
+    }
+
+    pub fn try_get_color(&self, name: &VarName) -> Option<Rgba<f32>> {
+        match self.try_get(name) {
+            Some(value) => match value {
+                Var::Color(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", name),
+            },
+            None => None,
         }
     }
 

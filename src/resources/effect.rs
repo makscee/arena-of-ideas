@@ -280,29 +280,26 @@ impl Effect {
                 StatusPool::add_entity_status(context.target, name, context, resources);
             }
             Effect::UseAbility { name, house } => {
-                if !world
+                if world
                     .entry(context.owner)
                     .context("Failed to get Owner")?
                     .get_component::<HouseComponent>()?
                     .houses
-                    .contains_key(house)
+                    .get(house)
+                    .is_none()
                 {
                     panic!(
                         "Tried to use {} while not being a member of the {:?}",
                         name, house
                     );
                 }
-                let ability = resources
-                    .houses
-                    .get(house)
-                    .context("Failed to get House")?
-                    .abilities
-                    .get(name)
-                    .context("Failed to get Ability")?;
+                let house = resources.houses.get(house).context("Failed to get House")?;
+                let ability = house.abilities.get(name).context("Failed to get Ability")?;
                 resources.action_queue.push_front(Action::new(
                     {
                         let mut context = context.clone();
                         context.vars.merge(&ability.vars, true);
+                        context.vars.insert(VarName::Color, Var::Color(house.color));
                         context
                     },
                     ability.effect.clone(),
@@ -391,35 +388,19 @@ impl Effect {
                     .context("Failed to get target")?
                     .get_component::<PositionComponent>()?
                     .0;
-                resources.cassette.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation {
-                        shader: resources
-                            .options
-                            .text
-                            .clone()
-                            .merge_uniforms(&context.vars.clone().into(), false)
-                            .set_uniform("u_position", ShaderUniform::Vec2(target_position))
-                            .set_uniform("u_text", ShaderUniform::String((0, text.clone())))
-                            .set_uniform(
-                                "u_outline_color",
-                                ShaderUniform::Color(color.unwrap_or_else(|| {
-                                    context.vars.get_color(&VarName::HouseColor1)
-                                })),
-                            )
-                            .set_uniform("u_alpha_over_t", ShaderUniform::Float(-0.8))
-                            .set_uniform("u_scale", ShaderUniform::Float(0.5))
-                            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.5))),
-                        from: hashmap! {
-                            "u_time" => ShaderUniform::Float(0.0),
-                        }
-                        .into(),
-                        to: hashmap! {
-                            "u_time" => ShaderUniform::Float(1.0),
-                        }
-                        .into(),
-                        easing: EasingType::Linear,
-                    },
+                let color = color
+                    .or_else(|| {
+                        context
+                            .vars
+                            .try_get_color(&VarName::Color)
+                            .or_else(|| Some(context.vars.get_color(&VarName::HouseColor1)))
+                    })
+                    .unwrap();
+                resources.cassette.add_effect(VfxSystem::vfx_show_text(
+                    resources,
+                    text,
+                    color,
+                    target_position,
                     0,
                 ))
             }
@@ -453,7 +434,7 @@ impl Effect {
                     target: target.calculate(&context, world, resources)?,
                     ..context.clone()
                 };
-                if WorldSystem::kill(context.target, world, resources) {
+                if UnitSystem::kill(context.target, world, resources) {
                     if let Some(effect) = then {
                         resources
                             .action_queue
@@ -462,7 +443,7 @@ impl Effect {
                 }
             }
             Effect::Aoe { factions, effect } => {
-                WorldSystem::collect_factions(world, &HashSet::from_iter(factions.clone()))
+                UnitSystem::collect_factions(world, &HashSet::from_iter(factions.clone()))
                     .iter()
                     .for_each(|(entity, _)| {
                         resources.action_queue.push_front(Action::new(

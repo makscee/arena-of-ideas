@@ -23,6 +23,11 @@ impl Game {
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
         let world_entity = world.push((WorldComponent { global_time: 0.0 },));
         Self::init_field(resources, world, world_entity);
+        SlotSystem::create_slot_entities(
+            world,
+            &resources.options,
+            hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
+        );
         let mut world_entry = world.entry(world_entity).unwrap();
         world_entry.add_component(EntityComponent {
             entity: world_entity,

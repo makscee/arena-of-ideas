@@ -164,13 +164,14 @@ impl GameStateSystem {
             GameState::Battle => {
                 WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(1.0));
                 BattleSystem::run_battle(world, resources);
+                resources.camera.center = BATTLEFIELD_POSITION;
             }
             GameState::Shop => {
                 ShopSystem::init(world, resources);
+                resources.camera.center = SHOP_POSITION;
             }
             GameState::Gallery => {
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 20.0)));
-                SlotSystem::clear_world(world);
             }
             GameState::GameOver => {
                 resources.camera.fov = resources.options.fov * 0.5;

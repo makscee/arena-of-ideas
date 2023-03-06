@@ -24,13 +24,14 @@ impl GallerySystem {
 
 const ZOOM_MULTIPLIER: f32 = 1.5;
 const UNIT_SPACING: f32 = 3.0;
+const CARD_ANIMATION_KEY: &str = "gallery_card_animation";
 
 impl GallerySystem {
     fn redraw_units(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let heroes = self.current_heroes.len();
         self.current_heroes[heroes - 1] = self.wanted_hero;
         resources.cassette.parallel_node.clear();
-        WorldSystem::clear_factions(world, &hashset! {Faction::Gallery});
+        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
         for (ind, template_ind) in self.current_heroes.iter().enumerate() {
             let template_key = self.paths[*template_ind].clone();
             let position = vec2(
@@ -49,7 +50,10 @@ impl GallerySystem {
                 resources
                     .cassette
                     .parallel_node
-                    .add_effect(VisualEffect::new_delayed(
+                    .clear_key(CARD_ANIMATION_KEY);
+                resources.cassette.parallel_node.add_effect_by_key(
+                    CARD_ANIMATION_KEY,
+                    VisualEffect::new_delayed(
                         1.0,
                         resources.cassette.head,
                         VisualEffectType::EntityShaderAnimation {
@@ -65,12 +69,12 @@ impl GallerySystem {
                             easing: EasingType::QuartInOut,
                         },
                         -1,
-                    ));
+                    ),
+                );
             }
-            resources
-                .cassette
-                .parallel_node
-                .add_effect(VisualEffect::new(
+            resources.cassette.parallel_node.add_effect_by_key(
+                CARD_ANIMATION_KEY,
+                VisualEffect::new(
                     0.0,
                     VisualEffectType::EntityShaderConst {
                         entity,
@@ -80,7 +84,8 @@ impl GallerySystem {
                         .into(),
                     },
                     -2,
-                ));
+                ),
+            );
         }
         self.need_card_animation = false;
         ContextSystem::refresh_all(world);

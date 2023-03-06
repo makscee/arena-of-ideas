@@ -31,6 +31,9 @@ pub enum VisualEffectType {
         to: ShaderUniforms,
         easing: EasingType,
     },
+    ShaderConst {
+        shader: Shader,
+    },
     EntityShaderAnimation {
         entity: legion::Entity,
         from: ShaderUniforms,
@@ -137,6 +140,7 @@ impl VisualEffectType {
                     _ => None,
                 }
             }
+            VisualEffectType::ShaderConst { shader } => Some(shader.clone()),
         }
     }
 }

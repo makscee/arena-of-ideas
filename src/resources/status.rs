@@ -141,13 +141,6 @@ impl StatusPool {
         }
     }
 
-    pub fn clear_factions(&mut self, factions: &HashSet<Faction>, world: &legion::World) {
-        let entities = WorldSystem::collect_factions(world, factions);
-        entities
-            .into_iter()
-            .for_each(|(entity, _)| self.clear_entity(&entity));
-    }
-
     pub fn clear_all_active(&mut self) {
         self.active_statuses.clear();
     }
