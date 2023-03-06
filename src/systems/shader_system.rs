@@ -115,7 +115,7 @@ impl ShaderSystem {
                     shader,
                     framebuffer,
                     &resources.geng,
-                    &resources.camera,
+                    &resources.camera.camera,
                     &resources.shader_programs,
                     (texture_uniforms, texture_size_uniforms, uniforms),
                 );

@@ -146,7 +146,7 @@ impl System for GallerySystem {
         }
         if resources.down_keys.contains(&geng::Key::Down) {
             self.need_redraw = true;
-            resources.camera.fov *= ZOOM_MULTIPLIER;
+            resources.camera.camera.fov *= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,
@@ -157,7 +157,7 @@ impl System for GallerySystem {
         }
         if resources.down_keys.contains(&geng::Key::Up) {
             self.need_redraw = true;
-            resources.camera.fov /= ZOOM_MULTIPLIER;
+            resources.camera.camera.fov /= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,

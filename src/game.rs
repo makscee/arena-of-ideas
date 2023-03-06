@@ -21,25 +21,13 @@ impl Game {
     }
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
-        let world_entity = world.push((WorldComponent { global_time: 0.0 },));
+        let world_entity = WorldSystem::init_world_entity(world);
         Self::init_field(resources, world, world_entity);
-        SlotSystem::create_slot_entities(
+        SlotSystem::init_world(
             world,
             &resources.options,
             hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
         );
-        let mut world_entry = world.entry(world_entity).unwrap();
-        world_entry.add_component(EntityComponent {
-            entity: world_entity,
-        });
-        let mut vars = Vars::default();
-        vars.insert(VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
-        world_entry.add_component(Context {
-            owner: world_entity,
-            target: world_entity,
-            parent: None,
-            vars,
-        });
     }
 
     fn init_field(
@@ -115,7 +103,7 @@ impl geng::State for Game {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.resources.mouse_pos = self.resources.camera.screen_to_world(
+        self.resources.mouse_pos = self.resources.camera.camera.screen_to_world(
             framebuffer.size().map(|x| x as f32),
             self.resources.geng.window().mouse_pos().map(|x| x as f32),
         );

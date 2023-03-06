@@ -3,6 +3,7 @@ use std::{collections::VecDeque, rc::Rc};
 use super::*;
 
 mod ability;
+mod camera;
 mod cassette;
 mod condition;
 mod effect;
@@ -19,6 +20,7 @@ mod trigger;
 mod visual_effect;
 
 pub use ability::*;
+pub use camera::*;
 pub use cassette::*;
 pub use condition::*;
 pub use effect::*;
@@ -64,7 +66,7 @@ pub struct Resources {
     pub current_state: GameState,
     pub transition_state: GameState,
 
-    pub camera: geng::Camera2d,
+    pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Geng,
 }
@@ -80,11 +82,6 @@ impl Resources {
             &static_path().join("options.json"),
         ))
         .unwrap();
-        let camera = geng::Camera2d {
-            center: vec2(0.0, 0.0),
-            rotation: 0.0,
-            fov: options.fov,
-        };
         let fonts = vec![
             Rc::new(
                 geng::font::Ttf::new(
@@ -112,7 +109,7 @@ impl Resources {
 
         Self {
             shader_programs,
-            camera,
+            camera: Camera::new(&options),
             fonts: Fonts::new(fonts),
             down_keys: default(),
             pressed_keys: default(),

@@ -14,7 +14,7 @@ impl BattleSystem {
     pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_battle(world, resources);
         let mut ticks = 0;
-        while Self::tick(world, resources) && ticks < 100 {
+        while Self::tick(world, resources) && ticks < 1000 {
             ticks += 1;
         }
         resources.cassette.node_template.clear();
@@ -36,7 +36,6 @@ impl BattleSystem {
         );
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
-        ActionSystem::run_ticks(world, resources);
     }
 
     fn battle_won(world: &legion::World) -> bool {
@@ -86,13 +85,12 @@ impl BattleSystem {
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
         resources.cassette.node_template.clear();
-        resources.cassette.close_node();
-
         SlotSystem::fill_gaps(world, hashset! {Faction::Light, Faction::Dark});
         Self::refresh_cassette(world, resources);
         Self::move_to_slots(world, resources);
         Self::refresh_cassette(world, resources);
         resources.cassette.close_node();
+        ActionSystem::run_ticks(world, resources);
         let units = <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .collect_vec();

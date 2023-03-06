@@ -3,6 +3,23 @@ use super::*;
 pub struct WorldSystem {}
 
 impl WorldSystem {
+    pub fn init_world_entity(world: &mut legion::World) -> legion::Entity {
+        let world_entity = world.push((WorldComponent { global_time: 0.0 },));
+        let mut world_entry = world.entry(world_entity).unwrap();
+        world_entry.add_component(EntityComponent {
+            entity: world_entity,
+        });
+        let mut vars = Vars::default();
+        vars.insert(VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
+        world_entry.add_component(Context {
+            owner: world_entity,
+            target: world_entity,
+            parent: None,
+            vars,
+        });
+        world_entity
+    }
+
     pub fn get_context(world: &legion::World) -> Context {
         <(&WorldComponent, &Context)>::query()
             .iter(world)

@@ -11,7 +11,7 @@ impl VfxSystem {
         font: usize,
     ) -> VisualEffect {
         VisualEffect::new(
-            3.0,
+            1.2,
             VisualEffectType::ShaderAnimation {
                 shader: resources
                     .options
@@ -21,8 +21,9 @@ impl VfxSystem {
                     .set_uniform("u_text", ShaderUniform::String((font, text.to_string())))
                     .set_uniform("u_outline_color", ShaderUniform::Color(color))
                     .set_uniform("u_alpha_over_t", ShaderUniform::Float(-0.8))
-                    .set_uniform("u_scale", ShaderUniform::Float(0.6))
-                    .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 4.5))),
+                    .set_uniform("u_scale", ShaderUniform::Float(0.7))
+                    .set_uniform("u_scale_over_t", ShaderUniform::Float(-0.2))
+                    .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 2.5))),
                 from: hashmap! {
                     "u_time" => ShaderUniform::Float(0.0),
                 }
@@ -31,7 +32,7 @@ impl VfxSystem {
                     "u_time" => ShaderUniform::Float(1.0),
                 }
                 .into(),
-                easing: EasingType::Linear,
+                easing: EasingType::QuartOut,
             },
             0,
         )

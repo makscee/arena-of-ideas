@@ -149,12 +149,12 @@ impl GameStateSystem {
             GameState::Gallery => {
                 resources.cassette.clear();
                 resources.action_queue.clear();
-                resources.camera.fov = resources.options.fov;
+                resources.camera.camera.fov = resources.options.fov;
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)));
             }
             GameState::GameOver => {
-                resources.camera.fov = resources.options.fov;
-                resources.camera.center = vec2::ZERO;
+                resources.camera.camera.fov = resources.options.fov;
+                resources.camera.need_pos = vec2::ZERO;
             }
         }
 
@@ -164,18 +164,18 @@ impl GameStateSystem {
             GameState::Battle => {
                 WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(1.0));
                 BattleSystem::run_battle(world, resources);
-                resources.camera.center = BATTLEFIELD_POSITION;
+                resources.camera.need_pos = BATTLEFIELD_POSITION;
             }
             GameState::Shop => {
                 ShopSystem::init(world, resources);
-                resources.camera.center = SHOP_POSITION;
+                resources.camera.need_pos = SHOP_POSITION;
             }
             GameState::Gallery => {
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 20.0)));
             }
             GameState::GameOver => {
-                resources.camera.fov = resources.options.fov * 0.5;
-                resources.camera.center = SlotSystem::get_position(3, &Faction::Team);
+                resources.camera.camera.fov = resources.options.fov * 0.5;
+                resources.camera.need_pos = SlotSystem::get_position(3, &Faction::Team);
                 GameOverSystem::init(world, resources);
             }
         }

@@ -109,11 +109,7 @@ impl SlotSystem {
             });
     }
 
-    pub fn create_slot_entities(
-        world: &mut legion::World,
-        options: &Options,
-        factions: HashSet<Faction>,
-    ) {
+    pub fn init_world(world: &mut legion::World, options: &Options, factions: HashSet<Faction>) {
         Self::clear_world(world);
         for slot in 1..=SLOTS_COUNT {
             factions.iter().for_each(|faction| {
