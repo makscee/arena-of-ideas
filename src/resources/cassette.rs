@@ -142,7 +142,15 @@ impl Cassette {
                 }
             };
         }
-        [entity_shaders.into_values().collect_vec(), shaders].concat()
+        [
+            entity_shaders
+                .into_iter()
+                .sorted_by_key(|item| format!("{:?}", item.0))
+                .map(|item| item.1)
+                .collect_vec(),
+            shaders,
+        ]
+        .concat()
     }
 
     pub fn length(&self) -> Time {
