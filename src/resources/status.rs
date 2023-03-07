@@ -66,6 +66,7 @@ impl StatusPool {
                 match &status.description {
                     Some(text) => Some(
                         options
+                            .shaders
                             .description_panel
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, -2.0)))

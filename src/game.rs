@@ -35,7 +35,7 @@ impl Game {
         world: &mut legion::World,
         world_entity: legion::Entity,
     ) {
-        let shader = resources.options.field.clone();
+        let shader = resources.options.shaders.field.clone();
         let entity = world.push((shader,));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });
@@ -94,7 +94,7 @@ impl geng::State for Game {
         let widgets = self
             .systems
             .iter_mut()
-            .map(|system| system.ui(cx, &mut self.world, &mut self.resources))
+            .map(|system| system.ui(cx, &self.world, &self.resources))
             .collect_vec();
         if widgets.is_empty() {
             return Box::new(ui::Void);

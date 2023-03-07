@@ -22,6 +22,7 @@ impl StatsUiSystem {
                 .map(|(hp, entity, unit_shader)| {
                     (entity.entity, {
                         let mut shader = options
+                            .shaders
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(1.0))
@@ -50,6 +51,7 @@ impl StatsUiSystem {
                 .map(|(attack, entity, unit_shader)| {
                     (entity.entity, {
                         let mut shader = options
+                            .shaders
                             .stats
                             .clone()
                             .set_uniform("u_offset", ShaderUniform::Float(-1.0))

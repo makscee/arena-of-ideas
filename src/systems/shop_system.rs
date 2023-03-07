@@ -21,42 +21,39 @@ impl System for ShopSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &mut legion::World,
-        resources: &mut Resources,
+        world: &'a legion::World,
+        resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         let reroll_btn = Button::new(cx, "Reroll (1G)");
         if reroll_btn.was_clicked() && resources.shop.money > 0 {
-            resources.shop.money -= 1;
-            Self::reroll(world, resources);
+            // resources.shop.money -= 1;
+            // Self::reroll(world, resources);
         }
         Box::new(
             (
-                Text::new(
-                    format!("Round #{}", resources.rounds.next_round + 1),
-                    resources.fonts.get_font(0),
-                    70.0,
-                    Rgba::WHITE,
-                ),
-                Text::new(
-                    format!("Money: {}G", resources.shop.money),
-                    resources.fonts.get_font(1),
-                    70.0,
-                    Rgba::WHITE,
-                ),
-                reroll_btn
-                    .uniform_padding(16.0)
-                    .background_color(Rgba::try_from("#267ec7").unwrap()),
-                Text::new(
-                    format!("Buy: {}G", UNIT_COST),
-                    resources.fonts.get_font(1),
-                    40.0,
-                    Rgba::WHITE,
+                (
+                    reroll_btn
+                        .uniform_padding(16.0)
+                        .background_color(Rgba::try_from("#267ec7").unwrap()),
+                    Text::new(
+                        format!("Buy: {}G", UNIT_COST),
+                        resources.fonts.get_font(1),
+                        40.0,
+                        Rgba::WHITE,
+                    ),
+                )
+                    .column()
+                    .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
+                    .uniform_padding(32.0)
+                    .align(vec2(1.0, 1.0)),
+                CornerButtonWidget::new(
+                    cx,
+                    resources,
+                    resources.options.images.eye_icon.clone(),
+                    vec2(1.0, 0.0),
                 ),
             )
-                .column()
-                .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
-                .uniform_padding(32.0)
-                .align(vec2(1.0, 1.0)),
+                .stack(),
         )
     }
 }

@@ -42,14 +42,14 @@ impl System for GameOverSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &mut legion::World,
-        resources: &mut Resources,
+        world: &'a legion::World,
+        resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         let restart = Button::new(cx, "Restart");
-        if restart.was_clicked() && resources.shop.money > 0 {
-            resources.transition_state = GameState::Shop;
-            ShopSystem::restart(world, resources);
-        }
+        // if restart.was_clicked() && resources.shop.money > 0 {
+        //     resources.transition_state = GameState::Shop;
+        //     ShopSystem::restart(world, resources);
+        // }
         Box::new(
             (
                 Text::new("Game Over!", resources.fonts.get_font(0), 70.0, Rgba::BLACK),

@@ -1,48 +1,5 @@
 {
     "fov": 18.0,
-    "field": {
-        "path": "shaders/system/field.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_color_1": "#000000",
-                "u_color_2": "#ffffff"
-            }
-        },
-        "layer": "Background",
-        "order": -1000
-    },
-    "stats": {
-        "path": "shaders/system/stats.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_scale": 0.25,
-                "u_text_scale": 1.6,
-                "u_text_color_default": "#ffffff",
-                "u_text_color_decreased": "#ff0000",
-                "u_text_color_increased": "#26d000",
-                "u_outline_color": "#000000",
-                "u_circle_color": "#c00909",
-                "u_font": 0
-            }
-        },
-        "layer": "Unit"
-    },
-    "name": {
-        "path": "shaders/system/name.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_text_color": "#ffffff",
-                "u_outline_color": "#212121",
-                "u_font": 1,
-                "u_offset": [
-                    0.0,
-                    -1.0
-                ]
-            }
-        },
-        "layer": "Unit",
-        "order": 10
-    },
     "stats_attack_color": "#ffc400",
     "stats_hp_color": "#d20505",
     "faction_colors": {
@@ -51,50 +8,103 @@
         "Shop": "#fbc000",
         "Team": "#e70083"
     },
-    "strike": {
-        "path": "shaders/system/strike.glsl",
-        "parameters": {
-            "instances": 3000,
-            "uniforms": {
-                "u_scale": 0.1,
-                "u_trail_count": 51
-            }
-        },
-        "layer": "Vfx"
-    },
-    "text": {
-        "path": "shaders/vfx/text.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_text_color": "#ffffff",
-                "u_outline_color": "#8d0000",
-                "u_offset": [
-                    0.0,
-                    1.0
-                ]
-            }
-        },
-        "layer": "UI"
-    },
-    "curve": {
-        "path": "shaders/vfx/curve.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_color": "#8d0000"
+    "shaders": {
+        "field": {
+            "path": "shaders/system/field.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color_1": "#000000",
+                    "u_color_2": "#ffffff"
+                }
             },
-            "vertices": 1000
+            "layer": "Background",
+            "order": -1000
         },
-        "layer": "UI"
-    },
-    "slot": {
-        "path": "shaders/system/slot.glsl",
-        "parameters": {
-            "uniforms": {}
+        "stats": {
+            "path": "shaders/system/stats.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_scale": 0.25,
+                    "u_text_scale": 1.6,
+                    "u_text_color_default": "#ffffff",
+                    "u_text_color_decreased": "#ff0000",
+                    "u_text_color_increased": "#26d000",
+                    "u_outline_color": "#000000",
+                    "u_circle_color": "#c00909",
+                    "u_font": 0
+                }
+            },
+            "layer": "Unit"
         },
-        "layer": "Background"
+        "name": {
+            "path": "shaders/system/name.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_text_color": "#ffffff",
+                    "u_outline_color": "#212121",
+                    "u_font": 1,
+                    "u_offset": [
+                        0.0,
+                        -1.0
+                    ]
+                }
+            },
+            "layer": "Unit",
+            "order": 10
+        },
+        "strike": {
+            "path": "shaders/system/strike.glsl",
+            "parameters": {
+                "instances": 3000,
+                "uniforms": {
+                    "u_scale": 0.1,
+                    "u_trail_count": 51
+                }
+            },
+            "layer": "Vfx"
+        },
+        "text": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_text_color": "#ffffff",
+                    "u_outline_color": "#8d0000",
+                    "u_offset": [
+                        0.0,
+                        1.0
+                    ]
+                }
+            },
+            "layer": "UI"
+        },
+        "curve": {
+            "path": "shaders/vfx/curve.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#8d0000"
+                },
+                "vertices": 1000
+            },
+            "layer": "UI"
+        },
+        "slot": {
+            "path": "shaders/system/slot.glsl",
+            "parameters": {
+                "uniforms": {}
+            },
+            "layer": "Background"
+        },
+        "description_panel": {
+            "path": "shaders/system/description_panel.glsl",
+            "layer": "UI"
+        },
+        "corner_button": {
+            "path": "shaders/widgets/corner_button.glsl"
+        }
     },
-    "description_panel": {
-        "path": "shaders/system/description_panel.glsl",
-        "layer": "UI"
+    "images": {
+        "eye_icon": {
+            "path": "images/eye_icon.png"
+        }
     }
 }

@@ -15,6 +15,7 @@ impl NameSystem {
                 (
                     entity.entity,
                     options
+                        .shaders
                         .name
                         .clone()
                         .set_uniform("u_name", ShaderUniform::String((1, name.0.clone()))),

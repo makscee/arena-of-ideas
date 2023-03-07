@@ -59,8 +59,8 @@ impl System for CassettePlayerSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &mut legion::World,
-        resources: &mut Resources,
+        world: &'a legion::World,
+        resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         if self.mode == PlayMode::Hidden {
             return Box::new(ui::Void);

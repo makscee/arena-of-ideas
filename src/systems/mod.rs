@@ -21,6 +21,7 @@ mod stats_ui_system;
 mod time_system;
 mod unit_system;
 mod vfx_system;
+mod widgets;
 mod world_system;
 
 pub use action_system::*;
@@ -42,6 +43,7 @@ pub use slot_system::*;
 pub use stats_ui_system::*;
 pub use unit_system::*;
 pub use vfx_system::*;
+pub use widgets::*;
 pub use world_system::*;
 
 pub trait System {
@@ -57,8 +59,8 @@ pub trait System {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &mut legion::World,
-        resources: &mut Resources,
+        world: &'a legion::World,
+        resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         #![allow(unused_variables)]
         Box::new(ui::Void)

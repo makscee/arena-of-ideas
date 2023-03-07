@@ -115,6 +115,7 @@ impl SlotSystem {
             factions.iter().for_each(|faction| {
                 let entity = world.push((
                     options
+                        .shaders
                         .slot
                         .clone()
                         .set_uniform("u_color", ShaderUniform::Color(faction.color(&options)))

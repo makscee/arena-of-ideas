@@ -17,6 +17,7 @@ impl HouseSystem {
                     let house = houses.get(&house_name).unwrap();
                     let description = house.abilities.get(&ability).unwrap().description.clone();
                     options
+                        .shaders
                         .description_panel
                         .clone()
                         .set_uniform("u_name", ShaderUniform::String((0, ability)))

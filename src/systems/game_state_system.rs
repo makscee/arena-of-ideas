@@ -95,8 +95,8 @@ impl System for GameStateSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &mut legion::World,
-        resources: &mut Resources,
+        world: &'a legion::World,
+        resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         if let Some(widgets) = self
             .systems

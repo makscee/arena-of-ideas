@@ -11,6 +11,8 @@ mod event;
 mod expression;
 mod fonts;
 mod house;
+mod image;
+mod image_textures;
 mod options;
 mod rounds;
 mod shader_programs;
@@ -28,6 +30,8 @@ pub use event::*;
 pub use expression::*;
 pub use fonts::*;
 pub use house::*;
+pub use image::*;
+pub use image_textures::*;
 pub use options::*;
 pub use rounds::*;
 pub use shader_programs::*;
@@ -41,6 +45,8 @@ pub struct Resources {
     pub reload_triggered: bool,
 
     pub shader_programs: ShaderPrograms,
+    pub image_textures: ImageTextures,
+
     pub down_keys: HashSet<geng::Key>,
     pub pressed_keys: HashSet<geng::Key>,
     pub down_mouse_buttons: HashSet<geng::MouseButton>,
@@ -74,8 +80,6 @@ pub struct Resources {
 //todo: async loading
 impl Resources {
     pub fn new(geng: &Geng) -> Self {
-        let shader_programs = ShaderPrograms::new();
-
         // todo: load all Resources as geng::Assets
         let options = futures::executor::block_on(<Options as geng::LoadAsset>::load(
             geng,
@@ -108,7 +112,8 @@ impl Resources {
         ];
 
         Self {
-            shader_programs,
+            shader_programs: default(),
+            image_textures: default(),
             camera: Camera::new(&options),
             fonts: Fonts::new(fonts),
             down_keys: default(),
@@ -140,6 +145,7 @@ impl Resources {
 
     pub fn load(&mut self, fws: &mut FileWatcherSystem) {
         self.load_shader_programs(fws);
+        self.load_image_textures(fws);
         self.load_houses(fws);
         self.load_unit_templates(fws);
         self.shop.load(&self.unit_templates);
@@ -222,6 +228,38 @@ impl Resources {
             .geng
             .shader_lib()
             .add(file.file_name().unwrap().to_str().unwrap(), program);
+    }
+
+    fn load_image_textures(&mut self, fws: &mut FileWatcherSystem) {
+        let list = futures::executor::block_on(Self::load_list(
+            &self.geng,
+            PathBuf::try_from("images/_list.json").unwrap(),
+        ));
+        for file in list {
+            fws.load_and_watch_file(
+                self,
+                &static_path().join(file),
+                Box::new(Self::load_image_texture),
+            );
+        }
+    }
+
+    fn load_image_texture(resources: &mut Resources, file: &PathBuf) {
+        let texture = futures::executor::block_on(<ugli::Texture as geng::LoadAsset>::load(
+            &resources.geng,
+            &file,
+        ));
+        match texture {
+            Ok(texture) => {
+                debug!("Load texture {:?}", file);
+                resources
+                    .image_textures
+                    .insert_texture(file.clone(), texture)
+            }
+            Err(error) => {
+                error!("Failed to load texture {:?} {}", file, error);
+            }
+        }
     }
 
     fn load_unit_templates(&mut self, fws: &mut FileWatcherSystem) {

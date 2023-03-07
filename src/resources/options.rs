@@ -3,16 +3,10 @@ use super::*;
 #[derive(Deserialize, Debug)]
 pub struct Options {
     pub fov: f32,
-    pub field: Shader,
-    pub stats: Shader,
+    pub shaders: Shaders,
+    pub images: Images,
     pub stats_attack_color: Rgba<f32>,
     pub stats_hp_color: Rgba<f32>,
-    pub strike: Shader,
-    pub text: Shader,
-    pub curve: Shader,
-    pub name: Shader,
-    pub slot: Shader,
-    pub description_panel: Shader,
     pub faction_colors: HashMap<Faction, Rgba<f32>>,
 }
 
@@ -29,4 +23,22 @@ impl geng::LoadAsset for Options {
     }
 
     const DEFAULT_EXT: Option<&'static str> = Some(".json");
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Shaders {
+    pub field: Shader,
+    pub stats: Shader,
+    pub strike: Shader,
+    pub text: Shader,
+    pub curve: Shader,
+    pub name: Shader,
+    pub slot: Shader,
+    pub description_panel: Shader,
+    pub corner_button: Shader,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Images {
+    pub eye_icon: Image,
 }

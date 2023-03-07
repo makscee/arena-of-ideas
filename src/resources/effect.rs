@@ -169,6 +169,7 @@ impl Effect {
                         VisualEffectType::ShaderAnimation {
                             shader: resources
                                 .options
+                                .shaders
                                 .text
                                 .clone()
                                 .set_uniform("u_text", ShaderUniform::String((0, text)))
@@ -207,6 +208,7 @@ impl Effect {
                         VisualEffectType::ShaderAnimation {
                             shader: resources
                                 .options
+                                .shaders
                                 .curve
                                 .clone()
                                 .set_uniform("u_position", ShaderUniform::Vec2(owner_position))

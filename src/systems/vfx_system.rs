@@ -15,6 +15,7 @@ impl VfxSystem {
             VisualEffectType::ShaderAnimation {
                 shader: resources
                     .options
+                    .shaders
                     .text
                     .clone()
                     .set_uniform("u_position", ShaderUniform::Vec2(position))
@@ -114,7 +115,7 @@ impl VfxSystem {
         VisualEffect::new(
             0.5,
             VisualEffectType::ShaderAnimation {
-                shader: resources.options.strike.clone(),
+                shader: resources.options.shaders.strike.clone(),
                 from: hashmap! {
                     "u_time" => ShaderUniform::Float(0.0),
                     "u_position" => ShaderUniform::Vec2(position),

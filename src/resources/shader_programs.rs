@@ -1,13 +1,10 @@
 use super::*;
 
 /// Load and store shader programs
+#[derive(Default)]
 pub struct ShaderPrograms(HashMap<PathBuf, ugli::Program>);
 
 impl ShaderPrograms {
-    pub fn new() -> Self {
-        Self(default())
-    }
-
     // full path
     pub fn get_program(&self, path: &PathBuf) -> &ugli::Program {
         &self
