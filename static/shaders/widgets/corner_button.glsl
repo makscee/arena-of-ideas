@@ -22,9 +22,10 @@ void main() {
 #ifdef FRAGMENT_SHADER
 uniform sampler2D u_texture;
 uniform vec4 u_icon_color;
+uniform vec2 u_corner;
 void main() {
     vec4 color = vec4(0);
-    vec2 square_uv = uv - vec2(1, -1);
+    vec2 square_uv = uv - (u_corner * 2 - vec2(1));
     color = alphaBlend(color, mix(vec4(0), u_color, float(abs(square_uv.x) + abs(square_uv.y) < 4 * u_scale)));
     vec2 icon_uv = uv * .6 * (1 / u_scale) + .5;
     vec4 icon_color = u_icon_color;

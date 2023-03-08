@@ -8,6 +8,7 @@ pub struct CornerButtonWidget<'a> {
     pub position: &'a mut Aabb2<f32>,   // Hidden
     pub sense: &'a mut geng::ui::Sense, // Helper hidden state for interaction
     clicked: bool,
+    corner: vec2<f32>,
 }
 
 impl<'a> CornerButtonWidget<'a> {
@@ -19,10 +20,12 @@ impl<'a> CornerButtonWidget<'a> {
             sense,
             resources,
             icon,
+            corner: vec2::ZERO,
         }
     }
 
-    pub fn place(self, corner: vec2<f64>) -> Box<dyn Widget + 'a> {
+    pub fn place(mut self, corner: vec2<f64>) -> Box<dyn Widget + 'a> {
+        self.corner = corner.map(|x| x as f32);
         self.flex_align(vec2(None, None), corner).boxed()
     }
 
@@ -92,6 +95,7 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
                     u_color: button_color,
                     u_icon_color: icon_color,
                     u_scale: scale,
+                    u_corner: self.corner,
                 },
                 geng::camera2d_uniforms(
                     &geng::PixelPerfectCamera,
