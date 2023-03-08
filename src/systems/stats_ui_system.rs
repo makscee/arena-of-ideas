@@ -36,7 +36,7 @@ impl StatsUiSystem {
                             )
                             .set_uniform(
                                 "u_circle_color",
-                                ShaderUniform::Color(options.stats_hp_color),
+                                ShaderUniform::Color(options.colors.stats_hp_color),
                             );
                         shader.parameters.uniforms = unit_shader
                             .parameters
@@ -66,7 +66,7 @@ impl StatsUiSystem {
                             .set_uniform("u_damage_taken", ShaderUniform::Float(0.0))
                             .set_uniform(
                                 "u_circle_color",
-                                ShaderUniform::Color(options.stats_attack_color),
+                                ShaderUniform::Color(options.colors.stats_attack_color),
                             );
                         shader.parameters.uniforms = unit_shader
                             .parameters

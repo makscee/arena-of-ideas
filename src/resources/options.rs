@@ -5,9 +5,7 @@ pub struct Options {
     pub fov: f32,
     pub shaders: Shaders,
     pub images: Images,
-    pub stats_attack_color: Rgba<f32>,
-    pub stats_hp_color: Rgba<f32>,
-    pub faction_colors: HashMap<Faction, Rgba<f32>>,
+    pub colors: Colors,
 }
 
 impl geng::LoadAsset for Options {
@@ -41,4 +39,14 @@ pub struct Shaders {
 #[derive(Deserialize, Debug)]
 pub struct Images {
     pub eye_icon: Image,
+    pub money_icon: Image,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Colors {
+    pub faction_colors: HashMap<Faction, Rgba<f32>>,
+    pub stats_attack_color: Rgba<f32>,
+    pub stats_hp_color: Rgba<f32>,
+    pub corner_button_color: Rgba<f32>,
+    pub corner_button_icon_color: Rgba<f32>,
 }

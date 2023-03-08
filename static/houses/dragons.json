@@ -49,8 +49,7 @@
                     },
                     {
                         "type": "ShowText",
-                        "text": "Grow",
-                        "color": "#df9800ff"
+                        "text": "Grow"
                     }
                 ]
             }
@@ -75,6 +74,10 @@
                         {
                             "type": "RemoveStatus",
                             "name": "Rebirth"
+                        },
+                        {
+                            "type": "ShowText",
+                            "text": "Rebirth"
                         }
                     ]
                 }

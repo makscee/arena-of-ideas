@@ -8,6 +8,8 @@ pub struct ShopSystem {
     buy_candidate: Option<legion::Entity>,
     sell_candidate: Option<legion::Entity>,
     hovered_team: Option<legion::Entity>,
+    need_reroll: bool,
+    need_cam_switch: bool,
 }
 
 const UNIT_COST: usize = 3;
@@ -16,6 +18,17 @@ impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
+        if self.need_reroll {
+            self.need_reroll = false;
+            Self::reroll(world, resources);
+            resources.shop.money -= 1;
+        }
+        if self.need_cam_switch {
+            resources.camera.focus = match resources.camera.focus {
+                Focus::Shop => Focus::Battle,
+                Focus::Battle => Focus::Shop,
+            }
+        }
     }
 
     fn ui<'a>(
@@ -26,9 +39,17 @@ impl System for ShopSystem {
     ) -> Box<dyn ui::Widget + 'a> {
         let reroll_btn = Button::new(cx, "Reroll (1G)");
         if reroll_btn.was_clicked() && resources.shop.money > 0 {
-            // resources.shop.money -= 1;
-            // Self::reroll(world, resources);
+            self.need_reroll = true;
         }
+        let cam_button = CornerButtonWidget::new(
+            cx,
+            resources,
+            match resources.camera.focus {
+                Focus::Shop => resources.options.images.eye_icon.clone(),
+                Focus::Battle => resources.options.images.money_icon.clone(),
+            },
+        );
+        self.need_cam_switch = cam_button.was_clicked();
         Box::new(
             (
                 (
@@ -46,12 +67,7 @@ impl System for ShopSystem {
                     .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
                     .uniform_padding(32.0)
                     .align(vec2(1.0, 1.0)),
-                CornerButtonWidget::new(
-                    cx,
-                    resources,
-                    resources.options.images.eye_icon.clone(),
-                    vec2(1.0, 0.0),
-                ),
+                cam_button.place(vec2(1.0, 0.0)),
             )
                 .stack(),
         )
@@ -64,6 +80,8 @@ impl ShopSystem {
             buy_candidate: default(),
             sell_candidate: default(),
             hovered_team: default(),
+            need_reroll: default(),
+            need_cam_switch: default(),
         }
     }
 
@@ -83,7 +101,7 @@ impl ShopSystem {
             &resources.status_pool,
             &resources.houses,
             &mut resources.cassette.parallel_node,
-            hashset! {Faction::Shop, Faction::Team},
+            hashset! {Faction::Shop, Faction::Team, Faction::Dark, Faction::Light},
         );
     }
 
@@ -115,7 +133,7 @@ impl ShopSystem {
                         self.buy_candidate = Some(dragged);
                     }
                 }
-                _ => panic!("Wrong faction"),
+                _ => {}
             }
         } else if let Some(sell_candidate) = self.sell_candidate {
             if world
@@ -201,12 +219,18 @@ impl ShopSystem {
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
         Self::reroll(world, resources);
+        WorldSystem::set_var(
+            world,
+            VarName::RoundNumber,
+            &Var::Int(resources.rounds.next_round as i32 + 1),
+        );
+        BattleSystem::create_enemies(resources, world);
+        SlotSystem::fill_gaps(world, hashset! {Faction::Dark});
         resources.shop.money = (UNIT_COST + 1 + resources.rounds.next_round).min(10);
     }
 
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {
         Self::clear(world, resources);
-
         let items = resources
             .shop
             .pool

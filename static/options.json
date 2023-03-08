@@ -1,12 +1,16 @@
 {
     "fov": 18.0,
-    "stats_attack_color": "#ffc400",
-    "stats_hp_color": "#d20505",
-    "faction_colors": {
-        "Dark": "#ffffff",
-        "Light": "#000000",
-        "Shop": "#fbc000",
-        "Team": "#e70083"
+    "colors": {
+        "stats_attack_color": "#ffc400",
+        "stats_hp_color": "#d20505",
+        "faction_colors": {
+            "Dark": "#ffffff",
+            "Light": "#000000",
+            "Shop": "#fbc000",
+            "Team": "#e70083"
+        },
+        "corner_button_icon_color": "#fffafa",
+        "corner_button_color": "#8087c7"
     },
     "shaders": {
         "field": {
@@ -105,6 +109,9 @@
     "images": {
         "eye_icon": {
             "path": "images/eye_icon.png"
+        },
+        "money_icon": {
+            "path": "images/money_icon.png"
         }
     }
 }

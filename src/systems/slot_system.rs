@@ -132,7 +132,6 @@ impl SlotSystem {
                     .entry(entity)
                     .unwrap()
                     .add_component(EntityComponent { entity });
-                debug!("Slot entity {:?}", entity);
             })
         }
         Self::refresh_slots_filled_uniform(world);

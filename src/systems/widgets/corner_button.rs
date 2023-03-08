@@ -1,39 +1,33 @@
-use std::rc::Rc;
-
 use super::*;
+use geng::ui::*;
 
-const SIZE: f32 = 200.0;
+const SIZE: f64 = 100.0;
 pub struct CornerButtonWidget<'a> {
     resources: &'a Resources,
     pub icon: Image,
-    pub position: &'a mut Aabb2<f32>,         // Hidden
-    pub animation_time: &'a mut f32,          // state
-    pub sense: &'a mut geng::ui::Sense,       // Helper hidden state for interaction
-    pub change: RefCell<&'a mut Option<f32>>, // Result of interaction is optionally a change that was made
-    pub corner: vec2<f32>,
+    pub position: &'a mut Aabb2<f32>,   // Hidden
+    pub sense: &'a mut geng::ui::Sense, // Helper hidden state for interaction
+    clicked: bool,
 }
 
 impl<'a> CornerButtonWidget<'a> {
-    pub fn new(
-        cx: &'a geng::ui::Controller,
-        resources: &'a Resources,
-        icon: Image,
-        corner: vec2<f32>,
-    ) -> Self {
+    pub fn new(cx: &'a geng::ui::Controller, resources: &'a Resources, icon: Image) -> Self {
+        let sense: &'a mut Sense = cx.get_state();
         Self {
             position: cx.get_state_with(|| Aabb2::point(vec2::ZERO)), // Specify default value for hidden state
-            animation_time: cx.get_state(),
-            sense: cx.get_state(),
-            change: RefCell::new(cx.get_state()),
+            clicked: sense.take_clicked(),
+            sense,
             resources,
             icon,
-            corner,
         }
     }
 
-    // We had a RefCell so that this method doesn't need a mut reference to self
-    pub fn get_change(&self) -> Option<f32> {
-        self.change.borrow_mut().take()
+    pub fn place(self, corner: vec2<f64>) -> Box<dyn Widget + 'a> {
+        self.flex_align(vec2(None, None), corner).boxed()
+    }
+
+    pub fn was_clicked(&self) -> bool {
+        self.clicked
     }
 }
 
@@ -43,7 +37,7 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
         _children: &geng::ui::ConstraintsContext,
     ) -> geng::ui::Constraints {
         geng::ui::Constraints {
-            min_size: vec2(1.0, 1.0),
+            min_size: vec2(SIZE, SIZE),
             flex: vec2(0.0, 0.0),
         }
     }
@@ -52,16 +46,21 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
         Some(self.sense)
     }
     fn update(&mut self, delta_time: f64) {
-        #![allow(unused_variables)]
+        self.sense.update(delta_time);
     }
     fn draw(&mut self, cx: &mut geng::ui::DrawContext) {
-        let size = cx.position.size().map(|x| x as f32);
-        *self.position = Aabb2::point(size * self.corner - vec2(SIZE, SIZE) * self.corner)
-            .extend_uniform(SIZE * 0.5);
+        *self.position = cx.position.map(|x| x as f32);
         #[derive(ugli::Vertex)]
         struct Vertex {
             a_pos: vec2<f32>,
         }
+        let button_color = self.resources.options.colors.corner_button_color;
+        let icon_color = self.resources.options.colors.corner_button_icon_color;
+        let scale = 1.0
+            + match self.sense.hovered_time {
+                Some(value) => (0.4 - value * value * 0.5).clamp_min(0.0) as f32,
+                None => 0.0,
+            };
         ugli::draw(
             cx.framebuffer,
             &self.resources.shader_programs.get_program(
@@ -72,25 +71,27 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
                 cx.geng.ugli(),
                 vec![
                     Vertex {
-                        a_pos: vec2(0.0, 0.0),
+                        a_pos: vec2(-1.0, -1.0),
                     },
                     Vertex {
-                        a_pos: vec2(1.0, 0.0),
+                        a_pos: vec2(1.0, -1.0),
                     },
                     Vertex {
                         a_pos: vec2(1.0, 1.0),
                     },
                     Vertex {
-                        a_pos: vec2(0.0, 1.0),
+                        a_pos: vec2(-1.0, 1.0),
                     },
                 ],
             ),
             (
                 ugli::uniforms! {
                     u_texture: self.icon.get(self.resources).deref(),
-                    u_pos: self.position.center(),
-                    u_size: self.position.size(),
-                    u_corner: self.corner,
+                    u_pos: cx.position.center().map(|x| x as f32),
+                    u_size: cx.position.size().map(|x| x as f32) * 0.5,
+                    u_color: button_color,
+                    u_icon_color: icon_color,
+                    u_scale: scale,
                 },
                 geng::camera2d_uniforms(
                     &geng::PixelPerfectCamera,
@@ -103,16 +104,5 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
             },
         );
     }
-    fn handle_event(&mut self, event: &geng::Event) {
-        // Use helper to determine if we should process interactions
-        if self.sense.is_hovered() {
-            if let geng::Event::MouseDown { position, .. } = &event {
-                debug!("Click");
-                let new_value = ((position.y as f32 - self.position.min.y)
-                    / self.position.height().max(0.1))
-                .clamp(0.0, 1.0);
-                **self.change.borrow_mut() = Some(new_value);
-            }
-        }
-    }
+    fn handle_event(&mut self, event: &geng::Event) {}
 }

@@ -13,6 +13,7 @@ impl BattleSystem {
 
     pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_battle(world, resources);
+        resources.rounds.next();
         let mut ticks = 0;
         while Self::tick(world, resources) && ticks < 1000 {
             ticks += 1;
@@ -29,11 +30,7 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
-        WorldSystem::set_var(
-            world,
-            VarName::RoundNumber,
-            &Var::Int(resources.rounds.next_round as i32 + 1),
-        );
+        Self::clear_world(world, resources);
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
     }
@@ -58,11 +55,15 @@ impl BattleSystem {
                 resources.transition_state = GameState::Shop;
             }
         }
+        Self::clear_world(world, resources);
+    }
+
+    fn clear_world(world: &mut legion::World, resources: &mut Resources) {
         let factions = &hashset! {Faction::Dark, Faction::Light};
         UnitSystem::clear_factions(world, resources, factions);
     }
 
-    fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
+    pub fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
         Rounds::load(world, resources);
     }
 
@@ -254,7 +255,7 @@ impl BattleSystem {
         resources.cassette.merge_template_into_last();
     }
 
-    fn move_to_slots(world: &mut legion::World, resources: &mut Resources) {
+    pub fn move_to_slots(world: &mut legion::World, resources: &mut Resources) {
         <(&UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
             .iter_mut(world)
             .for_each(|(unit, position, entity)| {

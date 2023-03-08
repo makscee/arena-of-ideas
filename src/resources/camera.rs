@@ -2,8 +2,13 @@ use super::*;
 
 pub struct Camera {
     pub camera: geng::Camera2d,
-    pub need_pos: vec2<f32>,
     pub pos: vec2<f32>,
+    pub focus: Focus,
+}
+
+pub enum Focus {
+    Shop,
+    Battle,
 }
 
 impl Camera {
@@ -17,7 +22,7 @@ impl Camera {
         Self {
             camera,
             pos,
-            need_pos: pos,
+            focus: Focus::Shop,
         }
     }
 }

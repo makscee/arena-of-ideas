@@ -10,16 +10,18 @@ pub struct Rounds {
 pub const ROUNDS_COUNT: usize = 10;
 
 impl Rounds {
-    fn next(&mut self) -> &Round {
-        let round = &self.rounds[self.next_round];
+    fn current(&self) -> &Round {
+        &self.rounds[self.next_round]
+    }
+
+    pub fn next(&mut self) {
         self.next_round += 1;
-        round
     }
 
     pub fn load(world: &mut legion::World, resources: &mut Resources) {
         resources
             .rounds
-            .next()
+            .current()
             .enemies
             .clone()
             .iter()

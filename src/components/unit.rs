@@ -19,7 +19,7 @@ pub enum Faction {
 
 impl Faction {
     pub fn color(&self, options: &Options) -> Rgba<f32> {
-        *options.faction_colors.get(self).unwrap()
+        *options.colors.faction_colors.get(self).unwrap()
     }
 }
 

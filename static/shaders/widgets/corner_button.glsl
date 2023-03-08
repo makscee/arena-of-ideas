@@ -1,6 +1,7 @@
 #include <common.glsl>
 
 varying vec2 uv;
+uniform float u_scale = 1.0;
 
 #ifdef VERTEX_SHADER
 attribute vec2 a_pos;
@@ -8,11 +9,11 @@ uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 uniform vec2 u_pos;
 uniform vec2 u_size;
-uniform vec2 u_corner;
+uniform vec2 u_padding = vec2(2);
 
 void main() {
-    uv = a_pos;
-    vec2 world_pos = u_pos + u_size * a_pos;
+    uv = a_pos * (1 + u_padding) * u_scale * u_scale;
+    vec2 world_pos = u_pos + u_size * uv;
     vec3 pos = u_projection_matrix * u_view_matrix * vec3(world_pos, 1.0);
     gl_Position = vec4(pos.xy, 0.0, pos.z);
 }
@@ -20,9 +21,15 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 uniform sampler2D u_texture;
+uniform vec4 u_icon_color;
 void main() {
-    vec4 color = u_color;
-    color = alphaBlend(color, texture2D(u_texture, uv));
-    gl_FragColor = color * vec4(1, 0, 0, 1);
+    vec4 color = vec4(0);
+    vec2 square_uv = uv - vec2(1, -1);
+    color = alphaBlend(color, mix(vec4(0), u_color, float(abs(square_uv.x) + abs(square_uv.y) < 4 * u_scale)));
+    vec2 icon_uv = uv * .6 * (1 / u_scale) + .5;
+    vec4 icon_color = u_icon_color;
+    icon_color.a = texture2D(u_texture, icon_uv).x;
+    color = alphaBlend(color, icon_color);
+    gl_FragColor = color;
 }
 #endif
