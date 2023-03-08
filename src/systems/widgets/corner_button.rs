@@ -5,8 +5,8 @@ const SIZE: f64 = 100.0;
 pub struct CornerButtonWidget<'a> {
     resources: &'a Resources,
     pub icon: Image,
-    pub position: &'a mut Aabb2<f32>,   // Hidden
-    pub sense: &'a mut geng::ui::Sense, // Helper hidden state for interaction
+    pub position: &'a mut Aabb2<f32>,
+    pub sense: &'a mut geng::ui::Sense,
     clicked: bool,
     corner: vec2<f32>,
 }
@@ -44,7 +44,6 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
             flex: vec2(0.0, 0.0),
         }
     }
-    // If using Sense helper this method must be added
     fn sense(&mut self) -> Option<&mut geng::ui::Sense> {
         Some(self.sense)
     }
@@ -61,7 +60,7 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
         let icon_color = self.resources.options.colors.corner_button_icon_color;
         let scale = 1.0
             + match self.sense.hovered_time {
-                Some(value) => (0.4 - value * value * 0.5).clamp_min(0.0) as f32,
+                Some(value) => (0.4 - value * value * 0.5).clamp_min(0.2) as f32,
                 None => 0.0,
             };
         ugli::draw(

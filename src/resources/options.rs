@@ -40,6 +40,7 @@ pub struct Shaders {
 pub struct Images {
     pub eye_icon: Image,
     pub money_icon: Image,
+    pub pool_icon: Image,
 }
 
 #[derive(Deserialize, Debug)]

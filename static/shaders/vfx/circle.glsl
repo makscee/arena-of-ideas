@@ -8,7 +8,6 @@ out float card;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 uniform vec2 u_position;
-uniform float u_scale = 1;
 uniform float u_padding = 1;
 uniform float u_radius;
 
@@ -26,6 +25,7 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 in float card;
+uniform float u_scale = 1;
 
 const float SIZE = 1.0;
 
@@ -35,8 +35,8 @@ void main() {
     if(length(uv) > SIZE) {
         discard;
     }
-    float len_fbm = length(uv + vec2(fbm(uv + vec2(u_game_time * 2, sin(u_game_time))) * 2));
-    vec4 color = vec4(u_color.rgb, (len_fbm) * (1 - len));
+    float len_fbm = length(vec2(fbm(uv * u_scale + vec2(u_game_time * 2, sin(u_game_time))) * 3));
+    vec4 color = vec4(u_color.rgb, len_fbm * (1 - len));
     gl_FragColor = color;
 }
 #endif

@@ -12,6 +12,7 @@ uniform float u_scale_over_t = 0;
 uniform int u_trail_count = 1;
 uniform float u_lifetime = 1;
 uniform float u_velocity_over_t = 1;
+uniform float u_radius;
 
 flat out int p_index;
 flat out float p_t;
@@ -26,8 +27,8 @@ void main() {
     vec2 vel = rotateCW((randVec(p_index + 1) - vec2(0.5)), p_t * PI * u_velocity_over_t);
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= 5;
-    float scale = max(u_scale + u_scale_over_t * p_t, 0.0);
-    vec2 pos = uv * scale + u_position + get_card_pos(vel * p_t, get_card_value()) * (1 + u_hovered);
+    float scale = max(u_scale + u_scale_over_t * p_t, 0.0) * u_radius;
+    vec2 pos = uv * scale + u_position + get_card_pos(vel * p_t, get_card_value()) * (1 + u_hovered) * u_radius;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }

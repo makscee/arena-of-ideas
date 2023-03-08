@@ -148,7 +148,7 @@ impl Resources {
         self.load_image_textures(fws);
         self.load_houses(fws);
         self.load_unit_templates(fws);
-        self.shop.load(&self.unit_templates);
+        Shop::load(self);
         fws.load_and_watch_file(
             self,
             &static_path().join("options.json"),
@@ -371,7 +371,11 @@ impl UnitTemplatesPool {
             RadiusComponent(1.0),
             FlagsComponent::default(),
             faction.clone(),
-            UnitComponent { faction, slot },
+            UnitComponent {
+                faction,
+                slot,
+                template_path: path.clone(),
+            },
             AttentionComponent::default(),
         ));
         let parent = WorldSystem::get_context(world).owner;

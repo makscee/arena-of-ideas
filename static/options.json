@@ -10,7 +10,7 @@
             "Team": "#e70083"
         },
         "corner_button_icon_color": "#fffafa",
-        "corner_button_color": "#8087c7"
+        "corner_button_color": "#2f2f2f"
     },
     "shaders": {
         "field": {
@@ -112,6 +112,9 @@
         },
         "money_icon": {
             "path": "images/money_icon.png"
+        },
+        "pool_icon": {
+            "path": "images/pool_icon.png"
         }
     }
 }

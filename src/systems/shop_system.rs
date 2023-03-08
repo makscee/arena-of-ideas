@@ -142,8 +142,8 @@ impl ShopSystem {
                 .get_component::<PositionComponent>()
                 .unwrap()
                 .0
-                .x
-                > 0.0
+                .y
+                > SHOP_POSITION.y
             {
                 Self::sell(sell_candidate, resources, world);
             } else {
@@ -196,6 +196,8 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
+        *resources.shop.pool.get_mut(&unit.template_path).unwrap() -= 1;
+        Shop::reload_shaders(resources);
         ContextSystem::refresh_entity(entity, world);
         Event::Buy {
             context: ContextSystem::get_context(entity, world),
@@ -205,6 +207,19 @@ impl ShopSystem {
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         resources.shop.money += 1;
+        *resources
+            .shop
+            .pool
+            .get_mut(
+                &world
+                    .entry(entity)
+                    .unwrap()
+                    .get_component::<UnitComponent>()
+                    .unwrap()
+                    .template_path,
+            )
+            .unwrap() += 2;
+        Shop::reload_shaders(resources);
         Event::Sell {
             context: ContextSystem::get_context(entity, world),
         }

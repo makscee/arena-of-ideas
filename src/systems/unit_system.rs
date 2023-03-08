@@ -216,7 +216,7 @@ impl UnitSystem {
             <(&UnitComponent, &EntityComponent)>::query()
                 .iter(world)
                 .filter_map(|(unit, entity)| match factions.contains(&unit.faction) {
-                    true => Some((entity.entity, *unit)),
+                    true => Some((entity.entity, unit.clone())),
                     false => None,
                 }),
         )

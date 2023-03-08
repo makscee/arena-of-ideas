@@ -137,7 +137,7 @@ impl SerializedComponent {
         }
     }
 
-    fn unpack_shader(component: &SerializedComponent) -> Option<Shader> {
+    pub fn unpack_shader(component: &SerializedComponent) -> Option<Shader> {
         match component {
             SerializedComponent::Shader {
                 path,

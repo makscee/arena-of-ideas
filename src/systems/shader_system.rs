@@ -123,7 +123,7 @@ impl ShaderSystem {
         }
     }
 
-    fn draw_shader<U>(
+    pub fn draw_shader<U>(
         shader: &Shader,
         framebuffer: &mut ugli::Framebuffer,
         geng: &Geng,

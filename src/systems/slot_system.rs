@@ -92,7 +92,7 @@ impl SlotSystem {
             .iter(world)
             .find_map(
                 |(entity, unit)| match unit.faction == *faction && unit.slot == slot {
-                    true => Some((entity.entity, *unit)),
+                    true => Some((entity.entity, unit.clone())),
                     false => None,
                 },
             )

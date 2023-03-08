@@ -14,6 +14,7 @@ mod game_state_system;
 mod house_system;
 mod mouse_system;
 mod name_system;
+mod pool_ui_system;
 mod shader_system;
 mod shop_system;
 mod slot_system;
@@ -37,6 +38,7 @@ use geng::prelude::itertools::Itertools;
 pub use house_system::*;
 pub use mouse_system::*;
 pub use name_system::*;
+pub use pool_ui_system::*;
 pub use shader_system::*;
 pub use shop_system::*;
 pub use slot_system::*;
@@ -89,6 +91,7 @@ impl Game {
             vec![
                 Box::new(SlotSystem::new()),
                 Box::new(ShopSystem::new()),
+                Box::new(PoolUiSystem::new()),
                 Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
                 Box::new(ActionSystem::new()),
                 Box::new(MouseSystem::new()),

@@ -1,9 +1,10 @@
 use super::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct UnitComponent {
     pub slot: usize,
     pub faction: Faction,
+    pub template_path: PathBuf,
 }
 
 pub const DEFAULT_UNIT_RADIUS: f32 = 1.0;
