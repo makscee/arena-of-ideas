@@ -7,8 +7,15 @@
                 "type": "List",
                 "effects": [
                     {
-                        "type": "ShowText",
-                        "text": "++Shield"
+                        "type": "TakeVar",
+                        "var": "Position",
+                        "entity": {
+                            "type": "Target"
+                        },
+                        "effect": {
+                            "type": "ShowText",
+                            "text": "++Shield"
+                        }
                     },
                     {
                         "type": "AttachStatus",

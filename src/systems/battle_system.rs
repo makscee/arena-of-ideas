@@ -13,7 +13,6 @@ impl BattleSystem {
 
     pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::init_battle(world, resources);
-        resources.rounds.next();
         let mut ticks = 0;
         while Self::tick(world, resources) && ticks < 1000 {
             ticks += 1;
@@ -45,11 +44,11 @@ impl BattleSystem {
 
     pub fn finish_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.game_won = Self::battle_won(world);
-        resources.last_round = resources.rounds.next_round;
+        resources.last_round = resources.rounds.current_ind();
         if !resources.game_won {
             resources.transition_state = GameState::GameOver;
         } else {
-            if resources.rounds.next_round == ROUNDS_COUNT {
+            if resources.rounds.current_ind() == ROUNDS_COUNT {
                 resources.transition_state = GameState::GameOver;
             } else {
                 resources.transition_state = GameState::Shop;
@@ -347,7 +346,7 @@ impl System for BattleSystem {
     ) -> Box<dyn ui::Widget + 'a> {
         Box::new(
             (Text::new(
-                format!("Round #{}", resources.rounds.next_round),
+                format!("Round #{}", resources.rounds.current_ind()),
                 resources.fonts.get_font(0),
                 70.0,
                 Rgba::WHITE,

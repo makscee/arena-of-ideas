@@ -94,10 +94,18 @@ impl Vars {
         }
     }
 
-    pub fn get_float(&self, name: &VarName) -> f32 {
-        match self.get(name) {
-            Var::Float(value) => *value,
-            _ => panic!("Wrong Var type {}", name),
+    pub fn get_vec2(&self, name: &VarName) -> vec2<f32> {
+        self.try_get_vec2(name)
+            .expect(&format!("Failed to get var {}", name))
+    }
+
+    pub fn try_get_vec2(&self, name: &VarName) -> Option<vec2<f32>> {
+        match self.try_get(name) {
+            Some(value) => match value {
+                Var::Vec2(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", name),
+            },
+            None => None,
         }
     }
 

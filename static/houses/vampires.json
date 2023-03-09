@@ -56,19 +56,20 @@
                         }
                     },
                     {
-                        "type": "Kill",
-                        "target": {
+                        "type": "TakeVar",
+                        "var": "Position",
+                        "entity": {
                             "type": "Target"
-                        }
-                    },
-                    {
-                        "type": "ChangeContext",
-                        "target": {
-                            "type": "Owner"
                         },
                         "effect": {
                             "type": "ShowText",
                             "text": "Devour"
+                        }
+                    },
+                    {
+                        "type": "Kill",
+                        "target": {
+                            "type": "Target"
                         }
                     }
                 ]

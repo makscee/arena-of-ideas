@@ -3,7 +3,7 @@ use super::*;
 #[derive(Deserialize, Debug, Clone, Default)]
 pub struct Rounds {
     #[serde(default)]
-    pub next_round: usize,
+    next_round: usize,
     rounds: Vec<Round>,
 }
 
@@ -11,7 +11,15 @@ pub const ROUNDS_COUNT: usize = 10;
 
 impl Rounds {
     fn current(&self) -> &Round {
-        &self.rounds[self.next_round]
+        &self.rounds[self.next_round - 1]
+    }
+
+    pub fn current_ind(&self) -> usize {
+        self.next_round
+    }
+
+    pub fn reset(&mut self) {
+        self.next_round = default();
     }
 
     pub fn next(&mut self) {

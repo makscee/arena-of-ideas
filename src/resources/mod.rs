@@ -150,7 +150,6 @@ impl Resources {
         self.load_image_textures(fws);
         self.load_houses(fws);
         self.load_unit_templates(fws);
-        Shop::load(self);
         fws.load_and_watch_file(
             self,
             &static_path().join("options.json"),

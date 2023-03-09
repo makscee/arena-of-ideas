@@ -88,11 +88,10 @@ impl ShopSystem {
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
-        resources.rounds.next_round = 0;
-        resources.shop.money = 4;
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Team});
         resources.status_pool.clear_all_active();
-        Self::reroll(world, resources);
+        resources.rounds.reset();
+        Self::init(world, resources);
     }
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
@@ -236,27 +235,17 @@ impl ShopSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        resources.logger.set_enabled(false);
-        PowerPointsSystem::measure(
-            &resources
-                .unit_templates
-                .heroes
-                .keys()
-                .cloned()
-                .collect_vec(),
-            world,
-            resources,
-        );
-        resources.logger.set_enabled(true);
+        Shop::update_pool(resources);
+        resources.rounds.next();
         Self::reroll(world, resources);
         WorldSystem::set_var(
             world,
             VarName::RoundNumber,
-            &Var::Int(resources.rounds.next_round as i32 + 1),
+            &Var::Int(resources.rounds.current_ind() as i32),
         );
         BattleSystem::create_enemies(resources, world);
         SlotSystem::fill_gaps(world, hashset! {Faction::Dark});
-        resources.shop.money = (UNIT_COST + 1 + resources.rounds.next_round).min(10);
+        resources.shop.money = (UNIT_COST + resources.rounds.current_ind()).min(10);
     }
 
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {

@@ -65,6 +65,11 @@ pub enum Effect {
         parent: Option<ExpressionEntity>,
         effect: Box<Effect>,
     },
+    TakeVar {
+        var: VarName,
+        entity: ExpressionEntity,
+        effect: Box<Effect>,
+    },
     If {
         condition: Condition,
         then: Box<Effect>,
@@ -394,11 +399,7 @@ impl Effect {
                 }
             }
             Effect::ShowText { text, color } => {
-                let target_position = world
-                    .entry_ref(context.target)
-                    .context("Failed to get target")?
-                    .get_component::<PositionComponent>()?
-                    .0;
+                let position = context.vars.get_vec2(&VarName::Position);
                 let color = color
                     .or_else(|| {
                         context
@@ -408,11 +409,7 @@ impl Effect {
                     })
                     .unwrap();
                 resources.cassette.add_effect(VfxSystem::vfx_show_text(
-                    resources,
-                    text,
-                    color,
-                    target_position,
-                    0,
+                    resources, text, color, position, 0,
                 ))
             }
             Effect::ChangeContext {
@@ -466,6 +463,27 @@ impl Effect {
                         ));
                     })
             }
+            Effect::TakeVar {
+                var,
+                entity,
+                effect,
+            } => resources.action_queue.push_front(Action::new(
+                {
+                    let mut vars = context.vars.clone();
+                    vars.insert(
+                        *var,
+                        ContextSystem::get_context(
+                            entity.calculate(&context, world, resources)?,
+                            world,
+                        )
+                        .vars
+                        .get(var)
+                        .clone(),
+                    );
+                    Context { vars, ..context }
+                },
+                effect.deref().clone(),
+            )),
         }
         Ok(())
     }

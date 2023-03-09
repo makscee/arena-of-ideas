@@ -12,11 +12,6 @@ impl PowerPointsSystem {
         templates
             .iter()
             .for_each(|path| Self::measure_single(path, templates, world, resources, &mut results));
-        dbg!(results
-            .iter()
-            .sorted_by_key(|(_, score)| score.clone())
-            .rev()
-            .collect_vec());
         results
     }
 
@@ -30,26 +25,16 @@ impl PowerPointsSystem {
         fn choose_random(templates: &Vec<PathBuf>) -> &PathBuf {
             templates.choose(&mut thread_rng()).unwrap()
         }
-        for _ in 0..3 {
+        for _ in 0..8 {
             let light = vec![template];
             let dark = vec![choose_random(all_templates)];
             if Self::run_simulation(&light, &dark, world, resources) == Faction::Light {
-                light
-                    .iter()
-                    .for_each(|path| *results.get_mut(*path).unwrap() += 1);
-            } else {
-                dark.iter()
-                    .for_each(|path| *results.get_mut(*path).unwrap() += 1);
+                *results.get_mut(template).unwrap() += 1;
             }
             let light = vec![template, choose_random(all_templates)];
             let dark = vec![choose_random(all_templates), choose_random(all_templates)];
             if Self::run_simulation(&light, &dark, world, resources) == Faction::Light {
-                light
-                    .iter()
-                    .for_each(|path| *results.get_mut(*path).unwrap() += 1);
-            } else {
-                dark.iter()
-                    .for_each(|path| *results.get_mut(*path).unwrap() += 1);
+                *results.get_mut(template).unwrap() += 1;
             }
         }
     }
