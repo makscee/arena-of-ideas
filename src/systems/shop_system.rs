@@ -57,11 +57,13 @@ impl System for ShopSystem {
                         .uniform_padding(16.0)
                         .background_color(Rgba::try_from("#267ec7").unwrap()),
                     Text::new(
-                        format!("Buy: {}G", UNIT_COST),
+                        format!("{}G", resources.shop.money),
                         resources.fonts.get_font(1),
-                        40.0,
-                        Rgba::WHITE,
-                    ),
+                        60.0,
+                        Rgba::BLACK,
+                    )
+                    .uniform_padding(32.0)
+                    .center(),
                 )
                     .column()
                     .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
