@@ -32,6 +32,9 @@ impl geng::ui::Widget for PoolWidget<'_> {
     }
     fn draw(&mut self, cx: &mut geng::ui::DrawContext) {
         *self.position = cx.position.map(|x| x as f32);
+        if self.height < 0.001 {
+            return;
+        }
         #[derive(ugli::Vertex)]
         struct Vertex {
             a_pos: vec2<f32>,

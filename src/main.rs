@@ -21,6 +21,7 @@ fn setup_geng() -> Geng {
     geng::setup_panic_handler();
     let geng = Geng::new_with(geng::ContextOptions {
         title: "Arena of Ideas".to_owned(),
+        antialias: true,
         shader_prefix: Some((
             include_str!("vertex_prefix.glsl").to_owned(),
             include_str!("fragment_prefix.glsl").to_owned(),
@@ -38,8 +39,8 @@ fn static_path() -> PathBuf {
 
 fn main() {
     logger::init().unwrap();
-    geng::setup_panic_handler();
     let geng = setup_geng();
+    
     let world = legion::World::default();
     let resources = Resources::new(&geng);
     let mut theme = geng.ui_theme();

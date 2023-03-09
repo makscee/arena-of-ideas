@@ -227,6 +227,7 @@ impl ShopSystem {
         }
         .send(resources, world);
         UnitSystem::kill(entity, world, resources);
+        SlotSystem::refresh_slots_filled_uniform(world);
     }
 
     pub fn clear(world: &mut legion::World, resources: &mut Resources) {
@@ -235,6 +236,18 @@ impl ShopSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
+        resources.logger.set_enabled(false);
+        PowerPointsSystem::measure(
+            &resources
+                .unit_templates
+                .heroes
+                .keys()
+                .cloned()
+                .collect_vec(),
+            world,
+            resources,
+        );
+        resources.logger.set_enabled(true);
         Self::reroll(world, resources);
         WorldSystem::set_var(
             world,

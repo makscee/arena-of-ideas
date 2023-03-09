@@ -18,9 +18,12 @@ impl ActionSystem {
         ContextSystem::refresh_all(world);
         StatusPool::init_new_statuses(world, resources);
         let Some(action) = resources.action_queue.pop_front() else { return false };
-        debug!(
-            "Procession action: {:?} context: {:?}",
-            action.effect, action.context
+        resources.logger.log(
+            &format!(
+                "Procession action: {:?} context: {:?}",
+                action.effect, action.context
+            ),
+            &LogContext::Action,
         );
         match action
             .effect

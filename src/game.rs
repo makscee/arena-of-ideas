@@ -1,11 +1,15 @@
+use std::collections::VecDeque;
+
 use geng::prelude::itertools::Itertools;
 
 use super::*;
+use geng::ui::*;
 
 pub struct Game {
     world: legion::World,
     resources: Resources,
     systems: Vec<Box<dyn System>>,
+    fps: VecDeque<f32>,
 }
 
 impl Game {
@@ -17,6 +21,7 @@ impl Game {
             world,
             resources,
             systems,
+            fps: VecDeque::from_iter((0..30).map(|x| x as f32)),
         }
     }
 
@@ -91,14 +96,26 @@ impl geng::State for Game {
     }
 
     fn ui<'a>(&'a mut self, cx: &'a ui::Controller) -> Box<dyn ui::Widget + 'a> {
-        let widgets = self
+        let mut widgets = self
             .systems
             .iter_mut()
             .map(|system| system.ui(cx, &self.world, &self.resources))
             .collect_vec();
-        if widgets.is_empty() {
-            return Box::new(ui::Void);
-        }
+        self.fps.pop_front();
+        self.fps.push_back(1.0 / self.resources.delta_time);
+        let mut fps: f32 = self.fps.iter().sum();
+        fps /= self.fps.len() as f32;
+        let fps = Text::new(
+            format!("{:.0}", fps),
+            self.resources.fonts.get_font(1),
+            32.0,
+            Rgba::WHITE,
+        )
+        .fixed_size(vec2(60.0, 30.0))
+        .background_color(Rgba::BLACK)
+        .align(vec2(0.0, 0.0))
+        .boxed();
+        widgets.push(fps);
         Box::new(geng::ui::stack(widgets))
     }
 

@@ -1,5 +1,13 @@
 {
     "fov": 18.0,
+    "log": {
+        "Action": true,
+        "Effect": false,
+        "Condition": false,
+        "Trigger": false,
+        "Event": false,
+        "UnitCreation": false
+    },
     "colors": {
         "stats_attack_color": "#ffc400",
         "stats_hp_color": "#d20505",

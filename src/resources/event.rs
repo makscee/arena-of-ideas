@@ -15,7 +15,9 @@ pub enum Event {
 
 impl Event {
     pub fn send(&self, resources: &mut Resources, world: &legion::World) -> Option<Context> {
-        debug!("Send event {:?}", self);
+        resources
+            .logger
+            .log(&format!("Send event {:?}", self), &LogContext::Event);
         match self {
             Event::BeforeIncomingDamage { context }
             | Event::AfterIncomingDamage { context }
@@ -32,6 +34,7 @@ impl Event {
                             self,
                             &mut resources.action_queue,
                             context.merge(&status_context, false),
+                            &resources.logger,
                         )
                     });
                 None
@@ -43,7 +46,12 @@ impl Event {
                     .get(status)
                     .expect("Failed to find defined status for initialization")
                     .trigger
-                    .catch_event(self, &mut resources.action_queue, context.clone());
+                    .catch_event(
+                        self,
+                        &mut resources.action_queue,
+                        context.clone(),
+                        &resources.logger,
+                    );
                 None
             }
             Event::BattleOver => {
@@ -65,16 +73,21 @@ impl Event {
                         )
                     })
                     .for_each(|(trigger, status_context)| {
-                        trigger.catch_event(self, &mut resources.action_queue, {
-                            let context = {
-                                let context = status_context.clone();
-                                context.merge(
-                                    &ContextSystem::get_context(status_context.owner, world),
-                                    true,
-                                )
-                            };
-                            context
-                        })
+                        trigger.catch_event(
+                            self,
+                            &mut resources.action_queue,
+                            {
+                                let context = {
+                                    let context = status_context.clone();
+                                    context.merge(
+                                        &ContextSystem::get_context(status_context.owner, world),
+                                        true,
+                                    )
+                                };
+                                context
+                            },
+                            &resources.logger,
+                        )
                     });
                 None
             }

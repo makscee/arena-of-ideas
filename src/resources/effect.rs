@@ -106,7 +106,9 @@ impl Effect {
                     }
                 };
                 if value == 0 {
-                    debug!("Attempt to do zero damage, returning.");
+                    resources
+                        .logger
+                        .log("Attempt to do zero damage, returning.", &LogContext::Effect);
                     return Ok(());
                 }
                 context.vars.insert(VarName::Damage, Var::Int(value));
@@ -134,7 +136,7 @@ impl Effect {
                     .get_component::<FlagsComponent>()?
                     .has_flag(&Flag::DamageImmune)
                 {
-                    debug!("Damage Immune");
+                    resources.logger.log("Damage Immune", &LogContext::Effect);
                     text = "Immune".to_string();
                 } else {
                     let hp = target.get_component_mut::<HpComponent>()?;
@@ -156,10 +158,13 @@ impl Effect {
                         },
                         -1,
                     ));
-                    debug!(
-                        "Entity#{:?} {} damage taken, new hp: {}",
-                        context.target, value, hp.current
-                    )
+                    resources.logger.log(
+                        &format!(
+                            "Entity#{:?} {} damage taken, new hp: {}",
+                            context.target, value, hp.current
+                        ),
+                        &LogContext::Effect,
+                    );
                 }
                 resources.cassette.add_effect_by_key(
                     &effect_key,
@@ -334,9 +339,13 @@ impl Effect {
                 value,
             } => {
                 let value = value.calculate(&context, world, resources)?;
-                debug!(
-                    "Set ability {} var {:?} value {}",
-                    ability_name, var_name, value
+
+                resources.logger.log(
+                    &format!(
+                        "Set ability {} var {:?} value {}",
+                        ability_name, var_name, value
+                    ),
+                    &LogContext::Effect,
                 );
                 resources
                     .houses

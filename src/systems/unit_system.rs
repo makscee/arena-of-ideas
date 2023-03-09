@@ -185,7 +185,6 @@ impl UnitSystem {
         }
         resources.status_pool.clear_entity(&entity);
         let res = world.remove(entity);
-        SlotSystem::refresh_slots_filled_uniform(world);
         res
     }
 

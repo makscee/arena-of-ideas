@@ -35,7 +35,7 @@ impl BattleSystem {
         Self::create_team(resources, world);
     }
 
-    fn battle_won(world: &legion::World) -> bool {
+    pub fn battle_won(world: &legion::World) -> bool {
         <&UnitComponent>::query()
             .iter(world)
             .filter(|unit| unit.faction == Faction::Dark)
@@ -88,22 +88,12 @@ impl BattleSystem {
         resources.cassette.node_template.clear();
         SlotSystem::fill_gaps(world, hashset! {Faction::Light, Faction::Dark});
         Self::refresh_cassette(world, resources);
-        Self::move_to_slots(world, resources);
+        Self::move_to_slots_animated(world, resources);
         Self::refresh_cassette(world, resources);
         resources.cassette.close_node();
         ActionSystem::run_ticks(world, resources);
-        let units = <(&UnitComponent, &EntityComponent)>::query()
-            .iter(world)
-            .collect_vec();
-        let left = units
-            .iter()
-            .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Light);
-        let right = units
-            .iter()
-            .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark);
-        if left.is_some() && right.is_some() {
-            let left_entity = left.unwrap().1.entity;
-            let right_entity = right.unwrap().1.entity;
+
+        if let Some((left_entity, right_entity)) = Self::find_hitters(world) {
             Self::refresh_cassette(world, resources);
             resources.cassette.close_node();
 
@@ -164,27 +154,7 @@ impl BattleSystem {
             );
             resources.cassette.close_node();
 
-            let context = Context {
-                owner: left_entity,
-                target: right_entity,
-                parent: Some(left_entity),
-                ..ContextSystem::get_context(left_entity, world)
-            };
-            resources
-                .action_queue
-                .push_back(Action::new(context, Effect::Damage { value: None }));
-
-            let context = Context {
-                owner: right_entity,
-                target: left_entity,
-                parent: Some(right_entity),
-                ..ContextSystem::get_context(right_entity, world)
-            };
-            resources
-                .action_queue
-                .push_back(Action::new(context, Effect::Damage { value: None }));
-
-            ActionSystem::run_ticks(world, resources);
+            Self::hit(left_entity, right_entity, world, resources);
 
             Self::refresh_cassette(world, resources);
             Self::add_strike_vfx(world, resources, left_entity, right_entity);
@@ -208,33 +178,86 @@ impl BattleSystem {
             );
             resources.cassette.close_node();
 
-            while let Some(dead_unit) = <(&EntityComponent, &HpComponent)>::query()
-                .iter(world)
-                .filter_map(|(unit, hp)| match hp.current <= 0 {
-                    true => Some(unit.entity),
-                    false => None,
-                })
-                .choose(&mut thread_rng())
-            {
-                debug!("Entity#{:?} dead", dead_unit);
-                let context = ContextSystem::get_context(dead_unit, world);
-                Event::BeforeDeath { context }.send(resources, world);
-                ActionSystem::run_ticks(world, resources);
-                Self::refresh_cassette(world, resources);
-                if world
-                    .entry(dead_unit)
-                    .unwrap()
-                    .get_component::<HpComponent>()
-                    .unwrap()
-                    .current
-                    <= 0
-                {
-                    UnitSystem::kill(dead_unit, world, resources);
-                }
-            }
+            Self::clear_dead(world, resources);
+            Self::refresh_cassette(world, resources);
+            SlotSystem::refresh_slots_filled_uniform(world);
             return true;
         }
         return false;
+    }
+
+    pub fn find_hitters(world: &legion::World) -> Option<(legion::Entity, legion::Entity)> {
+        let units = <(&UnitComponent, &EntityComponent)>::query()
+            .iter(world)
+            .collect_vec();
+
+        units
+            .iter()
+            .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Light)
+            .and_then(|(_, left)| {
+                match units
+                    .iter()
+                    .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark)
+                {
+                    Some((_, right)) => Some((left.entity, right.entity)),
+                    None => None,
+                }
+            })
+    }
+
+    pub fn hit(
+        left: legion::Entity,
+        right: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let context = Context {
+            owner: left,
+            target: right,
+            parent: Some(left),
+            ..ContextSystem::get_context(left, world)
+        };
+        resources
+            .action_queue
+            .push_back(Action::new(context, Effect::Damage { value: None }));
+
+        let context = Context {
+            owner: right,
+            target: left,
+            parent: Some(right),
+            ..ContextSystem::get_context(right, world)
+        };
+        resources
+            .action_queue
+            .push_back(Action::new(context, Effect::Damage { value: None }));
+
+        ActionSystem::run_ticks(world, resources);
+    }
+
+    pub fn clear_dead(world: &mut legion::World, resources: &mut Resources) {
+        while let Some(dead_unit) = <(&EntityComponent, &HpComponent)>::query()
+            .iter(world)
+            .filter_map(|(unit, hp)| match hp.current <= 0 {
+                true => Some(unit.entity),
+                false => None,
+            })
+            .choose(&mut thread_rng())
+        {
+            trace!("Entity#{:?} dead", dead_unit);
+            let context = ContextSystem::get_context(dead_unit, world);
+            Event::BeforeDeath { context }.send(resources, world);
+            ActionSystem::run_ticks(world, resources);
+            if world
+                .entry(dead_unit)
+                .unwrap()
+                .get_component::<HpComponent>()
+                .unwrap()
+                .current
+                <= 0
+            {
+                UnitSystem::kill(dead_unit, world, resources);
+            }
+        }
     }
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
@@ -255,7 +278,7 @@ impl BattleSystem {
         resources.cassette.merge_template_into_last();
     }
 
-    pub fn move_to_slots(world: &mut legion::World, resources: &mut Resources) {
+    fn move_to_slots_animated(world: &mut legion::World, resources: &mut Resources) {
         <(&UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
             .iter_mut(world)
             .for_each(|(unit, position, entity)| {

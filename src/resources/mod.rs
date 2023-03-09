@@ -41,6 +41,7 @@ pub use trigger::*;
 pub use visual_effect::*;
 
 pub struct Resources {
+    pub logger: Logger,
     pub options: Options,
     pub reload_triggered: bool,
 
@@ -112,6 +113,7 @@ impl Resources {
         ];
 
         Self {
+            logger: default(),
             shader_programs: default(),
             image_textures: default(),
             camera: Camera::new(&options),
@@ -291,6 +293,7 @@ impl Resources {
         resources.options =
             futures::executor::block_on(<Options as geng::LoadAsset>::load(&resources.geng, &file))
                 .unwrap();
+        resources.logger.load(&resources.options);
         dbg!(&resources.options);
     }
 
@@ -392,9 +395,12 @@ impl UnitTemplatesPool {
             .0
             .iter()
             .for_each(|component| component.add_to_entry(resources, path, entity, &context, world));
-        debug!(
-            "Unit#{:?} created. Template: {:?} Context: {:?}",
-            entity, template.0, context
+        resources.logger.log(
+            &format!(
+                "Unit#{:?} created. Template: {:?} Context: {:?}",
+                entity, template.0, context
+            ),
+            &LogContext::UnitCreation,
         );
         entity
     }
