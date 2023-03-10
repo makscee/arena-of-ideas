@@ -13,7 +13,7 @@
     },
     {
         "component": "Description",
-        "text": "Stats are\nequal to\nRound number"
+        "text": "+$Floor HP and ATK"
     },
     {
         "component": "StatusContainer",
@@ -28,16 +28,30 @@
                                 "type": "ChangeStat",
                                 "stat": "Hp",
                                 "value": {
-                                    "type": "Var",
-                                    "var": "RoundNumber"
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Floor"
+                                    },
+                                    "b": {
+                                        "type": "Stat",
+                                        "stat": "Hp"
+                                    }
                                 }
                             },
                             {
                                 "type": "ChangeStat",
                                 "stat": "Attack",
                                 "value": {
-                                    "type": "Var",
-                                    "var": "RoundNumber"
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Floor"
+                                    },
+                                    "b": {
+                                        "type": "Stat",
+                                        "stat": "Attack"
+                                    }
                                 }
                             }
                         ]

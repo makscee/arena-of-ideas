@@ -13,7 +13,7 @@
     },
     {
         "component": "Description",
-        "text": "Before death\ndamage equal to\nRound number to\nALL units"
+        "text": "Before death deal\ndamage equal\nto $Floor to\nALL units"
     },
     {
         "component": "StatusContainer",
@@ -31,7 +31,7 @@
                             "type": "Damage",
                             "value": {
                                 "type": "Var",
-                                "var": "RoundNumber"
+                                "var": "Floor"
                             }
                         }
                     }

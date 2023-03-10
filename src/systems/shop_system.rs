@@ -90,7 +90,7 @@ impl ShopSystem {
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Team});
         resources.status_pool.clear_all_active();
-        resources.rounds.reset();
+        resources.floors.reset();
         Self::init(world, resources);
     }
 
@@ -236,16 +236,15 @@ impl ShopSystem {
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
         Shop::update_pool(resources);
-        resources.rounds.next();
         Self::reroll(world, resources);
         WorldSystem::set_var(
             world,
-            VarName::RoundNumber,
-            &Var::Int(resources.rounds.current_ind() as i32),
+            VarName::Floor,
+            &Var::Int(resources.floors.current_ind() as i32),
         );
         BattleSystem::create_enemies(resources, world);
         SlotSystem::fill_gaps(world, hashset! {Faction::Dark});
-        resources.shop.money = (UNIT_COST + resources.rounds.current_ind()).min(10);
+        resources.shop.money = (UNIT_COST + resources.floors.current_ind()).min(10);
     }
 
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {

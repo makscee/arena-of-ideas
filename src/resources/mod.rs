@@ -9,12 +9,12 @@ mod condition;
 mod effect;
 mod event;
 mod expression;
+mod floors;
 mod fonts;
 mod house;
 mod image;
 mod image_textures;
 mod options;
-mod rounds;
 mod shader_programs;
 mod shop;
 mod status;
@@ -28,12 +28,12 @@ pub use condition::*;
 pub use effect::*;
 pub use event::*;
 pub use expression::*;
+pub use floors::*;
 pub use fonts::*;
 pub use house::*;
 pub use image::*;
 pub use image_textures::*;
 pub use options::*;
-pub use rounds::*;
 pub use shader_programs::*;
 pub use shop::*;
 pub use status::*;
@@ -67,7 +67,7 @@ pub struct Resources {
     pub last_round: usize,
 
     pub unit_templates: UnitTemplatesPool,
-    pub rounds: Rounds,
+    pub floors: Floors,
     pub houses: HashMap<HouseName, House>,
 
     pub current_state: GameState,
@@ -136,7 +136,7 @@ impl Resources {
             dragged_entity: default(),
             hovered_entity: default(),
             houses: default(),
-            rounds: default(),
+            floors: default(),
             reload_triggered: default(),
             game_won: default(),
             last_round: default(),
@@ -157,7 +157,7 @@ impl Resources {
         );
         fws.load_and_watch_file(
             self,
-            &static_path().join("rounds.json"),
+            &static_path().join("floors.json"),
             Box::new(Self::load_rounds),
         );
     }
@@ -326,9 +326,9 @@ impl Resources {
         let json =
             futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
                 .expect(&format!("Failed to load Rounds {:?}", file));
-        let rounds: Rounds =
+        let rounds: Floors =
             serde_json::from_str(&json).expect(&format!("Failed to parse Rounds {:?}", file));
-        resources.rounds = rounds;
+        resources.floors = rounds;
     }
 }
 

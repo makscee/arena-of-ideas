@@ -13,7 +13,7 @@
     },
     {
         "component": "Description",
-        "text": "Attack is equal\nto Round number.\nBefore death\nAttack random enemy"
+        "text": "Attack is equal\nto $Floor.\nBefore death\nAttack random enemy"
     },
     {
         "component": "StatusContainer",
@@ -29,7 +29,7 @@
                                 "stat": "Attack",
                                 "value": {
                                     "type": "Var",
-                                    "var": "RoundNumber"
+                                    "var": "Floor"
                                 }
                             }
                         ]

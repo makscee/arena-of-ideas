@@ -1,34 +1,33 @@
 use super::*;
 
 #[derive(Deserialize, Debug, Clone, Default)]
-pub struct Rounds {
+pub struct Floors {
     #[serde(default)]
-    next_round: usize,
-    rounds: Vec<Round>,
+    current: usize,
+    floors: Vec<Floor>,
 }
 
-pub const ROUNDS_COUNT: usize = 10;
-
-impl Rounds {
-    fn current(&self) -> &Round {
-        &self.rounds[self.next_round - 1]
+impl Floors {
+    fn current(&self) -> &Floor {
+        &self.floors[self.current]
     }
 
     pub fn current_ind(&self) -> usize {
-        self.next_round
+        self.current
     }
 
     pub fn reset(&mut self) {
-        self.next_round = default();
+        self.current = default();
     }
 
-    pub fn next(&mut self) {
-        self.next_round += 1;
+    pub fn next(&mut self) -> bool {
+        self.current += 1;
+        self.current < self.floors.len()
     }
 
     pub fn load(world: &mut legion::World, resources: &mut Resources) {
         resources
-            .rounds
+            .floors
             .current()
             .enemies
             .clone()
@@ -48,6 +47,6 @@ impl Rounds {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct Round {
+pub struct Floor {
     pub enemies: Vec<PathBuf>,
 }

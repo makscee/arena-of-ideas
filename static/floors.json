@@ -1,5 +1,5 @@
 {
-    "rounds": [
+    "floors": [
         {
             "enemies": [
                 "units/enemies/solid_grower.json"

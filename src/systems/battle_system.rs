@@ -44,14 +44,14 @@ impl BattleSystem {
 
     pub fn finish_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.game_won = Self::battle_won(world);
-        resources.last_round = resources.rounds.current_ind();
+        resources.last_round = resources.floors.current_ind();
         if !resources.game_won {
             resources.transition_state = GameState::GameOver;
         } else {
-            if resources.rounds.current_ind() == ROUNDS_COUNT {
-                resources.transition_state = GameState::GameOver;
-            } else {
+            if resources.floors.next() {
                 resources.transition_state = GameState::Shop;
+            } else {
+                resources.transition_state = GameState::GameOver;
             }
         }
         Self::clear_world(world, resources);
@@ -63,7 +63,7 @@ impl BattleSystem {
     }
 
     pub fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
-        Rounds::load(world, resources);
+        Floors::load(world, resources);
     }
 
     fn create_team(resources: &mut Resources, world: &mut legion::World) {
@@ -346,7 +346,7 @@ impl System for BattleSystem {
     ) -> Box<dyn ui::Widget + 'a> {
         Box::new(
             (Text::new(
-                format!("Round #{}", resources.rounds.current_ind()),
+                format!("Round #{}", resources.floors.current_ind()),
                 resources.fonts.get_font(0),
                 70.0,
                 Rgba::WHITE,

@@ -13,7 +13,7 @@
     },
     {
         "component": "Description",
-        "text": "Attack is equal\nto Round\nnumber doubled"
+        "text": "Attack is equal\nto $Floor\n doubled"
     },
     {
         "component": "StatusContainer",
@@ -28,14 +28,21 @@
                                 "type": "ChangeStat",
                                 "stat": "Attack",
                                 "value": {
-                                    "type": "Mul",
+                                    "type": "Sum",
                                     "a": {
-                                        "type": "Var",
-                                        "var": "RoundNumber"
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "Var",
+                                            "var": "Floor"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 2
+                                        }
                                     },
                                     "b": {
-                                        "type": "Const",
-                                        "value": 2
+                                        "type": "Stat",
+                                        "stat": "Attack"
                                     }
                                 }
                             }

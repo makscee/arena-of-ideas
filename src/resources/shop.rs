@@ -57,9 +57,9 @@ impl Shop {
     }
 
     pub fn update_pool(resources: &mut Resources) {
-        let level = resources.rounds.current_ind();
+        let floor = resources.floors.current_ind();
         resources.shop.pool.extend(
-            resources.shop.level_extensions[level]
+            resources.shop.level_extensions[floor]
                 .iter()
                 .map(|path| (path.clone(), HERO_POOL_COUNT)),
         );
