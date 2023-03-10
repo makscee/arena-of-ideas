@@ -32,6 +32,10 @@ impl GallerySystem {
         self.current_heroes[heroes - 1] = self.wanted_hero;
         resources.cassette.parallel_node.clear();
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
+        resources
+            .cassette
+            .parallel_node
+            .clear_key(CARD_ANIMATION_KEY);
         for (ind, template_ind) in self.current_heroes.iter().enumerate() {
             let template_key = self.paths[*template_ind].clone();
             let position = vec2(
@@ -47,10 +51,6 @@ impl GallerySystem {
                 position,
             );
             if self.need_card_animation {
-                resources
-                    .cassette
-                    .parallel_node
-                    .clear_key(CARD_ANIMATION_KEY);
                 resources.cassette.parallel_node.add_effect_by_key(
                     CARD_ANIMATION_KEY,
                     VisualEffect::new_delayed(

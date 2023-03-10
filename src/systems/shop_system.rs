@@ -242,6 +242,7 @@ impl ShopSystem {
             VarName::Floor,
             &Var::Int(resources.floors.current_ind() as i32),
         );
+        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark});
         BattleSystem::create_enemies(resources, world);
         SlotSystem::fill_gaps(world, hashset! {Faction::Dark});
         resources.shop.money = (UNIT_COST + resources.floors.current_ind()).min(10);

@@ -150,8 +150,14 @@ impl GameStateSystem {
             GameState::Gallery => {
                 resources.cassette.clear();
                 resources.action_queue.clear();
+                resources.status_pool.new_statuses.clear();
                 resources.camera.camera.fov = resources.options.fov;
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)));
+                SlotSystem::init_world(
+                    world,
+                    &resources.options,
+                    hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
+                );
             }
             GameState::GameOver => {
                 resources.camera.camera.fov = resources.options.fov;
@@ -172,7 +178,9 @@ impl GameStateSystem {
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Gallery => {
+                resources.camera.focus = Focus::Battle;
                 WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 20.0)));
+                SlotSystem::clear_world(world);
             }
             GameState::GameOver => {
                 resources.camera.camera.fov = resources.options.fov * 0.5;
