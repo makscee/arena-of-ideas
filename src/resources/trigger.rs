@@ -13,6 +13,7 @@ pub enum Trigger {
     Buy { effect: Effect },
     Sell { effect: Effect },
     RemoveFromTeam { effect: Effect },
+    AfterStrike { effect: Effect },
 }
 
 impl Trigger {
@@ -63,6 +64,10 @@ impl Trigger {
                 _ => {}
             },
             Trigger::ModifyIncomingDamage { .. } => {}
+            Trigger::AfterStrike { .. } => match event {
+                Event::AfterStrike { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
         }
     }
 
@@ -72,6 +77,7 @@ impl Trigger {
             | Trigger::AfterIncomingDamage { effect }
             | Trigger::BeforeDeath { effect }
             | Trigger::AfterBattle { effect }
+            | Trigger::AfterStrike { effect }
             | Trigger::Init { effect }
             | Trigger::RemoveFromTeam { effect }
             | Trigger::Buy { effect }

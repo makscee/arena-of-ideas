@@ -409,7 +409,7 @@ impl Effect {
                     })
                     .unwrap();
                 resources.cassette.add_effect(VfxSystem::vfx_show_text(
-                    resources, text, color, position, 0,
+                    resources, text, color, position, 2,
                 ))
             }
             Effect::ChangeContext {

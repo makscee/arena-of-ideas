@@ -76,9 +76,50 @@
             }
         },
         "SiphonLife": {
-            "description": "Deal 1 DMG\nheal same amount",
+            "description": "Deal 1 DMG\ngain 1 HP",
             "effect": {
-                "type": "Noop"
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "Damage",
+                        "value": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    {
+                        "type": "ChangeStat",
+                        "stat": "Hp",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Const",
+                                "value": 1
+                            },
+                            "b": {
+                                "type": "Stat",
+                                "stat": "Hp",
+                                "target": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "type": "TakeVar",
+                        "var": "Position",
+                        "entity": {
+                            "type": "Target"
+                        },
+                        "effect": {
+                            "type": "ShowText",
+                            "text": "SiphonLife"
+                        }
+                    }
+                ]
             }
         }
     },

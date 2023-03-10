@@ -210,26 +210,36 @@ impl BattleSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let context = Context {
+        let context_left = Context {
             owner: left,
             target: right,
             parent: Some(left),
             ..ContextSystem::get_context(left, world)
         };
-        resources
-            .action_queue
-            .push_back(Action::new(context, Effect::Damage { value: None }));
+        resources.action_queue.push_back(Action::new(
+            context_left.clone(),
+            Effect::Damage { value: None },
+        ));
 
-        let context = Context {
+        let context_right = Context {
             owner: right,
             target: left,
             parent: Some(right),
             ..ContextSystem::get_context(right, world)
         };
-        resources
-            .action_queue
-            .push_back(Action::new(context, Effect::Damage { value: None }));
-
+        resources.action_queue.push_back(Action::new(
+            context_right.clone(),
+            Effect::Damage { value: None },
+        ));
+        ActionSystem::run_ticks(world, resources);
+        Event::AfterStrike {
+            context: context_left,
+        }
+        .send(resources, world);
+        Event::AfterStrike {
+            context: context_right,
+        }
+        .send(resources, world);
         ActionSystem::run_ticks(world, resources);
     }
 
@@ -242,7 +252,10 @@ impl BattleSystem {
             })
             .choose(&mut thread_rng())
         {
-            trace!("Entity#{:?} dead", dead_unit);
+            resources.logger.log(
+                &format!("Entity#{:?} dead", dead_unit),
+                &LogContext::UnitCreation,
+            );
             let context = ContextSystem::get_context(dead_unit, world);
             Event::BeforeDeath { context }.send(resources, world);
             ActionSystem::run_ticks(world, resources);

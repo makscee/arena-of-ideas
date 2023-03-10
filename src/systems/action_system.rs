@@ -30,7 +30,10 @@ impl ActionSystem {
             .process(action.context.clone(), world, resources)
         {
             Ok(_) => {}
-            Err(error) => error!("Effect process error: {}", error),
+            Err(error) => {
+                error!("Effect process error: {}", error);
+                dbg!(action);
+            }
         }
         ContextSystem::refresh_all(world);
         true
@@ -43,6 +46,7 @@ impl System for ActionSystem {
     }
 }
 
+#[derive(Debug)]
 pub struct Action {
     pub context: Context,
     pub effect: Effect,

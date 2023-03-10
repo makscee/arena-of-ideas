@@ -11,7 +11,7 @@
     },
     {
         "component": "Description",
-        "text": "After attack:\nSiphon Life (1)"
+        "text": "After strike:\nSiphon Life (1)"
     },
     {
         "component": "AbilityDescription",
@@ -50,5 +50,20 @@
                 }
             }
         ]
+    },
+    {
+        "component": "StatusContainer",
+        "statuses": {
+            "SiphonAfterStrike": {
+                "trigger": {
+                    "type": "AfterStrike",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Vampires",
+                        "name": "SiphonLife"
+                    }
+                }
+            }
+        }
     }
 ]

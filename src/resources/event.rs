@@ -11,6 +11,7 @@ pub enum Event {
     Buy { context: Context },
     Sell { context: Context },
     RemoveFromTeam { context: Context },
+    AfterStrike { context: Context },
 }
 
 impl Event {
@@ -25,18 +26,11 @@ impl Event {
             | Event::Buy { context }
             | Event::Sell { context }
             | Event::RemoveFromTeam { context } => {
-                resources
-                    .status_pool
-                    .collect_triggers(&context.target)
-                    .iter()
-                    .for_each(|(trigger, status_context)| {
-                        trigger.catch_event(
-                            self,
-                            &mut resources.action_queue,
-                            context.merge(&status_context, false),
-                            &resources.logger,
-                        )
-                    });
+                Self::trigger(resources, context, &context.target, self);
+                None
+            }
+            Event::AfterStrike { context } => {
+                Self::trigger(resources, context, &context.owner, self);
                 None
             }
             Event::Init { status, context } => {
@@ -115,5 +109,25 @@ impl Event {
                 Some(context)
             }
         }
+    }
+
+    fn trigger(
+        resources: &mut Resources,
+        context: &Context,
+        entity: &legion::Entity,
+        event: &Event,
+    ) {
+        resources
+            .status_pool
+            .collect_triggers(entity)
+            .iter()
+            .for_each(|(trigger, status_context)| {
+                trigger.catch_event(
+                    event,
+                    &mut resources.action_queue,
+                    context.merge(&status_context, false),
+                    &resources.logger,
+                )
+            });
     }
 }
