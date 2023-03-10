@@ -7,6 +7,8 @@
     "shaders/system/slot.glsl",
     "shaders/system/description_panel.glsl",
     "shaders/vfx/circle.glsl",
+    "shaders/vfx/layered_triangles.glsl",
+    "shaders/vfx/fbm.glsl",
     "shaders/vfx/text.glsl",
     "shaders/vfx/particle_emitter.glsl",
     "shaders/vfx/curve.glsl",

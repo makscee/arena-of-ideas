@@ -1,0 +1,54 @@
+[
+    {
+        "component": "Name",
+        "name": "Dracula"
+    },
+    {
+        "component": "House",
+        "houses": [
+            "Vampires"
+        ]
+    },
+    {
+        "component": "Description",
+        "text": "After attack:\nSiphon Life (1)"
+    },
+    {
+        "component": "AbilityDescription",
+        "abilities": [
+            "SiphonLife"
+        ]
+    },
+    {
+        "component": "Hp",
+        "max": 1
+    },
+    {
+        "component": "Attack",
+        "value": 1
+    },
+    {
+        "component": "Shader",
+        "path": "shaders/system/unit.glsl",
+        "layer": "Unit",
+        "chain": [
+            {
+                "component": "Shader",
+                "path": "shaders/vfx/layered_triangles.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_color": "#9d0000",
+                        "u_color_1": "#7183e6",
+                        "u_inner_brightness": 0.5,
+                        "u_size": 0.8,
+                        "u_alpha": 0.3,
+                        "u_spin_part": 0.01,
+                        "u_move_speed": 1.3
+                    },
+                    "instances": 50,
+                    "vertices": 1
+                }
+            }
+        ]
+    }
+]

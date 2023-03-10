@@ -7,6 +7,7 @@
     "units/charger.json",
     "units/phoenix.json",
     "units/pollywog.json",
+    "units/dracula.json",
     "units/enemies/solid_grower.json",
     "units/enemies/fat_grower.json",
     "units/enemies/spit_grower.json",

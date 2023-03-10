@@ -245,7 +245,7 @@ impl ShopSystem {
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark});
         BattleSystem::create_enemies(resources, world);
         SlotSystem::fill_gaps(world, hashset! {Faction::Dark});
-        resources.shop.money = (UNIT_COST + resources.floors.current_ind()).min(10);
+        resources.shop.money = (UNIT_COST + resources.floors.current_ind() + 1).min(10);
     }
 
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {

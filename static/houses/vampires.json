@@ -74,6 +74,12 @@
                     }
                 ]
             }
+        },
+        "SiphonLife": {
+            "description": "Deal 1 DMG\nheal same amount",
+            "effect": {
+                "type": "Noop"
+            }
         }
     },
     "statuses": {}

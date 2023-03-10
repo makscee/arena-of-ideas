@@ -226,8 +226,10 @@ float toSegment(vec2 p, vec2 a, vec2 b) {
 float triangleSDF(vec2 uv, float size, float rotation) {
     uv = rotateCW(uv, rotation * PI * 2);
     vec2 p = uv;
-    vec2 p1 = -vec2(size);
-    vec2 p2 = vec2(size, -size);
+    float angle = PI * 7 / 6;
+    vec2 p1 = vec2(cos(angle), sin(angle)) * size;
+    angle = -PI / 6;
+    vec2 p2 = vec2(cos(angle), sin(angle)) * size;
     vec2 p3 = vec2(0., size);
     float d1 = toSegment(p, p1, p2);
     float d2 = toSegment(p, p2, p3);
