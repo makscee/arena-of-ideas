@@ -9,13 +9,15 @@ uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 uniform vec2 u_position;
 uniform float u_padding = 1;
-uniform float u_radius;
+uniform float u_radius = 1;
+uniform float u_size = 1;
 
 void main() {
     card = get_card_value();
     uv = a_pos * (1.0 + u_padding);
-    vec2 pos = uv * u_radius;
+    vec2 pos = uv * u_radius * u_size;
     pos *= (1 + u_hovered);
+    pos = get_card_pos(pos, get_card_value());
     pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -25,18 +27,15 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 in float card;
-uniform float u_scale = 1;
-
-const float SIZE = 1.0;
+uniform float u_border = 1;
+uniform float u_circle_fbm = 0;
+uniform float u_circle_fbm_speed = 0;
+uniform float u_aa = 0.03;
 
 void main() {
-    vec2 uv = get_card_uv(uv, get_card_value());
-    float len = length(uv);
-    if(length(uv) > SIZE) {
-        discard;
-    }
-    float len_fbm = length(vec2(fbm(uv * u_scale + vec2(u_game_time * 2, sin(u_game_time))) * 3));
-    vec4 color = vec4(u_color.rgb, len_fbm * (1 - len));
+    float len = length(uv) + fbm(uv + vec2(u_global_time * u_circle_fbm_speed)) * u_circle_fbm;
+    float alpha = aliase(1 - u_border, 1, u_aa, len);
+    vec4 color = vec4(u_color.rgb, alpha);
     gl_FragColor = color;
 }
 #endif

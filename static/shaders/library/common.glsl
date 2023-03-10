@@ -174,6 +174,10 @@ float smoothhump(float left, float right, float t) // 0 -> 1 -> 0
     return min(smoothstep(0., left, t), smoothstep(1., right, t));
 }
 
+float aliase(float left, float right, float smear, float t) {
+    return min(smoothstep(left - smear, left + smear, t), smoothstep(right + smear, right - smear, t));
+}
+
 vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
     float t2 = t * t;
     float one_minus_t = 1.0 - t;
