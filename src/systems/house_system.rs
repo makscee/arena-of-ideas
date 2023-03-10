@@ -20,7 +20,7 @@ impl HouseSystem {
                         .shaders
                         .description_panel
                         .clone()
-                        .set_uniform("u_name", ShaderUniform::String((0, ability)))
+                        .set_uniform("u_name", ShaderUniform::String((2, ability)))
                         .set_uniform(
                             "u_description",
                             ShaderUniform::String((1, description.clone())),
