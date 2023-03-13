@@ -1,8 +1,11 @@
+use self::button_system::ButtonSystem;
+
 use super::*;
 use geng::prelude::itertools::Itertools;
 
 mod action_system;
 mod battle_system;
+mod button_system;
 mod camera_system;
 mod cassette_player_system;
 mod context_system;
@@ -84,7 +87,7 @@ impl Game {
             GameState::Battle,
             vec![
                 Box::new(SlotSystem::new()),
-                Box::new(CassettePlayerSystem::new(PlayMode::Play)),
+                Box::new(CassettePlayerSystem::new(false)),
                 Box::new(ActionSystem::new()),
                 Box::new(BattleSystem::new()),
             ],
@@ -95,9 +98,8 @@ impl Game {
                 Box::new(SlotSystem::new()),
                 Box::new(ShopSystem::new()),
                 Box::new(PoolUiSystem::new()),
-                Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
+                Box::new(CassettePlayerSystem::new(true)),
                 Box::new(ActionSystem::new()),
-                Box::new(MouseSystem::new()),
             ],
         );
         game_state.add_systems(
@@ -105,14 +107,14 @@ impl Game {
             vec![
                 Box::new(GallerySystem::new()),
                 Box::new(SlotSystem::new()),
-                Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
+                Box::new(CassettePlayerSystem::new(true)),
             ],
         );
         game_state.add_systems(
             GameState::GameOver,
             vec![
                 Box::new(GameOverSystem::new()),
-                Box::new(CassettePlayerSystem::new(PlayMode::Hidden)),
+                Box::new(CassettePlayerSystem::new(true)),
                 Box::new(SlotSystem::new()),
             ],
         );
@@ -122,6 +124,8 @@ impl Game {
         global_systems.push(Box::new(CameraSystem::new()));
         global_systems.push(Box::new(ContextSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));
+        global_systems.push(Box::new(MouseSystem::new()));
+        global_systems.push(Box::new(ButtonSystem::new()));
         global_systems.push(Box::new(game_state));
         global_systems
     }

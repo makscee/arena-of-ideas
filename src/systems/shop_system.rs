@@ -117,24 +117,25 @@ impl ShopSystem {
                 }
                 SlotSystem::set_hovered_slot(world, &Faction::Team, slot);
             }
-            match world
+            if let Some(unit) = world
                 .entry(dragged)
                 .unwrap()
                 .get_component::<UnitComponent>()
-                .unwrap()
-                .faction
+                .ok()
             {
-                Faction::Team => {
-                    if self.sell_candidate.is_none() {
-                        self.sell_candidate = Some(dragged);
+                match unit.faction {
+                    Faction::Team => {
+                        if self.sell_candidate.is_none() {
+                            self.sell_candidate = Some(dragged);
+                        }
                     }
-                }
-                Faction::Shop => {
-                    if self.buy_candidate.is_none() {
-                        self.buy_candidate = Some(dragged);
+                    Faction::Shop => {
+                        if self.buy_candidate.is_none() {
+                            self.buy_candidate = Some(dragged);
+                        }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
         } else if let Some(sell_candidate) = self.sell_candidate {
             if world

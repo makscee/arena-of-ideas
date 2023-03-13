@@ -2,11 +2,15 @@ use std::collections::VecDeque;
 
 use super::*;
 
-pub struct MouseSystem {}
+pub struct MouseSystem {
+    drag_start: Option<vec2<f32>>,
+}
 
 impl MouseSystem {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            drag_start: default(),
+        }
     }
 
     fn get_hovered_entity(world: &legion::World, resources: &Resources) -> Option<legion::Entity> {
@@ -59,6 +63,7 @@ impl MouseSystem {
     }
 
     fn handle_drag(
+        &mut self,
         world: &mut legion::World,
         resources: &mut Resources,
         hovered: Option<legion::Entity>,
@@ -68,14 +73,17 @@ impl MouseSystem {
             .down_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
+            self.drag_start = Some(resources.input.mouse_pos);
             if let Some(dragged) = hovered {
-                world
+                if world
                     .entry(dragged)
                     .unwrap()
                     .get_component_mut::<InputComponent>()
                     .unwrap()
-                    .set_dragged(true, resources.global_time);
-                resources.input.dragged_entity = hovered;
+                    .set_dragged(true, resources.global_time)
+                {
+                    resources.input.dragged_entity = hovered;
+                }
             }
         }
         if resources.input.dragged_entity.is_some()
@@ -102,12 +110,42 @@ impl MouseSystem {
                 .position = resources.input.mouse_pos;
         }
     }
+
+    fn handle_press(
+        &mut self,
+        world: &mut legion::World,
+        resources: &mut Resources,
+        hovered: Option<legion::Entity>,
+    ) {
+        if hovered.is_none() {
+            return;
+        }
+        if let Some(drag_start) = self.drag_start {
+            if !resources
+                .input
+                .pressed_mouse_buttons
+                .contains(&geng::MouseButton::Left)
+            {
+                self.drag_start = None;
+                if let Some(mut entry) = world.entry(hovered.unwrap()) {
+                    entry
+                        .get_component_mut::<InputComponent>()
+                        .unwrap()
+                        .set_pressed(
+                            drag_start == resources.input.mouse_pos,
+                            resources.global_time,
+                        );
+                }
+            }
+        }
+    }
 }
 
 impl System for MouseSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let hovered = Self::get_hovered_entity(world, resources);
         Self::handle_hover(world, resources, hovered);
-        Self::handle_drag(world, resources, hovered);
+        self.handle_drag(world, resources, hovered);
+        self.handle_press(world, resources, hovered);
     }
 }

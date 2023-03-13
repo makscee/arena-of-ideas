@@ -3,12 +3,48 @@ use super::*;
 use geng::ui::*;
 
 pub struct CassettePlayerSystem {
-    mode: PlayMode,
+    hidden: bool,
 }
 
 impl CassettePlayerSystem {
-    pub fn new(mode: PlayMode) -> Self {
-        Self { mode }
+    pub fn new(hidden: bool) -> Self {
+        Self { hidden }
+    }
+
+    pub fn init_world(
+        world_entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        fn play(resources: &mut Resources, _: &mut legion::World) {
+            resources.cassette_play_mode = CassettePlayMode::Play;
+        }
+        fn stop(resources: &mut Resources, _: &mut legion::World) {
+            resources.cassette_play_mode = CassettePlayMode::Stop;
+        }
+        let entity = world.push((
+            ButtonComponent::new(play),
+            AreaComponent {
+                r#type: AreaType::Rectangle {
+                    size: vec2(2.0, 1.0),
+                },
+                position: BATTLEFIELD_POSITION - vec2(0.0, 1.0),
+            },
+            InputComponent {
+                hovered: Some(default()),
+                dragged: None,
+                pressed: Some(default()),
+            },
+            resources.options.shaders.button.clone(),
+        ));
+        let mut entry = world.entry(entity).unwrap();
+        entry.add_component(EntityComponent { entity });
+        entry.add_component(Context {
+            owner: entity,
+            target: entity,
+            parent: Some(world_entity),
+            vars: default(),
+        });
     }
 }
 
@@ -16,21 +52,23 @@ const REWIND_SPEED: f32 = 5.0;
 
 impl System for CassettePlayerSystem {
     fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
-        resources.cassette.head = match self.mode {
-            PlayMode::Play | PlayMode::Hidden => resources.cassette.head + resources.delta_time,
-            PlayMode::Stop => resources.cassette.head,
-            PlayMode::Rewind { ts } => (resources.cassette.head
+        resources.cassette.head = match resources.cassette_play_mode {
+            CassettePlayMode::Play | CassettePlayMode::Hidden => {
+                resources.cassette.head + resources.delta_time
+            }
+            CassettePlayMode::Stop => resources.cassette.head,
+            CassettePlayMode::Rewind { ts } => (resources.cassette.head
                 + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED)
                 .clamp(0.01, resources.cassette.length()),
         };
-        if self.mode == PlayMode::Hidden {
+        if self.hidden {
             return;
         }
 
         if resources.input.down_keys.contains(&geng::Key::Space) {
-            self.mode = match self.mode {
-                PlayMode::Play => PlayMode::Stop,
-                PlayMode::Stop | PlayMode::Rewind { .. } => PlayMode::Play,
+            resources.cassette_play_mode = match resources.cassette_play_mode {
+                CassettePlayMode::Play => CassettePlayMode::Stop,
+                CassettePlayMode::Stop | CassettePlayMode::Rewind { .. } => CassettePlayMode::Play,
                 _ => panic!("Wrong Play Mode"),
             };
         }
@@ -42,13 +80,15 @@ impl System for CassettePlayerSystem {
             } else {
                 -1.0
             };
-            self.mode = PlayMode::Rewind {
-                ts: match self.mode {
-                    PlayMode::Play | PlayMode::Stop => {
+            resources.cassette_play_mode = CassettePlayMode::Rewind {
+                ts: match resources.cassette_play_mode {
+                    CassettePlayMode::Play | CassettePlayMode::Stop => {
                         resources.cassette.head + resources.delta_time * direction
                     }
 
-                    PlayMode::Rewind { ts } => ts + resources.delta_time * direction * REWIND_SPEED,
+                    CassettePlayMode::Rewind { ts } => {
+                        ts + resources.delta_time * direction * REWIND_SPEED
+                    }
                     _ => panic!("Wrong Play Mode"),
                 }
                 .clamp(0.0, resources.cassette.length()),
@@ -62,7 +102,7 @@ impl System for CassettePlayerSystem {
         world: &'a legion::World,
         resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
-        if self.mode == PlayMode::Hidden {
+        if resources.cassette_play_mode == CassettePlayMode::Hidden {
             return Box::new(ui::Void);
         }
         Box::new(
@@ -74,7 +114,7 @@ impl System for CassettePlayerSystem {
                     Rgba::BLACK,
                 ),
                 Text::new(
-                    format!("Mode {}", self.mode),
+                    format!("Mode {}", resources.cassette_play_mode),
                     resources.fonts.get_font(0),
                     64.0,
                     Rgba::BLACK,
@@ -89,23 +129,23 @@ impl System for CassettePlayerSystem {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum PlayMode {
+pub enum CassettePlayMode {
     Play,
     Stop,
     Rewind { ts: Time },
     Hidden,
 }
 
-impl Display for PlayMode {
+impl Display for CassettePlayMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                PlayMode::Play => "Play",
-                PlayMode::Stop => "Stop",
-                PlayMode::Rewind { .. } => "Rewind",
-                PlayMode::Hidden => "Hidden",
+                CassettePlayMode::Play => "Play",
+                CassettePlayMode::Stop => "Stop",
+                CassettePlayMode::Rewind { .. } => "Rewind",
+                CassettePlayMode::Hidden => "Hidden",
             }
         )
     }

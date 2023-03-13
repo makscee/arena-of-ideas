@@ -110,8 +110,13 @@
             "path": "shaders/system/description_panel.glsl",
             "layer": "UI"
         },
+        "button": {
+            "path": "shaders/system/button.glsl",
+            "layer": "UI"
+        },
         "corner_button": {
-            "path": "shaders/widgets/corner_button.glsl"
+            "path": "shaders/widgets/corner_button.glsl",
+            "layer": "UI"
         }
     },
     "images": {

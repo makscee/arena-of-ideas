@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct InputComponent {
     pub hovered: Option<(bool, Time)>,
     pub dragged: Option<(bool, Time)>,
@@ -37,9 +37,9 @@ impl InputComponent {
             None => false,
         }
     }
-    pub fn is_pressed(&self) -> bool {
+    pub fn is_pressed(&self, ts: Time) -> bool {
         match self.pressed {
-            Some(value) => value.0,
+            Some(value) => value.0 && value.1 == ts,
             None => false,
         }
     }
