@@ -14,7 +14,7 @@ impl HpComponent {
 }
 
 impl VarsProvider for HpComponent {
-    fn extend_vars(&self, vars: &mut Vars) {
+    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
         vars.insert(VarName::HpCurrent, Var::Int(self.current));
         vars.insert(VarName::HpMax, Var::Int(self.max));
     }

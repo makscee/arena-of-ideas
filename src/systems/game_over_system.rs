@@ -12,21 +12,6 @@ impl GameOverSystem {
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
         resources.cassette.parallel_node.clear();
-        <(&EntityComponent, &AttentionComponent)>::query()
-            .iter(world)
-            .map(|(entity, _)| entity.entity)
-            .collect_vec()
-            .into_iter()
-            .for_each(|entity| {
-                world
-                    .entry(entity)
-                    .unwrap()
-                    .remove_component::<AttentionComponent>();
-                world
-                    .entry(entity)
-                    .unwrap()
-                    .remove_component::<HoverComponent>();
-            });
         UnitSystem::draw_all_units_to_cassette_node(
             world,
             &resources.options,

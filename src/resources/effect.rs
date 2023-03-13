@@ -129,8 +129,8 @@ impl Effect {
                 let owner_position = world
                     .entry_ref(context.owner)
                     .context("Failed to get owner")?
-                    .get_component::<PositionComponent>()?
-                    .0;
+                    .get_component::<AreaComponent>()?
+                    .position;
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
@@ -193,7 +193,7 @@ impl Effect {
                                 .set_uniform(
                                     "u_position",
                                     ShaderUniform::Vec2(
-                                        target.get_component::<PositionComponent>().unwrap().0,
+                                        target.get_component::<AreaComponent>().unwrap().position,
                                     ),
                                 ),
                             from: hashmap! {
@@ -225,7 +225,7 @@ impl Effect {
                                 .set_uniform(
                                     "u_target_position",
                                     ShaderUniform::Vec2(
-                                        target.get_component::<PositionComponent>().unwrap().0,
+                                        target.get_component::<AreaComponent>().unwrap().position,
                                     ),
                                 ),
                             from: hashmap! {

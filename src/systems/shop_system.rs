@@ -108,9 +108,9 @@ impl ShopSystem {
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
         SlotSystem::set_hovered_slot(world, &Faction::Team, SLOTS_COUNT + 1);
-        if let Some(dragged) = resources.dragged_entity {
+        if let Some(dragged) = resources.input.dragged_entity {
             if let Some(slot) =
-                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
+                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos)
             {
                 if SlotSystem::make_gap(world, slot, hashset! {Faction::Team}) {
                     SlotSystem::refresh_slots_filled_uniform(world);
@@ -140,17 +140,18 @@ impl ShopSystem {
             if world
                 .entry(sell_candidate)
                 .unwrap()
-                .get_component::<PositionComponent>()
+                .get_component::<AreaComponent>()
                 .unwrap()
-                .0
+                .position
                 .y
                 > SHOP_POSITION.y
             {
                 Self::sell(sell_candidate, resources, world);
             } else {
-                if let Some(slot) =
-                    SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos)
-                {
+                if let Some(slot) = SlotSystem::get_horizontal_hovered_slot(
+                    &Faction::Team,
+                    resources.input.mouse_pos,
+                ) {
                     world
                         .entry_mut(sell_candidate)
                         .unwrap()
@@ -162,17 +163,18 @@ impl ShopSystem {
             self.sell_candidate = None;
             SlotSystem::refresh_slots_filled_uniform(world);
         } else if let Some(buy_candidate) = self.buy_candidate {
-            let slot = SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.mouse_pos);
+            let slot =
+                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos);
             if resources.shop.money >= UNIT_COST
                 && slot.is_some()
-                && resources.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
+                && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
                 && Self::team_count(world) < SLOTS_COUNT
             {
                 let slot = slot.unwrap();
                 Self::buy(buy_candidate, slot, resources, world);
                 // SlotSystem::fill_gaps(world, hashset! {Faction::Team});
                 SlotSystem::refresh_slots_filled_uniform(world);
-                ContextSystem::refresh_all(world);
+                ContextSystem::refresh_all(world, resources);
                 self.hovered_team = Some(buy_candidate);
             }
             self.buy_candidate = None;
@@ -199,7 +201,8 @@ impl ShopSystem {
         unit.slot = slot;
         *resources.shop.pool.get_mut(&unit.template_path).unwrap() -= 1;
         Shop::reload_shaders(resources);
-        ContextSystem::refresh_entity(entity, world);
+        ContextSystem::refresh_entity(entity, world, resources);
+        dbg!(ContextSystem::get_context(entity, world));
         Event::Buy {
             context: ContextSystem::get_context(entity, world),
         }
@@ -240,7 +243,7 @@ impl ShopSystem {
         WorldSystem::set_var(
             world,
             VarName::Floor,
-            &Var::Int(resources.floors.current_ind() as i32),
+            Var::Int(resources.floors.current_ind() as i32),
         );
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark});
         BattleSystem::create_enemies(resources, world);

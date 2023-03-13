@@ -197,19 +197,20 @@ impl SlotSystem {
         let mut current_slot: HashMap<&Faction, usize> =
             HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
         let mut changed = false;
-        <&mut UnitComponent>::query()
-            .filter(!component::<DragComponent>())
+        <(&mut UnitComponent, &InputComponent)>::query()
             .iter_mut(world)
-            .sorted_by_key(|unit| unit.slot)
-            .for_each(|unit| {
-                if let Some(slot) = current_slot.get_mut(&unit.faction) {
-                    *slot = *slot + 1;
-                    if *slot == gap_slot {
+            .sorted_by_key(|(unit, input)| unit.slot)
+            .for_each(|(unit, input)| {
+                if !input.is_dragged() {
+                    if let Some(slot) = current_slot.get_mut(&unit.faction) {
                         *slot = *slot + 1;
-                    }
-                    if unit.slot != *slot {
-                        changed = true;
-                        unit.slot = *slot;
+                        if *slot == gap_slot {
+                            *slot = *slot + 1;
+                        }
+                        if unit.slot != *slot {
+                            changed = true;
+                            unit.slot = *slot;
+                        }
                     }
                 }
             });
@@ -231,11 +232,11 @@ impl SlotSystem {
 
 impl System for SlotSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        <(&UnitComponent, &mut PositionComponent)>::query()
+        <(&UnitComponent, &mut AreaComponent)>::query()
             .iter_mut(world)
-            .for_each(|(unit, position)| {
+            .for_each(|(unit, area)| {
                 let need_pos = Self::get_unit_position(unit);
-                position.0 += (need_pos - position.0) * PULL_FORCE * resources.delta_time;
+                area.position += (need_pos - area.position) * PULL_FORCE * resources.delta_time;
             })
     }
 }

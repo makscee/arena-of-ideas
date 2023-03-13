@@ -56,39 +56,38 @@ impl Game {
 impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         self.resources.delta_time = delta_time as Time;
-        self.resources.game_time += self.resources.delta_time;
 
         self.systems
             .iter_mut()
             .for_each(|s| s.update(&mut self.world, &mut self.resources));
-        self.resources.down_keys.clear();
-        self.resources.down_mouse_buttons.clear();
+        self.resources.input.down_keys.clear();
+        self.resources.input.down_mouse_buttons.clear();
     }
 
     fn handle_event(&mut self, event: geng::Event) {
         match event {
             geng::Event::KeyDown { key } => {
-                self.resources.down_keys.insert(key);
-                self.resources.pressed_keys.insert(key);
+                self.resources.input.down_keys.insert(key);
+                self.resources.input.pressed_keys.insert(key);
             }
 
             geng::Event::KeyUp { key } => {
-                self.resources.pressed_keys.remove(&key);
+                self.resources.input.pressed_keys.remove(&key);
             }
 
             geng::Event::MouseDown {
                 position: _,
                 button,
             } => {
-                self.resources.down_mouse_buttons.insert(button);
-                self.resources.pressed_mouse_buttons.insert(button);
+                self.resources.input.down_mouse_buttons.insert(button);
+                self.resources.input.pressed_mouse_buttons.insert(button);
             }
 
             geng::Event::MouseUp {
                 position: _,
                 button,
             } => {
-                self.resources.pressed_mouse_buttons.remove(&button);
+                self.resources.input.pressed_mouse_buttons.remove(&button);
             }
 
             _ => {}
@@ -120,7 +119,7 @@ impl geng::State for Game {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.resources.mouse_pos = self.resources.camera.camera.screen_to_world(
+        self.resources.input.mouse_pos = self.resources.camera.camera.screen_to_world(
             framebuffer.size().map(|x| x as f32),
             self.resources.geng.window().mouse_pos().map(|x| x as f32),
         );

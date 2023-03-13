@@ -7,12 +7,13 @@ pub enum VarName {
     HpCurrent,
     Position,
     Radius,
+    Size,
     Test,
     Faction,
     Slot,
     Card,
+    Zoom,
     Description,
-    Hovered,
     HouseColor1,
     HouseColor2,
     HouseColor3,
@@ -24,6 +25,13 @@ pub enum VarName {
     Reflection,
     GrowAmount,
     Color,
+    GlobalTime,
+    Hovered,
+    HoveredTs,
+    Dragged,
+    DraggedTs,
+    Pressed,
+    PressedTs,
 }
 
 impl VarName {
@@ -109,6 +117,21 @@ impl Vars {
         }
     }
 
+    pub fn get_float(&self, name: &VarName) -> f32 {
+        self.try_get_float(name)
+            .expect(&format!("Failed to get var {}", name))
+    }
+
+    pub fn try_get_float(&self, name: &VarName) -> Option<f32> {
+        match self.try_get(name) {
+            Some(value) => match value {
+                Var::Float(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", name),
+            },
+            None => None,
+        }
+    }
+
     pub fn merge(&mut self, other: &Vars, force: bool) {
         other.0.iter().for_each(|(key, value)| {
             if force || !self.0.contains_key(key) {
@@ -158,5 +181,5 @@ impl fmt::Display for VarName {
 }
 
 pub trait VarsProvider {
-    fn extend_vars(&self, vars: &mut Vars);
+    fn extend_vars(&self, vars: &mut Vars, resources: &Resources);
 }

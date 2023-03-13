@@ -16,7 +16,7 @@ uniform float u_padding = 1;
 void main() {
     uv = a_pos * (1.0 + BORDER_THICKNESS + u_padding) * vec2(1, u_height);
     vec2 pos = uv * u_size + u_offset;
-    pos *= (1 + u_hovered);
+    pos *= u_zoom;
     pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -31,10 +31,10 @@ uniform sampler2D u_description;
 uniform vec2 u_description_size;
 uniform sampler2D u_name;
 uniform vec2 u_name_size;
+uniform float u_hovered;
 
 void main() {
-    float card = get_card_value();
-    vec2 uv = uv / (vec2(2) - card);
+    vec2 uv = uv / (vec2(2) - u_card);
     commonInit(u_position + u_offset + uv);
     float card_sdf = rectangle_sdf(uv, vec2(1, u_height), 0);
     vec4 color = vec4(field_color, card_sdf < 0);
@@ -49,6 +49,6 @@ void main() {
     color = alphaBlend(color, border_color);
     color = alphaBlend(color, name_color);
     color = alphaBlend(color, description_color);
-    gl_FragColor = vec4(color.rgb, color.a * card * u_hovered);
+    gl_FragColor = vec4(color.rgb, color.a * u_card * u_hovered);
 }
 #endif

@@ -1,6 +1,7 @@
 #include <common.glsl>
 uniform vec2 u_position = vec2(0);
 uniform vec2 u_size = vec2(1.2, 1.6);
+uniform float u_hovered;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;

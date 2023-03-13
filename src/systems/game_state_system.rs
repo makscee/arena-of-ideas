@@ -23,7 +23,7 @@ impl System for GameStateSystem {
                 // }
             }
             GameState::Battle => {
-                if resources.down_keys.contains(&geng::Key::R) {
+                if resources.input.down_keys.contains(&geng::Key::R) {
                     resources.cassette.clear();
                     BattleSystem::run_battle(world, resources);
                 }
@@ -32,31 +32,31 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Shop => {
-                if resources.down_keys.contains(&geng::Key::Space) {
+                if resources.input.down_keys.contains(&geng::Key::Space) {
                     resources.transition_state = GameState::Battle;
                 }
 
-                if resources.down_keys.contains(&geng::Key::G) {
+                if resources.input.down_keys.contains(&geng::Key::G) {
                     resources.transition_state = GameState::Gallery;
                 }
 
-                if resources.down_keys.contains(&geng::Key::O) {
+                if resources.input.down_keys.contains(&geng::Key::O) {
                     resources.transition_state = GameState::GameOver;
                 }
-                if resources.down_keys.contains(&geng::Key::R) {
+                if resources.input.down_keys.contains(&geng::Key::R) {
                     ShopSystem::restart(world, resources);
                 }
-                if resources.down_keys.contains(&geng::Key::C) {
+                if resources.input.down_keys.contains(&geng::Key::C) {
                     resources.shop.money += 100;
                 }
             }
             GameState::Gallery => {
-                if resources.down_keys.contains(&geng::Key::G) {
+                if resources.input.down_keys.contains(&geng::Key::G) {
                     resources.transition_state = GameState::Shop;
                 }
             }
             GameState::GameOver => {
-                if resources.down_keys.contains(&geng::Key::Enter) {
+                if resources.input.down_keys.contains(&geng::Key::Enter) {
                     resources.transition_state = GameState::Shop;
                 }
             }
@@ -144,7 +144,7 @@ impl GameStateSystem {
             }
             GameState::Battle => {
                 resources.cassette.clear();
-                WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(0.0));
+                WorldSystem::set_var(world, VarName::IsBattle, Var::Float(0.0));
                 Event::BattleOver.send(resources, world);
             }
             GameState::Gallery => {
@@ -152,7 +152,7 @@ impl GameStateSystem {
                 resources.action_queue.clear();
                 resources.status_pool.new_statuses.clear();
                 resources.camera.camera.fov = resources.options.fov;
-                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 0.0)));
+                WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
                 SlotSystem::init_world(
                     world,
                     &resources.options,
@@ -169,7 +169,7 @@ impl GameStateSystem {
         match resources.transition_state {
             GameState::MainMenu => {}
             GameState::Battle => {
-                WorldSystem::set_var(world, VarName::IsBattle, &Var::Float(1.0));
+                WorldSystem::set_var(world, VarName::IsBattle, Var::Float(1.0));
                 BattleSystem::run_battle(world, resources);
                 resources.camera.focus = Focus::Battle;
             }
@@ -179,7 +179,7 @@ impl GameStateSystem {
             }
             GameState::Gallery => {
                 resources.camera.focus = Focus::Battle;
-                WorldSystem::set_var(world, VarName::FieldPosition, &Var::Vec2(vec2(0.0, 20.0)));
+                WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 20.0)));
                 SlotSystem::clear_world(world);
             }
             GameState::GameOver => {

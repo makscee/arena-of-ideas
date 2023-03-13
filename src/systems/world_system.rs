@@ -4,7 +4,7 @@ pub struct WorldSystem {}
 
 impl WorldSystem {
     pub fn init_world_entity(world: &mut legion::World) -> legion::Entity {
-        let world_entity = world.push((WorldComponent { global_time: 0.0 },));
+        let world_entity = world.push((WorldComponent {},));
         let mut world_entry = world.entry(world_entity).unwrap();
         world_entry.add_component(EntityComponent {
             entity: world_entity,
@@ -28,7 +28,7 @@ impl WorldSystem {
             .clone()
     }
 
-    pub fn set_var(world: &mut legion::World, name: VarName, value: &Var) {
+    pub fn set_var(world: &mut legion::World, name: VarName, value: Var) {
         <(&WorldComponent, &mut Context)>::query()
             .iter_mut(world)
             .for_each(|(_, context)| context.vars.insert(name, value.clone()));
@@ -59,10 +59,10 @@ impl WorldSystem {
     }
 
     pub fn set_time(ts: Time, world: &mut legion::World) {
-        <&mut WorldComponent>::query().iter_mut(world).collect_vec()[0].global_time = ts;
+        Self::set_var(world, VarName::GlobalTime, Var::Float(ts));
     }
 
     pub fn get_time(world: &legion::World) -> Time {
-        <&WorldComponent>::query().iter(world).collect_vec()[0].global_time
+        Self::get_var_float(world, &VarName::GlobalTime)
     }
 }

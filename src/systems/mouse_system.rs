@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 pub struct MouseSystem {}
@@ -7,21 +9,21 @@ impl MouseSystem {
         Self {}
     }
 
-    fn get_hovered_unit(world: &legion::World, resources: &Resources) -> Option<legion::Entity> {
-        <(
-            &PositionComponent,
-            &RadiusComponent,
-            &EntityComponent,
-            &UnitComponent,
-        )>::query()
-        .iter(world)
-        .find_map(|(position, radius, entity, _)| {
-            if (resources.mouse_pos - position.0).len() < radius.0 {
-                Some(entity.entity)
-            } else {
-                None
-            }
-        })
+    fn get_hovered_entity(world: &legion::World, resources: &Resources) -> Option<legion::Entity> {
+        let mut entities = VecDeque::new();
+        <(&AreaComponent, &EntityComponent, &InputComponent)>::query()
+            .iter(world)
+            .for_each(|(area, entity, input)| {
+                if input.is_dragged() {
+                    entities.push_front(entity.entity);
+                } else if area.contains(resources.input.mouse_pos) && input.hovered.is_some() {
+                    entities.push_back(entity.entity);
+                }
+            });
+        match entities.is_empty() {
+            true => None,
+            false => Some(entities[0]),
+        }
     }
 
     fn handle_hover(
@@ -30,7 +32,7 @@ impl MouseSystem {
         hovered: Option<legion::Entity>,
     ) {
         if let Some(hovered) = hovered {
-            if let Some(old_hovered) = resources.hovered_entity {
+            if let Some(old_hovered) = resources.input.hovered_entity {
                 if old_hovered == hovered {
                     return;
                 }
@@ -38,16 +40,21 @@ impl MouseSystem {
             world
                 .entry(hovered)
                 .unwrap()
-                .add_component(HoverComponent {});
+                .get_component_mut::<InputComponent>()
+                .unwrap()
+                .set_hovered(true, resources.global_time);
         }
-        if resources.hovered_entity != hovered {
-            resources.hovered_entity.and_then(|entity| {
-                world.entry(entity).and_then(|mut entry| {
-                    entry.remove_component::<HoverComponent>();
-                    Some(())
-                })
+        if resources.input.hovered_entity != hovered {
+            resources.input.hovered_entity.and_then(|entity| {
+                if let Some(mut prev) = world.entry(entity) {
+                    prev.get_component_mut::<InputComponent>()
+                        .unwrap()
+                        .set_hovered(false, resources.global_time);
+                }
+                Some(())
             });
-            resources.hovered_entity = hovered;
+
+            resources.input.hovered_entity = hovered;
         }
     }
 
@@ -57,60 +64,50 @@ impl MouseSystem {
         hovered: Option<legion::Entity>,
     ) {
         if resources
+            .input
             .down_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
             if let Some(dragged) = hovered {
-                resources.dragged_entity = Some(dragged);
                 world
                     .entry(dragged)
                     .unwrap()
-                    .add_component(DragComponent {});
+                    .get_component_mut::<InputComponent>()
+                    .unwrap()
+                    .set_dragged(true, resources.global_time);
+                resources.input.dragged_entity = hovered;
             }
         }
-        if resources.dragged_entity.is_some()
+        if resources.input.dragged_entity.is_some()
             && !resources
+                .input
                 .pressed_mouse_buttons
                 .contains(&geng::MouseButton::Left)
         {
-            let dragged = resources.dragged_entity.unwrap();
+            let dragged = resources.input.dragged_entity.unwrap();
             world
                 .entry(dragged)
                 .unwrap()
-                .remove_component::<DragComponent>();
-            resources.dragged_entity = None;
+                .get_component_mut::<InputComponent>()
+                .unwrap()
+                .set_dragged(false, resources.global_time);
+            resources.input.dragged_entity = None;
         }
-        if let Some(dragged) = resources.dragged_entity {
+        if let Some(dragged) = resources.input.dragged_entity {
             world
                 .entry(dragged)
                 .unwrap()
-                .get_component_mut::<PositionComponent>()
+                .get_component_mut::<AreaComponent>()
                 .unwrap()
-                .0 = resources.mouse_pos;
+                .position = resources.input.mouse_pos;
         }
-    }
-
-    fn update_attention(world: &mut legion::World, resources: &mut Resources) {
-        <(&UnitComponent, &mut AttentionComponent)>::query()
-            .filter(component::<DragComponent>() | component::<HoverComponent>())
-            .iter_mut(world)
-            .for_each(|(unit, attention)| {
-                attention.ts = (attention.ts + resources.delta_time).min(1.0)
-            });
-        <(&UnitComponent, &mut AttentionComponent)>::query()
-            .filter(!component::<DragComponent>() & !component::<HoverComponent>())
-            .iter_mut(world)
-            .for_each(|(unit, attention)| {
-                attention.ts = (attention.ts - resources.delta_time).max(0.0);
-            });
     }
 }
 
 impl System for MouseSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        let hovered = Self::get_hovered_unit(world, resources);
+        let hovered = Self::get_hovered_entity(world, resources);
         Self::handle_hover(world, resources, hovered);
         Self::handle_drag(world, resources, hovered);
-        Self::update_attention(world, resources);
     }
 }

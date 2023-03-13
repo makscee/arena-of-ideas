@@ -5,7 +5,7 @@ uniform float u_global_time;
 uniform vec2 u_field_position;
 
 uniform float u_card;
-uniform float u_hovered = 0;
+uniform float u_zoom;
 uniform float u_is_battle;
 
 vec3 light_color = vec3(1);
@@ -56,10 +56,6 @@ vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color, float text_b
 float get_text_sdf(vec2 uv, sampler2D sampler) {
     vec2 text_uv = uv * .5 + .5;
     return texture2D(sampler, text_uv).x;
-}
-
-float get_card_value() {
-    return mix(u_card, u_hovered, u_is_battle);
 }
 
 vec2 get_card_uv(vec2 uv, float card) {

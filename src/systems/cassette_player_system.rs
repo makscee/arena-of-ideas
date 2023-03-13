@@ -27,17 +27,17 @@ impl System for CassettePlayerSystem {
             return;
         }
 
-        if resources.down_keys.contains(&geng::Key::Space) {
+        if resources.input.down_keys.contains(&geng::Key::Space) {
             self.mode = match self.mode {
                 PlayMode::Play => PlayMode::Stop,
                 PlayMode::Stop | PlayMode::Rewind { .. } => PlayMode::Play,
                 _ => panic!("Wrong Play Mode"),
             };
         }
-        if resources.pressed_keys.contains(&geng::Key::Left)
-            || resources.pressed_keys.contains(&geng::Key::Right)
+        if resources.input.pressed_keys.contains(&geng::Key::Left)
+            || resources.input.pressed_keys.contains(&geng::Key::Right)
         {
-            let direction = if resources.pressed_keys.contains(&geng::Key::Right) {
+            let direction = if resources.input.pressed_keys.contains(&geng::Key::Right) {
                 1.0
             } else {
                 -1.0

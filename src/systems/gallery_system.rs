@@ -88,7 +88,7 @@ impl GallerySystem {
             );
         }
         self.need_card_animation = false;
-        ContextSystem::refresh_all(world);
+        ContextSystem::refresh_all(world, resources);
         UnitSystem::draw_all_units_to_cassette_node(
             world,
             &resources.options,
@@ -109,7 +109,7 @@ impl GallerySystem {
 
 impl System for GallerySystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if resources.down_keys.contains(&geng::Key::Escape) {
+        if resources.input.down_keys.contains(&geng::Key::Escape) {
             self.clear();
         }
         if self.paths.is_empty() {
@@ -133,49 +133,49 @@ impl System for GallerySystem {
             self.need_redraw = true;
         }
 
-        if resources.down_keys.contains(&geng::Key::Enter) {
+        if resources.input.down_keys.contains(&geng::Key::Enter) {
             self.current_heroes.push(self.wanted_hero + 1);
         }
 
-        if resources.down_keys.contains(&geng::Key::Left) {
+        if resources.input.down_keys.contains(&geng::Key::Left) {
             let length = self.paths.len();
             self.wanted_hero = (self.wanted_hero + length - 1) % length;
         }
-        if resources.down_keys.contains(&geng::Key::Right) {
+        if resources.input.down_keys.contains(&geng::Key::Right) {
             self.wanted_hero = (self.wanted_hero + 1) % self.paths.len();
         }
-        if resources.down_keys.contains(&geng::Key::Down) {
+        if resources.input.down_keys.contains(&geng::Key::Down) {
             self.need_redraw = true;
             resources.camera.camera.fov *= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,
-                &Var::Vec2(
+                Var::Vec2(
                     WorldSystem::get_var_vec2(world, &VarName::FieldPosition) * ZOOM_MULTIPLIER,
                 ),
             )
         }
-        if resources.down_keys.contains(&geng::Key::Up) {
+        if resources.input.down_keys.contains(&geng::Key::Up) {
             self.need_redraw = true;
             resources.camera.camera.fov /= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,
-                &Var::Vec2(
+                Var::Vec2(
                     WorldSystem::get_var_vec2(world, &VarName::FieldPosition) / ZOOM_MULTIPLIER,
                 ),
             )
         }
-        if resources.down_keys.contains(&geng::Key::C) {
+        if resources.input.down_keys.contains(&geng::Key::C) {
             self.need_redraw = true;
             WorldSystem::set_var(
                 world,
                 VarName::FieldPosition,
-                &Var::Vec2(-1.0 * WorldSystem::get_var_vec2(world, &VarName::FieldPosition)),
+                Var::Vec2(-1.0 * WorldSystem::get_var_vec2(world, &VarName::FieldPosition)),
             )
         }
 
-        if resources.down_keys.contains(&geng::Key::Space) {
+        if resources.input.down_keys.contains(&geng::Key::Space) {
             self.is_card = !self.is_card;
             self.need_card_animation = true;
             self.need_redraw = true;

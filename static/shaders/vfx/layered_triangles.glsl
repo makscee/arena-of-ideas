@@ -1,5 +1,4 @@
 #include <common.glsl>
-
 #ifdef VERTEX_SHADER
 out vec2 uv;
 flat out int p_index;
@@ -17,8 +16,8 @@ void main() {
     uv = a_pos * (1.0 + u_padding);
     vec2 pos = uv * u_radius * u_size;
     pos = rotateCW(pos, 0.0);
-    pos = get_card_pos(pos, get_card_value());
-    pos *= (1 + u_hovered);
+    pos = get_card_pos(pos, u_card);
+    pos *= u_zoom;
     pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);

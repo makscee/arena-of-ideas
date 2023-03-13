@@ -59,7 +59,7 @@ impl geng::ui::Widget for PoolWidget<'_> {
                     &self.resources.camera.camera,
                     &self.resources.shader_programs,
                     ugli::uniforms! {
-                        u_global_time: self.resources.game_time,
+                        u_global_time: self.resources.global_time,
                         u_game_time: self.resources.cassette.head,
                         u_position: position,
                         u_radius: 0.6 * self.height,
@@ -73,7 +73,7 @@ impl geng::ui::Widget for PoolWidget<'_> {
                     &self.resources.camera.camera,
                     &self.resources.shader_programs,
                     ugli::uniforms! {
-                        u_global_time: self.resources.game_time,
+                        u_global_time: self.resources.global_time,
                         u_game_time: self.resources.cassette.head,
                         u_position: position,
                         u_offset: vec2(0.0,-1.0),

@@ -1,8 +1,6 @@
 #include <common.glsl>
-
 #ifdef VERTEX_SHADER
 out vec2 uv;
-out float card;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
@@ -14,9 +12,8 @@ uniform float u_offset;
 
 void main() {
     uv = a_pos * (1.0 + u_padding);
-    card = get_card_value();
-    vec2 pos = uv * 1.0 * u_scale + rotateCW(vec2(0, -1), PI * (.23 - card * .03) * u_offset) * 1.2 * (1 + card * .05);
-    pos *= (1 + u_hovered);
+    vec2 pos = uv * 1.0 * u_scale + rotateCW(vec2(0, -1), PI * (.23 - u_card * .03) * u_offset) * 1.2 * (1 + u_card * .05);
+    pos *= u_zoom;
     pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -25,7 +22,6 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
-in float card;
 
 uniform sampler2D u_text;
 uniform vec2 u_text_size;
@@ -47,7 +43,7 @@ const float AA = 0.05;
 const float CHANGE_T_DURATION = 1.0;
 
 void main() {
-    vec2 uv = uv / (1 - card * .1);
+    vec2 uv = uv / (1 - u_card * .1);
     float dist = length(uv);
     vec4 color = vec4(0);
     color = alphaBlend(color, vec4(u_outline_color.rgb, smoothstep(BORDER + AA, BORDER - AA, abs(1 - dist))));

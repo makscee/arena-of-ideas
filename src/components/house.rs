@@ -20,7 +20,7 @@ impl HouseComponent {
 }
 
 impl VarsProvider for HouseComponent {
-    fn extend_vars(&self, vars: &mut Vars) {
+    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
         let colors = self.houses.iter().map(|(_, color)| color).collect_vec();
         vars.insert(VarName::HouseColor1, Var::Color(*colors[0]));
         if colors.len() > 1 {

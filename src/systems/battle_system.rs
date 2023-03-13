@@ -273,7 +273,7 @@ impl BattleSystem {
     }
 
     fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
-        ContextSystem::refresh_all(world);
+        ContextSystem::refresh_all(world, resources);
         let factions = hashset! {Faction::Light, Faction::Dark};
         UnitSystem::draw_all_units_to_cassette_node(
             world,
@@ -291,17 +291,17 @@ impl BattleSystem {
     }
 
     fn move_to_slots_animated(world: &mut legion::World, resources: &mut Resources) {
-        <(&UnitComponent, &mut PositionComponent, &EntityComponent)>::query()
+        <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
             .iter_mut(world)
-            .for_each(|(unit, position, entity)| {
+            .for_each(|(unit, area, entity)| {
                 let slot_position = SlotSystem::get_unit_position(unit);
-                if slot_position != position.0 {
+                if slot_position != area.position {
                     resources.cassette.add_effect(VfxSystem::vfx_move_unit(
                         entity.entity,
-                        position.0,
+                        area.position,
                         slot_position,
                     ));
-                    position.0 = slot_position;
+                    area.position = slot_position;
                 }
             });
     }
@@ -315,15 +315,15 @@ impl BattleSystem {
         let left_position = world
             .entry_ref(left)
             .expect("Left striker not found")
-            .get_component::<PositionComponent>()
+            .get_component::<AreaComponent>()
             .unwrap()
-            .0;
+            .position;
         let right_position = world
             .entry_ref(right)
             .expect("Right striker not found")
-            .get_component::<PositionComponent>()
+            .get_component::<AreaComponent>()
             .unwrap()
-            .0;
+            .position;
         let position = left_position + (right_position - left_position) * 0.5;
         resources
             .cassette

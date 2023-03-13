@@ -3,8 +3,8 @@ use super::*;
 pub struct ContextSystem {}
 
 impl System for ContextSystem {
-    fn update(&mut self, world: &mut legion::World, _resources: &mut Resources) {
-        Self::refresh_all(world);
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        Self::refresh_all(world, resources);
     }
 }
 
@@ -14,34 +14,34 @@ impl ContextSystem {
     }
 
     /// Merge data from other entity components
-    pub fn refresh_entity(entity: legion::Entity, world: &mut legion::World) {
+    pub fn refresh_entity(
+        entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &Resources,
+    ) {
         let entry = world.entry(entity).expect("Unit entity not found");
         let mut context = Context {
             vars: default(),
             ..entry.get_component::<Context>().unwrap().clone()
         };
 
-        if let Some(component) = entry.get_component::<UnitComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-            UnitSystem::add_attention_vars(component, &entry, &mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<PositionComponent>().ok() {
-            component.extend_vars(&mut context.vars);
-        }
-        if let Some(component) = entry.get_component::<RadiusComponent>().ok() {
-            component.extend_vars(&mut context.vars);
+        if let Some(component) = entry.get_component::<AreaComponent>().ok() {
+            component.extend_vars(&mut context.vars, resources);
         }
         if let Some(component) = entry.get_component::<HpComponent>().ok() {
-            component.extend_vars(&mut context.vars);
+            component.extend_vars(&mut context.vars, resources);
         }
         if let Some(component) = entry.get_component::<DescriptionComponent>().ok() {
-            component.extend_vars(&mut context.vars);
+            component.extend_vars(&mut context.vars, resources);
         }
-        if let Some(component) = entry.get_component::<HoverComponent>().ok() {
-            component.extend_vars(&mut context.vars);
+        if let Some(component) = entry.get_component::<InputComponent>().ok() {
+            component.extend_vars(&mut context.vars, resources);
         }
         if let Some(component) = entry.get_component::<HouseComponent>().ok() {
-            component.extend_vars(&mut context.vars);
+            component.extend_vars(&mut context.vars, resources);
+        }
+        if let Some(component) = entry.get_component::<UnitComponent>().ok() {
+            component.extend_vars(&mut context.vars, resources);
         }
 
         world.entry(entity).unwrap().add_component(context);
@@ -72,13 +72,13 @@ impl ContextSystem {
         ))
     }
 
-    pub fn refresh_all(world: &mut legion::World) {
+    pub fn refresh_all(world: &mut legion::World, resources: &Resources) {
         <&EntityComponent>::query()
             .filter(!component::<WorldComponent>() & component::<Context>())
             .iter(world)
             .map(|entity| entity.entity)
             .collect_vec()
             .into_iter()
-            .for_each(|entity| Self::refresh_entity(entity, world));
+            .for_each(|entity| Self::refresh_entity(entity, world, resources));
     }
 }

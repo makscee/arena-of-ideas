@@ -4,7 +4,6 @@ uniform float u_radius;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
-out float card;
 attribute vec2 a_pos;
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
@@ -12,10 +11,9 @@ uniform mat3 u_view_matrix;
 uniform float u_padding = 0.3;
 
 void main() {
-    card = get_card_value();
     uv = a_pos * (1.0 + u_padding);
     vec2 pos = uv * u_radius;
-    pos *= (1 + u_hovered);
+    pos *= u_zoom;
     pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -36,15 +34,15 @@ const float TEXT_INSIDE = 0.5;
 const float TEXT_BORDER = 0.25;
 
 in vec2 uv;
-in float card;
 
+uniform float u_hovered;
 uniform float u_damage_taken;
 uniform sampler2D u_description;
 uniform vec2 u_description_size;
 uniform vec4 u_house_color1;
 
 vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
-    vec2 uv = uv / mix(3, 1, card);
+    vec2 uv = uv / mix(3, 1, u_card);
     float card_sdf = rectangle_sdf(uv * CARD_SIZE.y / CARD_SIZE.x, CARD_SIZE, 0);
     if(card_sdf > CARD_BORDER) {
         return vec4(0);
@@ -65,12 +63,12 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     card_color = alphaBlend(card_color, text_bg);
     card_color = alphaBlend(card_color, border_color);
     card_color = alphaBlend(card_color, text_color);
-    card_color.a = min(card_color.a, card);
+    card_color.a = min(card_color.a, u_card);
     return alphaBlend(unit_color, card_color);
 }
 
 void main() {
-    vec2 uv = get_card_uv(uv, get_card_value());
+    vec2 uv = get_card_uv(uv, u_card);
     float len = length(uv) - 1.;
     float dmg_t = u_damage_taken;
     commonInit(u_position + uv);

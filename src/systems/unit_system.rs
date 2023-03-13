@@ -74,11 +74,7 @@ impl UnitSystem {
                 unit
             },
             original_entry
-                .get_component::<PositionComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<RadiusComponent>()
+                .get_component::<AreaComponent>()
                 .unwrap()
                 .clone(),
             original_entry
@@ -110,6 +106,11 @@ impl UnitSystem {
             parent: Some(parent),
             target: new_entity,
             ..original_context
+        });
+        new_entry.add_component(InputComponent {
+            hovered: Some(default()),
+            dragged: None,
+            pressed: None,
         });
 
         // Optional components
@@ -150,20 +151,6 @@ impl UnitSystem {
         {
             world.entry(clone_entity).unwrap().add_component(component);
         }
-    }
-
-    pub fn add_attention_vars(unit: &UnitComponent, entry: &legion::world::Entry, vars: &mut Vars) {
-        let card = match unit.faction == Faction::Shop {
-            true => 1.0,
-            false => {
-                let attention_ts = entry
-                    .get_component::<AttentionComponent>()
-                    .map_or(0.0, |component| component.ts);
-                (attention_ts / CARD_ANIMATION_DURATION).clamp(0.0, 1.0)
-            }
-        };
-
-        vars.insert(VarName::Card, Var::Float(card));
     }
 
     pub fn kill(

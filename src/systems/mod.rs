@@ -1,6 +1,5 @@
-use self::time_system::TimeSystem;
-
 use super::*;
+use geng::prelude::itertools::Itertools;
 
 mod action_system;
 mod battle_system;
@@ -36,7 +35,6 @@ pub use file_watcher_system::*;
 pub use gallery_system::*;
 pub use game_over_system::*;
 pub use game_state_system::*;
-use geng::prelude::itertools::Itertools;
 pub use house_system::*;
 pub use logger::*;
 pub use mouse_system::*;
@@ -47,6 +45,7 @@ pub use shader_system::*;
 pub use shop_system::*;
 pub use slot_system::*;
 pub use stats_ui_system::*;
+pub use time_system::*;
 pub use unit_system::*;
 pub use vfx_system::*;
 pub use widgets::*;

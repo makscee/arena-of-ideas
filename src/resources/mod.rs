@@ -14,6 +14,7 @@ mod fonts;
 mod house;
 mod image;
 mod image_textures;
+mod input;
 mod options;
 mod shader_programs;
 mod shop;
@@ -33,6 +34,7 @@ pub use fonts::*;
 pub use house::*;
 pub use image::*;
 pub use image_textures::*;
+pub use input::*;
 pub use options::*;
 pub use shader_programs::*;
 pub use shop::*;
@@ -48,21 +50,13 @@ pub struct Resources {
     pub shader_programs: ShaderPrograms,
     pub image_textures: ImageTextures,
 
-    pub down_keys: HashSet<geng::Key>,
-    pub pressed_keys: HashSet<geng::Key>,
-    pub down_mouse_buttons: HashSet<geng::MouseButton>,
-    pub pressed_mouse_buttons: HashSet<geng::MouseButton>,
-    pub mouse_pos: vec2<f32>,
-
-    pub game_time: Time,
+    pub global_time: Time,
     pub delta_time: Time,
     pub status_pool: StatusPool,
     pub action_queue: VecDeque<Action>,
     pub cassette: Cassette,
     pub shop: Shop,
     pub frame_shaders: Vec<Shader>,
-    pub dragged_entity: Option<legion::Entity>,
-    pub hovered_entity: Option<legion::Entity>,
     pub game_won: bool,
     pub last_round: usize,
 
@@ -73,6 +67,7 @@ pub struct Resources {
     pub current_state: GameState,
     pub transition_state: GameState,
 
+    pub input: Input,
     pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Geng,
@@ -129,10 +124,8 @@ impl Resources {
             image_textures: default(),
             camera: Camera::new(&options),
             fonts: Fonts::new(fonts),
-            down_keys: default(),
-            pressed_keys: default(),
             geng: geng.clone(),
-            game_time: default(),
+            global_time: default(),
             delta_time: default(),
             action_queue: default(),
             status_pool: default(),
@@ -141,11 +134,7 @@ impl Resources {
             shop: default(),
             frame_shaders: default(),
             options,
-            down_mouse_buttons: default(),
-            pressed_mouse_buttons: default(),
-            mouse_pos: vec2::ZERO,
-            dragged_entity: default(),
-            hovered_entity: default(),
+            input: default(),
             houses: default(),
             floors: default(),
             reload_triggered: default(),
@@ -380,8 +369,10 @@ impl UnitTemplatesPool {
             .expect(&format!("Template not found: {:?}", path))
             .clone();
         let entity = world.push((
-            PositionComponent(position),
-            RadiusComponent(1.0),
+            AreaComponent {
+                position,
+                r#type: AreaType::Circle { radius: 1.0 },
+            },
             FlagsComponent::default(),
             faction.clone(),
             UnitComponent {
@@ -389,7 +380,11 @@ impl UnitTemplatesPool {
                 slot,
                 template_path: path.clone(),
             },
-            AttentionComponent::default(),
+            InputComponent {
+                hovered: Some(default()),
+                dragged: Some(default()),
+                pressed: None,
+            },
         ));
         let parent = WorldSystem::get_context(world).owner;
         let mut entry = world.entry(entity).unwrap();

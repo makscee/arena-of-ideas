@@ -1,9 +1,7 @@
 #include <common.glsl>
-
 #ifdef VERTEX_SHADER
 out vec2 uv;
 attribute vec2 a_pos;
-out float card;
 
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
@@ -12,10 +10,9 @@ uniform float u_padding = 1;
 uniform float u_radius;
 
 void main() {
-    card = get_card_value();
     uv = a_pos * (1.0 + u_padding);
     vec2 pos = uv * u_radius;
-    pos *= (1 + u_hovered);
+    pos *= u_zoom;
     pos += u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
@@ -24,13 +21,12 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
-in float card;
 uniform float u_scale = 1;
 
 const float SIZE = 1.0;
 
 void main() {
-    vec2 uv = get_card_uv(uv, get_card_value());
+    vec2 uv = get_card_uv(uv, u_card);
     float len = length(uv);
     if(length(uv) > SIZE) {
         discard;
