@@ -29,7 +29,7 @@ uniform float u_circle_fbm_speed = 0;
 uniform float u_aa = 0.03;
 
 void main() {
-    float len = length(uv) + fbm(uv + vec2(u_global_time * u_circle_fbm_speed)) * u_circle_fbm;
+    float len = length(uv) + fbm(uv + vec2(u_game_time * u_circle_fbm_speed)) * u_circle_fbm;
     float alpha = aliase(1 - u_border, 1, u_aa, len);
     vec4 color = vec4(u_color.rgb, alpha);
     gl_FragColor = color;

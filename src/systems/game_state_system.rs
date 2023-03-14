@@ -33,6 +33,7 @@ impl System for GameStateSystem {
             }
             GameState::Shop => {
                 if resources.input.down_keys.contains(&geng::Key::Space) {
+                    BattleSystem::init_battle(world, resources);
                     resources.transition_state = GameState::Battle;
                 }
 

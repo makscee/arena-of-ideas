@@ -62,7 +62,7 @@ impl MouseSystem {
         }
     }
 
-    fn handle_drag(
+    fn handle_press(
         &mut self,
         world: &mut legion::World,
         resources: &mut Resources,
@@ -74,32 +74,40 @@ impl MouseSystem {
             .contains(&geng::MouseButton::Left)
         {
             self.drag_start = Some(resources.input.mouse_pos);
-            if let Some(dragged) = hovered {
-                if world
+            if let Some(pressed) = hovered {
+                let mut entry = world.entry(pressed).unwrap();
+                let input = entry.get_component_mut::<InputComponent>().unwrap();
+                if input.set_dragged(true, resources.global_time) {
+                    resources.input.dragged_entity = hovered;
+                }
+                if input.set_pressed(true, resources.global_time) {
+                    resources.input.pressed_entity = hovered;
+                }
+            }
+        }
+        if !resources
+            .input
+            .pressed_mouse_buttons
+            .contains(&geng::MouseButton::Left)
+        {
+            if let Some(dragged) = resources.input.dragged_entity {
+                world
                     .entry(dragged)
                     .unwrap()
                     .get_component_mut::<InputComponent>()
                     .unwrap()
-                    .set_dragged(true, resources.global_time)
-                {
-                    resources.input.dragged_entity = hovered;
-                }
+                    .set_dragged(false, resources.global_time);
+                resources.input.dragged_entity = None;
             }
-        }
-        if resources.input.dragged_entity.is_some()
-            && !resources
-                .input
-                .pressed_mouse_buttons
-                .contains(&geng::MouseButton::Left)
-        {
-            let dragged = resources.input.dragged_entity.unwrap();
-            world
-                .entry(dragged)
-                .unwrap()
-                .get_component_mut::<InputComponent>()
-                .unwrap()
-                .set_dragged(false, resources.global_time);
-            resources.input.dragged_entity = None;
+            if let Some(pressed) = resources.input.pressed_entity {
+                world
+                    .entry(pressed)
+                    .unwrap()
+                    .get_component_mut::<InputComponent>()
+                    .unwrap()
+                    .set_pressed(false, resources.global_time);
+                resources.input.pressed_entity = None;
+            }
         }
         if let Some(dragged) = resources.input.dragged_entity {
             world
@@ -111,7 +119,7 @@ impl MouseSystem {
         }
     }
 
-    fn handle_press(
+    fn handle_click(
         &mut self,
         world: &mut legion::World,
         resources: &mut Resources,
@@ -125,16 +133,14 @@ impl MouseSystem {
                 .input
                 .pressed_mouse_buttons
                 .contains(&geng::MouseButton::Left)
+                && (drag_start - resources.input.mouse_pos).len() < 0.01
             {
                 self.drag_start = None;
                 if let Some(mut entry) = world.entry(hovered.unwrap()) {
                     entry
                         .get_component_mut::<InputComponent>()
                         .unwrap()
-                        .set_pressed(
-                            drag_start == resources.input.mouse_pos,
-                            resources.global_time,
-                        );
+                        .set_clicked(resources.global_time);
                 }
             }
         }
@@ -145,7 +151,7 @@ impl System for MouseSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let hovered = Self::get_hovered_entity(world, resources);
         Self::handle_hover(world, resources, hovered);
-        self.handle_drag(world, resources, hovered);
         self.handle_press(world, resources, hovered);
+        self.handle_click(world, resources, hovered);
     }
 }

@@ -8,7 +8,7 @@ pub struct UnitComponent {
 }
 
 pub const DEFAULT_UNIT_RADIUS: f32 = 1.0;
-const CARD_ANIMATION_TIME: Time = 0.3;
+const CARD_ANIMATION_TIME: Time = 0.2;
 
 #[derive(Clone, Copy, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub enum Faction {
@@ -52,6 +52,6 @@ impl VarsProvider for UnitComponent {
         };
         card = card.max(hover);
         vars.insert(VarName::Card, Var::Float(card));
-        vars.insert(VarName::Zoom, Var::Float(1.0 + hover));
+        vars.insert(VarName::Zoom, Var::Float(1.0 + hover * 1.4));
     }
 }

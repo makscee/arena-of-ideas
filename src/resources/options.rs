@@ -44,6 +44,8 @@ pub struct Images {
     pub eye_icon: Image,
     pub money_icon: Image,
     pub pool_icon: Image,
+    pub play_icon: Image,
+    pub pause_icon: Image,
 }
 
 #[derive(Deserialize, Debug)]

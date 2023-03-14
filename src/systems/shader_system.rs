@@ -81,6 +81,7 @@ impl ShaderSystem {
             for shader in shaders.iter().sorted_by_key(|shader| shader.order) {
                 let uniforms = ugli::uniforms!(
                     u_game_time: resources.cassette.head,
+                    u_global_time: resources.global_time,
                 );
                 let texts = shader
                     .parameters

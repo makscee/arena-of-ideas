@@ -9,7 +9,7 @@ pub struct ShopSystem {
     sell_candidate: Option<legion::Entity>,
     hovered_team: Option<legion::Entity>,
     need_reroll: bool,
-    need_cam_switch: bool,
+    need_switch_battle: bool,
 }
 
 const UNIT_COST: usize = 3;
@@ -23,9 +23,12 @@ impl System for ShopSystem {
             Self::reroll(world, resources);
             resources.shop.money -= 1;
         }
-        if self.need_cam_switch {
+        if self.need_switch_battle {
             resources.camera.focus = match resources.camera.focus {
-                Focus::Shop => Focus::Battle,
+                Focus::Shop => {
+                    BattleSystem::init_battle(world, resources);
+                    Focus::Battle
+                }
                 Focus::Battle => Focus::Shop,
             }
         }
@@ -41,7 +44,7 @@ impl System for ShopSystem {
         if reroll_btn.was_clicked() && resources.shop.money > 0 {
             self.need_reroll = true;
         }
-        let cam_button = CornerButtonWidget::new(
+        let switch_button = CornerButtonWidget::new(
             cx,
             resources,
             match resources.camera.focus {
@@ -49,7 +52,7 @@ impl System for ShopSystem {
                 Focus::Battle => resources.options.images.money_icon.clone(),
             },
         );
-        self.need_cam_switch = cam_button.was_clicked();
+        self.need_switch_battle = switch_button.was_clicked();
         Box::new(
             (
                 (
@@ -69,7 +72,7 @@ impl System for ShopSystem {
                     .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
                     .uniform_padding(32.0)
                     .align(vec2(1.0, 1.0)),
-                cam_button.place(vec2(1.0, 0.0)),
+                switch_button.place(vec2(1.0, 0.0)),
             )
                 .stack(),
         )
@@ -83,7 +86,7 @@ impl ShopSystem {
             sell_candidate: default(),
             hovered_team: default(),
             need_reroll: default(),
-            need_cam_switch: default(),
+            need_switch_battle: default(),
         }
     }
 
@@ -246,9 +249,6 @@ impl ShopSystem {
             VarName::Floor,
             Var::Int(resources.floors.current_ind() as i32),
         );
-        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark});
-        BattleSystem::create_enemies(resources, world);
-        SlotSystem::fill_gaps(world, hashset! {Faction::Dark});
         resources.shop.money = (UNIT_COST + resources.floors.current_ind() + 1).min(10);
     }
 

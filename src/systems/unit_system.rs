@@ -111,6 +111,7 @@ impl UnitSystem {
             hovered: Some(default()),
             dragged: None,
             pressed: None,
+            clicked: None,
         });
 
         // Optional components

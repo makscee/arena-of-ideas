@@ -1,10 +1,11 @@
 use super::*;
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct InputComponent {
     pub hovered: Option<(bool, Time)>,
     pub dragged: Option<(bool, Time)>,
     pub pressed: Option<(bool, Time)>,
+    pub clicked: Option<Time>,
 }
 
 impl VarsProvider for InputComponent {
@@ -37,9 +38,15 @@ impl InputComponent {
             None => false,
         }
     }
+    pub fn is_clicked(&self, ts: Time) -> bool {
+        match self.clicked {
+            Some(value) => value == ts,
+            None => false,
+        }
+    }
     pub fn is_pressed(&self, ts: Time) -> bool {
         match self.pressed {
-            Some(value) => value.0 && value.1 == ts,
+            Some(value) => value.0,
             None => false,
         }
     }
@@ -63,6 +70,13 @@ impl InputComponent {
         if let Some(pressed) = &mut self.pressed {
             pressed.0 = value;
             pressed.1 = ts;
+            return true;
+        }
+        false
+    }
+    pub fn set_clicked(&mut self, ts: Time) -> bool {
+        if let Some(clicked) = &mut self.clicked {
+            *clicked = ts;
             return true;
         }
         false

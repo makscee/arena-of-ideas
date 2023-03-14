@@ -132,6 +132,12 @@
         },
         "pool_icon": {
             "path": "images/pool_icon.png"
+        },
+        "play_icon": {
+            "path": "images/play_icon.png"
+        },
+        "pause_icon": {
+            "path": "images/pause_icon.png"
         }
     }
 }

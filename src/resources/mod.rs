@@ -386,6 +386,7 @@ impl UnitTemplatesPool {
                 hovered: Some(default()),
                 dragged: Some(default()),
                 pressed: None,
+                clicked: None,
             },
         ));
         let parent = WorldSystem::get_context(world).owner;

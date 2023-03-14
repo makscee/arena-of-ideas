@@ -86,7 +86,6 @@ impl Game {
         game_state.add_systems(
             GameState::Battle,
             vec![
-                Box::new(SlotSystem::new()),
                 Box::new(CassettePlayerSystem::new(false)),
                 Box::new(ActionSystem::new()),
                 Box::new(BattleSystem::new()),
@@ -95,7 +94,6 @@ impl Game {
         game_state.add_systems(
             GameState::Shop,
             vec![
-                Box::new(SlotSystem::new()),
                 Box::new(ShopSystem::new()),
                 Box::new(PoolUiSystem::new()),
                 Box::new(CassettePlayerSystem::new(true)),
@@ -106,7 +104,6 @@ impl Game {
             GameState::Gallery,
             vec![
                 Box::new(GallerySystem::new()),
-                Box::new(SlotSystem::new()),
                 Box::new(CassettePlayerSystem::new(true)),
             ],
         );
@@ -115,7 +112,6 @@ impl Game {
             vec![
                 Box::new(GameOverSystem::new()),
                 Box::new(CassettePlayerSystem::new(true)),
-                Box::new(SlotSystem::new()),
             ],
         );
 
@@ -124,6 +120,7 @@ impl Game {
         global_systems.push(Box::new(CameraSystem::new()));
         global_systems.push(Box::new(ContextSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));
+        global_systems.push(Box::new(SlotSystem::new()));
         global_systems.push(Box::new(MouseSystem::new()));
         global_systems.push(Box::new(ButtonSystem::new()));
         global_systems.push(Box::new(game_state));

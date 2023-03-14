@@ -12,7 +12,6 @@ impl BattleSystem {
     }
 
     pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
-        Self::init_battle(world, resources);
         let mut ticks = 0;
         while Self::tick(world, resources) && ticks < 1000 {
             ticks += 1;
@@ -32,6 +31,7 @@ impl BattleSystem {
         Self::clear_world(world, resources);
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
+        SlotSystem::fill_gaps(world, hashset! {Faction::Dark, Faction::Light});
     }
 
     pub fn battle_won(world: &legion::World) -> bool {
@@ -57,7 +57,7 @@ impl BattleSystem {
         Self::clear_world(world, resources);
     }
 
-    fn clear_world(world: &mut legion::World, resources: &mut Resources) {
+    pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {
         let factions = &hashset! {Faction::Dark, Faction::Light};
         UnitSystem::clear_factions(world, resources, factions);
     }
@@ -66,7 +66,7 @@ impl BattleSystem {
         Floors::load(world, resources);
     }
 
-    fn create_team(resources: &mut Resources, world: &mut legion::World) {
+    pub fn create_team(resources: &mut Resources, world: &mut legion::World) {
         <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
             .filter_map(|(unit, entity)| {
