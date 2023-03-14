@@ -5,8 +5,10 @@ pub struct SlotSystem {}
 pub const SLOTS_COUNT: usize = 5;
 pub const PULL_FORCE: f32 = 7.0;
 pub const SHOP_POSITION: vec2<f32> = vec2(-30.0, 0.0);
-pub const TEAM_OFFSET: vec2<f32> = vec2(0.0, -3.0);
+pub const SHOP_TEAM_OFFSET: vec2<f32> = vec2(0.0, -3.0);
 pub const SHOP_CASE_OFFSET: vec2<f32> = vec2(0.0, 3.0);
+pub const STRIKER_OFFSET: vec2<f32> = vec2(1.5, 0.0);
+pub const TEAM_OFFSET: vec2<f32> = vec2(2.5, 4.0);
 pub const BATTLEFIELD_POSITION: vec2<f32> = vec2(0.0, 0.0);
 
 impl SlotSystem {
@@ -28,14 +30,14 @@ impl SlotSystem {
         match faction {
             Faction::Light | Faction::Dark => {
                 return match slot == 1 {
-                    true => vec2(1.5, 0.0),
-                    false => vec2((slot as f32 - 1.0) * 2.5, -4.0),
+                    true => STRIKER_OFFSET,
+                    false => vec2(slot as f32 - 1.0, 1.0) * TEAM_OFFSET,
                 } * faction_mul
                     + BATTLEFIELD_POSITION
             }
             Faction::Team => {
                 SHOP_POSITION
-                    + TEAM_OFFSET
+                    + SHOP_TEAM_OFFSET
                     + vec2(slot as f32 - SLOTS_COUNT as f32 / 2.0, 0.0) * faction_mul * 2.5
             }
             Faction::Shop => {

@@ -81,10 +81,26 @@
                 "uniforms": {
                     "u_text_color": "#ffffff",
                     "u_outline_color": "#8d0000",
+                    "u_scale": 1.0,
                     "u_offset": [
                         0.0,
                         1.0
                     ]
+                }
+            },
+            "layer": "UI"
+        },
+        "battle_timer": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_position": [
+                        0.0,
+                        -5.0
+                    ],
+                    "u_text_color": "#ffffff",
+                    "u_outline_color": "#515151",
+                    "u_scale": 0.7
                 }
             },
             "layer": "UI"

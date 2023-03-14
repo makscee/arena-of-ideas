@@ -62,6 +62,7 @@ impl CassettePlayerSystem {
             resources,
             &resources.options.images.play_icon,
             play,
+            BATTLEFIELD_POSITION + vec2(0.0, -3.0),
         );
     }
 }
@@ -79,6 +80,17 @@ impl System for CassettePlayerSystem {
         };
         if self.hidden {
             return;
+        }
+        match resources.current_state {
+            GameState::Battle => resources.frame_shaders.push(resources
+                .options
+                .shaders
+                .battle_timer
+                .clone()
+                .merge_uniforms(&hashmap! {
+                    "u_text" => ShaderUniform::String((0, format!("{:.2}", resources.cassette.head))),
+                }.into(), true)),
+            _ => {}
         }
 
         if resources.input.down_keys.contains(&geng::Key::Space) {

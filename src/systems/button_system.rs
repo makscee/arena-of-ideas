@@ -13,6 +13,7 @@ impl ButtonSystem {
         resources: &Resources,
         icon: &Image,
         action: fn(legion::Entity, &mut Resources, &mut legion::World, ButtonState),
+        position: vec2<f32>,
     ) {
         let entity = world.push((
             ButtonComponent::new(action),
@@ -20,7 +21,7 @@ impl ButtonSystem {
                 r#type: AreaType::Rectangle {
                     size: vec2(1.0, 1.0),
                 },
-                position: BATTLEFIELD_POSITION + vec2(0.0, 3.0),
+                position,
             },
             InputComponent {
                 hovered: Some(default()),

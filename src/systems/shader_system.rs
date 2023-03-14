@@ -65,8 +65,10 @@ impl ShaderSystem {
 
         let shaders = resources
             .cassette
-            .get_shaders(resources.input.mouse_pos, world_shaders);
-
+            .get_shaders(resources.input.mouse_pos, world_shaders)
+            .into_iter()
+            .chain(resources.frame_shaders.drain(..))
+            .collect_vec();
         let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
         let emtpy_vec: Vec<Shader> = Vec::new();
         for shader in shaders {
