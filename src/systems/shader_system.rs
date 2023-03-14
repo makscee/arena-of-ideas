@@ -100,15 +100,29 @@ impl ShaderSystem {
                         .map(|(font, text, _, _)| (*font, *text))
                         .collect_vec(),
                 );
+                let images = shader
+                    .parameters
+                    .uniforms
+                    .0
+                    .iter()
+                    .filter_map(|(key, uniform)| match uniform {
+                        ShaderUniform::Texture(image) => Some((image, key)),
+                        _ => None,
+                    })
+                    .collect_vec();
                 let mut texture_uniforms = SingleUniformVec::default();
                 let mut texture_size_uniforms = SingleUniformVec::default();
                 for (font, text, key, size_key) in texts.iter() {
                     let texture = resources.fonts.get_texture(*font, text);
                     texture_uniforms.0.push(SingleUniform::new(key, texture));
                     texture_size_uniforms.0.push(SingleUniform::new(
-                        &size_key,
+                        size_key.as_str(),
                         texture.and_then(|texture| Some(texture.size().map(|x| x as f32))),
                     ));
+                }
+                for (image, key) in images {
+                    let texture = resources.image_textures.get_texture(image);
+                    texture_uniforms.0.push(SingleUniform::new(key, texture));
                 }
                 Self::draw_shader(
                     shader,

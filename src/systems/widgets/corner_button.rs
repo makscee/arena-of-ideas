@@ -88,7 +88,7 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
             ),
             (
                 ugli::uniforms! {
-                    u_texture: self.icon.get(self.resources).deref(),
+                    u_texture: self.resources.image_textures.get_texture(&self.icon),
                     u_pos: cx.position.center().map(|x| x as f32),
                     u_size: cx.position.size().map(|x| x as f32) * 0.5,
                     u_color: button_color,

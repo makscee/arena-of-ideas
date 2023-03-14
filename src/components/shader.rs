@@ -176,6 +176,7 @@ pub enum ShaderUniform {
     Vec4(vec4<f32>),
     Color(Rgba<f32>),
     String((usize, String)),
+    Texture(Image),
 }
 
 impl ugli::Uniform for ShaderUniform {
@@ -188,6 +189,7 @@ impl ugli::Uniform for ShaderUniform {
             Self::Vec4(value) => value.apply(gl, info),
             Self::Color(value) => value.apply(gl, info),
             Self::String(_) => {}
+            Self::Texture(_) => {}
         }
     }
 }

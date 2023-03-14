@@ -10,16 +10,16 @@ impl ButtonSystem {
 
 impl System for ButtonSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        <(&ButtonComponent, &InputComponent)>::query()
+        <(&ButtonComponent, &InputComponent, &EntityComponent)>::query()
             .iter(world)
             .find_map(
-                |(button, input)| match input.is_pressed(resources.global_time) {
-                    true => Some(button.clone()),
+                |(button, input, entity)| match input.is_pressed(resources.global_time) {
+                    true => Some((button.clone(), entity.entity)),
                     false => None,
                 },
             )
-            .and_then(|button| {
-                button.click(resources, world);
+            .and_then(|(button, entity)| {
+                button.click(entity, resources, world);
                 Some(())
             });
     }

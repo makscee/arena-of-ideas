@@ -16,26 +16,36 @@ impl CassettePlayerSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        fn play(resources: &mut Resources, _: &mut legion::World) {
+        fn play(entity: legion::Entity, resources: &mut Resources, _: &mut legion::World) {
             resources.cassette_play_mode = CassettePlayMode::Play;
         }
-        fn stop(resources: &mut Resources, _: &mut legion::World) {
+        fn stop(entity: legion::Entity, resources: &mut Resources, _: &mut legion::World) {
             resources.cassette_play_mode = CassettePlayMode::Stop;
         }
+
         let entity = world.push((
             ButtonComponent::new(play),
             AreaComponent {
                 r#type: AreaType::Rectangle {
-                    size: vec2(2.0, 1.0),
+                    size: vec2(1.0, 1.0),
                 },
-                position: BATTLEFIELD_POSITION - vec2(0.0, 1.0),
+                position: BATTLEFIELD_POSITION - vec2(0.0, 2.0),
             },
             InputComponent {
                 hovered: Some(default()),
                 dragged: None,
                 pressed: Some(default()),
             },
-            resources.options.shaders.button.clone(),
+            resources
+                .options
+                .shaders
+                .icon
+                .clone()
+                .set_uniform(
+                    "u_texture",
+                    ShaderUniform::Texture(resources.options.images.money_icon.clone()),
+                )
+                .set_uniform("u_icon_color", ShaderUniform::Color(Rgba::MAGENTA)),
         ));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });

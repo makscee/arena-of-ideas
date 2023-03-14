@@ -35,6 +35,7 @@ pub struct Shaders {
     pub slot: Shader,
     pub description_panel: Shader,
     pub button: Shader,
+    pub icon: Shader,
     pub corner_button: Shader,
 }
 
