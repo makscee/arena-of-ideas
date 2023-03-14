@@ -47,6 +47,8 @@ pub struct Images {
     pub pool_icon: Image,
     pub play_icon: Image,
     pub pause_icon: Image,
+    pub rewind_forward_icon: Image,
+    pub rewind_backward_icon: Image,
 }
 
 #[derive(Deserialize, Debug)]
@@ -56,4 +58,6 @@ pub struct Colors {
     pub stats_hp_color: Rgba<f32>,
     pub corner_button_color: Rgba<f32>,
     pub corner_button_icon_color: Rgba<f32>,
+    pub cassette_player_btn_normal: Rgba<f32>,
+    pub cassette_player_btn_active: Rgba<f32>,
 }

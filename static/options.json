@@ -18,7 +18,9 @@
             "Team": "#e70083"
         },
         "corner_button_icon_color": "#fffafa",
-        "corner_button_color": "#2f2f2f"
+        "corner_button_color": "#2f2f2f",
+        "cassette_player_btn_normal": "#ff8b2c",
+        "cassette_player_btn_active": "#1bfc79"
     },
     "shaders": {
         "field": {
@@ -154,6 +156,12 @@
         },
         "pause_icon": {
             "path": "images/pause_icon.png"
+        },
+        "rewind_backward_icon": {
+            "path": "images/rewind_backward_icon.png"
+        },
+        "rewind_forward_icon": {
+            "path": "images/rewind_forward_icon.png"
         }
     }
 }

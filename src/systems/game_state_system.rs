@@ -166,16 +166,19 @@ impl GameStateSystem {
             }
         }
 
+        resources.current_state = resources.transition_state.clone();
         //transition to
         match resources.transition_state {
             GameState::MainMenu => {}
             GameState::Battle => {
                 WorldSystem::set_var(world, VarName::IsBattle, Var::Float(1.0));
+                CassettePlayerSystem::init_world(world, resources);
                 BattleSystem::run_battle(world, resources);
                 resources.camera.focus = Focus::Battle;
             }
             GameState::Shop => {
                 ShopSystem::init(world, resources);
+                CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Gallery => {
@@ -189,7 +192,5 @@ impl GameStateSystem {
                 GameOverSystem::init(world, resources);
             }
         }
-
-        resources.current_state = resources.transition_state.clone();
     }
 }

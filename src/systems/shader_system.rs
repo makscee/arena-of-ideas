@@ -125,6 +125,9 @@ impl ShaderSystem {
                 }
                 for (image, key) in images {
                     let texture = resources.image_textures.get_texture(image);
+                    if texture.is_none() {
+                        panic!("Can't find texture {:?}", image);
+                    }
                     texture_uniforms.0.push(SingleUniform::new(key, texture));
                 }
                 Self::draw_shader(

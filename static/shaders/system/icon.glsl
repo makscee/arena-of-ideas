@@ -1,6 +1,7 @@
 #include <common.glsl>
 uniform vec2 u_position = vec2(0);
 uniform vec2 u_size;
+uniform float u_scale = 1;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -10,7 +11,7 @@ uniform mat3 u_view_matrix;
 
 void main() {
     uv = a_pos;
-    vec2 pos = uv * u_size + u_position;
+    vec2 pos = uv * u_size * u_scale + u_position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
@@ -20,6 +21,7 @@ void main() {
 in vec2 uv;
 uniform sampler2D u_texture;
 uniform vec4 u_icon_color;
+uniform float u_hovered;
 
 void main() {
     vec4 color = vec4(0);
@@ -27,7 +29,6 @@ void main() {
     vec4 icon_color = u_icon_color;
     icon_color.a = texture2D(u_texture, icon_uv).x;
     color = alphaBlend(color, icon_color);
-    gl_FragColor = color;
-    // gl_FragColor = vec4(1, 0, 1, 1);
+    gl_FragColor = color * (1. + u_hovered);
 }
 #endif

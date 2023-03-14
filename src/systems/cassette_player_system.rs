@@ -1,21 +1,25 @@
 use super::*;
 
-use geng::ui::*;
-
 pub struct CassettePlayerSystem {
     hidden: bool,
 }
+
+struct CassettePlayerButtonComponent {}
 
 impl CassettePlayerSystem {
     pub fn new(hidden: bool) -> Self {
         Self { hidden }
     }
 
-    pub fn init_world(
-        world_entity: legion::Entity,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) {
+    pub fn init_world(world: &mut legion::World, resources: &mut Resources) {
+        <(&EntityComponent, &CassettePlayerButtonComponent)>::query()
+            .iter(world)
+            .map(|(entity, _)| entity.entity)
+            .collect_vec()
+            .iter()
+            .for_each(|entity| {
+                world.remove(*entity);
+            });
         fn play(
             entity: legion::Entity,
             resources: &mut Resources,
@@ -28,7 +32,12 @@ impl CassettePlayerSystem {
             }
             match resources.current_state {
                 GameState::Shop => {
-                    ButtonSystem::change_icon_color(entity, world, Rgba::GREEN);
+                    ButtonSystem::change_icon(entity, world, &resources.options.images.pause_icon);
+                    ButtonSystem::change_icon_color(
+                        entity,
+                        world,
+                        resources.options.colors.cassette_player_btn_active,
+                    );
                     resources.transition_state = GameState::Battle;
                 }
                 GameState::Battle => {
@@ -37,33 +46,137 @@ impl CassettePlayerSystem {
                             ButtonSystem::change_icon(
                                 entity,
                                 world,
-                                &resources.options.images.pause_icon,
+                                &resources.options.images.play_icon,
+                            );
+                            ButtonSystem::change_icon_color(
+                                entity,
+                                world,
+                                resources.options.colors.cassette_player_btn_normal,
                             );
                             CassettePlayMode::Stop
                         }
-                        CassettePlayMode::Stop => {
+                        CassettePlayMode::Stop | CassettePlayMode::Rewind { .. } => {
                             ButtonSystem::change_icon(
                                 entity,
                                 world,
-                                &resources.options.images.play_icon,
+                                &resources.options.images.pause_icon,
+                            );
+                            ButtonSystem::change_icon_color(
+                                entity,
+                                world,
+                                resources.options.colors.cassette_player_btn_active,
                             );
                             CassettePlayMode::Play
                         }
-                        CassettePlayMode::Rewind { .. } => CassettePlayMode::Play,
                     }
                 }
                 _ => {}
             }
         }
 
-        ButtonSystem::create_button(
+        fn rewind(
+            entity: legion::Entity,
+            resources: &mut Resources,
+            world: &mut legion::World,
+            direction: f32,
+        ) {
+            match resources.current_state {
+                GameState::Battle => {}
+                _ => {
+                    return;
+                }
+            }
+            resources.cassette_play_mode = CassettePlayMode::Rewind {
+                ts: match resources.cassette_play_mode {
+                    CassettePlayMode::Play | CassettePlayMode::Stop => {
+                        resources.cassette.head + resources.delta_time * direction
+                    }
+
+                    CassettePlayMode::Rewind { ts } => {
+                        ts + resources.delta_time * direction * REWIND_SPEED
+                    }
+                    _ => panic!("Wrong Play Mode"),
+                }
+                .clamp(0.0, resources.cassette.length()),
+            };
+        }
+
+        fn rewind_backward(
+            entity: legion::Entity,
+            resources: &mut Resources,
+            world: &mut legion::World,
+            state: ButtonState,
+        ) {
+            match state {
+                ButtonState::Pressed { .. } => rewind(entity, resources, world, -1.0),
+                _ => {}
+            }
+        }
+
+        fn rewind_forward(
+            entity: legion::Entity,
+            resources: &mut Resources,
+            world: &mut legion::World,
+            state: ButtonState,
+        ) {
+            match state {
+                ButtonState::Pressed { .. } => rewind(entity, resources, world, 1.0),
+                _ => {}
+            }
+        }
+        let world_entity = WorldSystem::get_context(world).owner;
+        let mut buttons = vec![];
+        buttons.push(ButtonSystem::create_button(
             world,
             world_entity,
             resources,
             &resources.options.images.play_icon,
+            match resources.current_state {
+                GameState::Battle => resources.options.colors.cassette_player_btn_active,
+                _ => resources.options.colors.cassette_player_btn_normal,
+            },
             play,
             BATTLEFIELD_POSITION + vec2(0.0, -3.0),
-        );
+            &default(),
+        ));
+        match resources.current_state {
+            GameState::Battle => {
+                buttons.push(ButtonSystem::create_button(
+                    world,
+                    world_entity,
+                    resources,
+                    &resources.options.images.rewind_forward_icon,
+                    resources.options.colors.cassette_player_btn_normal,
+                    rewind_forward,
+                    BATTLEFIELD_POSITION + vec2(1.5, -3.0),
+                    &hashmap! {
+                        "u_scale" => ShaderUniform::Float(0.7),
+                    }
+                    .into(),
+                ));
+                buttons.push(ButtonSystem::create_button(
+                    world,
+                    world_entity,
+                    resources,
+                    &resources.options.images.rewind_backward_icon,
+                    resources.options.colors.cassette_player_btn_normal,
+                    rewind_backward,
+                    BATTLEFIELD_POSITION + vec2(-1.5, -3.0),
+                    &hashmap! {
+                        "u_scale" => ShaderUniform::Float(0.7),
+                    }
+                    .into(),
+                ));
+            }
+            _ => {}
+        }
+
+        for button in buttons {
+            world
+                .entry(button)
+                .unwrap()
+                .add_component(CassettePlayerButtonComponent {});
+        }
     }
 }
 
@@ -122,37 +235,6 @@ impl System for CassettePlayerSystem {
                 .clamp(0.0, resources.cassette.length()),
             };
         }
-    }
-
-    fn ui<'a>(
-        &'a mut self,
-        cx: &'a ui::Controller,
-        world: &'a legion::World,
-        resources: &'a Resources,
-    ) -> Box<dyn ui::Widget + 'a> {
-        if self.hidden {
-            return Box::new(ui::Void);
-        }
-        Box::new(
-            (
-                Text::new(
-                    format!("{:.2}", resources.cassette.head),
-                    resources.fonts.get_font(0),
-                    64.0,
-                    Rgba::BLACK,
-                ),
-                Text::new(
-                    format!("Mode {}", resources.cassette_play_mode),
-                    resources.fonts.get_font(0),
-                    64.0,
-                    Rgba::BLACK,
-                ),
-            )
-                .column()
-                .align(vec2(0.0, 0.0))
-                .fixed_size(vec2(200.0, 60.0))
-                .uniform_padding(16.0),
-        )
     }
 }
 

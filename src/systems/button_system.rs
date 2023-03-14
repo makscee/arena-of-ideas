@@ -12,9 +12,11 @@ impl ButtonSystem {
         world_entity: legion::Entity,
         resources: &Resources,
         icon: &Image,
+        color: Rgba<f32>,
         action: fn(legion::Entity, &mut Resources, &mut legion::World, ButtonState),
         position: vec2<f32>,
-    ) {
+        uniforms: &ShaderUniforms,
+    ) -> legion::Entity {
         let entity = world.push((
             ButtonComponent::new(action),
             AreaComponent {
@@ -37,8 +39,9 @@ impl ButtonSystem {
                 .set_uniform("u_texture", ShaderUniform::Texture(icon.clone()))
                 .set_uniform(
                     "u_icon_color",
-                    ShaderUniform::Color(Rgba::try_from("#ff7904").unwrap()),
-                ),
+                    ShaderUniform::Color(Rgba::try_from(color).unwrap()),
+                )
+                .merge_uniforms(&uniforms, true),
         ));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent { entity });
@@ -48,6 +51,7 @@ impl ButtonSystem {
             parent: Some(world_entity),
             vars: default(),
         });
+        entity
     }
 
     pub fn change_icon(entity: legion::Entity, world: &mut legion::World, icon: &Image) {
