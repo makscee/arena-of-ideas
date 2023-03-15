@@ -2,8 +2,7 @@ use super::*;
 
 pub struct UnitSystem {}
 
-const STATUSES_EFFECTS_KEY: &str = "statuses";
-const CARD_ANIMATION_DURATION: Time = 0.2;
+const CARD_ANIMATION_TIME: Time = 0.2;
 impl UnitSystem {
     pub fn draw_all_units_to_cassette_node(
         world: &legion::World,
@@ -13,7 +12,6 @@ impl UnitSystem {
         node: &mut CassetteNode,
         factions: HashSet<Faction>,
     ) {
-        node.clear_key(STATUSES_EFFECTS_KEY);
         <(&UnitComponent, &EntityComponent, &Shader)>::query()
             .iter(world)
             .filter(|(unit, _, _)| factions.contains(&unit.faction))
@@ -30,23 +28,7 @@ impl UnitSystem {
                     .concat(),
                 ));
                 node.add_entity_shader(entity.entity, unit_shader);
-                statuses
-                    .get_description_shaders(&entity.entity, options)
-                    .into_iter()
-                    .for_each(|shader| {
-                        node.add_effect_by_key(
-                            STATUSES_EFFECTS_KEY,
-                            VisualEffect {
-                                duration: 0.0,
-                                delay: 0.0,
-                                r#type: VisualEffectType::EntityExtraShaderConst {
-                                    entity: entity.entity,
-                                    shader,
-                                },
-                                order: 30,
-                            },
-                        )
-                    });
+                node.save_active_statuses(statuses);
             });
         StatsUiSystem::fill_cassette_node(world, options, node);
         HouseSystem::fill_cassette_node_with_descriptions(world, options, houses, node);
@@ -207,5 +189,52 @@ impl UnitSystem {
                     false => None,
                 }),
         )
+    }
+
+    pub fn inject_entity_shaders_uniforms(
+        entity_shaders: &mut HashMap<legion::Entity, Shader>,
+        resources: &Resources,
+    ) {
+        for (entity, shader) in entity_shaders.iter_mut() {
+            let faction_value = shader
+                .parameters
+                .uniforms
+                .get_float(&VarName::Faction.convert_to_uniform());
+            if let Some(faction_value) = faction_value {
+                let mut card_value: f32 = match faction_value == Faction::Shop.float_value() {
+                    true => 1.0,
+                    false => 0.0,
+                };
+                let hover_value = resources
+                    .input
+                    .hover_data
+                    .get(entity)
+                    .unwrap_or(&(false, -1000.0));
+                let hover_value = (1.0
+                    - hover_value.0 as u8 as f32
+                    - ((resources.global_time - hover_value.1) / CARD_ANIMATION_TIME).min(1.0))
+                .abs();
+                card_value = card_value.max(hover_value);
+
+                shader.parameters.uniforms.insert(
+                    VarName::Card.convert_to_uniform(),
+                    ShaderUniform::Float(card_value),
+                );
+                shader.parameters.uniforms.insert(
+                    VarName::Zoom.convert_to_uniform(),
+                    ShaderUniform::Float(1.0 + hover_value * 1.4),
+                );
+            }
+        }
+
+        // for (entity, (value, time)) in resources.input.hover_data.iter() {
+        //     entity_shaders.get_mut(entity).and_then(|shader| {
+        //         shader.parameters.uniforms.insert(
+        //             VarName::Card.convert_to_uniform(),
+        //             ShaderUniform::Float(*value as u8 as f32),
+        //         );
+        //         Some(())
+        //     });
+        // }
     }
 }

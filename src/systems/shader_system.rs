@@ -55,7 +55,6 @@ impl ShaderSystem {
         framebuffer: &mut ugli::Framebuffer,
     ) {
         // Get all Shader components from World for drawing
-
         let world_shaders: HashMap<legion::Entity, Shader> = HashMap::from_iter(
             <&EntityComponent>::query()
                 .filter(!component::<UnitComponent>() & component::<Shader>())
@@ -63,9 +62,7 @@ impl ShaderSystem {
                 .map(|entity| (entity.entity, Self::get_entity_shader(world, entity.entity))),
         );
 
-        let shaders = resources
-            .cassette
-            .get_shaders(resources.input.mouse_pos, world_shaders)
+        let shaders = Cassette::get_shaders(resources, world_shaders)
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
             .collect_vec();

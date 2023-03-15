@@ -30,4 +30,34 @@ impl AreaComponent {
             AreaType::Rectangle { size } => pos.x.abs() < size.x && pos.y.abs() < size.y,
         }
     }
+
+    pub fn from_shader(shader: &Shader) -> Option<Self> {
+        shader
+            .parameters
+            .uniforms
+            .get_vec2(&VarName::Position.convert_to_uniform())
+            .and_then(|position| {
+                if let Some(radius) = shader
+                    .parameters
+                    .uniforms
+                    .get_float(&VarName::Radius.convert_to_uniform())
+                {
+                    Some(Self {
+                        r#type: AreaType::Circle { radius },
+                        position,
+                    })
+                } else if let Some(size) = shader
+                    .parameters
+                    .uniforms
+                    .get_vec2(&VarName::Size.convert_to_uniform())
+                {
+                    Some(Self {
+                        r#type: AreaType::Rectangle { size },
+                        position,
+                    })
+                } else {
+                    None
+                }
+            })
+    }
 }

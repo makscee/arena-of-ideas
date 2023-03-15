@@ -23,17 +23,20 @@ impl Faction {
     pub fn color(&self, options: &Options) -> Rgba<f32> {
         *options.colors.faction_colors.get(self).unwrap()
     }
-}
-
-impl VarsProvider for UnitComponent {
-    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
-        let faction_val = match self.faction {
+    pub fn float_value(&self) -> f32 {
+        match self {
             Faction::Dark => 0.0,
             Faction::Light => 1.0,
             Faction::Team => 2.0,
             Faction::Shop => 3.0,
             Faction::Gallery => 4.0,
-        };
+        }
+    }
+}
+
+impl VarsProvider for UnitComponent {
+    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
+        let faction_val = self.faction.float_value();
         vars.insert(VarName::Faction, Var::Float(faction_val));
         vars.insert(VarName::Slot, Var::Int(self.slot as i32));
 

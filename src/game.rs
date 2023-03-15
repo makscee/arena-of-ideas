@@ -59,9 +59,16 @@ impl geng::State for Game {
 
         self.systems
             .iter_mut()
+            .for_each(|s| s.pre_update(&mut self.world, &mut self.resources));
+        self.systems
+            .iter_mut()
             .for_each(|s| s.update(&mut self.world, &mut self.resources));
+        self.systems
+            .iter_mut()
+            .for_each(|s| s.post_update(&mut self.world, &mut self.resources));
         self.resources.input.down_keys.clear();
         self.resources.input.down_mouse_buttons.clear();
+        self.resources.input.up_mouse_buttons.clear();
     }
 
     fn handle_event(&mut self, event: geng::Event) {
@@ -88,6 +95,7 @@ impl geng::State for Game {
                 button,
             } => {
                 self.resources.input.pressed_mouse_buttons.remove(&button);
+                self.resources.input.up_mouse_buttons.insert(button);
             }
 
             _ => {}

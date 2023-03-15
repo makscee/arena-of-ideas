@@ -60,4 +60,5 @@ pub struct Colors {
     pub corner_button_icon_color: Rgba<f32>,
     pub cassette_player_btn_normal: Rgba<f32>,
     pub cassette_player_btn_active: Rgba<f32>,
+    pub cassette_player_btn_hovered: Rgba<f32>,
 }

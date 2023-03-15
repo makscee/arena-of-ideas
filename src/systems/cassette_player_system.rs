@@ -18,58 +18,72 @@ impl CassettePlayerSystem {
             .collect_vec()
             .iter()
             .for_each(|entity| {
+                resources.input.listeners.remove(entity);
                 world.remove(*entity);
             });
         fn play(
             entity: legion::Entity,
             resources: &mut Resources,
             world: &mut legion::World,
-            state: ButtonState,
+            event: InputEvent,
         ) {
-            match state {
-                ButtonState::Pressed { .. } => return,
-                _ => {}
-            }
-            match resources.current_state {
-                GameState::Shop => {
-                    ButtonSystem::change_icon(entity, world, &resources.options.images.pause_icon);
-                    ButtonSystem::change_icon_color(
-                        entity,
-                        world,
-                        resources.options.colors.cassette_player_btn_active,
-                    );
-                    resources.transition_state = GameState::Battle;
-                }
-                GameState::Battle => {
-                    resources.cassette_play_mode = match resources.cassette_play_mode {
-                        CassettePlayMode::Play => {
-                            ButtonSystem::change_icon(
-                                entity,
-                                world,
-                                &resources.options.images.play_icon,
-                            );
-                            ButtonSystem::change_icon_color(
-                                entity,
-                                world,
-                                resources.options.colors.cassette_player_btn_normal,
-                            );
-                            CassettePlayMode::Stop
-                        }
-                        CassettePlayMode::Stop | CassettePlayMode::Rewind { .. } => {
-                            ButtonSystem::change_icon(
-                                entity,
-                                world,
-                                &resources.options.images.pause_icon,
-                            );
-                            ButtonSystem::change_icon_color(
-                                entity,
-                                world,
-                                resources.options.colors.cassette_player_btn_active,
-                            );
-                            CassettePlayMode::Play
+            match event {
+                InputEvent::Click => match resources.current_state {
+                    GameState::Shop => {
+                        ButtonSystem::change_icon(
+                            entity,
+                            world,
+                            &resources.options.images.pause_icon,
+                        );
+                        ButtonSystem::change_icon_color(
+                            entity,
+                            world,
+                            resources.options.colors.cassette_player_btn_active,
+                        );
+                        resources.transition_state = GameState::Battle;
+                    }
+                    GameState::Battle => {
+                        resources.cassette_play_mode = match resources.cassette_play_mode {
+                            CassettePlayMode::Play => {
+                                ButtonSystem::change_icon(
+                                    entity,
+                                    world,
+                                    &resources.options.images.play_icon,
+                                );
+                                ButtonSystem::change_icon_color(
+                                    entity,
+                                    world,
+                                    resources.options.colors.cassette_player_btn_normal,
+                                );
+                                CassettePlayMode::Stop
+                            }
+                            CassettePlayMode::Stop | CassettePlayMode::Rewind { .. } => {
+                                ButtonSystem::change_icon(
+                                    entity,
+                                    world,
+                                    &resources.options.images.pause_icon,
+                                );
+                                ButtonSystem::change_icon_color(
+                                    entity,
+                                    world,
+                                    resources.options.colors.cassette_player_btn_active,
+                                );
+                                CassettePlayMode::Play
+                            }
                         }
                     }
-                }
+                    _ => {}
+                },
+                InputEvent::HoverStart => ButtonSystem::change_icon_color(
+                    entity,
+                    world,
+                    resources.options.colors.cassette_player_btn_hovered,
+                ),
+                InputEvent::HoverStop => ButtonSystem::change_icon_color(
+                    entity,
+                    world,
+                    resources.options.colors.cassette_player_btn_normal,
+                ),
                 _ => {}
             }
         }
@@ -79,50 +93,60 @@ impl CassettePlayerSystem {
             resources: &mut Resources,
             world: &mut legion::World,
             direction: f32,
+            event: InputEvent,
         ) {
-            match resources.current_state {
-                GameState::Battle => {}
-                _ => {
-                    return;
-                }
-            }
-            resources.cassette_play_mode = CassettePlayMode::Rewind {
-                ts: match resources.cassette_play_mode {
-                    CassettePlayMode::Play | CassettePlayMode::Stop => {
-                        resources.cassette.head + resources.delta_time * direction
+            match event {
+                InputEvent::Press => {
+                    match resources.current_state {
+                        GameState::Battle => {}
+                        _ => {
+                            return;
+                        }
                     }
+                    resources.cassette_play_mode = CassettePlayMode::Rewind {
+                        ts: match resources.cassette_play_mode {
+                            CassettePlayMode::Play | CassettePlayMode::Stop => {
+                                resources.cassette.head + resources.delta_time * direction
+                            }
 
-                    CassettePlayMode::Rewind { ts } => {
-                        ts + resources.delta_time * direction * REWIND_SPEED
-                    }
-                    _ => panic!("Wrong Play Mode"),
+                            CassettePlayMode::Rewind { ts } => {
+                                ts + resources.delta_time * direction * REWIND_SPEED
+                            }
+                            _ => panic!("Wrong Play Mode"),
+                        }
+                        .clamp(0.0, resources.cassette.length()),
+                    };
                 }
-                .clamp(0.0, resources.cassette.length()),
-            };
+                InputEvent::HoverStart => ButtonSystem::change_icon_color(
+                    entity,
+                    world,
+                    resources.options.colors.cassette_player_btn_hovered,
+                ),
+                InputEvent::HoverStop => ButtonSystem::change_icon_color(
+                    entity,
+                    world,
+                    resources.options.colors.cassette_player_btn_normal,
+                ),
+                _ => {}
+            }
         }
 
         fn rewind_backward(
             entity: legion::Entity,
             resources: &mut Resources,
             world: &mut legion::World,
-            state: ButtonState,
+            event: InputEvent,
         ) {
-            match state {
-                ButtonState::Pressed { .. } => rewind(entity, resources, world, -1.0),
-                _ => {}
-            }
+            rewind(entity, resources, world, -1.0, event);
         }
 
         fn rewind_forward(
             entity: legion::Entity,
             resources: &mut Resources,
             world: &mut legion::World,
-            state: ButtonState,
+            event: InputEvent,
         ) {
-            match state {
-                ButtonState::Pressed { .. } => rewind(entity, resources, world, 1.0),
-                _ => {}
-            }
+            rewind(entity, resources, world, 1.0, event);
         }
         let world_entity = WorldSystem::get_context(world).owner;
         let mut buttons = vec![];
@@ -130,7 +154,10 @@ impl CassettePlayerSystem {
             world,
             world_entity,
             resources,
-            &resources.options.images.play_icon,
+            match resources.current_state {
+                GameState::Battle => resources.options.images.pause_icon.clone(),
+                _ => resources.options.images.play_icon.clone(),
+            },
             match resources.current_state {
                 GameState::Battle => resources.options.colors.cassette_player_btn_active,
                 _ => resources.options.colors.cassette_player_btn_normal,
@@ -145,10 +172,10 @@ impl CassettePlayerSystem {
                     world,
                     world_entity,
                     resources,
-                    &resources.options.images.rewind_forward_icon,
+                    resources.options.images.rewind_forward_icon.clone(),
                     resources.options.colors.cassette_player_btn_normal,
                     rewind_forward,
-                    BATTLEFIELD_POSITION + vec2(1.5, -3.0),
+                    BATTLEFIELD_POSITION + vec2(2.5, -3.0),
                     &hashmap! {
                         "u_scale" => ShaderUniform::Float(0.7),
                     }
@@ -158,10 +185,10 @@ impl CassettePlayerSystem {
                     world,
                     world_entity,
                     resources,
-                    &resources.options.images.rewind_backward_icon,
+                    resources.options.images.rewind_backward_icon.clone(),
                     resources.options.colors.cassette_player_btn_normal,
                     rewind_backward,
-                    BATTLEFIELD_POSITION + vec2(-1.5, -3.0),
+                    BATTLEFIELD_POSITION + vec2(-2.5, -3.0),
                     &hashmap! {
                         "u_scale" => ShaderUniform::Float(0.7),
                     }

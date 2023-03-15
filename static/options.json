@@ -1,5 +1,5 @@
 {
-    "fov": 12.0,
+    "fov": 14.0,
     "log": {
         "Action": true,
         "Effect": false,
@@ -20,6 +20,7 @@
         "corner_button_icon_color": "#fffafa",
         "corner_button_color": "#2f2f2f",
         "cassette_player_btn_normal": "#ff8b2c",
+        "cassette_player_btn_hovered": "#fff42c",
         "cassette_player_btn_active": "#1bfc79"
     },
     "shaders": {

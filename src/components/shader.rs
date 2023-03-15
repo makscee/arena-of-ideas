@@ -148,6 +148,20 @@ impl ShaderUniforms {
     pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
         self.0.get(key)
     }
+
+    pub fn get_vec2(&self, key: &str) -> Option<vec2<f32>> {
+        self.get(key).and_then(|v| match v {
+            ShaderUniform::Vec2(v) => Some(*v),
+            _ => None,
+        })
+    }
+
+    pub fn get_float(&self, key: &str) -> Option<f32> {
+        self.get(key).and_then(|v| match v {
+            ShaderUniform::Float(v) => Some(*v),
+            _ => None,
+        })
+    }
 }
 
 impl From<HashMap<&str, ShaderUniform>> for ShaderUniforms {

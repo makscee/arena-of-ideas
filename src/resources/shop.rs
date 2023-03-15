@@ -2,22 +2,15 @@ use super::*;
 use geng::prelude::itertools::Itertools;
 
 const HERO_POOL_COUNT: usize = 5;
+
+#[derive(Default)]
 pub struct Shop {
     pub pool: HashMap<PathBuf, usize>,
     pub level_extensions: Vec<Vec<PathBuf>>,
     pub units: Vec<(String, Shader)>,
     pub money: usize,
-}
-
-impl Default for Shop {
-    fn default() -> Self {
-        Self {
-            pool: default(),
-            money: default(),
-            units: default(),
-            level_extensions: default(),
-        }
-    }
+    pub drop_entity: Option<legion::Entity>,
+    pub drag_entity: Option<legion::Entity>,
 }
 
 impl Shop {

@@ -410,6 +410,28 @@ impl UnitTemplatesPool {
             ),
             &LogContext::UnitCreation,
         );
+        fn unit_drag(
+            entity: legion::Entity,
+            resources: &mut Resources,
+            world: &mut legion::World,
+            event: InputEvent,
+        ) {
+            match event {
+                InputEvent::Drag { .. } => {
+                    world.entry_mut(entity).ok().and_then(|mut entry| {
+                        entry.get_component_mut::<AreaComponent>().unwrap().position =
+                            resources.input.mouse_pos;
+                        Some(())
+                    });
+                    resources.shop.drag_entity = Some(entity);
+                }
+                InputEvent::DragStop => {
+                    resources.shop.drop_entity = Some(entity);
+                }
+                _ => {}
+            };
+        }
+        resources.input.listeners.insert(entity, unit_drag);
         entity
     }
 }

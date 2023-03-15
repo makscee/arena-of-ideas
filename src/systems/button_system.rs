@@ -3,22 +3,17 @@ use super::*;
 pub struct ButtonSystem {}
 
 impl ButtonSystem {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     pub fn create_button(
         world: &mut legion::World,
         world_entity: legion::Entity,
-        resources: &Resources,
-        icon: &Image,
+        resources: &mut Resources,
+        icon: Image,
         color: Rgba<f32>,
-        action: fn(legion::Entity, &mut Resources, &mut legion::World, ButtonState),
+        listener: fn(legion::Entity, &mut Resources, &mut legion::World, InputEvent),
         position: vec2<f32>,
         uniforms: &ShaderUniforms,
     ) -> legion::Entity {
         let entity = world.push((
-            ButtonComponent::new(action),
             AreaComponent {
                 r#type: AreaType::Rectangle {
                     size: vec2(1.0, 1.0),
@@ -36,7 +31,7 @@ impl ButtonSystem {
                 .shaders
                 .icon
                 .clone()
-                .set_uniform("u_texture", ShaderUniform::Texture(icon.clone()))
+                .set_uniform("u_texture", ShaderUniform::Texture(icon))
                 .set_uniform(
                     "u_icon_color",
                     ShaderUniform::Color(Rgba::try_from(color).unwrap()),
@@ -51,6 +46,7 @@ impl ButtonSystem {
             parent: Some(world_entity),
             vars: default(),
         });
+        resources.input.listeners.insert(entity, listener);
         entity
     }
 
@@ -85,28 +81,5 @@ impl ButtonSystem {
             .parameters
             .uniforms;
         uniforms.insert(key, value);
-    }
-}
-
-impl System for ButtonSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        <(&ButtonComponent, &InputComponent, &EntityComponent)>::query()
-            .iter(world)
-            .map(|(button, input, entity)| (button.clone(), input.clone(), entity.entity))
-            .collect_vec()
-            .into_iter()
-            .for_each(|(button, input, entity)| {
-                if input.is_clicked(resources.global_time) {
-                    button.click(entity, resources, world);
-                }
-                if input.is_pressed(resources.global_time) {
-                    button.press(
-                        entity,
-                        resources,
-                        world,
-                        resources.global_time - input.pressed.unwrap().1,
-                    );
-                }
-            });
     }
 }

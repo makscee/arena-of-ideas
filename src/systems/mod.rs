@@ -14,8 +14,8 @@ mod gallery_system;
 mod game_over_system;
 mod game_state_system;
 mod house_system;
+mod input_system;
 mod logger;
-mod mouse_system;
 mod name_system;
 mod pool_ui_system;
 mod power_points_system;
@@ -39,8 +39,8 @@ pub use gallery_system::*;
 pub use game_over_system::*;
 pub use game_state_system::*;
 pub use house_system::*;
+pub use input_system::*;
 pub use logger::*;
-pub use mouse_system::*;
 pub use name_system::*;
 pub use pool_ui_system::*;
 pub use power_points_system::*;
@@ -55,7 +55,13 @@ pub use widgets::*;
 pub use world_system::*;
 
 pub trait System {
+    fn pre_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        #![allow(unused_variables)]
+    }
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources);
+    fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        #![allow(unused_variables)]
+    }
     fn draw(
         &self,
         world: &legion::World,
@@ -121,8 +127,7 @@ impl Game {
         global_systems.push(Box::new(ContextSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));
         global_systems.push(Box::new(SlotSystem::new()));
-        global_systems.push(Box::new(MouseSystem::new()));
-        global_systems.push(Box::new(ButtonSystem::new()));
+        global_systems.push(Box::new(InputSystem::new()));
         global_systems.push(Box::new(game_state));
         global_systems
     }

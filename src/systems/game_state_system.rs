@@ -117,6 +117,30 @@ impl System for GameStateSystem {
         }
         Box::new(ui::Void)
     }
+
+    fn pre_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        self.systems
+            .get_mut(&resources.current_state)
+            .and_then(|systems| {
+                Some(
+                    systems
+                        .iter_mut()
+                        .for_each(|system| system.pre_update(world, resources)),
+                )
+            });
+    }
+
+    fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        self.systems
+            .get_mut(&resources.current_state)
+            .and_then(|systems| {
+                Some(
+                    systems
+                        .iter_mut()
+                        .for_each(|system| system.post_update(world, resources)),
+                )
+            });
+    }
 }
 
 impl GameStateSystem {

@@ -68,12 +68,14 @@ impl Cassette {
     }
 
     pub fn get_shaders(
-        &self,
-        mouse_pos: vec2<f32>,
+        resources: &mut Resources,
         mut world_shaders: HashMap<legion::Entity, Shader>,
     ) -> Vec<Shader> {
-        let node = self.get_node_at_ts(self.head).merge(&self.parallel_node);
-        let time = self.head - node.start;
+        let cassette = &resources.cassette;
+        let node = cassette
+            .get_node_at_ts(cassette.head)
+            .merge(&cassette.parallel_node);
+        let time = cassette.head - node.start;
         let mut shaders: Vec<Shader> = default();
         world_shaders.extend(node.entity_shaders.clone().into_iter());
         let mut entity_shaders = world_shaders;
@@ -96,35 +98,50 @@ impl Cassette {
 
         // todo: rework
         // inject hovered info
-        for (_, shader) in entity_shaders.iter_mut() {
-            let position = shader
-                .parameters
-                .uniforms
-                .get(&VarName::Position.convert_to_uniform())
-                .and_then(|x| match x {
-                    ShaderUniform::Vec2(v) => Some(v),
-                    _ => None,
-                });
-            let radius = shader
-                .parameters
-                .uniforms
-                .get(&VarName::Radius.convert_to_uniform())
-                .and_then(|x| match x {
-                    ShaderUniform::Float(v) => Some(v),
-                    _ => None,
-                });
-            if position.is_none() || radius.is_none() {
-                continue;
-            }
-            let position = position.unwrap();
-            let radius = radius.unwrap();
-            if (mouse_pos - *position).len() < *radius {
-                shader
-                    .parameters
-                    .uniforms
-                    .insert("u_hovered".to_string(), ShaderUniform::Float(1.0));
+        // for (_, shader) in entity_shaders.iter_mut() {
+        //     let position = shader
+        //         .parameters
+        //         .uniforms
+        //         .get(&VarName::Position.convert_to_uniform())
+        //         .and_then(|x| match x {
+        //             ShaderUniform::Vec2(v) => Some(v),
+        //             _ => None,
+        //         });
+        //     let radius = shader
+        //         .parameters
+        //         .uniforms
+        //         .get(&VarName::Radius.convert_to_uniform())
+        //         .and_then(|x| match x {
+        //             ShaderUniform::Float(v) => Some(v),
+        //             _ => None,
+        //         });
+        //     if position.is_none() || radius.is_none() {
+        //         continue;
+        //     }
+        //     let position = position.unwrap();
+        //     let radius = radius.unwrap();
+        //     if (mouse_pos - *position).len() < *radius {
+        //         shader
+        //             .parameters
+        //             .uniforms
+        //             .insert("u_hovered".to_string(), ShaderUniform::Float(1.0));
+        //     }
+        // }
+
+        let mut hovered_entity = None;
+        for (entity, shader) in entity_shaders
+            .iter()
+            .sorted_by_key(|(_, shader)| -shader.order)
+        {
+            if let Some(area) = AreaComponent::from_shader(shader) {
+                if area.contains(resources.input.mouse_pos) {
+                    hovered_entity = Some(*entity);
+                    break;
+                }
             }
         }
+        InputSystem::set_hovered_entity(hovered_entity, resources);
+        UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
 
         // 2nd phase: apply any other shaders that might need updated entity shaders uniforms
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
@@ -194,6 +211,7 @@ pub struct CassetteNode {
     start: Time,
     duration: Time,
     entity_shaders: HashMap<legion::Entity, Shader>,
+    active_statuses: HashMap<legion::Entity, HashMap<String, Context>>,
     effects: HashMap<String, Vec<VisualEffect>>,
 }
 
@@ -253,5 +271,14 @@ impl CassetteNode {
     }
     pub fn start(&self) -> Time {
         self.start
+    }
+    pub fn save_active_statuses(&mut self, pool: &StatusPool) {
+        self.active_statuses = pool.active_statuses.clone();
+    }
+    pub fn get_entity_statuses_names(&self, entity: &legion::Entity) -> Vec<String> {
+        self.active_statuses
+            .get(entity)
+            .and_then(|statuses| Some(statuses.keys().cloned().collect_vec()))
+            .unwrap_or_else(|| vec![])
     }
 }
