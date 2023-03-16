@@ -1,12 +1,18 @@
 use super::*;
 
-pub struct Definitions(HashMap<String, String>);
+#[derive(Default)]
+pub struct Definitions(HashMap<String, Definition>);
 
 impl Definitions {
-    pub fn get(&self, key: &str) -> Option<&String> {
+    pub fn get(&self, key: &str) -> Option<&Definition> {
         self.0.get(key)
     }
-    pub fn insert(&mut self, key: String, value: String) {
-        self.insert(key, value);
+    pub fn insert(&mut self, key: String, color: Rgba<f32>, description: String) {
+        self.0.insert(key, Definition { description, color });
     }
+}
+
+pub struct Definition {
+    pub description: String,
+    pub color: Rgba<f32>,
 }

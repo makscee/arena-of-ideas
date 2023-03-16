@@ -18,7 +18,7 @@ impl UnitSystem {
             .for_each(|(_, entity, _)| {
                 let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity).clone();
                 unit_shader
-                    .chain_after
+                    .chain_before
                     .extend(statuses.get_entity_shaders(&entity.entity));
                 unit_shader
                     .chain_after

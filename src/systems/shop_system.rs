@@ -136,6 +136,8 @@ impl ShopSystem {
                             .get_component_mut::<UnitComponent>()
                             .unwrap()
                             .slot = slot;
+                    } else {
+                        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Team});
                     }
                 }
                 Faction::Shop => {

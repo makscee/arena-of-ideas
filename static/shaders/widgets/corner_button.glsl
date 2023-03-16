@@ -7,7 +7,7 @@ attribute vec2 a_pos;
 uniform vec2 u_pos;
 
 void main() {
-    uv = a_pos * (1 + u_padding) * u_scale * u_scale;
+    uv = rotateCW(a_pos, PI * .25) * 3 * u_scale * u_scale;
     vec2 world_pos = u_pos + u_size * uv;
     vec3 pos = u_projection_matrix * u_view_matrix * vec3(world_pos, 1.0);
     gl_Position = vec4(pos.xy, 0.0, pos.z);

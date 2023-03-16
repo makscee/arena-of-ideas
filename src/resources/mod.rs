@@ -66,6 +66,7 @@ pub struct Resources {
     pub unit_templates: UnitTemplatesPool,
     pub floors: Floors,
     pub houses: HashMap<HouseName, House>,
+    pub definitions: Definitions,
 
     pub current_state: GameState,
     pub transition_state: GameState,
@@ -140,6 +141,7 @@ impl Resources {
             options,
             input: default(),
             houses: default(),
+            definitions: default(),
             floors: default(),
             reload_triggered: default(),
             game_won: default(),
@@ -322,6 +324,11 @@ impl Resources {
                 status.color = Some(house.color);
             }
             resources.status_pool.define_status(name.clone(), status)
+        });
+        house.abilities.iter().for_each(|(name, ability)| {
+            resources
+                .definitions
+                .insert(name.clone(), house.color, ability.description.clone())
         });
         resources.houses.insert(house.name, house);
     }

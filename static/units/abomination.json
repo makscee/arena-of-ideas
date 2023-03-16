@@ -29,25 +29,18 @@
     },
     {
         "component": "Shader",
-        "path": "shaders/system/unit.glsl",
-        "layer": "Unit",
-        "chain": [
-            {
-                "component": "Shader",
-                "path": "shaders/vfx/circle.glsl",
-                "parameters": {
-                    "uniforms": {
-                        "u_color": "#860000",
-                        "u_radius": 0.6,
-                        "u_border": 0.5,
-                        "u_circle_fbm": 0.15,
-                        "u_circle_fbm_speed": 40.0,
-                        "u_padding": 0.2,
-                        "u_aa": 0.05
-                    }
-                }
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#860000",
+                "u_circle_radius": 0.6,
+                "u_border": 0.5,
+                "u_circle_fbm": 0.15,
+                "u_circle_fbm_speed": 40.0,
+                "u_padding": 0.2,
+                "u_aa": 0.05
             }
-        ]
+        }
     },
     {
         "component": "StatusContainer",

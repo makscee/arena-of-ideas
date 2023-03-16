@@ -17,8 +17,7 @@ const float THICKNESS = 0.01;
 const float SPREAD = 0.04;
 
 void main() {
-    vec2 uv = get_card_uv(uv, u_card);
-    uv /= u_scale;
+    vec2 uv = uv / 1.2;
     float len = length(uv) - 1.;
     if(abs(len) > THICKNESS + SPREAD)
         discard;

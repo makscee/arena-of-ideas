@@ -31,6 +31,7 @@ pub struct Shaders {
     pub stats: Shader,
     pub strike: Shader,
     pub text: Shader,
+    pub status_panel_text: Shader,
     pub battle_timer: Shader,
     pub curve: Shader,
     pub name: Shader,

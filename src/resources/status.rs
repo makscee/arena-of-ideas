@@ -5,14 +5,13 @@ use super::*;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Status {
     pub trigger: Trigger,
-    pub description: Option<String>,
     pub color: Option<Rgba<f32>>,
     pub shader: Option<Shader>,
 }
 
 #[derive(Default, Debug)]
 pub struct StatusPool {
-    pub defined_statuses: HashMap<String, Status>, // key = status name
+    pub defined_statuses: HashMap<String, Status>, // status name -> status
     pub active_statuses: HashMap<legion::Entity, HashMap<String, Context>>, // entity -> status name -> context
     pub new_statuses: VecDeque<(legion::Entity, String)>, // statuses that need to be inited
 }

@@ -91,14 +91,7 @@ impl SerializedComponent {
             }
             SerializedComponent::StatusContainer { statuses } => {
                 statuses.into_iter().for_each(|(name, status)| {
-                    let name = format!(
-                        "{:?}_{}",
-                        path.file_name()
-                            .unwrap()
-                            .to_string_lossy()
-                            .trim_matches('"'),
-                        name
-                    );
+                    let name = format!("{}_{}", path.file_name().unwrap().to_string_lossy(), name);
                     resources
                         .status_pool
                         .define_status(name.clone(), status.clone());

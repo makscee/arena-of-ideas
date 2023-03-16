@@ -103,6 +103,25 @@
             },
             "layer": "UI"
         },
+        "status_panel_text": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_text_color": "#ffffff",
+                    "u_outline_color": "#0dde1b",
+                    "u_scale": 0.4,
+                    "u_offset": [
+                        4.0,
+                        1.0
+                    ],
+                    "u_index_offset": [
+                        0.0,
+                        -0.65
+                    ]
+                }
+            },
+            "layer": "UI"
+        },
         "battle_timer": {
             "path": "shaders/vfx/text.glsl",
             "parameters": {
