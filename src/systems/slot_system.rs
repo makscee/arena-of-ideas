@@ -53,20 +53,10 @@ impl SlotSystem {
         Self::get_position(unit.slot, &unit.faction)
     }
 
-    pub fn get_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
-        for slot in 1..=SLOTS_COUNT {
-            let slot_pos = Self::get_position(slot, faction);
-            if (slot_pos - mouse_pos).len() < DEFAULT_UNIT_RADIUS {
-                return Some(slot);
-            }
-        }
-        None
-    }
-
     pub fn get_horizontal_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {
         for slot in 1..=SLOTS_COUNT {
             let slot_pos = Self::get_position(slot, faction);
-            if (mouse_pos.x - slot_pos.x).abs() < DEFAULT_UNIT_RADIUS {
+            if (mouse_pos.x - slot_pos.x).abs() < 1.0 {
                 return Some(slot);
             }
         }
@@ -193,17 +183,18 @@ impl SlotSystem {
 
     pub fn make_gap(
         world: &mut legion::World,
+        resources: &Resources,
         gap_slot: usize,
         factions: HashSet<Faction>,
     ) -> bool {
         let mut current_slot: HashMap<&Faction, usize> =
             HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
         let mut changed = false;
-        <(&mut UnitComponent, &InputComponent)>::query()
+        <(&mut UnitComponent, &EntityComponent)>::query()
             .iter_mut(world)
-            .sorted_by_key(|(unit, input)| unit.slot)
-            .for_each(|(unit, input)| {
-                if !input.is_dragged() {
+            .sorted_by_key(|(unit, _)| unit.slot)
+            .for_each(|(unit, entity)| {
+                if resources.input.cur_dragged.as_ref() != Some(&entity.entity) {
                     if let Some(slot) = current_slot.get_mut(&unit.faction) {
                         *slot = *slot + 1;
                         if *slot == gap_slot {
@@ -219,8 +210,8 @@ impl SlotSystem {
         changed
     }
 
-    pub fn fill_gaps(world: &mut legion::World, factions: HashSet<Faction>) {
-        Self::make_gap(world, SLOTS_COUNT + 1, factions);
+    pub fn fill_gaps(world: &mut legion::World, resources: &Resources, factions: HashSet<Faction>) {
+        Self::make_gap(world, resources, SLOTS_COUNT + 1, factions);
     }
 
     fn get_filled_slots(world: &legion::World) -> HashSet<(Faction, usize)> {

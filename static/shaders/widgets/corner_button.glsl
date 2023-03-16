@@ -1,15 +1,10 @@
 #include <common.glsl>
 
 varying vec2 uv;
-uniform float u_scale = 1.0;
 
 #ifdef VERTEX_SHADER
 attribute vec2 a_pos;
-uniform mat3 u_projection_matrix;
-uniform mat3 u_view_matrix;
 uniform vec2 u_pos;
-uniform vec2 u_size;
-uniform vec2 u_padding = vec2(2);
 
 void main() {
     uv = a_pos * (1 + u_padding) * u_scale * u_scale;

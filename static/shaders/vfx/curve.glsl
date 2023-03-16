@@ -5,11 +5,9 @@ uniform float u_time;
 out vec2 uv;
 out float t;
 attribute vec2 a_pos;
-uniform mat3 u_projection_matrix;
-uniform mat3 u_view_matrix;
+
 uniform float u_end_cut = 0;
 uniform float u_thickness = 0.3;
-uniform vec2 u_position;
 uniform vec2 u_target_position;
 
 void main() {

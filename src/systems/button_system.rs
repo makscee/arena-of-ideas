@@ -20,12 +20,6 @@ impl ButtonSystem {
                 },
                 position,
             },
-            InputComponent {
-                hovered: Some(default()),
-                dragged: None,
-                pressed: Some(default()),
-                clicked: Some(default()),
-            },
             resources
                 .options
                 .shaders

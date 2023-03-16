@@ -10,7 +10,6 @@ mod entity;
 mod flags;
 mod house;
 mod hp;
-mod input;
 mod name;
 mod shader;
 mod slot;
@@ -27,7 +26,6 @@ pub use entity::*;
 pub use flags::*;
 pub use house::*;
 pub use hp::*;
-pub use input::*;
 pub use name::*;
 pub use shader::*;
 pub use slot::*;
@@ -115,7 +113,13 @@ impl SerializedComponent {
                 });
             }
             SerializedComponent::Shader { .. } => {
-                entry.add_component(Self::unpack_shader(self).unwrap())
+                let shader = Shader {
+                    chain: Some(Box::new(
+                        Self::unpack_shader(self).into_iter().collect_vec(),
+                    )),
+                    ..resources.options.shaders.unit.clone()
+                };
+                entry.add_component(shader)
             }
 
             SerializedComponent::Name { name } => entry.add_component(NameComponent::new(name)),

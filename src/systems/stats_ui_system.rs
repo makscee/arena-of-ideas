@@ -25,7 +25,7 @@ impl StatsUiSystem {
                             .shaders
                             .stats
                             .clone()
-                            .set_uniform("u_offset", ShaderUniform::Float(1.0))
+                            .set_uniform("u_angle_offset", ShaderUniform::Float(1.0))
                             .set_uniform(
                                 "u_text",
                                 ShaderUniform::String((0, hp.current.to_string())),
@@ -54,7 +54,7 @@ impl StatsUiSystem {
                             .shaders
                             .stats
                             .clone()
-                            .set_uniform("u_offset", ShaderUniform::Float(-1.0))
+                            .set_uniform("u_angle_offset", ShaderUniform::Float(-1.0))
                             .set_uniform(
                                 "u_text",
                                 ShaderUniform::String((0, attack.value.to_string())),

@@ -31,7 +31,7 @@ impl BattleSystem {
         Self::clear_world(world, resources);
         Self::create_enemies(resources, world);
         Self::create_team(resources, world);
-        SlotSystem::fill_gaps(world, hashset! {Faction::Dark, Faction::Light});
+        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Dark, Faction::Light});
     }
 
     pub fn battle_won(world: &legion::World) -> bool {
@@ -85,7 +85,7 @@ impl BattleSystem {
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
         resources.cassette.node_template.clear();
-        SlotSystem::fill_gaps(world, hashset! {Faction::Light, Faction::Dark});
+        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Light, Faction::Dark});
         Self::refresh_cassette(world, resources);
         Self::move_to_slots_animated(world, resources);
         Self::refresh_cassette(world, resources);

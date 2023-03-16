@@ -1,54 +1,35 @@
 #include <common.glsl>
-const float BORDER_THICKNESS = 0.025;
-
-uniform vec2 u_position = vec2(0);
-uniform vec2 u_offset = vec2(0, 0);
-uniform vec2 u_size = vec2(0.5, 0.5);
-uniform float u_height = 0.7;
-
 #ifdef VERTEX_SHADER
 out vec2 uv;
 attribute vec2 a_pos;
-uniform mat3 u_projection_matrix;
-uniform mat3 u_view_matrix;
-uniform float u_padding = 1;
 
 void main() {
-    uv = a_pos * (1.0 + BORDER_THICKNESS + u_padding) * vec2(1, u_height);
-    vec2 pos = uv * u_size + u_offset;
-    pos *= u_zoom;
-    pos += u_position;
-    vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
-    gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
+    uv = get_uv(a_pos);
+    gl_Position = get_gl_position(a_pos);
 }
 #endif
 
 #ifdef FRAGMENT_SHADER
-const float NAME_HEIGHT = 0.4;
-
 in vec2 uv;
-uniform sampler2D u_description;
-uniform vec2 u_description_size;
-uniform sampler2D u_name;
-uniform vec2 u_name_size;
-uniform float u_hovered;
+uniform sampler2D u_title;
+uniform vec2 u_title_size;
+
+const float BORDER_THICKNESS = 0.1;
 
 void main() {
-    vec2 uv = uv / (vec2(2) - u_card);
-    commonInit(u_position + u_offset + uv);
-    float card_sdf = rectangle_sdf(uv, vec2(1, u_height), 0);
-    vec4 color = vec4(field_color, card_sdf < 0);
-    float border_value = max(float(BORDER_THICKNESS - abs(card_sdf) > 0), float(BORDER_THICKNESS - abs(uv.y - 1 + NAME_HEIGHT) > 0 && card_sdf < 0));
-    float border_glow = (.7 - card_sdf / .5) * float(card_sdf > 0);
-    vec4 border_color = vec4(base_color.rgb, max(border_value, border_glow));
-    vec2 name_uv = uv * vec2(u_name_size.y / u_name_size.x, 1) - vec2(0, 1 - NAME_HEIGHT * .5);
-    name_uv /= NAME_HEIGHT;
-    vec4 name_color = get_text_color(get_text_sdf(name_uv * 1.2, u_name), vec4(vec3(1), 1), u_color, .2, .5);
-    vec2 description_uv = uv * vec2(1, u_description_size.x / u_description_size.y) + vec2(0, u_height * .1);
-    vec4 description_color = get_text_color(get_text_sdf(description_uv * 1.2, u_description), vec4(vec3(1), 1), vec4(vec3(0), 0.8), .25, .5);
-    color = alphaBlend(color, border_color);
-    color = alphaBlend(color, name_color);
-    color = alphaBlend(color, description_color);
-    gl_FragColor = vec4(color.rgb, color.a * u_card * u_hovered);
+    vec2 border_thickness = BORDER_THICKNESS / u_size;
+    float border = float(abs(uv.x) > 1 - border_thickness.x || abs(uv.y) > 1 - border_thickness.y);
+    border = max(border, float(abs(uv.y - 0.7) < border_thickness.y * .5));
+    border = border * smoothstep(-.9, .5, uv.y);
+    float background = smoothstep(-.9, 1.7, uv.y);
+
+    vec2 text_uv = (uv * u_size * .45) * vec2(1, u_title_size.x / u_title_size.y) + vec2(0, -2);
+    float text_sdf = get_text_sdf(text_uv * 1.5, u_title);
+    vec4 text_color = get_text_color(text_sdf, u_color, vec4(1), 0.43, 0.5);
+
+    float alpha = max(border, background);
+    vec4 color = vec4(u_color.rgb, alpha);
+    color = alphaBlend(color, text_color);
+    gl_FragColor = color;
 }
 #endif

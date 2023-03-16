@@ -34,9 +34,6 @@ impl ContextSystem {
         if let Some(component) = entry.get_component::<DescriptionComponent>().ok() {
             component.extend_vars(&mut context.vars, resources);
         }
-        if let Some(component) = entry.get_component::<InputComponent>().ok() {
-            component.extend_vars(&mut context.vars, resources);
-        }
         if let Some(component) = entry.get_component::<HouseComponent>().ok() {
             component.extend_vars(&mut context.vars, resources);
         }

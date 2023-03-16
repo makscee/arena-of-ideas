@@ -111,7 +111,7 @@ impl ShopSystem {
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos)
             {
-                if SlotSystem::make_gap(world, slot, hashset! {Faction::Team}) {
+                if SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team}) {
                     SlotSystem::refresh_slots_filled_uniform(world);
                 }
                 SlotSystem::set_hovered_slot(world, &Faction::Team, slot);

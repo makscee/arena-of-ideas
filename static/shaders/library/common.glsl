@@ -5,13 +5,62 @@ uniform float u_global_time;
 uniform vec2 u_field_position;
 
 uniform float u_card;
-uniform float u_zoom;
-uniform float u_is_battle;
+uniform float u_zoom = 1;
 
 vec3 light_color = vec3(1);
 vec3 dark_color = vec3(0);
 vec3 base_color;
 vec3 field_color;
+
+uniform mat3 u_projection_matrix;
+uniform mat3 u_view_matrix;
+uniform vec2 u_position = vec2(0);
+uniform vec2 u_offset = vec2(0, 0);
+uniform vec2 u_size = vec2(0);
+uniform float u_radius = 0;
+uniform float u_padding = 0;
+uniform float u_scale = 1;
+
+/// Setup
+vec2 get_card_uv(vec2 uv, float card) {
+    return mix(uv, uv * 2 + vec2(0, -.7), card);
+}
+
+vec2 get_card_pos(vec2 pos, float card) {
+    return mix(pos, (pos + vec2(0, .7)) / 2, card);
+}
+
+vec2 get_uv(vec2 a_pos) {
+    return a_pos * (1.0 + u_padding);
+}
+
+vec4 get_gl_position(vec2 a_pos, vec2 size, vec2 offset, float card) {
+    vec2 uv = get_uv(a_pos);
+    vec2 pos = uv * size * u_scale + offset;
+    pos = get_card_pos(pos, card);
+    pos *= u_zoom;
+    pos += u_position;
+    vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
+    return vec4(p_pos.xy, 0.0, p_pos.z);
+}
+
+vec4 get_gl_position(vec2 a_pos) {
+    vec2 size = vec2(max(u_size.x, u_radius), max(u_size.y, u_radius));
+    size = mix(vec2(1), size, float(length(size) > 0.));
+    return get_gl_position(a_pos, size, u_offset, u_card);
+}
+
+vec4 get_gl_position(vec2 a_pos, vec2 size) {
+    return get_gl_position(a_pos, size, u_offset, u_card);
+}
+
+vec4 get_gl_position(vec2 a_pos, float radius) {
+    return get_gl_position(a_pos, vec2(radius), u_offset, u_card);
+}
+
+vec4 get_gl_position(vec2 a_pos, vec2 size, vec2 offset) {
+    return get_gl_position(a_pos, size, offset, u_card);
+}
 
 /// Noise
 float hash(float n) {
@@ -48,7 +97,7 @@ float get_field_value(vec2 position) {
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }
 
-const float TEXT_AA = 0.05;
+const float TEXT_AA = 0.01;
 vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color, float text_border, float text_inside) {
     return mix(mix(vec4(0), outline_color, smoothstep(text_border - TEXT_AA, text_border + TEXT_AA, sdf)), text_color, smoothstep(text_inside - TEXT_AA, text_inside + TEXT_AA, sdf));
 }
@@ -56,14 +105,6 @@ vec4 get_text_color(float sdf, vec4 text_color, vec4 outline_color, float text_b
 float get_text_sdf(vec2 uv, sampler2D sampler) {
     vec2 text_uv = uv * .5 + .5;
     return texture2D(sampler, text_uv).x;
-}
-
-vec2 get_card_uv(vec2 uv, float card) {
-    return mix(uv, uv * 2 + vec2(0, -.7), card);
-}
-
-vec2 get_card_pos(vec2 pos, float card) {
-    return mix(pos, (pos + vec2(0, .7)) / 2, card);
 }
 
 void commonInit(vec2 position) {

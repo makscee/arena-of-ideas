@@ -31,7 +31,6 @@ impl UnitSystem {
                 node.save_active_statuses(statuses);
             });
         StatsUiSystem::fill_cassette_node(world, options, node);
-        HouseSystem::fill_cassette_node_with_descriptions(world, options, houses, node);
         NameSystem::fill_cassette_node(world, options, node);
     }
 
@@ -88,12 +87,6 @@ impl UnitSystem {
             parent: Some(parent),
             target: new_entity,
             ..original_context
-        });
-        new_entry.add_component(InputComponent {
-            hovered: Some(default()),
-            dragged: None,
-            pressed: None,
-            clicked: None,
         });
 
         // Optional components

@@ -26,6 +26,7 @@ impl geng::LoadAsset for Options {
 
 #[derive(Deserialize, Debug)]
 pub struct Shaders {
+    pub unit: Shader,
     pub field: Shader,
     pub stats: Shader,
     pub strike: Shader,

@@ -5,6 +5,8 @@ pub struct Input {
     pub prev_hovered: Option<legion::Entity>,
     pub hover_data: HashMap<legion::Entity, (bool, Time)>,
 
+    pub cur_dragged: Option<legion::Entity>,
+
     pub listeners:
         HashMap<legion::Entity, fn(legion::Entity, &mut Resources, &mut legion::World, InputEvent)>,
 
@@ -31,6 +33,7 @@ impl Default for Input {
             hover_data: default(),
             cur_hovered: default(),
             prev_hovered: default(),
+            cur_dragged: default(),
         }
     }
 }

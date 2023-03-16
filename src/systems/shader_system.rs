@@ -66,76 +66,65 @@ impl ShaderSystem {
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
             .collect_vec();
-        let mut shaders_by_layer: HashMap<ShaderLayer, Vec<Shader>> = HashMap::default();
-        let emtpy_vec: Vec<Shader> = Vec::new();
+
         for shader in shaders {
-            let layer = shader.layer;
-            let vec = match shaders_by_layer.entry(layer) {
-                Entry::Occupied(o) => o.into_mut(),
-                Entry::Vacant(v) => v.insert(emtpy_vec.clone()),
-            };
-            vec.push(shader);
-        }
-        for (_layer, shaders) in shaders_by_layer.iter().sorted_by_key(|entry| entry.0) {
-            for shader in shaders.iter().sorted_by_key(|shader| shader.order) {
-                let uniforms = ugli::uniforms!(
-                    u_game_time: resources.cassette.head,
-                    u_global_time: resources.global_time,
-                );
-                let texts = shader
-                    .parameters
-                    .uniforms
-                    .0
-                    .iter()
-                    .filter_map(|(key, uniform)| match uniform {
-                        ShaderUniform::String((font, text)) => {
-                            Some((*font, text, key, format!("{}_size", key)))
-                        }
-                        _ => None,
-                    })
-                    .collect_vec();
-                resources.fonts.load_textures(
-                    texts
-                        .iter()
-                        .map(|(font, text, _, _)| (*font, *text))
-                        .collect_vec(),
-                );
-                let images = shader
-                    .parameters
-                    .uniforms
-                    .0
-                    .iter()
-                    .filter_map(|(key, uniform)| match uniform {
-                        ShaderUniform::Texture(image) => Some((image, key)),
-                        _ => None,
-                    })
-                    .collect_vec();
-                let mut texture_uniforms = SingleUniformVec::default();
-                let mut texture_size_uniforms = SingleUniformVec::default();
-                for (font, text, key, size_key) in texts.iter() {
-                    let texture = resources.fonts.get_texture(*font, text);
-                    texture_uniforms.0.push(SingleUniform::new(key, texture));
-                    texture_size_uniforms.0.push(SingleUniform::new(
-                        size_key.as_str(),
-                        texture.and_then(|texture| Some(texture.size().map(|x| x as f32))),
-                    ));
-                }
-                for (image, key) in images {
-                    let texture = resources.image_textures.get_texture(image);
-                    if texture.is_none() {
-                        panic!("Can't find texture {:?}", image);
+            let uniforms = ugli::uniforms!(
+                u_game_time: resources.cassette.head,
+                u_global_time: resources.global_time,
+            );
+            let texts = shader
+                .parameters
+                .uniforms
+                .0
+                .iter()
+                .filter_map(|(key, uniform)| match uniform {
+                    ShaderUniform::String((font, text)) => {
+                        Some((*font, text, key, format!("{}_size", key)))
                     }
-                    texture_uniforms.0.push(SingleUniform::new(key, texture));
-                }
-                Self::draw_shader(
-                    shader,
-                    framebuffer,
-                    &resources.geng,
-                    &resources.camera.camera,
-                    &resources.shader_programs,
-                    (texture_uniforms, texture_size_uniforms, uniforms),
-                );
+                    _ => None,
+                })
+                .collect_vec();
+            resources.fonts.load_textures(
+                texts
+                    .iter()
+                    .map(|(font, text, _, _)| (*font, *text))
+                    .collect_vec(),
+            );
+            let images = shader
+                .parameters
+                .uniforms
+                .0
+                .iter()
+                .filter_map(|(key, uniform)| match uniform {
+                    ShaderUniform::Texture(image) => Some((image, key)),
+                    _ => None,
+                })
+                .collect_vec();
+            let mut texture_uniforms = SingleUniformVec::default();
+            let mut texture_size_uniforms = SingleUniformVec::default();
+            for (font, text, key, size_key) in texts.iter() {
+                let texture = resources.fonts.get_texture(*font, text);
+                texture_uniforms.0.push(SingleUniform::new(key, texture));
+                texture_size_uniforms.0.push(SingleUniform::new(
+                    size_key.as_str(),
+                    texture.and_then(|texture| Some(texture.size().map(|x| x as f32))),
+                ));
             }
+            for (image, key) in images {
+                let texture = resources.image_textures.get_texture(image);
+                if texture.is_none() {
+                    panic!("Can't find texture {:?}", image);
+                }
+                texture_uniforms.0.push(SingleUniform::new(key, texture));
+            }
+            Self::draw_shader(
+                &shader,
+                framebuffer,
+                &resources.geng,
+                &resources.camera.camera,
+                &resources.shader_programs,
+                (texture_uniforms, texture_size_uniforms, uniforms),
+            );
         }
     }
 

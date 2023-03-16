@@ -71,7 +71,7 @@ impl PowerPointsSystem {
         while let Some((left, right)) = BattleSystem::find_hitters(world) {
             BattleSystem::hit(left, right, world, resources);
             BattleSystem::clear_dead(world, resources);
-            SlotSystem::fill_gaps(world, hashset! {Faction::Light, Faction::Dark});
+            SlotSystem::fill_gaps(world, resources, hashset! {Faction::Light, Faction::Dark});
         }
         let result = match BattleSystem::battle_won(world) {
             true => Faction::Light,

@@ -39,6 +39,12 @@ impl Default for ShaderLayer {
     }
 }
 
+impl ShaderLayer {
+    pub fn index(&self) -> usize {
+        *self as usize
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ShaderParameters {
     #[serde(default = "vertices_default")]

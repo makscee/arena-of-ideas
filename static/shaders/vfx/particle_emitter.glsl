@@ -3,16 +3,11 @@
 #ifdef VERTEX_SHADER
 out vec2 uv;
 attribute vec2 a_pos;
-uniform mat3 u_projection_matrix;
-uniform mat3 u_view_matrix;
 
-uniform vec2 u_position = vec2(0);
-uniform float u_scale = 1;
 uniform float u_scale_over_t = 0;
 uniform int u_trail_count = 1;
 uniform float u_lifetime = 1;
 uniform float u_velocity_over_t = 1;
-uniform float u_radius;
 
 flat out int p_index;
 flat out float p_t;

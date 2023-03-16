@@ -68,6 +68,7 @@ impl InputSystem {
         {
             self.press_start = Some(resources.input.mouse_pos);
         }
+        resources.input.cur_dragged = None;
 
         if let Some(hovered) = resources.input.cur_hovered {
             if resources
@@ -91,6 +92,7 @@ impl InputSystem {
                 }
                 if self.is_dragging {
                     Self::send_event(resources, world, hovered, InputEvent::Drag);
+                    resources.input.cur_dragged = Some(hovered);
                 }
             }
             if resources

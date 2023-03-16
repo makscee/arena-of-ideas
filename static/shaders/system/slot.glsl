@@ -1,22 +1,15 @@
 #include <common.glsl>
-uniform vec2 u_position = vec2(0);
-uniform vec2 u_size = vec2(1.2, 1.6);
 uniform float u_hovered;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
 out vec2 size;
 attribute vec2 a_pos;
-uniform mat3 u_projection_matrix;
-uniform mat3 u_view_matrix;
-uniform vec2 u_offset = vec2(0.0, 0.0);
 
 void main() {
-    uv = a_pos;
     size = mix(u_size, u_size * vec2(1, 1.5), u_hovered);
-    vec2 pos = uv * 1.0 * size + u_position + u_offset;
-    vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
-    gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
+    uv = get_uv(a_pos);
+    gl_Position = get_gl_position(a_pos);
 }
 #endif
 

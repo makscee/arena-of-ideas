@@ -24,12 +24,22 @@
         "cassette_player_btn_active": "#1bfc79"
     },
     "shaders": {
+        "unit": {
+            "path": "shaders/system/unit.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_padding": 1.0
+                }
+            },
+            "layer": "Unit"
+        },
         "field": {
             "path": "shaders/system/field.glsl",
             "parameters": {
                 "uniforms": {
                     "u_color_1": "#000000",
-                    "u_color_2": "#ffffff"
+                    "u_color_2": "#ffffff",
+                    "u_padding": 100.0
                 }
             },
             "layer": "Background",
@@ -121,13 +131,36 @@
         "slot": {
             "path": "shaders/system/slot.glsl",
             "parameters": {
-                "uniforms": {}
+                "uniforms": {
+                    "u_size": [
+                        1.2,
+                        1.6
+                    ]
+                }
             },
             "layer": "Background"
         },
         "description_panel": {
             "path": "shaders/system/description_panel.glsl",
-            "layer": "UI"
+            "layer": "UI",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#9266CC",
+                    "u_offset": [
+                        3.5,
+                        -1.5
+                    ],
+                    "u_size": [
+                        1.5,
+                        3.0
+                    ],
+                    "u_padding": 0.0,
+                    "u_title": [
+                        2,
+                        "Statuses"
+                    ]
+                }
+            }
         },
         "button": {
             "path": "shaders/system/button.glsl",

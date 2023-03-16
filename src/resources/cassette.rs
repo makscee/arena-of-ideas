@@ -72,11 +72,10 @@ impl Cassette {
         mut world_shaders: HashMap<legion::Entity, Shader>,
     ) -> Vec<Shader> {
         let cassette = &resources.cassette;
-        let node = cassette
+        let mut node = cassette
             .get_node_at_ts(cassette.head)
             .merge(&cassette.parallel_node);
         let time = cassette.head - node.start;
-        let mut shaders: Vec<Shader> = default();
         world_shaders.extend(node.entity_shaders.clone().into_iter());
         let mut entity_shaders = world_shaders;
 
@@ -95,55 +94,11 @@ impl Cassette {
                 _ => {}
             };
         }
-
-        // todo: rework
-        // inject hovered info
-        // for (_, shader) in entity_shaders.iter_mut() {
-        //     let position = shader
-        //         .parameters
-        //         .uniforms
-        //         .get(&VarName::Position.convert_to_uniform())
-        //         .and_then(|x| match x {
-        //             ShaderUniform::Vec2(v) => Some(v),
-        //             _ => None,
-        //         });
-        //     let radius = shader
-        //         .parameters
-        //         .uniforms
-        //         .get(&VarName::Radius.convert_to_uniform())
-        //         .and_then(|x| match x {
-        //             ShaderUniform::Float(v) => Some(v),
-        //             _ => None,
-        //         });
-        //     if position.is_none() || radius.is_none() {
-        //         continue;
-        //     }
-        //     let position = position.unwrap();
-        //     let radius = radius.unwrap();
-        //     if (mouse_pos - *position).len() < *radius {
-        //         shader
-        //             .parameters
-        //             .uniforms
-        //             .insert("u_hovered".to_string(), ShaderUniform::Float(1.0));
-        //     }
-        // }
-
-        let mut hovered_entity = None;
-        for (entity, shader) in entity_shaders
-            .iter()
-            .sorted_by_key(|(_, shader)| -shader.order)
-        {
-            if let Some(area) = AreaComponent::from_shader(shader) {
-                if area.contains(resources.input.mouse_pos) {
-                    hovered_entity = Some(*entity);
-                    break;
-                }
-            }
-        }
-        InputSystem::set_hovered_entity(hovered_entity, resources);
         UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
+        StatusSystem::add_active_statuses_panel_to_node(&mut node, resources);
 
         // 2nd phase: apply any other shaders that might need updated entity shaders uniforms
+        let mut extra_shaders: Vec<Shader> = default();
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
             let time = time - effect.delay;
             if effect.duration > 0.0 && (time > effect.duration || time < 0.0) {
@@ -154,20 +109,35 @@ impl Cassette {
                 VisualEffectType::EntityShaderAnimation { .. }
                 | VisualEffectType::EntityShaderConst { .. } => {}
                 _ => {
-                    shaders
+                    extra_shaders
                         .extend(effect_type.process(time / effect.duration, &mut entity_shaders));
                 }
             };
         }
-        [
-            entity_shaders
-                .into_iter()
-                .sorted_by_key(|item| format!("{:?}", item.0))
-                .map(|item| item.1)
-                .collect_vec(),
-            shaders,
-        ]
-        .concat()
+
+        let entity_shaders_vec = entity_shaders
+            .into_iter()
+            .sorted_by_key(|(entity, shader)| {
+                (shader.layer.index(), shader.order, format!("{:?}", entity))
+            })
+            .collect_vec();
+
+        let mut hovered_entity = None;
+        for (entity, shader) in entity_shaders_vec.iter().rev() {
+            if let Some(area) = AreaComponent::from_shader(shader) {
+                if area.contains(resources.input.mouse_pos) {
+                    hovered_entity = Some(*entity);
+                    break;
+                }
+            }
+        }
+        InputSystem::set_hovered_entity(hovered_entity, resources);
+        let entity_shaders_vec = entity_shaders_vec
+            .into_iter()
+            .map(|(_, shader)| shader)
+            .collect_vec();
+
+        [entity_shaders_vec, extra_shaders].concat()
     }
 
     pub fn length(&self) -> Time {
@@ -268,6 +238,16 @@ impl CassetteNode {
         other.entity_shaders.iter().for_each(|(entity, shader)| {
             node.entity_shaders.insert(*entity, shader.clone());
         });
+        other
+            .active_statuses
+            .iter()
+            .for_each(|(entity, other_statuses)| {
+                let mut statuses = node.active_statuses.remove(entity).unwrap_or_default();
+                other_statuses.iter().for_each(|(name, context)| {
+                    statuses.insert(name.clone(), context.clone());
+                });
+                node.active_statuses.insert(*entity, statuses);
+            })
     }
     pub fn start(&self) -> Time {
         self.start

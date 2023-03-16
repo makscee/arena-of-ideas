@@ -7,9 +7,6 @@ pub struct UnitComponent {
     pub template_path: PathBuf,
 }
 
-pub const DEFAULT_UNIT_RADIUS: f32 = 1.0;
-const CARD_ANIMATION_TIME: Time = 0.2;
-
 #[derive(Clone, Copy, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub enum Faction {
     Light,
@@ -35,26 +32,8 @@ impl Faction {
 }
 
 impl VarsProvider for UnitComponent {
-    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
-        let faction_val = self.faction.float_value();
-        vars.insert(VarName::Faction, Var::Float(faction_val));
+    fn extend_vars(&self, vars: &mut Vars, _: &Resources) {
+        vars.insert(VarName::Faction, Var::Float(self.faction.float_value()));
         vars.insert(VarName::Slot, Var::Int(self.slot as i32));
-
-        let mut card: f32 = match self.faction {
-            Faction::Shop => 1.0,
-            _ => 0.0,
-        };
-        let hover = match vars.try_get_float(&VarName::Hovered) {
-            Some(value) => (1.0
-                - value
-                - ((resources.global_time - vars.get_float(&VarName::HoveredTs))
-                    / CARD_ANIMATION_TIME)
-                    .min(1.0))
-            .abs(),
-            None => 0.0,
-        };
-        card = card.max(hover);
-        vars.insert(VarName::Card, Var::Float(card));
-        vars.insert(VarName::Zoom, Var::Float(1.0 + hover * 1.4));
     }
 }

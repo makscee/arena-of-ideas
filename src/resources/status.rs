@@ -52,40 +52,6 @@ impl StatusPool {
             .collect_vec()
     }
 
-    pub fn get_description_shaders(
-        &self,
-        entity: &legion::Entity,
-        options: &Options,
-    ) -> Vec<Shader> {
-        self.active_statuses
-            .get(entity)
-            .unwrap_or(&default())
-            .keys()
-            .filter_map(|key| {
-                let status = self.defined_statuses.get(key).unwrap();
-                match &status.description {
-                    Some(text) => Some(
-                        options
-                            .shaders
-                            .description_panel
-                            .clone()
-                            .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, -2.0)))
-                            .set_uniform("u_description", ShaderUniform::String((1, text.clone())))
-                            .set_uniform("u_name", ShaderUniform::String((2, key.clone())))
-                            .set_uniform(
-                                "u_color",
-                                ShaderUniform::Color(match status.color {
-                                    Some(color) => color,
-                                    None => Rgba::BLACK,
-                                }),
-                            ),
-                    ),
-                    _ => None,
-                }
-            })
-            .collect_vec()
-    }
-
     pub fn add_entity_status(
         entity: legion::Entity,
         status_name: &str,

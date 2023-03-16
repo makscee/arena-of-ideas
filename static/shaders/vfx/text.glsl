@@ -5,14 +5,8 @@ uniform vec2 u_text_size;
 out vec2 uv;
 out float t;
 attribute vec2 a_pos;
-uniform mat3 u_projection_matrix;
-uniform mat3 u_view_matrix;
 
-uniform float u_padding = 1;
-uniform vec2 u_position = vec2(0);
-uniform vec2 u_offset = vec2(0);
 uniform vec2 u_position_over_t = vec2(0);
-uniform float u_scale = 1;
 uniform float u_scale_over_t = 0;
 uniform float u_gravity = 0;
 uniform vec2 u_direction = vec2(0, 1);
