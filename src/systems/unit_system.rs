@@ -17,21 +17,24 @@ impl UnitSystem {
             .filter(|(unit, _, _)| factions.contains(&unit.faction))
             .for_each(|(_, entity, _)| {
                 let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity).clone();
-                unit_shader.chain = Some(Box::new(
-                    [
-                        statuses.get_entity_shaders(&entity.entity),
-                        match unit_shader.chain {
-                            Some(chain) => chain.deref().clone(),
-                            None => vec![],
-                        },
-                    ]
-                    .concat(),
+                unit_shader
+                    .chain_after
+                    .extend(statuses.get_entity_shaders(&entity.entity));
+                unit_shader
+                    .chain_after
+                    .extend(StatsUiSystem::get_entity_shaders(
+                        entity.entity,
+                        world,
+                        options,
+                    ));
+                unit_shader.chain_after.push(NameSystem::get_entity_shader(
+                    entity.entity,
+                    world,
+                    options,
                 ));
                 node.add_entity_shader(entity.entity, unit_shader);
-                node.save_active_statuses(statuses);
             });
-        StatsUiSystem::fill_cassette_node(world, options, node);
-        NameSystem::fill_cassette_node(world, options, node);
+        node.save_active_statuses(statuses);
     }
 
     pub fn duplicate_unit(

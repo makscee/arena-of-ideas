@@ -52,12 +52,10 @@ impl geng::ui::Widget for PoolWidget<'_> {
             .enumerate()
             .for_each(|(ind, (size, shader))| {
                 let position = position + vec2(ind as f32 * 2.0, 0.0);
-                ShaderSystem::draw_shader(
+                ShaderSystem::draw_shader_single(
                     shader,
                     cx.framebuffer,
-                    &self.resources.geng,
-                    &self.resources.camera.camera,
-                    &self.resources.shader_programs,
+                    self.resources,
                     ugli::uniforms! {
                         u_global_time: self.resources.global_time,
                         u_game_time: self.resources.cassette.head,
@@ -66,12 +64,10 @@ impl geng::ui::Widget for PoolWidget<'_> {
                     },
                 );
                 let text_texture = self.resources.fonts.get_texture(1, size).unwrap();
-                ShaderSystem::draw_shader(
+                ShaderSystem::draw_shader_single(
                     &self.resources.options.shaders.text,
                     cx.framebuffer,
-                    &self.resources.geng,
-                    &self.resources.camera.camera,
-                    &self.resources.shader_programs,
+                    self.resources,
                     ugli::uniforms! {
                         u_global_time: self.resources.global_time,
                         u_game_time: self.resources.cassette.head,

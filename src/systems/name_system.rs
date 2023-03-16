@@ -2,40 +2,23 @@ use super::*;
 
 pub struct NameSystem {}
 
-const EFFECTS_KEY: &str = "names";
-
 impl NameSystem {
-    pub fn get_all_shaders(
+    pub fn get_entity_shader(
+        entity: legion::Entity,
         world: &legion::World,
         options: &Options,
-    ) -> Vec<(legion::Entity, Shader)> {
-        <(&EntityComponent, &NameComponent, &Shader)>::query()
-            .iter(world)
-            .map(|(entity, name, _)| {
-                (
-                    entity.entity,
-                    options
-                        .shaders
-                        .name
-                        .clone()
-                        .set_uniform("u_name", ShaderUniform::String((1, name.0.clone()))),
-                )
-            })
-            .collect_vec()
-    }
-
-    pub fn fill_cassette_node(world: &legion::World, options: &Options, node: &mut CassetteNode) {
-        node.clear_key(EFFECTS_KEY);
-        let effects = Self::get_all_shaders(world, options)
-            .into_iter()
-            .map(|(entity, shader)| {
-                VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityExtraShaderConst { entity, shader },
-                    0,
-                )
-            })
-            .collect_vec();
-        node.add_effects_by_key(EFFECTS_KEY, effects);
+    ) -> Shader {
+        let name = world
+            .entry_ref(entity)
+            .unwrap()
+            .get_component::<NameComponent>()
+            .unwrap()
+            .0
+            .clone();
+        options
+            .shaders
+            .name
+            .clone()
+            .set_uniform("u_name", ShaderUniform::String((1, name)))
     }
 }

@@ -13,7 +13,10 @@ impl InputSystem {
         }
     }
 
-    pub fn set_hovered_entity(entity: Option<legion::Entity>, resources: &mut Resources) {
+    pub fn set_hovered_entity(
+        entity: Option<legion::Entity>,
+        resources: &mut Resources,
+    ) -> Option<legion::Entity> {
         resources.input.prev_hovered = resources.input.cur_hovered;
         if resources.input.cur_hovered == entity
             || resources
@@ -21,7 +24,7 @@ impl InputSystem {
                 .pressed_mouse_buttons
                 .contains(&geng::MouseButton::Left)
         {
-            return;
+            return resources.input.cur_hovered;
         }
 
         if let Some(prev_hovered) = resources.input.cur_hovered {
@@ -41,6 +44,7 @@ impl InputSystem {
         }
 
         resources.input.cur_hovered = entity;
+        return resources.input.cur_hovered;
     }
 
     fn send_event(

@@ -72,6 +72,20 @@ impl ShaderSystem {
                 u_game_time: resources.cassette.head,
                 u_global_time: resources.global_time,
             );
+            Self::draw_shader(shader, framebuffer, resources, uniforms);
+        }
+    }
+
+    pub fn draw_shader<U>(
+        shader: Shader,
+        framebuffer: &mut ugli::Framebuffer,
+        resources: &mut Resources,
+        uniforms: U,
+    ) where
+        U: ugli::Uniforms,
+    {
+        let chain = Self::flatten_shader_chain(shader);
+        for shader in chain.into_iter() {
             let texts = shader
                 .parameters
                 .uniforms
@@ -117,89 +131,68 @@ impl ShaderSystem {
                 }
                 texture_uniforms.0.push(SingleUniform::new(key, texture));
             }
-            Self::draw_shader(
+
+            Self::draw_shader_single(
                 &shader,
                 framebuffer,
-                &resources.geng,
-                &resources.camera.camera,
-                &resources.shader_programs,
-                (texture_uniforms, texture_size_uniforms, uniforms),
+                resources,
+                (&uniforms, &texture_uniforms, &texture_size_uniforms),
             );
         }
     }
 
-    pub fn draw_shader<U>(
+    pub fn draw_shader_single<U>(
         shader: &Shader,
         framebuffer: &mut ugli::Framebuffer,
-        geng: &Geng,
-        camera: &geng::Camera2d,
-        shader_programs: &ShaderPrograms,
+        resources: &Resources,
         uniforms: U,
     ) where
         U: ugli::Uniforms,
     {
-        let mut queue = VecDeque::from([(shader.clone(), shader.parameters.clone())]);
-        let mut chain: Vec<(Shader, ShaderParameters)> = default();
-        while let Some((shader, parameters)) = queue.pop_front() {
-            chain.extend(Self::flatten_shader_chain(shader, parameters))
-        }
-        for (shader, parameters) in chain.into_iter().rev() {
-            let program = shader_programs.get_program(&static_path().join(&shader.path));
-
-            let mut instances_arr: ugli::VertexBuffer<Instance> =
-                ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
-            instances_arr.resize(shader.parameters.instances, Instance {});
-            let uniforms = (
-                geng::camera2d_uniforms(camera, framebuffer.size().map(|x| x as f32)),
-                parameters.clone(),
-                &uniforms,
-            );
-            let quad = Self::get_quad(shader.parameters.vertices, &geng);
-            ugli::draw(
-                framebuffer,
-                &program,
-                ugli::DrawMode::TriangleStrip,
-                ugli::instanced(&quad, &instances_arr),
-                uniforms,
-                ugli::DrawParameters {
-                    blend_mode: Some(ugli::BlendMode::straight_alpha()),
-                    ..default()
-                },
-            );
-        }
+        let program = resources
+            .shader_programs
+            .get_program(&static_path().join(&shader.path));
+        let mut instances_arr: ugli::VertexBuffer<Instance> =
+            ugli::VertexBuffer::new_dynamic(resources.geng.ugli(), Vec::new());
+        instances_arr.resize(shader.parameters.instances, Instance {});
+        let uniforms = (
+            geng::camera2d_uniforms(
+                &resources.camera.camera,
+                framebuffer.size().map(|x| x as f32),
+            ),
+            shader.parameters.clone(),
+            &uniforms,
+        );
+        let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
+        ugli::draw(
+            framebuffer,
+            &program,
+            ugli::DrawMode::TriangleStrip,
+            ugli::instanced(&quad, &instances_arr),
+            uniforms,
+            ugli::DrawParameters {
+                blend_mode: Some(ugli::BlendMode::straight_alpha()),
+                ..default()
+            },
+        );
     }
 
-    fn flatten_shader_chain(
-        mut shader: Shader,
-        parameters: ShaderParameters,
-    ) -> Vec<(Shader, ShaderParameters)> {
-        match shader.chain {
-            Some(chain) => {
-                shader.chain = None;
-                [
-                    vec![(shader, parameters.clone())],
-                    chain
-                        .deref()
-                        .into_iter()
-                        .map(|shader| {
-                            Self::flatten_shader_chain(
-                                shader.clone(),
-                                ShaderParameters {
-                                    uniforms: shader
-                                        .parameters
-                                        .uniforms
-                                        .merge(&parameters.uniforms),
-                                    ..shader.parameters.clone()
-                                },
-                            )
-                        })
-                        .flatten()
-                        .collect_vec(),
-                ]
-                .concat()
-            }
-            None => vec![(shader, parameters)],
-        }
+    fn flatten_shader_chain(mut shader: Shader) -> Vec<Shader> {
+        let mut before = shader.chain_before.drain(..).collect_vec();
+        before.iter_mut().for_each(|x| {
+            x.parameters
+                .uniforms
+                .merge_mut(&shader.parameters.uniforms, false);
+        });
+
+        let mut after = shader.chain_after.drain(..).collect_vec();
+        after.iter_mut().for_each(|x| {
+            x.parameters
+                .uniforms
+                .merge_mut(&shader.parameters.uniforms, false);
+        });
+
+        [before, vec![shader], after].concat()
     }
 
     pub fn get_quad(vertices: usize, geng: &Geng) -> ugli::VertexBuffer<draw_2d::Vertex> {

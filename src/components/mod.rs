@@ -57,7 +57,8 @@ pub enum SerializedComponent {
         parameters: Option<ShaderParameters>,
         layer: Option<ShaderLayer>,
         order: Option<i32>,
-        chain: Option<Box<Vec<SerializedComponent>>>,
+        #[serde(default)]
+        chain: Box<Vec<SerializedComponent>>,
     },
     House {
         houses: Vec<HouseName>,
@@ -114,9 +115,7 @@ impl SerializedComponent {
             }
             SerializedComponent::Shader { .. } => {
                 let shader = Shader {
-                    chain: Some(Box::new(
-                        Self::unpack_shader(self).into_iter().collect_vec(),
-                    )),
+                    chain_before: Box::new(Self::unpack_shader(self).into_iter().collect_vec()),
                     ..resources.options.shaders.unit.clone()
                 };
                 entry.add_component(shader)
@@ -144,24 +143,20 @@ impl SerializedComponent {
                 order,
                 chain,
             } => {
-                let chain = match chain {
-                    Some(chain) => {
-                        let chain = chain.deref();
-                        Some(Box::new(
-                            chain
-                                .iter()
-                                .map(|shader| Self::unpack_shader(shader).unwrap())
-                                .collect_vec(),
-                        ))
-                    }
-                    _ => None,
-                };
+                let chain = Box::new(
+                    chain
+                        .deref()
+                        .into_iter()
+                        .map(|shader| Self::unpack_shader(shader).unwrap())
+                        .collect_vec(),
+                );
                 return Some(Shader {
                     path: path.clone(),
                     parameters: parameters.clone().unwrap_or_default(),
                     layer: layer.clone().unwrap_or(ShaderLayer::Unit),
                     order: order.unwrap_or_default(),
-                    chain,
+                    chain_before: chain,
+                    chain_after: default(),
                 });
             }
             _ => None,

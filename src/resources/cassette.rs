@@ -115,7 +115,7 @@ impl Cassette {
             };
         }
 
-        let entity_shaders_vec = entity_shaders
+        let mut entity_shaders_vec = entity_shaders
             .into_iter()
             .sorted_by_key(|(entity, shader)| {
                 (shader.layer.index(), shader.order, format!("{:?}", entity))
@@ -131,7 +131,12 @@ impl Cassette {
                 }
             }
         }
-        InputSystem::set_hovered_entity(hovered_entity, resources);
+        if let Some(hovered) = InputSystem::set_hovered_entity(hovered_entity, resources) {
+            let last_ind = entity_shaders_vec.len() - 1;
+            if let Some(hovered_ind) = entity_shaders_vec.iter().position(|x| x.0 == hovered) {
+                entity_shaders_vec.swap(hovered_ind, last_ind);
+            }
+        }
         let entity_shaders_vec = entity_shaders_vec
             .into_iter()
             .map(|(_, shader)| shader)
@@ -180,7 +185,7 @@ impl Cassette {
 pub struct CassetteNode {
     start: Time,
     duration: Time,
-    entity_shaders: HashMap<legion::Entity, Shader>,
+    pub entity_shaders: HashMap<legion::Entity, Shader>,
     active_statuses: HashMap<legion::Entity, HashMap<String, Context>>,
     effects: HashMap<String, Vec<VisualEffect>>,
 }

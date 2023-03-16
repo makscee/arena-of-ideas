@@ -10,7 +10,10 @@ pub struct Shader {
     pub layer: ShaderLayer,
     #[serde(default)]
     pub order: i32,
-    pub chain: Option<Box<Vec<Shader>>>,
+    #[serde(default)]
+    pub chain_before: Box<Vec<Shader>>,
+    #[serde(default)]
+    pub chain_after: Box<Vec<Shader>>,
 }
 
 impl Shader {
@@ -23,6 +26,8 @@ impl Shader {
         self.parameters.uniforms.merge_mut(uniforms, force);
         self
     }
+
+    fn extend_chain(&mut self, shaders: Vec<Shader>) {}
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
