@@ -177,7 +177,7 @@ impl ShaderSystem {
         );
     }
 
-    fn flatten_shader_chain(mut shader: Shader) -> Vec<Shader> {
+    pub fn flatten_shader_chain(mut shader: Shader) -> Vec<Shader> {
         let mut before = shader.chain_before.drain(..).collect_vec();
         before.iter_mut().for_each(|x| {
             x.parameters

@@ -11,6 +11,7 @@ pub struct Shop {
     pub money: usize,
     pub drop_entity: Option<legion::Entity>,
     pub drag_entity: Option<legion::Entity>,
+    pub refresh_btn: Option<legion::Entity>,
 }
 
 impl Shop {
@@ -77,7 +78,17 @@ impl Shop {
                     .unwrap()
                     .0
                     .iter()
-                    .filter_map(|component| SerializedComponent::unpack_shader(component))
+                    .filter_map(|component| match component {
+                        SerializedComponent::Shader { .. } => Some(Shader {
+                            chain_before: Box::new(
+                                SerializedComponent::unpack_shader(component)
+                                    .into_iter()
+                                    .collect_vec(),
+                            ),
+                            ..resources.options.shaders.unit.clone()
+                        }),
+                        _ => None,
+                    })
                     .map(|shader| (size.to_string(), shader))
                     .collect_vec()
             })

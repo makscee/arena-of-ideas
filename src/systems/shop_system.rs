@@ -6,7 +6,6 @@ use super::*;
 
 #[derive(Default)]
 pub struct ShopSystem {
-    need_reroll: bool,
     need_switch_battle: bool,
 }
 
@@ -21,11 +20,6 @@ impl System for ShopSystem {
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
-        if self.need_reroll {
-            self.need_reroll = false;
-            Self::reroll(world, resources);
-            resources.shop.money -= 1;
-        }
         if self.need_switch_battle {
             resources.camera.focus = match resources.camera.focus {
                 Focus::Shop => {
@@ -44,10 +38,6 @@ impl System for ShopSystem {
         world: &'a legion::World,
         resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
-        let reroll_btn = Button::new(cx, "Reroll (1G)");
-        if reroll_btn.was_clicked() && resources.shop.money > 0 {
-            self.need_reroll = true;
-        }
         let switch_button = CornerButtonWidget::new(
             cx,
             resources,
@@ -57,19 +47,7 @@ impl System for ShopSystem {
             },
         );
         self.need_switch_battle = switch_button.was_clicked();
-        Box::new(
-            (
-                (reroll_btn
-                    .uniform_padding(16.0)
-                    .background_color(Rgba::try_from("#267ec7").unwrap()),)
-                    .column()
-                    .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
-                    .uniform_padding(32.0)
-                    .align(vec2(1.0, 1.0)),
-                switch_button.place(vec2(1.0, 0.0)),
-            )
-                .stack(),
-        )
+        Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
     }
 }
 
@@ -236,6 +214,47 @@ impl ShopSystem {
             Var::Int(resources.floors.current_ind() as i32),
         );
         resources.shop.money = (UNIT_COST + resources.floors.current_ind() + 1).min(10);
+        if resources.shop.refresh_btn.is_none() {
+            let world_entity = WorldSystem::get_context(world).owner;
+            fn refresh(
+                entity: legion::Entity,
+                resources: &mut Resources,
+                world: &mut legion::World,
+                event: InputEvent,
+            ) {
+                match event {
+                    InputEvent::Click => {
+                        ShopSystem::reroll(world, resources);
+                        resources.shop.money -= 1;
+                    }
+                    InputEvent::HoverStart => ButtonSystem::change_icon_color(
+                        entity,
+                        world,
+                        resources.options.colors.btn_hovered,
+                    ),
+                    InputEvent::HoverStop => ButtonSystem::change_icon_color(
+                        entity,
+                        world,
+                        resources.options.colors.btn_normal,
+                    ),
+                    _ => {}
+                }
+            }
+
+            ButtonSystem::create_button(
+                world,
+                world_entity,
+                resources,
+                resources.options.images.refresh_icon.clone(),
+                resources.options.colors.btn_normal,
+                refresh,
+                SlotSystem::get_position(0, &Faction::Shop) + vec2(0.0, -2.0),
+                &hashmap! {
+                    "u_scale" => ShaderUniform::Float(1.1),
+                }
+                .into(),
+            );
+        }
     }
 
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {

@@ -38,7 +38,7 @@ impl CassettePlayerSystem {
                         ButtonSystem::change_icon_color(
                             entity,
                             world,
-                            resources.options.colors.cassette_player_btn_active,
+                            resources.options.colors.btn_active,
                         );
                         resources.transition_state = GameState::Battle;
                     }
@@ -53,7 +53,7 @@ impl CassettePlayerSystem {
                                 ButtonSystem::change_icon_color(
                                     entity,
                                     world,
-                                    resources.options.colors.cassette_player_btn_normal,
+                                    resources.options.colors.btn_normal,
                                 );
                                 CassettePlayMode::Stop
                             }
@@ -66,7 +66,7 @@ impl CassettePlayerSystem {
                                 ButtonSystem::change_icon_color(
                                     entity,
                                     world,
-                                    resources.options.colors.cassette_player_btn_active,
+                                    resources.options.colors.btn_active,
                                 );
                                 CassettePlayMode::Play
                             }
@@ -77,12 +77,12 @@ impl CassettePlayerSystem {
                 InputEvent::HoverStart => ButtonSystem::change_icon_color(
                     entity,
                     world,
-                    resources.options.colors.cassette_player_btn_hovered,
+                    resources.options.colors.btn_hovered,
                 ),
                 InputEvent::HoverStop => ButtonSystem::change_icon_color(
                     entity,
                     world,
-                    resources.options.colors.cassette_player_btn_normal,
+                    resources.options.colors.btn_normal,
                 ),
                 _ => {}
             }
@@ -120,12 +120,12 @@ impl CassettePlayerSystem {
                 InputEvent::HoverStart => ButtonSystem::change_icon_color(
                     entity,
                     world,
-                    resources.options.colors.cassette_player_btn_hovered,
+                    resources.options.colors.btn_hovered,
                 ),
                 InputEvent::HoverStop => ButtonSystem::change_icon_color(
                     entity,
                     world,
-                    resources.options.colors.cassette_player_btn_normal,
+                    resources.options.colors.btn_normal,
                 ),
                 _ => {}
             }
@@ -159,8 +159,8 @@ impl CassettePlayerSystem {
                 _ => resources.options.images.play_icon.clone(),
             },
             match resources.current_state {
-                GameState::Battle => resources.options.colors.cassette_player_btn_active,
-                _ => resources.options.colors.cassette_player_btn_normal,
+                GameState::Battle => resources.options.colors.btn_active,
+                _ => resources.options.colors.btn_normal,
             },
             play,
             BATTLEFIELD_POSITION + vec2(0.0, -3.0),
@@ -173,7 +173,7 @@ impl CassettePlayerSystem {
                     world_entity,
                     resources,
                     resources.options.images.rewind_forward_icon.clone(),
-                    resources.options.colors.cassette_player_btn_normal,
+                    resources.options.colors.btn_normal,
                     rewind_forward,
                     BATTLEFIELD_POSITION + vec2(2.5, -3.0),
                     &hashmap! {
@@ -186,7 +186,7 @@ impl CassettePlayerSystem {
                     world_entity,
                     resources,
                     resources.options.images.rewind_backward_icon.clone(),
-                    resources.options.colors.cassette_player_btn_normal,
+                    resources.options.colors.btn_normal,
                     rewind_backward,
                     BATTLEFIELD_POSITION + vec2(-2.5, -3.0),
                     &hashmap! {
@@ -229,6 +229,7 @@ impl System for CassettePlayerSystem {
                 .clone()
                 .merge_uniforms(&hashmap! {
                     "u_text" => ShaderUniform::String((0, format!("{:.2}", resources.cassette.head))),
+                    "u_align" => ShaderUniform::Float(-1.0),
                 }.into(), true)),
             _ => {}
         }
