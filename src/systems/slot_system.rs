@@ -126,21 +126,33 @@ impl SlotSystem {
                     .add_component(EntityComponent { entity });
             })
         }
-        Self::refresh_slots_filled_uniform(world);
+        Self::refresh_slots_uniforms(world, options);
     }
 
-    pub fn refresh_slots_filled_uniform(world: &mut legion::World) {
+    pub fn refresh_slots_uniforms(world: &mut legion::World, options: &Options) {
         let filled_slots = Self::get_filled_slots(world);
         <(&SlotComponent, &mut Shader)>::query()
             .iter_mut(world)
             .for_each(|(slot, shader)| {
+                let filled = filled_slots.contains(&(slot.faction, slot.slot));
                 shader.parameters.uniforms.insert(
                     "u_filled".to_string(),
-                    ShaderUniform::Float(match filled_slots.contains(&(slot.faction, slot.slot)) {
+                    ShaderUniform::Float(match filled {
                         true => 1.0,
                         false => 0.0,
                     }),
-                )
+                );
+                shader.chain_after.clear();
+                if filled && slot.faction == Faction::Shop {
+                    shader
+                        .chain_after
+                        .push(options.shaders.slot_price.clone().set_uniform(
+                            "u_text_color",
+                            ShaderUniform::Color(
+                                *options.colors.faction_colors.get(&Faction::Shop).unwrap(),
+                            ),
+                        ));
+                }
             })
     }
 

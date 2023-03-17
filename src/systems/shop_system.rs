@@ -20,6 +20,7 @@ impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         self.handle_drag(world, resources);
         Self::refresh_cassette(world, resources);
+        SlotSystem::refresh_slots_uniforms(world, &resources.options);
         if self.need_reroll {
             self.need_reroll = false;
             Self::reroll(world, resources);
@@ -111,7 +112,7 @@ impl ShopSystem {
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos)
             {
                 if SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team}) {
-                    SlotSystem::refresh_slots_filled_uniform(world);
+                    SlotSystem::refresh_slots_uniforms(world, &resources.options);
                 }
                 SlotSystem::set_hovered_slot(world, &Faction::Team, slot);
             }
@@ -155,7 +156,7 @@ impl ShopSystem {
                 }
                 _ => {}
             }
-            SlotSystem::refresh_slots_filled_uniform(world);
+            SlotSystem::refresh_slots_uniforms(world, &resources.options);
         }
     }
 
@@ -206,7 +207,7 @@ impl ShopSystem {
         }
         .send(resources, world);
         UnitSystem::kill(entity, world, resources);
-        SlotSystem::refresh_slots_filled_uniform(world);
+        SlotSystem::refresh_slots_uniforms(world, &resources.options);
     }
 
     pub fn clear(world: &mut legion::World, resources: &mut Resources) {
@@ -245,6 +246,6 @@ impl ShopSystem {
                 SlotSystem::get_position(slot, &Faction::Shop),
             );
         }
-        SlotSystem::refresh_slots_filled_uniform(world);
+        SlotSystem::refresh_slots_uniforms(world, &resources.options);
     }
 }

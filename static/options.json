@@ -9,14 +9,15 @@
         "UnitCreation": false
     },
     "colors": {
-        "stats_attack_color": "#ffc400",
-        "stats_hp_color": "#d20505",
         "faction_colors": {
             "Dark": "#ffffff",
             "Light": "#000000",
             "Shop": "#fbc000",
             "Team": "#e70083"
         },
+        "inactive": "#aeaeae",
+        "stats_attack_color": "#ffc400",
+        "stats_hp_color": "#d20505",
         "corner_button_icon_color": "#fffafa",
         "corner_button_color": "#2f2f2f",
         "cassette_player_btn_normal": "#ff8b2c",
@@ -146,6 +147,26 @@
                 }
             },
             "layer": "Background"
+        },
+        "slot_price": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_scale": 0.5,
+                    "u_offset": [
+                        0.0,
+                        -2.0
+                    ],
+                    "u_outline_color": "#404040",
+                    "u_text": [
+                        1,
+                        "3 g"
+                    ],
+                    "u_text_inside": 0.45,
+                    "u_text_border": 0.35
+                }
+            },
+            "layer": "UI"
         },
         "status_panel": {
             "path": "shaders/system/description_panel.glsl",

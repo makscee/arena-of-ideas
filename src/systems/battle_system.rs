@@ -178,7 +178,7 @@ impl BattleSystem {
 
             Self::clear_dead(world, resources);
             Self::refresh_cassette(world, resources);
-            SlotSystem::refresh_slots_filled_uniform(world);
+            SlotSystem::refresh_slots_uniforms(world, &resources.options);
             return true;
         }
         return false;

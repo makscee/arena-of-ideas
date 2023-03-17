@@ -35,6 +35,7 @@ pub struct Shaders {
     pub curve: Shader,
     pub name: Shader,
     pub slot: Shader,
+    pub slot_price: Shader,
     pub status_panel: Shader,
     pub definitions_panel: Shader,
     pub status_panel_text: Shader,
@@ -59,6 +60,7 @@ pub struct Images {
 #[derive(Deserialize, Debug)]
 pub struct Colors {
     pub faction_colors: HashMap<Faction, Rgba<f32>>,
+    pub inactive: Rgba<f32>,
     pub stats_attack_color: Rgba<f32>,
     pub stats_hp_color: Rgba<f32>,
     pub corner_button_color: Rgba<f32>,
