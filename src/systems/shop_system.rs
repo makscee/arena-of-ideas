@@ -99,7 +99,6 @@ impl ShopSystem {
             &world,
             &resources.options,
             &resources.status_pool,
-            &resources.houses,
             &mut resources.cassette.parallel_node,
             hashset! {Faction::Shop, Faction::Team, Faction::Dark, Faction::Light},
         );
@@ -118,7 +117,6 @@ impl ShopSystem {
             }
         }
         if let Some(dropped) = resources.shop.drop_entity {
-            resources.shop.drag_entity = None;
             let entry = world.entry(dropped).unwrap();
             let unit = entry.get_component::<UnitComponent>().unwrap();
             match unit.faction {

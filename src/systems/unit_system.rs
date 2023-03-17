@@ -8,7 +8,6 @@ impl UnitSystem {
         world: &legion::World,
         options: &Options,
         statuses: &StatusPool,
-        houses: &HashMap<HouseName, House>,
         node: &mut CassetteNode,
         factions: HashSet<Faction>,
     ) {

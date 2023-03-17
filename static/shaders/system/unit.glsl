@@ -32,6 +32,7 @@ uniform float u_damage_taken;
 uniform sampler2D u_description;
 uniform vec2 u_description_size;
 uniform vec4 u_house_color1;
+uniform vec4 u_faction_color;
 
 vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec2 uv = uv / mix(3, 1, u_card);
@@ -40,8 +41,8 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
         return vec4(0);
     }
     float border_dist = min(abs(card_sdf) - CARD_BORDER, ((abs(uv.y) - CARD_BORDER) * float(card_sdf < 0)));
-    vec3 mixed_color = mix(u_house_color1.rgb, base_color, smoothstep(.3, 1, -border_dist / CARD_BORDER));
-    vec4 border_color = vec4(mixed_color, border_dist < 0);
+    vec4 mixed_color = mix(u_house_color1, u_faction_color, smoothstep(0.7, .1, -border_dist / CARD_BORDER));
+    vec4 border_color = vec4(mixed_color.rgb, border_dist < 0);
 
     vec2 text_uv = uv * 2 + vec2(0, 1.0);
     text_uv *= vec2(1, u_description_size.x / u_description_size.y);
@@ -65,7 +66,7 @@ void main() {
     float dmg_t = u_damage_taken;
     vec4 color = vec4(field_color, 0);
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
-    color = alphaBlend(color, vec4(base_color, alpha));
+    color = alphaBlend(color, vec4(u_faction_color.rgb, alpha));
     if(len > THICKNESS + SPREAD)
         color.a = 0;
     if(dmg_t > 0. && len < 0.) {

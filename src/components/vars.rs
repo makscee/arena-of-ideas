@@ -10,6 +10,7 @@ pub enum VarName {
     Size,
     Test,
     Faction,
+    FactionColor,
     Slot,
     Card,
     Zoom,

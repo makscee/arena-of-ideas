@@ -21,7 +21,6 @@ impl BattleSystem {
             world,
             &resources.options,
             &resources.status_pool,
-            &resources.houses,
             &mut resources.cassette.node_template,
             hashset! {Faction::Dark, Faction::Light},
         );
@@ -279,7 +278,6 @@ impl BattleSystem {
             world,
             &resources.options,
             &resources.status_pool,
-            &resources.houses,
             &mut resources.cassette.node_template,
             factions,
         );
