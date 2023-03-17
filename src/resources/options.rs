@@ -36,6 +36,7 @@ pub struct Shaders {
     pub name: Shader,
     pub slot: Shader,
     pub slot_price: Shader,
+    pub money_indicator: Shader,
     pub status_panel: Shader,
     pub definitions_panel: Shader,
     pub status_panel_text: Shader,

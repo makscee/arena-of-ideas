@@ -35,6 +35,7 @@ impl System for ShopSystem {
                 Focus::Battle => Focus::Shop,
             }
         }
+        Self::refresh_ui(resources);
     }
 
     fn ui<'a>(
@@ -58,19 +59,9 @@ impl System for ShopSystem {
         self.need_switch_battle = switch_button.was_clicked();
         Box::new(
             (
-                (
-                    reroll_btn
-                        .uniform_padding(16.0)
-                        .background_color(Rgba::try_from("#267ec7").unwrap()),
-                    Text::new(
-                        format!("{}G", resources.shop.money),
-                        resources.fonts.get_font(1),
-                        60.0,
-                        Rgba::BLACK,
-                    )
-                    .uniform_padding(32.0)
-                    .center(),
-                )
+                (reroll_btn
+                    .uniform_padding(16.0)
+                    .background_color(Rgba::try_from("#267ec7").unwrap()),)
                     .column()
                     .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
                     .uniform_padding(32.0)
@@ -213,6 +204,27 @@ impl ShopSystem {
     pub fn clear(world: &mut legion::World, resources: &mut Resources) {
         let factions = &hashset! {Faction::Shop};
         UnitSystem::clear_factions(world, resources, factions);
+    }
+
+    fn refresh_ui(resources: &mut Resources) {
+        let position = SlotSystem::get_position(0, &Faction::Shop);
+        let text_color = *resources
+            .options
+            .colors
+            .faction_colors
+            .get(&Faction::Shop)
+            .unwrap();
+        let text = format!("{} g", resources.shop.money.to_string());
+        resources.frame_shaders.push(
+            resources
+                .options
+                .shaders
+                .money_indicator
+                .clone()
+                .set_uniform("u_position", ShaderUniform::Vec2(position))
+                .set_uniform("u_text_color", ShaderUniform::Color(text_color))
+                .set_uniform("u_text", ShaderUniform::String((1, text))),
+        )
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
