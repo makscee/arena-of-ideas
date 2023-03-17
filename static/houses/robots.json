@@ -23,7 +23,7 @@
                     }
                 ]
             },
-            "description": "Negate one\ninstance of\nincoming damage",
+            "description": "Negate one instance\nof incoming damage",
             "vars": {
                 "Charges": 1,
                 "Hits": 0,
@@ -33,7 +33,6 @@
     },
     "statuses": {
         "Shield": {
-            "description": "Negate one\ninstance of\nincoming damage",
             "trigger": {
                 "type": "List",
                 "triggers": [

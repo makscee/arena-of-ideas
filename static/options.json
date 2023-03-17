@@ -71,13 +71,13 @@
                     "u_card_scale": 0.2,
                     "u_card_offset": [
                         0.0,
-                        -2.1
+                        -1.7
                     ],
                     "u_offset": [
                         0.0,
                         -1.0
                     ],
-                    "u_max_width": 2.5,
+                    "u_max_width": 3.5,
                     "u_padding": 0.0
                 }
             },
@@ -105,25 +105,6 @@
                     "u_offset": [
                         0.0,
                         1.0
-                    ]
-                }
-            },
-            "layer": "UI"
-        },
-        "status_panel_text": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_text_color": "#ffffff",
-                    "u_scale": 0.35,
-                    "u_align": -1.0,
-                    "u_offset": [
-                        2.5,
-                        0.3
-                    ],
-                    "u_index_offset": [
-                        0.0,
-                        -0.5
                     ]
                 }
             },
@@ -166,14 +147,14 @@
             },
             "layer": "Background"
         },
-        "description_panel": {
+        "status_panel": {
             "path": "shaders/system/description_panel.glsl",
             "layer": "UI",
             "parameters": {
                 "uniforms": {
                     "u_color": "#9266CC",
                     "u_offset": [
-                        3.5,
+                        -3.5,
                         -1.5
                     ],
                     "u_size": [
@@ -187,6 +168,87 @@
                     ]
                 }
             }
+        },
+        "status_panel_text": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_text_color": "#ffffff",
+                    "u_scale": 0.35,
+                    "u_align": -1.0,
+                    "u_offset": [
+                        -4.6,
+                        0.2
+                    ],
+                    "u_index_offset": [
+                        0.0,
+                        -0.5
+                    ]
+                }
+            },
+            "layer": "UI"
+        },
+        "definitions_panel": {
+            "path": "shaders/system/description_panel.glsl",
+            "layer": "UI",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#D99E82",
+                    "u_offset": [
+                        3.8,
+                        -1.5
+                    ],
+                    "u_size": [
+                        1.8,
+                        3.0
+                    ],
+                    "u_padding": 0.0,
+                    "u_title": [
+                        2,
+                        "Definitions"
+                    ]
+                }
+            }
+        },
+        "definitions_panel_title": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_text_color": "#ffffff",
+                    "u_scale": 0.5,
+                    "u_align": -1.0,
+                    "u_offset": [
+                        2.1,
+                        0.0
+                    ],
+                    "u_index_offset": [
+                        0.0,
+                        -1.4
+                    ]
+                }
+            },
+            "layer": "UI"
+        },
+        "definitions_panel_text": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_text_color": "#000000",
+                    "u_outline_color": "#ffffff",
+                    "u_text_border": 0.25,
+                    "u_scale": 0.35,
+                    "u_align": -1.0,
+                    "u_offset": [
+                        2.3,
+                        -0.55
+                    ],
+                    "u_index_offset": [
+                        0.0,
+                        -1.4
+                    ]
+                }
+            },
+            "layer": "UI"
         },
         "button": {
             "path": "shaders/system/button.glsl",

@@ -3,7 +3,7 @@
     "color": "#7f0000ff",
     "abilities": {
         "Devour": {
-            "description": "Kill target\nand gain\ntheir stats",
+            "description": "Kill target and\ngain their stats",
             "effect": {
                 "type": "List",
                 "effects": [

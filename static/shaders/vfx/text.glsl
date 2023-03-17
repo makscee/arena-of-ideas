@@ -17,7 +17,7 @@ void main() {
     vec2 rel = vec2(u_text_size.x / u_text_size.y, 1);
     rel = mix(rel, vec2(u_max_width, u_max_width / rel.x), float(rel.x > u_max_width));
     offset += u_index * u_index_offset;
-    position += vec2(-rel.x * .5 * u_align, 0) + u_card_offset * card;
+    offset += vec2(-rel.x * .5 * u_align, 0) + u_card_offset * card;
     scale += u_card_scale * card;
     size = rel;
     uv = get_uv(a_pos);
