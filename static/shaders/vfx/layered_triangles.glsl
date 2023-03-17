@@ -5,9 +5,10 @@ flat out int p_index;
 attribute vec2 a_pos;
 
 void main() {
+    init_fields();
     p_index = gl_InstanceID;
     uv = get_uv(a_pos);
-    gl_Position = get_gl_position(a_pos);
+    gl_Position = get_gl_position(uv);
 }
 #endif
 

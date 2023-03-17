@@ -62,16 +62,23 @@
             "layer": "Unit"
         },
         "name": {
-            "path": "shaders/system/name.glsl",
+            "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
                     "u_text_color": "#ffffff",
                     "u_outline_color": "#212121",
-                    "u_font": 1,
+                    "u_scale": 0.15,
+                    "u_card_scale": 0.2,
+                    "u_card_offset": [
+                        0.0,
+                        -2.1
+                    ],
                     "u_offset": [
                         0.0,
                         -1.0
-                    ]
+                    ],
+                    "u_max_width": 2.5,
+                    "u_padding": 0.0
                 }
             },
             "layer": "Unit",
@@ -108,15 +115,15 @@
             "parameters": {
                 "uniforms": {
                     "u_text_color": "#ffffff",
-                    "u_outline_color": "#0dde1b",
-                    "u_scale": 0.4,
+                    "u_scale": 0.35,
+                    "u_align": -1.0,
                     "u_offset": [
-                        4.0,
-                        1.0
+                        2.5,
+                        0.3
                     ],
                     "u_index_offset": [
                         0.0,
-                        -0.65
+                        -0.5
                     ]
                 }
             },

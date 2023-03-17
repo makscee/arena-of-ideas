@@ -6,7 +6,7 @@ attribute vec2 a_pos;
 
 void main() {
     uv = get_uv(a_pos);
-    gl_Position = get_gl_position(a_pos);
+    gl_Position = get_gl_position(uv);
 }
 #endif
 

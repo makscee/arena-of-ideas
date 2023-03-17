@@ -5,8 +5,10 @@ out vec2 uv;
 attribute vec2 a_pos;
 
 void main() {
+    init_fields();
+    card = 0;
     uv = get_uv(a_pos);
-    gl_Position = get_gl_position(a_pos, vec2(u_radius), u_offset, 0.);
+    gl_Position = get_gl_position(uv);
 }
 #endif
 
@@ -37,7 +39,6 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     if(card_sdf > CARD_BORDER) {
         return vec4(0);
     }
-    commonInit(u_position + uv);
     float border_dist = min(abs(card_sdf) - CARD_BORDER, ((abs(uv.y) - CARD_BORDER) * float(card_sdf < 0)));
     vec3 mixed_color = mix(u_house_color1.rgb, base_color, smoothstep(.3, 1, -border_dist / CARD_BORDER));
     vec4 border_color = vec4(mixed_color, border_dist < 0);
@@ -58,10 +59,10 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
 }
 
 void main() {
-    vec2 uv = get_card_uv(uv, u_card);
+    init_fields();
+    vec2 uv = get_card_uv(uv);
     float len = length(uv) - 1.;
     float dmg_t = u_damage_taken;
-    commonInit(u_position + uv);
     vec4 color = vec4(field_color, 0);
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
     color = alphaBlend(color, vec4(base_color, alpha));

@@ -2,7 +2,6 @@
     "shaders/system/unit.glsl",
     "shaders/system/field.glsl",
     "shaders/system/stats.glsl",
-    "shaders/system/name.glsl",
     "shaders/system/strike.glsl",
     "shaders/system/slot.glsl",
     "shaders/system/description_panel.glsl",

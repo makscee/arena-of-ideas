@@ -19,6 +19,6 @@ impl NameSystem {
             .shaders
             .name
             .clone()
-            .set_uniform("u_name", ShaderUniform::String((1, name)))
+            .set_uniform("u_text", ShaderUniform::String((1, name)))
     }
 }

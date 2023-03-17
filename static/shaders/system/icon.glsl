@@ -5,6 +5,7 @@ out vec2 uv;
 attribute vec2 a_pos;
 
 void main() {
+    init_fields();
     uv = get_uv(a_pos);
     gl_Position = get_gl_position(a_pos);
 }

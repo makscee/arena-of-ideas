@@ -3,49 +3,46 @@ uniform vec2 u_text_size;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
-out float t;
 attribute vec2 a_pos;
 
-uniform vec2 u_position_over_t = vec2(0);
-uniform float u_scale_over_t = 0;
-uniform float u_gravity = 0;
-uniform vec2 u_direction = vec2(0, 1);
-uniform float u_velocity = 0;
-uniform float u_time = 0;
 uniform int u_index = 0;
 uniform vec2 u_index_offset = vec2(0);
+uniform vec2 u_card_offset = vec2(0);
+uniform float u_align;
+uniform float u_card_scale = 0;
+uniform float u_max_width = 100;
 
 void main() {
-    uv = a_pos * (1.0 + u_padding);
-    t = u_time;
+    init_fields();
     vec2 rel = vec2(u_text_size.x / u_text_size.y, 1);
-    vec2 vel = normalize(u_direction) * u_velocity + vec2(0, u_gravity * t);
-    vec2 pos = uv * rel * 1.0 * (u_scale + u_scale_over_t * t) + u_position + u_offset + u_index * u_index_offset + vel * t + u_position_over_t * t;
-    vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
-    gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
+    rel = mix(rel, vec2(u_max_width, u_max_width / rel.x), float(rel.x > u_max_width));
+    offset += u_index * u_index_offset;
+    position += vec2(-rel.x * .5 * u_align, 0) + u_card_offset * card;
+    scale += u_card_scale * card;
+    size = rel;
+    uv = get_uv(a_pos);
+    gl_Position = get_gl_position(uv);
 }
 #endif
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
-in float t;
 
 uniform vec4 u_text_color;
 uniform vec4 u_outline_color;
-uniform float u_alpha_over_t = 0;
 
 uniform sampler2D u_text;
 
-const float TEXT_INSIDE = 0.5;
-const float TEXT_BORDER = 0.35;
+uniform float u_text_inside = 0.5;
+uniform float u_text_border = 0.3;
 const float AA = 0.03;
 
 void main() {
+    init_fields();
     vec4 color = vec4(0);
     float sdf = get_text_sdf(uv, u_text);
-    vec4 text_color = get_text_color(sdf, u_text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
+    vec4 text_color = get_text_color(sdf, u_text_color, u_outline_color, u_text_border, u_text_inside);
     color = alphaBlend(color, text_color);
-    color.a += u_alpha_over_t * t;
     gl_FragColor = color;
 }
 #endif

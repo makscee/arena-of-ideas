@@ -299,7 +299,7 @@ impl Resources {
             futures::executor::block_on(<Options as geng::LoadAsset>::load(&resources.geng, &file))
                 .unwrap();
         resources.logger.load(&resources.options);
-        dbg!(&resources.options);
+        // dbg!(&resources.options);
     }
 
     fn load_houses(&mut self, fws: &mut FileWatcherSystem) {

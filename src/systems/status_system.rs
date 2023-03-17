@@ -10,6 +10,7 @@ impl StatusSystem {
     ) -> Vec<Shader> {
         node.get_entity_statuses_names(&entity)
             .into_iter()
+            .chain(vec!["Shield".to_string(), "Grow".to_string()])
             .filter_map(|name| match resources.definitions.get(&name) {
                 Some(def) => Some(
                     resources

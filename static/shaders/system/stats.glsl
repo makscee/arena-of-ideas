@@ -5,9 +5,11 @@ attribute vec2 a_pos;
 uniform float u_angle_offset;
 
 void main() {
-    vec2 offset = rotateCW(vec2(0, -1), PI * (.23 - u_card * .07) * u_angle_offset) * 1.2 * (1 + u_card * 1.5);
+    init_fields();
+    offset = rotateCW(vec2(0, -1), PI * (.23 - card * .07) * u_angle_offset) * 1.2 * (1 + card * 1.5);
+    size = vec2(1 + card * .7);
     uv = get_uv(a_pos);
-    gl_Position = get_gl_position(a_pos, vec2(1 + u_card * .7), offset);
+    gl_Position = get_gl_position(uv);
 }
 #endif
 
