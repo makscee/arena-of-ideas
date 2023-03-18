@@ -175,7 +175,7 @@ impl GameStateSystem {
             GameState::Gallery => {
                 resources.cassette.clear();
                 resources.action_queue.clear();
-                resources.status_pool.new_statuses.clear();
+                resources.status_pool.status_changes.clear();
                 resources.camera.camera.fov = resources.options.fov;
                 WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
                 SlotSystem::init_world(

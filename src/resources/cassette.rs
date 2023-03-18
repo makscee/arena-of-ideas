@@ -186,7 +186,7 @@ pub struct CassetteNode {
     start: Time,
     duration: Time,
     pub entity_shaders: HashMap<legion::Entity, Shader>,
-    active_statuses: HashMap<legion::Entity, HashMap<String, Context>>,
+    active_statuses: HashMap<legion::Entity, HashMap<String, i32>>,
     effects: HashMap<String, Vec<VisualEffect>>,
 }
 
@@ -260,10 +260,17 @@ impl CassetteNode {
     pub fn save_active_statuses(&mut self, pool: &StatusPool) {
         self.active_statuses = pool.active_statuses.clone();
     }
-    pub fn get_entity_statuses_names(&self, entity: &legion::Entity) -> Vec<String> {
+    pub fn get_entity_statuses(&self, entity: &legion::Entity) -> Vec<(String, i32)> {
         self.active_statuses
             .get(entity)
-            .and_then(|statuses| Some(statuses.keys().cloned().collect_vec()))
+            .and_then(|statuses| {
+                Some(
+                    statuses
+                        .iter()
+                        .map(|(name, charges)| (name.clone(), *charges))
+                        .collect_vec(),
+                )
+            })
             .unwrap_or_else(|| vec![])
     }
 }

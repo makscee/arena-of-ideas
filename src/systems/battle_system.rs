@@ -217,7 +217,10 @@ impl BattleSystem {
         };
         resources.action_queue.push_back(Action::new(
             context_left.clone(),
-            Effect::Damage { value: None },
+            Effect::Damage {
+                value: None,
+                then: None,
+            },
         ));
 
         let context_right = Context {
@@ -228,15 +231,20 @@ impl BattleSystem {
         };
         resources.action_queue.push_back(Action::new(
             context_right.clone(),
-            Effect::Damage { value: None },
+            Effect::Damage {
+                value: None,
+                then: None,
+            },
         ));
         ActionSystem::run_ticks(world, resources);
         Event::AfterStrike {
-            context: context_left,
+            owner: left,
+            target: right,
         }
         .send(resources, world);
         Event::AfterStrike {
-            context: context_right,
+            owner: right,
+            target: left,
         }
         .send(resources, world);
         ActionSystem::run_ticks(world, resources);
@@ -255,18 +263,11 @@ impl BattleSystem {
                 &format!("Entity#{:?} dead", dead_unit),
                 &LogContext::UnitCreation,
             );
-            let context = ContextSystem::get_context(dead_unit, world);
-            Event::BeforeDeath { context }.send(resources, world);
-            ActionSystem::run_ticks(world, resources);
-            if world
-                .entry(dead_unit)
-                .unwrap()
-                .get_component::<HpComponent>()
-                .unwrap()
-                .current
-                <= 0
-            {
-                UnitSystem::kill(dead_unit, world, resources);
+            if UnitSystem::process_death(dead_unit, world, resources) {
+                resources.logger.log(
+                    &format!("Entity#{:?} removed", dead_unit),
+                    &LogContext::UnitCreation,
+                );
             }
         }
     }

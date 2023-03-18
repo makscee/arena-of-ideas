@@ -50,11 +50,11 @@
                         "type": "List",
                         "effects": [
                             {
-                                "type": "SetAbilityVarInt",
+                                "type": "ChangeAbilityVarInt",
                                 "house": "Robots",
                                 "ability": "Shield",
                                 "var": "Reflection",
-                                "value": {
+                                "delta": {
                                     "type": "Const",
                                     "value": 1
                                 }

@@ -11,7 +11,7 @@
     },
     {
         "component": "Description",
-        "text": "Shield has\n1 more charge"
+        "text": "Shield: +1 charge\non apply"
     },
     {
         "component": "AbilityDescription",
@@ -49,27 +49,18 @@
                     "type": "List",
                     "triggers": [
                         {
-                            "type": "Buy",
+                            "type": "AddToTeam",
                             "effect": {
                                 "type": "List",
                                 "effects": [
                                     {
-                                        "type": "SetAbilityVarInt",
+                                        "type": "ChangeAbilityVarInt",
                                         "house": "Robots",
                                         "ability": "Shield",
                                         "var": "Charges",
-                                        "value": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Const",
-                                                "value": 1
-                                            },
-                                            "b": {
-                                                "type": "AbilityVar",
-                                                "house": "Robots",
-                                                "ability": "Shield",
-                                                "var": "Charges"
-                                            }
+                                        "delta": {
+                                            "type": "Const",
+                                            "value": 1
                                         }
                                     },
                                     {
@@ -85,22 +76,13 @@
                                 "type": "List",
                                 "effects": [
                                     {
-                                        "type": "SetAbilityVarInt",
+                                        "type": "ChangeAbilityVarInt",
                                         "house": "Robots",
                                         "ability": "Shield",
                                         "var": "Charges",
-                                        "value": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Const",
-                                                "value": -1
-                                            },
-                                            "b": {
-                                                "type": "AbilityVar",
-                                                "house": "Robots",
-                                                "ability": "Shield",
-                                                "var": "Charges"
-                                            }
+                                        "delta": {
+                                            "type": "Const",
+                                            "value": -1
                                         }
                                     },
                                     {

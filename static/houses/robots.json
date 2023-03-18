@@ -18,16 +18,19 @@
                         }
                     },
                     {
-                        "type": "AttachStatus",
-                        "name": "Shield"
+                        "type": "ChangeStatus",
+                        "name": "Shield",
+                        "charges": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
                     }
                 ]
             },
             "description": "Negate one instance\nof incoming damage",
             "vars": {
-                "Charges": 1,
-                "Hits": 0,
-                "Reflection": 0
+                "Reflection": 0,
+                "Charges": 1
             }
         }
     },
@@ -37,9 +40,16 @@
                 "type": "List",
                 "triggers": [
                     {
-                        "type": "Init",
+                        "type": "OnStatusAdd",
                         "effect": {
                             "type": "AddFlag",
+                            "flag": "DamageImmune"
+                        }
+                    },
+                    {
+                        "type": "OnStatusRemove",
+                        "effect": {
+                            "type": "RemoveFlag",
                             "flag": "DamageImmune"
                         }
                     },
@@ -74,58 +84,8 @@
                                     }
                                 },
                                 {
-                                    "type": "If",
-                                    "condition": {
-                                        "type": "LessInt",
-                                        "a": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "StatusVar",
-                                                "status": "Shield",
-                                                "var": "Hits"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": 1
-                                            }
-                                        },
-                                        "b": {
-                                            "type": "AbilityVar",
-                                            "house": "Robots",
-                                            "ability": "Shield",
-                                            "var": "Charges"
-                                        }
-                                    },
-                                    "then": {
-                                        "type": "SetStatusVarInt",
-                                        "status": "Shield",
-                                        "var": "Hits",
-                                        "value": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Const",
-                                                "value": 1
-                                            },
-                                            "b": {
-                                                "type": "StatusVar",
-                                                "status": "Shield",
-                                                "var": "Hits"
-                                            }
-                                        }
-                                    },
-                                    "else": {
-                                        "type": "List",
-                                        "effects": [
-                                            {
-                                                "type": "RemoveFlag",
-                                                "flag": "DamageImmune"
-                                            },
-                                            {
-                                                "type": "RemoveStatus",
-                                                "name": "Shield"
-                                            }
-                                        ]
-                                    }
+                                    "type": "RemoveStatus",
+                                    "name": "Shield"
                                 }
                             ]
                         }

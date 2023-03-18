@@ -14,12 +14,6 @@
         "text": "Has Rebirth"
     },
     {
-        "component": "AbilityDescription",
-        "abilities": [
-            "Rebirth"
-        ]
-    },
-    {
         "component": "Hp",
         "max": 4
     },
@@ -48,11 +42,19 @@
         "statuses": {
             "GetShield": {
                 "trigger": {
-                    "type": "Init",
+                    "type": "OnStatusAdd",
                     "effect": {
-                        "type": "UseAbility",
-                        "house": "Dragons",
-                        "name": "Rebirth"
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "UseAbility",
+                                "house": "Dragons",
+                                "name": "Rebirth"
+                            },
+                            {
+                                "type": "RemoveThisStatus"
+                            }
+                        ]
                     }
                 }
             }

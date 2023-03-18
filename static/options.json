@@ -5,8 +5,9 @@
         "Effect": false,
         "Condition": false,
         "Trigger": false,
-        "Event": false,
-        "UnitCreation": false
+        "Event": true,
+        "UnitCreation": false,
+        "Measurement": false
     },
     "colors": {
         "faction_colors": {

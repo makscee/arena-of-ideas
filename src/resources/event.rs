@@ -2,16 +2,51 @@ use super::*;
 
 #[derive(Debug)]
 pub enum Event {
-    Init { status: String, context: Context },
-    ModifyIncomingDamage { context: Context },
-    BeforeIncomingDamage { context: Context },
-    AfterIncomingDamage { context: Context },
-    BeforeDeath { context: Context },
+    StatusAdd {
+        status: String,
+        owner: legion::Entity,
+    },
+    StatusRemove {
+        status: String,
+        owner: legion::Entity,
+    },
+    StatusChargeAdd {
+        status: String,
+        owner: legion::Entity,
+    },
+    StatusChargeRemove {
+        status: String,
+        owner: legion::Entity,
+    },
+    ModifyIncomingDamage {
+        context: Context,
+    },
+    BeforeIncomingDamage {
+        context: Context,
+    },
+    AfterIncomingDamage {
+        context: Context,
+    },
+    BeforeDeath {
+        owner: legion::Entity,
+    },
+    Buy {
+        owner: legion::Entity,
+    },
+    Sell {
+        owner: legion::Entity,
+    },
+    AddToTeam {
+        owner: legion::Entity,
+    },
+    RemoveFromTeam {
+        owner: legion::Entity,
+    },
+    AfterStrike {
+        owner: legion::Entity,
+        target: legion::Entity,
+    },
     BattleOver,
-    Buy { context: Context },
-    Sell { context: Context },
-    RemoveFromTeam { context: Context },
-    AfterStrike { context: Context },
 }
 
 impl Event {
@@ -20,71 +55,12 @@ impl Event {
             .logger
             .log(&format!("Send event {:?}", self), &LogContext::Event);
         match self {
-            Event::BeforeIncomingDamage { context }
-            | Event::AfterIncomingDamage { context }
-            | Event::BeforeDeath { context }
-            | Event::Buy { context }
-            | Event::Sell { context }
-            | Event::RemoveFromTeam { context } => {
-                Self::trigger(resources, context, &context.target, self);
-                None
-            }
-            Event::AfterStrike { context } => {
-                Self::trigger(resources, context, &context.owner, self);
-                None
-            }
-            Event::Init { status, context } => {
-                resources
-                    .status_pool
-                    .defined_statuses
-                    .get(status)
-                    .expect("Failed to find defined status for initialization")
-                    .trigger
-                    .catch_event(
-                        self,
-                        &mut resources.action_queue,
-                        context.clone(),
-                        &resources.logger,
-                    );
-                None
-            }
+            // Send event to every active status
             Event::BattleOver => {
-                resources
-                    .status_pool
-                    .active_statuses
-                    .values()
-                    .map(|map| map.iter())
-                    .flatten()
-                    .map(|(status_name, status_context)| {
-                        (
-                            &resources
-                                .status_pool
-                                .defined_statuses
-                                .get(status_name)
-                                .expect("Failed to find defined status")
-                                .trigger,
-                            status_context,
-                        )
-                    })
-                    .for_each(|(trigger, status_context)| {
-                        trigger.catch_event(
-                            self,
-                            &mut resources.action_queue,
-                            {
-                                let context = {
-                                    let context = status_context.clone();
-                                    context.merge(
-                                        &ContextSystem::get_context(status_context.owner, world),
-                                        true,
-                                    )
-                                };
-                                context
-                            },
-                            &resources.logger,
-                        )
-                    });
+                StatusPool::notify_all(self, resources, world);
                 None
             }
+            // Modify Damage var in provided context and return updated context
             Event::ModifyIncomingDamage { context } => {
                 let mut context = context.clone();
                 let mut damage = context.vars.get_int(&VarName::Damage);
@@ -92,10 +68,15 @@ impl Event {
                     .status_pool
                     .collect_triggers(&context.target)
                     .iter()
-                    .for_each(|(trigger, status_context)| match trigger {
+                    .for_each(|(name, trigger, charges)| match trigger {
                         Trigger::ModifyIncomingDamage { value } => {
                             damage = match value.calculate(
-                                &context.merge(status_context, false),
+                                context
+                                    .add_var(VarName::Charges, Var::Int(*charges))
+                                    .add_var(
+                                        VarName::StatusName,
+                                        Var::String((0, name.to_string())),
+                                    ),
                                 world,
                                 resources,
                             ) {
@@ -108,26 +89,55 @@ impl Event {
                     });
                 Some(context)
             }
+            // Trigger owner status with owner context
+            Event::StatusAdd { status, owner }
+            | Event::StatusRemove { status, owner }
+            | Event::StatusChargeAdd { status, owner }
+            | Event::StatusChargeRemove { status, owner } => {
+                let context = ContextSystem::get_context(*owner, world)
+                    .add_var(VarName::StatusName, Var::String((0, status.clone())))
+                    .to_owned();
+                resources
+                    .status_pool
+                    .defined_statuses
+                    .get(status)
+                    .unwrap()
+                    .trigger
+                    .catch_event(
+                        self,
+                        &mut resources.action_queue,
+                        context,
+                        &resources.logger,
+                    );
+                None
+            }
+            // Trigger context.owner with provided context
+            Event::BeforeIncomingDamage { context } | Event::AfterIncomingDamage { context } => {
+                StatusPool::notify_entity(
+                    self,
+                    context.target,
+                    resources,
+                    world,
+                    Some(context.clone()),
+                );
+                None
+            }
+            Event::BeforeDeath { owner }
+            | Event::Buy { owner }
+            | Event::Sell { owner }
+            | Event::AddToTeam { owner }
+            | Event::RemoveFromTeam { owner } => {
+                StatusPool::notify_entity(self, *owner, resources, world, None);
+                None
+            }
+            Event::AfterStrike { owner, target } => {
+                let context = Context {
+                    target: *target,
+                    ..ContextSystem::get_context(*owner, world)
+                };
+                StatusPool::notify_entity(self, *owner, resources, world, Some(context));
+                None
+            }
         }
-    }
-
-    fn trigger(
-        resources: &mut Resources,
-        context: &Context,
-        entity: &legion::Entity,
-        event: &Event,
-    ) {
-        resources
-            .status_pool
-            .collect_triggers(entity)
-            .iter()
-            .for_each(|(trigger, status_context)| {
-                trigger.catch_event(
-                    event,
-                    &mut resources.action_queue,
-                    context.merge(&status_context, false),
-                    &resources.logger,
-                )
-            });
     }
 }

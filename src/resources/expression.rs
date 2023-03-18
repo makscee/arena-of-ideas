@@ -21,13 +21,13 @@ pub enum ExpressionInt {
     Var {
         var: VarName,
     },
+    EntityVar {
+        var: VarName,
+        entity: ExpressionEntity,
+    },
     AbilityVar {
         house: HouseName,
         ability: String,
-        var: VarName,
-    },
-    StatusVar {
-        status: String,
         var: VarName,
     },
     Stat {
@@ -54,6 +54,12 @@ impl ExpressionInt {
             }
             ExpressionInt::Const { value } => Ok(*value),
             ExpressionInt::Var { var } => Ok(context.vars.get_int(var)),
+            ExpressionInt::EntityVar { var, entity } => {
+                ContextSystem::try_get_context(entity.calculate(context, world, resources)?, world)?
+                    .vars
+                    .try_get_int(var)
+                    .context(format!("Var not found {}", var))
+            }
             ExpressionInt::Stat { stat, target } => {
                 let target = target
                     .as_ref()
@@ -81,18 +87,6 @@ impl ExpressionInt {
                 ))?
                 .vars
                 .get_int(var_name)),
-            ExpressionInt::StatusVar { status, var } => Ok(resources
-                .status_pool
-                .active_statuses
-                .get(&context.target)
-                .context(format!("Failed to get target#{:?}", context.target))?
-                .get(status)
-                .context(format!(
-                    "Failed to find status {} on {:?}",
-                    status, context.target
-                ))?
-                .vars
-                .get_int(var)),
         }
     }
 }

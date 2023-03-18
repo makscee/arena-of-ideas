@@ -4,27 +4,36 @@ pub struct StatusSystem {}
 
 const PANELS_KEY: &str = "panels";
 impl StatusSystem {
-    fn get_status_names_shaders(names: &Vec<String>, resources: &Resources) -> Vec<Shader> {
+    fn get_status_names_shaders(names: &Vec<(String, i32)>, resources: &Resources) -> Vec<Shader> {
         names
             .iter()
-            .filter_map(|name| match resources.definitions.get(name) {
+            .filter_map(|(name, charges)| match resources.definitions.get(name) {
                 Some(def) => Some(
                     resources
                         .options
                         .shaders
                         .status_panel_text
                         .clone()
-                        .set_uniform("u_text", ShaderUniform::String((1, name.clone())))
+                        .set_uniform(
+                            "u_text",
+                            ShaderUniform::String((
+                                1,
+                                match *charges > 1 {
+                                    true => format!("{} ({})", name, charges),
+                                    false => name.clone(),
+                                },
+                            )),
+                        )
                         .set_uniform("u_outline_color", ShaderUniform::Color(def.color)),
                 ),
                 None => None,
             })
             .collect_vec()
     }
-    fn get_definitions_shaders(names: &Vec<String>, resources: &Resources) -> Vec<Shader> {
+    fn get_definitions_shaders(names: &Vec<(String, i32)>, resources: &Resources) -> Vec<Shader> {
         names
             .iter()
-            .filter_map(|name| match resources.definitions.get(name) {
+            .filter_map(|(name, _)| match resources.definitions.get(name) {
                 Some(def) => Some(vec![
                     resources
                         .options
@@ -51,7 +60,7 @@ impl StatusSystem {
 
     pub fn add_active_statuses_panel_to_node(node: &mut CassetteNode, resources: &Resources) {
         if let Some(hovered) = resources.input.cur_hovered {
-            let names = node.get_entity_statuses_names(&hovered);
+            let names = node.get_entity_statuses(&hovered);
             let name_shaders = Self::get_status_names_shaders(&names, resources);
             let definition_shaders = Self::get_definitions_shaders(&names, resources);
             if !name_shaders.is_empty() {

@@ -11,7 +11,7 @@
     },
     {
         "component": "Description",
-        "text": "After strike:\nSiphon Life (1)"
+        "text": "After strike:\nuse nSiphon Life"
     },
     {
         "component": "AbilityDescription",
@@ -21,7 +21,7 @@
     },
     {
         "component": "Hp",
-        "max": 2
+        "max": 3
     },
     {
         "component": "Attack",

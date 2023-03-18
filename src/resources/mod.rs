@@ -288,7 +288,8 @@ impl Resources {
         let json =
             futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
                 .expect("Failed to load unit");
-        let template = serde_json::from_str(&json).expect("Failed to parse UnitTemplate");
+        let template =
+            serde_json::from_str(&json).expect(&format!("Failed to parse UnitTemplate {:?}", file));
         resources
             .unit_templates
             .define_template(file.clone(), template);

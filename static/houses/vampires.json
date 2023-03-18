@@ -3,80 +3,43 @@
     "color": "#7f0000ff",
     "abilities": {
         "Devour": {
-            "description": "Kill target and\ngain their stats",
+            "description": "Kill target, gain +1/+1\nper target current HP",
             "effect": {
                 "type": "List",
                 "effects": [
                     {
-                        "type": "ChangeStat",
-                        "stat": "Hp",
-                        "target": {
-                            "type": "Owner"
-                        },
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Stat",
-                                "stat": "Hp",
-                                "target": {
-                                    "type": "Target"
-                                }
-                            },
-                            "b": {
-                                "type": "Stat",
-                                "stat": "Hp",
-                                "target": {
-                                    "type": "Owner"
-                                }
-                            }
-                        }
-                    },
-                    {
-                        "type": "ChangeStat",
-                        "stat": "Attack",
-                        "target": {
-                            "type": "Owner"
-                        },
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Stat",
-                                "stat": "Attack",
-                                "target": {
-                                    "type": "Target"
-                                }
-                            },
-                            "b": {
-                                "type": "Stat",
-                                "stat": "Attack",
-                                "target": {
-                                    "type": "Owner"
-                                }
-                            }
-                        }
-                    },
-                    {
                         "type": "TakeVar",
-                        "var": "Position",
                         "entity": {
                             "type": "Target"
                         },
+                        "var": "HpCurrent",
+                        "new_name": "Charges",
                         "effect": {
-                            "type": "ShowText",
-                            "text": "Devour"
-                        }
-                    },
-                    {
-                        "type": "Kill",
-                        "target": {
-                            "type": "Target"
+                            "type": "Kill",
+                            "then": {
+                                "type": "ChangeContext",
+                                "owner": {
+                                    "type": "Target"
+                                },
+                                "target": {
+                                    "type": "Owner"
+                                },
+                                "effect": {
+                                    "type": "ChangeStatus",
+                                    "name": "Devour",
+                                    "charges": {
+                                        "type": "Var",
+                                        "var": "Charges"
+                                    }
+                                }
+                            }
                         }
                     }
                 ]
             }
         },
         "SiphonLife": {
-            "description": "Deal 1 DMG\ngain 1 HP",
+            "description": "Steal 1 HP\nfrom target",
             "effect": {
                 "type": "List",
                 "effects": [
@@ -85,43 +48,77 @@
                         "value": {
                             "type": "Const",
                             "value": 1
-                        }
-                    },
-                    {
-                        "type": "ChangeStat",
-                        "stat": "Hp",
-                        "target": {
-                            "type": "Owner"
                         },
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Const",
-                                "value": 1
+                        "then": {
+                            "type": "AddStatus",
+                            "target": {
+                                "type": "Owner"
                             },
-                            "b": {
-                                "type": "Stat",
-                                "stat": "Hp",
-                                "target": {
-                                    "type": "Owner"
-                                }
-                            }
+                            "name": "SiphonLife"
                         }
                     },
                     {
-                        "type": "TakeVar",
-                        "var": "Position",
-                        "entity": {
-                            "type": "Target"
-                        },
-                        "effect": {
-                            "type": "ShowText",
-                            "text": "SiphonLife"
-                        }
+                        "type": "ShowText",
+                        "text": "SiphonLife"
                     }
                 ]
             }
         }
     },
-    "statuses": {}
+    "statuses": {
+        "Devour": {
+            "trigger": {
+                "type": "List",
+                "triggers": [
+                    {
+                        "type": "OnStatusChargeAdd",
+                        "effect": {
+                            "type": "ChangeStats",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    },
+                    {
+                        "type": "OnStatusChargeRemove",
+                        "effect": {
+                            "type": "ChangeStats",
+                            "delta": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "SiphonLife": {
+            "trigger": {
+                "type": "List",
+                "triggers": [
+                    {
+                        "type": "OnStatusChargeAdd",
+                        "effect": {
+                            "type": "ChangeMaxHp",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    },
+                    {
+                        "type": "OnStatusChargeRemove",
+                        "effect": {
+                            "type": "ChangeMaxHp",
+                            "delta": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
 }

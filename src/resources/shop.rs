@@ -16,7 +16,6 @@ pub struct Shop {
 
 impl Shop {
     pub fn load(resources: &mut Resources, world: &mut legion::World) {
-        resources.logger.set_enabled(false);
         let mut sorted_heroes = PowerPointsSystem::measure(
             &resources
                 .unit_templates
@@ -31,7 +30,6 @@ impl Shop {
         .sorted_by_key(|(_, score)| score.clone())
         .rev()
         .collect_vec();
-        resources.logger.set_enabled(true);
         dbg!(&sorted_heroes);
         let level_extensions = &mut resources.shop.level_extensions;
         level_extensions.push(default());
@@ -52,12 +50,14 @@ impl Shop {
 
     pub fn update_pool(resources: &mut Resources) {
         let floor = resources.floors.current_ind();
-        resources.shop.pool.extend(
-            resources.shop.level_extensions[floor]
-                .iter()
-                .map(|path| (path.clone(), HERO_POOL_COUNT)),
-        );
-        Self::reload_shaders(resources);
+        if resources.shop.level_extensions.len() > floor {
+            resources.shop.pool.extend(
+                resources.shop.level_extensions[floor]
+                    .iter()
+                    .map(|path| (path.clone(), HERO_POOL_COUNT)),
+            );
+            Self::reload_shaders(resources);
+        }
     }
 
     pub fn reset(resources: &mut Resources, world: &mut legion::World) {

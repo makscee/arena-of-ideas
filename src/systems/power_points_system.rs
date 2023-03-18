@@ -8,10 +8,19 @@ impl PowerPointsSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> HashMap<PathBuf, usize> {
+        if !resources
+            .options
+            .log
+            .get(&LogContext::Measurement)
+            .unwrap_or(&false)
+        {
+            resources.logger.set_enabled(false);
+        }
         let mut results = HashMap::from_iter(templates.iter().map(|path| (path.clone(), 0usize)));
         templates
             .iter()
             .for_each(|path| Self::measure_single(path, templates, world, resources, &mut results));
+        resources.logger.set_enabled(true);
         results
     }
 

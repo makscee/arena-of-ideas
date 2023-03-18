@@ -150,10 +150,8 @@ impl ShopSystem {
         *resources.shop.pool.get_mut(&unit.template_path).unwrap() -= 1;
         Shop::reload_shaders(resources);
         ContextSystem::refresh_entity(entity, world, resources);
-        Event::Buy {
-            context: ContextSystem::get_context(entity, world),
-        }
-        .send(resources, world);
+        Event::Buy { owner: entity }.send(resources, world);
+        Event::AddToTeam { owner: entity }.send(resources, world);
     }
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
@@ -171,11 +169,8 @@ impl ShopSystem {
             )
             .unwrap() += 2;
         Shop::reload_shaders(resources);
-        Event::Sell {
-            context: ContextSystem::get_context(entity, world),
-        }
-        .send(resources, world);
-        UnitSystem::kill(entity, world, resources);
+        Event::Sell { owner: entity }.send(resources, world);
+        UnitSystem::delete_unit(entity, world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
     }
 

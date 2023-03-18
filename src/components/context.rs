@@ -23,4 +23,9 @@ impl Context {
         let context = self.clone();
         context.merge_mut(other, force)
     }
+
+    pub fn add_var(&mut self, name: VarName, var: Var) -> &mut Self {
+        self.vars.insert(name, var);
+        self
+    }
 }

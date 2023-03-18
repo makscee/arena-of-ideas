@@ -4,68 +4,55 @@
     "abilities": {
         "Rebirth": {
             "effect": {
-                "type": "AttachStatus",
+                "type": "AddStatus",
                 "name": "Rebirth"
             },
-            "description": "Revive after death"
+            "description": "Revive\nafter death"
         },
         "Grow": {
-            "vars": {
-                "GrowAmount": 1
-            },
-            "description": "Gain +1/+1",
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "ChangeStat",
-                        "stat": "Hp",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Var",
-                                "var": "GrowAmount"
-                            },
-                            "b": {
-                                "type": "Stat",
-                                "stat": "Hp"
-                            }
-                        }
-                    },
-                    {
-                        "type": "ChangeStat",
-                        "stat": "Attack",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Var",
-                                "var": "GrowAmount"
-                            },
-                            "b": {
-                                "type": "Stat",
-                                "stat": "Attack"
-                            }
-                        }
-                    },
-                    {
-                        "type": "ShowText",
-                        "text": "Grow"
-                    }
-                ]
-            }
+                "type": "AddStatus",
+                "name": "Grow"
+            },
+            "description": "Gain +1/+1"
         }
     },
     "statuses": {
+        "Grow": {
+            "trigger": {
+                "type": "List",
+                "triggers": [
+                    {
+                        "type": "OnStatusChargeAdd",
+                        "effect": {
+                            "type": "ChangeStats",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    },
+                    {
+                        "type": "OnStatusChargeRemove",
+                        "effect": {
+                            "type": "ChangeStats",
+                            "delta": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    }
+                ]
+            }
+        },
         "Rebirth": {
-            "description": "Revive after death\nthen remove\nthis status",
             "trigger": {
                 "type": "BeforeDeath",
                 "effect": {
                     "type": "List",
                     "effects": [
                         {
-                            "type": "ChangeStat",
-                            "stat": "Hp",
+                            "type": "SetCurrentHp",
                             "value": {
                                 "type": "Const",
                                 "value": 1

@@ -95,15 +95,7 @@ impl SerializedComponent {
                     resources
                         .status_pool
                         .define_status(name.clone(), status.clone());
-                    StatusPool::add_entity_status(
-                        entity,
-                        &name,
-                        Context {
-                            parent: Some(context.owner),
-                            ..context.clone()
-                        },
-                        resources,
-                    );
+                    StatusPool::change_entity_status(entity, &name, resources, 1);
                 });
             }
             SerializedComponent::Shader { .. } => {

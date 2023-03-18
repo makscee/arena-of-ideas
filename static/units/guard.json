@@ -11,7 +11,7 @@
     },
     {
         "component": "Description",
-        "text": "Has Shield"
+        "text": "On Buy:\ngain Shield"
     },
     {
         "component": "Hp",
@@ -41,11 +41,19 @@
         "statuses": {
             "GetShield": {
                 "trigger": {
-                    "type": "Init",
+                    "type": "Buy",
                     "effect": {
-                        "type": "UseAbility",
-                        "house": "Robots",
-                        "name": "Shield"
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "UseAbility",
+                                "house": "Robots",
+                                "name": "Shield"
+                            },
+                            {
+                                "type": "RemoveThisStatus"
+                            }
+                        ]
                     }
                 }
             }

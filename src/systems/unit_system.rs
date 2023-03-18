@@ -95,21 +95,12 @@ impl UnitSystem {
         Self::clone_component::<Shader>(original_entity, new_entity, world);
         Self::clone_component::<DescriptionComponent>(original_entity, new_entity, world);
 
-        // // Statuses
+        // Statuses
         if let Some(statuses) = resources.status_pool.active_statuses.get(&original_entity) {
-            statuses.clone().iter().for_each(|(name, context)| {
-                StatusPool::add_entity_status(
-                    new_entity,
-                    name,
-                    Context {
-                        owner: new_entity,
-                        target: new_entity,
-                        parent: Some(new_entity),
-                        ..context.clone()
-                    },
-                    resources,
-                );
-            });
+            resources
+                .status_pool
+                .active_statuses
+                .insert(new_entity, statuses.clone());
         }
     }
 
@@ -131,7 +122,27 @@ impl UnitSystem {
         }
     }
 
-    pub fn kill(
+    pub fn process_death(
+        entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> bool {
+        Event::BeforeDeath { owner: entity }.send(resources, world);
+        ActionSystem::run_ticks(world, resources);
+        if world
+            .entry(entity)
+            .unwrap()
+            .get_component::<HpComponent>()
+            .unwrap()
+            .current
+            <= 0
+        {
+            return Self::delete_unit(entity, world, resources);
+        }
+        false
+    }
+
+    pub fn delete_unit(
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
@@ -143,10 +154,7 @@ impl UnitSystem {
             .unwrap()
             .clone();
         if unit.faction == Faction::Team {
-            Event::RemoveFromTeam {
-                context: ContextSystem::get_context(entity, world),
-            }
-            .send(resources, world);
+            Event::RemoveFromTeam { owner: entity }.send(resources, world);
         }
         resources.status_pool.clear_entity(&entity);
         let res = world.remove(entity);

@@ -2,21 +2,21 @@
     "floors": [
         {
             "enemies": [
-                "units/enemies/solid_grower.json"
+                "units/enemies/basic.json"
             ]
         },
         {
             "enemies": [
-                "units/enemies/fat_grower.json",
-                "units/enemies/glass_grower.json"
+                "units/enemies/basic.json",
+                "units/enemies/basic.json",
+                "units/enemies/basic.json"
             ]
         },
         {
             "enemies": [
-                "units/enemies/spit_grower.json",
-                "units/enemies/solid_grower.json",
-                "units/enemies/solid_grower.json",
-                "units/enemies/solid_grower.json"
+                "units/enemies/basic.json",
+                "units/enemies/basic.json",
+                "units/enemies/basic.json"
             ]
         },
         {

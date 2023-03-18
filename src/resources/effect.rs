@@ -7,9 +7,10 @@ use super::*;
 pub enum Effect {
     Damage {
         value: Option<ExpressionInt>,
+        then: Option<Box<Effect>>,
     },
     Kill {
-        target: ExpressionEntity,
+        target: Option<ExpressionEntity>,
         then: Option<Box<Effect>>,
     },
     Repeat {
@@ -28,36 +29,55 @@ pub enum Effect {
     RemoveFlag {
         flag: Flag,
     },
-    RemoveStatus {
-        name: String,
-    },
     Noop,
     SetVarInt {
         name: VarName,
         value: ExpressionInt,
     },
-    SetAbilityVarInt {
+    ChangeAbilityVarInt {
         house: HouseName,
         ability: String,
         var: VarName,
-        value: ExpressionInt,
+        delta: ExpressionInt,
     },
-    SetStatusVarInt {
-        status: String,
-        var: VarName,
-        value: ExpressionInt,
-    },
-    AttachStatus {
+    AddStatus {
         name: String,
+        target: Option<ExpressionEntity>,
+    },
+    RemoveStatus {
+        name: String,
+        target: Option<ExpressionEntity>,
+    },
+    RemoveThisStatus,
+    ChangeStatus {
+        name: String,
+        target: Option<ExpressionEntity>,
+        charges: ExpressionInt,
     },
     UseAbility {
         house: HouseName,
         name: String,
     },
+    SetCurrentHp {
+        target: Option<ExpressionEntity>,
+        value: ExpressionInt,
+    },
     ChangeStat {
         stat: StatType,
         target: Option<ExpressionEntity>,
-        value: ExpressionInt,
+        delta: ExpressionInt,
+    },
+    ChangeAttack {
+        target: Option<ExpressionEntity>,
+        delta: ExpressionInt,
+    },
+    ChangeMaxHp {
+        target: Option<ExpressionEntity>,
+        delta: ExpressionInt,
+    },
+    ChangeStats {
+        target: Option<ExpressionEntity>,
+        delta: ExpressionInt,
     },
     ChangeContext {
         target: Option<ExpressionEntity>,
@@ -67,6 +87,7 @@ pub enum Effect {
     },
     TakeVar {
         var: VarName,
+        new_name: Option<VarName>,
         entity: ExpressionEntity,
         effect: Box<Effect>,
     },
@@ -97,14 +118,14 @@ impl Effect {
         resources: &mut Resources,
     ) -> Result<(), Error> {
         match self {
-            Effect::Damage { value } => {
+            Effect::Damage { value, then } => {
                 let mut context = context.clone();
                 let mut value = match value {
                     Some(v) => v.calculate(&context, world, resources)?,
                     None => {
                         world
                             .entry_ref(context.owner)
-                            .context("Filed to get Owner")?
+                            .context("Failed to get Owner")?
                             .get_component::<AttackComponent>()
                             .context("Failed to get Attack component")?
                             .value
@@ -170,6 +191,11 @@ impl Effect {
                         ),
                         &LogContext::Effect,
                     );
+                    if let Some(effect) = then {
+                        resources
+                            .action_queue
+                            .push_front(Action::new(context.clone(), effect.deref().clone()));
+                    }
                 }
                 Event::AfterIncomingDamage { context }.send(resources, world);
             }
@@ -201,14 +227,6 @@ impl Effect {
                     .get_component_mut::<FlagsComponent>()?
                     .remove_flag(flag);
             }
-            Effect::RemoveStatus { name: status } => {
-                resources
-                    .status_pool
-                    .active_statuses
-                    .get_mut(&context.target)
-                    .context("Tried to remove absent status")?
-                    .remove(status);
-            }
             Effect::SetVarInt { name, value } => {
                 let value = value.calculate(&context, world, resources)?;
                 world
@@ -218,8 +236,35 @@ impl Effect {
                     .vars
                     .insert(name.clone(), Var::Int(value));
             }
-            Effect::AttachStatus { name } => {
-                StatusPool::add_entity_status(context.target, name, context, resources);
+            Effect::ChangeStatus { name, target, .. }
+            | Effect::AddStatus { name, target, .. }
+            | Effect::RemoveStatus { name, target, .. } => {
+                let context = Context {
+                    target: target
+                        .as_ref()
+                        .and_then(|t| t.calculate(&context, world, resources).ok())
+                        .unwrap_or(context.target),
+                    ..context.clone()
+                };
+                let charges = match self {
+                    Effect::AddStatus { name: _, target: _ } => 1,
+                    Effect::RemoveStatus { name: _, target: _ } => -1,
+                    Effect::ChangeStatus {
+                        name: _,
+                        target: _,
+                        charges,
+                    } => charges.calculate(&context, world, resources)?,
+                    _ => 0,
+                };
+                StatusPool::change_entity_status(context.target, name, resources, charges);
+            }
+            Effect::RemoveThisStatus => {
+                StatusPool::change_entity_status(
+                    context.target,
+                    &context.vars.get_string(&VarName::StatusName),
+                    resources,
+                    -1,
+                );
             }
             Effect::UseAbility { name, house } => {
                 if world
@@ -247,71 +292,114 @@ impl Effect {
                     ability.effect.clone(),
                 ));
             }
+            Effect::SetCurrentHp { value, target } => {
+                let value = value.calculate(&context, world, resources)?;
+                let context = Context {
+                    target: target
+                        .as_ref()
+                        .and_then(|t| t.calculate(&context, world, resources).ok())
+                        .unwrap_or(context.target),
+                    ..context.clone()
+                };
+                let mut target = world.entry(context.target).unwrap();
+                target.get_component_mut::<HpComponent>().unwrap().current = value;
+            }
             Effect::ChangeStat {
                 stat,
-                value,
+                delta,
                 target,
             } => {
-                let value = value.calculate(&context, world, resources)?;
-                let target = target
-                    .as_ref()
-                    .and_then(|target| target.calculate(&context, world, resources).ok())
-                    .unwrap_or(context.target);
-                let mut target = world.entry(target).unwrap();
+                let delta = delta.calculate(&context, world, resources)?;
+                let context = Context {
+                    target: target
+                        .as_ref()
+                        .and_then(|t| t.calculate(&context, world, resources).ok())
+                        .unwrap_or(context.target),
+                    ..context.clone()
+                };
+                let mut target = world.entry(context.target).unwrap();
                 match stat {
                     StatType::Hp => {
-                        target.get_component_mut::<HpComponent>().unwrap().current = value
+                        let mut hp = target.get_component_mut::<HpComponent>().unwrap();
+                        hp.max += delta;
+                        if hp.current > 0 {
+                            hp.current = (hp.current + delta).max(1);
+                        } else if delta > 0 {
+                            hp.current += delta;
+                        }
                     }
                     StatType::Attack => {
-                        target.get_component_mut::<AttackComponent>().unwrap().value = value
+                        target.get_component_mut::<AttackComponent>().unwrap().value += delta;
                     }
                 }
             }
-            Effect::SetAbilityVarInt {
+            Effect::ChangeAttack { target, delta } => {
+                return Self::process(
+                    &Effect::ChangeStat {
+                        stat: StatType::Attack,
+                        target: target.clone(),
+                        delta: delta.clone(),
+                    },
+                    context,
+                    world,
+                    resources,
+                );
+            }
+            Effect::ChangeMaxHp { target, delta } => {
+                return Self::process(
+                    &Effect::ChangeStat {
+                        stat: StatType::Hp,
+                        target: target.clone(),
+                        delta: delta.clone(),
+                    },
+                    context,
+                    world,
+                    resources,
+                );
+            }
+            Effect::ChangeStats { target, delta } => {
+                return Self::process(
+                    &Effect::List {
+                        effects: vec![
+                            Box::new(Effect::ChangeStat {
+                                stat: StatType::Hp,
+                                target: target.clone(),
+                                delta: delta.clone(),
+                            }),
+                            Box::new(Effect::ChangeStat {
+                                stat: StatType::Attack,
+                                target: target.clone(),
+                                delta: delta.clone(),
+                            }),
+                        ],
+                    },
+                    context,
+                    world,
+                    resources,
+                );
+            }
+            Effect::ChangeAbilityVarInt {
                 house,
-                ability: ability_name,
-                var: var_name,
-                value,
+                ability,
+                var,
+                delta,
             } => {
-                let value = value.calculate(&context, world, resources)?;
+                let delta = delta.calculate(&context, world, resources)?;
 
                 resources.logger.log(
-                    &format!(
-                        "Set ability {} var {:?} value {}",
-                        ability_name, var_name, value
-                    ),
+                    &format!("Set ability {} var {:?} delta {}", ability, var, delta),
                     &LogContext::Effect,
                 );
-                resources
+                let vars = &mut resources
                     .houses
                     .get_mut(house)
-                    .context(format!("Failed to get {:?}", house))?
+                    .unwrap()
                     .abilities
-                    .get_mut(ability_name)
-                    .context(format!(
-                        "Failed to get Ability {} from {:?}",
-                        ability_name, house
-                    ))?
-                    .vars
-                    .insert(*var_name, Var::Int(value));
-            }
-            Effect::SetStatusVarInt { status, var, value } => {
-                let value = value.calculate(&context, world, resources)?;
-                resources
-                    .status_pool
-                    .active_statuses
-                    .get_mut(&context.target)
-                    .context(format!(
-                        "Failed to get target#{:?} statuses",
-                        context.target
-                    ))?
-                    .get_mut(status)
-                    .context(format!(
-                        "Failed to find status {} on {:?}",
-                        status, context.target
-                    ))?
-                    .vars
-                    .insert(*var, Var::Int(value));
+                    .get_mut(ability)
+                    .unwrap()
+                    .vars;
+                let value = vars.try_get_int(var).unwrap_or_default() + delta;
+                vars.insert(*var, Var::Int(value));
             }
             Effect::If {
                 condition,
@@ -369,10 +457,19 @@ impl Effect {
             }
             Effect::Kill { target, then } => {
                 let context = Context {
-                    target: target.calculate(&context, world, resources)?,
+                    target: target
+                        .as_ref()
+                        .and_then(|t| t.calculate(&context, world, resources).ok())
+                        .unwrap_or(context.target),
                     ..context.clone()
                 };
-                if UnitSystem::kill(context.target, world, resources) {
+                world
+                    .entry(context.target)
+                    .unwrap()
+                    .get_component_mut::<HpComponent>()
+                    .unwrap()
+                    .current = 0;
+                if UnitSystem::process_death(context.target, world, resources) {
                     if let Some(effect) = then {
                         resources
                             .action_queue
@@ -396,12 +493,13 @@ impl Effect {
             Effect::TakeVar {
                 var,
                 entity,
+                new_name,
                 effect,
             } => resources.action_queue.push_front(Action::new(
                 {
                     let mut vars = context.vars.clone();
                     vars.insert(
-                        *var,
+                        new_name.unwrap_or(*var),
                         ContextSystem::get_context(
                             entity.calculate(&context, world, resources)?,
                             world,

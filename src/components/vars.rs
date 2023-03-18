@@ -27,12 +27,7 @@ pub enum VarName {
     GrowAmount,
     Color,
     GlobalTime,
-    Hovered,
-    HoveredTs,
-    Dragged,
-    DraggedTs,
-    Pressed,
-    PressedTs,
+    StatusName,
 }
 
 impl VarName {
@@ -81,13 +76,6 @@ impl Vars {
         self.0.get(name)
     }
 
-    pub fn get_int(&self, name: &VarName) -> i32 {
-        match self.get(name) {
-            Var::Int(value) => *value,
-            _ => panic!("Wrong Var type {}", name),
-        }
-    }
-
     pub fn get_color(&self, name: &VarName) -> Rgba<f32> {
         self.try_get_color(name)
             .expect(&format!("Failed to get var {}", name))
@@ -118,6 +106,21 @@ impl Vars {
         }
     }
 
+    pub fn get_int(&self, name: &VarName) -> i32 {
+        self.try_get_int(name)
+            .expect(&format!("Failed to get var {}", name))
+    }
+
+    pub fn try_get_int(&self, name: &VarName) -> Option<i32> {
+        match self.try_get(name) {
+            Some(value) => match value {
+                Var::Int(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", name),
+            },
+            None => None,
+        }
+    }
+
     pub fn get_float(&self, name: &VarName) -> f32 {
         self.try_get_float(name)
             .expect(&format!("Failed to get var {}", name))
@@ -127,6 +130,21 @@ impl Vars {
         match self.try_get(name) {
             Some(value) => match value {
                 Var::Float(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", name),
+            },
+            None => None,
+        }
+    }
+
+    pub fn get_string(&self, name: &VarName) -> String {
+        self.try_get_string(name)
+            .expect(&format!("Failed to get var {}", name))
+    }
+
+    pub fn try_get_string(&self, name: &VarName) -> Option<String> {
+        match self.try_get(name) {
+            Some(value) => match value {
+                Var::String((_font, value)) => Some(value.clone()),
                 _ => panic!("Wrong Var type {}", name),
             },
             None => None,

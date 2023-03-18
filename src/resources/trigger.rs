@@ -3,7 +3,10 @@ use super::*;
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum Trigger {
-    Init { effect: Effect },
+    OnStatusAdd { effect: Effect },
+    OnStatusRemove { effect: Effect },
+    OnStatusChargeAdd { effect: Effect },
+    OnStatusChargeRemove { effect: Effect },
     ModifyIncomingDamage { value: ExpressionInt },
     BeforeIncomingDamage { effect: Effect },
     AfterIncomingDamage { effect: Effect },
@@ -12,8 +15,9 @@ pub enum Trigger {
     List { triggers: Vec<Box<Trigger>> },
     Buy { effect: Effect },
     Sell { effect: Effect },
-    RemoveFromTeam { effect: Effect },
     AfterStrike { effect: Effect },
+    AddToTeam { effect: Effect },
+    RemoveFromTeam { effect: Effect },
 }
 
 impl Trigger {
@@ -39,20 +43,12 @@ impl Trigger {
                     trigger.catch_event(event, action_queue, context.clone(), logger)
                 });
             }
-            Trigger::Init { .. } => match event {
-                Event::Init { .. } => self.fire(action_queue, context, logger),
-                _ => {}
-            },
             Trigger::Buy { .. } => match event {
                 Event::Buy { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::Sell { .. } => match event {
                 Event::Sell { .. } => self.fire(action_queue, context, logger),
-                _ => {}
-            },
-            Trigger::RemoveFromTeam { .. } => match event {
-                Event::RemoveFromTeam { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::BeforeDeath { .. } => match event {
@@ -68,6 +64,30 @@ impl Trigger {
                 Event::AfterStrike { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::OnStatusAdd { .. } => match event {
+                Event::StatusAdd { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::OnStatusRemove { .. } => match event {
+                Event::StatusRemove { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::OnStatusChargeAdd { .. } => match event {
+                Event::StatusChargeAdd { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::OnStatusChargeRemove { .. } => match event {
+                Event::StatusChargeRemove { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::AddToTeam { .. } => match event {
+                Event::AddToTeam { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::RemoveFromTeam { .. } => match event {
+                Event::RemoveFromTeam { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
         }
     }
 
@@ -78,10 +98,14 @@ impl Trigger {
             | Trigger::BeforeDeath { effect }
             | Trigger::AfterBattle { effect }
             | Trigger::AfterStrike { effect }
-            | Trigger::Init { effect }
-            | Trigger::RemoveFromTeam { effect }
             | Trigger::Buy { effect }
-            | Trigger::Sell { effect } => {
+            | Trigger::Sell { effect }
+            | Trigger::AddToTeam { effect }
+            | Trigger::RemoveFromTeam { effect }
+            | Trigger::OnStatusAdd { effect }
+            | Trigger::OnStatusRemove { effect }
+            | Trigger::OnStatusChargeAdd { effect }
+            | Trigger::OnStatusChargeRemove { effect } => {
                 logger.log(
                     &format!("Caught trigger {:?}, {:?}", self, context),
                     &LogContext::Trigger,
