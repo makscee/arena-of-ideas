@@ -4,10 +4,9 @@ use super::*;
 pub struct UnitComponent {
     pub slot: usize,
     pub faction: Faction,
-    pub template_path: PathBuf,
 }
 
-#[derive(Clone, Copy, Deserialize, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Deserialize, Serialize, Debug, PartialEq, Eq, Hash)]
 pub enum Faction {
     Light,
     Dark,

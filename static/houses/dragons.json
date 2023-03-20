@@ -23,23 +23,19 @@
                 "type": "List",
                 "triggers": [
                     {
-                        "type": "OnStatusChargeAdd",
-                        "effect": {
-                            "type": "ChangeStats",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
-                            }
+                        "type": "ChangeVarInt",
+                        "var": "HpValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     },
                     {
-                        "type": "OnStatusChargeRemove",
-                        "effect": {
-                            "type": "ChangeStats",
-                            "delta": {
-                                "type": "Const",
-                                "value": -1
-                            }
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     }
                 ]
@@ -47,26 +43,9 @@
         },
         "Rebirth": {
             "trigger": {
-                "type": "BeforeDeath",
+                "type": "AfterDeath",
                 "effect": {
-                    "type": "List",
-                    "effects": [
-                        {
-                            "type": "SetCurrentHp",
-                            "value": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        },
-                        {
-                            "type": "RemoveStatus",
-                            "name": "Rebirth"
-                        },
-                        {
-                            "type": "ShowText",
-                            "text": "Rebirth"
-                        }
-                    ]
+                    "type": "Revive"
                 }
             }
         }

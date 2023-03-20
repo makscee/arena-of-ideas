@@ -1,10 +1,11 @@
 use super::*;
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VarName {
     Damage,
-    HpMax,
-    HpCurrent,
+    HpValue,
+    HpDamage,
+    AttackValue,
     Position,
     Radius,
     Size,
@@ -46,7 +47,7 @@ impl VarName {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Var {
     Int(i32),
@@ -58,12 +59,16 @@ pub enum Var {
     Color(Rgba<f32>),
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Vars(HashMap<VarName, Var>);
 
 impl Vars {
     pub fn insert(&mut self, name: VarName, var: Var) {
         self.0.insert(name, var);
+    }
+
+    pub fn remove(&mut self, name: &VarName) {
+        self.0.remove(name);
     }
 
     pub fn get(&self, name: &VarName) -> &Var {
@@ -151,7 +156,7 @@ impl Vars {
         }
     }
 
-    pub fn merge(&mut self, other: &Vars, force: bool) {
+    pub fn merge_mut(&mut self, other: &Vars, force: bool) {
         other.0.iter().for_each(|(key, value)| {
             if force || !self.0.contains_key(key) {
                 self.0.insert(*key, value.clone());

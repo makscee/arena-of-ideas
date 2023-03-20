@@ -40,17 +40,10 @@
                 "type": "List",
                 "triggers": [
                     {
-                        "type": "OnStatusAdd",
-                        "effect": {
-                            "type": "AddFlag",
-                            "flag": "DamageImmune"
-                        }
-                    },
-                    {
-                        "type": "OnStatusRemove",
-                        "effect": {
-                            "type": "RemoveFlag",
-                            "flag": "DamageImmune"
+                        "type": "ModifyIncomingDamage",
+                        "value": {
+                            "type": "Const",
+                            "value": 0
                         }
                     },
                     {

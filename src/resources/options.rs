@@ -7,6 +7,7 @@ pub struct Options {
     pub shaders: Shaders,
     pub images: Images,
     pub colors: Colors,
+    pub custom_game: CustomGameConfig,
 }
 
 impl geng::LoadAsset for Options {
@@ -70,4 +71,12 @@ pub struct Colors {
     pub btn_normal: Rgba<f32>,
     pub btn_active: Rgba<f32>,
     pub btn_hovered: Rgba<f32>,
+    pub damage_text: Rgba<f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CustomGameConfig {
+    pub enable: bool,
+    pub light: Option<Team>,
+    pub dark: Option<Team>,
 }

@@ -1,10 +1,14 @@
 {
+    "custom_game": {
+        "enable": false
+    },
     "fov": 14.0,
     "log": {
         "Action": true,
-        "Effect": false,
+        "Effect": true,
+        "Contexts": false,
         "Condition": false,
-        "Trigger": false,
+        "Trigger": true,
         "Event": true,
         "UnitCreation": false,
         "Measurement": false
@@ -16,6 +20,7 @@
             "Shop": "#fbc000",
             "Team": "#e70083"
         },
+        "damage_text": "#a70b0b",
         "inactive": "#aeaeae",
         "stats_attack_color": "#ffc400",
         "stats_hp_color": "#d20505",

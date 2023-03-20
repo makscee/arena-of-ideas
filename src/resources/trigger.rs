@@ -1,23 +1,29 @@
 use super::*;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(tag = "type")]
+#[serde(deny_unknown_fields)]
 pub enum Trigger {
-    OnStatusAdd { effect: Effect },
-    OnStatusRemove { effect: Effect },
-    OnStatusChargeAdd { effect: Effect },
-    OnStatusChargeRemove { effect: Effect },
-    ModifyIncomingDamage { value: ExpressionInt },
-    BeforeIncomingDamage { effect: Effect },
-    AfterIncomingDamage { effect: Effect },
-    BeforeDeath { effect: Effect },
-    AfterBattle { effect: Effect },
     List { triggers: Vec<Box<Trigger>> },
-    Buy { effect: Effect },
-    Sell { effect: Effect },
-    AfterStrike { effect: Effect },
-    AddToTeam { effect: Effect },
-    RemoveFromTeam { effect: Effect },
+    OnStatusAdd { effect: EffectWrapped },
+    OnStatusRemove { effect: EffectWrapped },
+    OnStatusChargeAdd { effect: EffectWrapped },
+    OnStatusChargeRemove { effect: EffectWrapped },
+    BeforeIncomingDamage { effect: EffectWrapped },
+    AfterIncomingDamage { effect: EffectWrapped },
+    AfterDamageDealt { effect: EffectWrapped },
+    BeforeDeath { effect: EffectWrapped },
+    AfterDeath { effect: EffectWrapped },
+    AfterBirth { effect: EffectWrapped },
+    AfterBattle { effect: EffectWrapped },
+    Buy { effect: EffectWrapped },
+    Sell { effect: EffectWrapped },
+    AfterStrike { effect: EffectWrapped },
+    AddToTeam { effect: EffectWrapped },
+    RemoveFromTeam { effect: EffectWrapped },
+    ModifyIncomingDamage { value: ExpressionInt },
+    ChangeVarInt { var: VarName, delta: ExpressionInt }, // Preferred for stat changes
+    Noop,
 }
 
 impl Trigger {
@@ -38,6 +44,10 @@ impl Trigger {
                 Event::AfterIncomingDamage { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::AfterDamageDealt { .. } => match event {
+                Event::AfterDamageDealt { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
             Trigger::List { triggers } => {
                 triggers.iter().for_each(|trigger| {
                     trigger.catch_event(event, action_queue, context.clone(), logger)
@@ -55,11 +65,18 @@ impl Trigger {
                 Event::BeforeDeath { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::AfterDeath { .. } => match event {
+                Event::AfterDeath { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::AfterBirth { .. } => match event {
+                Event::AfterBirth { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
             Trigger::AfterBattle { .. } => match event {
                 Event::BattleOver { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::ModifyIncomingDamage { .. } => {}
             Trigger::AfterStrike { .. } => match event {
                 Event::AfterStrike { .. } => self.fire(action_queue, context, logger),
                 _ => {}
@@ -88,6 +105,8 @@ impl Trigger {
                 Event::RemoveFromTeam { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::ModifyIncomingDamage { .. } | Trigger::ChangeVarInt { .. } | Trigger::Noop => {
+            }
         }
     }
 
@@ -95,7 +114,10 @@ impl Trigger {
         match self {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
+            | Trigger::AfterDamageDealt { effect }
             | Trigger::BeforeDeath { effect }
+            | Trigger::AfterDeath { effect }
+            | Trigger::AfterBirth { effect }
             | Trigger::AfterBattle { effect }
             | Trigger::AfterStrike { effect }
             | Trigger::Buy { effect }
@@ -112,9 +134,52 @@ impl Trigger {
                 );
                 action_queue.push_back(Action::new(context, effect.clone()))
             }
-            Trigger::ModifyIncomingDamage { .. } | Trigger::List { .. } => {
+            Trigger::ModifyIncomingDamage { .. }
+            | Trigger::List { .. }
+            | Trigger::ChangeVarInt { .. } => {
                 panic!("Can't fire {:?}", self)
             }
+            Trigger::Noop => {}
         }
+    }
+
+    /// Change vars and return updated context
+    pub fn calculate_event(
+        &self,
+        event: &Event,
+        context: Context,
+        world: &legion::World,
+        resources: &Resources,
+    ) -> Context {
+        let mut context = context.clone();
+        match self {
+            Trigger::List { triggers } => {
+                for trigger in triggers {
+                    context = trigger.calculate_event(event, context, world, resources);
+                }
+            }
+            Trigger::ModifyIncomingDamage { value } => match event {
+                Event::ModifyIncomingDamage { .. } => {
+                    let mut damage = context.vars.get_int(&VarName::Damage);
+                    damage = match value.calculate(&context, world, resources) {
+                        Ok(value) => value,
+                        Err(_) => damage,
+                    };
+                    context.vars.insert(VarName::Damage, Var::Int(damage));
+                }
+                _ => {}
+            },
+            Trigger::ChangeVarInt { var, delta } => match event {
+                Event::ModifyContext { .. } => match delta.calculate(&context, world, resources) {
+                    Ok(delta) => context
+                        .vars
+                        .insert(*var, Var::Int(delta + context.vars.get_int(var))),
+                    Err(_) => {}
+                },
+                _ => {}
+            },
+            _ => {}
+        }
+        context
     }
 }

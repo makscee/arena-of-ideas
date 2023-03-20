@@ -5,3 +5,9 @@ use super::*;
 pub struct EntityComponent {
     pub entity: legion::Entity,
 }
+
+impl EntityComponent {
+    pub fn new(entity: legion::Entity) -> Self {
+        Self { entity }
+    }
+}

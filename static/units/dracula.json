@@ -1,34 +1,20 @@
-[
-    {
-        "component": "Name",
-        "name": "Dracula"
+{
+    "name": "Dracula",
+    "description": "After strike:\nuse Siphon Life",
+    "attack": 1,
+    "health": 3,
+    "houses": [
+        "Vampires"
+    ],
+    "trigger": {
+        "type": "AfterStrike",
+        "effect": {
+            "type": "UseAbility",
+            "house": "Vampires",
+            "name": "SiphonLife"
+        }
     },
-    {
-        "component": "House",
-        "houses": [
-            "Vampires"
-        ]
-    },
-    {
-        "component": "Description",
-        "text": "After strike:\nuse nSiphon Life"
-    },
-    {
-        "component": "AbilityDescription",
-        "abilities": [
-            "SiphonLife"
-        ]
-    },
-    {
-        "component": "Hp",
-        "max": 3
-    },
-    {
-        "component": "Attack",
-        "value": 1
-    },
-    {
-        "component": "Shader",
+    "shader": {
         "path": "shaders/vfx/layered_triangles.glsl",
         "parameters": {
             "uniforms": {
@@ -43,20 +29,5 @@
             "instances": 40,
             "vertices": 1
         }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "SiphonAfterStrike": {
-                "trigger": {
-                    "type": "AfterStrike",
-                    "effect": {
-                        "type": "UseAbility",
-                        "house": "Vampires",
-                        "name": "SiphonLife"
-                    }
-                }
-            }
-        }
     }
-]
+}

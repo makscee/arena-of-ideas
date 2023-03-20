@@ -3,6 +3,7 @@ use std::{collections::VecDeque, rc::Rc};
 use super::*;
 
 mod ability;
+mod ability_state;
 mod camera;
 mod cassette;
 mod condition;
@@ -17,13 +18,16 @@ mod image;
 mod image_textures;
 mod input;
 mod options;
+mod serialized_unit;
 mod shader_programs;
 mod shop;
 mod status;
+mod team;
 mod trigger;
 mod visual_effect;
 
 pub use ability::*;
+pub use ability_state::*;
 pub use camera::*;
 pub use cassette::*;
 pub use condition::*;
@@ -38,9 +42,11 @@ pub use image::*;
 pub use image_textures::*;
 pub use input::*;
 pub use options::*;
+pub use serialized_unit::*;
 pub use shader_programs::*;
 pub use shop::*;
 pub use status::*;
+pub use team::*;
 pub use trigger::*;
 pub use visual_effect::*;
 
@@ -58,13 +64,16 @@ pub struct Resources {
     pub action_queue: VecDeque<Action>,
     pub cassette: Cassette,
     pub cassette_play_mode: CassettePlayMode,
-    pub shop: Shop,
     pub frame_shaders: Vec<Shader>,
+
+    pub shop: Shop,
     pub game_won: bool,
     pub last_round: usize,
-
-    pub unit_templates: UnitTemplatesPool,
     pub floors: Floors,
+
+    pub hero_pool: HashMap<PathBuf, SerializedUnit>,
+    pub unit_corpses: HashMap<legion::Entity, (SerializedUnit, Faction)>,
+    pub teams: HashMap<Faction, Team>,
     pub houses: HashMap<HouseName, House>,
     pub definitions: Definitions,
 
@@ -133,7 +142,6 @@ impl Resources {
             delta_time: default(),
             action_queue: default(),
             status_pool: default(),
-            unit_templates: default(),
             cassette: default(),
             cassette_play_mode: CassettePlayMode::Play,
             shop: default(),
@@ -148,6 +156,9 @@ impl Resources {
             last_round: default(),
             current_state: GameState::MainMenu,
             transition_state: GameState::MainMenu,
+            hero_pool: default(),
+            teams: default(),
+            unit_corpses: default(),
         }
     }
 
@@ -155,7 +166,7 @@ impl Resources {
         self.load_shader_programs(fws);
         self.load_image_textures(fws);
         self.load_houses(fws);
-        self.load_unit_templates(fws);
+        self.load_hero_pool(fws);
         fws.load_and_watch_file(
             self,
             &static_path().join("options.json"),
@@ -269,30 +280,24 @@ impl Resources {
         }
     }
 
-    fn load_unit_templates(&mut self, fws: &mut FileWatcherSystem) {
+    fn load_hero_pool(&mut self, fws: &mut FileWatcherSystem) {
         let list = futures::executor::block_on(Self::load_list(
             &self.geng,
             PathBuf::try_from("units/_list.json").unwrap(),
         ));
 
         for file in list {
-            fws.load_and_watch_file(
-                self,
-                &static_path().join(file),
-                Box::new(Self::load_unit_template),
-            );
+            fws.load_and_watch_file(self, &static_path().join(file), Box::new(Self::load_hero));
         }
     }
 
-    fn load_unit_template(resources: &mut Resources, file: &PathBuf) {
+    fn load_hero(resources: &mut Resources, file: &PathBuf) {
         let json =
             futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
                 .expect("Failed to load unit");
-        let template =
+        let unit =
             serde_json::from_str(&json).expect(&format!("Failed to parse UnitTemplate {:?}", file));
-        resources
-            .unit_templates
-            .define_template(file.clone(), template);
+        resources.hero_pool.insert(file.clone(), unit);
     }
 
     fn load_options(resources: &mut Resources, file: &PathBuf) {
@@ -300,7 +305,6 @@ impl Resources {
             futures::executor::block_on(<Options as geng::LoadAsset>::load(&resources.geng, &file))
                 .unwrap();
         resources.logger.load(&resources.options);
-        // dbg!(&resources.options);
     }
 
     fn load_houses(&mut self, fws: &mut FileWatcherSystem) {
@@ -343,102 +347,3 @@ impl Resources {
         resources.floors = rounds;
     }
 }
-
-#[derive(Default, Debug)]
-pub struct UnitTemplatesPool {
-    pub heroes: HashMap<PathBuf, UnitTemplate>,
-    pub enemies: HashMap<PathBuf, UnitTemplate>,
-}
-
-impl UnitTemplatesPool {
-    pub fn define_template(&mut self, path: PathBuf, template: UnitTemplate) {
-        match template.0.iter().any(|component| match component {
-            SerializedComponent::House { houses: _ } => true,
-            _ => false,
-        }) {
-            true => {
-                self.heroes.insert(path, template);
-            }
-            false => {
-                self.enemies.insert(path, template);
-            }
-        }
-    }
-
-    pub fn create_unit_entity(
-        path: &PathBuf,
-        resources: &mut Resources,
-        world: &mut legion::World,
-        faction: Faction,
-        slot: usize,
-        position: vec2<f32>,
-    ) -> legion::Entity {
-        let template = resources
-            .unit_templates
-            .heroes
-            .get(path)
-            .or_else(|| resources.unit_templates.enemies.get(path))
-            .expect(&format!("Template not found: {:?}", path))
-            .clone();
-        let entity = world.push((
-            AreaComponent {
-                position,
-                r#type: AreaType::Circle { radius: 1.0 },
-            },
-            FlagsComponent::default(),
-            faction.clone(),
-            UnitComponent {
-                faction,
-                slot,
-                template_path: path.clone(),
-            },
-        ));
-        let parent = WorldSystem::get_context(world).owner;
-        let mut entry = world.entry(entity).unwrap();
-        entry.add_component(EntityComponent { entity });
-        let context = Context {
-            owner: entity,
-            target: entity,
-            parent: Some(parent),
-            vars: default(),
-        };
-        entry.add_component(context.clone());
-        template
-            .0
-            .iter()
-            .for_each(|component| component.add_to_entry(resources, path, entity, &context, world));
-        resources.logger.log(
-            &format!(
-                "Unit#{:?} created. Template: {:?} Context: {:?}",
-                entity, template.0, context
-            ),
-            &LogContext::UnitCreation,
-        );
-        fn unit_drag(
-            entity: legion::Entity,
-            resources: &mut Resources,
-            world: &mut legion::World,
-            event: InputEvent,
-        ) {
-            match event {
-                InputEvent::Drag { .. } => {
-                    world.entry_mut(entity).ok().and_then(|mut entry| {
-                        entry.get_component_mut::<AreaComponent>().unwrap().position =
-                            resources.input.mouse_pos;
-                        Some(())
-                    });
-                    resources.shop.drag_entity = Some(entity);
-                }
-                InputEvent::DragStop => {
-                    resources.shop.drop_entity = Some(entity);
-                }
-                _ => {}
-            };
-        }
-        resources.input.listeners.insert(entity, unit_drag);
-        entity
-    }
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct UnitTemplate(pub Vec<SerializedComponent>);

@@ -9,55 +9,36 @@ pub enum StatType {
 }
 
 impl StatsUiSystem {
-    pub fn get_entity_shaders(
-        entity: legion::Entity,
-        world: &legion::World,
-        options: &Options,
-    ) -> Vec<Shader> {
-        world
-            .entry_ref(entity)
-            .unwrap()
-            .get_component::<HpComponent>()
-            .map(|hp| {
-                options
-                    .shaders
-                    .stats
-                    .clone()
-                    .set_uniform("u_angle_offset", ShaderUniform::Float(1.0))
-                    .set_uniform("u_text", ShaderUniform::String((0, hp.current.to_string())))
-                    .set_uniform("u_value_modified", ShaderUniform::Int(hp.current - hp.max))
-                    .set_uniform(
-                        "u_circle_color",
-                        ShaderUniform::Color(options.colors.stats_hp_color),
-                    )
-            })
-            .into_iter()
-            .chain(
-                world
-                    .entry_ref(entity)
-                    .unwrap()
-                    .get_component::<AttackComponent>()
-                    .map(|attack| {
-                        options
-                            .shaders
-                            .stats
-                            .clone()
-                            .set_uniform("u_angle_offset", ShaderUniform::Float(-1.0))
-                            .set_uniform(
-                                "u_text",
-                                ShaderUniform::String((0, attack.value.to_string())),
-                            )
-                            .set_uniform(
-                                "u_value_modified",
-                                ShaderUniform::Int(attack.value - attack.initial_value),
-                            )
-                            .set_uniform(
-                                "u_circle_color",
-                                ShaderUniform::Color(options.colors.stats_attack_color),
-                            )
-                    })
-                    .into_iter(),
-            )
-            .collect_vec()
+    pub fn get_entity_shaders(vars: &Vars, options: &Options) -> Vec<Shader> {
+        let damage = vars.get_int(&VarName::HpDamage);
+        let hp_value = vars.get_int(&VarName::HpValue) - damage;
+        let hp_modified = -damage.signum();
+        let attack_value = vars.get_int(&VarName::AttackValue);
+        vec![
+            options
+                .shaders
+                .stats
+                .clone()
+                .set_uniform("u_angle_offset", ShaderUniform::Float(1.0))
+                .set_uniform("u_text", ShaderUniform::String((0, hp_value.to_string())))
+                .set_uniform("u_value_modified", ShaderUniform::Int(hp_modified))
+                .set_uniform(
+                    "u_circle_color",
+                    ShaderUniform::Color(options.colors.stats_hp_color),
+                ),
+            options
+                .shaders
+                .stats
+                .clone()
+                .set_uniform("u_angle_offset", ShaderUniform::Float(-1.0))
+                .set_uniform(
+                    "u_text",
+                    ShaderUniform::String((0, attack_value.to_string())),
+                )
+                .set_uniform(
+                    "u_circle_color",
+                    ShaderUniform::Color(options.colors.stats_attack_color),
+                ),
+        ]
     }
 }

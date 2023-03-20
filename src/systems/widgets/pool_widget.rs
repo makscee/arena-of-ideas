@@ -47,12 +47,14 @@ impl geng::ui::Widget for PoolWidget<'_> {
         );
         self.resources
             .shop
-            .units
+            .pool
             .iter()
             .enumerate()
-            .for_each(|(ind, (size, shader))| {
+            .for_each(|(ind, unit)| {
                 let position = position + vec2(ind as f32 * 2.0, 0.0);
-                for shader in ShaderSystem::flatten_shader_chain(shader.clone()) {
+                let mut shader = unit.shader.clone();
+                UnitSystem::pack_shader(&mut shader, &self.resources.options);
+                for shader in ShaderSystem::flatten_shader_chain(shader) {
                     ShaderSystem::draw_shader_single(
                         &shader,
                         cx.framebuffer,
@@ -65,22 +67,6 @@ impl geng::ui::Widget for PoolWidget<'_> {
                         },
                     );
                 }
-                let text_texture = self.resources.fonts.get_texture(1, size).unwrap();
-                ShaderSystem::draw_shader_single(
-                    &self.resources.options.shaders.text,
-                    cx.framebuffer,
-                    self.resources,
-                    ugli::uniforms! {
-                        u_global_time: self.resources.global_time,
-                        u_game_time: self.resources.cassette.head,
-                        u_position: position,
-                        u_offset: vec2(0.0,-1.0),
-                        u_text: text_texture,
-                        u_scale: 0.4 * self.height,
-                        u_text_size: text_texture.size().map(|x| x as f32),
-                        u_outline_color: self.resources.options.colors.corner_button_color,
-                    },
-                );
             });
     }
 }

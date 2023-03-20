@@ -11,13 +11,18 @@ pub enum GameState {
     Battle,
     Gallery,
     GameOver,
+    CustomGame,
 }
 
 impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         match resources.current_state {
             GameState::MainMenu => {
-                resources.transition_state = GameState::Shop;
+                if resources.options.custom_game.enable {
+                    resources.transition_state = GameState::CustomGame;
+                } else {
+                    resources.transition_state = GameState::Shop;
+                }
                 // if !resources.down_keys.is_empty() {
                 //     self.transition = GameState::Gallery;
                 // }
@@ -25,6 +30,7 @@ impl System for GameStateSystem {
             GameState::Battle => {
                 if resources.input.down_keys.contains(&geng::Key::R) {
                     resources.cassette.clear();
+                    BattleSystem::init_battle(world, resources);
                     BattleSystem::run_battle(world, resources);
                 }
                 if resources.cassette.head > resources.cassette.length() + 2.0 {
@@ -59,6 +65,13 @@ impl System for GameStateSystem {
             GameState::GameOver => {
                 if resources.input.down_keys.contains(&geng::Key::Enter) {
                     resources.transition_state = GameState::Shop;
+                }
+            }
+            GameState::CustomGame => {
+                if resources.input.down_keys.contains(&geng::Key::R) {
+                    resources.cassette.clear();
+                    BattleSystem::init_battle(world, resources);
+                    BattleSystem::run_battle(world, resources);
                 }
             }
         }
@@ -144,7 +157,7 @@ impl System for GameStateSystem {
 }
 
 impl GameStateSystem {
-    pub fn new(state: GameState) -> Self {
+    pub fn new() -> Self {
         Self { systems: default() }
     }
 
@@ -161,16 +174,15 @@ impl GameStateSystem {
         // transition from
         match resources.current_state {
             GameState::MainMenu => {
-                Shop::reset(resources, world);
+                Shop::load_pool(world, resources);
             }
             GameState::Shop => {
                 resources.cassette.clear();
-                ShopSystem::clear(world, resources);
             }
             GameState::Battle => {
                 resources.cassette.clear();
                 WorldSystem::set_var(world, VarName::IsBattle, Var::Float(0.0));
-                Event::BattleOver.send(resources, world);
+                Event::BattleOver.send(world, resources);
             }
             GameState::Gallery => {
                 resources.cassette.clear();
@@ -188,6 +200,7 @@ impl GameStateSystem {
                 resources.camera.camera.fov = resources.options.fov;
                 resources.camera.focus = Focus::Battle;
             }
+            GameState::CustomGame => {}
         }
 
         resources.current_state = resources.transition_state.clone();
@@ -215,6 +228,7 @@ impl GameStateSystem {
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
             }
+            GameState::CustomGame => {}
         }
     }
 }

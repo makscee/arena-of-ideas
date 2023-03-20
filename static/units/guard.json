@@ -1,28 +1,28 @@
-[
-    {
-        "component": "Name",
-        "name": "Guard"
+{
+    "name": "Guard",
+    "description": "On Buy:\ngain Shield",
+    "health": 1,
+    "attack": 3,
+    "houses": [
+        "Robots"
+    ],
+    "trigger": {
+        "type": "AfterBirth",
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "UseAbility",
+                    "house": "Robots",
+                    "name": "Shield"
+                },
+                {
+                    "type": "RemoveTrigger"
+                }
+            ]
+        }
     },
-    {
-        "component": "House",
-        "houses": [
-            "Robots"
-        ]
-    },
-    {
-        "component": "Description",
-        "text": "On Buy:\ngain Shield"
-    },
-    {
-        "component": "Hp",
-        "max": 1
-    },
-    {
-        "component": "Attack",
-        "value": 3
-    },
-    {
-        "component": "Shader",
+    "shader": {
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
@@ -35,28 +35,5 @@
                 "u_aa": 0.05
             }
         }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "GetShield": {
-                "trigger": {
-                    "type": "Buy",
-                    "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "UseAbility",
-                                "house": "Robots",
-                                "name": "Shield"
-                            },
-                            {
-                                "type": "RemoveThisStatus"
-                            }
-                        ]
-                    }
-                }
-            }
-        }
     }
-]
+}

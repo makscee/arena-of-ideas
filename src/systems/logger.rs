@@ -15,6 +15,7 @@ pub enum LogContext {
     Event,
     UnitCreation,
     Measurement,
+    Contexts,
 }
 
 impl Logger {

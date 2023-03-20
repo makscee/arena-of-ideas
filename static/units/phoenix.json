@@ -1,28 +1,28 @@
-[
-    {
-        "component": "Name",
-        "name": "Phoenix"
+{
+    "name": "Phoenix",
+    "description": "Has Rebirth",
+    "attack": 3,
+    "health": 4,
+    "houses": [
+        "Dragons"
+    ],
+    "trigger": {
+        "type": "AfterBirth",
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "UseAbility",
+                    "house": "Dragons",
+                    "name": "Rebirth"
+                },
+                {
+                    "type": "RemoveTrigger"
+                }
+            ]
+        }
     },
-    {
-        "component": "House",
-        "houses": [
-            "Dragons"
-        ]
-    },
-    {
-        "component": "Description",
-        "text": "Has Rebirth"
-    },
-    {
-        "component": "Hp",
-        "max": 4
-    },
-    {
-        "component": "Attack",
-        "value": 3
-    },
-    {
-        "component": "Shader",
+    "shader": {
         "path": "shaders/vfx/particle_emitter.glsl",
         "parameters": {
             "instances": 3000,
@@ -36,28 +36,5 @@
                 "u_lifetime": 2.2
             }
         }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "GetShield": {
-                "trigger": {
-                    "type": "OnStatusAdd",
-                    "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "UseAbility",
-                                "house": "Dragons",
-                                "name": "Rebirth"
-                            },
-                            {
-                                "type": "RemoveThisStatus"
-                            }
-                        ]
-                    }
-                }
-            }
-        }
     }
-]
+}

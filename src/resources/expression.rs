@@ -1,10 +1,8 @@
 /// Expression is anything that can return a value.
 /// For each return type there should be one enum
-use legion::EntityStore;
-
 use super::*;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ExpressionInt {
     Sum {
@@ -29,10 +27,6 @@ pub enum ExpressionInt {
         house: HouseName,
         ability: String,
         var: VarName,
-    },
-    Stat {
-        stat: StatType,
-        target: Option<ExpressionEntity>,
     },
 }
 
@@ -60,38 +54,30 @@ impl ExpressionInt {
                     .try_get_int(var)
                     .context(format!("Var not found {}", var))
             }
-            ExpressionInt::Stat { stat, target } => {
-                let target = target
-                    .as_ref()
-                    .and_then(|target| Some(target.calculate(&context, world, resources)))
-                    .unwrap_or(Ok(context.target));
-                let target = world.entry_ref(target?).unwrap();
-                Ok(match stat {
-                    StatType::Hp => target.get_component::<HpComponent>().unwrap().current,
-                    StatType::Attack => target.get_component::<AttackComponent>().unwrap().value,
-                })
-            }
             ExpressionInt::AbilityVar {
                 house,
                 ability: ability_name,
                 var: var_name,
-            } => Ok(resources
-                .houses
-                .get(house)
-                .context(format!("Failed to get {:?}", house))?
-                .abilities
-                .get(ability_name)
-                .context(format!(
-                    "Failed to get Ability {} from {:?}",
-                    ability_name, house
-                ))?
-                .vars
-                .get_int(var_name)),
+            } => {
+                todo!("rewrite");
+                Ok(resources
+                    .houses
+                    .get(house)
+                    .context(format!("Failed to get {:?}", house))?
+                    .abilities
+                    .get(ability_name)
+                    .context(format!(
+                        "Failed to get Ability {} from {:?}",
+                        ability_name, house
+                    ))?
+                    .vars
+                    .get_int(var_name))
+            }
         }
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ExpressionEntity {
     World,
@@ -145,5 +131,33 @@ impl ExpressionEntity {
                     .context(format!("No units of {:?} found", faction))
             }
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ExpressionFaction {
+    Owner,
+    Target,
+    Parent,
+}
+
+impl ExpressionFaction {
+    pub fn calculate(
+        &self,
+        context: &Context,
+        world: &legion::World,
+        _: &Resources,
+    ) -> Result<Faction, Error> {
+        let entity = match self {
+            ExpressionFaction::Owner => context.owner,
+            ExpressionFaction::Target => context.target,
+            ExpressionFaction::Parent => context.parent.context("No parent")?,
+        };
+        Ok(world
+            .entry_ref(entity)
+            .context("Failed to find entity")?
+            .get_component::<UnitComponent>()?
+            .faction)
     }
 }

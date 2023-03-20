@@ -66,20 +66,8 @@ impl BattleSystem {
     }
 
     pub fn create_team(resources: &mut Resources, world: &mut legion::World) {
-        <(&UnitComponent, &EntityComponent)>::query()
-            .iter(world)
-            .filter_map(|(unit, entity)| {
-                if unit.faction == Faction::Team {
-                    Some(entity.entity)
-                } else {
-                    None
-                }
-            })
-            .collect_vec()
-            .iter()
-            .for_each(|entity| {
-                UnitSystem::duplicate_unit(*entity, world, resources, Faction::Light)
-            });
+        Team::pack_entries(&Faction::Team, world, resources);
+        Team::unpack_entries(Faction::Team, Faction::Light, world, resources);
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
@@ -152,10 +140,17 @@ impl BattleSystem {
             );
             resources.cassette.close_node();
 
+            let (left_position, right_position) = (
+                ContextSystem::get_context(left_entity, world)
+                    .vars
+                    .get_vec2(&VarName::Position),
+                ContextSystem::get_context(right_entity, world)
+                    .vars
+                    .get_vec2(&VarName::Position),
+            );
             Self::hit(left_entity, right_entity, world, resources);
-
             Self::refresh_cassette(world, resources);
-            Self::add_strike_vfx(world, resources, left_entity, right_entity);
+            Self::add_strike_vfx(world, resources, left_position, right_position);
             resources.cassette.close_node();
             resources
                 .cassette
@@ -176,7 +171,7 @@ impl BattleSystem {
             );
             resources.cassette.close_node();
 
-            Self::clear_dead(world, resources);
+            Self::death_check(world, resources);
             Self::refresh_cassette(world, resources);
             SlotSystem::refresh_slots_uniforms(world, &resources.options);
             return true;
@@ -220,7 +215,8 @@ impl BattleSystem {
             Effect::Damage {
                 value: None,
                 then: None,
-            },
+            }
+            .wrap(),
         ));
 
         let context_right = Context {
@@ -234,28 +230,34 @@ impl BattleSystem {
             Effect::Damage {
                 value: None,
                 then: None,
-            },
+            }
+            .wrap(),
         ));
         ActionSystem::run_ticks(world, resources);
         Event::AfterStrike {
             owner: left,
             target: right,
         }
-        .send(resources, world);
+        .send(world, resources);
         Event::AfterStrike {
             owner: right,
             target: left,
         }
-        .send(resources, world);
+        .send(world, resources);
         ActionSystem::run_ticks(world, resources);
     }
 
-    pub fn clear_dead(world: &mut legion::World, resources: &mut Resources) {
-        while let Some(dead_unit) = <(&EntityComponent, &HpComponent)>::query()
+    pub fn death_check(world: &mut legion::World, resources: &mut Resources) {
+        ContextSystem::refresh_all(world, resources);
+        while let Some(dead_unit) = <(&EntityComponent, &Context, &HealthComponent)>::query()
             .iter(world)
-            .filter_map(|(unit, hp)| match hp.current <= 0 {
-                true => Some(unit.entity),
-                false => None,
+            .filter_map(|(unit, context, _)| {
+                match context.vars.get_int(&VarName::HpValue)
+                    <= context.vars.get_int(&VarName::HpDamage)
+                {
+                    true => Some(unit.entity),
+                    false => None,
+                }
             })
             .choose(&mut thread_rng())
         {
@@ -308,22 +310,10 @@ impl BattleSystem {
     fn add_strike_vfx(
         world: &legion::World,
         resources: &mut Resources,
-        left: legion::Entity,
-        right: legion::Entity,
+        left: vec2<f32>,
+        right: vec2<f32>,
     ) {
-        let left_position = world
-            .entry_ref(left)
-            .expect("Left striker not found")
-            .get_component::<AreaComponent>()
-            .unwrap()
-            .position;
-        let right_position = world
-            .entry_ref(right)
-            .expect("Right striker not found")
-            .get_component::<AreaComponent>()
-            .unwrap()
-            .position;
-        let position = left_position + (right_position - left_position) * 0.5;
+        let position = left + (right - left) * 0.5;
         resources
             .cassette
             .add_effect(VfxSystem::vfx_strike(resources, position));

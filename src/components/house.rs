@@ -4,30 +4,28 @@ use super::*;
 
 #[derive(Default, Clone)]
 pub struct HouseComponent {
-    pub houses: HashMap<HouseName, Rgba<f32>>,
+    pub houses: HashSet<HouseName>,
 }
 
 impl HouseComponent {
-    pub fn new(houses: Vec<HouseName>, resources: &Resources) -> Self {
-        Self {
-            houses: HashMap::from_iter(
-                houses
-                    .iter()
-                    .map(|name| (*name, resources.houses.get(name).unwrap().color)),
-            ),
-        }
+    pub fn new(houses: HashSet<HouseName>) -> Self {
+        Self { houses }
     }
 }
 
 impl VarsProvider for HouseComponent {
     fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
-        let colors = self.houses.iter().map(|(_, color)| color).collect_vec();
-        vars.insert(VarName::HouseColor1, Var::Color(*colors[0]));
+        let colors = self
+            .houses
+            .iter()
+            .map(|house| resources.houses.get(house).unwrap().color)
+            .collect_vec();
+        vars.insert(VarName::HouseColor1, Var::Color(colors[0]));
         if colors.len() > 1 {
-            vars.insert(VarName::HouseColor2, Var::Color(*colors[1]));
+            vars.insert(VarName::HouseColor2, Var::Color(colors[1]));
         }
         if colors.len() > 2 {
-            vars.insert(VarName::HouseColor3, Var::Color(*colors[2]));
+            vars.insert(VarName::HouseColor3, Var::Color(colors[2]));
         }
     }
 }

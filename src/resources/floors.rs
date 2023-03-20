@@ -4,11 +4,11 @@ use super::*;
 pub struct Floors {
     #[serde(default)]
     current: usize,
-    floors: Vec<Floor>,
+    floors: Vec<Team>,
 }
 
 impl Floors {
-    fn current(&self) -> &Floor {
+    fn current(&self) -> &Team {
         &self.floors[self.current]
     }
 
@@ -27,26 +27,8 @@ impl Floors {
 
     pub fn load(world: &mut legion::World, resources: &mut Resources) {
         resources
-            .floors
-            .current()
-            .enemies
-            .clone()
-            .iter()
-            .enumerate()
-            .for_each(|(slot, path)| {
-                UnitTemplatesPool::create_unit_entity(
-                    &static_path().join(path),
-                    resources,
-                    world,
-                    Faction::Dark,
-                    slot,
-                    vec2::ZERO,
-                );
-            })
+            .teams
+            .insert(Faction::Dark, resources.floors.current().clone());
+        Team::unpack_entries(Faction::Dark, Faction::Dark, world, resources);
     }
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Floor {
-    pub enemies: Vec<PathBuf>,
 }

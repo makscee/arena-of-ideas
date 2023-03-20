@@ -1,84 +1,82 @@
 {
     "floors": [
         {
-            "enemies": [
-                "units/enemies/basic.json"
+            "name": "Snake",
+            "units": [
+                {
+                    "name": "Snake",
+                    "description": "On damage dealt:\nKill",
+                    "attack": 1,
+                    "health": 1,
+                    "houses": [
+                        "Snakes"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Snakes",
+                            "name": "Poison"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#00d836",
+                                "u_color_1": "#00ff22",
+                                "u_inner_brightness": 0.5,
+                                "u_radius": 0.8,
+                                "u_alpha": 0.3,
+                                "u_spin_part": 0.01,
+                                "u_move_speed": 1.3
+                            },
+                            "instances": 40,
+                            "vertices": 1
+                        }
+                    }
+                }
             ]
         },
         {
-            "enemies": [
-                "units/enemies/basic.json",
-                "units/enemies/basic.json",
-                "units/enemies/basic.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/basic.json",
-                "units/enemies/basic.json",
-                "units/enemies/basic.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/glass_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/glass_grower.json",
-                "units/enemies/bomb_grower.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/solid_grower.json",
-                "units/enemies/solid_grower.json",
-                "units/enemies/solid_grower.json",
-                "units/enemies/solid_grower.json",
-                "units/enemies/solid_grower.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/bomb_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/spit_grower.json",
-                "units/enemies/spit_grower.json",
-                "units/enemies/spit_grower.json",
-                "units/enemies/spit_grower.json",
-                "units/enemies/spit_grower.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/bomb_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/fat_grower.json"
-            ]
-        },
-        {
-            "enemies": [
-                "units/enemies/spit_grower.json",
-                "units/enemies/fat_grower.json",
-                "units/enemies/glass_grower.json",
-                "units/enemies/solid_grower.json",
-                "units/enemies/bomb_grower.json"
+            "name": "Shielded Snake",
+            "units": [
+                {
+                    "name": "Snake",
+                    "description": "On damage dealt:\nKill",
+                    "attack": 1,
+                    "health": 1,
+                    "houses": [
+                        "Snakes"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Snakes",
+                            "name": "Poison"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#00d836",
+                                "u_color_1": "#00ff22",
+                                "u_inner_brightness": 0.5,
+                                "u_radius": 0.8,
+                                "u_alpha": 0.3,
+                                "u_spin_part": 0.01,
+                                "u_move_speed": 1.3
+                            },
+                            "instances": 40,
+                            "vertices": 1
+                        }
+                    },
+                    "active_statuses": {
+                        "Shield": 1
+                    }
+                }
             ]
         }
     ]

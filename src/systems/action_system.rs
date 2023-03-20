@@ -15,6 +15,9 @@ impl ActionSystem {
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
+        if resources.action_queue.is_empty() && resources.status_pool.status_changes.is_empty() {
+            return false;
+        }
         ContextSystem::refresh_all(world, resources);
         StatusPool::process_status_changes(world, resources);
         let Some(action) = resources.action_queue.pop_front() else { return false };
@@ -22,6 +25,9 @@ impl ActionSystem {
             &format!("Procession action: {:?}", action.effect),
             &LogContext::Action,
         );
+        resources
+            .logger
+            .log(&format!("{:?}", action.context), &LogContext::Contexts);
         match action
             .effect
             .process(action.context.clone(), world, resources)
@@ -46,11 +52,11 @@ impl System for ActionSystem {
 #[derive(Debug)]
 pub struct Action {
     pub context: Context,
-    pub effect: Effect,
+    pub effect: EffectWrapped,
 }
 
 impl Action {
-    pub fn new(context: Context, effect: Effect) -> Self {
+    pub fn new(context: Context, effect: EffectWrapped) -> Self {
         Self { context, effect }
     }
 }

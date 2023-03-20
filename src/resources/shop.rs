@@ -1,13 +1,13 @@
-use super::*;
 use geng::prelude::itertools::Itertools;
 
-const HERO_POOL_COUNT: usize = 5;
+use super::*;
+
+const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 
 #[derive(Default)]
 pub struct Shop {
-    pub pool: HashMap<PathBuf, usize>,
-    pub level_extensions: Vec<Vec<PathBuf>>,
-    pub units: Vec<(String, Shader)>,
+    pub pool: Vec<SerializedUnit>,
+    pub level_extensions: Vec<Vec<SerializedUnit>>,
     pub money: usize,
     pub drop_entity: Option<legion::Entity>,
     pub drag_entity: Option<legion::Entity>,
@@ -15,92 +15,59 @@ pub struct Shop {
 }
 
 impl Shop {
-    pub fn load(resources: &mut Resources, world: &mut legion::World) {
-        let mut sorted_heroes = PowerPointsSystem::measure(
-            &resources
-                .unit_templates
-                .heroes
-                .keys()
-                .cloned()
-                .collect_vec(),
+    pub fn load_pool(world: &mut legion::World, resources: &mut Resources) {
+        let measures = PowerPointsSystem::measure(
+            resources.hero_pool.values().cloned().collect_vec(),
             world,
             resources,
-        )
-        .into_iter()
-        .sorted_by_key(|(_, score)| score.clone())
-        .rev()
-        .collect_vec();
-        dbg!(&sorted_heroes);
-        let level_extensions = &mut resources.shop.level_extensions;
-        level_extensions.push(default());
-        for _ in 0..3 {
-            level_extensions[0].push(sorted_heroes.pop().unwrap().0);
-        }
-        let heroes_per_level = (sorted_heroes.len() as f32 / 10.0).ceil() as usize;
-        let mut current_level = 0;
-        while let Some((path, _)) = sorted_heroes.pop() {
-            level_extensions[current_level].push(path);
-            if level_extensions[current_level].len() >= heroes_per_level {
-                current_level += 1;
-                level_extensions.insert(current_level, default());
-            }
-        }
-        dbg!(level_extensions);
-    }
-
-    pub fn update_pool(resources: &mut Resources) {
-        let floor = resources.floors.current_ind();
-        if resources.shop.level_extensions.len() > floor {
-            resources.shop.pool.extend(
-                resources.shop.level_extensions[floor]
-                    .iter()
-                    .map(|path| (path.clone(), HERO_POOL_COUNT)),
-            );
-            Self::reload_shaders(resources);
-        }
-    }
-
-    pub fn reset(resources: &mut Resources, world: &mut legion::World) {
-        resources.shop = default();
-        Self::load(resources, world);
-    }
-
-    pub fn reload_shaders(resources: &mut Resources) {
-        resources.shop.units = resources
-            .shop
-            .pool
+        );
+        dbg!(measures
             .iter()
-            .map(|(path, size)| {
-                resources
-                    .unit_templates
-                    .heroes
-                    .get(path)
-                    .unwrap()
-                    .0
-                    .iter()
-                    .filter_map(|component| match component {
-                        SerializedComponent::Shader { .. } => Some(Shader {
-                            chain_before: Box::new(
-                                SerializedComponent::unpack_shader(component)
-                                    .into_iter()
-                                    .collect_vec(),
-                            ),
-                            ..resources.options.shaders.unit.clone()
-                        }),
-                        _ => None,
-                    })
-                    .map(|shader| (size.to_string(), shader))
-                    .collect_vec()
-            })
-            .flatten()
-            .collect_vec();
-        resources.fonts.load_textures(
+            .map(|(unit, score)| (&unit.name, score))
+            .sorted_by_key(|x| x.1)
+            .collect_vec());
+        let mut sorted_by_power = VecDeque::from_iter(
+            measures
+                .into_iter()
+                .sorted_by_key(|(_, score)| *score)
+                .map(|(unit, _)| unit),
+        );
+        let heroes_per_extension = (sorted_by_power.len() as f32 / 10.0).ceil() as usize;
+        let mut cur_level = 0;
+        resources.shop.level_extensions = vec![default()];
+        while let Some(unit) = sorted_by_power.pop_front() {
+            if resources
+                .shop
+                .level_extensions
+                .get(cur_level)
+                .unwrap()
+                .len()
+                >= heroes_per_extension + (cur_level == 0) as usize * 3
+            {
+                cur_level += 1;
+                resources.shop.level_extensions.push(default());
+            }
             resources
                 .shop
-                .units
-                .iter()
-                .map(|(size, _)| (1usize, size))
-                .collect_vec(),
-        );
+                .level_extensions
+                .get_mut(cur_level)
+                .unwrap()
+                .push(unit);
+        }
+    }
+
+    pub fn load_level(resources: &mut Resources, level: usize) {
+        if let Some(new_units) = resources.shop.level_extensions.get(level) {
+            resources.shop.pool.extend(
+                new_units
+                    .iter()
+                    .map(|unit| {
+                        (0..INITIAL_POOL_COUNT_PER_HERO)
+                            .map(|_| unit.clone())
+                            .collect_vec()
+                    })
+                    .flatten(),
+            )
+        }
     }
 }

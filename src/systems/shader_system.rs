@@ -28,21 +28,22 @@ impl ShaderSystem {
     }
 
     /// Get Shader component and merge Context into it's vars if any
-    pub fn get_entity_shader(world: &legion::World, entity: legion::Entity) -> Shader {
+    pub fn get_entity_shader(
+        world: &legion::World,
+        entity: legion::Entity,
+        context: Option<&Context>,
+    ) -> Shader {
         let mut shader = world
             .entry_ref(entity)
             .expect("Failed to find Entry")
             .get_component::<Shader>()
             .unwrap()
             .clone();
-        match ContextSystem::try_get_context(entity, world) {
-            Ok(context) => {
-                shader.parameters.uniforms = shader
-                    .parameters
-                    .uniforms
-                    .merge(&context.vars.clone().into())
-            }
-            Err(_) => {}
+        if let Some(context) = context {
+            shader
+                .parameters
+                .uniforms
+                .merge_mut(&context.vars.clone().into(), true);
         }
 
         shader
@@ -59,7 +60,18 @@ impl ShaderSystem {
             <&EntityComponent>::query()
                 .filter(!component::<UnitComponent>() & component::<Shader>())
                 .iter(world)
-                .map(|entity| (entity.entity, Self::get_entity_shader(world, entity.entity))),
+                .map(|entity| {
+                    (
+                        entity.entity,
+                        Self::get_entity_shader(
+                            world,
+                            entity.entity,
+                            ContextSystem::try_get_context(entity.entity, world)
+                                .ok()
+                                .as_ref(),
+                        ),
+                    )
+                }),
         );
 
         let shaders = Cassette::get_shaders(resources, world_shaders)

@@ -1,7 +1,8 @@
 use super::*;
 
 /// Component to link to a shader program with specific parameters
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Shader {
     pub path: PathBuf, // static path
     #[serde(default)]
@@ -30,7 +31,7 @@ impl Shader {
     fn extend_chain(&mut self, shaders: Vec<Shader>) {}
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
 pub enum ShaderLayer {
     Background,
     Unit,
@@ -50,7 +51,7 @@ impl ShaderLayer {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ShaderParameters {
     #[serde(default = "vertices_default")]
     pub vertices: usize,
@@ -88,7 +89,7 @@ impl ugli::Uniforms for ShaderParameters {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct ShaderUniforms(pub HashMap<String, ShaderUniform>);
 
 impl ShaderUniforms {
@@ -191,7 +192,7 @@ impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ShaderUniform {
     Int(i32),

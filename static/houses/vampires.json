@@ -3,39 +3,28 @@
     "color": "#7f0000ff",
     "abilities": {
         "Devour": {
-            "description": "Kill target, gain +1/+1\nper target current HP",
+            "description": "Kill target, gain +1/+1\nper target HP",
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "TakeVar",
-                        "entity": {
-                            "type": "Target"
+                "type": "TakeVar",
+                "entity": {
+                    "type": "Target"
+                },
+                "var": "HpValue",
+                "new_name": "Charges",
+                "effect": {
+                    "type": "Kill",
+                    "then": {
+                        "type": "ChangeStatus",
+                        "target": {
+                            "type": "Owner"
                         },
-                        "var": "HpCurrent",
-                        "new_name": "Charges",
-                        "effect": {
-                            "type": "Kill",
-                            "then": {
-                                "type": "ChangeContext",
-                                "owner": {
-                                    "type": "Target"
-                                },
-                                "target": {
-                                    "type": "Owner"
-                                },
-                                "effect": {
-                                    "type": "ChangeStatus",
-                                    "name": "Devour",
-                                    "charges": {
-                                        "type": "Var",
-                                        "var": "Charges"
-                                    }
-                                }
-                            }
+                        "name": "Devour",
+                        "charges": {
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     }
-                ]
+                }
             }
         },
         "SiphonLife": {
@@ -71,23 +60,19 @@
                 "type": "List",
                 "triggers": [
                     {
-                        "type": "OnStatusChargeAdd",
-                        "effect": {
-                            "type": "ChangeStats",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
-                            }
+                        "type": "ChangeVarInt",
+                        "var": "HpValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     },
                     {
-                        "type": "OnStatusChargeRemove",
-                        "effect": {
-                            "type": "ChangeStats",
-                            "delta": {
-                                "type": "Const",
-                                "value": -1
-                            }
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     }
                 ]
@@ -95,29 +80,12 @@
         },
         "SiphonLife": {
             "trigger": {
-                "type": "List",
-                "triggers": [
-                    {
-                        "type": "OnStatusChargeAdd",
-                        "effect": {
-                            "type": "ChangeMaxHp",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    },
-                    {
-                        "type": "OnStatusChargeRemove",
-                        "effect": {
-                            "type": "ChangeMaxHp",
-                            "delta": {
-                                "type": "Const",
-                                "value": -1
-                            }
-                        }
-                    }
-                ]
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
             }
         }
     }

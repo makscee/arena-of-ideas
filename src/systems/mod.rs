@@ -89,7 +89,7 @@ impl Game {
         resources.load(&mut fws);
 
         let mut global_systems: Vec<Box<dyn System>> = Vec::default();
-        let mut game_state = GameStateSystem::new(GameState::MainMenu);
+        let mut game_state = GameStateSystem::new();
         game_state.add_systems(GameState::MainMenu, vec![]);
         game_state.add_systems(
             GameState::Battle,

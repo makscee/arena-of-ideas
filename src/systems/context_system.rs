@@ -28,7 +28,10 @@ impl ContextSystem {
         if let Some(component) = entry.get_component::<AreaComponent>().ok() {
             component.extend_vars(&mut context.vars, resources);
         }
-        if let Some(component) = entry.get_component::<HpComponent>().ok() {
+        if let Some(component) = entry.get_component::<HealthComponent>().ok() {
+            component.extend_vars(&mut context.vars, resources);
+        }
+        if let Some(component) = entry.get_component::<AttackComponent>().ok() {
             component.extend_vars(&mut context.vars, resources);
         }
         if let Some(component) = entry.get_component::<DescriptionComponent>().ok() {
@@ -41,25 +44,21 @@ impl ContextSystem {
             component.extend_vars(&mut context.vars, resources);
         }
 
+        // apply changes from active statuses
+        context = Event::ModifyContext { context }.calculate(world, resources);
+
         world.entry(entity).unwrap().add_component(context);
     }
 
     pub fn try_get_context(
         entity: legion::Entity,
         world: &legion::World,
-    ) -> Result<Context, legion::world::ComponentError> {
-        world
-            .entry_ref(entity)
-            .unwrap()
-            .get_component::<Context>()
-            .and_then(|context| {
-                Ok(match context.parent {
-                    Some(parent) => context
-                        .clone()
-                        .merge_mut(&Self::get_context(parent, world), false),
-                    None => context.clone(),
-                })
-            })
+    ) -> Result<Context, Error> {
+        let mut context = world.entry_ref(entity)?.get_component::<Context>()?.clone();
+        if let Some(parent) = context.parent {
+            context.merge_mut(&ContextSystem::get_context(parent, world), false);
+        }
+        Ok(context)
     }
 
     pub fn get_context(entity: legion::Entity, world: &legion::World) -> Context {

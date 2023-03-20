@@ -1,34 +1,62 @@
-[
-    {
-        "component": "Name",
-        "name": "Charger"
-    },
-    {
-        "component": "House",
-        "houses": [
-            "Robots"
+{
+    "name": "Charger",
+    "description": "Shield: +1 charge\non apply",
+    "health": 2,
+    "attack": 1,
+    "houses": [
+        "Robots"
+    ],
+    "trigger": {
+        "type": "List",
+        "triggers": [
+            {
+                "type": "AddToTeam",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeAbilityVarInt",
+                            "house": "Robots",
+                            "ability": "Shield",
+                            "var": "Charges",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        },
+                        {
+                            "type": "ShowText",
+                            "text": "++Shield Charges"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "RemoveFromTeam",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeAbilityVarInt",
+                            "house": "Robots",
+                            "ability": "Shield",
+                            "var": "Charges",
+                            "delta": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        },
+                        {
+                            "type": "ShowText",
+                            "text": "--Shield Charges",
+                            "color": "#e70000"
+                        }
+                    ]
+                }
+            }
         ]
     },
-    {
-        "component": "Description",
-        "text": "Shield: +1 charge\non apply"
-    },
-    {
-        "component": "AbilityDescription",
-        "abilities": [
-            "Shield"
-        ]
-    },
-    {
-        "component": "Hp",
-        "max": 2
-    },
-    {
-        "component": "Attack",
-        "value": 1
-    },
-    {
-        "component": "Shader",
+    "shader": {
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
@@ -40,62 +68,5 @@
                 "u_padding": 1.0
             }
         }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "GetShield": {
-                "trigger": {
-                    "type": "List",
-                    "triggers": [
-                        {
-                            "type": "AddToTeam",
-                            "effect": {
-                                "type": "List",
-                                "effects": [
-                                    {
-                                        "type": "ChangeAbilityVarInt",
-                                        "house": "Robots",
-                                        "ability": "Shield",
-                                        "var": "Charges",
-                                        "delta": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    },
-                                    {
-                                        "type": "ShowText",
-                                        "text": "++Shield Charges"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "type": "RemoveFromTeam",
-                            "effect": {
-                                "type": "List",
-                                "effects": [
-                                    {
-                                        "type": "ChangeAbilityVarInt",
-                                        "house": "Robots",
-                                        "ability": "Shield",
-                                        "var": "Charges",
-                                        "delta": {
-                                            "type": "Const",
-                                            "value": -1
-                                        }
-                                    },
-                                    {
-                                        "type": "ShowText",
-                                        "text": "--Shield Charges",
-                                        "color": "#e70000"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }
-        }
     }
-]
+}

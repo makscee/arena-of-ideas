@@ -8,11 +8,12 @@ pub struct House {
     pub statuses: HashMap<String, Status>,
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum HouseName {
     Vampires,
     Dragons,
     Robots,
+    Snakes,
 }
 
 impl geng::LoadAsset for House {

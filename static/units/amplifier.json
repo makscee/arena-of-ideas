@@ -1,34 +1,34 @@
-[
-    {
-        "component": "Name",
-        "name": "Amplifier"
+{
+    "name": "Amplifier",
+    "description": "On buy:\nShield\nreflects damage",
+    "health": 2,
+    "attack": 2,
+    "houses": [
+        "Robots"
+    ],
+    "trigger": {
+        "type": "Buy",
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "ChangeAbilityVarInt",
+                    "house": "Robots",
+                    "ability": "Shield",
+                    "var": "Reflection",
+                    "delta": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                },
+                {
+                    "type": "ShowText",
+                    "text": "++Shield Reflection"
+                }
+            ]
+        }
     },
-    {
-        "component": "House",
-        "houses": [
-            "Robots"
-        ]
-    },
-    {
-        "component": "Description",
-        "text": "On buy:\nShield\nreflects damage"
-    },
-    {
-        "component": "AbilityDescription",
-        "abilities": [
-            "Shield"
-        ]
-    },
-    {
-        "component": "Hp",
-        "max": 2
-    },
-    {
-        "component": "Attack",
-        "value": 2
-    },
-    {
-        "component": "Shader",
+    "shader": {
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
@@ -39,34 +39,5 @@
                 "u_circle_fbm_speed": 6.0
             }
         }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "ShieldAddReflect": {
-                "trigger": {
-                    "type": "Buy",
-                    "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "ChangeAbilityVarInt",
-                                "house": "Robots",
-                                "ability": "Shield",
-                                "var": "Reflection",
-                                "delta": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
-                            },
-                            {
-                                "type": "ShowText",
-                                "text": "++Shield Reflection"
-                            }
-                        ]
-                    }
-                }
-            }
-        }
     }
-]
+}

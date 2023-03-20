@@ -42,50 +42,50 @@ impl GallerySystem {
                 UNIT_SPACING * ind as f32 - (heroes - 1) as f32 * 0.5 * UNIT_SPACING,
                 0.0,
             );
-            let entity = UnitTemplatesPool::create_unit_entity(
-                &template_key,
-                resources,
-                world,
-                Faction::Gallery,
-                0,
-                position,
-            );
-            if self.need_card_animation {
-                resources.cassette.parallel_node.add_effect_by_key(
-                    CARD_ANIMATION_KEY,
-                    VisualEffect::new_delayed(
-                        1.0,
-                        resources.cassette.head,
-                        VisualEffectType::EntityShaderAnimation {
-                            entity: entity,
-                            from: hashmap! {
-                                "u_card" => ShaderUniform::Float(if self.is_card {0.0} else {1.0})
-                            }
-                            .into(),
-                            to: hashmap! {
-                                "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
-                            }
-                            .into(),
-                            easing: EasingType::QuartInOut,
-                        },
-                        -1,
-                    ),
-                );
-            }
-            resources.cassette.parallel_node.add_effect_by_key(
-                CARD_ANIMATION_KEY,
-                VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityShaderConst {
-                        entity,
-                        uniforms: hashmap! {
-                            "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
-                        }
-                        .into(),
-                    },
-                    -2,
-                ),
-            );
+            // let entity = UnitTemplatesPool::create_unit_entity(
+            //     &template_key,
+            //     resources,
+            //     world,
+            //     Faction::Gallery,
+            //     0,
+            //     position,
+            // );
+            // if self.need_card_animation {
+            //     resources.cassette.parallel_node.add_effect_by_key(
+            //         CARD_ANIMATION_KEY,
+            //         VisualEffect::new_delayed(
+            //             1.0,
+            //             resources.cassette.head,
+            //             VisualEffectType::EntityShaderAnimation {
+            //                 entity: entity,
+            //                 from: hashmap! {
+            //                     "u_card" => ShaderUniform::Float(if self.is_card {0.0} else {1.0})
+            //                 }
+            //                 .into(),
+            //                 to: hashmap! {
+            //                     "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
+            //                 }
+            //                 .into(),
+            //                 easing: EasingType::QuartInOut,
+            //             },
+            //             -1,
+            //         ),
+            //     );
+            // }
+            // resources.cassette.parallel_node.add_effect_by_key(
+            //     CARD_ANIMATION_KEY,
+            //     VisualEffect::new(
+            //         0.0,
+            //         VisualEffectType::EntityShaderConst {
+            //             entity,
+            //             uniforms: hashmap! {
+            //                 "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
+            //             }
+            //             .into(),
+            //         },
+            //         -2,
+            //     ),
+            // );
         }
         self.need_card_animation = false;
         ContextSystem::refresh_all(world, resources);
@@ -111,16 +111,16 @@ impl System for GallerySystem {
         if resources.input.down_keys.contains(&geng::Key::Escape) {
             self.clear();
         }
-        if self.paths.is_empty() {
-            self.paths = Vec::from_iter(
-                resources
-                    .unit_templates
-                    .heroes
-                    .keys()
-                    .chain(resources.unit_templates.enemies.keys())
-                    .map(|p| p.clone()),
-            );
-        }
+        // if self.paths.is_empty() {
+        //     self.paths = Vec::from_iter(
+        //         resources
+        //             .unit_templates
+        //             .heroes
+        //             .keys()
+        //             .chain(resources.unit_templates.enemies.keys())
+        //             .map(|p| p.clone()),
+        //     );
+        // }
         if resources.reload_triggered {
             self.need_redraw = true;
         }

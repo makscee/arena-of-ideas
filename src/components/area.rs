@@ -23,6 +23,10 @@ impl VarsProvider for AreaComponent {
 }
 
 impl AreaComponent {
+    pub fn new(r#type: AreaType, position: vec2<f32>) -> Self {
+        Self { r#type, position }
+    }
+
     pub fn contains(&self, pos: vec2<f32>) -> bool {
         let pos = pos - self.position;
         match self.r#type {

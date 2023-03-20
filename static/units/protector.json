@@ -1,148 +1,119 @@
-[
     {
-        "component": "Name",
-        "name": "Protector"
-    },
-    {
-        "component": "House",
+        "name": "Protector",
+        "description": "On Buy:\ngive Shield\nto adjacent allies",
+        "health": 1,
+        "attack": 1,
         "houses": [
             "Robots"
-        ]
-    },
-    {
-        "component": "Description",
-        "text": "On Buy:\ngive Shield\nto adjacent allies"
-    },
-    {
-        "component": "AbilityDescription",
-        "abilities": [
-            "Shield"
-        ]
-    },
-    {
-        "component": "Hp",
-        "max": 1
-    },
-    {
-        "component": "Attack",
-        "value": 1
-    },
-    {
-        "component": "Shader",
-        "path": "shaders/vfx/circle.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_color": "#002fff",
-                "u_circle_radius": 0.9,
-                "u_border": 0.2,
-                "u_circle_fbm": 0.1,
-                "u_circle_fbm_speed": 3.3,
-                "u_padding": 0.2,
-                "u_aa": 0.2
-            }
-        }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "GetShield": {
-                "trigger": {
-                    "type": "Buy",
-                    "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "If",
-                                "condition": {
-                                    "type": "SlotOccupied",
-                                    "faction": "Team",
-                                    "slot": {
-                                        "type": "Sum",
-                                        "a": {
-                                            "type": "Var",
-                                            "var": "Slot"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    }
+        ],
+        "trigger": {
+            "type": "Buy",
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
                                 },
-                                "then": {
-                                    "type": "ChangeContext",
-                                    "target": {
-                                        "type": "FindUnit",
-                                        "slot": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "var": "Slot"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": 1
-                                            }
-                                        },
-                                        "faction": "Team"
-                                    },
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "house": "Robots",
-                                        "name": "Shield"
-                                    }
-                                },
-                                "else": {
-                                    "type": "Noop"
-                                }
-                            },
-                            {
-                                "type": "If",
-                                "condition": {
-                                    "type": "SlotOccupied",
-                                    "faction": "Team",
-                                    "slot": {
-                                        "type": "Sum",
-                                        "a": {
-                                            "type": "Var",
-                                            "var": "Slot"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": -1
-                                        }
-                                    }
-                                },
-                                "then": {
-                                    "type": "ChangeContext",
-                                    "target": {
-                                        "type": "FindUnit",
-                                        "slot": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "var": "Slot"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": -1
-                                            }
-                                        },
-                                        "faction": "Team"
-                                    },
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "house": "Robots",
-                                        "name": "Shield"
-                                    }
-                                },
-                                "else": {
-                                    "type": "Noop"
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
                                 }
                             }
-                        ]
+                        },
+                        "then": {
+                            "type": "ChangeContext",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                },
+                                "faction": "Team"
+                            },
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Robots",
+                                "name": "Shield"
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    },
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            }
+                        },
+                        "then": {
+                            "type": "ChangeContext",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": -1
+                                    }
+                                },
+                                "faction": "Team"
+                            },
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Robots",
+                                "name": "Shield"
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
+                ]
+            }
+        },
+        "shader": {
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#002fff",
+                    "u_circle_radius": 0.9,
+                    "u_border": 0.2,
+                    "u_circle_fbm": 0.1,
+                    "u_circle_fbm_speed": 3.3,
+                    "u_padding": 0.2,
+                    "u_aa": 0.2
                 }
             }
         }
     }
-]

@@ -21,13 +21,25 @@ pub enum Event {
     ModifyIncomingDamage {
         context: Context,
     },
+    ModifyContext {
+        context: Context,
+    },
     BeforeIncomingDamage {
         context: Context,
     },
     AfterIncomingDamage {
         context: Context,
     },
+    AfterDamageDealt {
+        context: Context,
+    },
+    AfterDeath {
+        context: Context,
+    },
     BeforeDeath {
+        owner: legion::Entity,
+    },
+    AfterBirth {
         owner: legion::Entity,
     },
     Buy {
@@ -50,44 +62,11 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn send(&self, resources: &mut Resources, world: &legion::World) -> Option<Context> {
-        resources
-            .logger
-            .log(&format!("Send event {:?}", self), &LogContext::Event);
+    pub fn send(&self, world: &legion::World, resources: &mut Resources) {
         match self {
             // Send event to every active status
             Event::BattleOver => {
                 StatusPool::notify_all(self, resources, world);
-                None
-            }
-            // Modify Damage var in provided context and return updated context
-            Event::ModifyIncomingDamage { context } => {
-                let mut context = context.clone();
-                let mut damage = context.vars.get_int(&VarName::Damage);
-                resources
-                    .status_pool
-                    .collect_triggers(&context.target)
-                    .iter()
-                    .for_each(|(name, trigger, charges)| match trigger {
-                        Trigger::ModifyIncomingDamage { value } => {
-                            damage = match value.calculate(
-                                context
-                                    .add_var(VarName::Charges, Var::Int(*charges))
-                                    .add_var(
-                                        VarName::StatusName,
-                                        Var::String((0, name.to_string())),
-                                    ),
-                                world,
-                                resources,
-                            ) {
-                                Ok(value) => value,
-                                Err(_) => damage,
-                            };
-                            context.vars.insert(VarName::Damage, Var::Int(damage));
-                        }
-                        _ => {}
-                    });
-                Some(context)
             }
             // Trigger owner status with owner context
             Event::StatusAdd { status, owner }
@@ -109,9 +88,8 @@ impl Event {
                         context,
                         &resources.logger,
                     );
-                None
             }
-            // Trigger context.owner with provided context
+            // Trigger context.target with provided context
             Event::BeforeIncomingDamage { context } | Event::AfterIncomingDamage { context } => {
                 StatusPool::notify_entity(
                     self,
@@ -120,23 +98,53 @@ impl Event {
                     world,
                     Some(context.clone()),
                 );
-                None
+            }
+            // Trigger context.owner with provided context
+            Event::AfterDamageDealt { context } | Event::AfterDeath { context } => {
+                StatusPool::notify_entity(
+                    self,
+                    context.owner,
+                    resources,
+                    world,
+                    Some(context.clone()),
+                );
             }
             Event::BeforeDeath { owner }
+            | Event::AfterBirth { owner }
             | Event::Buy { owner }
             | Event::Sell { owner }
             | Event::AddToTeam { owner }
             | Event::RemoveFromTeam { owner } => {
                 StatusPool::notify_entity(self, *owner, resources, world, None);
-                None
             }
             Event::AfterStrike { owner, target } => {
-                let context = Context {
-                    target: *target,
-                    ..ContextSystem::get_context(*owner, world)
-                };
-                StatusPool::notify_entity(self, *owner, resources, world, Some(context));
-                None
+                if let Some(owner_context) = ContextSystem::try_get_context(*owner, world).ok() {
+                    let context = Context {
+                        target: *target,
+                        ..owner_context
+                    };
+                    StatusPool::notify_entity(self, *owner, resources, world, Some(context));
+                }
+            }
+            Event::ModifyIncomingDamage { .. } | Event::ModifyContext { .. } => {
+                panic!("Can't send event {:?}", self)
+            }
+        }
+    }
+
+    pub fn calculate(&self, world: &legion::World, resources: &Resources) -> Context {
+        match self {
+            Event::ModifyContext { context } | Event::ModifyIncomingDamage { context } => {
+                StatusPool::calculate_entity(
+                    &self,
+                    context.target,
+                    context.clone(),
+                    world,
+                    resources,
+                )
+            }
+            _ => {
+                panic!("Can't calculate event {:?}", self)
             }
         }
     }

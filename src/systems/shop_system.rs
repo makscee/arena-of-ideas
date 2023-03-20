@@ -1,4 +1,3 @@
-use geng::prelude::rand::distributions::{Distribution, WeightedIndex};
 use geng::ui::*;
 use legion::EntityStore;
 
@@ -147,36 +146,22 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
-        *resources.shop.pool.get_mut(&unit.template_path).unwrap() -= 1;
-        Shop::reload_shaders(resources);
         ContextSystem::refresh_entity(entity, world, resources);
-        Event::Buy { owner: entity }.send(resources, world);
-        Event::AddToTeam { owner: entity }.send(resources, world);
+        Event::Buy { owner: entity }.send(world, resources);
+        Event::AddToTeam { owner: entity }.send(world, resources);
+        ContextSystem::refresh_all(world, resources);
     }
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         resources.shop.money += 1;
-        *resources
+        Event::Sell { owner: entity }.send(world, resources);
+        resources
             .shop
             .pool
-            .get_mut(
-                &world
-                    .entry(entity)
-                    .unwrap()
-                    .get_component::<UnitComponent>()
-                    .unwrap()
-                    .template_path,
-            )
-            .unwrap() += 2;
-        Shop::reload_shaders(resources);
-        Event::Sell { owner: entity }.send(resources, world);
-        UnitSystem::delete_unit(entity, world, resources);
+            .push(SerializedUnit::pack(entity, world, resources));
+        UnitSystem::turn_unit_into_corpse(entity, world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
-    }
-
-    pub fn clear(world: &mut legion::World, resources: &mut Resources) {
-        let factions = &hashset! {Faction::Shop};
-        UnitSystem::clear_factions(world, resources, factions);
+        ContextSystem::refresh_all(world, resources);
     }
 
     fn refresh_ui(resources: &mut Resources) {
@@ -201,7 +186,7 @@ impl ShopSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        Shop::update_pool(resources);
+        Shop::load_level(resources, resources.floors.current_ind());
         Self::reroll(world, resources);
         WorldSystem::set_var(
             world,
@@ -250,28 +235,37 @@ impl ShopSystem {
                 .into(),
             );
         }
+        ContextSystem::refresh_all(world, resources);
+    }
+
+    pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
+        let case = UnitSystem::collect_faction(world, Faction::Shop);
+        let packed_units = case
+            .keys()
+            .map(|entity| SerializedUnit::pack(*entity, world, resources))
+            .collect_vec();
+        UnitSystem::clear_faction(world, resources, Faction::Shop);
+        resources.shop.pool.extend(packed_units.into_iter());
+    }
+
+    pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
+        for slot in 0..SLOTS_COUNT {
+            if resources.shop.pool.is_empty() {
+                return;
+            }
+            let mut rng = rand::thread_rng();
+            let ind: usize = rng.gen_range(0..resources.shop.pool.len());
+            resources
+                .shop
+                .pool
+                .remove(ind)
+                .unpack(world, resources, slot + 1, Faction::Shop);
+        }
     }
 
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {
-        Self::clear(world, resources);
-        let items = resources
-            .shop
-            .pool
-            .iter()
-            .map(|(path, size)| (path.clone(), *size))
-            .collect_vec();
-        let dist2 = WeightedIndex::new(items.iter().map(|item| item.1)).unwrap();
-        for slot in 1..=SLOTS_COUNT {
-            let path = &items[dist2.sample(&mut thread_rng())].0;
-            UnitTemplatesPool::create_unit_entity(
-                path,
-                resources,
-                world,
-                Faction::Shop,
-                slot,
-                SlotSystem::get_position(slot, &Faction::Shop),
-            );
-        }
+        Self::clear_case(world, resources);
+        Self::fill_case(world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
     }
 }

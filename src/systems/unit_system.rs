@@ -4,6 +4,11 @@ pub struct UnitSystem {}
 
 const CARD_ANIMATION_TIME: Time = 0.2;
 impl UnitSystem {
+    pub fn pack_shader(shader: &mut Shader, options: &Options) {
+        let chain_shader = mem::replace(shader, options.shaders.unit.clone());
+        shader.chain_before.push(chain_shader);
+    }
+
     pub fn draw_all_units_to_cassette_node(
         world: &legion::World,
         options: &Options,
@@ -15,17 +20,19 @@ impl UnitSystem {
             .iter(world)
             .filter(|(unit, _, _)| factions.contains(&unit.faction))
             .for_each(|(_, entity, _)| {
-                let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity).clone();
+                let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity, None);
+                Self::pack_shader(&mut unit_shader, options);
+                let context = ContextSystem::get_context(entity.entity, world);
+                unit_shader
+                    .parameters
+                    .uniforms
+                    .merge_mut(&context.vars.clone().into(), true);
                 unit_shader
                     .chain_before
                     .extend(statuses.get_entity_shaders(&entity.entity));
                 unit_shader
                     .chain_after
-                    .extend(StatsUiSystem::get_entity_shaders(
-                        entity.entity,
-                        world,
-                        options,
-                    ));
+                    .extend(StatsUiSystem::get_entity_shaders(&context.vars, options));
                 unit_shader.chain_after.push(NameSystem::get_entity_shader(
                     entity.entity,
                     world,
@@ -36,113 +43,26 @@ impl UnitSystem {
         node.save_active_statuses(statuses);
     }
 
-    pub fn duplicate_unit(
-        original_entity: legion::Entity,
-        world: &mut legion::World,
-        resources: &mut Resources,
-        faction: Faction,
-    ) {
-        let original_entry = world.entry_ref(original_entity).unwrap();
-        let original_context = original_entry.get_component::<Context>().unwrap().clone();
-        // Mandatory components
-        // For some reasoun it seems to be possible to init entity only with 8 components
-        // Any more mandatory components should be cloned down below
-        let new_entity = world.push((
-            {
-                let mut unit = original_entry
-                    .get_component::<UnitComponent>()
-                    .unwrap()
-                    .clone();
-                unit.faction = faction;
-                unit
-            },
-            original_entry
-                .get_component::<AreaComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<HpComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<AttackComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<NameComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<FlagsComponent>()
-                .unwrap()
-                .clone(),
-            original_entry
-                .get_component::<HouseComponent>()
-                .unwrap()
-                .clone(),
-        ));
-        let parent = WorldSystem::get_context(world).owner;
-        let mut new_entry = world.entry(new_entity).unwrap();
-        new_entry.add_component(EntityComponent { entity: new_entity });
-        new_entry.add_component(Context {
-            owner: new_entity,
-            parent: Some(parent),
-            target: new_entity,
-            ..original_context
-        });
-
-        // Optional components
-        Self::clone_component::<Shader>(original_entity, new_entity, world);
-        Self::clone_component::<DescriptionComponent>(original_entity, new_entity, world);
-
-        // Statuses
-        if let Some(statuses) = resources.status_pool.active_statuses.get(&original_entity) {
-            resources
-                .status_pool
-                .active_statuses
-                .insert(new_entity, statuses.clone());
-        }
-    }
-
-    fn clone_component<T: legion::storage::Component>(
-        original_entity: legion::Entity,
-        clone_entity: legion::Entity,
-        world: &mut legion::World,
-    ) where
-        T: Clone,
-    {
-        if let Some(component) = world
-            .entry_ref(original_entity)
-            .unwrap()
-            .get_component::<T>()
-            .cloned()
-            .ok()
-        {
-            world.entry(clone_entity).unwrap().add_component(component);
-        }
-    }
-
     pub fn process_death(
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> bool {
-        Event::BeforeDeath { owner: entity }.send(resources, world);
+        Event::BeforeDeath { owner: entity }.send(world, resources);
         ActionSystem::run_ticks(world, resources);
-        if world
-            .entry(entity)
-            .unwrap()
-            .get_component::<HpComponent>()
-            .unwrap()
-            .current
-            <= 0
-        {
-            return Self::delete_unit(entity, world, resources);
+        ContextSystem::refresh_entity(entity, world, resources);
+        let context = ContextSystem::get_context(entity, world);
+        if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {
+            if Self::turn_unit_into_corpse(entity, world, resources) {
+                Event::AfterDeath { context }.send(world, resources);
+                resources.status_pool.clear_entity(&entity);
+                return true;
+            }
         }
         false
     }
 
-    pub fn delete_unit(
+    pub fn turn_unit_into_corpse(
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
@@ -154,11 +74,18 @@ impl UnitSystem {
             .unwrap()
             .clone();
         if unit.faction == Faction::Team {
-            Event::RemoveFromTeam { owner: entity }.send(resources, world);
+            Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
-        resources.status_pool.clear_entity(&entity);
+        let corpse = SerializedUnit::pack(entity, world, resources);
+        resources
+            .unit_corpses
+            .insert(entity, (corpse, unit.faction));
         let res = world.remove(entity);
         res
+    }
+
+    pub fn clear_faction(world: &mut legion::World, resources: &mut Resources, faction: Faction) {
+        Self::clear_factions(world, resources, &hashset! {faction});
     }
 
     pub fn clear_factions(
@@ -178,6 +105,13 @@ impl UnitSystem {
             resources.status_pool.clear_entity(entity);
         });
         unit_entitites
+    }
+
+    pub fn collect_faction(
+        world: &legion::World,
+        faction: Faction,
+    ) -> HashMap<legion::Entity, UnitComponent> {
+        Self::collect_factions(world, &hashset! {faction})
     }
 
     pub fn collect_factions(
@@ -229,15 +163,5 @@ impl UnitSystem {
                 );
             }
         }
-
-        // for (entity, (value, time)) in resources.input.hover_data.iter() {
-        //     entity_shaders.get_mut(entity).and_then(|shader| {
-        //         shader.parameters.uniforms.insert(
-        //             VarName::Card.convert_to_uniform(),
-        //             ShaderUniform::Float(*value as u8 as f32),
-        //         );
-        //         Some(())
-        //     });
-        // }
     }
 }

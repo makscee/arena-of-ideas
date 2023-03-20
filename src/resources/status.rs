@@ -2,7 +2,7 @@ use geng::prelude::itertools::Itertools;
 
 use super::*;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Status {
     pub trigger: Trigger,
     pub color: Option<Rgba<f32>>,
@@ -19,14 +19,11 @@ pub struct StatusPool {
 impl StatusPool {
     /// Send event to all active statuses
     pub fn notify_all(event: &Event, resources: &mut Resources, world: &legion::World) {
-        resources
-            .status_pool
-            .active_statuses
-            .keys()
-            .cloned()
-            .collect_vec()
-            .into_iter()
-            .for_each(|entity| Self::notify_entity(event, entity, resources, world, None))
+        <(&EntityComponent, &Trigger)>::query()
+            .iter(world)
+            .for_each(|(entity, _)| {
+                Self::notify_entity(event, entity.entity, resources, world, None)
+            });
     }
 
     /// Trigger all active statuses on entity
@@ -37,32 +34,52 @@ impl StatusPool {
         world: &legion::World,
         context: Option<Context>,
     ) {
-        if let Some(statuses) = resources.status_pool.active_statuses.get(&entity) {
-            let context = context.unwrap_or(ContextSystem::get_context(entity, world));
-            statuses.iter().for_each(|(status_name, _)| {
-                resources
-                    .status_pool
-                    .defined_statuses
-                    .get(status_name)
-                    .unwrap()
-                    .trigger
-                    .catch_event(
-                        event,
-                        &mut resources.action_queue,
-                        context
-                            .clone()
-                            .add_var(VarName::StatusName, Var::String((0, status_name.clone())))
-                            .to_owned(),
-                        &resources.logger,
-                    );
-            });
+        let context = context.unwrap_or_else(|| ContextSystem::get_context(entity, world));
+        for (name, trigger, charges) in resources.status_pool.collect_triggers(&entity, world) {
+            trigger.catch_event(
+                event,
+                &mut resources.action_queue,
+                context
+                    .clone()
+                    .add_var(VarName::StatusName, Var::String((0, name.clone())))
+                    .add_var(VarName::Charges, Var::Int(charges))
+                    .to_owned(),
+                &resources.logger,
+            );
         }
     }
 
-    pub fn collect_triggers(&self, entity: &legion::Entity) -> Vec<(String, Trigger, i32)> {
-        self.collect_statuses(entity)
+    pub fn calculate_entity(
+        event: &Event,
+        entity: legion::Entity,
+        context: Context,
+        world: &legion::World,
+        resources: &Resources,
+    ) -> Context {
+        let mut context = context.to_owned();
+        for (_, trigger, charges) in resources.status_pool.collect_triggers(&entity, world) {
+            context.add_var(VarName::Charges, Var::Int(charges));
+            context = trigger.calculate_event(event, context, world, resources);
+        }
+        context.vars.remove(&VarName::Charges);
+        context
+    }
+
+    pub fn collect_triggers(
+        &self,
+        entity: &legion::Entity,
+        world: &legion::World,
+    ) -> Vec<(String, Trigger, i32)> {
+        self.collect_statuses(&entity)
             .into_iter()
             .map(|(name, status, charges)| (name, status.trigger, charges))
+            .chain(
+                world
+                    .entry_ref(*entity)
+                    .iter()
+                    .filter_map(|x| x.get_component::<Trigger>().ok())
+                    .map(|trigger| ("_local".to_string(), (*trigger).clone(), 1)),
+            )
             .collect_vec()
     }
 
@@ -88,7 +105,15 @@ impl StatusPool {
         self.collect_statuses(entity)
             .into_iter()
             .filter_map(|(_, status, _)| match status.shader {
-                Some(shader) => Some(shader),
+                Some(mut shader) => {
+                    if let Some(status_color) = status.color {
+                        shader.parameters.uniforms.insert(
+                            VarName::Color.convert_to_uniform(),
+                            ShaderUniform::Color(status.color.unwrap()),
+                        );
+                    }
+                    Some(shader)
+                }
                 None => None,
             })
             .collect_vec()
@@ -96,7 +121,7 @@ impl StatusPool {
 
     pub fn change_entity_status(
         entity: legion::Entity,
-        status_name: &str,
+        status_name: &String,
         resources: &mut Resources,
         charges_change: i32,
     ) {
@@ -111,7 +136,7 @@ impl StatusPool {
 
     fn add_status_charge(
         entity: legion::Entity,
-        status: &str,
+        status: &String,
         resources: &mut Resources,
         world: &legion::World,
     ) {
@@ -126,13 +151,13 @@ impl StatusPool {
                 status: status.to_string(),
                 owner: entity,
             }
-            .send(resources, world);
+            .send(world, resources);
         }
         Event::StatusChargeAdd {
             status: status.to_string(),
             owner: entity,
         }
-        .send(resources, world);
+        .send(world, resources);
         entity_statuses.insert(status.to_string(), charges + 1);
         resources
             .status_pool
@@ -142,7 +167,7 @@ impl StatusPool {
 
     fn remove_status_charge(
         entity: legion::Entity,
-        status: &str,
+        status: &String,
         resources: &mut Resources,
         world: &legion::World,
     ) {
@@ -157,13 +182,13 @@ impl StatusPool {
                 status: status.to_string(),
                 owner: entity,
             }
-            .send(resources, world);
+            .send(world, resources);
         }
         Event::StatusChargeRemove {
             status: status.to_string(),
             owner: entity,
         }
-        .send(resources, world);
+        .send(world, resources);
         if charges > 1 {
             entity_statuses.insert(status.to_string(), charges - 1);
         } else {
@@ -190,14 +215,6 @@ impl StatusPool {
     }
 
     pub fn define_status(&mut self, name: String, mut status: Status) {
-        if status.shader.is_some() && status.color.is_some() {
-            if let Some(ref mut shader) = status.shader {
-                shader.parameters.uniforms.insert(
-                    "u_color".to_string(),
-                    ShaderUniform::Color(status.color.unwrap()),
-                );
-            }
-        }
         self.defined_statuses.insert(name, status);
     }
 

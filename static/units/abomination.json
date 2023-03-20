@@ -1,34 +1,108 @@
-[
-    {
-        "component": "Name",
-        "name": "Abomination"
+{
+    "name": "Abomination",
+    "description": "On Buy:\nDevour\nadjacent allies",
+    "health": 2,
+    "attack": 2,
+    "houses": [
+        "Vampires"
+    ],
+    "trigger": {
+        "type": "Buy",
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "SlotOccupied",
+                        "faction": "Team",
+                        "slot": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "Slot"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    },
+                    "then": {
+                        "type": "ChangeContext",
+                        "target": {
+                            "type": "FindUnit",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            "faction": "Team"
+                        },
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Vampires",
+                            "name": "Devour"
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                },
+                {
+                    "type": "If",
+                    "condition": {
+                        "type": "SlotOccupied",
+                        "faction": "Team",
+                        "slot": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "Slot"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
+                    },
+                    "then": {
+                        "type": "ChangeContext",
+                        "target": {
+                            "type": "FindUnit",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            },
+                            "faction": "Team"
+                        },
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Vampires",
+                            "name": "Devour"
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                }
+            ]
+        }
     },
-    {
-        "component": "House",
-        "houses": [
-            "Vampires"
-        ]
-    },
-    {
-        "component": "AbilityDescription",
-        "abilities": [
-            "Devour"
-        ]
-    },
-    {
-        "component": "Description",
-        "text": "On Buy:\nDevour\nadjacent allies"
-    },
-    {
-        "component": "Hp",
-        "max": 2
-    },
-    {
-        "component": "Attack",
-        "value": 2
-    },
-    {
-        "component": "Shader",
+    "shader": {
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
@@ -41,108 +115,5 @@
                 "u_aa": 0.05
             }
         }
-    },
-    {
-        "component": "StatusContainer",
-        "statuses": {
-            "DevourAlly": {
-                "trigger": {
-                    "type": "Buy",
-                    "effect": {
-                        "type": "List",
-                        "effects": [
-                            {
-                                "type": "If",
-                                "condition": {
-                                    "type": "SlotOccupied",
-                                    "faction": "Team",
-                                    "slot": {
-                                        "type": "Sum",
-                                        "a": {
-                                            "type": "Var",
-                                            "var": "Slot"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    }
-                                },
-                                "then": {
-                                    "type": "ChangeContext",
-                                    "target": {
-                                        "type": "FindUnit",
-                                        "slot": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "var": "Slot"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": 1
-                                            }
-                                        },
-                                        "faction": "Team"
-                                    },
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "house": "Vampires",
-                                        "name": "Devour"
-                                    }
-                                },
-                                "else": {
-                                    "type": "Noop"
-                                }
-                            },
-                            {
-                                "type": "If",
-                                "condition": {
-                                    "type": "SlotOccupied",
-                                    "faction": "Team",
-                                    "slot": {
-                                        "type": "Sum",
-                                        "a": {
-                                            "type": "Var",
-                                            "var": "Slot"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": -1
-                                        }
-                                    }
-                                },
-                                "then": {
-                                    "type": "ChangeContext",
-                                    "target": {
-                                        "type": "FindUnit",
-                                        "slot": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "var": "Slot"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": -1
-                                            }
-                                        },
-                                        "faction": "Team"
-                                    },
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "house": "Vampires",
-                                        "name": "Devour"
-                                    }
-                                },
-                                "else": {
-                                    "type": "Noop"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        }
     }
-]
+}
