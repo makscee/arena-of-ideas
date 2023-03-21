@@ -1,6 +1,7 @@
 use super::*;
 
 #[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct House {
     pub name: HouseName,
     pub color: Rgba<f32>,

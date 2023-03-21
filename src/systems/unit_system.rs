@@ -76,7 +76,7 @@ impl UnitSystem {
         if unit.faction == Faction::Team {
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
-        let corpse = SerializedUnit::pack(entity, world, resources);
+        let corpse = PackedUnit::pack(entity, world, resources);
         resources
             .unit_corpses
             .insert(entity, (corpse, unit.faction));

@@ -29,7 +29,7 @@ impl BattleSystem {
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::clear_world(world, resources);
         Self::create_enemies(resources, world);
-        Self::create_team(resources, world);
+        Self::load_player_team(resources, world);
         SlotSystem::fill_gaps(world, resources, hashset! {Faction::Dark, Faction::Light});
     }
 
@@ -65,9 +65,10 @@ impl BattleSystem {
         Floors::load(world, resources);
     }
 
-    pub fn create_team(resources: &mut Resources, world: &mut legion::World) {
-        Team::pack_entries(&Faction::Team, world, resources);
-        Team::unpack_entries(Faction::Team, Faction::Light, world, resources);
+    pub fn load_player_team(resources: &mut Resources, world: &mut legion::World) {
+        let team = TeamPool::get_team(Faction::Team, resources).clone();
+        TeamPool::save_team(Faction::Light, team, resources);
+        TeamPool::load_team(&Faction::Light, world, resources);
     }
 
     pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {

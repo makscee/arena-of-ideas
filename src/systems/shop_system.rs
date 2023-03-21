@@ -20,13 +20,15 @@ impl System for ShopSystem {
         Self::refresh_cassette(world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
         if self.need_switch_battle {
-            resources.camera.focus = match resources.camera.focus {
+            match resources.camera.focus {
                 Focus::Shop => {
-                    BattleSystem::init_battle(world, resources);
-                    Focus::Battle
+                    Self::switch_to_battle(world, resources);
                 }
-                Focus::Battle => Focus::Shop,
+                Focus::Battle => {
+                    Self::switch_to_shop(world, resources);
+                }
             }
+            self.need_switch_battle = false;
         }
         Self::refresh_ui(resources);
     }
@@ -34,7 +36,7 @@ impl System for ShopSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &'a legion::World,
+        _: &'a legion::World,
         resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         let switch_button = CornerButtonWidget::new(
@@ -45,7 +47,7 @@ impl System for ShopSystem {
                 Focus::Battle => resources.options.images.money_icon.clone(),
             },
         );
-        self.need_switch_battle = switch_button.was_clicked();
+        self.need_switch_battle = switch_button.was_clicked() || self.need_switch_battle;
         Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
     }
 }
@@ -53,6 +55,16 @@ impl System for ShopSystem {
 impl ShopSystem {
     pub fn new() -> Self {
         default()
+    }
+
+    fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
+        resources.camera.focus = Focus::Battle;
+        TeamPool::refresh_team(&Faction::Team, world, resources);
+        BattleSystem::init_battle(world, resources);
+    }
+
+    fn switch_to_shop(world: &mut legion::World, resources: &mut Resources) {
+        resources.camera.focus = Focus::Shop;
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
@@ -149,6 +161,7 @@ impl ShopSystem {
         ContextSystem::refresh_entity(entity, world, resources);
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
+        TeamPool::refresh_team(&Faction::Team, world, resources);
         ContextSystem::refresh_all(world, resources);
     }
 
@@ -158,9 +171,10 @@ impl ShopSystem {
         resources
             .shop
             .pool
-            .push(SerializedUnit::pack(entity, world, resources));
+            .push(PackedUnit::pack(entity, world, resources));
         UnitSystem::turn_unit_into_corpse(entity, world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
+        TeamPool::refresh_team(&Faction::Team, world, resources);
         ContextSystem::refresh_all(world, resources);
     }
 
@@ -186,14 +200,11 @@ impl ShopSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        Shop::load_level(resources, resources.floors.current_ind());
+        let current_floor = resources.floors.current_ind();
+        Shop::load_level(resources, current_floor);
         Self::reroll(world, resources);
-        WorldSystem::set_var(
-            world,
-            VarName::Floor,
-            Var::Int(resources.floors.current_ind() as i32),
-        );
-        resources.shop.money = (UNIT_COST + resources.floors.current_ind() + 1).min(10);
+        WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
+        resources.shop.money = (UNIT_COST + current_floor + 1).min(10);
         if resources.shop.refresh_btn.is_none() {
             let world_entity = WorldSystem::get_context(world).owner;
             fn refresh(
@@ -242,7 +253,7 @@ impl ShopSystem {
         let case = UnitSystem::collect_faction(world, Faction::Shop);
         let packed_units = case
             .keys()
-            .map(|entity| SerializedUnit::pack(*entity, world, resources))
+            .map(|entity| PackedUnit::pack(*entity, world, resources))
             .collect_vec();
         UnitSystem::clear_faction(world, resources, Faction::Shop);
         resources.shop.pool.extend(packed_units.into_iter());

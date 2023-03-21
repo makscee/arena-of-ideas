@@ -6,8 +6,8 @@ const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 
 #[derive(Default)]
 pub struct Shop {
-    pub pool: Vec<SerializedUnit>,
-    pub level_extensions: Vec<Vec<SerializedUnit>>,
+    pub pool: Vec<PackedUnit>,
+    pub level_extensions: Vec<Vec<PackedUnit>>,
     pub money: usize,
     pub drop_entity: Option<legion::Entity>,
     pub drag_entity: Option<legion::Entity>,

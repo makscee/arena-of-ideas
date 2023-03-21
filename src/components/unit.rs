@@ -28,6 +28,14 @@ impl Faction {
             Faction::Gallery => 4.0,
         }
     }
+    pub fn from_entity(entity: legion::Entity, world: &legion::World) -> Faction {
+        world
+            .entry_ref(entity)
+            .unwrap()
+            .get_component::<UnitComponent>()
+            .unwrap()
+            .faction
+    }
 }
 
 impl VarsProvider for UnitComponent {

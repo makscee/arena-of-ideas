@@ -5,32 +5,55 @@ use super::*;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Team {
     pub name: String,
-    pub units: Vec<SerializedUnit>,
+    pub units: Vec<PackedUnit>,
     #[serde(default)]
     pub ability_state: AbilitiesState,
 }
 
 impl Team {
+    pub fn empty(name: String) -> Self {
+        Self { name, ..default() }
+    }
+
+    pub fn new(name: String, units: Vec<PackedUnit>) -> Self {
+        Self {
+            name,
+            units,
+            ..default()
+        }
+    }
+
     pub fn unpack_entries(
-        from: Faction,
-        into: Faction,
+        &self,
+        faction: &Faction,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let units = resources.teams.get_mut(&from).unwrap().units.to_owned();
-        units.iter().enumerate().for_each(|(slot, unit)| {
-            unit.unpack(world, resources, slot + 1, into);
+        self.units.iter().enumerate().for_each(|(slot, unit)| {
+            unit.unpack(world, resources, slot + 1, *faction);
         });
-        resources.teams.get_mut(&from).unwrap().units = units;
     }
 
-    pub fn pack_entries(faction: &Faction, world: &legion::World, resources: &mut Resources) {
-        let mut team = resources.teams.remove(faction).unwrap_or_default();
-        team.units = UnitSystem::collect_factions(world, &hashset! {*faction})
+    pub fn pack_entries(
+        faction: &Faction,
+        world: &legion::World,
+        resources: &Resources,
+    ) -> Vec<PackedUnit> {
+        UnitSystem::collect_faction(world, *faction)
             .iter()
             .sorted_by_key(|(_, unit)| unit.slot)
-            .map(|(entity, _)| SerializedUnit::pack(*entity, world, resources))
-            .collect_vec();
-        resources.teams.insert(*faction, team);
+            .map(|(entity, _)| PackedUnit::pack(*entity, world, resources))
+            .collect_vec()
+    }
+
+    pub fn try_get_ability_var_int(
+        &self,
+        house: &HouseName,
+        ability: &str,
+        var: &VarName,
+    ) -> Option<i32> {
+        self.ability_state
+            .get_vars(house, ability)
+            .and_then(|vars| vars.try_get_int(var))
     }
 }

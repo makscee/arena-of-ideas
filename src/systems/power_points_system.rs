@@ -4,10 +4,10 @@ pub struct PowerPointsSystem {}
 
 impl PowerPointsSystem {
     pub fn measure(
-        pool: Vec<SerializedUnit>,
+        pool: Vec<PackedUnit>,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> Vec<(SerializedUnit, usize)> {
+    ) -> Vec<(PackedUnit, usize)> {
         if !resources
             .options
             .log
@@ -26,11 +26,11 @@ impl PowerPointsSystem {
 
     pub fn measure_single(
         index: usize,
-        results: &mut Vec<(SerializedUnit, usize)>,
+        results: &mut Vec<(PackedUnit, usize)>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        fn choose_random(pool: &Vec<(SerializedUnit, usize)>) -> &SerializedUnit {
+        fn choose_random(pool: &Vec<(PackedUnit, usize)>) -> &PackedUnit {
             &pool.iter().choose(&mut thread_rng()).unwrap().0
         }
         let mut result = 0;
@@ -51,8 +51,8 @@ impl PowerPointsSystem {
     }
 
     fn run_simulation(
-        light: Vec<&SerializedUnit>,
-        dark: Vec<&SerializedUnit>,
+        light: Vec<&PackedUnit>,
+        dark: Vec<&PackedUnit>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> Faction {

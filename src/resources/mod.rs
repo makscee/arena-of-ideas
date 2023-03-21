@@ -14,15 +14,17 @@ mod expression;
 mod floors;
 mod fonts;
 mod house;
+mod house_pool;
 mod image;
 mod image_textures;
 mod input;
 mod options;
-mod serialized_unit;
+mod packed_unit;
 mod shader_programs;
 mod shop;
 mod status;
 mod team;
+mod team_pool;
 mod trigger;
 mod visual_effect;
 
@@ -38,15 +40,17 @@ pub use expression::*;
 pub use floors::*;
 pub use fonts::*;
 pub use house::*;
+pub use house_pool::*;
 pub use image::*;
 pub use image_textures::*;
 pub use input::*;
 pub use options::*;
-pub use serialized_unit::*;
+pub use packed_unit::*;
 pub use shader_programs::*;
 pub use shop::*;
 pub use status::*;
 pub use team::*;
+pub use team_pool::*;
 pub use trigger::*;
 pub use visual_effect::*;
 
@@ -71,10 +75,10 @@ pub struct Resources {
     pub last_round: usize,
     pub floors: Floors,
 
-    pub hero_pool: HashMap<PathBuf, SerializedUnit>,
-    pub unit_corpses: HashMap<legion::Entity, (SerializedUnit, Faction)>,
-    pub teams: HashMap<Faction, Team>,
-    pub houses: HashMap<HouseName, House>,
+    pub house_pool: HousePool,
+    pub hero_pool: HashMap<PathBuf, PackedUnit>,
+    pub team_pool: TeamPool,
+    pub unit_corpses: HashMap<legion::Entity, (PackedUnit, Faction)>,
     pub definitions: Definitions,
 
     pub current_state: GameState,
@@ -130,35 +134,38 @@ impl Resources {
                 .unwrap(),
             ),
         ];
+        let team_pool = TeamPool::new(hashmap! {
+            Faction::Team => Team::empty(options.player_team_name.clone())
+        });
 
         Self {
+            geng: geng.clone(),
+            camera: Camera::new(&options),
+            fonts: Fonts::new(fonts),
             logger: default(),
             shader_programs: default(),
             image_textures: default(),
-            camera: Camera::new(&options),
-            fonts: Fonts::new(fonts),
-            geng: geng.clone(),
             global_time: default(),
             delta_time: default(),
             action_queue: default(),
             status_pool: default(),
             cassette: default(),
-            cassette_play_mode: CassettePlayMode::Play,
             shop: default(),
             frame_shaders: default(),
-            options,
             input: default(),
-            houses: default(),
+            house_pool: default(),
             definitions: default(),
             floors: default(),
             reload_triggered: default(),
             game_won: default(),
             last_round: default(),
-            current_state: GameState::MainMenu,
-            transition_state: GameState::MainMenu,
             hero_pool: default(),
-            teams: default(),
             unit_corpses: default(),
+            cassette_play_mode: CassettePlayMode::Play,
+            transition_state: GameState::MainMenu,
+            current_state: GameState::MainMenu,
+            options,
+            team_pool,
         }
     }
 
@@ -335,7 +342,7 @@ impl Resources {
                 .definitions
                 .insert(name.clone(), house.color, ability.description.clone())
         });
-        resources.houses.insert(house.name, house);
+        resources.house_pool.insert_house(house.name, house);
     }
 
     fn load_rounds(resources: &mut Resources, file: &PathBuf) {

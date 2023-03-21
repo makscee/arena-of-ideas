@@ -8,6 +8,7 @@ pub struct Options {
     pub images: Images,
     pub colors: Colors,
     pub custom_game: CustomGameConfig,
+    pub player_team_name: String,
 }
 
 impl geng::LoadAsset for Options {

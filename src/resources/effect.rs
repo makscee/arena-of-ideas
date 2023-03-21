@@ -249,30 +249,25 @@ impl EffectWrapped {
                         name, house
                     );
                 }
-                let (defaults, effect, color) = {
-                    let house = resources
-                        .houses
-                        .get(&house)
-                        .context("Failed to get House")?;
-                    let ability = house.abilities.get(name).context("Failed to get Ability")?;
-                    (&ability.vars, &ability.effect, house.color)
-                };
-                context.vars.merge_mut(defaults, true);
-                context.vars.insert(VarName::Color, Var::Color(color));
-                let owner_faction = owner_entry
-                    .get_component::<UnitComponent>()
-                    .unwrap()
-                    .faction;
-                if let Some(vars) = resources
-                    .teams
-                    .get(&owner_faction)
-                    .and_then(|team| team.ability_state.get_vars(house, name))
+                let defaults = resources
+                    .house_pool
+                    .try_get_ability_vars(house, name)
+                    .context("Failed to find ability")?;
+                if let Some(overrides) =
+                    TeamPool::try_get_team(Faction::from_entity(context.owner, world), resources)
+                        .and_then(|x| x.ability_state.get_vars(house, name))
                 {
-                    context.vars.merge_mut(vars, true);
+                    context.vars.merge_mut(overrides, true);
                 }
-                resources
-                    .action_queue
-                    .push_front(Action::new(context, effect.clone()));
+                context.vars.merge_mut(defaults, true);
+                context.vars.insert(
+                    VarName::Color,
+                    Var::Color(resources.house_pool.get_color(house)),
+                );
+                resources.action_queue.push_front(Action::new(
+                    context,
+                    resources.house_pool.get_ability(house, name).effect.clone(),
+                ));
             }
             Effect::SetHealth { value } => {
                 let value = value.calculate(&context, world, resources)?;
@@ -291,21 +286,25 @@ impl EffectWrapped {
                 delta,
             } => {
                 let delta = delta.calculate(&context, world, resources)?;
-
                 resources.logger.log(
                     &format!("Set ability {} var {:?} delta {}", ability, var, delta),
                     &LogContext::Effect,
                 );
-                let vars = &mut resources
-                    .houses
-                    .get_mut(&house)
-                    .unwrap()
-                    .abilities
-                    .get_mut(ability)
-                    .unwrap()
-                    .vars;
-                let value = vars.try_get_int(&var).unwrap_or_default() + delta;
-                vars.insert(*var, Var::Int(value));
+
+                let prev_value = ExpressionInt::AbilityVar {
+                    house: *house,
+                    ability: ability.clone(),
+                    var: *var,
+                }
+                .calculate(&context, world, resources)?;
+                TeamPool::set_ability_var_int(
+                    house,
+                    ability,
+                    var,
+                    prev_value + delta,
+                    &Faction::from_entity(context.owner, world),
+                    resources,
+                );
             }
             Effect::If {
                 condition,

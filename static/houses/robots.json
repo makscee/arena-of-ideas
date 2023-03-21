@@ -28,7 +28,7 @@
                 ]
             },
             "description": "Negate one instance\nof incoming damage",
-            "vars": {
+            "default_vars": {
                 "Reflection": 0,
                 "Charges": 1
             }

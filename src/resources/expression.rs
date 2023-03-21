@@ -56,23 +56,15 @@ impl ExpressionInt {
             }
             ExpressionInt::AbilityVar {
                 house,
-                ability: ability_name,
-                var: var_name,
-            } => {
-                todo!("rewrite");
-                Ok(resources
-                    .houses
-                    .get(house)
-                    .context(format!("Failed to get {:?}", house))?
-                    .abilities
-                    .get(ability_name)
-                    .context(format!(
-                        "Failed to get Ability {} from {:?}",
-                        ability_name, house
-                    ))?
-                    .vars
-                    .get_int(var_name))
-            }
+                ability,
+                var,
+            } => Ok(TeamPool::get_ability_var_int(
+                house,
+                ability,
+                var,
+                &Faction::from_entity(context.owner, world),
+                resources,
+            )),
         }
     }
 }

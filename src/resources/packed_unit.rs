@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct SerializedUnit {
+pub struct PackedUnit {
     pub name: String,
     pub description: String,
     pub health: i32,
@@ -16,7 +16,7 @@ pub struct SerializedUnit {
     pub shader: Shader,
 }
 
-impl SerializedUnit {
+impl PackedUnit {
     pub fn pack(entity: legion::Entity, world: &legion::World, resources: &Resources) -> Self {
         let entry = world.entry_ref(entity).unwrap();
         let name = entry.get_component::<NameComponent>().unwrap().0.clone();

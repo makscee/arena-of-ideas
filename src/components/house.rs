@@ -18,7 +18,7 @@ impl VarsProvider for HouseComponent {
         let colors = self
             .houses
             .iter()
-            .map(|house| resources.houses.get(house).unwrap().color)
+            .map(|house| resources.house_pool.get_color(house))
             .collect_vec();
         vars.insert(VarName::HouseColor1, Var::Color(colors[0]));
         if colors.len() > 1 {

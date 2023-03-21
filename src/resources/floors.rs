@@ -27,8 +27,9 @@ impl Floors {
 
     pub fn load(world: &mut legion::World, resources: &mut Resources) {
         resources
-            .teams
-            .insert(Faction::Dark, resources.floors.current().clone());
-        Team::unpack_entries(Faction::Dark, Faction::Dark, world, resources);
+            .floors
+            .current()
+            .clone()
+            .unpack_entries(&Faction::Dark, world, resources);
     }
 }
