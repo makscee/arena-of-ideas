@@ -22,6 +22,10 @@ impl Shader {
         self.parameters.uniforms.insert(String::from(key), value);
         self
     }
+    pub fn set_uniform_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Shader {
+        self.parameters.uniforms.insert(String::from(key), value);
+        self
+    }
 
     pub fn merge_uniforms(mut self, uniforms: &ShaderUniforms, force: bool) -> Shader {
         self.parameters.uniforms.merge_mut(uniforms, force);

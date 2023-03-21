@@ -23,9 +23,6 @@ impl System for GameStateSystem {
                 } else {
                     resources.transition_state = GameState::Shop;
                 }
-                // if !resources.down_keys.is_empty() {
-                //     self.transition = GameState::Gallery;
-                // }
             }
             GameState::Battle => {
                 if resources.input.down_keys.contains(&geng::Key::R) {
@@ -69,9 +66,7 @@ impl System for GameStateSystem {
             }
             GameState::CustomGame => {
                 if resources.input.down_keys.contains(&geng::Key::R) {
-                    resources.cassette.clear();
-                    BattleSystem::init_battle(world, resources);
-                    BattleSystem::run_battle(world, resources);
+                    resources.transition_state = GameState::MainMenu;
                 }
             }
         }
@@ -228,7 +223,27 @@ impl GameStateSystem {
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
             }
-            GameState::CustomGame => {}
+            GameState::CustomGame => {
+                resources.camera.focus = Focus::Battle;
+                let light = resources
+                    .options
+                    .custom_game
+                    .light
+                    .clone()
+                    .expect("Light team not set for custom game in options.json");
+                let dark = resources
+                    .options
+                    .custom_game
+                    .dark
+                    .clone()
+                    .expect("Light team not set for custom game in options.json");
+                TeamPool::save_team(Faction::Light, light, resources);
+                TeamPool::save_team(Faction::Dark, dark, resources);
+                BattleSystem::clear_world(world, resources);
+                TeamPool::load_team(&Faction::Light, world, resources);
+                TeamPool::load_team(&Faction::Dark, world, resources);
+                BattleSystem::run_battle(world, resources);
+            }
         }
     }
 }

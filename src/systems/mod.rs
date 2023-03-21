@@ -100,6 +100,13 @@ impl Game {
             ],
         );
         game_state.add_systems(
+            GameState::CustomGame,
+            vec![
+                Box::new(CassettePlayerSystem::new(false)),
+                Box::new(ActionSystem::new()),
+            ],
+        );
+        game_state.add_systems(
             GameState::Shop,
             vec![
                 Box::new(ShopSystem::new()),

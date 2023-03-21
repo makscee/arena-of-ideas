@@ -359,12 +359,10 @@ impl EffectWrapped {
                 let mut entry = world.entry_mut(context.target).unwrap();
                 let health = entry.get_component_mut::<HealthComponent>().unwrap();
                 health.damage = i32::MAX as usize;
-                if UnitSystem::process_death(context.target, world, resources) {
-                    if let Some(effect) = then {
-                        resources
-                            .action_queue
-                            .push_front(Action::new(context, effect.deref().clone()));
-                    }
+                if let Some(effect) = then {
+                    resources
+                        .action_queue
+                        .push_front(Action::new(context, effect.deref().clone()));
                 }
             }
             Effect::Revive { slot } => {

@@ -1,5 +1,3 @@
-use legion::EntityStore;
-
 use super::*;
 use geng::ui::*;
 

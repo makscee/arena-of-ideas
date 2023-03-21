@@ -25,11 +25,8 @@ const DEFAULT_EFFECT_KEY: &str = "default";
 impl Cassette {
     pub fn close_node(&mut self) {
         let node = self.queue.last_mut().unwrap();
-        let start = (node.start + node.duration).max(self.head);
-        if node.duration == 0.0 {
-            node.start = start;
-            self.queue.pop();
-        }
+        node.duration = node.duration.max(self.head - node.start);
+        let start = node.start + node.duration;
         let mut new_node = self.node_template.clone();
         new_node.start = start;
         self.queue.push(new_node);

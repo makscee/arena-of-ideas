@@ -135,13 +135,17 @@ impl SlotSystem {
             .iter_mut(world)
             .for_each(|(slot, shader)| {
                 let filled = filled_slots.contains(&(slot.faction, slot.slot));
-                shader.parameters.uniforms.insert(
-                    "u_filled".to_string(),
+                shader.set_uniform_ref(
+                    "u_filled",
                     ShaderUniform::Float(match filled {
                         true => 1.0,
                         false => 0.0,
                     }),
                 );
+                // todo: save slot shaders to cassette
+                // if !filled && (slot.faction == Faction::Dark || slot.faction == Faction::Light) {
+                //     shader.set_uniform_ref("u_scale", ShaderUniform::Float(0.0));
+                // }
                 shader.chain_after.clear();
                 if filled && slot.faction == Faction::Shop {
                     shader

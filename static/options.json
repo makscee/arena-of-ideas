@@ -1,7 +1,86 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": false
+        "enable": true,
+        "light": {
+            "name": "Snake",
+            "units": [
+                {
+                    "name": "Snake",
+                    "description": "On damage dealt:\nKill",
+                    "attack": 1,
+                    "health": 1,
+                    "houses": [
+                        "Snakes"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Snakes",
+                            "name": "Poison"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#00d836",
+                                "u_color_1": "#00ff22",
+                                "u_inner_brightness": 0.5,
+                                "u_radius": 0.8,
+                                "u_alpha": 0.3,
+                                "u_spin_part": 0.01,
+                                "u_move_speed": 1.3
+                            },
+                            "instances": 40,
+                            "vertices": 1
+                        }
+                    }
+                }
+            ]
+        },
+        "dark": {
+            "name": "Shielded Snake",
+            "units": [
+                {
+                    "name": "Snake",
+                    "description": "On damage dealt:\nKill",
+                    "attack": 1,
+                    "health": 1,
+                    "houses": [
+                        "Snakes"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Snakes",
+                            "name": "Poison"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#00d836",
+                                "u_color_1": "#00ff22",
+                                "u_inner_brightness": 0.5,
+                                "u_radius": 0.8,
+                                "u_alpha": 0.3,
+                                "u_spin_part": 0.01,
+                                "u_move_speed": 1.3
+                            },
+                            "instances": 40,
+                            "vertices": 1
+                        }
+                    },
+                    "active_statuses": {
+                        "Shield": 1
+                    }
+                }
+            ]
+        }
     },
     "fov": 14.0,
     "log": {
