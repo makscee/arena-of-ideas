@@ -7,39 +7,54 @@ impl ActionSystem {
         Self {}
     }
 
-    pub fn run_ticks(world: &mut legion::World, resources: &mut Resources) {
+    pub fn run_ticks(world: &mut legion::World, resources: &mut Resources) -> Vec<CassetteNode> {
         let mut ticks = 0;
-        while Self::tick(world, resources) && ticks < 1000 {
+        let mut nodes = Vec::default();
+        loop {
+            let (ticked, node) = Self::tick(world, resources);
             ticks += 1;
-        }
-    }
-
-    pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
-        if resources.action_queue.is_empty() && resources.status_pool.status_changes.is_empty() {
-            return false;
-        }
-        ContextSystem::refresh_all(world, resources);
-        StatusPool::process_status_changes(world, resources);
-        let Some(action) = resources.action_queue.pop_front() else { return false };
-        resources.logger.log(
-            &format!("Procession action: {:?}", action.effect),
-            &LogContext::Action,
-        );
-        resources
-            .logger
-            .log(&format!("{:?}", action.context), &LogContext::Contexts);
-        match action
-            .effect
-            .process(action.context.clone(), world, resources)
-        {
-            Ok(_) => {}
-            Err(error) => {
-                error!("Effect process error: {}", error);
-                dbg!(action);
+            if let Some(node) = node {
+                nodes.push(node);
+            }
+            if !ticked || ticks > 1000 {
+                break;
             }
         }
-        ContextSystem::refresh_all(world, resources);
-        true
+        nodes
+    }
+
+    pub fn tick(
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> (bool, Option<CassetteNode>) {
+        if !resources.status_pool.status_changes.is_empty() {
+            ContextSystem::refresh_all(world, resources);
+            let node = StatusPool::process_status_changes(world, resources);
+            return (true, node);
+        } else if !resources.action_queue.is_empty() {
+            ContextSystem::refresh_all(world, resources);
+            let action = resources.action_queue.pop_front().unwrap();
+            resources.logger.log(
+                &format!("Procession action: {:?}", action.effect),
+                &LogContext::Action,
+            );
+            resources
+                .logger
+                .log(&format!("{:?}", action.context), &LogContext::Contexts);
+            match action
+                .effect
+                .process(action.context.clone(), world, resources)
+            {
+                Ok(node) => {
+                    return (true, Some(node));
+                }
+                Err(error) => {
+                    error!("Effect process error: {}", error);
+                    dbg!(action);
+                }
+            }
+        }
+        (false, None)
     }
 }
 

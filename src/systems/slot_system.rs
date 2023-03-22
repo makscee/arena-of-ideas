@@ -7,7 +7,7 @@ pub const PULL_FORCE: f32 = 7.0;
 pub const SHOP_POSITION: vec2<f32> = vec2(-30.0, 0.0);
 pub const SHOP_TEAM_OFFSET: vec2<f32> = vec2(0.0, -3.0);
 pub const SHOP_CASE_OFFSET: vec2<f32> = vec2(0.0, 3.0);
-pub const STRIKER_OFFSET: vec2<f32> = vec2(1.5, 0.0);
+pub const STRIKER_OFFSET: vec2<f32> = vec2(3.5, 0.0);
 pub const TEAM_OFFSET: vec2<f32> = vec2(2.5, 4.0);
 pub const BATTLEFIELD_POSITION: vec2<f32> = vec2(0.0, 0.0);
 
@@ -151,7 +151,7 @@ impl SlotSystem {
                     shader
                         .chain_after
                         .push(options.shaders.slot_price.clone().set_uniform(
-                            "u_text_color",
+                            "u_color",
                             ShaderUniform::Color(
                                 *options.colors.faction_colors.get(&Faction::Shop).unwrap(),
                             ),
@@ -201,7 +201,7 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &Resources,
         gap_slot: usize,
-        factions: HashSet<Faction>,
+        factions: &HashSet<Faction>,
     ) -> bool {
         let mut current_slot: HashMap<&Faction, usize> =
             HashMap::from_iter(factions.iter().map(|faction| (faction, 0usize)));
@@ -226,7 +226,11 @@ impl SlotSystem {
         changed
     }
 
-    pub fn fill_gaps(world: &mut legion::World, resources: &Resources, factions: HashSet<Faction>) {
+    pub fn fill_gaps(
+        world: &mut legion::World,
+        resources: &Resources,
+        factions: &HashSet<Faction>,
+    ) {
         Self::make_gap(world, resources, SLOTS_COUNT + 1, factions);
     }
 

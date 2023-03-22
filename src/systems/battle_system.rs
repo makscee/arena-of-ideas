@@ -3,32 +3,25 @@ use geng::ui::*;
 
 pub struct BattleSystem {}
 
-const STRIKE_FREEZE_EFFECT_KEY: &str = "strike_freeze";
 impl BattleSystem {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn run_battle(world: &mut legion::World, resources: &mut Resources) {
+    pub fn run_battle(world: &mut legion::World, resources: &mut Resources) -> Vec<CassetteNode> {
         let mut ticks = 0;
-        while Self::tick(world, resources) && ticks < 1000 {
+        let nodes = &mut Some(default());
+        while Self::tick(world, resources, nodes) && ticks < 1000 {
             ticks += 1;
         }
-        resources.cassette.node_template.clear();
-        UnitSystem::draw_all_units_to_cassette_node(
-            world,
-            &resources.options,
-            &resources.status_pool,
-            &mut resources.cassette.node_template,
-            hashset! {Faction::Dark, Faction::Light},
-        );
+        nodes.to_owned().unwrap_or_default()
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
         Self::clear_world(world, resources);
-        Self::create_enemies(resources, world);
+        Self::load_floor(resources, world);
         Self::load_player_team(resources, world);
-        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Dark, Faction::Light});
+        SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Dark, Faction::Light});
     }
 
     pub fn battle_won(world: &legion::World) -> bool {
@@ -59,123 +52,102 @@ impl BattleSystem {
         UnitSystem::clear_factions(world, resources, factions);
     }
 
-    pub fn create_enemies(resources: &mut Resources, world: &mut legion::World) {
-        Floors::load(world, resources);
+    pub fn load_floor(resources: &mut Resources, world: &mut legion::World) {
+        let team = resources.floors.current().clone();
+        let faction = Faction::Dark;
+        TeamPool::save_team(faction, team, resources);
+        TeamPool::load_team(&faction, world, resources);
     }
 
     pub fn load_player_team(resources: &mut Resources, world: &mut legion::World) {
         let team = TeamPool::get_team(Faction::Team, resources).clone();
-        TeamPool::save_team(Faction::Light, team, resources);
-        TeamPool::load_team(&Faction::Light, world, resources);
+        let faction = Faction::Light;
+        TeamPool::save_team(faction, team, resources);
+        TeamPool::load_team(&faction, world, resources);
     }
 
-    pub fn tick(world: &mut legion::World, resources: &mut Resources) -> bool {
-        resources.cassette.node_template.clear();
-        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Light, Faction::Dark});
-        Self::refresh_cassette(world, resources);
-        Self::move_to_slots_animated(world, resources);
-        Self::refresh_cassette(world, resources);
-        resources.cassette.close_node();
-        ActionSystem::run_ticks(world, resources);
+    /// Refresh all units, add them as node entities, push node to nodes, clear node
+    fn push_node(
+        node: &mut CassetteNode,
+        nodes: &mut Option<Vec<CassetteNode>>,
+        world: &mut legion::World,
+        resources: &Resources,
+    ) {
+        if node.duration == 0.0 {
+            return;
+        }
+        if let Some(nodes) = nodes {
+            let factions = &hashset! {Faction::Light, Faction::Dark};
+            ContextSystem::refresh_factions(factions, world, resources);
+            UnitSystem::draw_all_units_to_cassette_node(factions, node, world, resources);
+            let mut push_node = CassetteNode::default();
+            if let Some(last) = nodes.last() {
+                node.start = last.duration + last.start;
+            }
+            mem::swap(node, &mut push_node);
+            nodes.push(push_node);
+        }
+    }
 
-        if let Some((left_entity, right_entity)) = Self::find_hitters(world) {
-            Self::refresh_cassette(world, resources);
-            resources.cassette.close_node();
-
-            Self::add_strike_animation(
-                &mut resources.cassette,
-                StrikePhase::Charge,
-                left_entity,
-                Faction::Light,
-            );
-            Self::add_strike_animation(
-                &mut resources.cassette,
-                StrikePhase::Charge,
-                right_entity,
-                Faction::Dark,
-            );
-            resources.cassette.close_node();
-
-            Self::add_strike_animation(
-                &mut resources.cassette,
-                StrikePhase::Release,
-                left_entity,
-                Faction::Light,
-            );
-            Self::add_strike_animation(
-                &mut resources.cassette,
-                StrikePhase::Release,
-                right_entity,
-                Faction::Dark,
-            );
-            resources.cassette.node_template.clear();
-            resources.cassette.node_template.add_effect_by_key(
-                STRIKE_FREEZE_EFFECT_KEY,
-                VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityShaderConst {
-                        entity: left_entity,
-                        uniforms: hashmap! {
-                            "u_position" => ShaderUniform::Vec2(vec2(-1.0,0.0))
-                        }
-                        .into(),
-                    },
-                    15,
-                ),
-            );
-            resources.cassette.node_template.add_effect_by_key(
-                STRIKE_FREEZE_EFFECT_KEY,
-                VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityShaderConst {
-                        entity: right_entity,
-                        uniforms: hashmap! {
-                            "u_position" => ShaderUniform::Vec2(vec2(1.0,0.0))
-                        }
-                        .into(),
-                    },
-                    15,
-                ),
-            );
-            resources.cassette.close_node();
-
-            let (left_position, right_position) = (
-                ContextSystem::get_context(left_entity, world)
-                    .vars
-                    .get_vec2(&VarName::Position),
-                ContextSystem::get_context(right_entity, world)
-                    .vars
-                    .get_vec2(&VarName::Position),
-            );
-            Self::hit(left_entity, right_entity, world, resources);
-            Self::refresh_cassette(world, resources);
-            Self::add_strike_vfx(world, resources, left_position, right_position);
-            resources.cassette.close_node();
-            resources
-                .cassette
-                .node_template
-                .clear_key(STRIKE_FREEZE_EFFECT_KEY);
-
-            Self::add_strike_animation(
-                &mut resources.cassette,
-                StrikePhase::Retract,
-                left_entity,
-                Faction::Light,
-            );
-            Self::add_strike_animation(
-                &mut resources.cassette,
-                StrikePhase::Retract,
-                right_entity,
-                Faction::Dark,
-            );
-            resources.cassette.close_node();
-
+    pub fn tick(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        nodes: &mut Option<Vec<CassetteNode>>,
+    ) -> bool {
+        let factions = &hashset! {Faction::Light, Faction::Dark};
+        SlotSystem::fill_gaps(world, resources, factions);
+        ContextSystem::refresh_factions(factions, world, resources);
+        let node = &mut CassetteNode::default();
+        Self::move_to_slots_animated(world, node);
+        Self::push_node(node, nodes, world, resources);
+        ActionSystem::run_ticks(world, resources)
+            .into_iter()
+            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
+        if let Some((left, right)) = Self::find_hitters(world) {
+            Self::move_strikers(&StrikePhase::Charge, left, right, world, node);
+            Self::push_node(node, nodes, world, resources);
+            Self::move_strikers(&StrikePhase::Release, left, right, world, node);
+            Self::push_node(node, nodes, world, resources);
+            Self::add_strike_vfx(world, resources, node);
+            Self::push_node(node, nodes, world, resources);
+            Self::hit(left, right, nodes, world, resources);
             Self::death_check(world, resources);
-            Self::refresh_cassette(world, resources);
-            SlotSystem::refresh_slots_uniforms(world, &resources.options);
+            Self::move_strikers(&StrikePhase::Retract, left, right, world, node);
+            Self::push_node(node, nodes, world, resources);
             return true;
         }
-        return false;
+        false
+    }
+
+    fn move_strikers(
+        phase: &StrikePhase,
+        left: legion::Entity,
+        right: legion::Entity,
+        world: &mut legion::World,
+        node: &mut CassetteNode,
+    ) {
+        let (left_pos, right_pos) = Self::get_strikers_positions(phase);
+        let (easing, duration) = match phase {
+            StrikePhase::Charge => (EasingType::QuartInOut, 1.5),
+            StrikePhase::Release => (EasingType::Linear, 0.1),
+            StrikePhase::Retract => (EasingType::QuartOut, 0.25),
+        };
+        VfxSystem::translate_animated(left, left_pos, node, world, easing, duration);
+        VfxSystem::translate_animated(right, right_pos, node, world, easing, duration);
+    }
+
+    fn get_strikers_positions(phase: &StrikePhase) -> (vec2<f32>, vec2<f32>) {
+        let left = vec2(-1.0, 1.0);
+        let right = vec2(1.0, 1.0);
+        let left_slot = SlotSystem::get_position(1, &Faction::Light);
+        let right_slot = SlotSystem::get_position(1, &Faction::Dark);
+
+        let delta = match phase {
+            StrikePhase::Charge => vec2(4.5, 0.0),
+            StrikePhase::Release => vec2(-right_slot.x + 1.0, 0.0),
+            StrikePhase::Retract => vec2::ZERO,
+        };
+        (delta * left + left_slot, delta * right + right_slot)
     }
 
     pub fn find_hitters(world: &legion::World) -> Option<(legion::Entity, legion::Entity)> {
@@ -200,13 +172,13 @@ impl BattleSystem {
     pub fn hit(
         left: legion::Entity,
         right: legion::Entity,
+        nodes: &mut Option<Vec<CassetteNode>>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
         let context_left = Context {
             owner: left,
             target: right,
-            parent: Some(left),
             ..ContextSystem::get_context(left, world)
         };
         resources.action_queue.push_back(Action::new(
@@ -217,11 +189,20 @@ impl BattleSystem {
             }
             .wrap(),
         ));
-
+        ActionSystem::run_ticks(world, resources)
+            .into_iter()
+            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
+        Event::AfterStrike {
+            owner: left,
+            target: right,
+        }
+        .send(world, resources);
+        ActionSystem::run_ticks(world, resources)
+            .into_iter()
+            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
         let context_right = Context {
             owner: right,
             target: left,
-            parent: Some(right),
             ..ContextSystem::get_context(right, world)
         };
         resources.action_queue.push_back(Action::new(
@@ -232,18 +213,17 @@ impl BattleSystem {
             }
             .wrap(),
         ));
-        ActionSystem::run_ticks(world, resources);
-        Event::AfterStrike {
-            owner: left,
-            target: right,
-        }
-        .send(world, resources);
+        ActionSystem::run_ticks(world, resources)
+            .into_iter()
+            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
         Event::AfterStrike {
             owner: right,
             target: left,
         }
         .send(world, resources);
-        ActionSystem::run_ticks(world, resources);
+        ActionSystem::run_ticks(world, resources)
+            .into_iter()
+            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
     }
 
     pub fn death_check(world: &mut legion::World, resources: &mut Resources) {
@@ -273,68 +253,24 @@ impl BattleSystem {
         }
     }
 
-    fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
-        ContextSystem::refresh_all(world, resources);
-        let factions = hashset! {Faction::Light, Faction::Dark};
-        UnitSystem::draw_all_units_to_cassette_node(
-            world,
-            &resources.options,
-            &resources.status_pool,
-            &mut resources.cassette.node_template,
-            factions,
-        );
-        resources
-            .cassette
-            .node_template
-            .add_effects_by_key("slots", SlotSystem::get_slot_filled_visual_effects(world));
-        resources.cassette.merge_template_into_last();
-    }
-
-    fn move_to_slots_animated(world: &mut legion::World, resources: &mut Resources) {
-        <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
-            .iter_mut(world)
-            .for_each(|(unit, area, entity)| {
-                let slot_position = SlotSystem::get_unit_position(unit);
-                if slot_position != area.position {
-                    resources.cassette.add_effect(VfxSystem::vfx_move_unit(
-                        entity.entity,
-                        area.position,
-                        slot_position,
-                    ));
-                    area.position = slot_position;
-                }
+    fn move_to_slots_animated(world: &mut legion::World, node: &mut CassetteNode) {
+        UnitSystem::collect_factions(world, &hashset! { Faction::Light, Faction::Dark })
+            .into_iter()
+            .for_each(|(entity, unit)| {
+                VfxSystem::translate_animated(
+                    entity,
+                    SlotSystem::get_unit_position(&unit),
+                    node,
+                    world,
+                    EasingType::CubicIn,
+                    0.2,
+                )
             });
     }
 
-    fn add_strike_vfx(
-        world: &legion::World,
-        resources: &mut Resources,
-        left: vec2<f32>,
-        right: vec2<f32>,
-    ) {
-        let position = left + (right - left) * 0.5;
-        resources
-            .cassette
-            .add_effect(VfxSystem::vfx_strike(resources, position));
-    }
-
-    fn add_strike_animation(
-        cassette: &mut Cassette,
-        phase: StrikePhase,
-        entity: legion::Entity,
-        faction: Faction,
-    ) {
-        match phase {
-            StrikePhase::Charge => {
-                cassette.add_effect(VfxSystem::vfx_strike_charge(entity, &faction))
-            }
-            StrikePhase::Release => {
-                cassette.add_effect(VfxSystem::vfx_strike_release(entity, &faction))
-            }
-            StrikePhase::Retract => {
-                cassette.add_effect(VfxSystem::vfx_strike_retract(entity, &faction))
-            }
-        };
+    fn add_strike_vfx(world: &legion::World, resources: &mut Resources, node: &mut CassetteNode) {
+        let position = BATTLEFIELD_POSITION;
+        node.add_effect(VfxSystem::vfx_strike(resources, position));
     }
 }
 

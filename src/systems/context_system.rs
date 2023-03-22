@@ -68,6 +68,22 @@ impl ContextSystem {
         ))
     }
 
+    pub fn get_position(entity: legion::Entity, world: &legion::World) -> Option<vec2<f32>> {
+        Self::try_get_context(entity, world)
+            .ok()
+            .and_then(|x| x.vars.try_get_vec2(&VarName::Position))
+    }
+
+    pub fn refresh_factions(
+        factions: &HashSet<Faction>,
+        world: &mut legion::World,
+        resources: &Resources,
+    ) {
+        UnitSystem::collect_factions(world, factions)
+            .into_iter()
+            .for_each(|(entity, _)| Self::refresh_entity(entity, world, resources));
+    }
+
     pub fn refresh_all(world: &mut legion::World, resources: &Resources) {
         <&EntityComponent>::query()
             .filter(!component::<WorldComponent>() & component::<Context>())

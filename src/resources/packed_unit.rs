@@ -3,17 +3,26 @@ use super::*;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct PackedUnit {
+    #[serde(default = "default_name")]
     pub name: String,
+    #[serde(default = "default_description")]
     pub description: String,
     pub health: i32,
     #[serde(default)]
     pub damage: usize, // damage taken
     pub attack: usize,
     pub houses: HashSet<HouseName>,
+    #[serde(default)]
     pub trigger: Trigger,
     #[serde(default)]
     pub active_statuses: HashMap<String, i32>,
     pub shader: Shader,
+}
+fn default_name() -> String {
+    "no_name".to_string()
+}
+fn default_description() -> String {
+    "".to_string()
 }
 
 impl PackedUnit {
@@ -67,6 +76,7 @@ impl PackedUnit {
         resources: &mut Resources,
         slot: usize,
         faction: Faction,
+        position: Option<vec2<f32>>,
     ) -> legion::Entity {
         let entity = world.push((
             NameComponent::new(&self.name),
@@ -74,7 +84,10 @@ impl PackedUnit {
             AttackComponent::new(self.attack),
             HealthComponent::new(self.health),
             HouseComponent::new(self.houses.clone()),
-            AreaComponent::new(AreaType::Circle { radius: 1.0 }, vec2::ZERO),
+            AreaComponent::new(
+                AreaType::Circle { radius: 1.0 },
+                position.unwrap_or(vec2::ZERO),
+            ),
             self.shader.clone(),
             self.trigger.clone(),
         ));

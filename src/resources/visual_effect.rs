@@ -145,13 +145,14 @@ impl VisualEffectType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EasingType {
     Linear,
     QuartOut,
     QuartIn,
     QuartInOut,
     CubicIn,
+    BackIn,
 }
 
 impl EasingType {
@@ -162,6 +163,7 @@ impl EasingType {
             EasingType::QuartIn => tween::Tweener::quart_in(0.0, 1.0, 1.0).move_to(t),
             EasingType::QuartInOut => tween::Tweener::quart_in_out(0.0, 1.0, 1.0).move_to(t),
             EasingType::CubicIn => tween::Tweener::cubic_in(0.0, 1.0, 1.0).move_to(t),
+            EasingType::BackIn => tween::Tweener::back_in(0.0, 1.0, 1.0).move_to(t),
         }
     }
 }

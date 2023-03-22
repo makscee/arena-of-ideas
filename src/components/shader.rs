@@ -31,8 +31,6 @@ impl Shader {
         self.parameters.uniforms.merge_mut(uniforms, force);
         self
     }
-
-    fn extend_chain(&mut self, shaders: Vec<Shader>) {}
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
@@ -153,6 +151,7 @@ impl ShaderUniforms {
                 ),
             }
         }
+        result.insert("u_t".to_string(), ShaderUniform::Float(t));
 
         result
     }

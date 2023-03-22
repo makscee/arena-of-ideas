@@ -26,6 +26,12 @@ pub enum Trigger {
     Noop,
 }
 
+impl Default for Trigger {
+    fn default() -> Self {
+        Trigger::Noop
+    }
+}
+
 impl Trigger {
     /// Link triggers to events
     pub fn catch_event(

@@ -129,6 +129,9 @@ impl ShaderSystem {
             let mut texture_uniforms = SingleUniformVec::default();
             let mut texture_size_uniforms = SingleUniformVec::default();
             for (font, text, key, size_key) in texts.iter() {
+                if text.is_empty() {
+                    continue;
+                }
                 let texture = resources.fonts.get_texture(*font, text);
                 texture_uniforms.0.push(SingleUniform::new(key, texture));
                 texture_size_uniforms.0.push(SingleUniform::new(

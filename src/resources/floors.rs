@@ -8,7 +8,7 @@ pub struct Floors {
 }
 
 impl Floors {
-    fn current(&self) -> &Team {
+    pub fn current(&self) -> &Team {
         &self.floors[self.current]
     }
 
@@ -23,13 +23,5 @@ impl Floors {
     pub fn next(&mut self) -> bool {
         self.current += 1;
         self.current < self.floors.len()
-    }
-
-    pub fn load(world: &mut legion::World, resources: &mut Resources) {
-        resources
-            .floors
-            .current()
-            .clone()
-            .unpack_entries(&Faction::Dark, world, resources);
     }
 }

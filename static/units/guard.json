@@ -7,19 +7,11 @@
         "Robots"
     ],
     "trigger": {
-        "type": "AfterBirth",
+        "type": "Buy",
         "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "UseAbility",
-                    "house": "Robots",
-                    "name": "Shield"
-                },
-                {
-                    "type": "RemoveTrigger"
-                }
-            ]
+            "type": "UseAbility",
+            "house": "Robots",
+            "name": "Shield"
         }
     },
     "shader": {

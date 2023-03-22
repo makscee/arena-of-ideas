@@ -4,28 +4,12 @@
     "abilities": {
         "Shield": {
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "TakeVar",
-                        "var": "Position",
-                        "entity": {
-                            "type": "Target"
-                        },
-                        "effect": {
-                            "type": "ShowText",
-                            "text": "++Shield"
-                        }
-                    },
-                    {
-                        "type": "ChangeStatus",
-                        "name": "Shield",
-                        "charges": {
-                            "type": "Var",
-                            "var": "Charges"
-                        }
-                    }
-                ]
+                "type": "ChangeStatus",
+                "name": "Shield",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
             },
             "description": "Negate one instance\nof incoming damage",
             "default_vars": {
@@ -52,27 +36,31 @@
                             "type": "List",
                             "effects": [
                                 {
-                                    "type": "ChangeContext",
+                                    "type": "If",
                                     "target": {
                                         "type": "Owner"
                                     },
                                     "owner": {
                                         "type": "Target"
                                     },
-                                    "effect": {
+                                    "condition": {
+                                        "type": "MoreInt",
+                                        "a": {
+                                            "type": "AbilityVar",
+                                            "house": "Robots",
+                                            "ability": "Shield",
+                                            "var": "Reflection"
+                                        },
+                                        "b": {
+                                            "type": "Const",
+                                            "value": 0
+                                        }
+                                    },
+                                    "then": {
                                         "type": "Damage",
                                         "value": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "AbilityVar",
-                                                "house": "Robots",
-                                                "ability": "Shield",
-                                                "var": "Reflection"
-                                            },
-                                            "b": {
-                                                "type": "Var",
-                                                "var": "Damage"
-                                            }
+                                            "type": "Var",
+                                            "var": "Damage"
                                         }
                                     }
                                 },

@@ -45,10 +45,6 @@
                             },
                             "name": "SiphonLife"
                         }
-                    },
-                    {
-                        "type": "ShowText",
-                        "text": "SiphonLife"
                     }
                 ]
             }

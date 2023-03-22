@@ -11,14 +11,8 @@ impl GameOverSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        resources.cassette.parallel_node.clear();
-        UnitSystem::draw_all_units_to_cassette_node(
-            world,
-            &resources.options,
-            &resources.status_pool,
-            &mut resources.cassette.parallel_node,
-            hashset! {Faction::Team},
-        );
+        resources.cassette.render_node.clear();
+        todo!()
     }
 }
 

@@ -58,17 +58,17 @@ impl PowerPointsSystem {
     ) -> Faction {
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark, Faction::Light});
         light.iter().enumerate().for_each(|(ind, unit)| {
-            unit.unpack(world, resources, ind + 1, Faction::Light);
+            unit.unpack(world, resources, ind + 1, Faction::Light, None);
         });
         dark.iter().enumerate().for_each(|(ind, unit)| {
-            unit.unpack(world, resources, ind + 1, Faction::Dark);
+            unit.unpack(world, resources, ind + 1, Faction::Dark, None);
         });
         ActionSystem::run_ticks(world, resources);
 
         while let Some((left, right)) = BattleSystem::find_hitters(world) {
-            BattleSystem::hit(left, right, world, resources);
+            BattleSystem::hit(left, right, &mut None, world, resources);
             BattleSystem::death_check(world, resources);
-            SlotSystem::fill_gaps(world, resources, hashset! {Faction::Light, Faction::Dark});
+            SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Light, Faction::Dark});
         }
         let result = match BattleSystem::battle_won(world) {
             true => Faction::Light,

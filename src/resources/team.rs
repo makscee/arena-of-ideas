@@ -30,7 +30,9 @@ impl Team {
         resources: &mut Resources,
     ) {
         self.units.iter().enumerate().for_each(|(slot, unit)| {
-            unit.unpack(world, resources, slot + 1, *faction);
+            let slot = slot + 1;
+            let position = SlotSystem::get_position(slot, faction);
+            unit.unpack(world, resources, slot + 1, *faction, Some(position));
         });
     }
 

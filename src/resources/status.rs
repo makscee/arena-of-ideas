@@ -200,18 +200,49 @@ impl StatusPool {
             .insert(entity, entity_statuses);
     }
 
-    pub fn process_status_changes(world: &legion::World, resources: &mut Resources) {
-        while let Some((entity, status_name, charges_delta)) =
+    pub fn process_status_changes(
+        world: &legion::World,
+        resources: &mut Resources,
+    ) -> Option<CassetteNode> {
+        let delay_per_charge = 0.3;
+        let key = "status_changes";
+        if let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()
         {
-            for _ in 0..charges_delta.abs() {
-                if charges_delta > 0 {
+            let mut node = CassetteNode::default();
+            for i in 0..charges_delta.abs() {
+                let (text, color) = if charges_delta > 0 {
                     Self::add_status_charge(entity, &status_name, resources, world);
+                    ("+", resources.options.colors.text_add_color)
                 } else {
                     Self::remove_status_charge(entity, &status_name, resources, world);
-                }
+                    ("-", resources.options.colors.text_remove_color)
+                };
+                let text = format!("{}{}", text, &status_name);
+                let outline_color = resources
+                    .status_pool
+                    .defined_statuses
+                    .get(&status_name)
+                    .unwrap()
+                    .color
+                    .unwrap();
+
+                node.add_effect_by_key(
+                    key,
+                    VfxSystem::vfx_show_text(
+                        resources,
+                        &text,
+                        color,
+                        outline_color,
+                        ContextSystem::get_position(entity, world).unwrap(),
+                        1,
+                        delay_per_charge * i as f32,
+                    ),
+                );
             }
+            return Some(node);
         }
+        None
     }
 
     pub fn define_status(&mut self, name: String, mut status: Status) {

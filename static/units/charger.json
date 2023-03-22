@@ -26,7 +26,7 @@
                         },
                         {
                             "type": "ShowText",
-                            "text": "++Shield Charges"
+                            "text": "+Shield Charges"
                         }
                     ]
                 }
@@ -48,7 +48,7 @@
                         },
                         {
                             "type": "ShowText",
-                            "text": "--Shield Charges",
+                            "text": "-Shield Charges",
                             "color": "#e70000"
                         }
                     ]

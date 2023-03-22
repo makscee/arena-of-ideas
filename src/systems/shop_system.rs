@@ -17,7 +17,6 @@ impl System for ShopSystem {
     }
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         self.handle_drag(world, resources);
-        Self::refresh_cassette(world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
         if self.need_switch_battle {
             match resources.camera.focus {
@@ -31,6 +30,13 @@ impl System for ShopSystem {
             self.need_switch_battle = false;
         }
         Self::refresh_ui(resources);
+        Self::refresh_cassette(world, resources);
+        let mut nodes = ActionSystem::run_ticks(world, resources);
+        if !nodes.is_empty() {
+            BattleSystem::death_check(world, resources);
+            nodes.extend(ActionSystem::run_ticks(world, resources));
+            resources.cassette.add_tape_nodes(nodes);
+        }
     }
 
     fn ui<'a>(
@@ -57,7 +63,7 @@ impl ShopSystem {
         default()
     }
 
-    fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
+    pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         TeamPool::refresh_team(&Faction::Team, world, resources);
         BattleSystem::init_battle(world, resources);
@@ -74,24 +80,13 @@ impl ShopSystem {
         Self::init(world, resources);
     }
 
-    fn refresh_cassette(world: &mut legion::World, resources: &mut Resources) {
-        resources.cassette.parallel_node.clear_entities();
-        UnitSystem::draw_all_units_to_cassette_node(
-            &world,
-            &resources.options,
-            &resources.status_pool,
-            &mut resources.cassette.parallel_node,
-            hashset! {Faction::Shop, Faction::Team, Faction::Dark, Faction::Light},
-        );
-    }
-
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
         SlotSystem::set_hovered_slot(world, &Faction::Team, SLOTS_COUNT + 1);
         if let Some(dragged) = resources.shop.drag_entity {
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos)
             {
-                if SlotSystem::make_gap(world, resources, slot, hashset! {Faction::Team}) {
+                if SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team}) {
                     SlotSystem::refresh_slots_uniforms(world, &resources.options);
                 }
                 SlotSystem::set_hovered_slot(world, &Faction::Team, slot);
@@ -116,7 +111,7 @@ impl ShopSystem {
                             .unwrap()
                             .slot = slot;
                     } else {
-                        SlotSystem::fill_gaps(world, resources, hashset! {Faction::Team});
+                        SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Team});
                     }
                 }
                 Faction::Shop => {
@@ -136,7 +131,6 @@ impl ShopSystem {
                 }
                 _ => {}
             }
-            SlotSystem::refresh_slots_uniforms(world, &resources.options);
         }
     }
 
@@ -158,6 +152,16 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
+        let node = &mut default();
+        VfxSystem::translate_animated(
+            entity,
+            SlotSystem::get_unit_position(unit),
+            node,
+            world,
+            EasingType::QuartInOut,
+            0.5,
+        );
+        resources.cassette.add_tape_nodes(vec![node.to_owned()]);
         ContextSystem::refresh_entity(entity, world, resources);
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
@@ -194,9 +198,20 @@ impl ShopSystem {
                 .money_indicator
                 .clone()
                 .set_uniform("u_position", ShaderUniform::Vec2(position))
-                .set_uniform("u_text_color", ShaderUniform::Color(text_color))
+                .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((1, text))),
         )
+    }
+
+    fn refresh_cassette(world: &legion::World, resources: &mut Resources) {
+        let mut node = CassetteNode::default();
+        UnitSystem::draw_all_units_to_cassette_node(
+            &hashset! {Faction::Shop, Faction::Team, Faction::Light, Faction::Dark},
+            &mut node,
+            world,
+            resources,
+        );
+        resources.cassette.render_node = node;
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
@@ -247,6 +262,7 @@ impl ShopSystem {
             );
         }
         ContextSystem::refresh_all(world, resources);
+        Self::refresh_cassette(world, resources);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
@@ -264,13 +280,17 @@ impl ShopSystem {
             if resources.shop.pool.is_empty() {
                 return;
             }
+            let slot = slot + 1;
             let mut rng = rand::thread_rng();
             let ind: usize = rng.gen_range(0..resources.shop.pool.len());
-            resources
-                .shop
-                .pool
-                .remove(ind)
-                .unpack(world, resources, slot + 1, Faction::Shop);
+            let position = SlotSystem::get_position(slot, &Faction::Shop);
+            resources.shop.pool.remove(ind).unpack(
+                world,
+                resources,
+                slot,
+                Faction::Shop,
+                Some(position),
+            );
         }
     }
 

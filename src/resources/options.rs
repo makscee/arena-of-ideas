@@ -73,6 +73,8 @@ pub struct Colors {
     pub btn_active: Rgba<f32>,
     pub btn_hovered: Rgba<f32>,
     pub damage_text: Rgba<f32>,
+    pub text_add_color: Rgba<f32>,
+    pub text_remove_color: Rgba<f32>,
 }
 
 #[derive(Deserialize, Debug)]

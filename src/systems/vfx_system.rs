@@ -2,16 +2,48 @@ use super::*;
 
 pub struct VfxSystem {}
 
+/// Logic
+impl VfxSystem {
+    pub fn translate_animated(
+        entity: legion::Entity,
+        position: vec2<f32>,
+        node: &mut CassetteNode,
+        world: &mut legion::World,
+        easing: EasingType,
+        duration: Time,
+    ) {
+        world.entry(entity).and_then(|mut x| {
+            x.get_component_mut::<AreaComponent>()
+                .and_then(|area| {
+                    node.add_effect(Self::vfx_move_unit(
+                        entity,
+                        area.position,
+                        position,
+                        easing,
+                        duration,
+                    ));
+                    area.position = position;
+                    Ok(())
+                })
+                .ok()
+        });
+    }
+}
+
+/// Effects Collection
 impl VfxSystem {
     pub fn vfx_show_text(
         resources: &Resources,
         text: &str,
         color: Rgba<f32>,
+        outline_color: Rgba<f32>,
         position: vec2<f32>,
         font: usize,
+        delay: Time,
     ) -> VisualEffect {
-        VisualEffect::new(
+        VisualEffect::new_delayed(
             1.2,
+            delay,
             VisualEffectType::ShaderAnimation {
                 shader: resources
                     .options
@@ -19,95 +51,49 @@ impl VfxSystem {
                     .text
                     .clone()
                     .set_uniform("u_position", ShaderUniform::Vec2(position))
+                    .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, 0.5)))
+                    .set_uniform("u_offset_over_t", ShaderUniform::Vec2(vec2(0.0, 1.8)))
                     .set_uniform("u_text", ShaderUniform::String((font, text.to_string())))
+                    .set_uniform("u_color", ShaderUniform::Color(outline_color))
                     .set_uniform("u_outline_color", ShaderUniform::Color(color))
-                    .set_uniform("u_alpha_over_t", ShaderUniform::Float(-0.8))
-                    .set_uniform("u_scale", ShaderUniform::Float(0.7))
-                    .set_uniform("u_scale_over_t", ShaderUniform::Float(-0.2))
-                    .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 2.5))),
-                from: hashmap! {
-                    "u_time" => ShaderUniform::Float(0.0),
-                }
-                .into(),
-                to: hashmap! {
-                    "u_time" => ShaderUniform::Float(1.0),
-                }
-                .into(),
+                    .set_uniform("u_outline_fade", ShaderUniform::Float(1.0))
+                    .set_uniform("u_text_border", ShaderUniform::Float(0.1))
+                    .set_uniform("u_alpha", ShaderUniform::Float(8.0))
+                    .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
+                    .set_uniform("u_scale", ShaderUniform::Float(0.6)),
+                from: default(),
+                to: default(),
                 easing: EasingType::QuartOut,
             },
             0,
         )
     }
-
-    pub fn vfx_strike_charge(entity: legion::Entity, faction: &Faction) -> VisualEffect {
-        let faction_mul = match faction {
-            Faction::Light => -1.0,
-            Faction::Dark => 1.0,
-            _ => panic!("Wrong faction"),
-        };
+    pub fn vfx_show_damage_text(
+        resources: &Resources,
+        text: &str,
+        color: Rgba<f32>,
+        position: vec2<f32>,
+    ) -> VisualEffect {
         VisualEffect::new(
-            1.5,
-            VisualEffectType::EntityShaderAnimation {
-                entity,
-                from: hashmap! {
-                    "u_position" => ShaderUniform::Vec2(vec2(1.5, 0.0) * faction_mul),
-                }
-                .into(),
-                to: hashmap! {
-                    "u_position" => ShaderUniform::Vec2(vec2(4.5, 0.0) * faction_mul),
-                }
-                .into(),
-                easing: EasingType::QuartInOut,
+            0.8,
+            VisualEffectType::ShaderAnimation {
+                shader: resources
+                    .options
+                    .shaders
+                    .text
+                    .clone()
+                    .set_uniform("u_position", ShaderUniform::Vec2(position))
+                    .set_uniform("u_offset_over_t", ShaderUniform::Vec2(vec2(0.0, -5.1)))
+                    .set_uniform("u_text", ShaderUniform::String((0, text.to_string())))
+                    .set_uniform("u_outline_color", ShaderUniform::Color(color))
+                    .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
+                    .set_uniform("u_scale", ShaderUniform::Float(1.0))
+                    .set_uniform("u_scale_over_t", ShaderUniform::Float(-1.0)),
+                from: default(),
+                to: default(),
+                easing: EasingType::BackIn,
             },
-            20,
-        )
-    }
-
-    pub fn vfx_strike_release(entity: legion::Entity, faction: &Faction) -> VisualEffect {
-        let faction_mul = match faction {
-            Faction::Light => -1.0,
-            Faction::Dark => 1.0,
-            _ => panic!("Wrong faction"),
-        };
-        VisualEffect::new(
-            0.1,
-            VisualEffectType::EntityShaderAnimation {
-                entity,
-                from: hashmap! {
-                    "u_position" => ShaderUniform::Vec2(vec2(4.5, 0.0) * faction_mul),
-                }
-                .into(),
-                to: hashmap! {
-                    "u_position" => ShaderUniform::Vec2(vec2(1.0, 0.0) * faction_mul),
-                }
-                .into(),
-                easing: EasingType::Linear,
-            },
-            20,
-        )
-    }
-
-    pub fn vfx_strike_retract(entity: legion::Entity, faction: &Faction) -> VisualEffect {
-        let faction_mul = match faction {
-            Faction::Light => -1.0,
-            Faction::Dark => 1.0,
-            _ => panic!("Wrong faction"),
-        };
-        VisualEffect::new(
-            0.25,
-            VisualEffectType::EntityShaderAnimation {
-                entity,
-                from: hashmap! {
-                    "u_position" => ShaderUniform::Vec2(vec2(1.0, 0.0) * faction_mul),
-                }
-                .into(),
-                to: hashmap! {
-                    "u_position" => ShaderUniform::Vec2(vec2(1.5, 0.0) * faction_mul),
-                }
-                .into(),
-                easing: EasingType::QuartOut,
-            },
-            20,
+            0,
         )
     }
 
@@ -132,14 +118,20 @@ impl VfxSystem {
         )
     }
 
-    pub fn vfx_move_unit(entity: legion::Entity, from: vec2<f32>, to: vec2<f32>) -> VisualEffect {
+    pub fn vfx_move_unit(
+        entity: legion::Entity,
+        from: vec2<f32>,
+        to: vec2<f32>,
+        easing: EasingType,
+        duration: Time,
+    ) -> VisualEffect {
         VisualEffect::new(
-            0.2,
+            duration,
             VisualEffectType::EntityShaderAnimation {
                 entity,
                 from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
                 to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
-                easing: EasingType::QuartIn,
+                easing,
             },
             0,
         )

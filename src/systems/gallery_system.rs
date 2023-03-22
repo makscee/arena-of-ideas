@@ -30,12 +30,9 @@ impl GallerySystem {
     fn redraw_units(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let heroes = self.current_heroes.len();
         self.current_heroes[heroes - 1] = self.wanted_hero;
-        resources.cassette.parallel_node.clear();
+        resources.cassette.render_node.clear();
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
-        resources
-            .cassette
-            .parallel_node
-            .clear_key(CARD_ANIMATION_KEY);
+        resources.cassette.render_node.clear_key(CARD_ANIMATION_KEY);
         for (ind, template_ind) in self.current_heroes.iter().enumerate() {
             let template_key = self.paths[*template_ind].clone();
             let position = vec2(
@@ -89,13 +86,13 @@ impl GallerySystem {
         }
         self.need_card_animation = false;
         ContextSystem::refresh_all(world, resources);
-        UnitSystem::draw_all_units_to_cassette_node(
-            world,
-            &resources.options,
-            &resources.status_pool,
-            &mut resources.cassette.parallel_node,
-            hashset! {Faction::Gallery},
-        );
+        // UnitSystem::draw_all_units_to_cassette_node(
+        //     world,
+        //     &resources.options,
+        //     &resources.status_pool,
+        //     &mut resources.cassette.parallel_node,
+        //     hashset! {Faction::Gallery},
+        // );
     }
 
     fn clear(&mut self) {

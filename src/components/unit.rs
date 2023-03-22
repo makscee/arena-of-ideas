@@ -28,13 +28,18 @@ impl Faction {
             Faction::Gallery => 4.0,
         }
     }
-    pub fn from_entity(entity: legion::Entity, world: &legion::World) -> Faction {
+    pub fn from_entity(
+        entity: legion::Entity,
+        world: &legion::World,
+        resources: &Resources,
+    ) -> Faction {
         world
             .entry_ref(entity)
+            .ok()
+            .and_then(|x| x.get_component::<UnitComponent>().ok().cloned())
+            .and_then(|x| Some(x.faction))
+            .or_else(|| resources.unit_corpses.get(&entity).and_then(|x| Some(x.1)))
             .unwrap()
-            .get_component::<UnitComponent>()
-            .unwrap()
-            .faction
     }
 }
 

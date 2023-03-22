@@ -27,13 +27,13 @@ uniform vec4 u_circle_color;
 
 uniform float u_text_scale = 1;
 uniform float u_damage_taken = 0;
+uniform float u_animate_on_damage = 0;
 uniform int u_value_modified;
 
 const float BORDER = 0.08;
 const float TEXT_INSIDE = 0.5;
 const float TEXT_BORDER = 0.37;
 const float AA = 0.05;
-const float CHANGE_T_DURATION = 1.0;
 
 void main() {
     vec2 uv = uv / (1 - u_card * .1);
@@ -48,7 +48,7 @@ void main() {
         text_color = u_text_color_increased;
     }
 
-    float text_scale = u_text_scale * (1 + u_damage_taken);
+    float text_scale = u_text_scale * (1 + u_damage_taken * u_animate_on_damage);
     float sdf = get_text_sdf(uv / text_scale * vec2(u_text_size.y / u_text_size.x, 1), u_text);
     text_color = get_text_color(sdf, text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);

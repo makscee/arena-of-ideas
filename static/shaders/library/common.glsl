@@ -3,6 +3,7 @@ uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
 uniform vec2 u_field_position;
+uniform float u_t = 0;
 
 vec3 light_color = vec3(1);
 vec3 dark_color = vec3(0);

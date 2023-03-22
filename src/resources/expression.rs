@@ -58,13 +58,12 @@ impl ExpressionInt {
                 house,
                 ability,
                 var,
-            } => Ok(TeamPool::get_ability_var_int(
-                house,
-                ability,
-                var,
-                &Faction::from_entity(context.owner, world),
-                resources,
-            )),
+            } => {
+                let faction = Faction::from_entity(context.owner, world, &resources);
+                Ok(TeamPool::get_ability_var_int(
+                    house, ability, var, &faction, resources,
+                ))
+            }
         }
     }
 }

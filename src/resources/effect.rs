@@ -54,11 +54,6 @@ pub enum Effect {
     SetAttack {
         value: ExpressionInt,
     },
-    ChangeContext {
-        owner: Option<ExpressionEntity>,
-        parent: Option<ExpressionEntity>,
-        effect: Box<EffectWrapped>,
-    },
     TakeVar {
         var: VarName,
         new_name: Option<VarName>,
@@ -68,7 +63,7 @@ pub enum Effect {
     If {
         condition: Condition,
         then: Box<EffectWrapped>,
-        r#else: Box<EffectWrapped>,
+        r#else: Option<Box<EffectWrapped>>,
     },
     ShowText {
         text: String,
@@ -89,6 +84,7 @@ impl Effect {
         EffectWrapped {
             effect: self,
             target: default(),
+            owner: default(),
         }
     }
 }
@@ -98,11 +94,8 @@ pub struct EffectWrapped {
     #[serde(flatten)]
     pub effect: Effect,
     pub target: Option<ExpressionEntity>,
+    pub owner: Option<ExpressionEntity>,
 }
-
-const DAMAGE_TEXT_EFFECT_KEY: &str = "damage_text";
-const DAMAGE_CURVE_EFFECT_KEY: &str = "damage_curve";
-const MULTIPLE_DAMAGE_DELAY: Time = 0.2;
 
 impl EffectWrapped {
     pub fn process(
@@ -110,13 +103,19 @@ impl EffectWrapped {
         context: Context,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> Result<(), Error> {
+    ) -> Result<CassetteNode, Error> {
+        let mut node = CassetteNode::default();
         let mut context = Context {
             target: self
                 .target
                 .as_ref()
                 .and_then(|t| t.calculate(&context, world, resources).ok())
                 .unwrap_or(context.target),
+            owner: self
+                .owner
+                .as_ref()
+                .and_then(|t| t.calculate(&context, world, resources).ok())
+                .unwrap_or(context.owner),
             ..context
         };
         match &self.effect {
@@ -132,6 +131,7 @@ impl EffectWrapped {
                             .value
                     }
                 };
+                let initial_damage = value;
                 context.vars.insert(VarName::Damage, Var::Int(value as i32));
                 Event::BeforeIncomingDamage {
                     context: context.clone(),
@@ -143,23 +143,20 @@ impl EffectWrapped {
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
-
-                let effect_key = format!("{}_{:?}", DAMAGE_TEXT_EFFECT_KEY, context.owner);
-                let effect_delay =
-                    resources.cassette.get_key_count(&effect_key) as f32 * MULTIPLE_DAMAGE_DELAY;
-                VfxSystem::vfx_show_text(
+                node.add_effect(VfxSystem::vfx_show_text(
                     resources,
                     &text,
+                    resources.options.colors.text_remove_color,
                     resources.options.colors.damage_text,
                     target.get_component::<AreaComponent>().unwrap().position,
                     0,
-                );
+                    0.0,
+                ));
                 if value > 0 {
                     let hp = target.get_component_mut::<HealthComponent>()?;
                     hp.damage += value as usize;
-                    resources.cassette.add_effect(VisualEffect::new_delayed(
+                    node.add_effect(VisualEffect::new(
                         1.0,
-                        effect_delay,
                         VisualEffectType::EntityShaderAnimation {
                             entity: context.target,
                             from: hashmap! {
@@ -172,7 +169,7 @@ impl EffectWrapped {
                             .into(),
                             easing: EasingType::Linear,
                         },
-                        -1,
+                        0,
                     ));
                     resources.logger.log(
                         &format!("Entity#{:?} {} damage taken", context.target, value),
@@ -188,7 +185,12 @@ impl EffectWrapped {
                     }
                     .send(world, resources);
                 }
-                Event::AfterIncomingDamage { context }.send(world, resources);
+                Event::AfterIncomingDamage {
+                    context: context
+                        .add_var(VarName::Damage, Var::Int(initial_damage as i32))
+                        .to_owned(),
+                }
+                .send(world, resources);
             }
             Effect::Repeat { count, effect } => {
                 for _ in 0..*count {
@@ -253,13 +255,13 @@ impl EffectWrapped {
                     .house_pool
                     .try_get_ability_vars(house, name)
                     .context("Failed to find ability")?;
-                if let Some(overrides) =
-                    TeamPool::try_get_team(Faction::from_entity(context.owner, world), resources)
-                        .and_then(|x| x.ability_state.get_vars(house, name))
+                let faction = Faction::from_entity(context.owner, world, &resources);
+                context.vars.merge_mut(defaults, true);
+                if let Some(overrides) = TeamPool::try_get_team(faction, resources)
+                    .and_then(|x| x.ability_state.get_vars(house, name))
                 {
                     context.vars.merge_mut(overrides, true);
                 }
-                context.vars.merge_mut(defaults, true);
                 context.vars.insert(
                     VarName::Color,
                     Var::Color(resources.house_pool.get_color(house)),
@@ -297,12 +299,13 @@ impl EffectWrapped {
                     var: *var,
                 }
                 .calculate(&context, world, resources)?;
+                let faction = Faction::from_entity(context.owner, world, &resources);
                 TeamPool::set_ability_var_int(
                     house,
                     ability,
                     var,
                     prev_value + delta,
-                    &Faction::from_entity(context.owner, world),
+                    &faction,
                     resources,
                 );
             }
@@ -315,7 +318,7 @@ impl EffectWrapped {
                     resources
                         .action_queue
                         .push_front(Action::new(context.clone(), then.deref().clone()));
-                } else {
+                } else if let Some(r#else) = r#else {
                     resources
                         .action_queue
                         .push_front(Action::new(context.clone(), r#else.deref().clone()));
@@ -331,29 +334,15 @@ impl EffectWrapped {
                             .or_else(|| Some(context.vars.get_color(&VarName::HouseColor1)))
                     })
                     .unwrap();
-                resources.cassette.add_effect(VfxSystem::vfx_show_text(
-                    resources, &text, color, position, 2,
+                node.add_effect(VfxSystem::vfx_show_text(
+                    resources,
+                    &text,
+                    Rgba::WHITE,
+                    color,
+                    position,
+                    2,
+                    0.0,
                 ))
-            }
-            Effect::ChangeContext {
-                owner,
-                parent,
-                effect,
-            } => {
-                resources.action_queue.push_front(Action::new(
-                    Context {
-                        owner: match owner {
-                            Some(entity) => entity.calculate(&context, world, resources)?,
-                            None => context.target,
-                        },
-                        parent: match parent {
-                            Some(entity) => Some(entity.calculate(&context, world, resources)?),
-                            None => context.parent,
-                        },
-                        ..context.clone()
-                    },
-                    effect.deref().clone(),
-                ));
             }
             Effect::Kill { then } => {
                 let mut entry = world.entry_mut(context.target).unwrap();
@@ -372,7 +361,7 @@ impl EffectWrapped {
                     .remove(&context.target)
                     .context("Target is not a corpse")?;
                 corpse.health = 1;
-                corpse.unpack(world, resources, slot, faction);
+                corpse.unpack(world, resources, slot, faction, None);
             }
             Effect::Aoe { factions, effect } => {
                 UnitSystem::collect_factions(world, &HashSet::from_iter(factions.clone()))
@@ -415,6 +404,6 @@ impl EffectWrapped {
                 }
             }
         }
-        Ok(())
+        Ok(node)
     }
 }

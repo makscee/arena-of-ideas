@@ -9,38 +9,45 @@ impl UnitSystem {
         shader.chain_before.push(chain_shader);
     }
 
-    pub fn draw_all_units_to_cassette_node(
-        world: &legion::World,
-        options: &Options,
-        statuses: &StatusPool,
+    pub fn draw_unit_to_cassette_node(
+        entity: legion::Entity,
         node: &mut CassetteNode,
-        factions: HashSet<Faction>,
+        world: &legion::World,
+        resources: &Resources,
     ) {
-        <(&UnitComponent, &EntityComponent, &Shader)>::query()
-            .iter(world)
-            .filter(|(unit, _, _)| factions.contains(&unit.faction))
-            .for_each(|(_, entity, _)| {
-                let mut unit_shader = ShaderSystem::get_entity_shader(world, entity.entity, None);
-                Self::pack_shader(&mut unit_shader, options);
-                let context = ContextSystem::get_context(entity.entity, world);
-                unit_shader
-                    .parameters
-                    .uniforms
-                    .merge_mut(&context.vars.clone().into(), true);
-                unit_shader
-                    .chain_before
-                    .extend(statuses.get_entity_shaders(&entity.entity));
-                unit_shader
-                    .chain_after
-                    .extend(StatsUiSystem::get_entity_shaders(&context.vars, options));
-                unit_shader.chain_after.push(NameSystem::get_entity_shader(
-                    entity.entity,
-                    world,
-                    options,
-                ));
-                node.add_entity_shader(entity.entity, unit_shader);
+        let options = &resources.options;
+        let mut unit_shader = ShaderSystem::get_entity_shader(world, entity, None);
+        Self::pack_shader(&mut unit_shader, options);
+        let context = ContextSystem::get_context(entity, world);
+        unit_shader
+            .parameters
+            .uniforms
+            .merge_mut(&context.vars.clone().into(), true);
+        let statuses = &resources.status_pool;
+        unit_shader
+            .chain_before
+            .extend(statuses.get_entity_shaders(&entity));
+        unit_shader
+            .chain_after
+            .extend(StatsUiSystem::get_entity_shaders(&context.vars, options));
+        unit_shader
+            .chain_after
+            .push(NameSystem::get_entity_shader(entity, world, options));
+        node.add_entity_shader(entity, unit_shader);
+        node.save_entity_statuses(entity, statuses);
+    }
+
+    pub fn draw_all_units_to_cassette_node(
+        factions: &HashSet<Faction>,
+        node: &mut CassetteNode,
+        world: &legion::World,
+        resources: &Resources,
+    ) {
+        UnitSystem::collect_factions(world, &factions)
+            .iter()
+            .for_each(|(entity, _)| {
+                Self::draw_unit_to_cassette_node(*entity, node, world, resources)
             });
-        node.save_active_statuses(statuses);
     }
 
     pub fn process_death(

@@ -17,7 +17,8 @@ impl HealthComponent {
 }
 
 impl VarsProvider for HealthComponent {
-    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
+    fn extend_vars(&self, vars: &mut Vars, _: &Resources) {
+        vars.insert(VarName::HpOriginalValue, Var::Int(self.value));
         vars.insert(VarName::HpValue, Var::Int(self.value));
         vars.insert(VarName::HpDamage, Var::Int(self.damage as i32));
     }

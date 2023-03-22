@@ -27,16 +27,16 @@ impl System for GameStateSystem {
             GameState::Battle => {
                 if resources.input.down_keys.contains(&geng::Key::R) {
                     resources.cassette.clear();
-                    BattleSystem::init_battle(world, resources);
-                    BattleSystem::run_battle(world, resources);
+                    resources.current_state = GameState::Shop;
+                    resources.transition_state = GameState::Battle;
                 }
-                if resources.cassette.head > resources.cassette.length() + 2.0 {
+                if resources.cassette.head > resources.cassette.length() {
                     BattleSystem::finish_battle(world, resources);
                 }
             }
             GameState::Shop => {
                 if resources.input.down_keys.contains(&geng::Key::Space) {
-                    BattleSystem::init_battle(world, resources);
+                    ShopSystem::switch_to_battle(world, resources);
                     resources.transition_state = GameState::Battle;
                 }
 
@@ -67,6 +67,7 @@ impl System for GameStateSystem {
             GameState::CustomGame => {
                 if resources.input.down_keys.contains(&geng::Key::R) {
                     resources.transition_state = GameState::MainMenu;
+                    resources.cassette.head = 0.0;
                 }
             }
         }
@@ -173,6 +174,7 @@ impl GameStateSystem {
             }
             GameState::Shop => {
                 resources.cassette.clear();
+                ShopSystem::clear_case(world, resources);
             }
             GameState::Battle => {
                 resources.cassette.clear();
@@ -205,8 +207,20 @@ impl GameStateSystem {
             GameState::Battle => {
                 WorldSystem::set_var(world, VarName::IsBattle, Var::Float(1.0));
                 CassettePlayerSystem::init_world(world, resources);
-                BattleSystem::run_battle(world, resources);
                 resources.camera.focus = Focus::Battle;
+                BattleSystem::clear_world(world, resources);
+                TeamPool::load_team(&Faction::Light, world, resources);
+                TeamPool::load_team(&Faction::Dark, world, resources);
+                let tape = BattleSystem::run_battle(world, resources);
+                resources.cassette.tape = tape;
+                let last_node = &mut default();
+                let factions = &hashset! {Faction::Light, Faction::Dark};
+                ContextSystem::refresh_factions(factions, world, resources);
+                UnitSystem::draw_all_units_to_cassette_node(factions, last_node, world, resources);
+                last_node.duration = 2.0;
+                resources
+                    .cassette
+                    .add_tape_nodes(vec![last_node.to_owned()]);
             }
             GameState::Shop => {
                 ShopSystem::init(world, resources);
@@ -242,7 +256,8 @@ impl GameStateSystem {
                 BattleSystem::clear_world(world, resources);
                 TeamPool::load_team(&Faction::Light, world, resources);
                 TeamPool::load_team(&Faction::Dark, world, resources);
-                BattleSystem::run_battle(world, resources);
+                let tape = BattleSystem::run_battle(world, resources);
+                resources.cassette.tape = tape;
             }
         }
     }

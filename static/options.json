@@ -1,24 +1,26 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Snake",
             "units": [
                 {
                     "name": "Snake",
-                    "description": "On damage dealt:\nKill",
                     "attack": 1,
-                    "health": 1,
+                    "health": 20,
                     "houses": [
                         "Snakes"
                     ],
                     "trigger": {
                         "type": "AfterBirth",
                         "effect": {
-                            "type": "UseAbility",
-                            "house": "Snakes",
-                            "name": "Poison"
+                            "type": "ChangeStatus",
+                            "name": "Shield",
+                            "charges": {
+                                "type": "Const",
+                                "value": 3
+                            }
                         }
                     },
                     "shader": {
@@ -47,18 +49,10 @@
                     "name": "Snake",
                     "description": "On damage dealt:\nKill",
                     "attack": 1,
-                    "health": 1,
+                    "health": 9,
                     "houses": [
                         "Snakes"
                     ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "house": "Snakes",
-                            "name": "Poison"
-                        }
-                    },
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
@@ -100,7 +94,7 @@
             "Shop": "#fbc000",
             "Team": "#e70083"
         },
-        "damage_text": "#a70b0b",
+        "damage_text": "#ffffff",
         "inactive": "#aeaeae",
         "stats_attack_color": "#ffc400",
         "stats_hp_color": "#d20505",
@@ -108,7 +102,9 @@
         "corner_button_color": "#2f2f2f",
         "btn_normal": "#ff8b2c",
         "btn_hovered": "#fff42c",
-        "btn_active": "#1bfc79"
+        "btn_active": "#1bfc79",
+        "text_add_color": "#a4ebff",
+        "text_remove_color": "#ff6b6b"
     },
     "shaders": {
         "unit": {
@@ -152,7 +148,7 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_text_color": "#ffffff",
+                    "u_color": "#ffffff",
                     "u_outline_color": "#212121",
                     "u_scale": 0.15,
                     "u_card_scale": 0.2,
@@ -184,17 +180,6 @@
         },
         "text": {
             "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_text_color": "#ffffff",
-                    "u_outline_color": "#8d0000",
-                    "u_scale": 1.0,
-                    "u_offset": [
-                        0.0,
-                        1.0
-                    ]
-                }
-            },
             "layer": "UI"
         },
         "battle_timer": {
@@ -205,7 +190,7 @@
                         0.0,
                         -5.0
                     ],
-                    "u_text_color": "#ffffff",
+                    "u_color": "#ffffff",
                     "u_outline_color": "#515151",
                     "u_scale": 0.7
                 }
@@ -297,7 +282,7 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_text_color": "#ffffff",
+                    "u_color": "#ffffff",
                     "u_scale": 0.35,
                     "u_align": -1.0,
                     "u_offset": [
@@ -338,7 +323,7 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_text_color": "#ffffff",
+                    "u_color": "#ffffff",
                     "u_scale": 0.5,
                     "u_align": -1.0,
                     "u_offset": [
@@ -357,7 +342,7 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_text_color": "#000000",
+                    "u_color": "#000000",
                     "u_outline_color": "#ffffff",
                     "u_text_border": 0.25,
                     "u_scale": 0.35,

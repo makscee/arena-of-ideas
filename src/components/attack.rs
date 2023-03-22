@@ -12,7 +12,8 @@ impl AttackComponent {
 }
 
 impl VarsProvider for AttackComponent {
-    fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
-        vars.insert(VarName::AttackValue, Var::Int(self.value as i32))
+    fn extend_vars(&self, vars: &mut Vars, _: &Resources) {
+        vars.insert(VarName::AttackValue, Var::Int(self.value as i32));
+        vars.insert(VarName::AttackOriginalValue, Var::Int(self.value as i32));
     }
 }

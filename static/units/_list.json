@@ -1,4 +1,11 @@
 [
     "units/guard.json",
-    "units/ghoul.json"
+    "units/ghoul.json",
+    "units/protector.json",
+    "units/abomination.json",
+    "units/amplifier.json",
+    "units/charger.json",
+    "units/phoenix.json",
+    "units/pollywog.json",
+    "units/dracula.json"
 ]
