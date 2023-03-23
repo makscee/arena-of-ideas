@@ -15,8 +15,18 @@ impl SimulationSystem {
         dark.iter().enumerate().for_each(|(slot, unit)| {
             unit.unpack(world, resources, slot + 1, Faction::Dark, None);
         });
-        let result = BattleSystem::run_battle(world, resources, &mut None);
-        resources.cassette.clear();
+        ActionSystem::run_ticks(world, resources);
+        let mut ticks = 0;
+        while let Some((left, right)) = BattleSystem::find_hitters(world) {
+            ticks += 1;
+            BattleSystem::hit(left, right, &mut None, world, resources);
+            BattleSystem::death_check(world, resources);
+            SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Light, Faction::Dark});
+            if ticks > 1000 {
+                panic!("Exceeded ticks limit")
+            }
+        }
+        let result = BattleSystem::battle_won(world);
         BattleSystem::clear_world(world, resources);
         result
     }

@@ -17,6 +17,9 @@ impl ActionSystem {
                 nodes.push(node);
             }
             if !ticked || ticks > 1000 {
+                if ticked {
+                    panic!("Exceeded ticks limit")
+                }
                 break;
             }
         }

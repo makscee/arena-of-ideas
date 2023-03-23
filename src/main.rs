@@ -37,6 +37,7 @@ fn static_path() -> PathBuf {
     run_dir().join("static")
 }
 fn main() {
+    let timer = Instant::now();
     logger::init().unwrap();
 
     let options = Options::load();
@@ -54,5 +55,6 @@ fn main() {
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
     let game = Game::new(world, resources, watcher);
+    debug!("Game load in: {:?}", timer.elapsed());
     geng.clone().run(game);
 }

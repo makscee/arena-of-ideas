@@ -38,7 +38,7 @@ impl PowerPointsSystem {
         }
         let mut result = 0;
         let unit = &results.get(index).unwrap().0;
-        for _ in 0..3 {
+        for _ in 0..8 {
             let light = vec![unit];
             let dark = vec![choose_random(results)];
             if SimulationSystem::run_battle(&light, &dark, world, resources) {
