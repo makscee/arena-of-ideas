@@ -145,8 +145,13 @@ impl EffectWrapped {
                             .value
                     }
                 };
-                let initial_damage = value;
                 context.vars.insert(VarName::Damage, Var::Int(value as i32));
+                context = Event::ModifyOutgoingDamage { context }.calculate(world, resources);
+                let initial_damage = context.vars.get_int(&VarName::Damage).max(0) as usize;
+                Event::BeforeOutgoingDamage {
+                    context: context.clone(),
+                }
+                .send(world, resources);
                 Event::BeforeIncomingDamage {
                     context: context.clone(),
                 }
@@ -199,10 +204,13 @@ impl EffectWrapped {
                     }
                     .send(world, resources);
                 }
+                context.add_var(VarName::Damage, Var::Int(initial_damage as i32));
+                Event::AfterOutgoingDamage {
+                    context: context.clone(),
+                }
+                .send(world, resources);
                 Event::AfterIncomingDamage {
-                    context: context
-                        .add_var(VarName::Damage, Var::Int(initial_damage as i32))
-                        .to_owned(),
+                    context: context.clone(),
                 }
                 .send(world, resources);
             }

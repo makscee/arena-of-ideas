@@ -21,6 +21,9 @@ pub enum Event {
     ModifyIncomingDamage {
         context: Context,
     },
+    ModifyOutgoingDamage {
+        context: Context,
+    },
     ModifyContext {
         context: Context,
     },
@@ -28,6 +31,12 @@ pub enum Event {
         context: Context,
     },
     AfterIncomingDamage {
+        context: Context,
+    },
+    BeforeOutgoingDamage {
+        context: Context,
+    },
+    AfterOutgoingDamage {
         context: Context,
     },
     AfterDamageDealt {
@@ -101,7 +110,10 @@ impl Event {
                 );
             }
             // Trigger context.owner with provided context
-            Event::AfterDamageDealt { context } | Event::AfterDeath { context } => {
+            Event::AfterOutgoingDamage { context }
+            | Event::BeforeOutgoingDamage { context }
+            | Event::AfterDamageDealt { context }
+            | Event::AfterDeath { context } => {
                 StatusPool::notify_entity(
                     self,
                     context.owner,
@@ -127,7 +139,9 @@ impl Event {
                     StatusPool::notify_entity(self, *owner, resources, world, Some(context));
                 }
             }
-            Event::ModifyIncomingDamage { .. } | Event::ModifyContext { .. } => {
+            Event::ModifyOutgoingDamage { .. }
+            | Event::ModifyIncomingDamage { .. }
+            | Event::ModifyContext { .. } => {
                 panic!("Can't send event {:?}", self)
             }
         }
@@ -144,6 +158,13 @@ impl Event {
                     resources,
                 )
             }
+            Event::ModifyOutgoingDamage { context } => StatusPool::calculate_entity(
+                &self,
+                context.owner,
+                context.clone(),
+                world,
+                resources,
+            ),
             _ => {
                 panic!("Can't calculate event {:?}", self)
             }

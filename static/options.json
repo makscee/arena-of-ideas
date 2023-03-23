@@ -5,8 +5,8 @@
         "light": {
             "units": [
                 {
-                    "attack": 2,
-                    "health": 3
+                    "attack": 1,
+                    "health": 1000
                 }
             ]
         },
@@ -14,17 +14,12 @@
             "units": [
                 {
                     "attack": 1,
-                    "health": 7,
+                    "health": 5,
                     "houses": [
-                        "Warriors"
+                        "Demons"
                     ],
-                    "trigger": {
-                        "type": "BeforeBattle",
-                        "effect": {
-                            "type": "UseAbility",
-                            "house": "Warriors",
-                            "name": "Defense"
-                        }
+                    "active_statuses": {
+                        "Empower": 500
                     }
                 }
             ]

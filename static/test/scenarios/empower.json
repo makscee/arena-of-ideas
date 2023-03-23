@@ -1,0 +1,37 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 2
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 2,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BeforeBattle",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Demons",
+                        "name": "Empower"
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

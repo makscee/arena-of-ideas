@@ -11,6 +11,8 @@ pub enum Trigger {
     OnStatusChargeRemove { effect: EffectWrapped },
     BeforeIncomingDamage { effect: EffectWrapped },
     AfterIncomingDamage { effect: EffectWrapped },
+    BeforeOutgoingDamage { effect: EffectWrapped },
+    AfterOutgoingDamage { effect: EffectWrapped },
     AfterDamageDealt { effect: EffectWrapped },
     BeforeDeath { effect: EffectWrapped },
     AfterDeath { effect: EffectWrapped },
@@ -23,6 +25,7 @@ pub enum Trigger {
     AddToTeam { effect: EffectWrapped },
     RemoveFromTeam { effect: EffectWrapped },
     ModifyIncomingDamage { value: ExpressionInt },
+    ModifyOutgoingDamage { value: ExpressionInt },
     ChangeVarInt { var: VarName, delta: ExpressionInt }, // Preferred for stat changes
     Noop,
 }
@@ -49,6 +52,14 @@ impl Trigger {
             },
             Trigger::AfterIncomingDamage { .. } => match event {
                 Event::AfterIncomingDamage { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::BeforeOutgoingDamage { .. } => match event {
+                Event::BeforeOutgoingDamage { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::AfterOutgoingDamage { .. } => match event {
+                Event::AfterOutgoingDamage { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::AfterDamageDealt { .. } => match event {
@@ -116,8 +127,10 @@ impl Trigger {
                 Event::RemoveFromTeam { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::ModifyIncomingDamage { .. } | Trigger::ChangeVarInt { .. } | Trigger::Noop => {
-            }
+            Trigger::ModifyOutgoingDamage { .. }
+            | Trigger::ModifyIncomingDamage { .. }
+            | Trigger::ChangeVarInt { .. }
+            | Trigger::Noop => {}
         }
     }
 
@@ -125,6 +138,8 @@ impl Trigger {
         match self {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
+            | Trigger::BeforeOutgoingDamage { effect }
+            | Trigger::AfterOutgoingDamage { effect }
             | Trigger::AfterDamageDealt { effect }
             | Trigger::BeforeDeath { effect }
             | Trigger::AfterDeath { effect }
@@ -147,6 +162,7 @@ impl Trigger {
                 action_queue.push_back(Action::new(context, effect.clone()))
             }
             Trigger::ModifyIncomingDamage { .. }
+            | Trigger::ModifyOutgoingDamage { .. }
             | Trigger::List { .. }
             | Trigger::ChangeVarInt { .. } => {
                 panic!("Can't fire {:?}", self)
@@ -172,6 +188,17 @@ impl Trigger {
             }
             Trigger::ModifyIncomingDamage { value } => match event {
                 Event::ModifyIncomingDamage { .. } => {
+                    let mut damage = context.vars.get_int(&VarName::Damage);
+                    damage = match value.calculate(&context, world, resources) {
+                        Ok(value) => value,
+                        Err(_) => damage,
+                    };
+                    context.vars.insert(VarName::Damage, Var::Int(damage));
+                }
+                _ => {}
+            },
+            Trigger::ModifyOutgoingDamage { value } => match event {
+                Event::ModifyOutgoingDamage { .. } => {
                     let mut damage = context.vars.get_int(&VarName::Damage);
                     damage = match value.calculate(&context, world, resources) {
                         Ok(value) => value,

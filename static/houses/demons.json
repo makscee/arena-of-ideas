@@ -1,0 +1,61 @@
+{
+    "name": "Demons",
+    "color": "#8e0039ff",
+    "abilities": {
+        "Empower": {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Empower"
+            },
+            "description": "Next damage\nincreased by 1"
+        }
+    },
+    "statuses": {
+        "Empower": {
+            "trigger": {
+                "type": "List",
+                "triggers": [
+                    {
+                        "type": "ModifyOutgoingDamage",
+                        "value": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "Charges"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "var": "Damage"
+                            }
+                        }
+                    },
+                    {
+                        "type": "AfterOutgoingDamage",
+                        "effect": {
+                            "type": "ChangeStatus",
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "name": "Empower",
+                            "charges": {
+                                "type": "Sub",
+                                "a": {
+                                    "type": "Const",
+                                    "value": 0
+                                },
+                                "b": {
+                                    "type": "Var",
+                                    "var": "Charges"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "layer": "Unit"
+            }
+        }
+    }
+}

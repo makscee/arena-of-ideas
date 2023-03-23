@@ -1,0 +1,32 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1000
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 5,
+                "houses": [
+                    "Demons"
+                ],
+                "active_statuses": {
+                    "Empower": 500
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

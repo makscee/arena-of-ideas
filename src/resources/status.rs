@@ -204,12 +204,16 @@ impl StatusPool {
         world: &legion::World,
         resources: &mut Resources,
     ) -> Option<CassetteNode> {
-        let delay_per_charge = 0.3;
+        let mut delay_per_charge = 0.3;
+        let max_delay = 3.0;
         let key = "status_changes";
         if let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()
         {
             let mut node = CassetteNode::default();
+            if charges_delta.abs() as f32 * delay_per_charge > max_delay {
+                delay_per_charge = max_delay / charges_delta.abs() as f32;
+            }
             for i in 0..charges_delta.abs() {
                 let (text, color) = if charges_delta > 0 {
                     Self::add_status_charge(entity, &status_name, resources, world);
