@@ -19,7 +19,10 @@
 		{
 			"type": "cargo",
 			"command": "test",
-			"args": [],
+			"args": [
+				"--",
+				"--show-output"
+			],
 			"problemMatcher": [
 				"$rustc"
 			],

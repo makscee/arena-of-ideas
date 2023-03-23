@@ -1,4 +1,5 @@
 [
+    "test/scenarios/shield_charges.json",
     "test/scenarios/shield.json",
     "test/scenarios/test_1.json"
 ]

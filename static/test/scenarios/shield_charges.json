@@ -1,0 +1,37 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 999,
+                "health": 10
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1,
+                "trigger": {
+                    "type": "BeforeBattle",
+                    "effect": {
+                        "type": "ChangeStatus",
+                        "name": "Shield",
+                        "charges": {
+                            "type": "Const",
+                            "value": 10
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

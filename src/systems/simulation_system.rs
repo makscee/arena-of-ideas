@@ -117,6 +117,7 @@ mod tests {
             .collect_vec();
         assert!(!scenarios.is_empty());
         for (path, scenario) in scenarios {
+            println!("Run scenario: {:?}...", path.file_name().unwrap());
             assert!(
                 SimulationSystem::run_team_battle(
                     &scenario.light,
