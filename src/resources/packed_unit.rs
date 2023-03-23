@@ -11,6 +11,7 @@ pub struct PackedUnit {
     #[serde(default)]
     pub damage: usize, // damage taken
     pub attack: usize,
+    #[serde(default)]
     pub houses: HashSet<HouseName>,
     #[serde(default)]
     pub trigger: Trigger,

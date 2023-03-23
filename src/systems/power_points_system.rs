@@ -41,12 +41,12 @@ impl PowerPointsSystem {
         for _ in 0..8 {
             let light = vec![unit];
             let dark = vec![choose_random(results)];
-            if SimulationSystem::run_battle(&light, &dark, world, resources) {
+            if SimulationSystem::run_battle(&light, &dark, world, resources, None) {
                 result += 1;
             }
             let light = vec![unit, choose_random(results)];
             let dark = vec![choose_random(results), choose_random(results)];
-            if SimulationSystem::run_battle(&light, &dark, world, resources) {
+            if SimulationSystem::run_battle(&light, &dark, world, resources, None) {
                 result += 1;
             }
         }

@@ -4,10 +4,14 @@ use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Team {
+    #[serde(default = "default_name")]
     pub name: String,
     pub units: Vec<PackedUnit>,
     #[serde(default)]
     pub ability_state: AbilitiesState,
+}
+fn default_name() -> String {
+    "no_name".to_string()
 }
 
 impl Team {

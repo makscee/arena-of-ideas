@@ -1,0 +1,26 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 20
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 2,
+                "health": 20
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

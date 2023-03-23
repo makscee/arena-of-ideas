@@ -29,7 +29,7 @@
 			},
 			"env": {
 				"LOG": "debug",
-				"RUST_BACKTRACE": "1"
+				"RUST_BACKTRACE": "0"
 			}
 		},
 		{
