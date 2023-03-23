@@ -11,19 +11,16 @@ pub struct Options {
     pub player_team_name: String,
 }
 
-impl geng::LoadAsset for Options {
-    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
-        let geng = geng.clone();
-        let path = path.to_owned();
-        async move {
-            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            let options: Options = serde_json::from_str(&json)?;
-            Ok(options)
-        }
-        .boxed_local()
+impl FileWatcherLoader for Options {
+    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        resources.options = Self::load();
     }
+}
 
-    const DEFAULT_EXT: Option<&'static str> = Some(".json");
+impl Options {
+    pub fn load() -> Options {
+        futures::executor::block_on(load_json(static_path().join("options.json"))).unwrap()
+    }
 }
 
 #[derive(Deserialize, Debug)]

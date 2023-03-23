@@ -2,7 +2,7 @@ use geng::prelude::*;
 use geng::ui;
 
 mod components;
-mod game;
+pub mod game;
 mod resources;
 mod systems;
 
@@ -36,17 +36,23 @@ fn setup_geng() -> Geng {
 fn static_path() -> PathBuf {
     run_dir().join("static")
 }
-
 fn main() {
     logger::init().unwrap();
+
+    let options = Options::load();
+    let mut world = legion::World::default();
+    let mut resources = Resources::new(options);
+
+    let mut watcher = FileWatcherSystem::new();
+    resources.load(&mut watcher);
     let geng = setup_geng();
-    
-    let world = legion::World::default();
-    let resources = Resources::new(&geng);
+    resources.load_geng(&mut watcher, &geng);
+    Game::init_world(&mut resources, &mut world);
+
     let mut theme = geng.ui_theme();
     theme.font = resources.fonts.get_font(1);
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
-    let game = Game::new(world, resources);
+    let game = Game::new(world, resources, watcher);
     geng.clone().run(game);
 }

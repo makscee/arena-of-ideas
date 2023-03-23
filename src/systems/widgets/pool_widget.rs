@@ -52,7 +52,7 @@ impl geng::ui::Widget for PoolWidget<'_> {
             .enumerate()
             .for_each(|(ind, unit)| {
                 let position = position + vec2(ind as f32 * 2.0, 0.0);
-                let mut shader = unit.shader.clone();
+                let mut shader = unit.shader.clone().unwrap();
                 UnitSystem::pack_shader(&mut shader, &self.resources.options);
                 for shader in ShaderSystem::flatten_shader_chain(shader) {
                     ShaderSystem::draw_shader_single(

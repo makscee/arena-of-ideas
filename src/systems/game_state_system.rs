@@ -31,7 +31,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::Battle;
                 }
                 if resources.cassette.head > resources.cassette.length() {
-                    BattleSystem::finish_battle(world, resources);
+                    BattleSystem::finish_floor_battle(world, resources);
                 }
             }
             GameState::Shop => {
@@ -211,8 +211,11 @@ impl GameStateSystem {
                 BattleSystem::clear_world(world, resources);
                 TeamPool::load_team(&Faction::Light, world, resources);
                 TeamPool::load_team(&Faction::Dark, world, resources);
-                let tape = BattleSystem::run_battle(world, resources);
-                resources.cassette.tape = tape;
+                let tape = &mut Some(Vec::<CassetteNode>::default());
+                BattleSystem::run_battle(world, resources, tape);
+                if let Some(tape) = tape {
+                    resources.cassette.tape = tape.to_owned();
+                }
                 let last_node = &mut default();
                 let factions = &hashset! {Faction::Light, Faction::Dark};
                 ContextSystem::refresh_factions(factions, world, resources);
@@ -256,8 +259,11 @@ impl GameStateSystem {
                 BattleSystem::clear_world(world, resources);
                 TeamPool::load_team(&Faction::Light, world, resources);
                 TeamPool::load_team(&Faction::Dark, world, resources);
-                let tape = BattleSystem::run_battle(world, resources);
-                resources.cassette.tape = tape;
+                let tape = &mut Some(Vec::<CassetteNode>::default());
+                BattleSystem::run_battle(world, resources, tape);
+                if let Some(tape) = tape {
+                    resources.cassette.tape = tape.to_owned();
+                }
             }
         }
     }

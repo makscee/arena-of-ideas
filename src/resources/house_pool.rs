@@ -37,7 +37,16 @@ impl HousePool {
     }
 
     pub fn insert_house(&mut self, name: HouseName, house: House) {
-        dbg!(&house);
         self.houses.insert(name, house);
+    }
+}
+
+impl FileWatcherLoader for HousePool {
+    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::loader));
+        let paths: Vec<PathBuf> = futures::executor::block_on(load_json(path)).unwrap();
+        paths.into_iter().for_each(|path| {
+            House::loader(resources, &static_path().join(path), watcher);
+        })
     }
 }

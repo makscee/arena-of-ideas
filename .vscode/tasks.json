@@ -18,6 +18,22 @@
 		},
 		{
 			"type": "cargo",
+			"command": "test",
+			"args": [],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Test",
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"LOG": "debug",
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
 			"command": "build",
 			"args": [
 				"--release"

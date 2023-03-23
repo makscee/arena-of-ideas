@@ -20,7 +20,9 @@ impl VarsProvider for HouseComponent {
             .iter()
             .map(|house| resources.house_pool.get_color(house))
             .collect_vec();
-        vars.insert(VarName::HouseColor1, Var::Color(colors[0]));
+        if colors.len() > 0 {
+            vars.insert(VarName::HouseColor1, Var::Color(colors[0]));
+        }
         if colors.len() > 1 {
             vars.insert(VarName::HouseColor2, Var::Color(colors[1]));
         }

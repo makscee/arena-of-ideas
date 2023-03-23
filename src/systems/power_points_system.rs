@@ -8,6 +8,7 @@ impl PowerPointsSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> Vec<(PackedUnit, usize)> {
+        let start = Instant::now();
         if !resources
             .options
             .log
@@ -21,6 +22,8 @@ impl PowerPointsSystem {
             Self::measure_single(i, &mut results, world, resources);
         }
         resources.logger.set_enabled(true);
+        let duration = start.elapsed();
+        debug!("Measured in: {:?}", duration);
         results
     }
 
@@ -35,47 +38,18 @@ impl PowerPointsSystem {
         }
         let mut result = 0;
         let unit = &results.get(index).unwrap().0;
-        for _ in 0..8 {
+        for _ in 0..3 {
             let light = vec![unit];
             let dark = vec![choose_random(results)];
-            if Self::run_simulation(light, dark, world, resources) == Faction::Light {
+            if SimulationSystem::run_battle(&light, &dark, world, resources) {
                 result += 1;
             }
             let light = vec![unit, choose_random(results)];
             let dark = vec![choose_random(results), choose_random(results)];
-            if Self::run_simulation(light, dark, world, resources) == Faction::Light {
+            if SimulationSystem::run_battle(&light, &dark, world, resources) {
                 result += 1;
             }
         }
         results.get_mut(index).unwrap().1 = result;
-    }
-
-    fn run_simulation(
-        light: Vec<&PackedUnit>,
-        dark: Vec<&PackedUnit>,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) -> Faction {
-        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark, Faction::Light});
-        light.iter().enumerate().for_each(|(ind, unit)| {
-            unit.unpack(world, resources, ind + 1, Faction::Light, None);
-        });
-        dark.iter().enumerate().for_each(|(ind, unit)| {
-            unit.unpack(world, resources, ind + 1, Faction::Dark, None);
-        });
-        ActionSystem::run_ticks(world, resources);
-
-        while let Some((left, right)) = BattleSystem::find_hitters(world) {
-            BattleSystem::hit(left, right, &mut None, world, resources);
-            BattleSystem::death_check(world, resources);
-            SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Light, Faction::Dark});
-        }
-        let result = match BattleSystem::battle_won(world) {
-            true => Faction::Light,
-            false => Faction::Dark,
-        };
-        resources.cassette.clear();
-        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Dark, Faction::Light});
-        result
     }
 }

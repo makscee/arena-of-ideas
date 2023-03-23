@@ -13,9 +13,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(mut world: legion::World, mut resources: Resources) -> Self {
-        let systems = Game::create_systems(&mut resources);
-        Game::init_world(&mut resources, &mut world);
+    pub fn new(world: legion::World, mut resources: Resources, watcher: FileWatcherSystem) -> Self {
+        let mut systems = Game::create_systems(&mut resources);
+        systems.push(Box::new(watcher));
 
         Self {
             world,
@@ -129,7 +129,13 @@ impl geng::State for Game {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.resources.input.mouse_pos = self.resources.camera.camera.screen_to_world(
             framebuffer.size().map(|x| x as f32),
-            self.resources.geng.window().mouse_pos().map(|x| x as f32),
+            self.resources
+                .geng
+                .as_ref()
+                .unwrap()
+                .window()
+                .mouse_pos()
+                .map(|x| x as f32),
         );
         ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.systems

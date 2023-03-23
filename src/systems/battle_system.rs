@@ -8,13 +8,16 @@ impl BattleSystem {
         Self {}
     }
 
-    pub fn run_battle(world: &mut legion::World, resources: &mut Resources) -> Vec<CassetteNode> {
+    pub fn run_battle(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        nodes: &mut Option<Vec<CassetteNode>>,
+    ) -> bool {
         let mut ticks = 0;
-        let nodes = &mut Some(default());
         while Self::tick(world, resources, nodes) && ticks < 1000 {
             ticks += 1;
         }
-        nodes.to_owned().unwrap_or_default()
+        Self::battle_won(world)
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
@@ -32,7 +35,7 @@ impl BattleSystem {
             == 0
     }
 
-    pub fn finish_battle(world: &mut legion::World, resources: &mut Resources) {
+    pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.game_won = Self::battle_won(world);
         resources.last_round = resources.floors.current_ind();
         if !resources.game_won {

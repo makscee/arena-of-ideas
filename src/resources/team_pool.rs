@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Default)]
 pub struct TeamPool {
     teams: HashMap<Faction, Team>,
 }

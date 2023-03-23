@@ -17,20 +17,22 @@ pub enum HouseName {
     Snakes,
 }
 
-impl geng::LoadAsset for House {
-    fn load(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Self> {
-        let geng = geng.clone();
-        let path = path.to_owned();
-        async move {
-            let json = <String as geng::LoadAsset>::load(&geng, &path).await?;
-            let mut house: House = serde_json::from_str(&json)?;
-            house.statuses.iter_mut().for_each(|(_, status)| {
+impl FileWatcherLoader for House {
+    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::loader));
+        let house: House = futures::executor::block_on(load_json(path)).unwrap();
+        house.statuses.iter().for_each(|(name, status)| {
+            let mut status = status.clone();
+            if status.color.is_none() {
                 status.color = Some(house.color);
-            });
-            Ok(house)
-        }
-        .boxed_local()
+            }
+            resources.status_pool.define_status(name.clone(), status)
+        });
+        house.abilities.iter().for_each(|(name, ability)| {
+            resources
+                .definitions
+                .insert(name.clone(), house.color, ability.description.clone())
+        });
+        resources.house_pool.insert_house(house.name, house);
     }
-
-    const DEFAULT_EXT: Option<&'static str> = Some(".json");
 }

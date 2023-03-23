@@ -5,10 +5,14 @@ use notify::{DebouncedEvent, RecommendedWatcher, Watcher};
 use super::*;
 
 pub struct FileWatcherSystem {
-    files: HashMap<PathBuf, Box<dyn FnMut(&mut Resources, &PathBuf)>>,
+    loaders: HashMap<PathBuf, Box<dyn Fn(&mut Resources, &PathBuf, &mut FileWatcherSystem)>>,
     to_reload: HashSet<PathBuf>,
     watcher: RecommendedWatcher,
     receiver: Receiver<DebouncedEvent>,
+}
+
+pub trait FileWatcherLoader {
+    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem);
 }
 
 impl FileWatcherSystem {
@@ -18,22 +22,21 @@ impl FileWatcherSystem {
             notify::Watcher::new(tx, std::time::Duration::from_secs(1))
                 .expect("Failed to initialize a watcher");
         Self {
-            files: default(),
+            loaders: default(),
             to_reload: default(),
             watcher,
             receiver,
         }
     }
 
-    pub fn load_and_watch_file(
+    pub fn watch_file(
         &mut self,
-        resources: &mut Resources,
-        file: &PathBuf,
-        mut f: Box<dyn FnMut(&mut Resources, &PathBuf)>,
+        path: &PathBuf,
+        f: Box<dyn Fn(&mut Resources, &PathBuf, &mut FileWatcherSystem)>,
     ) {
-        f(resources, file);
-        self.watch(&file);
-        self.files.insert(file.clone(), f);
+        // f(resources, file, self);
+        self.watch(&path);
+        self.loaders.insert(path.clone(), f);
     }
 
     fn watch(&mut self, file: &PathBuf) {
@@ -64,13 +67,16 @@ impl FileWatcherSystem {
 impl System for FileWatcherSystem {
     fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
         resources.reload_triggered = !self.to_reload.is_empty();
-        self.to_reload.drain().for_each(|file| {
-            self.files
-                .get_mut(&file)
-                .expect(&format!("Can't find file to reload: {:?}", file))(
-                resources, &file
-            );
-        });
+        let mut loaders = HashMap::default();
+        mem::swap(&mut loaders, &mut self.loaders);
+
+        self.to_reload
+            .drain()
+            .collect_vec()
+            .into_iter()
+            .for_each(|path| (loaders.get(&path).unwrap())(resources, &path, self));
+        self.loaders.extend(loaders.drain());
+
         use std::sync::mpsc::TryRecvError;
         match self.receiver.try_recv() {
             Ok(event) => self.handle_notify(event),

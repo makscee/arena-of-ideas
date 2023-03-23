@@ -21,6 +21,7 @@ mod pool_ui_system;
 mod power_points_system;
 mod shader_system;
 mod shop_system;
+mod simulation_system;
 mod slot_system;
 mod stats_ui_system;
 mod status_system;
@@ -47,6 +48,7 @@ pub use pool_ui_system::*;
 pub use power_points_system::*;
 pub use shader_system::*;
 pub use shop_system::*;
+pub use simulation_system::*;
 pub use slot_system::*;
 pub use stats_ui_system::*;
 pub use status_system::*;
@@ -85,9 +87,6 @@ pub trait System {
 
 impl Game {
     pub fn create_systems(resources: &mut Resources) -> Vec<Box<dyn System>> {
-        let mut fws = FileWatcherSystem::new();
-        resources.load(&mut fws);
-
         let mut global_systems: Vec<Box<dyn System>> = Vec::default();
         let mut game_state = GameStateSystem::new();
         game_state.add_systems(GameState::MainMenu, vec![]);
@@ -130,7 +129,6 @@ impl Game {
             ],
         );
 
-        global_systems.push(Box::new(fws));
         global_systems.push(Box::new(TimeSystem::new()));
         global_systems.push(Box::new(CameraSystem::new()));
         global_systems.push(Box::new(ContextSystem::new()));

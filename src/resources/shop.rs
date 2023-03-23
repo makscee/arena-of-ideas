@@ -16,11 +16,7 @@ pub struct Shop {
 
 impl Shop {
     pub fn load_pool(world: &mut legion::World, resources: &mut Resources) {
-        let measures = PowerPointsSystem::measure(
-            resources.hero_pool.values().cloned().collect_vec(),
-            world,
-            resources,
-        );
+        let measures = PowerPointsSystem::measure(resources.hero_pool.all(), world, resources);
         dbg!(measures
             .iter()
             .map(|(unit, score)| (&unit.name, score))

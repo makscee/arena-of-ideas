@@ -25,3 +25,10 @@ impl Floors {
         self.current < self.floors.len()
     }
 }
+
+impl FileWatcherLoader for Floors {
+    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::loader));
+        resources.floors = futures::executor::block_on(load_json(path)).unwrap();
+    }
+}

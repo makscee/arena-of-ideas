@@ -164,11 +164,12 @@ impl ShaderSystem {
     ) where
         U: ugli::Uniforms,
     {
+        let geng = resources.geng.as_ref().unwrap();
         let program = resources
             .shader_programs
             .get_program(&static_path().join(&shader.path));
         let mut instances_arr: ugli::VertexBuffer<Instance> =
-            ugli::VertexBuffer::new_dynamic(resources.geng.ugli(), Vec::new());
+            ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new());
         instances_arr.resize(shader.parameters.instances, Instance {});
         let uniforms = (
             geng::camera2d_uniforms(
@@ -178,7 +179,7 @@ impl ShaderSystem {
             shader.parameters.clone(),
             &uniforms,
         );
-        let quad = Self::get_quad(shader.parameters.vertices, &resources.geng);
+        let quad = Self::get_quad(shader.parameters.vertices, geng);
         ugli::draw(
             framebuffer,
             &program,

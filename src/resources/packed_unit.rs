@@ -16,7 +16,7 @@ pub struct PackedUnit {
     pub trigger: Trigger,
     #[serde(default)]
     pub active_statuses: HashMap<String, i32>,
-    pub shader: Shader,
+    pub shader: Option<Shader>,
 }
 fn default_name() -> String {
     "no_name".to_string()
@@ -55,7 +55,7 @@ impl PackedUnit {
             .get(&entity)
             .cloned()
             .unwrap_or_default();
-        let shader = entry.get_component::<Shader>().unwrap().clone();
+        let shader = entry.get_component::<Shader>().ok().cloned();
 
         Self {
             name,
@@ -88,19 +88,21 @@ impl PackedUnit {
                 AreaType::Circle { radius: 1.0 },
                 position.unwrap_or(vec2::ZERO),
             ),
-            self.shader.clone(),
             self.trigger.clone(),
+            UnitComponent { slot, faction },
         ));
         let world_entity = WorldSystem::get_context(world).owner;
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
-        entry.add_component(UnitComponent { slot, faction });
         entry.add_component(Context {
             owner: entity,
             target: entity,
             parent: Some(world_entity),
             vars: default(),
         });
+        if let Some(shader) = &self.shader {
+            entry.add_component(shader.clone());
+        }
 
         resources
             .status_pool
@@ -135,5 +137,13 @@ impl PackedUnit {
             }
             _ => {}
         };
+    }
+}
+
+impl FileWatcherLoader for PackedUnit {
+    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::loader));
+        let unit = futures::executor::block_on(load_json(path)).unwrap();
+        resources.hero_pool.insert(path.clone(), unit);
     }
 }
