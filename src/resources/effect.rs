@@ -42,6 +42,7 @@ pub enum Effect {
         name: String,
     },
     RemoveThisStatus,
+    ClearStatuses,
     ChangeStatus {
         name: String,
         charges: ExpressionInt,
@@ -247,6 +248,9 @@ impl EffectWrapped {
                     resources,
                     -1,
                 );
+            }
+            Effect::ClearStatuses => {
+                resources.status_pool.clear_entity(&context.target);
             }
             Effect::UseAbility { name, house } => {
                 let owner_entry = world

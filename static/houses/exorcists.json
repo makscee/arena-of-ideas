@@ -1,0 +1,12 @@
+{
+    "name": "Exorcists",
+    "color": "#fffedeff",
+    "abilities": {
+        "Dispel": {
+            "description": "Remove all statuses",
+            "effect": {
+                "type": "ClearStatuses"
+            }
+        }
+    }
+}

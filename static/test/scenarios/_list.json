@@ -1,4 +1,5 @@
 [
+    "test/scenarios/dispel.json",
     "test/scenarios/swap.json",
     "test/scenarios/shield_charges.json",
     "test/scenarios/shield.json",
