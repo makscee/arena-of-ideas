@@ -21,6 +21,8 @@ impl PowerPointsSystem {
         for i in 0..results.len() {
             Self::measure_single(i, &mut results, world, resources);
         }
+        resources.action_queue.clear();
+        resources.unit_corpses.clear();
         resources.logger.set_enabled(true);
         let duration = start.elapsed();
         debug!("Measured in: {:?}", duration);
