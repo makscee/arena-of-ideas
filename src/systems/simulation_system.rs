@@ -18,6 +18,7 @@ impl SimulationSystem {
         });
         ActionSystem::run_ticks(world, resources);
         let mut ticks = 0;
+        Event::BattleStart.send(world, resources);
         while let Some((left, right)) = BattleSystem::find_hitters(world) {
             ticks += 1;
             BattleSystem::hit(left, right, &mut None, world, resources);
@@ -66,6 +67,8 @@ mod tests {
     fn setup() -> (legion::World, Resources) {
         let mut world = legion::World::default();
         let mut resources = Resources::new(Options::load());
+        let watcher = &mut FileWatcherSystem::new();
+        resources.load(watcher);
         Game::init_world(&mut resources, &mut world);
         (world, resources)
     }

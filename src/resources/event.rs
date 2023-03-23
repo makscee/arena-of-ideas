@@ -59,13 +59,14 @@ pub enum Event {
         target: legion::Entity,
     },
     BattleOver,
+    BattleStart,
 }
 
 impl Event {
     pub fn send(&self, world: &legion::World, resources: &mut Resources) {
         match self {
             // Send event to every active status
-            Event::BattleOver => {
+            Event::BattleOver | Event::BattleStart => {
                 StatusPool::notify_all(self, resources, world);
             }
             // Trigger owner status with owner context

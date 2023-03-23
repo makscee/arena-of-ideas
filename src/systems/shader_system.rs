@@ -32,21 +32,23 @@ impl ShaderSystem {
         world: &legion::World,
         entity: legion::Entity,
         context: Option<&Context>,
-    ) -> Shader {
-        let mut shader = world
+    ) -> Option<Shader> {
+        match world
             .entry_ref(entity)
-            .expect("Failed to find Entry")
-            .get_component::<Shader>()
-            .unwrap()
-            .clone();
-        if let Some(context) = context {
-            shader
-                .parameters
-                .uniforms
-                .merge_mut(&context.vars.clone().into(), true);
+            .ok()
+            .and_then(|x| x.get_component::<Shader>().ok().cloned())
+        {
+            Some(mut shader) => Some({
+                if let Some(context) = context {
+                    shader
+                        .parameters
+                        .uniforms
+                        .merge_mut(&context.vars.clone().into(), true);
+                }
+                shader
+            }),
+            None => None,
         }
-
-        shader
     }
 
     pub fn draw_all_shaders(
@@ -69,7 +71,8 @@ impl ShaderSystem {
                             ContextSystem::try_get_context(entity.entity, world)
                                 .ok()
                                 .as_ref(),
-                        ),
+                        )
+                        .unwrap(),
                     )
                 }),
         );

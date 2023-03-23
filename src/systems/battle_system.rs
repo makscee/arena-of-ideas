@@ -14,6 +14,7 @@ impl BattleSystem {
         nodes: &mut Option<Vec<CassetteNode>>,
     ) -> bool {
         let mut ticks = 0;
+        Event::BattleStart.send(world, resources);
         while Self::tick(world, resources, nodes) && ticks < 1000 {
             ticks += 1;
         }
@@ -21,10 +22,8 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
-        Self::clear_world(world, resources);
-        Self::load_floor(resources, world);
-        Self::load_player_team(resources, world);
-        SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Dark, Faction::Light});
+        TeamPool::unpack_team(&Faction::Light, world, resources);
+        TeamPool::unpack_team(&Faction::Dark, world, resources);
     }
 
     pub fn battle_won(world: &legion::World) -> bool {
@@ -55,18 +54,16 @@ impl BattleSystem {
         UnitSystem::clear_factions(world, resources, factions);
     }
 
-    pub fn load_floor(resources: &mut Resources, world: &mut legion::World) {
+    pub fn save_floor(resources: &mut Resources) {
         let team = resources.floors.current().clone();
         let faction = Faction::Dark;
         TeamPool::save_team(faction, team, resources);
-        TeamPool::load_team(&faction, world, resources);
     }
 
-    pub fn load_player_team(resources: &mut Resources, world: &mut legion::World) {
+    pub fn save_player_team(resources: &mut Resources) {
         let team = TeamPool::get_team(Faction::Team, resources).clone();
         let faction = Faction::Light;
         TeamPool::save_team(faction, team, resources);
-        TeamPool::load_team(&faction, world, resources);
     }
 
     /// Refresh all units, add them as node entities, push node to nodes, clear node

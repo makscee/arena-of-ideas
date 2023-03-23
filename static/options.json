@@ -1,44 +1,13 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Snake",
             "units": [
                 {
-                    "name": "Snake",
-                    "attack": 1,
-                    "health": 20,
-                    "houses": [
-                        "Snakes"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "ChangeStatus",
-                            "name": "Shield",
-                            "charges": {
-                                "type": "Const",
-                                "value": 3
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00d836",
-                                "u_color_1": "#00ff22",
-                                "u_inner_brightness": 0.5,
-                                "u_radius": 0.8,
-                                "u_alpha": 0.3,
-                                "u_spin_part": 0.01,
-                                "u_move_speed": 1.3
-                            },
-                            "instances": 40,
-                            "vertices": 1
-                        }
-                    }
+                    "attack": 999,
+                    "health": 1
                 }
             ]
         },
@@ -46,31 +15,14 @@
             "name": "Shielded Snake",
             "units": [
                 {
-                    "name": "Snake",
-                    "description": "On damage dealt:\nKill",
                     "attack": 1,
-                    "health": 9,
-                    "houses": [
-                        "Snakes"
-                    ],
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00d836",
-                                "u_color_1": "#00ff22",
-                                "u_inner_brightness": 0.5,
-                                "u_radius": 0.8,
-                                "u_alpha": 0.3,
-                                "u_spin_part": 0.01,
-                                "u_move_speed": 1.3
-                            },
-                            "instances": 40,
-                            "vertices": 1
+                    "health": 1,
+                    "trigger": {
+                        "type": "BeforeBattle",
+                        "effect": {
+                            "type": "AddStatus",
+                            "name": "Shield"
                         }
-                    },
-                    "active_statuses": {
-                        "Shield": 1
                     }
                 }
             ]

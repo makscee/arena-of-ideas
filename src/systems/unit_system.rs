@@ -16,8 +16,14 @@ impl UnitSystem {
         resources: &Resources,
     ) {
         let options = &resources.options;
-        let mut unit_shader = ShaderSystem::get_entity_shader(world, entity, None);
-        Self::pack_shader(&mut unit_shader, options);
+        let mut unit_shader = match ShaderSystem::get_entity_shader(world, entity, None) {
+            Some(mut shader) => {
+                Self::pack_shader(&mut shader, options);
+                shader
+            }
+            None => options.shaders.unit.clone(),
+        };
+
         let context = ContextSystem::get_context(entity, world);
         unit_shader
             .parameters
@@ -43,10 +49,11 @@ impl UnitSystem {
         world: &legion::World,
         resources: &Resources,
     ) {
-        UnitSystem::collect_factions(world, &factions)
-            .iter()
-            .for_each(|(entity, _)| {
-                Self::draw_unit_to_cassette_node(*entity, node, world, resources)
+        <&EntityComponent>::query()
+            .filter(component::<UnitComponent>())
+            .iter(world)
+            .for_each(|entity| {
+                Self::draw_unit_to_cassette_node(entity.entity, node, world, resources)
             });
     }
 

@@ -209,8 +209,8 @@ impl GameStateSystem {
                 CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Battle;
                 BattleSystem::clear_world(world, resources);
-                TeamPool::load_team(&Faction::Light, world, resources);
-                TeamPool::load_team(&Faction::Dark, world, resources);
+                TeamPool::unpack_team(&Faction::Light, world, resources);
+                TeamPool::unpack_team(&Faction::Dark, world, resources);
                 let tape = &mut Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, tape);
                 if let Some(tape) = tape {
@@ -257,8 +257,8 @@ impl GameStateSystem {
                 TeamPool::save_team(Faction::Light, light, resources);
                 TeamPool::save_team(Faction::Dark, dark, resources);
                 BattleSystem::clear_world(world, resources);
-                TeamPool::load_team(&Faction::Light, world, resources);
-                TeamPool::load_team(&Faction::Dark, world, resources);
+                TeamPool::unpack_team(&Faction::Light, world, resources);
+                TeamPool::unpack_team(&Faction::Dark, world, resources);
                 let tape = &mut Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, tape);
                 if let Some(tape) = tape {

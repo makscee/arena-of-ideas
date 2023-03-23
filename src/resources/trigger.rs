@@ -15,6 +15,7 @@ pub enum Trigger {
     BeforeDeath { effect: EffectWrapped },
     AfterDeath { effect: EffectWrapped },
     AfterBirth { effect: EffectWrapped },
+    BeforeBattle { effect: EffectWrapped },
     AfterBattle { effect: EffectWrapped },
     Buy { effect: EffectWrapped },
     Sell { effect: EffectWrapped },
@@ -79,6 +80,10 @@ impl Trigger {
                 Event::AfterBirth { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::BeforeBattle { .. } => match event {
+                Event::BattleStart { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
             Trigger::AfterBattle { .. } => match event {
                 Event::BattleOver { .. } => self.fire(action_queue, context, logger),
                 _ => {}
@@ -124,6 +129,7 @@ impl Trigger {
             | Trigger::BeforeDeath { effect }
             | Trigger::AfterDeath { effect }
             | Trigger::AfterBirth { effect }
+            | Trigger::BeforeBattle { effect }
             | Trigger::AfterBattle { effect }
             | Trigger::AfterStrike { effect }
             | Trigger::Buy { effect }

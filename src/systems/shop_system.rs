@@ -66,6 +66,8 @@ impl ShopSystem {
     pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         TeamPool::refresh_team(&Faction::Team, world, resources);
+        BattleSystem::save_player_team(resources);
+        BattleSystem::save_floor(resources);
         BattleSystem::init_battle(world, resources);
     }
 

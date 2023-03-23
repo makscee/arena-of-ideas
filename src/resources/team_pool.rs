@@ -64,7 +64,7 @@ impl TeamPool {
         resources.team_pool.teams.insert(faction, team);
     }
 
-    pub fn load_team(faction: &Faction, world: &mut legion::World, resources: &mut Resources) {
+    pub fn unpack_team(faction: &Faction, world: &mut legion::World, resources: &mut Resources) {
         resources
             .team_pool
             .teams
