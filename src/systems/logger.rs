@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Logger {
     enabled: bool,
     enabled_contexts: HashSet<LogContext>,
@@ -20,6 +20,7 @@ pub enum LogContext {
 
 impl Logger {
     pub fn load(&mut self, options: &Options) {
+        self.enabled = true;
         self.enabled_contexts = HashSet::from_iter(options.log.iter().filter_map(
             |(context, value)| match value {
                 true => Some(*context),

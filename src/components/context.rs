@@ -25,8 +25,8 @@ impl Context {
         context
     }
 
-    pub fn add_var(&mut self, name: VarName, var: Var) -> &mut Self {
-        self.vars.insert(name, var);
+    pub fn add_var(&mut self, var: VarName, value: Var) -> &mut Self {
+        self.vars.insert(var, value);
         self
     }
 }

@@ -49,11 +49,10 @@ impl UnitSystem {
         world: &legion::World,
         resources: &Resources,
     ) {
-        <&EntityComponent>::query()
-            .filter(component::<UnitComponent>())
-            .iter(world)
-            .for_each(|entity| {
-                Self::draw_unit_to_cassette_node(entity.entity, node, world, resources)
+        UnitSystem::collect_factions(world, factions)
+            .into_iter()
+            .for_each(|(entity, _)| {
+                Self::draw_unit_to_cassette_node(entity, node, world, resources)
             });
     }
 

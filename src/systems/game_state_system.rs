@@ -169,9 +169,7 @@ impl GameStateSystem {
         }
         // transition from
         match resources.current_state {
-            GameState::MainMenu => {
-                Shop::load_pool(world, resources);
-            }
+            GameState::MainMenu => {}
             GameState::Shop => {
                 resources.cassette.clear();
                 ShopSystem::clear_case(world, resources);
@@ -200,7 +198,6 @@ impl GameStateSystem {
             GameState::CustomGame => {}
         }
 
-        resources.current_state = resources.transition_state.clone();
         //transition to
         match resources.transition_state {
             GameState::MainMenu => {}
@@ -208,9 +205,6 @@ impl GameStateSystem {
                 WorldSystem::set_var(world, VarName::IsBattle, Var::Float(1.0));
                 CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Battle;
-                BattleSystem::clear_world(world, resources);
-                TeamPool::unpack_team(&Faction::Light, world, resources);
-                TeamPool::unpack_team(&Faction::Dark, world, resources);
                 let tape = &mut Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, tape);
                 if let Some(tape) = tape {
@@ -226,6 +220,9 @@ impl GameStateSystem {
                     .add_tape_nodes(vec![last_node.to_owned()]);
             }
             GameState::Shop => {
+                if resources.current_state == GameState::MainMenu {
+                    Shop::load_pool(world, resources);
+                }
                 ShopSystem::init(world, resources);
                 CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Shop;
@@ -257,8 +254,7 @@ impl GameStateSystem {
                 TeamPool::save_team(Faction::Light, light, resources);
                 TeamPool::save_team(Faction::Dark, dark, resources);
                 BattleSystem::clear_world(world, resources);
-                TeamPool::unpack_team(&Faction::Light, world, resources);
-                TeamPool::unpack_team(&Faction::Dark, world, resources);
+                BattleSystem::init_battle(world, resources);
                 let tape = &mut Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, tape);
                 if let Some(tape) = tape {
@@ -266,5 +262,6 @@ impl GameStateSystem {
                 }
             }
         }
+        resources.current_state = resources.transition_state.clone();
     }
 }

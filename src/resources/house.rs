@@ -6,6 +6,7 @@ pub struct House {
     pub name: HouseName,
     pub color: Rgba<f32>,
     pub abilities: HashMap<String, Ability>,
+    #[serde(default)]
     pub statuses: HashMap<String, Status>,
 }
 
@@ -15,6 +16,7 @@ pub enum HouseName {
     Dragons,
     Robots,
     Snakes,
+    Thieves,
 }
 
 impl FileWatcherLoader for House {

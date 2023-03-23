@@ -3,27 +3,38 @@
     "custom_game": {
         "enable": true,
         "light": {
-            "name": "Snake",
-            "units": [
-                {
-                    "attack": 999,
-                    "health": 1
-                }
-            ]
-        },
-        "dark": {
-            "name": "Shielded Snake",
             "units": [
                 {
                     "attack": 1,
                     "health": 1,
+                    "houses": [
+                        "Thieves"
+                    ],
                     "trigger": {
                         "type": "BeforeBattle",
                         "effect": {
-                            "type": "AddStatus",
-                            "name": "Shield"
+                            "type": "UseAbility",
+                            "house": "Thieves",
+                            "name": "Swap",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+            ]
+        },
+        "dark": {
+            "units": [
+                {
+                    "attack": 999,
+                    "health": 999
                 }
             ]
         }
@@ -32,7 +43,7 @@
     "log": {
         "Action": true,
         "Effect": true,
-        "Contexts": false,
+        "Contexts": true,
         "Condition": false,
         "Trigger": true,
         "Event": true,

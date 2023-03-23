@@ -31,6 +31,7 @@ pub enum VarName {
     Color,
     GlobalTime,
     StatusName,
+    Store,
 }
 
 impl VarName {
@@ -59,6 +60,7 @@ pub enum Var {
     Vec3(vec3<f32>),
     Vec4(vec4<f32>),
     Color(Rgba<f32>),
+    Faction(Faction),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -143,6 +145,21 @@ impl Vars {
         }
     }
 
+    pub fn get_faction(&self, var: &VarName) -> Faction {
+        self.try_get_faction(var)
+            .expect(&format!("Failed to get var {}", var))
+    }
+
+    pub fn try_get_faction(&self, var: &VarName) -> Option<Faction> {
+        match self.try_get(var) {
+            Some(value) => match value {
+                Var::Faction(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", var),
+            },
+            None => None,
+        }
+    }
+
     pub fn get_string(&self, var: &VarName) -> String {
         self.try_get_string(var)
             .expect(&format!("Failed to get var {}", var))
@@ -194,6 +211,7 @@ impl From<Vars> for ShaderUniforms {
                 Var::Color(v) => {
                     map.insert(name, ShaderUniform::Color(*v));
                 }
+                Var::Faction(_) => {}
             };
         });
         ShaderUniforms::from(map)

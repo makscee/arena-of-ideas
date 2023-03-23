@@ -41,6 +41,15 @@ impl Faction {
             .or_else(|| resources.unit_corpses.get(&entity).and_then(|x| Some(x.1)))
             .unwrap()
     }
+    pub fn opposite(&self) -> Faction {
+        match self {
+            Faction::Light => Faction::Dark,
+            Faction::Dark => Faction::Light,
+            Faction::Team => Faction::Shop,
+            Faction::Shop => Faction::Team,
+            Faction::Gallery => Faction::Gallery,
+        }
+    }
 }
 
 impl VarsProvider for UnitComponent {

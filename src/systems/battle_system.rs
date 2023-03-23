@@ -185,7 +185,7 @@ impl BattleSystem {
             context_left.clone(),
             Effect::Damage {
                 value: None,
-                then: None,
+                on_hit: None,
             }
             .wrap(),
         ));
@@ -209,7 +209,7 @@ impl BattleSystem {
             context_right.clone(),
             Effect::Damage {
                 value: None,
-                then: None,
+                on_hit: None,
             }
             .wrap(),
         ));

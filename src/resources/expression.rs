@@ -80,7 +80,7 @@ pub enum ExpressionEntity {
         faction: Faction,
     },
     RandomUnit {
-        faction: Faction,
+        faction: ExpressionFaction,
     },
 }
 
@@ -112,9 +112,10 @@ impl ExpressionEntity {
                     .context(format!("No unit of {:?} found in {} slot", faction, slot))
             }
             ExpressionEntity::RandomUnit { faction } => {
+                let faction = faction.calculate(context, world, resources)?;
                 <(&UnitComponent, &EntityComponent)>::query()
                     .iter(world)
-                    .filter_map(|(unit, entity)| match unit.faction == *faction {
+                    .filter_map(|(unit, entity)| match unit.faction == faction {
                         true => Some(entity.entity),
                         false => None,
                     })
@@ -131,6 +132,8 @@ pub enum ExpressionFaction {
     Owner,
     Target,
     Parent,
+    Opposite { faction: Box<ExpressionFaction> },
+    Var { var: VarName },
 }
 
 impl ExpressionFaction {
@@ -138,17 +141,24 @@ impl ExpressionFaction {
         &self,
         context: &Context,
         world: &legion::World,
-        _: &Resources,
+        resources: &Resources,
     ) -> Result<Faction, Error> {
-        let entity = match self {
-            ExpressionFaction::Owner => context.owner,
-            ExpressionFaction::Target => context.target,
-            ExpressionFaction::Parent => context.parent.context("No parent")?,
-        };
-        Ok(world
-            .entry_ref(entity)
-            .context("Failed to find entity")?
-            .get_component::<UnitComponent>()?
-            .faction)
+        match &self {
+            ExpressionFaction::Owner => Ok(Faction::from_entity(context.owner, world, resources)),
+            ExpressionFaction::Target => Ok(Faction::from_entity(context.target, world, resources)),
+            ExpressionFaction::Parent => Ok(Faction::from_entity(
+                context.parent.unwrap(),
+                world,
+                resources,
+            )),
+
+            ExpressionFaction::Opposite { faction } => {
+                Ok(faction.calculate(context, world, resources)?.opposite())
+            }
+            ExpressionFaction::Var { var } => context
+                .vars
+                .try_get_faction(var)
+                .context("Failed to get faction var"),
+        }
     }
 }

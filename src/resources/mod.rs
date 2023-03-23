@@ -145,6 +145,7 @@ impl Resources {
         self.team_pool = TeamPool::new(hashmap! {
             Faction::Team => Team::empty(self.options.player_team_name.clone())
         });
+        self.logger.load(&self.options);
     }
 
     pub fn load_geng(&mut self, watcher: &mut FileWatcherSystem, geng: &Geng) {

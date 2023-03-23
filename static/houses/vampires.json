@@ -13,7 +13,7 @@
                 "new_name": "Charges",
                 "effect": {
                     "type": "Kill",
-                    "then": {
+                    "after": {
                         "type": "ChangeStatus",
                         "target": {
                             "type": "Owner"
@@ -38,7 +38,7 @@
                             "type": "Const",
                             "value": 1
                         },
-                        "then": {
+                        "on_hit": {
                             "type": "AddStatus",
                             "target": {
                                 "type": "Owner"

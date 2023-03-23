@@ -7,11 +7,9 @@ use super::*;
 pub enum Effect {
     Damage {
         value: Option<ExpressionInt>,
-        then: Option<Box<EffectWrapped>>,
+        on_hit: Option<Box<EffectWrapped>>,
     },
-    Kill {
-        then: Option<Box<EffectWrapped>>,
-    },
+    Kill,
     Repeat {
         count: usize,
         effect: Box<EffectWrapped>,
@@ -24,8 +22,12 @@ pub enum Effect {
     },
     Noop,
     SetVarInt {
-        name: VarName,
+        var: VarName,
         value: ExpressionInt,
+    },
+    SetVarFaction {
+        var: VarName,
+        value: ExpressionFaction,
     },
     ChangeAbilityVarInt {
         house: HouseName,
@@ -53,6 +55,12 @@ pub enum Effect {
     },
     SetAttack {
         value: ExpressionInt,
+    },
+    SetFaction {
+        faction: ExpressionFaction,
+    },
+    SetSlot {
+        slot: ExpressionInt,
     },
     TakeVar {
         var: VarName,
@@ -85,6 +93,7 @@ impl Effect {
             effect: self,
             target: default(),
             owner: default(),
+            after: default(),
         }
     }
 }
@@ -95,6 +104,7 @@ pub struct EffectWrapped {
     pub effect: Effect,
     pub target: Option<ExpressionEntity>,
     pub owner: Option<ExpressionEntity>,
+    pub after: Option<Box<EffectWrapped>>,
 }
 
 impl EffectWrapped {
@@ -119,7 +129,10 @@ impl EffectWrapped {
             ..context
         };
         match &self.effect {
-            Effect::Damage { value, then } => {
+            Effect::Damage {
+                value,
+                on_hit: then,
+            } => {
                 let mut value = match value {
                     Some(v) => v.calculate(&context, world, resources)? as usize,
                     None => {
@@ -206,14 +219,13 @@ impl EffectWrapped {
                     .action_queue
                     .push_front(Action::new(context.clone(), effect.deref().clone()))
             }),
-            Effect::SetVarInt { name, value } => {
+            Effect::SetVarInt { var, value } => {
                 let value = value.calculate(&context, world, resources)?;
-                world
-                    .entry(context.target)
-                    .context("Failed to get Target")?
-                    .get_component_mut::<Context>()?
-                    .vars
-                    .insert(name.clone(), Var::Int(value));
+                context.add_var(*var, Var::Int(value));
+            }
+            Effect::SetVarFaction { var, value } => {
+                let value = value.calculate(&context, world, resources)?;
+                context.add_var(*var, Var::Faction(value));
             }
             Effect::ChangeStatus { name, .. }
             | Effect::AddStatus { name, .. }
@@ -267,7 +279,7 @@ impl EffectWrapped {
                     Var::Color(resources.house_pool.get_color(house)),
                 );
                 resources.action_queue.push_front(Action::new(
-                    context,
+                    context.clone(),
                     resources.house_pool.get_ability(house, name).effect.clone(),
                 ));
             }
@@ -344,15 +356,10 @@ impl EffectWrapped {
                     0.0,
                 ))
             }
-            Effect::Kill { then } => {
+            Effect::Kill => {
                 let mut entry = world.entry_mut(context.target).unwrap();
                 let health = entry.get_component_mut::<HealthComponent>().unwrap();
                 health.damage = i32::MAX as usize;
-                if let Some(effect) = then {
-                    resources
-                        .action_queue
-                        .push_front(Action::new(context, effect.deref().clone()));
-                }
             }
             Effect::Revive { slot } => {
                 let slot = slot.unwrap_or(1);
@@ -403,6 +410,27 @@ impl EffectWrapped {
                     entry.remove_component::<Trigger>();
                 }
             }
+            Effect::SetFaction { faction } => {
+                let faction = faction.calculate(&context, world, resources)?;
+                let mut target = world.entry(context.target).unwrap();
+                debug!(
+                    "Set faction {:?} from {:?} to {:?}",
+                    context.target,
+                    target.get_component::<UnitComponent>().unwrap().faction,
+                    faction
+                );
+                target.get_component_mut::<UnitComponent>().unwrap().faction = faction;
+            }
+            Effect::SetSlot { slot } => {
+                let slot = slot.calculate(&context, world, resources)? as usize;
+                let mut target = world.entry(context.target).unwrap();
+                target.get_component_mut::<UnitComponent>().unwrap().slot = slot;
+            }
+        }
+        if let Some(then) = self.after.as_deref() {
+            resources
+                .action_queue
+                .push_front(Action::new(context, then.deref().clone()));
         }
         Ok(node)
     }

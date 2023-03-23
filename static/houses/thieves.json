@@ -1,0 +1,32 @@
+{
+    "name": "Thieves",
+    "color": "#777d35ff",
+    "abilities": {
+        "Swap": {
+            "description": "Exchange faction\nwith target",
+            "effect": {
+                "type": "SetVarFaction",
+                "var": "Store",
+                "value": {
+                    "type": "Target"
+                },
+                "after": {
+                    "type": "SetFaction",
+                    "faction": {
+                        "type": "Owner"
+                    },
+                    "after": {
+                        "type": "SetFaction",
+                        "faction": {
+                            "type": "Var",
+                            "var": "Store"
+                        },
+                        "target": {
+                            "type": "Owner"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
