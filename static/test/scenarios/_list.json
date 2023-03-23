@@ -1,4 +1,7 @@
 [
+    "test/scenarios/defense_big.json",
+    "test/scenarios/defense_reverse.json",
+    "test/scenarios/defense.json",
     "test/scenarios/dispel.json",
     "test/scenarios/swap.json",
     "test/scenarios/shield_charges.json",

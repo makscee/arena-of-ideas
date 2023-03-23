@@ -1,0 +1,32 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 999,
+                "health": 3
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 4,
+                "houses": [
+                    "Warriors"
+                ],
+                "active_statuses": {
+                    "Defense": 1000
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

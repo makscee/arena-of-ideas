@@ -1,0 +1,60 @@
+{
+    "name": "Warriors",
+    "color": "#379291ff",
+    "abilities": {
+        "Defense": {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Defense"
+            },
+            "description": "Reduce incoming damage by 1\nbut not less than 1"
+        }
+    },
+    "statuses": {
+        "Defense": {
+            "trigger": {
+                "type": "ModifyIncomingDamage",
+                "value": {
+                    "type": "If",
+                    "condition": {
+                        "type": "MoreInt",
+                        "a": {
+                            "type": "Var",
+                            "var": "Damage"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 0
+                        }
+                    },
+                    "then": {
+                        "type": "Max",
+                        "a": {
+                            "type": "Sub",
+                            "a": {
+                                "type": "Var",
+                                "var": "Damage"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "var": "Charges"
+                            }
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    "else": {
+                        "type": "Var",
+                        "var": "Damage"
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "layer": "Unit"
+            }
+        }
+    }
+}

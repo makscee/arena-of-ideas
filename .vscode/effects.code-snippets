@@ -286,7 +286,7 @@
 		"body": [
 			"{",
 			"    \"type\": \"Var\",",
-			"    \"name\": \"$1$TM_SELECTED_TEXT\"",
+			"    \"var\": \"$1$TM_SELECTED_TEXT\"",
 			"}"
 		],
 		"description": "Var"

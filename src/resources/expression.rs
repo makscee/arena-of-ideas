@@ -9,9 +9,22 @@ pub enum ExpressionInt {
         a: Box<ExpressionInt>,
         b: Box<ExpressionInt>,
     },
+    Sub {
+        a: Box<ExpressionInt>,
+        b: Box<ExpressionInt>,
+    },
     Mul {
         a: Box<ExpressionInt>,
         b: Box<ExpressionInt>,
+    },
+    Max {
+        a: Box<ExpressionInt>,
+        b: Box<ExpressionInt>,
+    },
+    If {
+        condition: Box<Condition>,
+        then: Box<ExpressionInt>,
+        r#else: Box<ExpressionInt>,
     },
     Const {
         value: i32,
@@ -42,12 +55,21 @@ impl ExpressionInt {
                 Ok(a.calculate(context, world, resources)?
                     + b.calculate(context, world, resources)?)
             }
+            ExpressionInt::Sub { a, b } => {
+                Ok(a.calculate(context, world, resources)?
+                    - b.calculate(context, world, resources)?)
+            }
             ExpressionInt::Mul { a, b } => {
                 Ok(a.calculate(context, world, resources)?
                     * b.calculate(context, world, resources)?)
             }
+            ExpressionInt::Max { a, b } => Ok(a
+                .calculate(context, world, resources)?
+                .max(b.calculate(context, world, resources)?)),
             ExpressionInt::Const { value } => Ok(*value),
-            ExpressionInt::Var { var } => Ok(context.vars.get_int(var)),
+            ExpressionInt::Var { var } => {
+                context.vars.try_get_int(var).context("Failed to find var")
+            }
             ExpressionInt::EntityVar { var, entity } => {
                 ContextSystem::try_get_context(entity.calculate(context, world, resources)?, world)?
                     .vars
@@ -64,6 +86,14 @@ impl ExpressionInt {
                     house, ability, var, &faction, resources,
                 ))
             }
+            ExpressionInt::If {
+                condition,
+                then,
+                r#else,
+            } => match condition.calculate(context, world, resources)? {
+                true => then.calculate(context, world, resources),
+                false => r#else.calculate(context, world, resources),
+            },
         }
     }
 }

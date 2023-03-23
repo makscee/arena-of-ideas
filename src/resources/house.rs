@@ -18,6 +18,7 @@ pub enum HouseName {
     Snakes,
     Thieves,
     Exorcists,
+    Warriors,
 }
 
 impl FileWatcherLoader for House {

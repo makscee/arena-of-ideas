@@ -1,0 +1,37 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 2,
+                "health": 3
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 6,
+                "houses": [
+                    "Warriors"
+                ],
+                "trigger": {
+                    "type": "BeforeBattle",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Warriors",
+                        "name": "Defense"
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}
