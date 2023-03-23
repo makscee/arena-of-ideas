@@ -5,8 +5,10 @@
         "light": {
             "units": [
                 {
-                    "attack": 1,
-                    "health": 1,
+                    "name": "Hostage",
+                    "description": "Before Battle:\nSwap with random enemy",
+                    "health": 7,
+                    "attack": 7,
                     "houses": [
                         "Thieves"
                     ],
@@ -24,6 +26,20 @@
                                         "type": "Owner"
                                     }
                                 }
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#4b819c",
+                                "u_radius": 0.7,
+                                "u_border": 0.1,
+                                "u_circle_fbm": 0.05,
+                                "u_circle_fbm_speed": 3.3,
+                                "u_padding": 0.2,
+                                "u_aa": 0.05
                             }
                         }
                     }

@@ -352,7 +352,7 @@ impl EffectWrapped {
                     Rgba::WHITE,
                     color,
                     position,
-                    2,
+                    1,
                     0.0,
                 ))
             }
