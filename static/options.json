@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "units": [
                 {
@@ -26,6 +26,7 @@
         }
     },
     "fov": 14.0,
+    "initial_shop_fill": 10,
     "log": {
         "Action": true,
         "Effect": true,

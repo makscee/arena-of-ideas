@@ -16,17 +16,11 @@
                 "type": "List",
                 "triggers": [
                     {
-                        "type": "ModifyOutgoingDamage",
-                        "value": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Var",
-                                "var": "Charges"
-                            },
-                            "b": {
-                                "type": "Var",
-                                "var": "Damage"
-                            }
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     },
                     {

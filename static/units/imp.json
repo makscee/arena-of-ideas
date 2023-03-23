@@ -1,0 +1,25 @@
+{
+    "name": "Imp",
+    "description": "Has Empower (3)",
+    "health": 1,
+    "attack": 2,
+    "houses": [
+        "Demons"
+    ],
+    "active_statuses": {
+        "Empower": 3
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#b3006c",
+                "u_circle_radius": 0.5,
+                "u_border": 0.6,
+                "u_circle_fbm": 0.3,
+                "u_circle_fbm_speed": 5.0,
+                "u_aa": 0.1
+            }
+        }
+    }
+}

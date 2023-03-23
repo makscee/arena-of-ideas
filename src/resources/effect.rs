@@ -135,16 +135,9 @@ impl EffectWrapped {
                 on_hit: then,
             } => {
                 let mut value = match value {
-                    Some(v) => v.calculate(&context, world, resources)? as usize,
-                    None => {
-                        world
-                            .entry_ref(context.owner)
-                            .context("Failed to get Owner")?
-                            .get_component::<AttackComponent>()
-                            .context("Failed to get Attack component")?
-                            .value
-                    }
-                };
+                    Some(v) => v.calculate(&context, world, resources)?,
+                    None => context.vars.get_int(&VarName::AttackValue),
+                } as usize;
                 context.vars.insert(VarName::Damage, Var::Int(value as i32));
                 context = Event::ModifyOutgoingDamage { context }.calculate(world, resources);
                 let initial_damage = context.vars.get_int(&VarName::Damage).max(0) as usize;
@@ -425,12 +418,6 @@ impl EffectWrapped {
             Effect::SetFaction { faction } => {
                 let faction = faction.calculate(&context, world, resources)?;
                 let mut target = world.entry(context.target).unwrap();
-                debug!(
-                    "Set faction {:?} from {:?} to {:?}",
-                    context.target,
-                    target.get_component::<UnitComponent>().unwrap().faction,
-                    faction
-                );
                 target.get_component_mut::<UnitComponent>().unwrap().faction = faction;
             }
             Effect::SetSlot { slot } => {

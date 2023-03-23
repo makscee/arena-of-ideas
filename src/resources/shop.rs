@@ -38,7 +38,8 @@ impl Shop {
                 .get(cur_level)
                 .unwrap()
                 .len()
-                >= heroes_per_extension + (cur_level == 0) as usize * 3
+                >= heroes_per_extension
+                    + (cur_level == 0) as usize * resources.options.initial_shop_fill
             {
                 cur_level += 1;
                 resources.shop.level_extensions.push(default());
