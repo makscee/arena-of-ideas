@@ -15,6 +15,7 @@ pub struct Options {
 impl FileWatcherLoader for Options {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         resources.options = Self::load();
+        resources.transition_state = GameState::MainMenu;
     }
 }
 
