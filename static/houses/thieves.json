@@ -5,36 +5,27 @@
         "Swap": {
             "description": "Exchange faction\nwith target",
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
-                        "type": "ShowText",
-                        "text": "Swap"
+                "type": "SetVarFaction",
+                "var": "Store",
+                "value": {
+                    "type": "Target"
+                },
+                "after": {
+                    "type": "SetFaction",
+                    "faction": {
+                        "type": "Owner"
                     },
-                    {
-                        "type": "SetVarFaction",
-                        "var": "Store",
-                        "value": {
-                            "type": "Target"
+                    "after": {
+                        "type": "SetFaction",
+                        "faction": {
+                            "type": "Var",
+                            "var": "Store"
                         },
-                        "after": {
-                            "type": "SetFaction",
-                            "faction": {
-                                "type": "Owner"
-                            },
-                            "after": {
-                                "type": "SetFaction",
-                                "faction": {
-                                    "type": "Var",
-                                    "var": "Store"
-                                },
-                                "target": {
-                                    "type": "Owner"
-                                }
-                            }
+                        "target": {
+                            "type": "Owner"
                         }
                     }
-                ]
+                }
             }
         }
     }

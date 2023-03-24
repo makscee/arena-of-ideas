@@ -67,7 +67,19 @@ impl UnitSystem {
         let context = ContextSystem::get_context(entity, world);
         if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {
             if Self::turn_unit_into_corpse(entity, world, resources) {
-                Event::AfterDeath { context }.send(world, resources);
+                Event::AfterDeath {
+                    context: context.clone(),
+                }
+                .send(world, resources);
+                if let Some(killer) = resources.unit_offenders.get(&context.owner) {
+                    Event::AfterKill {
+                        context: Context {
+                            owner: *killer,
+                            ..context
+                        },
+                    }
+                    .send(world, resources);
+                }
                 resources.status_pool.clear_entity(&entity);
                 return true;
             }
@@ -89,6 +101,10 @@ impl UnitSystem {
         if unit.faction == Faction::Team {
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
+        resources.logger.log(
+            &format!("{:?} is now corpse", entity),
+            &LogContext::UnitCreation,
+        );
         let corpse = PackedUnit::pack(entity, world, resources);
         resources
             .unit_corpses

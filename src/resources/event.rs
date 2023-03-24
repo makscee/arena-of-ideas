@@ -42,6 +42,9 @@ pub enum Event {
     AfterDamageDealt {
         context: Context,
     },
+    AfterKill {
+        context: Context,
+    },
     AfterDeath {
         context: Context,
     },
@@ -113,6 +116,7 @@ impl Event {
             Event::AfterOutgoingDamage { context }
             | Event::BeforeOutgoingDamage { context }
             | Event::AfterDamageDealt { context }
+            | Event::AfterKill { context }
             | Event::AfterDeath { context } => {
                 StatusPool::notify_entity(
                     self,

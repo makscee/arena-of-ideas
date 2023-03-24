@@ -81,6 +81,7 @@ pub struct Resources {
     pub house_pool: HousePool,
     pub hero_pool: HeroPool,
     pub team_pool: TeamPool,
+    pub unit_offenders: HashMap<legion::Entity, legion::Entity>, // key last taken dmg from value
     pub unit_corpses: HashMap<legion::Entity, (PackedUnit, Faction)>,
     pub definitions: Definitions,
 
@@ -124,6 +125,7 @@ impl Resources {
             current_state: GameState::MainMenu,
             options,
             team_pool: default(),
+            unit_offenders: default(),
         }
     }
 
@@ -136,12 +138,6 @@ impl Resources {
         HeroPool::loader(self, &static_path().join("units/_list.json"), watcher);
         Floors::loader(self, &static_path().join("floors.json"), watcher);
 
-        // self.load_hero_pool(fws);
-        // fws.load_and_watch_file(
-        //     self,
-        //     &static_path().join("floors.json"),
-        //     Box::new(Self::load_rounds),
-        // );
         self.team_pool = TeamPool::new(hashmap! {
             Faction::Team => Team::empty(self.options.player_team_name.clone())
         });
@@ -159,174 +155,4 @@ impl Resources {
         self.fonts = Fonts::new(geng);
         ImageTextures::loader(self, &static_path().join("images/_list.json"), watcher);
     }
-
-    // pub async fn load_list(geng: &Geng, path: PathBuf) -> Vec<PathBuf> {
-    //     let list = <String as geng::LoadAsset>::load(&geng, &static_path().join(path))
-    //         .await
-    //         .expect("Failed to load list");
-    //     let list: Vec<String> = serde_json::from_str(&list).expect("Failed to parse shaders list");
-    //     let list = list
-    //         .iter()
-    //         .map(|path| PathBuf::try_from(path).unwrap())
-    //         .collect();
-    //     list
-    // }
-
-    // fn load_shader_programs(&mut self, fws: &mut FileWatcherSystem) {
-    //     // load & watch shader library
-    //     let list = futures::executor::block_on(Self::load_list(
-    //         &self.geng,
-    //         PathBuf::try_from("shaders/library/_list.json").unwrap(),
-    //     ));
-    //     for file in list {
-    //         fws.load_and_watch_file(
-    //             self,
-    //             &static_path().join(file),
-    //             Box::new(Self::load_shader_library_program),
-    //         );
-    //     }
-
-    //     // load & watch regular shaders
-    //     let list = futures::executor::block_on(Self::load_list(
-    //         &self.geng,
-    //         PathBuf::try_from("shaders/_list.json").unwrap(),
-    //     ));
-    //     for file in list {
-    //         fws.load_and_watch_file(
-    //             self,
-    //             &static_path().join(file),
-    //             Box::new(Self::load_shader_program),
-    //         );
-    //     }
-    // }
-
-    // fn load_shader_program(resources: &mut Resources, file: &PathBuf) {
-    //     let program = futures::executor::block_on(<ugli::Program as geng::LoadAsset>::load(
-    //         &resources.geng,
-    //         &file,
-    //     ));
-    //     match program {
-    //         Ok(program) => {
-    //             debug!("Load shader program {:?}", file);
-    //             resources
-    //                 .shader_programs
-    //                 .insert_program(file.clone(), program)
-    //         }
-    //         Err(error) => {
-    //             error!("Failed to load shader program {:?} {}", file, error);
-    //         }
-    //     }
-    // }
-
-    // fn load_shader_library_program(resources: &mut Resources, file: &PathBuf) {
-    //     let program =
-    //         &futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, &file))
-    //             .expect(&format!("Failed to load shader {:?}", file));
-    //     debug!("Load shader library program {:?}", file);
-    //     resources
-    //         .geng
-    //         .shader_lib()
-    //         .add(file.file_name().unwrap().to_str().unwrap(), program);
-    // }
-
-    // fn load_image_textures(&mut self, fws: &mut FileWatcherSystem) {
-    //     let list = futures::executor::block_on(Self::load_list(
-    //         &self.geng,
-    //         PathBuf::try_from("images/_list.json").unwrap(),
-    //     ));
-    //     for file in list {
-    //         fws.load_and_watch_file(
-    //             self,
-    //             &static_path().join(file),
-    //             Box::new(Self::load_image_texture),
-    //         );
-    //     }
-    // }
-
-    // fn load_image_texture(resources: &mut Resources, file: &PathBuf) {
-    //     let texture = futures::executor::block_on(<ugli::Texture as geng::LoadAsset>::load(
-    //         &resources.geng,
-    //         &file,
-    //     ));
-    //     match texture {
-    //         Ok(texture) => {
-    //             debug!("Load texture {:?}", file);
-    //             resources
-    //                 .image_textures
-    //                 .insert_texture(file.clone(), texture)
-    //         }
-    //         Err(error) => {
-    //             error!("Failed to load texture {:?} {}", file, error);
-    //         }
-    //     }
-    // }
-
-    // fn load_hero_pool(&mut self, fws: &mut FileWatcherSystem) {
-    //     let list = futures::executor::block_on(Self::load_list(
-    //         &self.geng,
-    //         PathBuf::try_from("units/_list.json").unwrap(),
-    //     ));
-
-    //     for file in list {
-    //         fws.load_and_watch_file(self, &static_path().join(file), Box::new(Self::load_hero));
-    //     }
-    // }
-
-    // fn load_hero(resources: &mut Resources, file: &PathBuf) {
-    //     let json =
-    //         futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
-    //             .expect("Failed to load unit");
-    //     let unit =
-    //         serde_json::from_str(&json).expect(&format!("Failed to parse UnitTemplate {:?}", file));
-    //     resources.hero_pool.insert(file.clone(), unit);
-    // }
-
-    // fn load_options(resources: &mut Resources, file: &PathBuf) {
-    //     resources.options =
-    //         futures::executor::block_on(<Options as geng::LoadAsset>::load(&resources.geng, &file))
-    //             .unwrap();
-    //     resources.logger.load(&resources.options);
-    // }
-
-    // fn load_houses(&mut self, fws: &mut FileWatcherSystem) {
-    //     let list = futures::executor::block_on(Self::load_list(
-    //         &self.geng,
-    //         PathBuf::try_from("houses/_list.json").unwrap(),
-    //     ));
-    //     for file in list {
-    //         fws.load_and_watch_file(self, &static_path().join(file), Box::new(Self::load_house));
-    //     }
-    // }
-
-    // fn load_house(resources: &mut Resources, file: &PathBuf) {
-    //     let json =
-    //         futures::executor::block_on(<String as geng::LoadAsset>::load(&resources.geng, file))
-    //             .expect(&format!("Failed to load House {:?}", file));
-    //     let house: House =
-    //         serde_json::from_str(&json).expect(&format!("Failed to parse House: {:?}", file));
-    //     house.statuses.iter().for_each(|(name, status)| {
-    //         let mut status = status.clone();
-    //         if status.color.is_none() {
-    //             status.color = Some(house.color);
-    //         }
-    //         resources.status_pool.define_status(name.clone(), status)
-    //     });
-    //     house.abilities.iter().for_each(|(name, ability)| {
-    //         resources
-    //             .definitions
-    //             .insert(name.clone(), house.color, ability.description.clone())
-    //     });
-    //     resources.house_pool.insert_house(house.name, house);
-    // }
-
-    // fn load_rounds(resources: &mut Resources, file: &PathBuf) {
-    //     let json = futures::executor::block_on(<String as geng::LoadAsset>::load(
-    //         &resources.geng.unwrap(),
-    //         file,
-    //     ))
-    //     .expect(&format!("Failed to load Rounds {:?}", file));
-    //     let rounds: Floors =
-    //         serde_json::from_str(&json).expect(&format!("Failed to parse Rounds {:?}", file));
-    //     resources.floors = rounds;
-    // }
 }

@@ -38,7 +38,10 @@ impl ActionSystem {
             ContextSystem::refresh_all(world, resources);
             let action = resources.action_queue.pop_front().unwrap();
             resources.logger.log(
-                &format!("Procession action: {:?}", action.effect),
+                &format!(
+                    "Process t:{:?} o:{:?}: {:?}",
+                    action.context.target, action.context.owner, action.effect
+                ),
                 &LogContext::Action,
             );
             resources
@@ -52,8 +55,8 @@ impl ActionSystem {
                     return (true, Some(node));
                 }
                 Err(error) => {
-                    error!("Effect process error: {}", error);
                     dbg!(action);
+                    panic!("Effect process error: {}", error);
                 }
             }
         }

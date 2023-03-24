@@ -14,6 +14,7 @@ pub enum Trigger {
     BeforeOutgoingDamage { effect: EffectWrapped },
     AfterOutgoingDamage { effect: EffectWrapped },
     AfterDamageDealt { effect: EffectWrapped },
+    AfterKill { effect: EffectWrapped },
     BeforeDeath { effect: EffectWrapped },
     AfterDeath { effect: EffectWrapped },
     AfterBirth { effect: EffectWrapped },
@@ -64,6 +65,10 @@ impl Trigger {
             },
             Trigger::AfterDamageDealt { .. } => match event {
                 Event::AfterDamageDealt { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::AfterKill { .. } => match event {
+                Event::AfterKill { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::List { triggers } => {
@@ -141,6 +146,7 @@ impl Trigger {
             | Trigger::BeforeOutgoingDamage { effect }
             | Trigger::AfterOutgoingDamage { effect }
             | Trigger::AfterDamageDealt { effect }
+            | Trigger::AfterKill { effect }
             | Trigger::BeforeDeath { effect }
             | Trigger::AfterDeath { effect }
             | Trigger::AfterBirth { effect }

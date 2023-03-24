@@ -92,6 +92,10 @@ impl PackedUnit {
             self.trigger.clone(),
             UnitComponent { slot, faction },
         ));
+        resources.logger.log(
+            &format!("Unpacking unit {} new id: {:?}", self.name, entity),
+            &LogContext::UnitCreation,
+        );
         let world_entity = WorldSystem::get_context(world).owner;
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));

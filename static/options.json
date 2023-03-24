@@ -1,25 +1,42 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
                     "attack": 1,
-                    "health": 1000
+                    "health": 3
+                },
+                {
+                    "attack": 1,
+                    "health": 3
+                },
+                {
+                    "attack": 2,
+                    "health": 3
+                },
+                {
+                    "attack": 2,
+                    "health": 3
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "attack": 1,
-                    "health": 5,
+                    "attack": 4,
+                    "health": 100,
                     "houses": [
-                        "Demons"
+                        "Necromancers"
                     ],
-                    "active_statuses": {
-                        "Empower": 500
+                    "trigger": {
+                        "type": "AfterKill",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Necromancers",
+                            "name": "Reanimate"
+                        }
                     }
                 }
             ]
@@ -30,11 +47,11 @@
     "log": {
         "Action": true,
         "Effect": true,
-        "Contexts": true,
+        "Contexts": false,
         "Condition": false,
         "Trigger": true,
         "Event": true,
-        "UnitCreation": false,
+        "UnitCreation": true,
         "Measurement": false
     },
     "colors": {

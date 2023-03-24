@@ -384,5 +384,16 @@
 			"}"
 		],
 		"description": "Stat Value"
+	},
+	"Use Ability": {
+		"prefix": "use_ability",
+		"body": [
+			"{",
+			"  \"type\": \"UseAbility\",",
+			"  \"house\": \"${1:Snakes}\",",
+			"  \"name\": \"${2:Poison}\"",
+			"}"
+		],
+		"description": "Use Ability"
 	}
 }

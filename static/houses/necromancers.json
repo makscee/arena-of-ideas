@@ -1,0 +1,18 @@
+{
+    "name": "Necromancers",
+    "color": "#4B0082",
+    "abilities": {
+        "Reanimate": {
+            "description": "Revive a dead unit\nwith 1 HP as ally",
+            "effect": {
+                "type": "Revive",
+                "after": {
+                    "type": "SetFaction",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            }
+        }
+    }
+}

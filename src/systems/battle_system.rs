@@ -98,11 +98,13 @@ impl BattleSystem {
         SlotSystem::fill_gaps(world, resources, factions);
         ContextSystem::refresh_factions(factions, world, resources);
         let node = &mut CassetteNode::default();
-        Self::move_to_slots_animated(world, node);
         Self::push_node(node, nodes, world, resources);
         ActionSystem::run_ticks(world, resources)
             .into_iter()
             .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
+        SlotSystem::fill_gaps(world, resources, factions);
+        SlotSystem::move_to_slots_animated(world, node);
+        Self::push_node(node, nodes, world, resources);
         if let Some((left, right)) = Self::find_hitters(world) {
             Self::move_strikers(&StrikePhase::Charge, left, right, world, node);
             Self::push_node(node, nodes, world, resources);
@@ -251,21 +253,6 @@ impl BattleSystem {
                 );
             }
         }
-    }
-
-    fn move_to_slots_animated(world: &mut legion::World, node: &mut CassetteNode) {
-        UnitSystem::collect_factions(world, &hashset! { Faction::Light, Faction::Dark })
-            .into_iter()
-            .for_each(|(entity, unit)| {
-                VfxSystem::translate_animated(
-                    entity,
-                    SlotSystem::get_unit_position(&unit),
-                    node,
-                    world,
-                    EasingType::CubicIn,
-                    0.2,
-                )
-            });
     }
 
     fn add_strike_vfx(world: &legion::World, resources: &mut Resources, node: &mut CassetteNode) {
