@@ -5,7 +5,7 @@
         "light": {
             "units": [
                 {
-                    "attack": 2,
+                    "attack": 50,
                     "health": 100
                 },
                 {
@@ -15,124 +15,123 @@
             ]
         },
         "dark": {
-            "name": "Party",
+            "name": "Golems",
             "units": [
                 {
-                    "name": "Tank",
-                    "attack": 0,
+                    "name": "Golem",
+                    "attack": 1,
+                    "health": 5,
+                    "houses": [
+                        "Warriors"
+                    ],
+                    "active_statuses": {
+                        "Defense": 99
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#737373",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 0.3,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Golem",
+                    "attack": 1,
+                    "health": 10,
+                    "houses": [
+                        "Warriors"
+                    ],
+                    "active_statuses": {
+                        "Defense": 99
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#737373",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 0.3,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Golem",
+                    "attack": 1,
+                    "health": 10,
+                    "houses": [
+                        "Warriors"
+                    ],
+                    "active_statuses": {
+                        "Defense": 99
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#737373",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 0.3,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Golem",
+                    "attack": 1,
+                    "health": 15,
+                    "houses": [
+                        "Warriors"
+                    ],
+                    "active_statuses": {
+                        "Defense": 99
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#737373",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 0.3,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Golem",
+                    "attack": 1,
                     "health": 20,
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#7b4e00",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Ranger",
-                    "health": 1,
-                    "attack": 1,
-                    "description": "Turn end:\nShoot random enemy 3 times",
                     "houses": [
-                        "Archers"
+                        "Warriors"
                     ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Archers",
-                                    "name": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 3
-                            }
-                        }
+                    "active_statuses": {
+                        "Defense": 99
                     },
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#00690e",
+                                "u_color": "#737373",
                                 "u_radius": 0.8,
                                 "u_border": 0.8,
                                 "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Priest",
-                    "health": 1,
-                    "attack": 1,
-                    "description": "Turn end:\nMend injured ally twice",
-                    "houses": [
-                        "Clerics"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Owner"
-                                },
-                                "condition": {
-                                    "type": "MoreInt",
-                                    "a": {
-                                        "type": "Var",
-                                        "var": "HpDamage"
-                                    },
-                                    "b": {
-                                        "type": "Const",
-                                        "value": 0
-                                    }
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Clerics",
-                                    "name": "Mend"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
+                                "u_circle_fbm_speed": 0.3,
                                 "u_padding": 1.0
                             }
                         }
@@ -349,11 +348,13 @@
             "parameters": {
                 "uniforms": {
                     "u_color": "#ffffff",
+                    "u_text_border": 0.05,
+                    "u_outline_fade": 1.0,
+                    "u_text_inside": 0.48,
                     "u_scale": 0.35,
-                    "u_align": -1.0,
                     "u_offset": [
-                        -4.6,
-                        0.2
+                        -3.5,
+                        0.0
                     ],
                     "u_index_offset": [
                         0.0,
@@ -390,6 +391,9 @@
             "parameters": {
                 "uniforms": {
                     "u_color": "#ffffff",
+                    "u_text_border": 0.05,
+                    "u_outline_fade": 1.3,
+                    "u_text_inside": 0.48,
                     "u_scale": 0.5,
                     "u_align": -1.0,
                     "u_offset": [
@@ -408,14 +412,15 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_color": "#000000",
-                    "u_outline_color": "#ffffff",
-                    "u_text_border": 0.25,
+                    "u_color": "#ffffff",
+                    "u_outline_color": "#000000",
+                    "u_text_border": 0.05,
+                    "u_outline_fade": 1.0,
+                    "u_text_inside": 0.48,
                     "u_scale": 0.35,
-                    "u_align": -1.0,
                     "u_offset": [
-                        2.3,
-                        -0.55
+                        3.8,
+                        -0.65
                     ],
                     "u_index_offset": [
                         0.0,
