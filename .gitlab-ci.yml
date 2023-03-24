@@ -10,12 +10,6 @@ build:
     - cp -R static target/aarch64-apple-darwin/release/
     # Create archive for macOS
     - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz --exclude=deps --exclude=examples --exclude=incremental -C target/aarch64-apple-darwin/release .
-    # macOS for Apple Silicon (M1)
-    - cargo build --release --target=x86_64-pc-windows-gnu
-    # Copy static files to executable folder
-    - cp -R static target/x86_64-pc-windows-gnu/release/
-    # Create archive for Windows
-    - tar -zcvf .artifacts/ArenaOfIdeas-windows.tar.gz --exclude=deps --exclude=examples --exclude=incremental -C target/x86_64-pc-windows-gnu/release .
   artifacts:
     paths:
       - .artifacts
