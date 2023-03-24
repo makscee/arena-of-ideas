@@ -7,7 +7,7 @@
         "Dragons"
     ],
     "trigger": {
-        "type": "AfterBattle",
+        "type": "BattleOver",
         "effect": {
             "type": "UseAbility",
             "house": "Dragons",

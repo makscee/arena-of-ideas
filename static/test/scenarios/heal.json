@@ -1,0 +1,57 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 50
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 3
+            },
+            {
+                "health": 1,
+                "attack": 1,
+                "trigger": {
+                    "type": "TurnStart",
+                    "effect": {
+                        "type": "FindTarget",
+                        "faction": {
+                            "type": "Owner"
+                        },
+                        "condition": {
+                            "type": "MoreInt",
+                            "a": {
+                                "type": "Var",
+                                "var": "HpDamage"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 0
+                            }
+                        },
+                        "effect": {
+                            "type": "Heal",
+                            "value": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

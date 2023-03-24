@@ -20,11 +20,13 @@ impl SimulationSystem {
         let mut ticks = 0;
         Event::BattleStart.send(world, resources);
         while let Some((left, right)) = BattleSystem::find_hitters(world) {
+            BattleSystem::send_event_and_tun_ticks(&Event::TurnStart, &mut None, world, resources);
             ticks += 1;
             BattleSystem::hit(left, right, &mut None, world, resources);
             BattleSystem::death_check(world, resources);
             ActionSystem::run_ticks(world, resources);
             SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Light, Faction::Dark});
+            BattleSystem::send_event_and_tun_ticks(&Event::TurnOver, &mut None, world, resources);
             if ticks > 1000 {
                 panic!("Exceeded ticks limit")
             }

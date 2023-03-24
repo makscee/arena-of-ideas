@@ -18,8 +18,10 @@ pub enum Trigger {
     BeforeDeath { effect: EffectWrapped },
     AfterDeath { effect: EffectWrapped },
     AfterBirth { effect: EffectWrapped },
-    BeforeBattle { effect: EffectWrapped },
-    AfterBattle { effect: EffectWrapped },
+    BattleStart { effect: EffectWrapped },
+    BattleOver { effect: EffectWrapped },
+    TurnStart { effect: EffectWrapped },
+    TurnOver { effect: EffectWrapped },
     Buy { effect: EffectWrapped },
     Sell { effect: EffectWrapped },
     AfterStrike { effect: EffectWrapped },
@@ -96,12 +98,20 @@ impl Trigger {
                 Event::AfterBirth { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::BeforeBattle { .. } => match event {
+            Trigger::BattleStart { .. } => match event {
                 Event::BattleStart { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::AfterBattle { .. } => match event {
+            Trigger::BattleOver { .. } => match event {
                 Event::BattleOver { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::TurnStart { .. } => match event {
+                Event::TurnStart { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::TurnOver { .. } => match event {
+                Event::TurnOver { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::AfterStrike { .. } => match event {
@@ -150,8 +160,10 @@ impl Trigger {
             | Trigger::BeforeDeath { effect }
             | Trigger::AfterDeath { effect }
             | Trigger::AfterBirth { effect }
-            | Trigger::BeforeBattle { effect }
-            | Trigger::AfterBattle { effect }
+            | Trigger::BattleStart { effect }
+            | Trigger::BattleOver { effect }
+            | Trigger::TurnStart { effect }
+            | Trigger::TurnOver { effect }
             | Trigger::AfterStrike { effect }
             | Trigger::Buy { effect }
             | Trigger::Sell { effect }

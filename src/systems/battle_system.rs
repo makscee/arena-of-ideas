@@ -99,7 +99,6 @@ impl BattleSystem {
         SlotSystem::fill_gaps(world, resources, factions);
         ContextSystem::refresh_factions(factions, world, resources);
         let node = &mut CassetteNode::default();
-        Self::push_node(node, nodes, world, resources);
         ActionSystem::run_ticks(world, resources)
             .into_iter()
             .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
@@ -107,6 +106,7 @@ impl BattleSystem {
         SlotSystem::move_to_slots_animated(world, node);
         Self::push_node(node, nodes, world, resources);
         if let Some((left, right)) = Self::find_hitters(world) {
+            Self::send_event_and_tun_ticks(&Event::TurnStart, nodes, world, resources);
             Self::move_strikers(&StrikePhase::Charge, left, right, world, node);
             Self::push_node(node, nodes, world, resources);
             Self::move_strikers(&StrikePhase::Release, left, right, world, node);
@@ -117,6 +117,7 @@ impl BattleSystem {
             Self::death_check(world, resources);
             Self::move_strikers(&StrikePhase::Retract, left, right, world, node);
             Self::push_node(node, nodes, world, resources);
+            Self::send_event_and_tun_ticks(&Event::TurnOver, nodes, world, resources);
             return true;
         }
         false
@@ -172,6 +173,18 @@ impl BattleSystem {
             })
     }
 
+    pub fn send_event_and_tun_ticks(
+        event: &Event,
+        nodes: &mut Option<Vec<CassetteNode>>,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        event.send(world, resources);
+        ActionSystem::run_ticks(world, resources)
+            .into_iter()
+            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
+    }
+
     pub fn hit(
         left: legion::Entity,
         right: legion::Entity,
@@ -195,14 +208,15 @@ impl BattleSystem {
         ActionSystem::run_ticks(world, resources)
             .into_iter()
             .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
-        Event::AfterStrike {
-            owner: left,
-            target: right,
-        }
-        .send(world, resources);
-        ActionSystem::run_ticks(world, resources)
-            .into_iter()
-            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
+        Self::send_event_and_tun_ticks(
+            &Event::AfterStrike {
+                owner: left,
+                target: right,
+            },
+            nodes,
+            world,
+            resources,
+        );
         let context_right = Context {
             owner: right,
             target: left,
@@ -219,14 +233,15 @@ impl BattleSystem {
         ActionSystem::run_ticks(world, resources)
             .into_iter()
             .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
-        Event::AfterStrike {
-            owner: right,
-            target: left,
-        }
-        .send(world, resources);
-        ActionSystem::run_ticks(world, resources)
-            .into_iter()
-            .for_each(|mut node| Self::push_node(&mut node, nodes, world, resources));
+        Self::send_event_and_tun_ticks(
+            &Event::AfterStrike {
+                owner: right,
+                target: left,
+            },
+            nodes,
+            world,
+            resources,
+        );
     }
 
     pub fn death_check(world: &mut legion::World, resources: &mut Resources) {

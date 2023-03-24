@@ -9,6 +9,9 @@ pub enum Effect {
         value: Option<ExpressionInt>,
         on_hit: Option<Box<EffectWrapped>>,
     },
+    Heal {
+        value: Box<ExpressionInt>,
+    },
     Kill,
     Repeat {
         count: usize,
@@ -86,6 +89,12 @@ pub enum Effect {
         slot: Option<ExpressionInt>,
     },
     RemoveTrigger,
+    /// Do effect if a unit matches condition
+    FindTarget {
+        faction: ExpressionFaction,
+        condition: Condition,
+        effect: Box<EffectWrapped>,
+    },
 }
 
 impl Effect {
@@ -209,6 +218,26 @@ impl EffectWrapped {
                     context: context.clone(),
                 }
                 .send(world, resources);
+            }
+            Effect::Heal { value } => {
+                let value = value.calculate(&context, world, resources)? as usize;
+                let text = format!("+{}", value);
+                let mut target = world
+                    .entry(context.target)
+                    .context("Failed to get Target")?;
+                if let Some(hp) = target.get_component_mut::<HealthComponent>().ok() {
+                    let value = value.min(hp.damage);
+                    hp.damage -= value;
+                    node.add_effect(VfxSystem::vfx_show_text(
+                        resources,
+                        &text,
+                        resources.options.colors.text_add_color,
+                        resources.options.colors.damage_text,
+                        target.get_component::<AreaComponent>().unwrap().position,
+                        0,
+                        0.0,
+                    ));
+                }
             }
             Effect::Repeat { count, effect } => {
                 for _ in 0..*count {
@@ -434,11 +463,14 @@ impl EffectWrapped {
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get target")?;
-                println!(
-                    "{:?} Faction {:?} -> {:?}",
-                    context.target,
-                    target.get_component::<UnitComponent>().unwrap().faction,
-                    faction
+                resources.logger.log(
+                    &format!(
+                        "{:?} Faction {:?} -> {:?}",
+                        context.target,
+                        target.get_component::<UnitComponent>().unwrap().faction,
+                        faction
+                    ),
+                    &LogContext::Effect,
                 );
                 target.get_component_mut::<UnitComponent>()?.faction = faction;
             }
@@ -448,6 +480,31 @@ impl EffectWrapped {
                     .entry(context.target)
                     .context("Failed to get target")?;
                 target.get_component_mut::<UnitComponent>()?.slot = slot;
+            }
+            Effect::FindTarget {
+                faction,
+                condition,
+                effect,
+            } => {
+                let faction = faction.calculate(&context, world, resources)?;
+                let target = UnitSystem::collect_faction(world, faction)
+                    .into_iter()
+                    .find(|(entity, _)| {
+                        if let Some(context) = ContextSystem::try_get_context(*entity, world).ok() {
+                            match condition.calculate(&context, world, resources) {
+                                Ok(value) => value,
+                                Err(_) => false,
+                            }
+                        } else {
+                            false
+                        }
+                    });
+                if let Some((target, _)) = target {
+                    context.target = target;
+                    resources
+                        .action_queue
+                        .push_front(Action::new(context.clone(), effect.deref().clone()));
+                }
             }
         }
         if let Some(then) = self.after.as_deref() {

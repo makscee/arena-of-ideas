@@ -13,7 +13,7 @@
                 "attack": 1,
                 "health": 1,
                 "trigger": {
-                    "type": "BeforeBattle",
+                    "type": "BattleStart",
                     "effect": {
                         "type": "AddStatus",
                         "name": "Shield"

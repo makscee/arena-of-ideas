@@ -7,7 +7,7 @@
         "Thieves"
     ],
     "trigger": {
-        "type": "BeforeBattle",
+        "type": "BattleStart",
         "effect": {
             "type": "UseAbility",
             "house": "Thieves",
