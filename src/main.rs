@@ -38,7 +38,7 @@ fn static_path() -> PathBuf {
 }
 fn main() {
     let timer = Instant::now();
-    logger::init().unwrap();
+    logger::init();
 
     let options = Options::load();
     let mut world = legion::World::default();
