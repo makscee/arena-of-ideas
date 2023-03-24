@@ -208,5 +208,19 @@
 			"}"
 		],
 		"description": "Is Corpse"
+	},
+	"Repeat": {
+		"prefix": "repeat",
+		"body": [
+			"{",
+			"    \"type\": \"Repeat\",",
+			"    \"effect\": $TM_SELECTED_TEXT,",
+			"    \"count\": {",
+			"        \"type\": \"Const\",",
+			"        \"value\": ${1:3}",
+			"    }",
+			"}"
+		],
+		"description": "Repeat"
 	}
 }

@@ -14,6 +14,7 @@ tween = "2.0.0"
 strfmt = "0.2.2"
 enum-utils = "0.1.2"
 legion = "0.4.0"
+enum-iterator = "1.4.0"
 
 [patch.crates-io]
 # Temp workaround until update in geng, as this issue is already fixed upstream

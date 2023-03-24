@@ -1,6 +1,5 @@
 #include <common.glsl>
 
-uniform float u_time;
 #ifdef VERTEX_SHADER
 out vec2 uv;
 out float t;
@@ -8,17 +7,18 @@ attribute vec2 a_pos;
 
 uniform float u_end_cut = 0;
 uniform float u_thickness = 0.3;
-uniform vec2 u_target_position;
+uniform vec2 u_from;
+uniform vec2 u_to;
 
 void main() {
     vec2 pos = vec2(a_pos.x * .5 + 0.5, a_pos.y);
     uv = pos;
-    t = 1 - u_time;
+    t = 1 - u_t;
     float height = pos.y * u_thickness;
     float bezier_t = pos.x;
 
     bezier_t = u_end_cut * .5 + bezier_t * (1. - u_end_cut);
-    vec4 bezier = bezierParentPartner(bezier_t, u_position, u_target_position, vec2(0, 1), 0.5);
+    vec4 bezier = bezierParentPartner(bezier_t, u_from, u_to, vec2(0, 1), 0.5);
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
     b_pos += b_normal * height * t * t * (1.0 - bezier_t * .7);

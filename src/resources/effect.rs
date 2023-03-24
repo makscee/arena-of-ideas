@@ -14,7 +14,7 @@ pub enum Effect {
     },
     Kill,
     Repeat {
-        count: usize,
+        count: ExpressionInt,
         effect: Box<EffectWrapped>,
     },
     List {
@@ -79,6 +79,9 @@ pub enum Effect {
     },
     ShowText {
         text: String,
+        color: Option<Rgba<f32>>,
+    },
+    ShowCurve {
         color: Option<Rgba<f32>>,
     },
     Aoe {
@@ -240,7 +243,7 @@ impl EffectWrapped {
                 }
             }
             Effect::Repeat { count, effect } => {
-                for _ in 0..*count {
+                for _ in 0..count.calculate(&context, world, resources)? {
                     resources
                         .action_queue
                         .push_front(Action::new(context.clone(), effect.deref().clone()));
@@ -315,18 +318,20 @@ impl EffectWrapped {
                     VarName::Color,
                     Var::Color(resources.house_pool.get_color(house)),
                 );
-                resources.action_queue.push_front(Action::new(
-                    context.clone(),
-                    resources.house_pool.get_ability(house, name).effect.clone(),
-                ));
-                resources.action_queue.push_front(Action::new(
-                    context.clone(),
-                    Effect::ShowText {
+                let effect = EffectWrapped {
+                    effect: Effect::ShowText {
                         text: format!("Use {}", name),
                         color: None,
-                    }
-                    .wrap(),
-                ));
+                    },
+                    target: None,
+                    owner: None,
+                    after: Some(Box::new(
+                        resources.house_pool.get_ability(house, name).effect.clone(),
+                    )),
+                };
+                resources
+                    .action_queue
+                    .push_front(Action::new(context.clone(), effect));
             }
             Effect::SetHealth { value } => {
                 let value = value.calculate(&context, world, resources)?;
@@ -400,6 +405,21 @@ impl EffectWrapped {
                     1,
                     0.0,
                 ))
+            }
+            Effect::ShowCurve { color } => {
+                let color = color
+                    .or_else(|| {
+                        context
+                            .vars
+                            .try_get_color(&VarName::Color)
+                            .or_else(|| Some(context.vars.get_color(&VarName::HouseColor1)))
+                    })
+                    .unwrap();
+                let from = ContextSystem::try_get_position(context.owner, world)
+                    .context("Failed to get owner")?;
+                let to = ContextSystem::try_get_position(context.target, world)
+                    .context("Failed to get target")?;
+                node.add_effect(VfxSystem::vfx_show_curve(resources, from, to, color));
             }
             Effect::Kill => {
                 let mut entry = world.entry_mut(context.target).unwrap();
@@ -507,11 +527,9 @@ impl EffectWrapped {
                 }
             }
         }
-        if let Some(then) = self.after.as_deref() {
-            resources
-                .action_queue
-                .push_front(Action::new(context, then.deref().clone()));
-        }
-        Ok(node)
+        Ok(match self.after.as_deref() {
+            Some(after) => Self::process(after, context, world, resources)?.merge(&node),
+            None => node,
+        })
     }
 }

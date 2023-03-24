@@ -19,9 +19,9 @@ pub enum Trigger {
     AfterDeath { effect: EffectWrapped },
     AfterBirth { effect: EffectWrapped },
     BattleStart { effect: EffectWrapped },
-    BattleOver { effect: EffectWrapped },
+    BattleEnd { effect: EffectWrapped },
     TurnStart { effect: EffectWrapped },
-    TurnOver { effect: EffectWrapped },
+    TurnEnd { effect: EffectWrapped },
     Buy { effect: EffectWrapped },
     Sell { effect: EffectWrapped },
     AfterStrike { effect: EffectWrapped },
@@ -102,16 +102,16 @@ impl Trigger {
                 Event::BattleStart { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::BattleOver { .. } => match event {
-                Event::BattleOver { .. } => self.fire(action_queue, context, logger),
+            Trigger::BattleEnd { .. } => match event {
+                Event::BattleEnd { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::TurnStart { .. } => match event {
                 Event::TurnStart { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::TurnOver { .. } => match event {
-                Event::TurnOver { .. } => self.fire(action_queue, context, logger),
+            Trigger::TurnEnd { .. } => match event {
+                Event::TurnEnd { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
             Trigger::AfterStrike { .. } => match event {
@@ -161,9 +161,9 @@ impl Trigger {
             | Trigger::AfterDeath { effect }
             | Trigger::AfterBirth { effect }
             | Trigger::BattleStart { effect }
-            | Trigger::BattleOver { effect }
+            | Trigger::BattleEnd { effect }
             | Trigger::TurnStart { effect }
-            | Trigger::TurnOver { effect }
+            | Trigger::TurnEnd { effect }
             | Trigger::AfterStrike { effect }
             | Trigger::Buy { effect }
             | Trigger::Sell { effect }

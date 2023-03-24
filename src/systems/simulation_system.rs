@@ -26,7 +26,7 @@ impl SimulationSystem {
             BattleSystem::death_check(world, resources);
             ActionSystem::run_ticks(world, resources);
             SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Light, Faction::Dark});
-            BattleSystem::send_event_and_tun_ticks(&Event::TurnOver, &mut None, world, resources);
+            BattleSystem::send_event_and_tun_ticks(&Event::TurnEnd, &mut None, world, resources);
             if ticks > 1000 {
                 panic!("Exceeded ticks limit")
             }

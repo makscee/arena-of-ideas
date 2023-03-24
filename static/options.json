@@ -15,38 +15,125 @@
             ]
         },
         "dark": {
+            "name": "Party",
             "units": [
                 {
-                    "attack": 1,
-                    "health": 10
+                    "name": "Tank",
+                    "attack": 0,
+                    "health": 20,
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#7b4e00",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 1.0,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
                 },
                 {
+                    "name": "Ranger",
                     "health": 1,
                     "attack": 1,
+                    "description": "Turn end:\nShoot random enemy 3 times",
+                    "houses": [
+                        "Archers"
+                    ],
                     "trigger": {
-                        "type": "TurnStart",
+                        "type": "TurnEnd",
                         "effect": {
-                            "type": "FindTarget",
-                            "faction": {
-                                "type": "Owner"
-                            },
-                            "condition": {
-                                "type": "MoreInt",
-                                "a": {
-                                    "type": "Var",
-                                    "var": "HpDamage"
-                                },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 0
-                                }
-                            },
+                            "type": "Repeat",
                             "effect": {
-                                "type": "Heal",
-                                "value": {
-                                    "type": "Const",
-                                    "value": 1
+                                "type": "FindTarget",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                },
+                                "condition": {
+                                    "type": "Always"
+                                },
+                                "effect": {
+                                    "type": "UseAbility",
+                                    "house": "Archers",
+                                    "name": "Shoot"
                                 }
+                            },
+                            "count": {
+                                "type": "Const",
+                                "value": 3
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#00690e",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 1.0,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Priest",
+                    "health": 1,
+                    "attack": 1,
+                    "description": "Turn end:\nMend injured ally twice",
+                    "houses": [
+                        "Clerics"
+                    ],
+                    "trigger": {
+                        "type": "TurnEnd",
+                        "effect": {
+                            "type": "Repeat",
+                            "effect": {
+                                "type": "FindTarget",
+                                "faction": {
+                                    "type": "Owner"
+                                },
+                                "condition": {
+                                    "type": "MoreInt",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "HpDamage"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 0
+                                    }
+                                },
+                                "effect": {
+                                    "type": "UseAbility",
+                                    "house": "Clerics",
+                                    "name": "Mend"
+                                }
+                            },
+                            "count": {
+                                "type": "Const",
+                                "value": 2
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#ffffff",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 1.0,
+                                "u_padding": 1.0
                             }
                         }
                     }

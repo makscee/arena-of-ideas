@@ -1,5 +1,4 @@
 #include <common.glsl>
-uniform float u_time;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -14,7 +13,7 @@ void main() {
     int trail_index = gl_InstanceID % u_trail_count;
     float trail_shift = 0.002 * trail_index;
     p_index = gl_InstanceID - trail_index;
-    p_t = u_time + trail_shift;
+    p_t = u_t + trail_shift;
     vec2 vel = (randCircle(p_index) + sin(randVec(p_index) * PI * 2 + p_t * 1.5)) * rand(p_index + 1) * 2.5;
     offset = vel * p_t;
     uv = get_uv(a_pos);

@@ -117,7 +117,7 @@ impl BattleSystem {
             Self::death_check(world, resources);
             Self::move_strikers(&StrikePhase::Retract, left, right, world, node);
             Self::push_node(node, nodes, world, resources);
-            Self::send_event_and_tun_ticks(&Event::TurnOver, nodes, world, resources);
+            Self::send_event_and_tun_ticks(&Event::TurnEnd, nodes, world, resources);
             return true;
         }
         false

@@ -1,0 +1,53 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 10
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 11
+            },
+            {
+                "health": 1,
+                "attack": 0,
+                "houses": [
+                    "Archers"
+                ],
+                "trigger": {
+                    "type": "TurnEnd",
+                    "effect": {
+                        "type": "FindTarget",
+                        "faction": {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        },
+                        "condition": {
+                            "type": "Always"
+                        },
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Archers",
+                            "name": "Shoot"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

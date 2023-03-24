@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::*;
 
 #[derive(Default)]
@@ -42,11 +44,14 @@ impl HousePool {
 }
 
 impl FileWatcherLoader for HousePool {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
-        let paths: Vec<PathBuf> = futures::executor::block_on(load_json(path)).unwrap();
-        paths.into_iter().for_each(|path| {
-            House::loader(resources, &static_path().join(path), watcher);
-        })
+    fn loader(resources: &mut Resources, _: &PathBuf, watcher: &mut FileWatcherSystem) {
+        enum_iterator::all::<HouseName>()
+            .map(|x| {
+                let name = format!("houses/{:?}.json", x).to_lowercase();
+                static_path().join(name)
+            })
+            .for_each(|path| {
+                House::loader(resources, &static_path().join(path), watcher);
+            });
     }
 }

@@ -178,7 +178,7 @@ impl GameStateSystem {
             GameState::Battle => {
                 resources.cassette.clear();
                 WorldSystem::set_var(world, VarName::IsBattle, Var::Float(0.0));
-                Event::BattleOver.send(world, resources);
+                Event::BattleEnd.send(world, resources);
             }
             GameState::Gallery => {
                 resources.cassette.clear();

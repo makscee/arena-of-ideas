@@ -3,6 +3,7 @@ use super::*;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Condition {
+    Always,
     EqualsInt {
         a: ExpressionInt,
         b: ExpressionInt,
@@ -65,6 +66,7 @@ impl Condition {
             Condition::Not { condition } => Ok(!condition.calculate(context, world, resources)?),
             Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
                 && b.calculate(context, world, resources)?),
+            Condition::Always => Ok(true),
         }
     }
 }

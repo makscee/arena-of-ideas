@@ -101,17 +101,39 @@ impl VfxSystem {
         VisualEffect::new(
             0.5,
             VisualEffectType::ShaderAnimation {
-                shader: resources.options.shaders.strike.clone(),
-                from: hashmap! {
-                    "u_time" => ShaderUniform::Float(0.0),
-                    "u_position" => ShaderUniform::Vec2(position),
-                }
-                .into(),
-                to: hashmap! {
-                    "u_time" => ShaderUniform::Float(1.0),
-                    "u_position" => ShaderUniform::Vec2(position),
-                }
-                .into(),
+                shader: resources
+                    .options
+                    .shaders
+                    .strike
+                    .clone()
+                    .set_uniform("u_position", ShaderUniform::Vec2(position)),
+                from: default(),
+                to: default(),
+                easing: EasingType::Linear,
+            },
+            0,
+        )
+    }
+
+    pub fn vfx_show_curve(
+        resources: &Resources,
+        from: vec2<f32>,
+        to: vec2<f32>,
+        color: Rgba<f32>,
+    ) -> VisualEffect {
+        VisualEffect::new(
+            1.0,
+            VisualEffectType::ShaderAnimation {
+                shader: resources
+                    .options
+                    .shaders
+                    .curve
+                    .clone()
+                    .set_uniform("u_color", ShaderUniform::Color(color))
+                    .set_uniform("u_from", ShaderUniform::Vec2(from))
+                    .set_uniform("u_to", ShaderUniform::Vec2(to)),
+                from: default(),
+                to: default(),
                 easing: EasingType::Linear,
             },
             0,

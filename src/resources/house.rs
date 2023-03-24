@@ -10,7 +10,9 @@ pub struct House {
     pub statuses: HashMap<String, Status>,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(
+    Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone, Copy, enum_iterator::Sequence,
+)]
 pub enum HouseName {
     Vampires,
     Dragons,
@@ -21,6 +23,8 @@ pub enum HouseName {
     Warriors,
     Demons,
     Necromancers,
+    Archers,
+    Clerics,
 }
 
 impl FileWatcherLoader for House {

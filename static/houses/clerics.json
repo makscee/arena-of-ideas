@@ -1,0 +1,19 @@
+{
+    "name": "Clerics",
+    "color": "#eaeaeaff",
+    "abilities": {
+        "Mend": {
+            "description": "Heal 1 damage",
+            "effect": {
+                "type": "Heal",
+                "value": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            }
+        }
+    }
+}

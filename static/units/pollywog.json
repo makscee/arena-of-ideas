@@ -7,7 +7,7 @@
         "Dragons"
     ],
     "trigger": {
-        "type": "BattleOver",
+        "type": "BattleEnd",
         "effect": {
             "type": "UseAbility",
             "house": "Dragons",

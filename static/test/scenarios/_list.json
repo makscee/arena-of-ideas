@@ -1,4 +1,5 @@
 [
+    "test/scenarios/shoot.json",
     "test/scenarios/heal.json",
     "test/scenarios/reanimate_help.json",
     "test/scenarios/reanimate_rebirth.json",

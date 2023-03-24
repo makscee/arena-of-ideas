@@ -238,7 +238,7 @@ impl StatusPool {
                         &text,
                         color,
                         outline_color,
-                        ContextSystem::get_position(entity, world).unwrap(),
+                        ContextSystem::try_get_position(entity, world).unwrap(),
                         1,
                         delay_per_charge * i as f32,
                     ),
