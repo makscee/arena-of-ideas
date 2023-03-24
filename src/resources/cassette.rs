@@ -4,7 +4,7 @@ use super::*;
 
 pub struct Cassette {
     pub head: Time,
-    pub tape: Vec<CassetteNode>,
+    tape: Vec<CassetteNode>,
     pub render_node: CassetteNode, // this node is always rendered
 }
 
@@ -252,5 +252,14 @@ impl CassetteNode {
                 )
             })
             .unwrap_or_else(|| vec![])
+    }
+    pub fn finish(mut self, world: &mut legion::World, resources: &Resources) -> Self {
+        if self.duration == 0.0 {
+            return self;
+        }
+        let factions = &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team};
+        ContextSystem::refresh_factions(factions, world, resources);
+        UnitSystem::draw_all_units_to_cassette_node(factions, &mut self, world, resources);
+        self
     }
 }

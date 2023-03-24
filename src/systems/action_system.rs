@@ -3,19 +3,22 @@ use super::*;
 pub struct ActionSystem {}
 
 impl ActionSystem {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn run_ticks(world: &mut legion::World, resources: &mut Resources) -> Vec<CassetteNode> {
+    pub fn run_ticks(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        nodes: &mut Option<Vec<CassetteNode>>,
+    ) {
         let mut ticks = 0;
-        let mut nodes = Vec::default();
         loop {
-            let (ticked, node) = Self::tick(world, resources);
+            let ticked = if let Some(nodes) = nodes {
+                let node = &mut Some(CassetteNode::default());
+                let result = Self::tick(world, resources, node);
+                nodes.push(node.take().unwrap().finish(world, resources));
+                result
+            } else {
+                Self::tick(world, resources, &mut None)
+            };
             ticks += 1;
-            if let Some(node) = node {
-                nodes.push(node);
-            }
             if !ticked || ticks > 1000 {
                 if ticked {
                     panic!("Exceeded ticks limit")
@@ -23,17 +26,17 @@ impl ActionSystem {
                 break;
             }
         }
-        nodes
     }
 
     pub fn tick(
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> (bool, Option<CassetteNode>) {
-        if !resources.status_pool.status_changes.is_empty() {
+        node: &mut Option<CassetteNode>,
+    ) -> bool {
+        let result = if !resources.status_pool.status_changes.is_empty() {
             ContextSystem::refresh_all(world, resources);
-            let node = StatusPool::process_status_changes(world, resources);
-            return (true, node);
+            StatusPool::process_status_changes(world, resources, node);
+            true
         } else if !resources.action_queue.is_empty() {
             ContextSystem::refresh_all(world, resources);
             let action = resources.action_queue.pop_front().unwrap();
@@ -49,24 +52,19 @@ impl ActionSystem {
                 .log(&format!("{:?}", action.context), &LogContext::Contexts);
             match action
                 .effect
-                .process(action.context.clone(), world, resources)
+                .process(action.context.clone(), world, resources, node)
             {
-                Ok(node) => {
-                    return (true, Some(node));
-                }
+                Ok(_) => {}
                 Err(error) => {
                     dbg!(action);
-                    panic!("Effect process error: {}", error);
+                    panic!("Action process error {}", error)
                 }
-            }
-        }
-        (false, None)
-    }
-}
-
-impl System for ActionSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        Self::tick(world, resources);
+            };
+            true
+        } else {
+            false
+        };
+        result
     }
 }
 

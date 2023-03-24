@@ -60,9 +60,10 @@ impl UnitSystem {
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
+        nodes: &mut Option<Vec<CassetteNode>>,
     ) -> bool {
         Event::BeforeDeath { owner: entity }.send(world, resources);
-        ActionSystem::run_ticks(world, resources);
+        ActionSystem::run_ticks(world, resources, nodes);
         ContextSystem::refresh_entity(entity, world, resources);
         let context = ContextSystem::get_context(entity, world);
         if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {

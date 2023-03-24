@@ -126,8 +126,8 @@ impl EffectWrapped {
         context: Context,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> Result<CassetteNode, Error> {
-        let mut node = CassetteNode::default();
+        node: &mut Option<CassetteNode>,
+    ) -> Result<(), Error> {
         let mut context = Context {
             target: self
                 .target
@@ -167,34 +167,38 @@ impl EffectWrapped {
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get Target")?;
-                node.add_effect(VfxSystem::vfx_show_text(
-                    resources,
-                    &text,
-                    resources.options.colors.text_remove_color,
-                    resources.options.colors.damage_text,
-                    target.get_component::<AreaComponent>().unwrap().position,
-                    0,
-                    0.0,
-                ));
+                if let Some(node) = node.as_mut() {
+                    node.add_effect(VfxSystem::vfx_show_text(
+                        resources,
+                        &text,
+                        resources.options.colors.text_remove_color,
+                        resources.options.colors.damage_text,
+                        target.get_component::<AreaComponent>().unwrap().position,
+                        0,
+                        0.0,
+                    ));
+                }
                 if value > 0 {
                     let hp = target.get_component_mut::<HealthComponent>()?;
                     hp.damage += value as usize;
-                    node.add_effect(VisualEffect::new(
-                        1.0,
-                        VisualEffectType::EntityShaderAnimation {
-                            entity: context.target,
-                            from: hashmap! {
-                                "u_damage_taken" => ShaderUniform::Float(1.0),
-                            }
-                            .into(),
-                            to: hashmap! {
-                                "u_damage_taken" => ShaderUniform::Float(0.0),
-                            }
-                            .into(),
-                            easing: EasingType::Linear,
-                        },
-                        0,
-                    ));
+                    if let Some(node) = node.as_mut() {
+                        node.add_effect(VisualEffect::new(
+                            1.0,
+                            VisualEffectType::EntityShaderAnimation {
+                                entity: context.target,
+                                from: hashmap! {
+                                    "u_damage_taken" => ShaderUniform::Float(1.0),
+                                }
+                                .into(),
+                                to: hashmap! {
+                                    "u_damage_taken" => ShaderUniform::Float(0.0),
+                                }
+                                .into(),
+                                easing: EasingType::Linear,
+                            },
+                            0,
+                        ));
+                    }
                     resources.logger.log(
                         &format!("Entity#{:?} {} damage taken", context.target, value),
                         &LogContext::Effect,
@@ -231,15 +235,17 @@ impl EffectWrapped {
                 if let Some(hp) = target.get_component_mut::<HealthComponent>().ok() {
                     let value = value.min(hp.damage);
                     hp.damage -= value;
-                    node.add_effect(VfxSystem::vfx_show_text(
-                        resources,
-                        &text,
-                        resources.options.colors.text_add_color,
-                        resources.options.colors.damage_text,
-                        target.get_component::<AreaComponent>().unwrap().position,
-                        0,
-                        0.0,
-                    ));
+                    if let Some(node) = node.as_mut() {
+                        node.add_effect(VfxSystem::vfx_show_text(
+                            resources,
+                            &text,
+                            resources.options.colors.text_add_color,
+                            resources.options.colors.damage_text,
+                            target.get_component::<AreaComponent>().unwrap().position,
+                            0,
+                            0.0,
+                        ));
+                    }
                 }
             }
             Effect::Repeat { count, effect } => {
@@ -396,15 +402,17 @@ impl EffectWrapped {
                             .or_else(|| Some(context.vars.get_color(&VarName::HouseColor1)))
                     })
                     .unwrap();
-                node.add_effect(VfxSystem::vfx_show_text(
-                    resources,
-                    &text,
-                    Rgba::WHITE,
-                    color,
-                    position,
-                    1,
-                    0.0,
-                ))
+                if let Some(node) = node.as_mut() {
+                    node.add_effect(VfxSystem::vfx_show_text(
+                        resources,
+                        &text,
+                        Rgba::WHITE,
+                        color,
+                        position,
+                        1,
+                        0.0,
+                    ));
+                }
             }
             Effect::ShowCurve { color } => {
                 let color = color
@@ -419,7 +427,10 @@ impl EffectWrapped {
                     .context("Failed to get owner")?;
                 let to = ContextSystem::try_get_position(context.target, world)
                     .context("Failed to get target")?;
-                node.add_effect(VfxSystem::vfx_show_curve(resources, from, to, color));
+
+                if let Some(node) = node.as_mut() {
+                    node.add_effect(VfxSystem::vfx_show_curve(resources, from, to, color));
+                }
             }
             Effect::Kill => {
                 let mut entry = world.entry_mut(context.target).unwrap();
@@ -527,8 +538,8 @@ impl EffectWrapped {
             }
         }
         Ok(match self.after.as_deref() {
-            Some(after) => Self::process(after, context, world, resources)?.merge(&node),
-            None => node,
+            Some(after) => Self::process(after, context, world, resources, node)?,
+            None => (),
         })
     }
 }

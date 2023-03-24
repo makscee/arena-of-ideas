@@ -94,16 +94,12 @@ impl Game {
             GameState::Battle,
             vec![
                 Box::new(CassettePlayerSystem::new(false)),
-                Box::new(ActionSystem::new()),
                 Box::new(BattleSystem::new()),
             ],
         );
         game_state.add_systems(
             GameState::CustomGame,
-            vec![
-                Box::new(CassettePlayerSystem::new(false)),
-                Box::new(ActionSystem::new()),
-            ],
+            vec![Box::new(CassettePlayerSystem::new(false))],
         );
         game_state.add_systems(
             GameState::Shop,
@@ -111,7 +107,6 @@ impl Game {
                 Box::new(ShopSystem::new()),
                 Box::new(PoolUiSystem::new()),
                 Box::new(CassettePlayerSystem::new(true)),
-                Box::new(ActionSystem::new()),
             ],
         );
         game_state.add_systems(

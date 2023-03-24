@@ -3,12 +3,12 @@
     "color": "#3c8d21ff",
     "abilities": {
         "Shoot": {
-            "description": "Deal 1 damage\nto target",
+            "description": "Deal attack damage\nto target",
             "effect": {
                 "type": "Damage",
                 "value": {
-                    "type": "Const",
-                    "value": 1
+                    "type": "Var",
+                    "var": "AttackValue"
                 },
                 "after": {
                     "type": "ShowCurve"

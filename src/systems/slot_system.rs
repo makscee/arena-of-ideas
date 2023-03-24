@@ -53,28 +53,36 @@ impl SlotSystem {
         Self::get_position(unit.slot, &unit.faction)
     }
 
-    pub fn move_to_slots_animated(world: &mut legion::World, node: &mut CassetteNode) {
-        <(&EntityComponent, &UnitComponent, &AreaComponent)>::query()
-            .iter(world)
-            .filter_map(|(entity, unit, area)| {
-                let need_pos = Self::get_unit_position(unit);
-                match need_pos == area.position {
-                    true => None,
-                    false => Some((need_pos, entity.entity)),
-                }
-            })
-            .collect_vec()
-            .into_iter()
-            .for_each(|(need_pos, entity)| {
-                VfxSystem::translate_animated(
-                    entity,
-                    need_pos,
-                    node,
-                    world,
-                    EasingType::QuartInOut,
-                    0.5,
-                )
-            });
+    pub fn move_to_slots_animated(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        nodes: &mut Option<Vec<CassetteNode>>,
+    ) {
+        if let Some(nodes) = nodes {
+            let mut node = CassetteNode::default();
+            <(&EntityComponent, &UnitComponent, &AreaComponent)>::query()
+                .iter(world)
+                .filter_map(|(entity, unit, area)| {
+                    let need_pos = Self::get_unit_position(unit);
+                    match need_pos == area.position {
+                        true => None,
+                        false => Some((need_pos, entity.entity)),
+                    }
+                })
+                .collect_vec()
+                .into_iter()
+                .for_each(|(need_pos, entity)| {
+                    VfxSystem::translate_animated(
+                        entity,
+                        need_pos,
+                        &mut node,
+                        world,
+                        EasingType::QuartInOut,
+                        0.5,
+                    )
+                });
+            nodes.push(node.finish(world, resources));
+        }
     }
 
     pub fn get_horizontal_hovered_slot(faction: &Faction, mouse_pos: vec2<f32>) -> Option<usize> {

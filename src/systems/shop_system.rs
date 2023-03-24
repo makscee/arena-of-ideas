@@ -31,12 +31,11 @@ impl System for ShopSystem {
         }
         Self::refresh_ui(resources);
         Self::refresh_cassette(world, resources);
-        let mut nodes = ActionSystem::run_ticks(world, resources);
-        if !nodes.is_empty() {
-            BattleSystem::death_check(world, resources);
-            nodes.extend(ActionSystem::run_ticks(world, resources));
-            resources.cassette.add_tape_nodes(nodes);
-        }
+        let mut tape = Some(Vec::<CassetteNode>::default());
+        ActionSystem::run_ticks(world, resources, &mut tape);
+        BattleSystem::death_check(world, resources, &mut tape);
+        ActionSystem::run_ticks(world, resources, &mut tape);
+        resources.cassette.add_tape_nodes(tape.unwrap());
     }
 
     fn ui<'a>(
@@ -160,9 +159,9 @@ impl ShopSystem {
         Event::AddToTeam { owner: entity }.send(world, resources);
         TeamPool::refresh_team(&Faction::Team, world, resources);
         ContextSystem::refresh_all(world, resources);
-        let node = &mut default();
-        SlotSystem::move_to_slots_animated(world, node);
-        resources.cassette.add_tape_nodes(vec![node.to_owned()]);
+        let mut nodes = Some(vec![]);
+        SlotSystem::move_to_slots_animated(world, resources, &mut nodes);
+        resources.cassette.add_tape_nodes(nodes.unwrap());
     }
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {

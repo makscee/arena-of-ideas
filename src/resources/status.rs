@@ -203,14 +203,14 @@ impl StatusPool {
     pub fn process_status_changes(
         world: &legion::World,
         resources: &mut Resources,
-    ) -> Option<CassetteNode> {
+        node: &mut Option<CassetteNode>,
+    ) {
         let mut delay_per_charge = 0.3;
         let max_delay = 3.0;
         let key = "status_changes";
         if let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()
         {
-            let mut node = CassetteNode::default();
             if charges_delta.abs() as f32 * delay_per_charge > max_delay {
                 delay_per_charge = max_delay / charges_delta.abs() as f32;
             }
@@ -230,23 +230,22 @@ impl StatusPool {
                     .unwrap()
                     .color
                     .unwrap();
-
-                node.add_effect_by_key(
-                    key,
-                    VfxSystem::vfx_show_text(
-                        resources,
-                        &text,
-                        color,
-                        outline_color,
-                        ContextSystem::try_get_position(entity, world).unwrap(),
-                        1,
-                        delay_per_charge * i as f32,
-                    ),
-                );
+                if let Some(node) = node.as_mut() {
+                    node.add_effect_by_key(
+                        key,
+                        VfxSystem::vfx_show_text(
+                            resources,
+                            &text,
+                            color,
+                            outline_color,
+                            ContextSystem::try_get_position(entity, world).unwrap(),
+                            1,
+                            delay_per_charge * i as f32,
+                        ),
+                    );
+                }
             }
-            return Some(node);
         }
-        None
     }
 
     pub fn define_status(&mut self, name: String, mut status: Status) {

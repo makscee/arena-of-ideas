@@ -206,23 +206,19 @@ impl GameStateSystem {
                 WorldSystem::set_var(world, VarName::IsBattle, Var::Float(1.0));
                 CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Battle;
-                let tape = &mut Some(Vec::<CassetteNode>::default());
-                BattleSystem::run_battle(world, resources, tape);
-                if let Some(tape) = tape {
-                    resources.cassette.tape = tape.to_owned();
-                    resources.cassette_play_mode = CassettePlayMode::Play;
-                    resources.cassette.head = 0.0;
-                    let factions = &hashset! {Faction::Light, Faction::Dark};
-                    ContextSystem::refresh_factions(factions, world, resources);
-                    let last_node = &mut default();
-                    UnitSystem::draw_all_units_to_cassette_node(
-                        factions, last_node, world, resources,
-                    );
-                    last_node.duration = 2.0;
-                    resources
-                        .cassette
-                        .add_tape_nodes(vec![last_node.to_owned()]);
-                }
+                let mut tape = Some(Vec::<CassetteNode>::default());
+                BattleSystem::run_battle(world, resources, &mut tape);
+                resources.cassette.add_tape_nodes(tape.unwrap());
+                resources.cassette_play_mode = CassettePlayMode::Play;
+                resources.cassette.head = 0.0;
+                let factions = &hashset! {Faction::Light, Faction::Dark};
+                ContextSystem::refresh_factions(factions, world, resources);
+                let last_node = &mut default();
+                UnitSystem::draw_all_units_to_cassette_node(factions, last_node, world, resources);
+                last_node.duration = 2.0;
+                resources
+                    .cassette
+                    .add_tape_nodes(vec![last_node.to_owned()]);
             }
             GameState::Shop => {
                 if resources.current_state == GameState::MainMenu {
@@ -260,11 +256,12 @@ impl GameStateSystem {
                 TeamPool::save_team(Faction::Dark, dark, resources);
                 BattleSystem::clear_world(world, resources);
                 BattleSystem::init_battle(world, resources);
-                let tape = &mut Some(Vec::<CassetteNode>::default());
-                BattleSystem::run_battle(world, resources, tape);
-                if let Some(tape) = tape {
-                    resources.cassette.tape = tape.to_owned();
-                }
+                let mut tape = Some(Vec::<CassetteNode>::default());
+                BattleSystem::run_battle(world, resources, &mut tape);
+                let tape = tape.unwrap();
+                dbg!(tape.len());
+                resources.cassette.add_tape_nodes(tape);
+                dbg!(resources.cassette.length());
             }
         }
         resources.current_state = resources.transition_state.clone();

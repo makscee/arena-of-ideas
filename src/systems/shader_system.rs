@@ -84,7 +84,10 @@ impl ShaderSystem {
 
         for shader in shaders {
             let uniforms = ugli::uniforms!(
-                u_game_time: resources.cassette.head,
+                u_game_time: match resources.cassette_play_mode {
+                    CassettePlayMode::Play | CassettePlayMode::Rewind { .. } => resources.cassette.head,
+                    CassettePlayMode::Stop => resources.global_time,
+                },
                 u_global_time: resources.global_time,
             );
             Self::draw_shader(shader, framebuffer, resources, uniforms);
