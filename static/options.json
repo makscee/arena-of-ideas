@@ -1,43 +1,39 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "units": [
                 {
-                    "attack": 1,
-                    "health": 3
+                    "attack": 999,
+                    "health": 1
                 },
                 {
-                    "attack": 1,
-                    "health": 3
-                },
-                {
-                    "attack": 2,
-                    "health": 3
-                },
-                {
-                    "attack": 2,
-                    "health": 3
+                    "attack": 999,
+                    "health": 999
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "attack": 4,
-                    "health": 100,
+                    "attack": 1,
+                    "health": 1,
                     "houses": [
                         "Necromancers"
                     ],
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "AfterDamageDealt",
                         "effect": {
                             "type": "UseAbility",
                             "house": "Necromancers",
                             "name": "Reanimate"
                         }
                     }
+                },
+                {
+                    "health": 1,
+                    "attack": 0
                 }
             ]
         }

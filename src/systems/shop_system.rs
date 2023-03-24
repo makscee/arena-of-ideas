@@ -154,21 +154,15 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
-        let node = &mut default();
-        VfxSystem::translate_animated(
-            entity,
-            SlotSystem::get_unit_position(unit),
-            node,
-            world,
-            EasingType::QuartInOut,
-            0.5,
-        );
-        resources.cassette.add_tape_nodes(vec![node.to_owned()]);
+
         ContextSystem::refresh_entity(entity, world, resources);
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
         TeamPool::refresh_team(&Faction::Team, world, resources);
         ContextSystem::refresh_all(world, resources);
+        let node = &mut default();
+        SlotSystem::move_to_slots_animated(world, node);
+        resources.cassette.add_tape_nodes(vec![node.to_owned()]);
     }
 
     fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {

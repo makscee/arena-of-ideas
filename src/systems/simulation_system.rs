@@ -23,15 +23,24 @@ impl SimulationSystem {
             ticks += 1;
             BattleSystem::hit(left, right, &mut None, world, resources);
             BattleSystem::death_check(world, resources);
+            ActionSystem::run_ticks(world, resources);
             SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Light, Faction::Dark});
             if ticks > 1000 {
                 panic!("Exceeded ticks limit")
             }
         }
         let result = match assert {
-            Some(condition) => condition
-                .calculate(&WorldSystem::get_context(world), world, resources)
-                .unwrap(),
+            Some(condition) => {
+                let result = condition
+                    .calculate(&WorldSystem::get_context(world), world, resources)
+                    .unwrap();
+                if !result {
+                    let light = Team::pack_entries(&Faction::Light, world, resources);
+                    let dark = Team::pack_entries(&Faction::Dark, world, resources);
+                    dbg!((light, dark));
+                }
+                result
+            }
             None => BattleSystem::battle_won(world),
         };
         BattleSystem::clear_world(world, resources);

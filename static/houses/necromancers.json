@@ -3,13 +3,39 @@
     "color": "#4B0082",
     "abilities": {
         "Reanimate": {
-            "description": "Revive a dead unit\nwith 1 HP as ally",
+            "description": "Revive unit after death\nwith 1 HP and reversed faction",
             "effect": {
-                "type": "Revive",
-                "after": {
-                    "type": "SetFaction",
-                    "faction": {
-                        "type": "Owner"
+                "type": "AddStatus",
+                "name": "Reanimate"
+            }
+        }
+    },
+    "statuses": {
+        "Reanimate": {
+            "trigger": {
+                "type": "AfterDeath",
+                "effect": {
+                    "type": "If",
+                    "condition": {
+                        "type": "IsCorpse",
+                        "entity": {
+                            "type": "Target"
+                        }
+                    },
+                    "then": {
+                        "type": "Revive",
+                        "after": {
+                            "type": "SetFaction",
+                            "faction": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Target"
+                                }
+                            }
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
                 }
             }

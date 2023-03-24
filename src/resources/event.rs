@@ -42,9 +42,6 @@ pub enum Event {
     AfterDamageDealt {
         context: Context,
     },
-    AfterKill {
-        context: Context,
-    },
     AfterDeath {
         context: Context,
     },
@@ -67,6 +64,10 @@ pub enum Event {
         owner: legion::Entity,
     },
     AfterStrike {
+        owner: legion::Entity,
+        target: legion::Entity,
+    },
+    AfterKill {
         owner: legion::Entity,
         target: legion::Entity,
     },
@@ -115,9 +116,8 @@ impl Event {
             // Trigger context.owner with provided context
             Event::AfterOutgoingDamage { context }
             | Event::BeforeOutgoingDamage { context }
-            | Event::AfterDamageDealt { context }
-            | Event::AfterKill { context }
-            | Event::AfterDeath { context } => {
+            | Event::AfterDeath { context }
+            | Event::AfterDamageDealt { context } => {
                 StatusPool::notify_entity(
                     self,
                     context.owner,
@@ -134,7 +134,7 @@ impl Event {
             | Event::RemoveFromTeam { owner } => {
                 StatusPool::notify_entity(self, *owner, resources, world, None);
             }
-            Event::AfterStrike { owner, target } => {
+            Event::AfterStrike { owner, target } | Event::AfterKill { owner, target } => {
                 if let Some(owner_context) = ContextSystem::try_get_context(*owner, world).ok() {
                     let context = Context {
                         target: *target,

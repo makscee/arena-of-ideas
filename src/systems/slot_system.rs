@@ -71,8 +71,8 @@ impl SlotSystem {
                     need_pos,
                     node,
                     world,
-                    EasingType::CubicIn,
-                    0.2,
+                    EasingType::QuartInOut,
+                    0.5,
                 )
             });
     }

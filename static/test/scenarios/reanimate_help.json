@@ -1,0 +1,45 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 999,
+                "health": 1
+            },
+            {
+                "attack": 999,
+                "health": 999
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1,
+                "houses": [
+                    "Necromancers"
+                ],
+                "trigger": {
+                    "type": "AfterDamageDealt",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Necromancers",
+                        "name": "Reanimate"
+                    }
+                }
+            },
+            {
+                "health": 1,
+                "attack": 0
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

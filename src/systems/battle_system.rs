@@ -22,6 +22,7 @@ impl BattleSystem {
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
+        Self::clear_world(world, resources);
         TeamPool::unpack_team(&Faction::Light, world, resources);
         TeamPool::unpack_team(&Faction::Dark, world, resources);
     }
@@ -242,13 +243,12 @@ impl BattleSystem {
             })
             .choose(&mut thread_rng())
         {
-            resources.logger.log(
-                &format!("Entity#{:?} dead", dead_unit),
-                &LogContext::UnitCreation,
-            );
+            resources
+                .logger
+                .log(&format!("{:?} dead", dead_unit), &LogContext::UnitCreation);
             if UnitSystem::process_death(dead_unit, world, resources) {
                 resources.logger.log(
-                    &format!("Entity#{:?} removed", dead_unit),
+                    &format!("{:?} removed", dead_unit),
                     &LogContext::UnitCreation,
                 );
             }

@@ -83,7 +83,7 @@ pub enum Effect {
         effect: Box<EffectWrapped>,
     },
     Revive {
-        slot: Option<usize>,
+        slot: Option<ExpressionInt>,
     },
     RemoveTrigger,
 }
@@ -378,7 +378,10 @@ impl EffectWrapped {
                 health.damage = i32::MAX as usize;
             }
             Effect::Revive { slot } => {
-                let slot = slot.unwrap_or_default();
+                let slot = slot
+                    .as_ref()
+                    .and_then(|x| Some(x.calculate(&context, world, resources).ok()?))
+                    .unwrap_or_default() as usize;
                 let (mut corpse, faction) = resources
                     .unit_corpses
                     .remove(&context.target)
@@ -431,6 +434,12 @@ impl EffectWrapped {
                 let mut target = world
                     .entry(context.target)
                     .context("Failed to get target")?;
+                println!(
+                    "{:?} Faction {:?} -> {:?}",
+                    context.target,
+                    target.get_component::<UnitComponent>().unwrap().faction,
+                    faction
+                );
                 target.get_component_mut::<UnitComponent>()?.faction = faction;
             }
             Effect::SetSlot { slot } => {

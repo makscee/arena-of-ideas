@@ -45,7 +45,32 @@
             "trigger": {
                 "type": "AfterDeath",
                 "effect": {
-                    "type": "Revive"
+                    "type": "If",
+                    "condition": {
+                        "type": "IsCorpse",
+                        "entity": {
+                            "type": "Target"
+                        }
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ShowText",
+                                "text": "Rebirth"
+                            },
+                            {
+                                "type": "Revive",
+                                "slot": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                }
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
                 }
             }
         }

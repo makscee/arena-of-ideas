@@ -66,23 +66,7 @@ impl UnitSystem {
         ContextSystem::refresh_entity(entity, world, resources);
         let context = ContextSystem::get_context(entity, world);
         if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {
-            if Self::turn_unit_into_corpse(entity, world, resources) {
-                Event::AfterDeath {
-                    context: context.clone(),
-                }
-                .send(world, resources);
-                if let Some(killer) = resources.unit_offenders.get(&context.owner) {
-                    Event::AfterKill {
-                        context: Context {
-                            owner: *killer,
-                            ..context
-                        },
-                    }
-                    .send(world, resources);
-                }
-                resources.status_pool.clear_entity(&entity);
-                return true;
-            }
+            return Self::turn_unit_into_corpse(entity, world, resources);
         }
         false
     }
@@ -101,15 +85,30 @@ impl UnitSystem {
         if unit.faction == Faction::Team {
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
+        let mut corpse = PackedUnit::pack(entity, world, resources);
+        corpse.active_statuses.clear();
+        resources
+            .unit_corpses
+            .insert(entity, (corpse, unit.faction));
+        let corpse_context = ContextSystem::get_context(entity, world);
+        let res = world.remove(entity);
+
         resources.logger.log(
             &format!("{:?} is now corpse", entity),
             &LogContext::UnitCreation,
         );
-        let corpse = PackedUnit::pack(entity, world, resources);
-        resources
-            .unit_corpses
-            .insert(entity, (corpse, unit.faction));
-        let res = world.remove(entity);
+        Event::AfterDeath {
+            context: corpse_context,
+        }
+        .send(world, resources);
+        if let Some(killer) = resources.unit_offenders.get(&entity) {
+            Event::AfterKill {
+                owner: *killer,
+                target: entity,
+            }
+            .send(world, resources);
+        }
+        resources.status_pool.clear_entity(&entity);
         res
     }
 

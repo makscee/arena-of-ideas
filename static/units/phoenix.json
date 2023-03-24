@@ -6,21 +6,8 @@
     "houses": [
         "Dragons"
     ],
-    "trigger": {
-        "type": "AfterBirth",
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "UseAbility",
-                    "house": "Dragons",
-                    "name": "Rebirth"
-                },
-                {
-                    "type": "RemoveTrigger"
-                }
-            ]
-        }
+    "active_statuses": {
+        "Rebirth": 1
     },
     "shader": {
         "path": "shaders/vfx/particle_emitter.glsl",

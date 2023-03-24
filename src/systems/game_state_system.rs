@@ -29,6 +29,7 @@ impl System for GameStateSystem {
                     resources.cassette.clear();
                     resources.current_state = GameState::Shop;
                     resources.transition_state = GameState::Battle;
+                    BattleSystem::init_battle(world, resources);
                 }
                 if resources.cassette.head > resources.cassette.length() {
                     BattleSystem::finish_floor_battle(world, resources);
@@ -209,15 +210,19 @@ impl GameStateSystem {
                 BattleSystem::run_battle(world, resources, tape);
                 if let Some(tape) = tape {
                     resources.cassette.tape = tape.to_owned();
+                    resources.cassette_play_mode = CassettePlayMode::Play;
+                    resources.cassette.head = 0.0;
+                    let factions = &hashset! {Faction::Light, Faction::Dark};
+                    ContextSystem::refresh_factions(factions, world, resources);
+                    let last_node = &mut default();
+                    UnitSystem::draw_all_units_to_cassette_node(
+                        factions, last_node, world, resources,
+                    );
+                    last_node.duration = 2.0;
+                    resources
+                        .cassette
+                        .add_tape_nodes(vec![last_node.to_owned()]);
                 }
-                let last_node = &mut default();
-                let factions = &hashset! {Faction::Light, Faction::Dark};
-                ContextSystem::refresh_factions(factions, world, resources);
-                UnitSystem::draw_all_units_to_cassette_node(factions, last_node, world, resources);
-                last_node.duration = 2.0;
-                resources
-                    .cassette
-                    .add_tape_nodes(vec![last_node.to_owned()]);
             }
             GameState::Shop => {
                 if resources.current_state == GameState::MainMenu {

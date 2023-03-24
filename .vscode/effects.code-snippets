@@ -1,43 +1,4 @@
 {
-	"Attach Status": {
-		"prefix": "attach_status",
-		"body": [
-			"{",
-			"  \"type\": \"AttachStatus\",",
-			"  \"status\": \"${1:Shield}\"",
-			"}"
-		],
-		"description": "Attach Status"
-	},
-	"Add Targets": {
-		"prefix": "add_targets",
-		"body": [
-			"{",
-			"    \"type\": \"AddTargets\",",
-			"    \"condition\": {",
-			"        \"type\": \"Always\"",
-			"    },",
-			"    \"additional_targets\": 1,",
-			"    \"effect\": $TM_SELECTED_TEXT$1",
-			"}"
-		],
-		"description": "Add Targets"
-	},
-	"Change Target": {
-		"prefix": "change_target",
-		"body": [
-			"{",
-			"    \"type\": \"ChangeTarget\",",
-			"    \"filter\": \"Allies\",",
-			"    \"condition\": {",
-			"        \"type\": \"UnitInjured\",",
-			"        \"who\": \"Target\"",
-			"    },",
-			"    \"effect\": $TM_SELECTED_TEXT$1",
-			"}"
-		],
-		"description": "Change Target"
-	},
 	"Condition Always": {
 		"prefix": "condition_always",
 		"body": [
@@ -58,105 +19,6 @@
 			"}"
 		],
 		"description": "Condition Always"
-	},
-	"Change Stats": {
-		"prefix": "change_stats",
-		"body": [
-			"{",
-			"   \"type\": \"ChangeStat\",",
-			"   \"stat\": \"${1:Health}\",",
-			"   \"who\": \"${2:Owner}\",",
-			"   \"value\": {",
-			"       \"a\": {",
-			"           \"stat\": \"${1:Health}\",",
-			"           \"type\": \"FindStat\",",
-			"           \"who\": \"${2:Owner}\"",
-			"       },",
-			"       \"b\": {",
-			"            \"type\": \"Const\",",
-			"            \"value\": 1",
-			"       },",
-			"       \"type\": \"Sum\"",
-			"   }",
-			" }"
-		],
-		"description": "Change Stats"
-	},
-	"Level Mul": {
-		"prefix": "level_mul",
-		"body": [
-			"{",
-			"  \"a\": $1$TM_SELECTED_TEXT,",
-			"  \"b\": {",
-			"    \"type\": \"FindStat\",",
-			"    \"stat\": \"Level\",",
-			"    \"who\": \"Owner\"",
-			"  },",
-			"  \"type\": \"Mul\"",
-			"}"
-		],
-		"description": "Level Mul"
-	},
-	"Level Stat": {
-		"prefix": "level_stat",
-		"body": [
-			"{",
-			"    \"type\": \"FindStat\",",
-			"    \"stat\": \"Level\",",
-			"    \"who\": \"Owner\"",
-			"}"
-		],
-		"description": "Level Stat"
-	},
-	"Change Context": {
-		"prefix": "change_context",
-		"body": [
-			"{",
-			"    \"type\": \"ChangeContext\",",
-			"    \"target\": \"Owner\",",
-			"    \"effect\": $TM_SELECTED_TEXT$1",
-			"}"
-		],
-		"description": "Change Context"
-	},
-	"Repeat": {
-		"prefix": "repeat",
-		"body": [
-			"{",
-			"    \"type\": \"Repeat\",",
-			"    \"times\": ${1:2},",
-			"    \"effect\": $TM_SELECTED_TEXT$2",
-			"}"
-		],
-		"description": "Repeat"
-	},
-	"Preset": {
-		"prefix": "preset",
-		"body": [
-			"{",
-			"    \"preset\": \"effects/$1\"",
-			"}"
-		],
-		"description": "Preset"
-	},
-	"Damage": {
-		"prefix": "damage",
-		"body": [
-			"{",
-			"    \"type\": \"Damage\",",
-			"    \"types\":",
-			"    [",
-			"        \"${1:Melee}\"",
-			"    ],",
-			"    \"value\":",
-			"    {",
-			"        \"type\": \"FindStat\",",
-			"        \"who\": \"Owner\",",
-			"        \"stat\": \"BaseDamage\"",
-			"    }",
-			"}"
-		],
-		"description": "Damage"
 	},
 	"Sum": {
 		"prefix": "sum",
@@ -232,55 +94,6 @@
 		],
 		"description": "Equal"
 	},
-	"Status New": {
-		"prefix": "status_new",
-		"body": [
-			"{",
-			"    \"name\": \"${1:OnDealDamage}\",",
-			"    \"type\": \"Status\",",
-			"    \"stacking\": {",
-			"        \"type\": \"Independent\"",
-			"    },",
-			"    \"listeners\": [",
-			"        {",
-			"            \"triggers\": [",
-			"                {",
-			"                    \"type\": \"${2:DamageDealt}\",",
-			"                    \"damage_type\": \"Crit\"",
-			"                }",
-			"            ],",
-			"            \"effect\": $TM_SELECTED_TEXT$3",
-			"        }",
-			"    ]",
-			"}"
-		],
-		"description": "Status New"
-	},
-	"Status Detect": {
-		"prefix": "status_detect",
-		"body": [
-			"{",
-			"    \"name\": \"DetectShield*\",",
-			"    \"type\": \"Status\",",
-			"    \"stacking\": {",
-			"        \"type\": \"Independent\"",
-			"    },",
-			"    \"listeners\": [",
-			"        {",
-			"            \"triggers\": [",
-			"                {",
-			"                    \"type\": \"DetectAttach\",",
-			"                    \"status_name\": \"${1:Shield}\",",
-			"                    \"filter\": \"Allies\"",
-			"                }",
-			"            ],",
-			"            \"effect\": $2$TM_SELECTED_TEXT",
-			"        }",
-			"    ]",
-			"}"
-		],
-		"description": "Status Detect"
-	},
 	"Var": {
 		"prefix": "var",
 		"body": [
@@ -313,17 +126,6 @@
 		],
 		"description": "Or"
 	},
-	"Condition_clan": {
-		"prefix": "condition_clan",
-		"body": [
-			"{",
-			"    \"type\": \"ClanSize\",",
-			"    \"clan\": \"${1:Protectors}\",",
-			"    \"count\": ${2:4}",
-			"}"
-		],
-		"description": "Condition_clan"
-	},
 	"Not": {
 		"prefix": "not",
 		"body": [
@@ -339,7 +141,7 @@
 		"body": [
 			"{",
 			"    \"type\": \"RemoveStatus\",",
-			"    \"status\": \"${1:Shield}\"",
+			"    \"name\": \"${1:Shield}\"",
 			"}"
 		],
 		"description": "Remove status"
@@ -353,37 +155,16 @@
 		],
 		"description": "Noop"
 	},
-	"More": {
-		"prefix": "more",
+	"More Int": {
+		"prefix": "more_int",
 		"body": [
 			"{",
-			"    \"type\": \"More\",",
+			"    \"type\": \"MoreInt\",",
 			"    \"a\": $1$TM_SELECTED_TEXT,",
 			"    \"b\": $2",
 			"}"
 		],
-		"description": "More"
-	},
-	"Message": {
-		"prefix": "message",
-		"body": [
-			"{",
-			"    \"type\": \"Message\",",
-			"    \"text\": $1$TM_SELECTED_TEXT",
-			"}"
-		],
-		"description": "Message"
-	},
-	"Stat Value": {
-		"prefix": "stat_value",
-		"body": [
-			"{",
-			"    \"type\": \"FindStat\",",
-			"    \"who\": \"Target\",",
-			"    \"stat\": \"BaseDamage\"",
-			"}"
-		],
-		"description": "Stat Value"
+		"description": "MoreInt"
 	},
 	"Use Ability": {
 		"prefix": "use_ability",
@@ -395,5 +176,37 @@
 			"}"
 		],
 		"description": "Use Ability"
+	},
+	"Show Text": {
+		"prefix": "show_text",
+		"body": [
+			"{",
+			"    \"type\": \"ShowText\",",
+			"    \"text\": \"${1:Text}\"",
+			"}"
+		],
+		"description": "Show Text"
+	},
+	"Add Status": {
+		"prefix": "add_status",
+		"body": [
+			"{",
+			"  \"type\": \"AddStatus\",",
+			"  \"name\": \"${1:Shield}\"",
+			"}"
+		],
+		"description": "Add Status"
+	},
+	"Is Corpse": {
+		"prefix": "is_corpse",
+		"body": [
+			"{",
+			"    \"type\": \"IsCorpse\",",
+			"    \"entity\": {",
+			"        \"type\": \"${1:Target}\"",
+			"    }",
+			"}"
+		],
+		"description": "Is Corpse"
 	}
 }

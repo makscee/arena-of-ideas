@@ -1,4 +1,6 @@
 [
+    "test/scenarios/reanimate_help.json",
+    "test/scenarios/reanimate_rebirth.json",
     "test/scenarios/empower_end.json",
     "test/scenarios/empower_big.json",
     "test/scenarios/empower.json",

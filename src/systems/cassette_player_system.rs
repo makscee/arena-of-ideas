@@ -28,7 +28,7 @@ impl CassettePlayerSystem {
             event: InputEvent,
         ) {
             match event {
-                InputEvent::Click => match resources.current_state {
+                InputEvent::Click => match resources.transition_state {
                     GameState::Shop => {
                         ButtonSystem::change_icon(
                             entity,
@@ -97,7 +97,7 @@ impl CassettePlayerSystem {
         ) {
             match event {
                 InputEvent::Press => {
-                    match resources.current_state {
+                    match resources.transition_state {
                         GameState::Battle => {}
                         _ => {
                             return;
@@ -154,11 +154,11 @@ impl CassettePlayerSystem {
             world,
             world_entity,
             resources,
-            match resources.current_state {
+            match resources.transition_state {
                 GameState::Battle => resources.options.images.pause_icon.clone(),
                 _ => resources.options.images.play_icon.clone(),
             },
-            match resources.current_state {
+            match resources.transition_state {
                 GameState::Battle => resources.options.colors.btn_active,
                 _ => resources.options.colors.btn_normal,
             },
@@ -166,7 +166,7 @@ impl CassettePlayerSystem {
             BATTLEFIELD_POSITION + vec2(0.0, -3.0),
             &default(),
         ));
-        match resources.current_state {
+        match resources.transition_state {
             GameState::Battle => {
                 buttons.push(ButtonSystem::create_button(
                     world,
@@ -216,7 +216,7 @@ impl System for CassettePlayerSystem {
             CassettePlayMode::Stop => resources.cassette.head,
             CassettePlayMode::Rewind { ts } => (resources.cassette.head
                 + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED)
-                .clamp(0.01, resources.cassette.length()),
+                .clamp(0.01, resources.cassette.length().max(0.01)),
         };
         if self.hidden {
             return;

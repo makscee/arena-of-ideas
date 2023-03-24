@@ -19,6 +19,16 @@ pub enum Condition {
         slot: ExpressionInt,
         faction: Faction,
     },
+    IsCorpse {
+        entity: ExpressionEntity,
+    },
+    Not {
+        condition: Box<Condition>,
+    },
+    And {
+        a: Box<Condition>,
+        b: Box<Condition>,
+    },
 }
 
 impl Condition {
@@ -49,6 +59,12 @@ impl Condition {
                 world,
             )
             .is_some()),
+            Condition::IsCorpse { entity } => Ok(resources
+                .unit_corpses
+                .contains_key(&entity.calculate(context, world, resources)?)),
+            Condition::Not { condition } => Ok(!condition.calculate(context, world, resources)?),
+            Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
+                && b.calculate(context, world, resources)?),
         }
     }
 }

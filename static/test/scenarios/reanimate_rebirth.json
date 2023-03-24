@@ -1,0 +1,61 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 3,
+                "health": 4,
+                "houses": [
+                    "Dragons"
+                ],
+                "active_statuses": {
+                    "Rebirth": 1
+                }
+            },
+            {
+                "attack": 1,
+                "health": 1
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 4,
+                "health": 6,
+                "houses": [
+                    "Necromancers"
+                ],
+                "trigger": {
+                    "type": "AfterDamageDealt",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Necromancers",
+                        "name": "Reanimate"
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "Not",
+        "condition": {
+            "type": "And",
+            "a": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": "Light"
+            },
+            "b": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": "Dark"
+            }
+        }
+    }
+}
