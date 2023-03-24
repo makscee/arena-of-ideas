@@ -43,6 +43,8 @@ uniform float u_text_border = 0.3;
 uniform float u_alpha = 1;
 uniform float u_alpha_over_t = 0;
 uniform float u_outline_fade = 0;
+uniform float u_mid_border = 0;
+uniform vec4 u_mid_border_color = vec4(0, 0, 0, 1);
 const float AA = 0.03;
 
 void main() {
@@ -50,6 +52,7 @@ void main() {
     vec4 color = vec4(0);
     float sdf = get_text_sdf(uv, u_text);
     vec4 text_color = get_text_color(sdf, u_color, u_outline_color, u_text_border, u_text_inside);
+    text_color = mix(text_color, u_mid_border_color, float(abs(sdf - u_text_inside) < u_mid_border));
     float outline_fade = smoothstep(u_text_inside, u_text_border, sdf) * u_outline_fade;
     text_color.a -= outline_fade;
     text_color.a = clamp((text_color.a * u_alpha + u_alpha_over_t * u_t) * float(text_color.a > 0.), 0., 1.);

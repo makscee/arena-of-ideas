@@ -31,6 +31,13 @@
                                 "faction": {
                                     "type": "Target"
                                 }
+                            },
+                            "after": {
+                                "type": "SetHealth",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
                             }
                         }
                     },

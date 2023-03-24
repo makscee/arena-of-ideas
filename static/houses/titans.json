@@ -1,0 +1,59 @@
+{
+    "name": "Titans",
+    "color": "#FFD700",
+    "abilities": {
+        "Immortality": {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Immortality"
+            },
+            "description": "75% chance to\nrevive after death"
+        }
+    },
+    "statuses": {
+        "Immortality": {
+            "trigger": {
+                "type": "AfterDeath",
+                "effect": {
+                    "type": "If",
+                    "condition": {
+                        "type": "And",
+                        "a": {
+                            "type": "IsCorpse",
+                            "entity": {
+                                "type": "Target"
+                            }
+                        },
+                        "b": {
+                            "type": "Chance",
+                            "part": 0.75
+                        }
+                    },
+                    "then": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "ShowText",
+                                "text": "Revive"
+                            },
+                            {
+                                "type": "Revive",
+                                "slot": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                }
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "layer": "Unit"
+            }
+        }
+    }
+}

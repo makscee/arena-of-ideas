@@ -5,8 +5,31 @@
         "light": {
             "units": [
                 {
-                    "attack": 50,
-                    "health": 100
+                    "name": "Phoenix",
+                    "description": "Has Rebirth",
+                    "attack": 15,
+                    "health": 500,
+                    "houses": [
+                        "Dragons"
+                    ],
+                    "active_statuses": {
+                        "Rebirth": 1
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_start_color": "#ff4400",
+                                "u_end_color": "#b9b9b9",
+                                "u_scale": 0.4,
+                                "u_scale_over_t": -0.5,
+                                "u_velocity_over_t": 0.0,
+                                "u_trail_count": 10,
+                                "u_lifetime": 2.2
+                            }
+                        }
+                    }
                 },
                 {
                     "attack": 1,
@@ -15,124 +38,97 @@
             ]
         },
         "dark": {
-            "name": "Golems",
+            "name": "Titans",
             "units": [
                 {
-                    "name": "Golem",
-                    "attack": 1,
-                    "health": 5,
-                    "houses": [
-                        "Warriors"
-                    ],
-                    "active_statuses": {
-                        "Defense": 99
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Golem",
-                    "attack": 1,
-                    "health": 10,
-                    "houses": [
-                        "Warriors"
-                    ],
-                    "active_statuses": {
-                        "Defense": 99
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Golem",
-                    "attack": 1,
-                    "health": 10,
-                    "houses": [
-                        "Warriors"
-                    ],
-                    "active_statuses": {
-                        "Defense": 99
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Golem",
-                    "attack": 1,
+                    "name": "Titan",
+                    "attack": 10,
                     "health": 15,
                     "houses": [
-                        "Warriors"
+                        "Titans"
                     ],
-                    "active_statuses": {
-                        "Defense": 99
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
+                            "instances": 3000,
                             "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
                             }
                         }
                     }
                 },
                 {
-                    "name": "Golem",
-                    "attack": 1,
-                    "health": 20,
+                    "name": "Titan",
+                    "attack": 10,
+                    "health": 15,
                     "houses": [
-                        "Warriors"
+                        "Titans"
                     ],
-                    "active_statuses": {
-                        "Defense": 99
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
+                            "instances": 3000,
                             "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Titan",
+                    "attack": 10,
+                    "health": 15,
+                    "houses": [
+                        "Titans"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
                             }
                         }
                     }
@@ -168,7 +164,7 @@
         "btn_normal": "#ff8b2c",
         "btn_hovered": "#fff42c",
         "btn_active": "#1bfc79",
-        "text_add_color": "#a4ebff",
+        "text_add_color": "#ffffff",
         "text_remove_color": "#ff6b6b"
     },
     "shaders": {
@@ -393,6 +389,7 @@
                     "u_color": "#ffffff",
                     "u_text_border": 0.05,
                     "u_outline_fade": 1.3,
+                    "u_mid_border": 0.04,
                     "u_text_inside": 0.48,
                     "u_scale": 0.5,
                     "u_align": -1.0,

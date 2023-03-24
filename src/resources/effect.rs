@@ -435,7 +435,6 @@ impl EffectWrapped {
                     .unit_corpses
                     .remove(&context.target)
                     .context("Target is not a corpse")?;
-                corpse.health = 1;
                 context.target = corpse.unpack(world, resources, slot, faction, None);
             }
             Effect::Aoe { factions, effect } => {

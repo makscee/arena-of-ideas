@@ -1,3 +1,5 @@
+use geng::prelude::rand::random;
+
 use super::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -29,6 +31,9 @@ pub enum Condition {
     And {
         a: Box<Condition>,
         b: Box<Condition>,
+    },
+    Chance {
+        part: f32,
     },
 }
 
@@ -67,6 +72,7 @@ impl Condition {
             Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
                 && b.calculate(context, world, resources)?),
             Condition::Always => Ok(true),
+            Condition::Chance { part } => Ok(random::<f32>() < *part),
         }
     }
 }

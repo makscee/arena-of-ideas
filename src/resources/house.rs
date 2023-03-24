@@ -25,6 +25,7 @@ pub enum HouseName {
     Necromancers,
     Archers,
     Clerics,
+    Titans,
 }
 
 impl FileWatcherLoader for House {

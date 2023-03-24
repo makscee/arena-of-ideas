@@ -64,6 +64,13 @@
                                 "slot": {
                                     "type": "Var",
                                     "var": "Slot"
+                                },
+                                "after": {
+                                    "type": "SetHealth",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
                                 }
                             }
                         ]
