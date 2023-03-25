@@ -1,0 +1,53 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 2,
+                "houses": [
+                    "Archers"
+                ],
+                "trigger": {
+                    "type": "AfterStrike",
+                    "effect": {
+                        "type": "Repeat",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Archers",
+                            "name": "Shoot",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            }
+                        },
+                        "count": {
+                            "type": "Const",
+                            "value": 3
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 6
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

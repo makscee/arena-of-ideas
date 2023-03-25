@@ -33,7 +33,7 @@ impl System for ShopSystem {
         Self::refresh_cassette(world, resources);
         let mut tape = Some(Vec::<CassetteNode>::default());
         ActionSystem::run_ticks(world, resources, &mut tape);
-        BattleSystem::death_check(world, resources, &mut tape);
+        BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut tape);
         ActionSystem::run_ticks(world, resources, &mut tape);
         resources.cassette.add_tape_nodes(tape.unwrap());
     }

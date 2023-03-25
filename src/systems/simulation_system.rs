@@ -69,6 +69,9 @@ mod tests {
         let mut resources = Resources::new(Options::load());
         let watcher = &mut FileWatcherSystem::new();
         resources.load(watcher);
+        resources
+            .logger
+            .set_enabled(resources.logger.is_context_enabled(&LogContext::Test));
         Game::init_world(&mut resources, &mut world);
         (world, resources)
     }

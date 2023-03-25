@@ -1,4 +1,7 @@
 [
+    "test/scenarios/gunner_extra.json",
+    "test/scenarios/gunner_break.json",
+    "test/scenarios/gunner.json",
     "test/scenarios/devil.json",
     "test/scenarios/empower_extra_atk.json",
     "test/scenarios/madman.json",

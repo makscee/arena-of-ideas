@@ -16,6 +16,7 @@ pub enum LogContext {
     UnitCreation,
     Measurement,
     Contexts,
+    Test,
 }
 
 impl Logger {
@@ -35,7 +36,7 @@ impl Logger {
         }
     }
 
-    fn is_context_enabled(&self, context: &LogContext) -> bool {
+    pub fn is_context_enabled(&self, context: &LogContext) -> bool {
         self.enabled && self.enabled_contexts.contains(context)
     }
 

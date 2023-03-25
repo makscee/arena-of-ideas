@@ -1,0 +1,46 @@
+{
+    "name": "Gunner",
+    "description": "After strike:\nShoot random enemy\n3 times",
+    "attack": 2,
+    "health": 4,
+    "houses": [
+        "Archers"
+    ],
+    "trigger": {
+        "type": "AfterStrike",
+        "effect": {
+            "type": "Repeat",
+            "effect": {
+                "type": "UseAbility",
+                "house": "Archers",
+                "name": "Shoot",
+                "target": {
+                    "type": "RandomUnit",
+                    "faction": {
+                        "type": "Opposite",
+                        "faction": {
+                            "type": "Owner"
+                        }
+                    }
+                }
+            },
+            "count": {
+                "type": "Const",
+                "value": 3
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#af079e",
+                "u_radius": 0.7,
+                "u_border": 0.4,
+                "u_circle_fbm": 1.3,
+                "u_circle_fbm_speed": 2.0,
+                "u_padding": 1.0
+            }
+        }
+    }
+}

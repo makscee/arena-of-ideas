@@ -5,13 +5,28 @@
         "Shoot": {
             "description": "Deal attack damage\nto target",
             "effect": {
-                "type": "Damage",
-                "value": {
-                    "type": "Var",
-                    "var": "AttackValue"
+                "type": "If",
+                "condition": {
+                    "type": "Not",
+                    "condition": {
+                        "type": "IsCorpse",
+                        "entity": {
+                            "type": "Target"
+                        }
+                    }
                 },
-                "after": {
-                    "type": "ShowCurve"
+                "then": {
+                    "type": "Damage",
+                    "value": {
+                        "type": "Var",
+                        "var": "AttackValue"
+                    },
+                    "after": {
+                        "type": "ShowCurve"
+                    }
+                },
+                "else": {
+                    "type": "Noop"
                 }
             }
         }
