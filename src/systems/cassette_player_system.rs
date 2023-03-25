@@ -218,6 +218,13 @@ impl System for CassettePlayerSystem {
                 + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED)
                 .clamp(0.01, resources.cassette.length().max(0.01)),
         };
+        resources.cassette_play_mode = match resources.cassette_play_mode {
+            CassettePlayMode::Play | CassettePlayMode::Stop => resources.cassette_play_mode,
+            CassettePlayMode::Rewind { ts } => match (ts - resources.cassette.head).abs() < 0.01 {
+                true => CassettePlayMode::Stop,
+                false => resources.cassette_play_mode,
+            },
+        };
         if self.hidden {
             return;
         }
