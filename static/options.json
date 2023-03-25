@@ -5,40 +5,49 @@
         "light": {
             "units": [
                 {
-                    "name": "Bowman",
-                    "description": "Start of turn:\nShoot random enemy",
-                    "attack": 1,
-                    "health": 2,
+                    "name": "Shikari",
+                    "description": "Battle Start:\nShoot random enemy\n5 times",
+                    "attack": 2,
+                    "health": 1,
                     "houses": [
                         "Archers"
                     ],
                     "trigger": {
-                        "type": "TurnStart",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
-                            "house": "Archers",
-                            "name": "Shoot",
-                            "target": {
-                                "type": "RandomUnit",
-                                "faction": {
-                                    "type": "Opposite",
+                            "type": "Repeat",
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Archers",
+                                "name": "Shoot",
+                                "target": {
+                                    "type": "RandomUnit",
                                     "faction": {
-                                        "type": "Owner"
+                                        "type": "Opposite",
+                                        "faction": {
+                                            "type": "Owner"
+                                        }
                                     }
                                 }
+                            },
+                            "count": {
+                                "type": "Const",
+                                "value": 5
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
+                            "instances": 1500,
                             "uniforms": {
-                                "u_color": "#3c8d21ff",
-                                "u_radius": 0.5,
-                                "u_border": 0.15,
-                                "u_circle_fbm": 0.3,
-                                "u_circle_fbm_speed": 2.0,
-                                "u_padding": 1.0
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#3c8d21ff",
+                                "u_scale": 0.3,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 2,
+                                "u_lifetime": 1.2
                             }
                         }
                     }
@@ -49,7 +58,11 @@
             "units": [
                 {
                     "attack": 1,
-                    "health": 1
+                    "health": 20
+                },
+                {
+                    "attack": 1,
+                    "health": 20
                 }
             ]
         }
