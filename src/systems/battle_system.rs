@@ -74,8 +74,8 @@ impl BattleSystem {
     ) -> bool {
         let factions = &hashset! {Faction::Light, Faction::Dark};
         SlotSystem::fill_gaps(world, resources, factions);
-        ContextSystem::refresh_factions(factions, world, resources);
         ActionSystem::run_ticks(world, resources, nodes);
+        ContextSystem::refresh_factions(factions, world, resources);
         SlotSystem::fill_gaps(world, resources, factions);
         SlotSystem::move_to_slots_animated(world, resources, nodes);
         if let Some((left, right)) = Self::find_hitters(world) {

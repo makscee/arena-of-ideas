@@ -1,0 +1,51 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 10,
+                "active_statuses": {
+                    "Empower": 10
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "name": "Exo",
+                "attack": 1,
+                "health": 1,
+                "description": "Start of battle:\nDispel random enemy",
+                "houses": [
+                    "Exorcists"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Exorcists",
+                        "name": "Dispel",
+                        "target": {
+                            "type": "RandomUnit",
+                            "faction": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

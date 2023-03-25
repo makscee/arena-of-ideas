@@ -222,15 +222,15 @@ impl StatusPool {
                     Self::remove_status_charge(entity, &status_name, resources, world);
                     ("-", resources.options.colors.text_remove_color)
                 };
-                let text = format!("{}{}", text, &status_name);
-                let outline_color = resources
-                    .status_pool
-                    .defined_statuses
-                    .get(&status_name)
-                    .unwrap()
-                    .color
-                    .unwrap();
                 if let Some(node) = node.as_mut() {
+                    let text = format!("{}{}", text, &status_name);
+                    let outline_color = resources
+                        .status_pool
+                        .defined_statuses
+                        .get(&status_name)
+                        .unwrap()
+                        .color
+                        .unwrap();
                     node.add_effect_by_key(
                         key,
                         VfxSystem::vfx_show_text(
@@ -258,5 +258,14 @@ impl StatusPool {
 
     pub fn clear_entity(&mut self, entity: &legion::Entity) {
         self.active_statuses.remove(entity);
+    }
+
+    pub fn clear_entity_by_changes(&mut self, entity: &legion::Entity) {
+        if let Some(statuses) = self.active_statuses.get(entity) {
+            for (name, charges) in statuses.into_iter() {
+                self.status_changes
+                    .push_back((*entity, name.clone(), -charges));
+            }
+        }
     }
 }

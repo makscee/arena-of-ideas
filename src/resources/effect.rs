@@ -292,7 +292,9 @@ impl EffectWrapped {
                 );
             }
             Effect::ClearStatuses => {
-                resources.status_pool.clear_entity(&context.target);
+                resources
+                    .status_pool
+                    .clear_entity_by_changes(&context.target);
             }
             Effect::UseAbility { name, house } => {
                 let owner_entry = world

@@ -177,7 +177,6 @@ impl GameStateSystem {
             }
             GameState::Battle => {
                 resources.cassette.clear();
-                WorldSystem::set_var(world, VarName::IsBattle, Var::Float(0.0));
                 Event::BattleEnd.send(world, resources);
             }
             GameState::Gallery => {
@@ -203,7 +202,6 @@ impl GameStateSystem {
         match resources.transition_state {
             GameState::MainMenu => {}
             GameState::Battle => {
-                WorldSystem::set_var(world, VarName::IsBattle, Var::Float(1.0));
                 CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Battle;
                 let mut tape = Some(Vec::<CassetteNode>::default());
@@ -258,8 +256,14 @@ impl GameStateSystem {
                 BattleSystem::init_battle(world, resources);
                 let mut tape = Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, &mut tape);
+                if resources.cassette.head > 0.0 {
+                    resources.cassette_play_mode = CassettePlayMode::Rewind {
+                        ts: resources.cassette.head,
+                    };
+                }
                 let tape = tape.unwrap();
                 dbg!(tape.len());
+                resources.cassette.clear();
                 resources.cassette.add_tape_nodes(tape);
                 dbg!(resources.cassette.length());
             }

@@ -1,4 +1,5 @@
 [
+    "test/scenarios/exo.json",
     "test/scenarios/cheater.json",
     "test/scenarios/shoot.json",
     "test/scenarios/heal.json",

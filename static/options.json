@@ -1,241 +1,42 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
-                    "name": "Phoenix",
-                    "description": "Has Rebirth",
                     "attack": 0,
-                    "health": 500,
-                    "houses": [
-                        "Dragons"
-                    ],
+                    "health": 10,
                     "active_statuses": {
-                        "Rebirth": 1
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 3000,
-                            "uniforms": {
-                                "u_start_color": "#ff4400",
-                                "u_end_color": "#b9b9b9",
-                                "u_scale": 0.4,
-                                "u_scale_over_t": -0.5,
-                                "u_velocity_over_t": 0.0,
-                                "u_trail_count": 10,
-                                "u_lifetime": 2.2
-                            }
-                        }
+                        "Empower": 10
                     }
-                },
-                {
-                    "attack": 1,
-                    "health": 10
                 }
             ]
         },
         "dark": {
-            "name": "Archers",
             "units": [
                 {
-                    "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
+                    "name": "Exo",
+                    "attack": 1,
+                    "health": 1,
+                    "description": "Start of battle:\nDispel random enemy",
                     "houses": [
-                        "Archers"
+                        "Exorcists"
                     ],
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
+                            "type": "UseAbility",
+                            "house": "Exorcists",
+                            "name": "Dispel",
+                            "target": {
+                                "type": "RandomUnit",
                                 "faction": {
                                     "type": "Opposite",
                                     "faction": {
                                         "type": "Owner"
                                     }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Archers",
-                                    "name": "Shoot"
                                 }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Archers",
-                                    "name": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Archers",
-                                    "name": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Archers",
-                                    "name": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
                             }
                         }
                     }

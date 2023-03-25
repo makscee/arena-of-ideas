@@ -5,7 +5,10 @@
         "Dispel": {
             "description": "Remove all statuses",
             "effect": {
-                "type": "ClearStatuses"
+                "type": "ClearStatuses",
+                "after": {
+                    "type": "ShowCurve"
+                }
             }
         }
     }

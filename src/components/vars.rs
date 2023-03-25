@@ -22,7 +22,6 @@ pub enum VarName {
     HouseColor2,
     HouseColor3,
     Floor,
-    IsBattle,
     FieldPosition,
     Charges,
     Hits,

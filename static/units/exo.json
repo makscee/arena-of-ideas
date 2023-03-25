@@ -1,0 +1,41 @@
+{
+    "name": "Exo",
+    "attack": 1,
+    "health": 1,
+    "description": "Start of battle:\nDispel random enemy",
+    "houses": [
+        "Exorcists"
+    ],
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "UseAbility",
+            "house": "Exorcists",
+            "name": "Dispel",
+            "target": {
+                "type": "RandomUnit",
+                "faction": {
+                    "type": "Opposite",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/layered_triangles.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#f1f1f1",
+                "u_color_1": "#fff200",
+                "u_radius": 0.4,
+                "u_alpha": 0.3,
+                "u_spin_part": 0.015,
+                "u_move_speed": 0.3
+            },
+            "instances": 40,
+            "vertices": 1
+        }
+    }
+}

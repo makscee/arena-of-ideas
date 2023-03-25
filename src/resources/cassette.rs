@@ -34,6 +34,10 @@ impl Cassette {
         })
     }
 
+    pub fn clear_tape(&mut self) {
+        self.tape = vec![default()];
+    }
+
     pub fn get_key_count(&self, key: &str) -> usize {
         self.last().get_key_count(key)
     }
@@ -124,7 +128,7 @@ impl Cassette {
     }
 
     pub fn clear(&mut self) {
-        self.tape = vec![default()];
+        self.clear_tape();
         self.head = 0.0;
         self.render_node.clear();
     }
