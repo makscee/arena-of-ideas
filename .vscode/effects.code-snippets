@@ -243,5 +243,30 @@
 			"}"
 		],
 		"description": "Show Curve"
+	},
+	"Ability Var": {
+		"prefix": "ability_var",
+		"body": [
+			"{",
+			"    \"type\": \"AbilityVar\",",
+			"    \"house\": \"${1:Robots}\",",
+			"    \"ability\": \"${2:Shield}\",",
+			"    \"var\": \"${3:Reflection}\"",
+			"}"
+		],
+		"description": "Ability Var"
+	},
+	"Change Ability Var Int": {
+		"prefix": "change_ability_var_int",
+		"body": [
+			"{",
+			"    \"type\": \"ChangeAbilityVarInt\",",
+			"    \"house\": \"${1:Robots}\",",
+			"    \"ability\": \"${2:Shield}\",",
+			"    \"var\": \"${3:Reflection}\",",
+			"    \"delta\": $4 $TM_SELECTED_TEXT",
+			"}"
+		],
+		"description": "Change Ability Var Int"
 	}
 }

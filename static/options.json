@@ -5,37 +5,45 @@
         "light": {
             "units": [
                 {
-                    "name": "Madman",
-                    "description": "Before strike:\ngain Empower (3)",
-                    "health": 3,
-                    "attack": 1,
+                    "name": "Lord",
+                    "description": "On Buy: Empower\n+2 extra attack",
+                    "health": 6,
+                    "attack": 2,
                     "houses": [
                         "Demons"
                     ],
+                    "active_statuses": {
+                        "Empower": 1
+                    },
                     "trigger": {
                         "type": "BeforeStrike",
                         "effect": {
-                            "type": "UseAbility",
+                            "type": "ChangeAbilityVarInt",
                             "house": "Demons",
-                            "name": "Empower",
-                            "target": {
-                                "type": "Owner"
+                            "ability": "Empower",
+                            "var": "AttackExtra",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
                             },
-                            "vars": {
-                                "Charges": 3
+                            "after": {
+                                "type": "ShowText",
+                                "text": "+Empower Extra ATK"
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
+                            "instances": 1500,
                             "uniforms": {
-                                "u_color": "#98005b",
-                                "u_circle_radius": 0.5,
-                                "u_border": 0.6,
-                                "u_circle_fbm": 0.25,
-                                "u_circle_fbm_speed": 10.0,
-                                "u_aa": 0.3
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#8e0039ff",
+                                "u_scale": 0.3,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 2,
+                                "u_lifetime": 1.2
                             }
                         }
                     }
@@ -45,8 +53,12 @@
         "dark": {
             "units": [
                 {
-                    "attack": 2,
-                    "health": 4
+                    "attack": 999,
+                    "health": 2
+                },
+                {
+                    "attack": 999,
+                    "health": 2
                 }
             ]
         }

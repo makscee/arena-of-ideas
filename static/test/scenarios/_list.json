@@ -1,4 +1,5 @@
 [
+    "test/scenarios/empower_extra_atk.json",
     "test/scenarios/madman.json",
     "test/scenarios/captain.json",
     "test/scenarios/dispel_all.json",

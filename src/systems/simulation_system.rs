@@ -16,6 +16,8 @@ impl SimulationSystem {
         dark.iter().enumerate().for_each(|(slot, unit)| {
             unit.unpack(world, resources, slot + 1, Faction::Dark, None);
         });
+        TeamPool::save_team(Faction::Light, Team::empty("light".to_string()), resources);
+        TeamPool::save_team(Faction::Dark, Team::empty("dark".to_string()), resources);
         ActionSystem::run_ticks(world, resources, &mut None);
         BattleSystem::run_battle(world, resources, &mut None);
         let result = match assert {

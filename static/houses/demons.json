@@ -16,7 +16,8 @@
             },
             "description": "Next damage\nincreased by 1",
             "default_vars": {
-                "Charges": 1
+                "Charges": 1,
+                "AttackExtra": 0
             }
         }
     },
@@ -29,8 +30,24 @@
                         "type": "ChangeVarInt",
                         "var": "AttackValue",
                         "delta": {
-                            "type": "Var",
-                            "var": "Charges"
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "Charges"
+                            },
+                            "b": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Charges"
+                                },
+                                "b": {
+                                    "type": "AbilityVar",
+                                    "house": "Demons",
+                                    "ability": "Empower",
+                                    "var": "AttackExtra"
+                                }
+                            }
                         }
                     },
                     {

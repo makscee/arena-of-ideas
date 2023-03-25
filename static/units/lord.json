@@ -1,0 +1,44 @@
+{
+    "name": "Lord",
+    "description": "On Buy: Empower\n+2 extra attack",
+    "health": 6,
+    "attack": 2,
+    "houses": [
+        "Demons"
+    ],
+    "active_statuses": {
+        "Empower": 1
+    },
+    "trigger": {
+        "type": "BeforeStrike",
+        "effect": {
+            "type": "ChangeAbilityVarInt",
+            "house": "Demons",
+            "ability": "Empower",
+            "var": "AttackExtra",
+            "delta": {
+                "type": "Const",
+                "value": 1
+            },
+            "after": {
+                "type": "ShowText",
+                "text": "+Empower Extra ATK"
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/particle_emitter.glsl",
+        "parameters": {
+            "instances": 1500,
+            "uniforms": {
+                "u_start_color": "#FFD700",
+                "u_end_color": "#8e0039ff",
+                "u_scale": 0.3,
+                "u_scale_over_t": -0.3,
+                "u_velocity_over_t": 0.3,
+                "u_trail_count": 2,
+                "u_lifetime": 1.2
+            }
+        }
+    }
+}

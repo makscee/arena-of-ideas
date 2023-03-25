@@ -1,0 +1,49 @@
+{
+    "light": {
+        "units": [
+            {
+                "health": 3,
+                "attack": 2,
+                "houses": [
+                    "Demons"
+                ],
+                "active_statuses": {
+                    "Empower": 4
+                },
+                "trigger": {
+                    "type": "BeforeStrike",
+                    "effect": {
+                        "type": "ChangeAbilityVarInt",
+                        "house": "Demons",
+                        "ability": "Empower",
+                        "var": "AttackExtra",
+                        "delta": {
+                            "type": "Const",
+                            "value": 1
+                        },
+                        "after": {
+                            "type": "ShowText",
+                            "text": "+Empower Extra ATK"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 2,
+                "health": 10
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}
