@@ -1,0 +1,112 @@
+{
+    "light": {
+        "units": [
+            {
+                "name": "Devil",
+                "attack": 6,
+                "health": 6,
+                "description": "Start of battle:\nEmpower (6)\neveryone",
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "Aoe",
+                        "factions": [
+                            {
+                                "type": "Owner"
+                            },
+                            {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            }
+                        ],
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Demons",
+                            "name": "Empower",
+                            "vars": {
+                                "Charges": 6
+                            }
+                        }
+                    }
+                },
+                "shader": {
+                    "path": "shaders/vfx/layered_triangles.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_color": "#8e0039ff",
+                            "u_color_1": "#000000",
+                            "u_radius": 1.5,
+                            "u_alpha": 0.1,
+                            "u_spin_part": 0.01,
+                            "u_move_speed": 0.5
+                        },
+                        "instances": 40,
+                        "vertices": 1
+                    }
+                }
+            },
+            {
+                "attack": 0,
+                "health": 6
+            },
+            {
+                "attack": 0,
+                "health": 6
+            },
+            {
+                "attack": 0,
+                "health": 6
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 6
+            },
+            {
+                "attack": 0,
+                "health": 6
+            },
+            {
+                "attack": 0,
+                "health": 6
+            },
+            {
+                "attack": 0,
+                "health": 6
+            }
+        ]
+    },
+    "assert": {
+        "type": "And",
+        "a": {
+            "type": "Not",
+            "condition": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": "Dark"
+            }
+        },
+        "b": {
+            "type": "Not",
+            "condition": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": "Light"
+            }
+        }
+    }
+}

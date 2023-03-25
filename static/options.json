@@ -5,59 +5,88 @@
         "light": {
             "units": [
                 {
-                    "name": "Lord",
-                    "description": "On Buy: Empower\n+2 extra attack",
+                    "name": "Devil",
+                    "attack": 6,
                     "health": 6,
-                    "attack": 2,
+                    "description": "Start of battle:\nEmpower (6)\neveryone",
                     "houses": [
                         "Demons"
                     ],
-                    "active_statuses": {
-                        "Empower": 1
-                    },
                     "trigger": {
-                        "type": "BeforeStrike",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "ChangeAbilityVarInt",
-                            "house": "Demons",
-                            "ability": "Empower",
-                            "var": "AttackExtra",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
-                            },
-                            "after": {
-                                "type": "ShowText",
-                                "text": "+Empower Extra ATK"
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                },
+                                {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Demons",
+                                "name": "Empower",
+                                "vars": {
+                                    "Charges": 6
+                                }
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
-                            "instances": 1500,
                             "uniforms": {
-                                "u_start_color": "#FFD700",
-                                "u_end_color": "#8e0039ff",
-                                "u_scale": 0.3,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 2,
-                                "u_lifetime": 1.2
-                            }
+                                "u_color": "#8e0039ff",
+                                "u_color_1": "#000000",
+                                "u_radius": 1.5,
+                                "u_alpha": 0.1,
+                                "u_spin_part": 0.01,
+                                "u_move_speed": 0.5
+                            },
+                            "instances": 40,
+                            "vertices": 1
                         }
                     }
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 1
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "attack": 999,
+                    "attack": 1,
                     "health": 2
                 },
                 {
-                    "attack": 999,
+                    "attack": 1,
+                    "health": 2
+                },
+                {
+                    "attack": 1,
+                    "health": 2
+                },
+                {
+                    "attack": 1,
                     "health": 2
                 }
             ]
