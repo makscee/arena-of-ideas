@@ -181,33 +181,31 @@ impl BattleSystem {
         resources: &mut Resources,
     ) {
         Self::spin(world, resources, nodes);
-        let context_left = Context {
-            owner: left,
-            target: right,
-            ..ContextSystem::get_context(left, world)
-        };
-        resources.action_queue.push_back(Action::new(
-            context_left.clone(),
-            Effect::Damage {
-                value: None,
-                on_hit: None,
+        if let Ok(mut context_left) = ContextSystem::try_get_context(left, world) {
+            if let Ok(mut context_right) = ContextSystem::try_get_context(right, world) {
+                context_left.owner = left;
+                context_left.target = right;
+                resources.action_queue.push_back(Action::new(
+                    context_left,
+                    Effect::Damage {
+                        value: None,
+                        on_hit: None,
+                    }
+                    .wrap(),
+                ));
+                context_right.owner = right;
+                context_right.target = left;
+                resources.action_queue.push_back(Action::new(
+                    context_right,
+                    Effect::Damage {
+                        value: None,
+                        on_hit: None,
+                    }
+                    .wrap(),
+                ));
             }
-            .wrap(),
-        ));
+        }
 
-        let context_right = Context {
-            owner: right,
-            target: left,
-            ..ContextSystem::get_context(right, world)
-        };
-        resources.action_queue.push_back(Action::new(
-            context_right.clone(),
-            Effect::Damage {
-                value: None,
-                on_hit: None,
-            }
-            .wrap(),
-        ));
         Self::spin(world, resources, nodes);
 
         Event::AfterStrike {

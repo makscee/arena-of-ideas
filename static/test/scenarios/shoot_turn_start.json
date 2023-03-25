@@ -1,0 +1,46 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 2,
+                "health": 4,
+                "houses": [
+                    "Archers"
+                ],
+                "trigger": {
+                    "type": "TurnStart",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Archers",
+                        "name": "Shoot",
+                        "target": {
+                            "type": "RandomUnit",
+                            "faction": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

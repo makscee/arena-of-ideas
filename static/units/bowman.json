@@ -1,0 +1,39 @@
+{
+    "name": "Bowman",
+    "description": "Start of turn:\nShoot random enemy",
+    "attack": 1,
+    "health": 2,
+    "houses": [
+        "Archers"
+    ],
+    "trigger": {
+        "type": "TurnStart",
+        "effect": {
+            "type": "UseAbility",
+            "house": "Archers",
+            "name": "Shoot",
+            "target": {
+                "type": "RandomUnit",
+                "faction": {
+                    "type": "Opposite",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#3c8d21ff",
+                "u_radius": 0.5,
+                "u_border": 0.15,
+                "u_circle_fbm": 0.3,
+                "u_circle_fbm_speed": 2.0,
+                "u_padding": 1.0
+            }
+        }
+    }
+}

@@ -34,12 +34,12 @@
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
-                "u_color": "#af079e",
-                "u_radius": 0.7,
-                "u_border": 0.4,
-                "u_circle_fbm": 1.3,
-                "u_circle_fbm_speed": 2.0,
-                "u_padding": 1.0
+                "u_color": "#3c8d21ff",
+                "u_circle_radius": 0.6,
+                "u_border": 0.2,
+                "u_circle_fbm": -0.5,
+                "u_circle_fbm_speed": 5.0,
+                "u_aa": 0.1
             }
         }
     }
