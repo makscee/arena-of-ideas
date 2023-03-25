@@ -85,7 +85,7 @@ pub enum Effect {
         color: Option<Rgba<f32>>,
     },
     Aoe {
-        factions: Vec<Faction>,
+        factions: Vec<ExpressionFaction>,
         effect: Box<EffectWrapped>,
     },
     Revive {
@@ -448,10 +448,15 @@ impl EffectWrapped {
                     .unit_corpses
                     .remove(&context.target)
                     .context("Target is not a corpse")?;
+                corpse.damage = 0;
                 context.target = corpse.unpack(world, resources, slot, faction, None);
             }
             Effect::Aoe { factions, effect } => {
-                UnitSystem::collect_factions(world, &HashSet::from_iter(factions.clone()))
+                let mut faction_values: Vec<Faction> = default();
+                for faction in factions {
+                    faction_values.push(faction.calculate(&context, world, resources)?);
+                }
+                UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
                     .iter()
                     .for_each(|(entity, _)| {
                         resources.action_queue.push_front(Action::new(

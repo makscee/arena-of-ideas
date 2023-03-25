@@ -5,137 +5,77 @@
         "light": {
             "units": [
                 {
-                    "name": "Cleanser",
-                    "description": "On Buy:\nDispel\nadjacent allies",
-                    "health": 1,
-                    "attack": 1,
+                    "name": "Purifier",
+                    "attack": 3,
+                    "health": 3,
+                    "description": "Start of battle:\nDispel everyone",
                     "houses": [
                         "Exorcists"
                     ],
                     "trigger": {
-                        "type": "Buy",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "List",
-                            "effects": [
+                            "type": "Aoe",
+                            "factions": [
                                 {
-                                    "type": "If",
-                                    "condition": {
-                                        "type": "SlotOccupied",
-                                        "faction": "Team",
-                                        "slot": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "var": "Slot"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": 1
-                                            }
-                                        }
-                                    },
-                                    "then": {
-                                        "type": "UseAbility",
-                                        "target": {
-                                            "type": "FindUnit",
-                                            "slot": {
-                                                "type": "Sum",
-                                                "a": {
-                                                    "type": "Var",
-                                                    "var": "Slot"
-                                                },
-                                                "b": {
-                                                    "type": "Const",
-                                                    "value": 1
-                                                }
-                                            },
-                                            "faction": "Team"
-                                        },
-                                        "house": "Exorcists",
-                                        "name": "Dispel"
-                                    },
-                                    "else": {
-                                        "type": "Noop"
-                                    }
+                                    "type": "Owner"
                                 },
                                 {
-                                    "type": "If",
-                                    "condition": {
-                                        "type": "SlotOccupied",
-                                        "faction": "Team",
-                                        "slot": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Var",
-                                                "var": "Slot"
-                                            },
-                                            "b": {
-                                                "type": "Const",
-                                                "value": -1
-                                            }
-                                        }
-                                    },
-                                    "then": {
-                                        "target": {
-                                            "type": "FindUnit",
-                                            "slot": {
-                                                "type": "Sum",
-                                                "a": {
-                                                    "type": "Var",
-                                                    "var": "Slot"
-                                                },
-                                                "b": {
-                                                    "type": "Const",
-                                                    "value": -1
-                                                }
-                                            },
-                                            "faction": "Team"
-                                        },
-                                        "type": "UseAbility",
-                                        "house": "Exorcists",
-                                        "name": "Dispel"
-                                    },
-                                    "else": {
-                                        "type": "Noop"
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
                                     }
                                 }
-                            ]
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Exorcists",
+                                "name": "Dispel"
+                            }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#afafaf",
-                                "u_circle_radius": 0.9,
-                                "u_border": 0.2,
-                                "u_circle_fbm": 0.1,
-                                "u_circle_fbm_speed": 3.3,
-                                "u_padding": 0.2,
-                                "u_aa": 0.2
-                            }
+                                "u_color_1": "#f1f1f1",
+                                "u_color": "#000000",
+                                "u_radius": 1.1,
+                                "u_alpha": 0.1,
+                                "u_spin_part": 0.015,
+                                "u_move_speed": 0.3
+                            },
+                            "instances": 40,
+                            "vertices": 1
                         }
                     }
                 },
                 {
-                    "attack": 0,
-                    "health": 10,
-                    "active_statuses": {
-                        "Empower": 10
-                    }
+                    "attack": 999,
+                    "health": 999
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "name": "Exo",
                     "attack": 1,
                     "health": 1,
-                    "description": "Start of battle:\nDispel random enemy",
                     "houses": [
-                        "Exorcists"
-                    ]
+                        "Necromancers"
+                    ],
+                    "trigger": {
+                        "type": "AfterDamageDealt",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Necromancers",
+                            "name": "Reanimate"
+                        }
+                    }
+                },
+                {
+                    "health": 1,
+                    "attack": 0
                 }
             ]
         }

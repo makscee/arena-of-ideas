@@ -1,0 +1,83 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1,
+                "houses": [
+                    "Exorcists"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "Aoe",
+                        "factions": [
+                            {
+                                "type": "Owner"
+                            },
+                            {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            }
+                        ],
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Exorcists",
+                            "name": "Dispel"
+                        }
+                    }
+                }
+            },
+            {
+                "attack": 0,
+                "health": 3,
+                "damage": 5,
+                "active_statuses": {
+                    "SiphonLife": 3
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 10,
+                "active_statuses": {
+                    "Empower": 3
+                }
+            },
+            {
+                "attack": 0,
+                "health": 10,
+                "active_statuses": {
+                    "Shield": 3
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "And",
+        "a": {
+            "type": "SlotOccupied",
+            "slot": {
+                "type": "Const",
+                "value": 1
+            },
+            "faction": "Light"
+        },
+        "b": {
+            "type": "Not",
+            "condition": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 2
+                },
+                "faction": "Light"
+            }
+        }
+    }
+}

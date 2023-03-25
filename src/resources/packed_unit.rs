@@ -83,7 +83,7 @@ impl PackedUnit {
             NameComponent::new(&self.name),
             DescriptionComponent::new(&self.description),
             AttackComponent::new(self.attack),
-            HealthComponent::new(self.health),
+            HealthComponent::new(self.health, self.damage),
             HouseComponent::new(self.houses.clone()),
             AreaComponent::new(
                 AreaType::Circle { radius: 1.0 },

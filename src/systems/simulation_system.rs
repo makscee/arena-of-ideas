@@ -114,7 +114,7 @@ mod tests {
             })
             .collect_vec();
         assert!(!scenarios.is_empty());
-        for (path, scenario) in scenarios {
+        for (path, scenario) in scenarios.iter() {
             println!("Run scenario: {:?}...", path.file_name().unwrap());
             assert!(
                 SimulationSystem::run_team_battle(
@@ -127,7 +127,12 @@ mod tests {
                 "Scenario {:?} failed assert: {:?}",
                 path,
                 scenario.assert
-            )
+            );
         }
+        println!("Scenarios:");
+        scenarios
+            .iter()
+            .rev()
+            .for_each(|(path, _)| println!("{}", path.file_name().unwrap().to_string_lossy()));
     }
 }

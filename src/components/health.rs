@@ -8,11 +8,8 @@ pub struct HealthComponent {
 }
 
 impl HealthComponent {
-    pub fn new(max: Hp) -> Self {
-        Self {
-            value: max,
-            damage: 0,
-        }
+    pub fn new(max: Hp, damage: usize) -> Self {
+        Self { value: max, damage }
     }
 }
 

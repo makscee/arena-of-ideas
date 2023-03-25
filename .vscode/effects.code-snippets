@@ -222,5 +222,17 @@
 			"}"
 		],
 		"description": "Repeat"
+	},
+	"Opposite": {
+		"prefix": "opposite",
+		"body": [
+			"{",
+			"    \"type\": \"Opposite\",",
+			"    \"faction\": {",
+			"        \"type\": \"${1:Owner}\"",
+			"    }",
+			"}"
+		],
+		"description": "Opposite"
 	}
 }
