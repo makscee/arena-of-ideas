@@ -9,6 +9,9 @@
                 "charges": {
                     "type": "Var",
                     "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
                 }
             },
             "description": "Negate one instance\nof incoming damage",

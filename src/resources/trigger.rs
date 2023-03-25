@@ -24,6 +24,7 @@ pub enum Trigger {
     TurnEnd { effect: EffectWrapped },
     Buy { effect: EffectWrapped },
     Sell { effect: EffectWrapped },
+    BeforeStrike { effect: EffectWrapped },
     AfterStrike { effect: EffectWrapped },
     AddToTeam { effect: EffectWrapped },
     RemoveFromTeam { effect: EffectWrapped },
@@ -114,6 +115,10 @@ impl Trigger {
                 Event::TurnEnd { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::BeforeStrike { .. } => match event {
+                Event::BeforeStrike { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
             Trigger::AfterStrike { .. } => match event {
                 Event::AfterStrike { .. } => self.fire(action_queue, context, logger),
                 _ => {}
@@ -164,6 +169,7 @@ impl Trigger {
             | Trigger::BattleEnd { effect }
             | Trigger::TurnStart { effect }
             | Trigger::TurnEnd { effect }
+            | Trigger::BeforeStrike { effect }
             | Trigger::AfterStrike { effect }
             | Trigger::Buy { effect }
             | Trigger::Sell { effect }

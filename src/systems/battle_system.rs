@@ -81,7 +81,22 @@ impl BattleSystem {
         if let Some((left, right)) = Self::find_hitters(world) {
             Event::TurnStart.send(world, resources);
             ActionSystem::run_ticks(world, resources, nodes);
+
             Self::move_strikers(&StrikePhase::Charge, left, right, world, resources, nodes);
+            Event::BeforeStrike {
+                owner: left,
+                target: right,
+            }
+            .send(world, resources);
+            ActionSystem::run_ticks(world, resources, nodes);
+
+            Event::BeforeStrike {
+                owner: right,
+                target: left,
+            }
+            .send(world, resources);
+            ActionSystem::run_ticks(world, resources, nodes);
+
             Self::move_strikers(&StrikePhase::Release, left, right, world, resources, nodes);
             Self::add_strike_vfx(world, resources, nodes);
             Self::hit(left, right, nodes, world, resources);
@@ -157,6 +172,7 @@ impl BattleSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        ContextSystem::refresh_entity(left, world, resources);
         let context_left = Context {
             owner: left,
             target: right,
@@ -171,12 +187,8 @@ impl BattleSystem {
             .wrap(),
         ));
         ActionSystem::run_ticks(world, resources, nodes);
-        Event::AfterStrike {
-            owner: left,
-            target: right,
-        }
-        .send(world, resources);
-        ActionSystem::run_ticks(world, resources, nodes);
+
+        ContextSystem::refresh_entity(right, world, resources);
         let context_right = Context {
             owner: right,
             target: left,
@@ -191,6 +203,14 @@ impl BattleSystem {
             .wrap(),
         ));
         ActionSystem::run_ticks(world, resources, nodes);
+
+        Event::AfterStrike {
+            owner: left,
+            target: right,
+        }
+        .send(world, resources);
+        ActionSystem::run_ticks(world, resources, nodes);
+
         Event::AfterStrike {
             owner: right,
             target: left,

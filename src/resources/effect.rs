@@ -107,6 +107,7 @@ impl Effect {
             target: default(),
             owner: default(),
             after: default(),
+            vars: default(),
         }
     }
 }
@@ -118,6 +119,7 @@ pub struct EffectWrapped {
     pub target: Option<ExpressionEntity>,
     pub owner: Option<ExpressionEntity>,
     pub after: Option<Box<EffectWrapped>>,
+    pub vars: Option<Vars>,
 }
 
 impl EffectWrapped {
@@ -141,6 +143,9 @@ impl EffectWrapped {
                 .unwrap_or(context.owner),
             ..context
         };
+        if let Some(vars) = self.vars.as_ref() {
+            context.vars.merge_mut(vars, true);
+        }
         match &self.effect {
             Effect::Damage {
                 value,
@@ -316,7 +321,7 @@ impl EffectWrapped {
                     .try_get_ability_vars(house, name)
                     .context("Failed to find ability")?;
                 let faction = Faction::from_entity(context.owner, world, &resources);
-                context.vars.merge_mut(defaults, true);
+                context.vars.merge_mut(defaults, false);
                 if let Some(overrides) = TeamPool::try_get_team(faction, resources)
                     .and_then(|x| x.ability_state.get_vars(house, name))
                 {
@@ -326,16 +331,16 @@ impl EffectWrapped {
                     VarName::Color,
                     Var::Color(resources.house_pool.get_color(house)),
                 );
-                let effect = EffectWrapped {
-                    effect: Effect::ShowText {
+                let effect = {
+                    let mut effect = Effect::ShowText {
                         text: format!("Use {}", name),
                         color: None,
-                    },
-                    target: None,
-                    owner: None,
-                    after: Some(Box::new(
+                    }
+                    .wrap();
+                    effect.after = Some(Box::new(
                         resources.house_pool.get_ability(house, name).effect.clone(),
-                    )),
+                    ));
+                    effect
                 };
                 resources
                     .action_queue

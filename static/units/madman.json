@@ -1,0 +1,36 @@
+{
+    "name": "Madman",
+    "description": "Before strike:\ngain Empower (3)",
+    "health": 3,
+    "attack": 1,
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "BeforeStrike",
+        "effect": {
+            "type": "UseAbility",
+            "house": "Demons",
+            "name": "Empower",
+            "target": {
+                "type": "Owner"
+            },
+            "vars": {
+                "Charges": 3
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#98005b",
+                "u_circle_radius": 0.5,
+                "u_border": 0.6,
+                "u_circle_fbm": 0.25,
+                "u_circle_fbm_speed": 10.0,
+                "u_aa": 0.3
+            }
+        }
+    }
+}

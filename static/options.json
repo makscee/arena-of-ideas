@@ -5,58 +5,38 @@
         "light": {
             "units": [
                 {
-                    "attack": 0,
-                    "health": 1
-                },
-                {
-                    "attack": 0,
-                    "health": 1
-                },
-                {
-                    "attack": 0,
-                    "health": 1
-                },
-                {
-                    "attack": 0,
-                    "health": 1
-                },
-                {
-                    "name": "Captain",
-                    "attack": 3,
+                    "name": "Madman",
+                    "description": "Before strike:\ngain Empower (3)",
                     "health": 3,
-                    "description": "Start of battle:\nEmpower all allies",
+                    "attack": 1,
                     "houses": [
                         "Demons"
                     ],
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "BeforeStrike",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Owner"
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "house": "Demons",
-                                "name": "Empower"
+                            "type": "UseAbility",
+                            "house": "Demons",
+                            "name": "Empower",
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "vars": {
+                                "Charges": 3
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#890202",
-                                "u_color_1": "#ffffff",
-                                "u_radius": 0.7,
-                                "u_alpha": 1.0,
-                                "u_spin_part": 0.1,
-                                "u_move_speed": 0.03
-                            },
-                            "instances": 40,
-                            "vertices": 1
+                                "u_color": "#98005b",
+                                "u_circle_radius": 0.5,
+                                "u_border": 0.6,
+                                "u_circle_fbm": 0.25,
+                                "u_circle_fbm_speed": 10.0,
+                                "u_aa": 0.3
+                            }
                         }
                     }
                 }
@@ -65,12 +45,8 @@
         "dark": {
             "units": [
                 {
-                    "attack": 999,
-                    "health": 2
-                },
-                {
-                    "attack": 999,
-                    "health": 2
+                    "attack": 2,
+                    "health": 4
                 }
             ]
         }

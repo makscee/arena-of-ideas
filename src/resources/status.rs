@@ -126,6 +126,13 @@ impl StatusPool {
         charges_change: i32,
     ) {
         if charges_change != 0 {
+            resources.logger.log(
+                &format!(
+                    "Change status {:?} {} {}",
+                    entity, status_name, charges_change
+                ),
+                &LogContext::Effect,
+            );
             resources.status_pool.status_changes.push_back((
                 entity,
                 status_name.to_string(),

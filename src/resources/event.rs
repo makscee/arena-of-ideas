@@ -63,6 +63,10 @@ pub enum Event {
     RemoveFromTeam {
         owner: legion::Entity,
     },
+    BeforeStrike {
+        owner: legion::Entity,
+        target: legion::Entity,
+    },
     AfterStrike {
         owner: legion::Entity,
         target: legion::Entity,
@@ -136,7 +140,9 @@ impl Event {
             | Event::RemoveFromTeam { owner } => {
                 StatusPool::notify_entity(self, *owner, resources, world, None);
             }
-            Event::AfterStrike { owner, target } | Event::AfterKill { owner, target } => {
+            Event::BeforeStrike { owner, target }
+            | Event::AfterStrike { owner, target }
+            | Event::AfterKill { owner, target } => {
                 if let Some(owner_context) = ContextSystem::try_get_context(*owner, world).ok() {
                     let context = Context {
                         target: *target,

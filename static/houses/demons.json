@@ -4,13 +4,20 @@
     "abilities": {
         "Empower": {
             "effect": {
-                "type": "AddStatus",
+                "type": "ChangeStatus",
                 "name": "Empower",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
                 "after": {
                     "type": "ShowCurve"
                 }
             },
-            "description": "Next damage\nincreased by 1"
+            "description": "Next damage\nincreased by 1",
+            "default_vars": {
+                "Charges": 1
+            }
         }
     },
     "statuses": {
