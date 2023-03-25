@@ -5,12 +5,28 @@
         "light": {
             "units": [
                 {
-                    "name": "Purifier",
+                    "attack": 0,
+                    "health": 1
+                },
+                {
+                    "attack": 0,
+                    "health": 1
+                },
+                {
+                    "attack": 0,
+                    "health": 1
+                },
+                {
+                    "attack": 0,
+                    "health": 1
+                },
+                {
+                    "name": "Captain",
                     "attack": 3,
                     "health": 3,
-                    "description": "Start of battle:\nDispel everyone",
+                    "description": "Start of battle:\nEmpower all allies",
                     "houses": [
-                        "Exorcists"
+                        "Demons"
                     ],
                     "trigger": {
                         "type": "BattleStart",
@@ -19,18 +35,12 @@
                             "factions": [
                                 {
                                     "type": "Owner"
-                                },
-                                {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
                                 }
                             ],
                             "effect": {
                                 "type": "UseAbility",
-                                "house": "Exorcists",
-                                "name": "Dispel"
+                                "house": "Demons",
+                                "name": "Empower"
                             }
                         }
                     },
@@ -38,44 +48,29 @@
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color_1": "#f1f1f1",
-                                "u_color": "#000000",
-                                "u_radius": 1.1,
-                                "u_alpha": 0.1,
-                                "u_spin_part": 0.015,
-                                "u_move_speed": 0.3
+                                "u_color": "#890202",
+                                "u_color_1": "#ffffff",
+                                "u_radius": 0.7,
+                                "u_alpha": 1.0,
+                                "u_spin_part": 0.1,
+                                "u_move_speed": 0.03
                             },
                             "instances": 40,
                             "vertices": 1
                         }
                     }
-                },
-                {
-                    "attack": 999,
-                    "health": 999
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "attack": 1,
-                    "health": 1,
-                    "houses": [
-                        "Necromancers"
-                    ],
-                    "trigger": {
-                        "type": "AfterDamageDealt",
-                        "effect": {
-                            "type": "UseAbility",
-                            "house": "Necromancers",
-                            "name": "Reanimate"
-                        }
-                    }
+                    "attack": 999,
+                    "health": 2
                 },
                 {
-                    "health": 1,
-                    "attack": 0
+                    "attack": 999,
+                    "health": 2
                 }
             ]
         }

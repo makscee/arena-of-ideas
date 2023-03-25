@@ -234,5 +234,14 @@
 			"}"
 		],
 		"description": "Opposite"
+	},
+	"Show Curve": {
+		"prefix": "show_curve",
+		"body": [
+			"{",
+			"    \"type\": \"ShowCurve\"",
+			"}"
+		],
+		"description": "Show Curve"
 	}
 }

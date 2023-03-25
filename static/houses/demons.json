@@ -5,7 +5,10 @@
         "Empower": {
             "effect": {
                 "type": "AddStatus",
-                "name": "Empower"
+                "name": "Empower",
+                "after": {
+                    "type": "ShowCurve"
+                }
             },
             "description": "Next damage\nincreased by 1"
         }
