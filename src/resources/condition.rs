@@ -25,6 +25,9 @@ pub enum Condition {
     IsCorpse {
         entity: ExpressionEntity,
     },
+    IsAlive {
+        entity: ExpressionEntity,
+    },
     Not {
         condition: Box<Condition>,
     },
@@ -73,6 +76,17 @@ impl Condition {
                 && b.calculate(context, world, resources)?),
             Condition::Always => Ok(true),
             Condition::Chance { part } => Ok(random::<f32>() < *part),
+            Condition::IsAlive { entity } => {
+                if let Ok(context) = ContextSystem::try_get_context(
+                    entity.calculate(context, world, resources)?,
+                    world,
+                ) {
+                    let vars = context.vars;
+                    Ok(vars.get_int(&VarName::HpValue) > vars.get_int(&VarName::HpDamage))
+                } else {
+                    Ok(false)
+                }
+            }
         }
     }
 }

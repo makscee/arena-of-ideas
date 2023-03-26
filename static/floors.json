@@ -212,6 +212,7 @@
                     "name": "Death Knight",
                     "attack": 4,
                     "health": 10,
+                    "description": "On hit:\napply Reanimate",
                     "houses": [
                         "Necromancers"
                     ],

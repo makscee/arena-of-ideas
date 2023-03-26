@@ -22,6 +22,9 @@
                         "charges": {
                             "type": "Var",
                             "var": "Charges"
+                        },
+                        "after": {
+                            "type": "ShowCurve"
                         }
                     }
                 }
@@ -33,17 +36,32 @@
                 "type": "List",
                 "effects": [
                     {
-                        "type": "Damage",
-                        "value": {
-                            "type": "Const",
-                            "value": 1
+                        "type": "If",
+                        "condition": {
+                            "type": "IsAlive",
+                            "entity": {
+                                "type": "Target"
+                            }
                         },
-                        "on_hit": {
-                            "type": "AddStatus",
-                            "target": {
-                                "type": "Owner"
+                        "then": {
+                            "type": "Damage",
+                            "value": {
+                                "type": "Const",
+                                "value": 1
                             },
-                            "name": "SiphonLife"
+                            "on_hit": {
+                                "type": "AddStatus",
+                                "target": {
+                                    "type": "Owner"
+                                },
+                                "name": "SiphonLife",
+                                "after": {
+                                    "type": "ShowCurve"
+                                }
+                            }
+                        },
+                        "else": {
+                            "type": "Noop"
                         }
                     }
                 ]

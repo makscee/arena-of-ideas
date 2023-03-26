@@ -1,0 +1,37 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 2,
+                "houses": [
+                    "Vampires"
+                ],
+                "trigger": {
+                    "type": "AfterStrike",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Vampires",
+                        "name": "SiphonLife"
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

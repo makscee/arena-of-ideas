@@ -14,11 +14,20 @@ impl BattleSystem {
         nodes: &mut Option<Vec<CassetteNode>>,
     ) -> bool {
         let mut ticks = 0;
+        Self::add_intro(resources, nodes);
         Event::BattleStart.send(world, resources);
         while Self::tick(world, resources, nodes) && ticks < 1000 {
             ticks += 1;
         }
         Self::battle_won(world)
+    }
+
+    pub fn add_intro(resources: &Resources, nodes: &mut Option<Vec<CassetteNode>>) {
+        if let Some(nodes) = nodes.as_mut() {
+            let mut node = CassetteNode::default();
+            node.add_effects(VfxSystem::vfx_battle_team_names_animation(resources));
+            nodes.push(node);
+        }
     }
 
     pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {

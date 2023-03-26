@@ -1,4 +1,5 @@
 [
+    "test/scenarios/siphon.json",
     "test/scenarios/shoot_turn_start.json",
     "test/scenarios/gunner_extra.json",
     "test/scenarios/gunner_break.json",

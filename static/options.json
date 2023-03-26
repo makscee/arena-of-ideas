@@ -1,8 +1,9 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
+            "name": "Dorks",
             "units": [
                 {
                     "name": "Shikari",
@@ -55,6 +56,7 @@
             ]
         },
         "dark": {
+            "name": "Snakes",
             "units": [
                 {
                     "attack": 1,
@@ -68,7 +70,7 @@
         }
     },
     "fov": 14.0,
-    "initial_shop_fill": 10,
+    "initial_shop_fill": 5,
     "log": {
         "Action": true,
         "Effect": true,
@@ -155,6 +157,39 @@
                     ],
                     "u_max_width": 3.5,
                     "u_padding": 0.0
+                }
+            },
+            "layer": "Unit",
+            "order": 10
+        },
+        "team_name": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_position": [
+                        10.0,
+                        1.0
+                    ],
+                    "u_color": "#ffffff",
+                    "u_outline_color": "#909090",
+                    "u_outline_fade": 0.7,
+                    "u_mid_border": 0.01,
+                    "u_scale": 1.0,
+                    "u_padding": 0.0
+                }
+            },
+            "layer": "Unit",
+            "order": 10
+        },
+        "team_name_intro": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_position": [
+                        3.0,
+                        0.0
+                    ],
+                    "u_scale": 2.0
                 }
             },
             "layer": "Unit",

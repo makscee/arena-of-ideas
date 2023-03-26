@@ -10,7 +10,7 @@
         "Empower": 1
     },
     "trigger": {
-        "type": "BeforeStrike",
+        "type": "Buy",
         "effect": {
             "type": "ChangeAbilityVarInt",
             "house": "Demons",
@@ -18,7 +18,7 @@
             "var": "AttackExtra",
             "delta": {
                 "type": "Const",
-                "value": 1
+                "value": 2
             },
             "after": {
                 "type": "ShowText",

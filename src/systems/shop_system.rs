@@ -94,43 +94,45 @@ impl ShopSystem {
             }
         }
         if let Some(dropped) = resources.shop.drop_entity {
-            let entry = world.entry(dropped).unwrap();
-            let unit = entry.get_component::<UnitComponent>().unwrap();
-            match unit.faction {
-                Faction::Team => {
-                    if entry.get_component::<AreaComponent>().unwrap().position.y > SHOP_POSITION.y
-                    {
-                        Self::sell(dropped, resources, world);
-                    } else if let Some(slot) = SlotSystem::get_horizontal_hovered_slot(
-                        &Faction::Team,
-                        resources.input.mouse_pos,
-                    ) {
-                        world
-                            .entry_mut(dropped)
-                            .unwrap()
-                            .get_component_mut::<UnitComponent>()
-                            .unwrap()
-                            .slot = slot;
-                    } else {
-                        SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Team});
+            if let Some(entry) = world.entry(dropped) {
+                let unit = entry.get_component::<UnitComponent>().unwrap();
+                match unit.faction {
+                    Faction::Team => {
+                        if entry.get_component::<AreaComponent>().unwrap().position.y
+                            > SHOP_POSITION.y
+                        {
+                            Self::sell(dropped, resources, world);
+                        } else if let Some(slot) = SlotSystem::get_horizontal_hovered_slot(
+                            &Faction::Team,
+                            resources.input.mouse_pos,
+                        ) {
+                            world
+                                .entry_mut(dropped)
+                                .unwrap()
+                                .get_component_mut::<UnitComponent>()
+                                .unwrap()
+                                .slot = slot;
+                        } else {
+                            SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Team});
+                        }
                     }
-                }
-                Faction::Shop => {
-                    let slot = SlotSystem::get_horizontal_hovered_slot(
-                        &Faction::Team,
-                        resources.input.mouse_pos,
-                    );
-                    if resources.shop.money >= UNIT_COST
-                        && slot.is_some()
-                        && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
-                        && Self::team_count(world) < SLOTS_COUNT
-                    {
-                        let slot = slot.unwrap();
-                        Self::buy(dropped, slot, resources, world);
-                        ContextSystem::refresh_all(world, resources);
+                    Faction::Shop => {
+                        let slot = SlotSystem::get_horizontal_hovered_slot(
+                            &Faction::Team,
+                            resources.input.mouse_pos,
+                        );
+                        if resources.shop.money >= UNIT_COST
+                            && slot.is_some()
+                            && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
+                            && Self::team_count(world) < SLOTS_COUNT
+                        {
+                            let slot = slot.unwrap();
+                            Self::buy(dropped, slot, resources, world);
+                            ContextSystem::refresh_all(world, resources);
+                        }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }

@@ -46,6 +46,8 @@ pub struct Shaders {
     pub button: Shader,
     pub icon: Shader,
     pub corner_button: Shader,
+    pub team_name: Shader,
+    pub team_name_intro: Shader,
 }
 
 #[derive(Deserialize, Debug)]

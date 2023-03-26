@@ -264,6 +264,7 @@ impl CassetteNode {
         let factions = &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team};
         ContextSystem::refresh_factions(factions, world, resources);
         UnitSystem::draw_all_units_to_cassette_node(factions, &mut self, world, resources);
+        self.add_effects(VfxSystem::vfx_battle_team_names(resources));
         self
     }
 }
