@@ -465,104 +465,6 @@
             ]
         },
         {
-            "name": "Titans",
-            "units": [
-                {
-                    "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
-                    "houses": [
-                        "Titans"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "house": "Titans",
-                            "name": "Immortality"
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 3000,
-                            "uniforms": {
-                                "u_start_color": "#FFD700",
-                                "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
-                    "houses": [
-                        "Titans"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "house": "Titans",
-                            "name": "Immortality"
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 3000,
-                            "uniforms": {
-                                "u_start_color": "#FFD700",
-                                "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
-                    "houses": [
-                        "Titans"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "house": "Titans",
-                            "name": "Immortality"
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 3000,
-                            "uniforms": {
-                                "u_start_color": "#FFD700",
-                                "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
-                            }
-                        }
-                    }
-                }
-            ]
-        },
-        {
             "name": "Cheater",
             "units": [
                 {
@@ -801,6 +703,135 @@
                                 "u_aa": 1.5,
                                 "u_circle_fbm_speed": 1.0,
                                 "u_padding": 3.0
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Titans",
+            "units": [
+                {
+                    "name": "Titan",
+                    "attack": 10,
+                    "health": 15,
+                    "houses": [
+                        "Titans"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Titan",
+                    "attack": 10,
+                    "health": 15,
+                    "houses": [
+                        "Titans"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Titan",
+                    "attack": 10,
+                    "health": 15,
+                    "houses": [
+                        "Titans"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Titan",
+                    "attack": 10,
+                    "health": 15,
+                    "houses": [
+                        "Titans"
+                    ],
+                    "trigger": {
+                        "type": "AfterBirth",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Titans",
+                            "name": "Immortality"
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#ffffff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 10,
+                                "u_lifetime": 3.2
                             }
                         }
                     }

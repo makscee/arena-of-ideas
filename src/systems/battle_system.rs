@@ -286,7 +286,7 @@ impl System for BattleSystem {
     ) -> Box<dyn ui::Widget + 'a> {
         Box::new(
             (Text::new(
-                format!("Round #{}", resources.floors.current_ind()),
+                format!("Floor #{}", resources.floors.current_ind()),
                 resources.fonts.get_font(0),
                 70.0,
                 Rgba::WHITE,

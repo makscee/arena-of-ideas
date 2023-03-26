@@ -224,6 +224,11 @@ impl GameStateSystem {
                 }
                 ShopSystem::init(world, resources);
                 CassettePlayerSystem::init_world(world, resources);
+                SlotSystem::init_world(
+                    world,
+                    &resources.options,
+                    hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
+                );
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Gallery => {
@@ -232,7 +237,6 @@ impl GameStateSystem {
                 SlotSystem::clear_world(world);
             }
             GameState::GameOver => {
-                resources.camera.camera.fov = resources.options.fov * 0.5;
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
             }

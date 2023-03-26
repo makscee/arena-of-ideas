@@ -3,7 +3,7 @@
     "custom_game": {
         "enable": false,
         "light": {
-            "name": "Dorks",
+            "name": "Dorks Shmorks",
             "units": [
                 {
                     "name": "Shikari",
@@ -56,7 +56,7 @@
             ]
         },
         "dark": {
-            "name": "Snakes",
+            "name": "Shielded Snakes",
             "units": [
                 {
                     "attack": 1,
@@ -167,13 +167,15 @@
             "parameters": {
                 "uniforms": {
                     "u_position": [
-                        10.0,
+                        11.0,
                         1.0
                     ],
-                    "u_color": "#ffffff",
-                    "u_outline_color": "#909090",
-                    "u_outline_fade": 0.7,
-                    "u_mid_border": 0.01,
+                    "u_align": 1.0,
+                    "u_color": "#000000",
+                    "u_outline_color": "#ffffff",
+                    "u_mid_border_color": "#ffffff",
+                    "u_outline_fade": 1.0,
+                    "u_mid_border": 0.03,
                     "u_scale": 1.0,
                     "u_padding": 0.0
                 }

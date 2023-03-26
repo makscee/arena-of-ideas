@@ -183,10 +183,15 @@ impl VfxSystem {
             0,
         ));
         let key = &VarName::Position.convert_to_uniform();
+        let mut from_vars = from.parameters.uniforms.clone();
+        let mut to_vars = to.parameters.uniforms.clone();
+        to_vars.insert("u_align".to_string(), ShaderUniform::Float(-1.0));
         from_vars.merge_mut(&to_vars, false);
         from_vars.0.insert(
             key.clone(),
-            ShaderUniform::Vec2(from_vars.get_vec2(key).unwrap() * vec2(-1.0, 1.0)),
+            ShaderUniform::Vec2(
+                from_vars.get_vec2(key).unwrap() * vec2(-1.0, 1.0) + vec2(0.0, -2.0),
+            ),
         );
         to_vars.0.insert(
             key.clone(),
@@ -197,6 +202,7 @@ impl VfxSystem {
             VisualEffectType::ShaderAnimation {
                 shader: from
                     .clone()
+                    .set_uniform("u_align", ShaderUniform::Float(-1.0))
                     .set_uniform("u_text", ShaderUniform::String((2, light.name.clone()))),
                 from: from_vars,
                 to: to_vars,
@@ -208,7 +214,7 @@ impl VfxSystem {
     }
 
     pub fn vfx_battle_team_names(resources: &Resources) -> Vec<VisualEffect> {
-        if resources.transition_state != GameState::Battle {
+        if resources.transition_state == GameState::Shop {
             return default();
         }
         let light = TeamPool::get_team(Faction::Light, resources);
@@ -225,6 +231,7 @@ impl VfxSystem {
             * vec2(-1.0, 1.0);
         let light_shader = shader
             .clone()
+            .set_uniform("u_align", ShaderUniform::Float(-1.0))
             .set_uniform(
                 &VarName::Position.convert_to_uniform(),
                 ShaderUniform::Vec2(light_pos),

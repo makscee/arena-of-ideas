@@ -7,7 +7,7 @@
                 "type": "AddStatus",
                 "name": "Immortality"
             },
-            "description": "75% chance to\nrevive after death"
+            "description": "60% chance to\nrevive after death"
         }
     },
     "statuses": {
@@ -26,7 +26,7 @@
                         },
                         "b": {
                             "type": "Chance",
-                            "part": 0.75
+                            "part": 0.6
                         }
                     },
                     "then": {

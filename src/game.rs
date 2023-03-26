@@ -28,11 +28,6 @@ impl Game {
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
         let world_entity = WorldSystem::init_world_entity(world);
         Self::init_field(resources, world, world_entity);
-        SlotSystem::init_world(
-            world,
-            &resources.options,
-            hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
-        );
     }
 
     fn init_field(
