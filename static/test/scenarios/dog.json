@@ -1,0 +1,65 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1,
+                "houses": [
+                    "Vampires"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "UseAbility",
+                                "house": "Vampires",
+                                "name": "Devour",
+                                "target": {
+                                    "type": "RandomUnit",
+                                    "faction": {
+                                        "type": "Opposite",
+                                        "faction": {
+                                            "type": "Owner"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "type": "Damage",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 20
+                                },
+                                "target": {
+                                    "type": "Owner"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 19
+            },
+            {
+                "attack": 0,
+                "health": 19
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

@@ -1,4 +1,5 @@
 [
+    "test/scenarios/dog.json",
     "test/scenarios/hound.json",
     "test/scenarios/siphon.json",
     "test/scenarios/shoot_turn_start.json",

@@ -1,0 +1,55 @@
+{
+    "name": "Dog",
+    "description": "Start of Battle:\nDevour\nrandom enemy,\nthen take 20 dmg",
+    "attack": 2,
+    "health": 1,
+    "houses": [
+        "Vampires"
+    ],
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "UseAbility",
+                    "house": "Vampires",
+                    "name": "Devour",
+                    "target": {
+                        "type": "RandomUnit",
+                        "faction": {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "Damage",
+                    "value": {
+                        "type": "Const",
+                        "value": 20
+                    },
+                    "target": {
+                        "type": "Owner"
+                    }
+                }
+            ]
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#b64300",
+                "u_circle_radius": 0.3,
+                "u_border": 0.6,
+                "u_circle_fbm": -1.2,
+                "u_circle_fbm_speed": 2.0,
+                "u_aa": 0.15,
+                "u_padding": 2.0
+            }
+        }
+    }
+}
