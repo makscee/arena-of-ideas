@@ -1,70 +1,66 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
-            "name": "Dorks Shmorks",
+            "name": "Dorks",
             "units": [
                 {
-                    "name": "Shikari",
-                    "description": "Battle Start:\nShoot random enemy\n5 times",
-                    "attack": 2,
-                    "health": 1,
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "UseAbility",
-                                "house": "Archers",
-                                "name": "Shoot",
-                                "target": {
-                                    "type": "RandomUnit",
-                                    "faction": {
-                                        "type": "Opposite",
-                                        "faction": {
-                                            "type": "Owner"
-                                        }
-                                    }
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 5
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 1500,
-                            "uniforms": {
-                                "u_start_color": "#FFD700",
-                                "u_end_color": "#3c8d21ff",
-                                "u_scale": 0.3,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 2,
-                                "u_lifetime": 1.2
-                            }
-                        }
-                    }
+                    "attack": 1,
+                    "health": 5
+                },
+                {
+                    "attack": 1,
+                    "health": 5
+                },
+                {
+                    "attack": 1,
+                    "health": 5
                 }
             ]
         },
         "dark": {
-            "name": "Shielded Snakes",
+            "name": "Hounds",
             "units": [
                 {
-                    "attack": 1,
-                    "health": 20
-                },
-                {
-                    "attack": 1,
-                    "health": 20
+                    "name": "Hound",
+                    "description": "Start of Battle:\nDevour\nrandom enemy",
+                    "attack": 3,
+                    "health": 1,
+                    "houses": [
+                        "Vampires"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Vampires",
+                            "name": "Devour",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#b60000",
+                                "u_circle_radius": 0.4,
+                                "u_border": 0.6,
+                                "u_circle_fbm": -1.9,
+                                "u_circle_fbm_speed": 2.0,
+                                "u_aa": 0.2,
+                                "u_padding": 2.0
+                            }
+                        }
+                    }
                 }
             ]
         }

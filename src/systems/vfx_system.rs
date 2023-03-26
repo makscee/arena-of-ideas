@@ -2,7 +2,7 @@ use super::*;
 
 pub struct VfxSystem {}
 
-const BATTLE_INTRO_DURATION: Time = 3.0;
+const BATTLE_INTRO_DURATION: Time = 1.0;
 
 /// Logic
 impl VfxSystem {

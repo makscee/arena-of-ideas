@@ -207,7 +207,7 @@ impl CassettePlayerSystem {
     }
 }
 
-const REWIND_SPEED: f32 = 5.0;
+const REWIND_SPEED: f32 = 10.0;
 
 impl System for CassettePlayerSystem {
     fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {

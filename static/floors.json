@@ -210,9 +210,8 @@
             "units": [
                 {
                     "name": "Death Knight",
-                    "attack": 4,
-                    "health": 10,
-                    "description": "On hit:\napply Reanimate",
+                    "attack": 8,
+                    "health": 12,
                     "houses": [
                         "Necromancers"
                     ],
@@ -243,8 +242,8 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 4,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 12,
                     "houses": [
                         "Necromancers"
                     ],
@@ -275,8 +274,8 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 4,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 12,
                     "houses": [
                         "Necromancers"
                     ],
@@ -307,8 +306,8 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 4,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 12,
                     "houses": [
                         "Necromancers"
                     ],
@@ -458,6 +457,91 @@
                                 "u_circle_fbm": 0.7,
                                 "u_circle_fbm_speed": 0.3,
                                 "u_padding": 1.0
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Hounds",
+            "units": [
+                {
+                    "name": "Hound",
+                    "description": "Start of Battle:\nDevour\nrandom enemy",
+                    "attack": 3,
+                    "health": 1,
+                    "houses": [
+                        "Vampires"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Vampires",
+                            "name": "Devour",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#b60000",
+                                "u_circle_radius": 0.4,
+                                "u_border": 0.6,
+                                "u_circle_fbm": -1.9,
+                                "u_circle_fbm_speed": 2.0,
+                                "u_aa": 0.2,
+                                "u_padding": 2.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Hound",
+                    "description": "Start of Battle:\nDevour\nrandom enemy",
+                    "attack": 3,
+                    "health": 1,
+                    "houses": [
+                        "Vampires"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "house": "Vampires",
+                            "name": "Devour",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#b60000",
+                                "u_circle_radius": 0.4,
+                                "u_border": 0.6,
+                                "u_circle_fbm": -1.9,
+                                "u_circle_fbm_speed": 2.0,
+                                "u_aa": 0.2,
+                                "u_padding": 2.0
                             }
                         }
                     }

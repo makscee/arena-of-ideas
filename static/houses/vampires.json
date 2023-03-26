@@ -22,11 +22,11 @@
                         "charges": {
                             "type": "Var",
                             "var": "Charges"
-                        },
-                        "after": {
-                            "type": "ShowCurve"
                         }
                     }
+                },
+                "after": {
+                    "type": "ShowCurve"
                 }
             }
         },

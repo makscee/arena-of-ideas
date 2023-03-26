@@ -268,5 +268,20 @@
 			"}"
 		],
 		"description": "Change Ability Var Int"
+	},
+	"Ranom Enemy": {
+		"prefix": "random_enemy",
+		"body": [
+			"{",
+			"    \"type\": \"RandomUnit\",",
+			"    \"faction\": {",
+			"        \"type\": \"Opposite\",",
+			"        \"faction\": {",
+			"            \"type\": \"Owner\"",
+			"        }",
+			"    }",
+			"}"
+		],
+		"description": "Ranom Enemy"
 	}
 }
