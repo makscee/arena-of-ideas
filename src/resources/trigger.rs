@@ -20,6 +20,7 @@ pub enum Trigger {
     AfterBirth { effect: EffectWrapped },
     BattleStart { effect: EffectWrapped },
     BattleEnd { effect: EffectWrapped },
+    FloorEnd { effect: EffectWrapped },
     TurnStart { effect: EffectWrapped },
     TurnEnd { effect: EffectWrapped },
     Buy { effect: EffectWrapped },
@@ -107,6 +108,10 @@ impl Trigger {
                 Event::BattleEnd { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
+            Trigger::FloorEnd { .. } => match event {
+                Event::FloorEnd { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
             Trigger::TurnStart { .. } => match event {
                 Event::TurnStart { .. } => self.fire(action_queue, context, logger),
                 _ => {}
@@ -167,6 +172,7 @@ impl Trigger {
             | Trigger::AfterBirth { effect }
             | Trigger::BattleStart { effect }
             | Trigger::BattleEnd { effect }
+            | Trigger::FloorEnd { effect }
             | Trigger::TurnStart { effect }
             | Trigger::TurnEnd { effect }
             | Trigger::BeforeStrike { effect }

@@ -1,0 +1,113 @@
+    {
+        "name": "Defender",
+        "description": "On Buy:\ngive Defense\nto adjacent allies",
+        "health": 1,
+        "attack": 1,
+        "houses": [
+            "Warriors"
+        ],
+        "trigger": {
+            "type": "Buy",
+            "effect": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            }
+                        },
+                        "then": {
+                            "type": "UseAbility",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                },
+                                "faction": "Team"
+                            },
+                            "house": "Warriors",
+                            "name": "Defense"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    },
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            }
+                        },
+                        "then": {
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": -1
+                                    }
+                                },
+                                "faction": "Team"
+                            },
+                            "type": "UseAbility",
+                            "house": "Warriors",
+                            "name": "Defense"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
+                    }
+                ]
+            }
+        },
+        "shader": {
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#909090ff",
+                    "u_circle_radius": 0.9,
+                    "u_border": 0.2,
+                    "u_circle_fbm": 0.1,
+                    "u_circle_fbm_speed": 3.3,
+                    "u_padding": 0.2,
+                    "u_aa": 0.2
+                }
+            }
+        }
+    }

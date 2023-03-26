@@ -1,17 +1,24 @@
 {
     "name": "Pollywog",
-    "description": "Grow after\nevery Battle",
+    "description": "Grow (2) after\nevery Battle",
     "attack": 1,
     "health": 1,
     "houses": [
         "Dragons"
     ],
     "trigger": {
-        "type": "BattleEnd",
+        "type": "FloorEnd",
         "effect": {
-            "type": "UseAbility",
-            "house": "Dragons",
-            "name": "Grow"
+            "type": "Repeat",
+            "effect": {
+                "type": "UseAbility",
+                "house": "Dragons",
+                "name": "Grow"
+            },
+            "count": {
+                "type": "Const",
+                "value": 2
+            }
         }
     },
     "shader": {

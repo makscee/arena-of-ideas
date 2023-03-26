@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Dorks",
             "units": [

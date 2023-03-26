@@ -18,10 +18,16 @@ pub struct StatusPool {
 
 impl StatusPool {
     /// Send event to all active statuses
-    pub fn notify_all(event: &Event, resources: &mut Resources, world: &legion::World) {
-        <(&EntityComponent, &Trigger)>::query()
+    pub fn notify_all(
+        event: &Event,
+        factions: &HashSet<Faction>,
+        resources: &mut Resources,
+        world: &legion::World,
+    ) {
+        <(&EntityComponent, &Trigger, &UnitComponent)>::query()
             .iter(world)
-            .for_each(|(entity, _)| {
+            .filter(|(_, _, unit)| factions.contains(&unit.faction))
+            .for_each(|(entity, _, _)| {
                 Self::notify_entity(event, entity.entity, resources, world, None)
             });
     }

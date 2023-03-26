@@ -77,6 +77,7 @@ pub enum Event {
     },
     BattleStart,
     BattleEnd,
+    FloorEnd,
     TurnStart,
     TurnEnd,
 }
@@ -86,7 +87,12 @@ impl Event {
         match self {
             // Send event to every active status
             Event::BattleEnd | Event::BattleStart | Event::TurnStart | Event::TurnEnd => {
-                StatusPool::notify_all(self, resources, world);
+                let factions = hashset! {Faction::Light, Faction::Dark};
+                StatusPool::notify_all(self, &factions, resources, world);
+            }
+            Event::FloorEnd => {
+                let factions = hashset! {Faction::Team};
+                StatusPool::notify_all(self, &factions, resources, world);
             }
             // Trigger owner status with owner context
             Event::StatusAdd { status, owner }
