@@ -231,13 +231,14 @@ impl BattleSystem {
         nodes: &mut Option<Vec<CassetteNode>>,
     ) {
         ContextSystem::refresh_factions(factions, world, resources);
-        while let Some(dead_unit) = <(&EntityComponent, &Context, &HealthComponent)>::query()
+        while let Some(dead_unit) = <(&EntityComponent, &Context)>::query()
+            .filter(component::<UnitComponent>())
             .iter(world)
-            .filter_map(|(unit, context, _)| {
+            .filter_map(|(entity, context)| {
                 match context.vars.get_int(&VarName::HpValue)
                     <= context.vars.get_int(&VarName::HpDamage)
                 {
-                    true => Some(unit.entity),
+                    true => Some(entity.entity),
                     false => None,
                 }
             })

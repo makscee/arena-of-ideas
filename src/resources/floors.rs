@@ -4,12 +4,12 @@ use super::*;
 pub struct Floors {
     #[serde(default)]
     current: usize,
-    floors: Vec<Team>,
+    pub teams: Vec<Team>,
 }
 
 impl Floors {
     pub fn current(&self) -> &Team {
-        &self.floors[self.current]
+        &self.teams[self.current]
     }
 
     pub fn current_ind(&self) -> usize {
@@ -22,7 +22,11 @@ impl Floors {
 
     pub fn next(&mut self) -> bool {
         self.current += 1;
-        self.current < self.floors.len()
+        self.current < self.teams.len()
+    }
+
+    pub fn count(&self) -> usize {
+        self.teams.len()
     }
 }
 

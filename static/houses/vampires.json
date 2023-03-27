@@ -50,11 +50,14 @@
                                 "value": 1
                             },
                             "on_hit": {
-                                "type": "AddStatus",
+                                "type": "Heal",
                                 "target": {
                                     "type": "Owner"
                                 },
-                                "name": "SiphonLife",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
                                 "after": {
                                     "type": "ShowCurve"
                                 }

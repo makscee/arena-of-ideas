@@ -2,7 +2,7 @@ use geng::prelude::itertools::Itertools;
 
 use super::*;
 
-const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
+pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 
 #[derive(Default)]
 pub struct Shop {
@@ -16,36 +16,31 @@ pub struct Shop {
 
 impl Shop {
     pub fn load_pool(world: &mut legion::World, resources: &mut Resources) {
-        todo!("New source of power points");
-        // let mut sorted_by_power = VecDeque::from_iter(
-        //     measures
-        //         .into_iter()
-        //         .sorted_by_key(|(_, score)| *score)
-        //         .map(|(unit, _)| unit),
-        // );
-        // let heroes_per_extension = (sorted_by_power.len() as f32 / 10.0).ceil() as usize;
-        // let mut cur_level = 0;
-        // resources.shop.level_extensions = vec![default()];
-        // while let Some(unit) = sorted_by_power.pop_front() {
-        //     if resources
-        //         .shop
-        //         .level_extensions
-        //         .get(cur_level)
-        //         .unwrap()
-        //         .len()
-        //         >= heroes_per_extension
-        //             + (cur_level == 0) as usize * resources.options.initial_shop_fill
-        //     {
-        //         cur_level += 1;
-        //         resources.shop.level_extensions.push(default());
-        //     }
-        //     resources
-        //         .shop
-        //         .level_extensions
-        //         .get_mut(cur_level)
-        //         .unwrap()
-        //         .push(unit);
-        // }
+        todo!("new power sorting");
+        let mut sorted_by_power = VecDeque::from_iter(resources.hero_pool.all());
+        let heroes_per_extension = (sorted_by_power.len() as f32 / 10.0).ceil() as usize;
+        let mut cur_level = 0;
+        resources.shop.level_extensions = vec![default()];
+        while let Some(unit) = sorted_by_power.pop_front() {
+            if resources
+                .shop
+                .level_extensions
+                .get(cur_level)
+                .unwrap()
+                .len()
+                >= heroes_per_extension
+                    + (cur_level == 0) as usize * resources.options.initial_shop_fill
+            {
+                cur_level += 1;
+                resources.shop.level_extensions.push(default());
+            }
+            resources
+                .shop
+                .level_extensions
+                .get_mut(cur_level)
+                .unwrap()
+                .push(unit);
+        }
     }
 
     pub fn load_level(resources: &mut Resources, level: usize) {

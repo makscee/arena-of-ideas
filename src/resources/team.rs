@@ -49,3 +49,10 @@ impl Team {
         }
     }
 }
+
+impl fmt::Display for Team {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let text = self.units.iter().map(|x| x.name.as_str()).join(", ");
+        write!(f, "{}[{}]", self.name, text)
+    }
+}

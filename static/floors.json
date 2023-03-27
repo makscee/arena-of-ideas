@@ -1,5 +1,5 @@
 {
-    "floors": [
+    "teams": [
         {
             "name": "Snake",
             "units": [
@@ -84,8 +84,8 @@
             "units": [
                 {
                     "name": "Tank",
-                    "attack": 0,
-                    "health": 20,
+                    "attack": 2,
+                    "health": 14,
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
@@ -102,7 +102,7 @@
                 },
                 {
                     "name": "Ranger",
-                    "health": 1,
+                    "health": 2,
                     "attack": 1,
                     "description": "Turn end:\nShoot random enemy 3 times",
                     "houses": [
@@ -151,7 +151,7 @@
                 },
                 {
                     "name": "Priest",
-                    "health": 1,
+                    "health": 2,
                     "attack": 1,
                     "description": "Turn end:\nMend injured ally twice",
                     "houses": [

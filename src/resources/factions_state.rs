@@ -17,6 +17,10 @@ impl FactionsState {
         self.states.remove(faction).unwrap()
     }
 
+    pub fn clear(&mut self, faction: Faction) {
+        self.states.insert(faction, default());
+    }
+
     pub fn try_get_ability_overrides(
         &self,
         faction: &Faction,

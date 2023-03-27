@@ -29,7 +29,7 @@ impl HealthComponent {
         if amount == 0 {
             return;
         }
-        self.damage -= amount.max(self.damage);
+        self.damage -= amount.min(self.damage);
     }
 
     pub fn last_attacker(&self) -> Option<legion::Entity> {

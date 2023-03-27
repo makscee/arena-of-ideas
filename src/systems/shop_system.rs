@@ -1,3 +1,5 @@
+use std::default;
+
 use geng::ui::*;
 use legion::EntityStore;
 
@@ -8,7 +10,7 @@ pub struct ShopSystem {
     need_switch_battle: bool,
 }
 
-const UNIT_COST: usize = 3;
+pub const UNIT_COST: usize = 3;
 
 impl System for ShopSystem {
     fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
@@ -100,7 +102,14 @@ impl ShopSystem {
                         if entry.get_component::<AreaComponent>().unwrap().position.y
                             > SHOP_POSITION.y
                         {
+                            resources
+                                .shop
+                                .pool
+                                .push(PackedUnit::pack(dropped, world, resources));
+                            resources.shop.money += 1;
                             Self::sell(dropped, resources, world);
+                            SlotSystem::refresh_slots_uniforms(world, &resources.options);
+                            ContextSystem::refresh_all(world, resources);
                         } else if let Some(slot) = SlotSystem::get_horizontal_hovered_slot(
                             &Faction::Team,
                             resources.input.mouse_pos,
@@ -125,8 +134,10 @@ impl ShopSystem {
                             && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
                             && Self::team_count(world) < SLOTS_COUNT
                         {
+                            resources.shop.money -= UNIT_COST;
                             let slot = slot.unwrap();
-                            Self::buy(dropped, slot, resources, world);
+                            let tape = &mut Some(Vec::<CassetteNode>::default());
+                            Self::buy(dropped, slot, resources, world, tape);
                             ContextSystem::refresh_all(world, resources);
                         }
                     }
@@ -143,13 +154,13 @@ impl ShopSystem {
             .count()
     }
 
-    fn buy(
+    pub fn buy(
         entity: legion::Entity,
         slot: usize,
         resources: &mut Resources,
         world: &mut legion::World,
+        nodes: &mut Option<Vec<CassetteNode>>,
     ) {
-        resources.shop.money -= UNIT_COST;
         let mut entry = world.entry_mut(entity).unwrap();
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
@@ -159,21 +170,12 @@ impl ShopSystem {
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
         ContextSystem::refresh_all(world, resources);
-        let mut nodes = Some(vec![]);
-        SlotSystem::move_to_slots_animated(world, resources, &mut nodes);
-        resources.cassette.add_tape_nodes(nodes.unwrap());
+        SlotSystem::move_to_slots_animated(world, resources, nodes);
     }
 
-    fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
-        resources.shop.money += 1;
+    pub fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         Event::Sell { owner: entity }.send(world, resources);
-        resources
-            .shop
-            .pool
-            .push(PackedUnit::pack(entity, world, resources));
         UnitSystem::turn_unit_into_corpse(entity, world, resources);
-        SlotSystem::refresh_slots_uniforms(world, &resources.options);
-        ContextSystem::refresh_all(world, resources);
     }
 
     fn refresh_ui(resources: &mut Resources) {
@@ -208,12 +210,16 @@ impl ShopSystem {
         resources.cassette.render_node = node;
     }
 
+    pub fn floor_money(floor: usize) -> usize {
+        (UNIT_COST + floor + 1).min(10)
+    }
+
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
         let current_floor = resources.floors.current_ind();
         Shop::load_level(resources, current_floor);
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
-        resources.shop.money = (UNIT_COST + current_floor + 1).min(10);
+        resources.shop.money = Self::floor_money(current_floor);
         if resources.shop.refresh_btn.is_none() {
             let world_entity = WorldSystem::get_context(world).owner;
             fn refresh(

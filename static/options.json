@@ -1,5 +1,6 @@
 {
     "player_team_name": "Dorks",
+    "walkthrough": true,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
@@ -94,11 +95,11 @@
     "initial_shop_fill": 5,
     "log": {
         "Action": true,
-        "Effect": true,
+        "Effect": false,
         "Contexts": false,
         "Condition": false,
-        "Trigger": true,
-        "Event": true,
+        "Trigger": false,
+        "Event": false,
         "UnitCreation": true,
         "Measurement": false,
         "Test": false

@@ -67,7 +67,8 @@ impl UnitSystem {
         ContextSystem::refresh_entity(entity, world, resources);
         let context = ContextSystem::get_context(entity, world);
         if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {
-            return Self::turn_unit_into_corpse(entity, world, resources);
+            Self::turn_unit_into_corpse(entity, world, resources);
+            return true;
         }
         false
     }
@@ -76,7 +77,7 @@ impl UnitSystem {
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> bool {
+    ) {
         let mut entry = world.entry(entity).unwrap();
         let unit = entry.get_component::<UnitComponent>().unwrap().clone();
         entry.remove_component::<UnitComponent>();
@@ -91,7 +92,6 @@ impl UnitSystem {
         };
         entry.add_component(corpse);
         let corpse_context = ContextSystem::get_context(entity, world);
-        let res = world.remove(entity);
 
         resources.logger.log(
             &format!("{:?} is now corpse", entity),
@@ -112,7 +112,6 @@ impl UnitSystem {
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
         resources.status_pool.clear_entity(&entity);
-        res
     }
 
     pub fn revive_corpse(
@@ -160,6 +159,9 @@ impl UnitSystem {
             world.remove(*entity);
             resources.status_pool.clear_entity(entity);
         });
+        factions
+            .into_iter()
+            .for_each(|f| resources.factions_state.clear(*f));
         unit_entitites
     }
 

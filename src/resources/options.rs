@@ -11,6 +11,7 @@ pub struct Options {
     pub images: Images,
     pub colors: Colors,
     pub custom_game: CustomGameConfig,
+    pub walkthrough: bool,
     pub player_team_name: String,
 }
 

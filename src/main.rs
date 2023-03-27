@@ -54,7 +54,11 @@ fn main() {
     theme.font = resources.fonts.get_font(1);
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
-    let game = Game::new(world, resources, watcher);
-    debug!("Game load in: {:?}", timer.elapsed());
-    geng.clone().run(game);
+    if resources.options.walkthrough {
+        WalkthroughSystem::run_simulation(&mut world, &mut resources);
+    } else {
+        let game = Game::new(world, resources, watcher);
+        debug!("Game load in: {:?}", timer.elapsed());
+        geng.clone().run(game);
+    }
 }
