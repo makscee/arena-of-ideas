@@ -4,21 +4,14 @@ pub struct SimulationSystem {}
 
 impl SimulationSystem {
     pub fn run_battle(
-        light: &Vec<&PackedUnit>,
-        dark: &Vec<&PackedUnit>,
+        light: &Team,
+        dark: &Team,
         world: &mut legion::World,
         resources: &mut Resources,
         assert: Option<&Condition>,
     ) -> bool {
-        light.iter().enumerate().for_each(|(slot, unit)| {
-            unit.unpack(world, resources, slot + 1, Faction::Light, None);
-        });
-        dark.iter().enumerate().for_each(|(slot, unit)| {
-            unit.unpack(world, resources, slot + 1, Faction::Dark, None);
-        });
-        TeamPool::save_team(Faction::Light, Team::empty("light".to_string()), resources);
-        TeamPool::save_team(Faction::Dark, Team::empty("dark".to_string()), resources);
-        ActionSystem::run_ticks(world, resources, &mut None);
+        light.unpack(&Faction::Light, world, resources);
+        dark.unpack(&Faction::Dark, world, resources);
         BattleSystem::run_battle(world, resources, &mut None);
         let result = match assert {
             Some(condition) => {
@@ -26,8 +19,8 @@ impl SimulationSystem {
                     .calculate(&WorldSystem::get_context(world), world, resources)
                     .unwrap();
                 if !result {
-                    let light = Team::pack_entries(&Faction::Light, world, resources);
-                    let dark = Team::pack_entries(&Faction::Dark, world, resources);
+                    let light = Team::pack(&Faction::Light, world, resources);
+                    let dark = Team::pack(&Faction::Dark, world, resources);
                     dbg!((light, dark));
                 }
                 result
@@ -36,18 +29,6 @@ impl SimulationSystem {
         };
         BattleSystem::clear_world(world, resources);
         result
-    }
-
-    pub fn run_team_battle(
-        light: &Team,
-        dark: &Team,
-        world: &mut legion::World,
-        resources: &mut Resources,
-        assert: Option<&Condition>,
-    ) -> bool {
-        let light: Vec<&PackedUnit> = light.units.iter().map(|x| x).collect_vec();
-        let dark: Vec<&PackedUnit> = dark.units.iter().map(|x| x).collect_vec();
-        Self::run_battle(&light, &dark, world, resources, assert)
     }
 }
 
@@ -91,11 +72,10 @@ mod tests {
             active_statuses: default(),
             shader: default(),
         };
-        let light = vec![&unit];
-        let dark = vec![&unit];
+        let light = Team::new(String::from("light"), vec![unit.clone()]);
         assert!(SimulationSystem::run_battle(
             &light,
-            &dark,
+            &light,
             &mut world,
             &mut resources,
             None
@@ -122,7 +102,7 @@ mod tests {
         for (path, scenario) in scenarios.iter() {
             println!("Run scenario: {:?}...", path.file_name().unwrap());
             assert!(
-                SimulationSystem::run_team_battle(
+                SimulationSystem::run_battle(
                     &scenario.light,
                     &scenario.dark,
                     &mut world,

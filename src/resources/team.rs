@@ -8,17 +8,13 @@ pub struct Team {
     pub name: String,
     pub units: Vec<PackedUnit>,
     #[serde(default)]
-    pub ability_state: AbilitiesState,
+    pub ability_overrides: HashMap<AbilityName, Vars>,
 }
 fn default_name() -> String {
     "no_name".to_string()
 }
 
 impl Team {
-    pub fn empty(name: String) -> Self {
-        Self { name, ..default() }
-    }
-
     pub fn new(name: String, units: Vec<PackedUnit>) -> Self {
         Self {
             name,
@@ -27,39 +23,29 @@ impl Team {
         }
     }
 
-    pub fn unpack_entries(
-        &self,
-        faction: &Faction,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) {
-        self.units.iter().enumerate().for_each(|(slot, unit)| {
-            let slot = slot + 1;
-            let position = SlotSystem::get_position(slot, faction);
-            unit.unpack(world, resources, slot + 1, *faction, Some(position));
-        });
+    pub fn unpack(&self, faction: &Faction, world: &mut legion::World, resources: &mut Resources) {
+        for (slot, unit) in self.units.iter().enumerate() {
+            unit.unpack(world, resources, slot + 1, *faction, None);
+        }
+        resources.factions_state.set_faction_state(
+            *faction,
+            FactionState {
+                ability_overrides: self.ability_overrides.clone(),
+                team_name: self.name.clone(),
+            },
+        );
     }
 
-    pub fn pack_entries(
-        faction: &Faction,
-        world: &legion::World,
-        resources: &Resources,
-    ) -> Vec<PackedUnit> {
-        UnitSystem::collect_faction(world, *faction)
-            .iter()
-            .sorted_by_key(|(_, unit)| unit.slot)
-            .map(|(entity, _)| PackedUnit::pack(*entity, world, resources))
-            .collect_vec()
-    }
-
-    pub fn try_get_ability_var_int(
-        &self,
-        house: &HouseName,
-        ability: &str,
-        var: &VarName,
-    ) -> Option<i32> {
-        self.ability_state
-            .get_vars(house, ability)
-            .and_then(|vars| vars.try_get_int(var))
+    pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {
+        let units = UnitSystem::collect_faction(world, *faction)
+            .into_iter()
+            .map(|(entity, _)| PackedUnit::pack(entity, world, resources))
+            .collect_vec();
+        let state = resources.factions_state.get_faction_state(faction);
+        Team {
+            name: state.team_name.clone(),
+            units,
+            ability_overrides: state.ability_overrides.clone(),
+        }
     }
 }

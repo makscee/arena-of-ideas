@@ -68,9 +68,11 @@ impl Condition {
                 world,
             )
             .is_some()),
-            Condition::IsCorpse { entity } => Ok(resources
-                .unit_corpses
-                .contains_key(&entity.calculate(context, world, resources)?)),
+            Condition::IsCorpse { entity } => Ok(UnitSystem::get_corpse(
+                entity.calculate(context, world, resources)?,
+                world,
+            )
+            .is_some()),
             Condition::Not { condition } => Ok(!condition.calculate(context, world, resources)?),
             Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
                 && b.calculate(context, world, resources)?),

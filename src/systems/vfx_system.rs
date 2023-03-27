@@ -162,8 +162,16 @@ impl VfxSystem {
     }
 
     pub fn vfx_battle_team_names_animation(resources: &Resources) -> Vec<VisualEffect> {
-        let light = TeamPool::get_team(Faction::Light, resources);
-        let dark = TeamPool::get_team(Faction::Dark, resources);
+        let light = resources
+            .factions_state
+            .get_faction_state(&Faction::Light)
+            .team_name
+            .clone();
+        let dark = resources
+            .factions_state
+            .get_faction_state(&Faction::Dark)
+            .team_name
+            .clone();
         let mut effects: Vec<VisualEffect> = default();
         let from = &resources.options.shaders.team_name_intro;
         let to = &resources.options.shaders.team_name;
@@ -175,7 +183,7 @@ impl VfxSystem {
             VisualEffectType::ShaderAnimation {
                 shader: from
                     .clone()
-                    .set_uniform("u_text", ShaderUniform::String((2, dark.name.clone()))),
+                    .set_uniform("u_text", ShaderUniform::String((2, dark.clone()))),
                 from: from_vars.clone(),
                 to: to_vars.clone(),
                 easing: EasingType::QuartInOut,
@@ -203,7 +211,7 @@ impl VfxSystem {
                 shader: from
                     .clone()
                     .set_uniform("u_align", ShaderUniform::Float(-1.0))
-                    .set_uniform("u_text", ShaderUniform::String((2, light.name.clone()))),
+                    .set_uniform("u_text", ShaderUniform::String((2, light.clone()))),
                 from: from_vars,
                 to: to_vars,
                 easing: EasingType::QuartInOut,
@@ -217,12 +225,20 @@ impl VfxSystem {
         if resources.transition_state == GameState::Shop {
             return default();
         }
-        let light = TeamPool::get_team(Faction::Light, resources);
-        let dark = TeamPool::get_team(Faction::Dark, resources);
+        let light = resources
+            .factions_state
+            .get_faction_state(&Faction::Light)
+            .team_name
+            .clone();
+        let dark = resources
+            .factions_state
+            .get_faction_state(&Faction::Dark)
+            .team_name
+            .clone();
         let shader = &resources.options.shaders.team_name;
         let dark_shader = shader
             .clone()
-            .set_uniform("u_text", ShaderUniform::String((2, dark.name.clone())));
+            .set_uniform("u_text", ShaderUniform::String((2, dark)));
         let light_pos = shader
             .parameters
             .uniforms
@@ -236,7 +252,7 @@ impl VfxSystem {
                 &VarName::Position.convert_to_uniform(),
                 ShaderUniform::Vec2(light_pos),
             )
-            .set_uniform("u_text", ShaderUniform::String((2, light.name.clone())));
+            .set_uniform("u_text", ShaderUniform::String((2, light)));
         vec![
             VisualEffect::new(
                 0.0,

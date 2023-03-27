@@ -16,6 +16,7 @@ impl BattleSystem {
         let mut ticks = 0;
         Self::add_intro(resources, nodes);
         Event::BattleStart.send(world, resources);
+        Self::spin(world, resources, nodes);
         while Self::tick(world, resources, nodes) && ticks < 1000 {
             ticks += 1;
         }
@@ -30,10 +31,15 @@ impl BattleSystem {
         }
     }
 
-    pub fn init_battle(world: &mut legion::World, resources: &mut Resources) {
+    pub fn init_battle(
+        light: &Team,
+        dark: &Team,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
         Self::clear_world(world, resources);
-        TeamPool::unpack_team(&Faction::Light, world, resources);
-        TeamPool::unpack_team(&Faction::Dark, world, resources);
+        light.unpack(&Faction::Light, world, resources);
+        dark.unpack(&Faction::Dark, world, resources);
     }
 
     pub fn battle_won(world: &legion::World) -> bool {
@@ -64,18 +70,6 @@ impl BattleSystem {
         UnitSystem::clear_factions(world, resources, factions);
     }
 
-    pub fn save_floor(resources: &mut Resources) {
-        let team = resources.floors.current().clone();
-        let faction = Faction::Dark;
-        TeamPool::save_team(faction, team, resources);
-    }
-
-    pub fn save_player_team(resources: &mut Resources) {
-        let team = TeamPool::get_team(Faction::Team, resources).clone();
-        let faction = Faction::Light;
-        TeamPool::save_team(faction, team, resources);
-    }
-
     pub fn tick(
         world: &mut legion::World,
         resources: &mut Resources,
@@ -83,9 +77,7 @@ impl BattleSystem {
     ) -> bool {
         let factions = &hashset! {Faction::Light, Faction::Dark};
         SlotSystem::fill_gaps(world, resources, factions);
-        ActionSystem::run_ticks(world, resources, nodes);
-        ContextSystem::refresh_factions(factions, world, resources);
-        SlotSystem::fill_gaps(world, resources, factions);
+        Self::spin(world, resources, nodes);
         SlotSystem::move_to_slots_animated(world, resources, nodes);
         if let Some((left, right)) = Self::find_hitters(world) {
             Event::TurnStart.send(world, resources);
@@ -172,7 +164,7 @@ impl BattleSystem {
             })
     }
 
-    fn spin(
+    pub fn spin(
         world: &mut legion::World,
         resources: &mut Resources,
         nodes: &mut Option<Vec<CassetteNode>>,

@@ -35,8 +35,7 @@ impl PackedUnit {
             .unwrap()
             .text
             .clone();
-        let health = entry.get_component::<HealthComponent>().unwrap().value;
-        let damage = entry.get_component::<HealthComponent>().unwrap().damage;
+        let (health, damage) = entry.get_component::<HealthComponent>().unwrap().stats();
         let attack = entry.get_component::<AttackComponent>().unwrap().value;
         let houses = HashSet::from_iter(
             entry

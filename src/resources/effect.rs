@@ -33,8 +33,7 @@ pub enum Effect {
         value: ExpressionFaction,
     },
     ChangeAbilityVarInt {
-        house: HouseName,
-        ability: String,
+        ability: AbilityName,
         var: VarName,
         delta: ExpressionInt,
     },
@@ -51,8 +50,7 @@ pub enum Effect {
         charges: ExpressionInt,
     },
     UseAbility {
-        house: HouseName,
-        name: String,
+        name: AbilityName,
     },
     SetHealth {
         value: ExpressionInt,
@@ -185,7 +183,7 @@ impl EffectWrapped {
                 }
                 if value > 0 {
                     let hp = target.get_component_mut::<HealthComponent>()?;
-                    hp.damage += value as usize;
+                    hp.deal_damage(value as usize, context.owner);
                     if let Some(node) = node.as_mut() {
                         node.add_effect(VisualEffect::new(
                             1.0,
@@ -208,9 +206,6 @@ impl EffectWrapped {
                         &format!("Entity#{:?} {} damage taken", context.target, value),
                         &LogContext::Effect,
                     );
-                    resources
-                        .unit_offenders
-                        .insert(context.target, context.owner);
                     if let Some(effect) = then {
                         resources
                             .action_queue
@@ -238,8 +233,7 @@ impl EffectWrapped {
                     .entry(context.target)
                     .context("Failed to get Target")?;
                 if let Some(hp) = target.get_component_mut::<HealthComponent>().ok() {
-                    let value = value.min(hp.damage);
-                    hp.damage -= value;
+                    hp.heal_damage(value);
                     if let Some(node) = node.as_mut() {
                         node.add_effect(VfxSystem::vfx_show_text(
                             resources,
@@ -301,10 +295,11 @@ impl EffectWrapped {
                     .status_pool
                     .clear_entity_by_changes(&context.target);
             }
-            Effect::UseAbility { name, house } => {
+            Effect::UseAbility { name } => {
                 let owner_entry = world
                     .entry_ref(context.owner)
                     .context("Failed to get Owner")?;
+                let house = &AbilityPool::get_house_origin(resources, name);
                 if owner_entry
                     .get_component::<HouseComponent>()?
                     .houses
@@ -316,14 +311,12 @@ impl EffectWrapped {
                         name, house
                     );
                 }
-                let defaults = resources
-                    .house_pool
-                    .try_get_ability_vars(house, name)
-                    .context("Failed to find ability")?;
+                let defaults = &AbilityPool::get_default_vars(resources, name);
                 let faction = Faction::from_entity(context.owner, world, &resources);
                 context.vars.merge_mut(defaults, false);
-                if let Some(overrides) = TeamPool::try_get_team(faction, resources)
-                    .and_then(|x| x.ability_state.get_vars(house, name))
+                if let Some(overrides) = resources
+                    .factions_state
+                    .try_get_ability_overrides(&faction, name)
                 {
                     context.vars.merge_mut(overrides, true);
                 }
@@ -337,9 +330,7 @@ impl EffectWrapped {
                         color: None,
                     }
                     .wrap();
-                    effect.after = Some(Box::new(
-                        resources.house_pool.get_ability(house, name).effect.clone(),
-                    ));
+                    effect.after = Some(Box::new(AbilityPool::get_effect(resources, name)));
                     effect
                 };
                 resources
@@ -357,7 +348,6 @@ impl EffectWrapped {
                 target.get_component_mut::<AttackComponent>().unwrap().value = value;
             }
             Effect::ChangeAbilityVarInt {
-                house,
                 ability,
                 var,
                 delta,
@@ -367,22 +357,9 @@ impl EffectWrapped {
                     &format!("Set ability {} var {:?} delta {}", ability, var, delta),
                     &LogContext::Effect,
                 );
-
-                let prev_value = ExpressionInt::AbilityVar {
-                    house: *house,
-                    ability: ability.clone(),
-                    var: *var,
-                }
-                .calculate(&context, world, resources)?;
                 let faction = Faction::from_entity(context.owner, world, &resources);
-                TeamPool::set_ability_var_int(
-                    house,
-                    ability,
-                    var,
-                    prev_value + delta,
-                    &faction,
-                    resources,
-                );
+                let prev_value = AbilityPool::get_var_int(resources, &faction, ability, var);
+                AbilityPool::set_var_int(resources, &faction, ability, *var, prev_value + delta);
             }
             Effect::If {
                 condition,
@@ -442,19 +419,14 @@ impl EffectWrapped {
             Effect::Kill => {
                 let mut entry = world.entry_mut(context.target).unwrap();
                 let health = entry.get_component_mut::<HealthComponent>().unwrap();
-                health.damage = i32::MAX as usize;
+                health.deal_damage(i32::MAX as usize, context.owner);
             }
             Effect::Revive { slot } => {
                 let slot = slot
                     .as_ref()
                     .and_then(|x| Some(x.calculate(&context, world, resources).ok()?))
                     .unwrap_or_default() as usize;
-                let (mut corpse, faction) = resources
-                    .unit_corpses
-                    .remove(&context.target)
-                    .context("Target is not a corpse")?;
-                corpse.damage = 0;
-                context.target = corpse.unpack(world, resources, slot, faction, None);
+                UnitSystem::revive_corpse(context.target, Some(slot), world, resources);
             }
             Effect::Aoe { factions, effect } => {
                 let mut faction_values: Vec<Faction> = default();

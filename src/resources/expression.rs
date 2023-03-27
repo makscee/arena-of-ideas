@@ -37,8 +37,7 @@ pub enum ExpressionInt {
         entity: ExpressionEntity,
     },
     AbilityVar {
-        house: HouseName,
-        ability: String,
+        ability: AbilityName,
         var: VarName,
     },
 }
@@ -76,15 +75,9 @@ impl ExpressionInt {
                     .try_get_int(var)
                     .context(format!("Var not found {}", var))
             }
-            ExpressionInt::AbilityVar {
-                house,
-                ability,
-                var,
-            } => {
+            ExpressionInt::AbilityVar { ability, var } => {
                 let faction = Faction::from_entity(context.owner, world, &resources);
-                Ok(TeamPool::get_ability_var_int(
-                    house, ability, var, &faction, resources,
-                ))
+                Ok(AbilityPool::get_var_int(resources, &faction, ability, var))
             }
             ExpressionInt::If {
                 condition,

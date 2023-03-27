@@ -64,10 +64,9 @@ impl ShopSystem {
 
     pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
-        TeamPool::refresh_team(&Faction::Team, world, resources);
-        BattleSystem::save_player_team(resources);
-        BattleSystem::save_floor(resources);
-        BattleSystem::init_battle(world, resources);
+        let light = Team::pack(&Faction::Team, world, resources);
+        let dark = resources.floors.current().clone();
+        BattleSystem::init_battle(&light, &dark, world, resources);
     }
 
     fn switch_to_shop(world: &mut legion::World, resources: &mut Resources) {
@@ -159,7 +158,6 @@ impl ShopSystem {
         ContextSystem::refresh_entity(entity, world, resources);
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
-        TeamPool::refresh_team(&Faction::Team, world, resources);
         ContextSystem::refresh_all(world, resources);
         let mut nodes = Some(vec![]);
         SlotSystem::move_to_slots_animated(world, resources, &mut nodes);
@@ -175,7 +173,6 @@ impl ShopSystem {
             .push(PackedUnit::pack(entity, world, resources));
         UnitSystem::turn_unit_into_corpse(entity, world, resources);
         SlotSystem::refresh_slots_uniforms(world, &resources.options);
-        TeamPool::refresh_team(&Faction::Team, world, resources);
         ContextSystem::refresh_all(world, resources);
     }
 

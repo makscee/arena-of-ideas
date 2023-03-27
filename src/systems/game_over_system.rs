@@ -67,13 +67,8 @@ impl System for GameOverSystem {
             self.need_restart = false;
             resources.current_state = GameState::MainMenu;
             resources.transition_state = GameState::Shop;
-            TeamPool::save_team(
-                Faction::Team,
-                Team::empty(resources.options.player_team_name.clone()),
-                resources,
-            );
+            resources.factions_state = default();
             resources.status_pool.clear_all_active();
-            resources.unit_corpses.clear();
             resources.action_queue.clear();
             resources.floors.reset();
             UnitSystem::clear_factions(

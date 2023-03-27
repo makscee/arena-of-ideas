@@ -26,10 +26,7 @@ impl System for GameStateSystem {
             }
             GameState::Battle => {
                 if resources.input.down_keys.contains(&geng::Key::R) {
-                    resources.cassette.clear();
-                    resources.current_state = GameState::Shop;
-                    resources.transition_state = GameState::Battle;
-                    BattleSystem::init_battle(world, resources);
+                    resources.cassette.head = 0.0;
                 }
                 if resources.cassette.head > resources.cassette.length() {
                     BattleSystem::finish_floor_battle(world, resources);
@@ -255,10 +252,8 @@ impl GameStateSystem {
                     .dark
                     .clone()
                     .expect("Light team not set for custom game in options.json");
-                TeamPool::save_team(Faction::Light, light, resources);
-                TeamPool::save_team(Faction::Dark, dark, resources);
                 BattleSystem::clear_world(world, resources);
-                BattleSystem::init_battle(world, resources);
+                BattleSystem::init_battle(&light, &dark, world, resources);
                 let mut tape = Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, &mut tape);
                 if resources.cassette.head > 0.0 {

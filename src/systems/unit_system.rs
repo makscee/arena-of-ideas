@@ -77,20 +77,19 @@ impl UnitSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> bool {
-        let unit = world
-            .entry_ref(entity)
+        let mut entry = world.entry(entity).unwrap();
+        let unit = entry.get_component::<UnitComponent>().unwrap().clone();
+        entry.remove_component::<UnitComponent>();
+
+        let killer = entry
+            .get_component::<HealthComponent>()
             .unwrap()
-            .get_component::<UnitComponent>()
-            .unwrap()
-            .clone();
-        if unit.faction == Faction::Team {
-            Event::RemoveFromTeam { owner: entity }.send(world, resources);
-        }
-        let mut corpse = PackedUnit::pack(entity, world, resources);
-        corpse.active_statuses.clear();
-        resources
-            .unit_corpses
-            .insert(entity, (corpse, unit.faction));
+            .last_attacker();
+        let corpse = CorpseComponent {
+            faction: unit.faction,
+            killer: killer.unwrap_or(entity),
+        };
+        entry.add_component(corpse);
         let corpse_context = ContextSystem::get_context(entity, world);
         let res = world.remove(entity);
 
@@ -102,15 +101,37 @@ impl UnitSystem {
             context: corpse_context,
         }
         .send(world, resources);
-        if let Some(killer) = resources.unit_offenders.get(&entity) {
+        if let Some(killer) = killer {
             Event::AfterKill {
-                owner: *killer,
+                owner: killer,
                 target: entity,
             }
             .send(world, resources);
         }
+        if unit.faction == Faction::Team {
+            Event::RemoveFromTeam { owner: entity }.send(world, resources);
+        }
         resources.status_pool.clear_entity(&entity);
         res
+    }
+
+    pub fn revive_corpse(
+        entity: legion::Entity,
+        slot: Option<usize>,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let mut entry = world.entry(entity).unwrap();
+        let corpse = entry.get_component::<CorpseComponent>().unwrap().clone();
+        entry.remove_component::<CorpseComponent>();
+        let slot = slot.unwrap_or_default();
+        let faction = corpse.faction;
+        let unit = UnitComponent { slot, faction };
+        entry.add_component(unit);
+        entry
+            .get_component_mut::<HealthComponent>()
+            .unwrap()
+            .heal_damage(i32::MAX as usize);
     }
 
     pub fn clear_faction(world: &mut legion::World, resources: &mut Resources, faction: Faction) {
@@ -124,8 +145,14 @@ impl UnitSystem {
     ) -> Vec<legion::Entity> {
         let unit_entitites = <(&EntityComponent, &UnitComponent)>::query()
             .iter(world)
-            .filter_map(|(entity, unit)| match factions.contains(&unit.faction) {
-                true => Some(entity.entity.clone()),
+            .map(|(entity, unit)| (entity.entity, unit.faction))
+            .chain(
+                <(&EntityComponent, &CorpseComponent)>::query()
+                    .iter(world)
+                    .map(|(entity, corpse)| (entity.entity, corpse.faction)),
+            )
+            .filter_map(|(entity, faction)| match factions.contains(&faction) {
+                true => Some(entity.clone()),
                 false => None,
             })
             .collect_vec();
@@ -155,6 +182,13 @@ impl UnitSystem {
                     false => None,
                 }),
         )
+    }
+
+    pub fn get_corpse(entity: legion::Entity, world: &legion::World) -> Option<CorpseComponent> {
+        world
+            .entry_ref(entity)
+            .ok()
+            .and_then(|x| x.get_component::<CorpseComponent>().ok().cloned())
     }
 
     pub fn inject_entity_shaders_uniforms(
