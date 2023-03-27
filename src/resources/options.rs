@@ -3,6 +3,8 @@ use super::*;
 #[derive(Deserialize, Debug)]
 pub struct Options {
     pub fov: f32,
+    pub rewind_speed: f32,
+    pub rewind_add_speed: f32,
     pub initial_shop_fill: usize,
     pub log: HashMap<LogContext, bool>,
     pub shaders: Shaders,

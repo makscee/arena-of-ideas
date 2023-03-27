@@ -1,5 +1,7 @@
 {
     "player_team_name": "Dorks",
+    "rewind_speed": 10.0,
+    "rewind_add_speed": 10.0,
     "custom_game": {
         "enable": false,
         "light": {

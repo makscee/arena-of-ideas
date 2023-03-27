@@ -110,7 +110,9 @@ impl CassettePlayerSystem {
                             }
 
                             CassettePlayMode::Rewind { ts } => {
-                                ts + resources.delta_time * direction * REWIND_SPEED
+                                ts + resources.delta_time
+                                    * direction
+                                    * resources.options.rewind_speed
                             }
                             _ => panic!("Wrong Play Mode"),
                         }
@@ -207,23 +209,16 @@ impl CassettePlayerSystem {
     }
 }
 
-const REWIND_SPEED: f32 = 10.0;
-
 impl System for CassettePlayerSystem {
     fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
         resources.cassette.head = match resources.cassette_play_mode {
             CassettePlayMode::Play => resources.cassette.head + resources.delta_time,
             CassettePlayMode::Stop => resources.cassette.head,
             CassettePlayMode::Rewind { ts } => (resources.cassette.head
-                + (ts - resources.cassette.head) * resources.delta_time * REWIND_SPEED)
+                + (ts - resources.cassette.head)
+                    * resources.delta_time
+                    * resources.options.rewind_speed)
                 .clamp(0.01, resources.cassette.length().max(0.01)),
-        };
-        resources.cassette_play_mode = match resources.cassette_play_mode {
-            CassettePlayMode::Play | CassettePlayMode::Stop => resources.cassette_play_mode,
-            CassettePlayMode::Rewind { ts } => match (ts - resources.cassette.head).abs() < 0.01 {
-                true => CassettePlayMode::Stop,
-                false => resources.cassette_play_mode,
-            },
         };
         if self.hidden {
             return;
@@ -263,7 +258,7 @@ impl System for CassettePlayerSystem {
                     }
 
                     CassettePlayMode::Rewind { ts } => {
-                        ts + resources.delta_time * direction * REWIND_SPEED
+                        ts + resources.delta_time * direction * resources.options.rewind_add_speed
                     }
                     _ => panic!("Wrong Play Mode"),
                 }

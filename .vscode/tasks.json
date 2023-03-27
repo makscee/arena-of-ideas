@@ -44,7 +44,27 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Build",
+			"label": "Build Mac",
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"LOG": "warn",
+				"CARGO_MANIFEST_DIR": "."
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "build",
+			"args": [
+				"--release",
+				"--target",
+				"x86_64-pc-windows-gnu"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Build Win",
 			"group": {
 				"kind": "build"
 			},
