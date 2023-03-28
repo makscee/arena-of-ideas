@@ -293,5 +293,18 @@
 			"}"
 		],
 		"description": "Chance"
+	},
+	"Slot Relative": {
+		"prefix": "slot_relative",
+		"body": [
+			"{",
+			"    \"type\": \"SlotRelative\",",
+			"    \"relation\": {",
+			"        \"type\": \"Const\",",
+			"        \"value\": ${1:-1}",
+			"    }",
+			"}"
+		],
+		"description": "Slot Relative"
 	}
 }

@@ -1,0 +1,40 @@
+{
+    "name": "Hell Sponge",
+    "description": "After Strike:\nEmpower (5)\nally behind",
+    "health": 10,
+    "attack": 1,
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "AfterStrike",
+        "effect": {
+            "type": "UseAbility",
+            "house": "Demons",
+            "name": "Empower",
+            "target": {
+                "type": "SlotRelative",
+                "relation": {
+                    "type": "Const",
+                    "value": 1
+                }
+            },
+            "vars": {
+                "Charges": 5
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#98005b",
+                "u_circle_radius": 0.8,
+                "u_border": 10.0,
+                "u_circle_fbm": -1.0,
+                "u_circle_fbm_speed": -2.0,
+                "u_aa": 0.03
+            }
+        }
+    }
+}

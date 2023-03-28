@@ -9,35 +9,28 @@
             "name": "Dorks",
             "units": [
                 {
+                    "name": "Hell Sponge",
+                    "description": "After Strike:\nEmpower (5)\nally behind",
                     "health": 10,
-                    "attack": 1
-                },
-                {
-                    "name": "Sergeant",
-                    "description": "Turn start:\nEmpower (2)\nfirst ally",
-                    "health": 3,
-                    "attack": 3,
+                    "attack": 1,
                     "houses": [
                         "Demons"
                     ],
                     "trigger": {
-                        "type": "TurnStart",
+                        "type": "AfterStrike",
                         "effect": {
                             "type": "UseAbility",
                             "house": "Demons",
                             "name": "Empower",
                             "target": {
-                                "type": "FindUnit",
-                                "slot": {
+                                "type": "SlotRelative",
+                                "relation": {
                                     "type": "Const",
                                     "value": 1
-                                },
-                                "faction": {
-                                    "type": "Owner"
                                 }
                             },
                             "vars": {
-                                "Charges": 3
+                                "Charges": 5
                             }
                         }
                     },
@@ -46,14 +39,18 @@
                         "parameters": {
                             "uniforms": {
                                 "u_color": "#98005b",
-                                "u_circle_radius": 0.7,
-                                "u_border": 0.4,
-                                "u_circle_fbm": 0.15,
-                                "u_circle_fbm_speed": 10.0,
-                                "u_aa": 0.1
+                                "u_circle_radius": 0.8,
+                                "u_border": 10.0,
+                                "u_circle_fbm": -1.0,
+                                "u_circle_fbm_speed": -2.0,
+                                "u_aa": 0.03
                             }
                         }
                     }
+                },
+                {
+                    "health": 10,
+                    "attack": 1
                 }
             ]
         },

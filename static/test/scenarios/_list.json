@@ -1,4 +1,5 @@
 [
+    "test/scenarios/hell_sponge.json",
     "test/scenarios/sergeant.json",
     "test/scenarios/healer.json",
     "test/scenarios/dog.json",

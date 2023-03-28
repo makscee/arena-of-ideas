@@ -24,11 +24,7 @@ impl Faction {
             Faction::Gallery => 4.0,
         }
     }
-    pub fn from_entity(
-        entity: legion::Entity,
-        world: &legion::World,
-        resources: &Resources,
-    ) -> Faction {
+    pub fn from_entity(entity: legion::Entity, world: &legion::World) -> Faction {
         if let Ok(entry) = world.entry_ref(entity) {
             if let Ok(unit) = entry.get_component::<UnitComponent>() {
                 return unit.faction;

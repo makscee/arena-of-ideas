@@ -76,7 +76,7 @@ impl ExpressionInt {
                     .context(format!("Var not found {}", var))
             }
             ExpressionInt::AbilityVar { ability, var } => {
-                let faction = Faction::from_entity(context.owner, world, &resources);
+                let faction = Faction::from_entity(context.owner, world);
                 Ok(AbilityPool::get_var_int(resources, &faction, ability, var))
             }
             ExpressionInt::If {
@@ -105,6 +105,9 @@ pub enum ExpressionEntity {
     RandomUnit {
         faction: ExpressionFaction,
     },
+    SlotRelative {
+        relation: Box<ExpressionInt>,
+    },
 }
 
 impl ExpressionEntity {
@@ -127,12 +130,8 @@ impl ExpressionEntity {
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
                 let faction = faction.calculate(context, world, resources)?;
-                UnitSystem::collect_faction(world, faction)
-                    .into_iter()
-                    .find_map(|(entity, unit)| match unit.slot == slot {
-                        true => Some(entity),
-                        false => None,
-                    })
+                SlotSystem::find_unit_by_slot(slot, &faction, world)
+                    .and_then(|x| Some(x.0))
                     .context(format!("No unit of {:?} found in {} slot", faction, slot))
             }
             ExpressionEntity::RandomUnit { faction } => {
@@ -145,6 +144,16 @@ impl ExpressionEntity {
                     })
                     .choose(&mut thread_rng())
                     .context(format!("No units of {:?} found", faction))
+            }
+            ExpressionEntity::SlotRelative { relation } => {
+                let unit = UnitSystem::get_unit(context.owner, world);
+                let relation = relation.calculate(context, world, resources)?;
+                let slot = (unit.slot as i32 + relation) as usize;
+                let faction = unit.faction;
+                dbg!(unit, slot, faction);
+                SlotSystem::find_unit_by_slot(slot, &faction, world)
+                    .and_then(|x| Some(x.0))
+                    .context(format!("No unit of {:?} found in {} slot", faction, slot))
             }
         }
     }
@@ -168,13 +177,9 @@ impl ExpressionFaction {
         resources: &Resources,
     ) -> Result<Faction, Error> {
         match &self {
-            ExpressionFaction::Owner => Ok(Faction::from_entity(context.owner, world, resources)),
-            ExpressionFaction::Target => Ok(Faction::from_entity(context.target, world, resources)),
-            ExpressionFaction::Parent => Ok(Faction::from_entity(
-                context.parent.unwrap(),
-                world,
-                resources,
-            )),
+            ExpressionFaction::Owner => Ok(Faction::from_entity(context.owner, world)),
+            ExpressionFaction::Target => Ok(Faction::from_entity(context.target, world)),
+            ExpressionFaction::Parent => Ok(Faction::from_entity(context.parent.unwrap(), world)),
 
             ExpressionFaction::Opposite { faction } => {
                 Ok(faction.calculate(context, world, resources)?.opposite())

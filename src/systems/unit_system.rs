@@ -9,6 +9,15 @@ impl UnitSystem {
         shader.chain_before.push(chain_shader);
     }
 
+    pub fn get_unit(entity: legion::Entity, world: &legion::World) -> UnitComponent {
+        world
+            .entry_ref(entity)
+            .unwrap()
+            .get_component::<UnitComponent>()
+            .unwrap()
+            .clone()
+    }
+
     pub fn draw_unit_to_cassette_node(
         entity: legion::Entity,
         node: &mut CassetteNode,

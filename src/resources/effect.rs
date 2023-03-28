@@ -312,7 +312,7 @@ impl EffectWrapped {
                     );
                 }
                 let defaults = &AbilityPool::get_default_vars(resources, name);
-                let faction = Faction::from_entity(context.owner, world, &resources);
+                let faction = Faction::from_entity(context.owner, world);
                 context.vars.merge_mut(defaults, false);
                 if let Some(overrides) = resources
                     .factions_state
@@ -357,7 +357,7 @@ impl EffectWrapped {
                     &format!("Set ability {} var {:?} delta {}", ability, var, delta),
                     &LogContext::Effect,
                 );
-                let faction = Faction::from_entity(context.owner, world, &resources);
+                let faction = Faction::from_entity(context.owner, world);
                 let prev_value = AbilityPool::get_var_int(resources, &faction, ability, var);
                 AbilityPool::set_var_int(resources, &faction, ability, *var, prev_value + delta);
             }
