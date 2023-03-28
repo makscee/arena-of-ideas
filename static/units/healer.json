@@ -1,0 +1,50 @@
+{
+    "name": "Healer",
+    "health": 3,
+    "attack": 1,
+    "description": "Turn end:\nMend (4)\ninjured ally",
+    "houses": [
+        "Clerics"
+    ],
+    "trigger": {
+        "type": "TurnEnd",
+        "effect": {
+            "type": "FindTarget",
+            "faction": {
+                "type": "Owner"
+            },
+            "condition": {
+                "type": "MoreInt",
+                "a": {
+                    "type": "Var",
+                    "var": "HpDamage"
+                },
+                "b": {
+                    "type": "Const",
+                    "value": 0
+                }
+            },
+            "effect": {
+                "type": "UseAbility",
+                "house": "Clerics",
+                "name": "Mend",
+                "vars": {
+                    "Charges": 4
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#ffffff",
+                "u_radius": 0.8,
+                "u_border": 0.8,
+                "u_circle_fbm": 0.7,
+                "u_circle_fbm_speed": 1.0,
+                "u_padding": 1.0
+            }
+        }
+    }
+}

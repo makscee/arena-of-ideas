@@ -104,7 +104,7 @@
                     "name": "Ranger",
                     "health": 2,
                     "attack": 1,
-                    "description": "Turn end:\nShoot random enemy 3 times",
+                    "description": "Turn end:\nShoot random\nenemy 3 times",
                     "houses": [
                         "Archers"
                     ],
@@ -153,39 +153,35 @@
                     "name": "Priest",
                     "health": 2,
                     "attack": 1,
-                    "description": "Turn end:\nMend injured ally twice",
+                    "description": "Turn end:\nMend (2)\ninjured ally",
                     "houses": [
                         "Clerics"
                     ],
                     "trigger": {
                         "type": "TurnEnd",
                         "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Owner"
+                            "type": "FindTarget",
+                            "faction": {
+                                "type": "Owner"
+                            },
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "HpDamage"
                                 },
-                                "condition": {
-                                    "type": "MoreInt",
-                                    "a": {
-                                        "type": "Var",
-                                        "var": "HpDamage"
-                                    },
-                                    "b": {
-                                        "type": "Const",
-                                        "value": 0
-                                    }
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "house": "Clerics",
-                                    "name": "Mend"
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
                                 }
                             },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Clerics",
+                                "name": "Mend",
+                                "vars": {
+                                    "Charges": 2
+                                }
                             }
                         }
                     },

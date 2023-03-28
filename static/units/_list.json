@@ -1,9 +1,11 @@
 [
+    "units/healer.json",
     "units/defender.json",
     "units/dog.json",
     "units/shikari.json",
     "units/bowman.json",
     "units/gunner.json",
+    "units/madman.json",
     "units/devil.json",
     "units/lord.json",
     "units/captain.json",

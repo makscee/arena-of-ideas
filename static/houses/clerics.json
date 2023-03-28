@@ -7,12 +7,15 @@
             "effect": {
                 "type": "Heal",
                 "value": {
-                    "type": "Const",
-                    "value": 1
+                    "type": "Var",
+                    "var": "Charges"
                 },
                 "after": {
                     "type": "ShowCurve"
                 }
+            },
+            "default_vars": {
+                "Charges": 1
             }
         }
     }

@@ -4,75 +4,77 @@
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Dorks",
             "units": [
                 {
-                    "name": "Dog",
-                    "description": "Start of Battle:\nDevour\nrandom enemy,\nthen take 20 dmg",
-                    "attack": 2,
-                    "health": 1,
+                    "health": 10,
+                    "damage": 8,
+                    "attack": 9
+                },
+                {
+                    "name": "Priest",
+                    "health": 3,
+                    "attack": 1,
+                    "description": "Turn end:\nMend (4)\ninjured ally",
                     "houses": [
-                        "Vampires"
+                        "Clerics"
                     ],
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "TurnEnd",
                         "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "Damage",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 20
-                                    },
-                                    "target": {
-                                        "type": "Owner"
-                                    }
+                            "type": "FindTarget",
+                            "faction": {
+                                "type": "Owner"
+                            },
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "HpDamage"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
                                 }
-                            ]
+                            },
+                            "effect": {
+                                "type": "UseAbility",
+                                "house": "Clerics",
+                                "name": "Mend",
+                                "vars": {
+                                    "Charges": 9
+                                }
+                            }
                         }
                     },
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#b64300",
-                                "u_circle_radius": 0.3,
-                                "u_border": 0.6,
-                                "u_circle_fbm": -1.2,
-                                "u_circle_fbm_speed": 2.0,
-                                "u_aa": 0.15,
-                                "u_padding": 2.0
+                                "u_color": "#ffffff",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 1.0,
+                                "u_padding": 1.0
                             }
                         }
                     }
-                },
-                {
-                    "attack": 1,
-                    "health": 5
-                },
-                {
-                    "attack": 1,
-                    "health": 5
                 }
             ]
         },
         "dark": {
-            "name": "Hounds",
+            "name": "Dorks",
             "units": [
                 {
-                    "attack": 7,
-                    "health": 5
+                    "health": 9,
+                    "attack": 1
                 },
                 {
-                    "attack": 7,
-                    "health": 5
-                },
-                {
-                    "attack": 7,
-                    "health": 5
+                    "health": 9,
+                    "attack": 9
                 }
             ]
         }
