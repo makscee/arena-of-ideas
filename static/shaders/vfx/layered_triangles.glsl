@@ -19,7 +19,7 @@ flat in int p_index;
 uniform vec4 u_color_1 = vec4(0);
 uniform float u_alpha = 0.5;
 uniform float u_spin_part = 0.01;
-uniform float u_move_speed = 1;
+uniform float u_move_speed = 0;
 
 void main() {
     float fbm_v = fbm(randVec(p_index) * vec2(u_global_time * u_move_speed));

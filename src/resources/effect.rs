@@ -169,8 +169,8 @@ impl EffectWrapped {
                     node.add_effect(VfxSystem::vfx_show_text(
                         resources,
                         &text,
-                        resources.options.colors.text_remove_color,
                         resources.options.colors.damage_text,
+                        resources.options.colors.text_remove_color,
                         target.get_component::<AreaComponent>().unwrap().position,
                         0,
                         0.0,
@@ -229,12 +229,13 @@ impl EffectWrapped {
                     .context("Failed to get Target")?;
                 if let Some(hp) = target.get_component_mut::<HealthComponent>().ok() {
                     hp.heal_damage(value);
+                    let color = context.vars.get_color(&VarName::Color);
                     if let Some(node) = node.as_mut() {
                         node.add_effect(VfxSystem::vfx_show_text(
                             resources,
                             &text,
-                            resources.options.colors.text_add_color,
                             resources.options.colors.damage_text,
+                            color,
                             target.get_component::<AreaComponent>().unwrap().position,
                             0,
                             0.0,

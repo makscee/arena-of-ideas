@@ -1,0 +1,42 @@
+{
+    "name": "Holy Priest",
+    "attack": 3,
+    "health": 10,
+    "description": "End of turn\nMend (3)\nall allies",
+    "houses": [
+        "Clerics"
+    ],
+    "trigger": {
+        "type": "TurnEnd",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "name": "Mend",
+                "vars": {
+                    "Charges": 3
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/layered_triangles.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#ffffff",
+                "u_color_1": "#87c9ff",
+                "u_radius": 1.5,
+                "u_alpha": 0.8,
+                "u_spin_part": 0.03,
+                "u_move_speed": 0.5
+            },
+            "instances": 40,
+            "vertices": 1
+        }
+    }
+}
