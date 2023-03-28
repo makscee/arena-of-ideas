@@ -10,7 +10,6 @@
         "type": "AfterStrike",
         "effect": {
             "type": "UseAbility",
-            "house": "Vampires",
             "name": "SiphonLife"
         }
     },

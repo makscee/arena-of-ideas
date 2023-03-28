@@ -34,7 +34,6 @@
                         },
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Archers",
                             "name": "Shoot"
                         }
                     }

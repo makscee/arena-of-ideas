@@ -23,7 +23,6 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "house": "Exorcists",
                 "name": "Dispel"
             }
         }

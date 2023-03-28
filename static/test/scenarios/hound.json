@@ -21,14 +21,12 @@
                 "attack": 1,
                 "health": 1,
                 "houses": [
-                    "Vampires"
+                    "Demons"
                 ],
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
-                        "house": "Vampires",
-                        "name": "Devour",
                         "target": {
                             "type": "RandomUnit",
                             "faction": {

@@ -47,7 +47,6 @@
                                     "type": "Owner"
                                 }
                             },
-                            "house": "Exorcists",
                             "name": "Dispel"
                         },
                         "else": {
@@ -90,7 +89,6 @@
                                 }
                             },
                             "type": "UseAbility",
-                            "house": "Exorcists",
                             "name": "Dispel"
                         },
                         "else": {

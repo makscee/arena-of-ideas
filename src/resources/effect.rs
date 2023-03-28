@@ -4,6 +4,7 @@ use super::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
+#[serde(deny_unknown_fields)]
 pub enum Effect {
     Damage {
         value: Option<ExpressionInt>,

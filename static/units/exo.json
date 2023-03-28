@@ -10,7 +10,6 @@
         "type": "BattleStart",
         "effect": {
             "type": "UseAbility",
-            "house": "Exorcists",
             "name": "Dispel",
             "target": {
                 "type": "RandomUnit",

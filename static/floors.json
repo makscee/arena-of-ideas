@@ -15,7 +15,6 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Snakes",
                             "name": "Poison"
                         }
                     },
@@ -53,7 +52,6 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Snakes",
                             "name": "Poison"
                         }
                     },
@@ -125,7 +123,6 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "house": "Archers",
                                     "name": "Shoot"
                                 }
                             },
@@ -177,7 +174,6 @@
                             },
                             "effect": {
                                 "type": "UseAbility",
-                                "house": "Clerics",
                                 "name": "Mend",
                                 "vars": {
                                     "Charges": 2
@@ -222,7 +218,6 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "house": "Necromancers",
                                 "name": "Reanimate"
                             },
                             "else": {
@@ -265,7 +260,6 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "house": "Necromancers",
                                 "name": "Reanimate"
                             },
                             "else": {
@@ -308,7 +302,6 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "house": "Necromancers",
                                 "name": "Reanimate"
                             },
                             "else": {
@@ -351,7 +344,6 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "house": "Necromancers",
                                 "name": "Reanimate"
                             },
                             "else": {
@@ -512,13 +504,12 @@
                     "attack": 12,
                     "health": 12,
                     "houses": [
-                        "Vampires"
+                        "Demons"
                     ],
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Vampires",
                             "name": "Devour",
                             "target": {
                                 "type": "RandomUnit",
@@ -552,13 +543,12 @@
                     "attack": 12,
                     "health": 12,
                     "houses": [
-                        "Vampires"
+                        "Demons"
                     ],
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Vampires",
                             "name": "Devour",
                             "target": {
                                 "type": "RandomUnit",
@@ -603,7 +593,6 @@
                         "type": "AfterStrike",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Robots",
                             "name": "Shield",
                             "target": {
                                 "type": "Owner"
@@ -656,7 +645,6 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "house": "Archers",
                                     "name": "Shoot"
                                 }
                             },
@@ -706,7 +694,6 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "house": "Archers",
                                     "name": "Shoot"
                                 }
                             },
@@ -756,7 +743,6 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "house": "Archers",
                                     "name": "Shoot"
                                 }
                             },
@@ -806,7 +792,6 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "house": "Archers",
                                     "name": "Shoot"
                                 }
                             },
@@ -847,7 +832,6 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Titans",
                             "name": "Immortality"
                         }
                     },
@@ -878,7 +862,6 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Titans",
                             "name": "Immortality"
                         }
                     },
@@ -909,7 +892,6 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Titans",
                             "name": "Immortality"
                         }
                     },
@@ -940,7 +922,6 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Titans",
                             "name": "Immortality"
                         }
                     },

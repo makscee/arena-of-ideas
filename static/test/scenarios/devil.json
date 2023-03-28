@@ -26,7 +26,6 @@
                         ],
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Demons",
                             "name": "Empower",
                             "vars": {
                                 "Charges": 6

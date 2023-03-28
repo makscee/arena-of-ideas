@@ -12,7 +12,6 @@
             "type": "Repeat",
             "effect": {
                 "type": "UseAbility",
-                "house": "Archers",
                 "name": "Shoot",
                 "target": {
                     "type": "RandomUnit",

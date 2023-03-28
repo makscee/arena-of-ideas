@@ -32,7 +32,6 @@
                         },
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Clerics",
                             "name": "Mend",
                             "vars": {
                                 "Charges": 9

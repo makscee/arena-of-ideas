@@ -150,6 +150,7 @@ impl PackedUnit {
 impl FileWatcherLoader for PackedUnit {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::loader));
+        debug!("Load unit {:?}", path);
         let unit = futures::executor::block_on(load_json(path)).unwrap();
         resources.hero_pool.insert(path.clone(), unit);
     }

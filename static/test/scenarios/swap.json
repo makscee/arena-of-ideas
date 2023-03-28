@@ -11,7 +11,6 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
-                        "house": "Thieves",
                         "name": "Swap",
                         "target": {
                             "type": "RandomUnit",

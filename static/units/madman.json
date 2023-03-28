@@ -10,7 +10,6 @@
         "type": "BeforeStrike",
         "effect": {
             "type": "UseAbility",
-            "house": "Demons",
             "name": "Empower",
             "target": {
                 "type": "Owner"

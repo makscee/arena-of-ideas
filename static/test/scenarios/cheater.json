@@ -19,7 +19,6 @@
                     "type": "AfterStrike",
                     "effect": {
                         "type": "UseAbility",
-                        "house": "Robots",
                         "name": "Shield",
                         "target": {
                             "type": "Owner"

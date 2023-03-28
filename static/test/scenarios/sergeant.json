@@ -15,7 +15,6 @@
                     "type": "TurnStart",
                     "effect": {
                         "type": "UseAbility",
-                        "house": "Demons",
                         "name": "Empower",
                         "target": {
                             "type": "FindUnit",

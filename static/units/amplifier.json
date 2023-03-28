@@ -13,7 +13,6 @@
             "effects": [
                 {
                     "type": "ChangeAbilityVarInt",
-                    "house": "Robots",
                     "ability": "Shield",
                     "var": "Reflection",
                     "delta": {

@@ -44,7 +44,6 @@
                         "type": "Owner"
                     }
                 },
-                "house": "Vampires",
                 "name": "Devour"
             },
             "else": {

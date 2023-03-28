@@ -4,7 +4,7 @@
     "health": 2,
     "attack": 2,
     "houses": [
-        "Vampires"
+        "Demons"
     ],
     "trigger": {
         "type": "Buy",
@@ -47,7 +47,6 @@
                                 "type": "Owner"
                             }
                         },
-                        "house": "Vampires",
                         "name": "Devour"
                     },
                     "else": {
@@ -90,7 +89,6 @@
                                 "type": "Owner"
                             }
                         },
-                        "house": "Vampires",
                         "name": "Devour"
                     },
                     "else": {

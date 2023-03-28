@@ -11,7 +11,6 @@
                     "type": "TurnStart",
                     "effect": {
                         "type": "UseAbility",
-                        "house": "Archers",
                         "name": "Shoot",
                         "target": {
                             "type": "RandomUnit",

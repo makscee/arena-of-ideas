@@ -12,7 +12,6 @@
             "type": "Repeat",
             "effect": {
                 "type": "UseAbility",
-                "house": "Dragons",
                 "name": "Grow"
             },
             "count": {

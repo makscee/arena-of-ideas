@@ -16,7 +16,6 @@
                     "effects": [
                         {
                             "type": "ChangeAbilityVarInt",
-                            "house": "Robots",
                             "ability": "Shield",
                             "var": "Charges",
                             "delta": {
@@ -38,7 +37,6 @@
                     "effects": [
                         {
                             "type": "ChangeAbilityVarInt",
-                            "house": "Robots",
                             "ability": "Shield",
                             "var": "Charges",
                             "delta": {

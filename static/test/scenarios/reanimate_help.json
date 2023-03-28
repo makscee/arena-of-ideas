@@ -23,7 +23,6 @@
                     "type": "AfterDamageDealt",
                     "effect": {
                         "type": "UseAbility",
-                        "house": "Necromancers",
                         "name": "Reanimate"
                     }
                 }

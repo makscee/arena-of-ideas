@@ -10,7 +10,6 @@
         "type": "Buy",
         "effect": {
             "type": "UseAbility",
-            "house": "Robots",
             "name": "Shield"
         }
     },

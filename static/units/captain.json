@@ -17,7 +17,6 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "house": "Demons",
                 "name": "Empower"
             }
         }

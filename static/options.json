@@ -20,7 +20,6 @@
                         "type": "AfterStrike",
                         "effect": {
                             "type": "UseAbility",
-                            "house": "Demons",
                             "name": "Empower",
                             "target": {
                                 "type": "SlotRelative",

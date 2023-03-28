@@ -2,34 +2,6 @@
     "name": "Vampires",
     "color": "#7f0000ff",
     "abilities": {
-        "Devour": {
-            "description": "Kill target, gain +1/+1\nper target HP",
-            "effect": {
-                "type": "TakeVar",
-                "entity": {
-                    "type": "Target"
-                },
-                "var": "HpValue",
-                "new_name": "Charges",
-                "effect": {
-                    "type": "Kill",
-                    "after": {
-                        "type": "ChangeStatus",
-                        "target": {
-                            "type": "Owner"
-                        },
-                        "name": "Devour",
-                        "charges": {
-                            "type": "Var",
-                            "var": "Charges"
-                        }
-                    }
-                },
-                "after": {
-                    "type": "ShowCurve"
-                }
-            }
-        },
         "SiphonLife": {
             "description": "Steal 1 HP\nfrom target",
             "effect": {
@@ -72,29 +44,6 @@
         }
     },
     "statuses": {
-        "Devour": {
-            "trigger": {
-                "type": "List",
-                "triggers": [
-                    {
-                        "type": "ChangeVarInt",
-                        "var": "HpValue",
-                        "delta": {
-                            "type": "Var",
-                            "var": "Charges"
-                        }
-                    },
-                    {
-                        "type": "ChangeVarInt",
-                        "var": "AttackValue",
-                        "delta": {
-                            "type": "Var",
-                            "var": "Charges"
-                        }
-                    }
-                ]
-            }
-        },
         "SiphonLife": {
             "trigger": {
                 "type": "ChangeVarInt",
