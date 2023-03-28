@@ -1,0 +1,47 @@
+{
+    "light": {
+        "units": [
+            {
+                "health": 3,
+                "attack": 3,
+                "houses": [
+                    "Druids"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "Repeat",
+                        "effect": {
+                            "type": "UseAbility",
+                            "name": "SummonTreant"
+                        },
+                        "count": {
+                            "type": "Const",
+                            "value": 2
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "health": 10,
+                "attack": 10
+            },
+            {
+                "attack": 2,
+                "health": 3
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

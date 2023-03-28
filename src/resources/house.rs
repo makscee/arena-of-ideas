@@ -26,11 +26,13 @@ pub enum HouseName {
     Archers,
     Clerics,
     Titans,
+    Druids,
 }
 
 impl FileWatcherLoader for House {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::loader));
+        debug!("Load house {:?}", path);
         let house: House = futures::executor::block_on(load_json(path)).unwrap();
         house.statuses.iter().for_each(|(name, status)| {
             let mut status = status.clone();

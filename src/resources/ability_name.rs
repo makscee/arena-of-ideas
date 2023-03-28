@@ -16,6 +16,7 @@ pub enum AbilityName {
     SiphonLife,
     Empower,
     Mend,
+    SummonTreant,
 }
 
 impl fmt::Display for AbilityName {

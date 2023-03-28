@@ -1,0 +1,39 @@
+{
+    "name": "Forester",
+    "health": 3,
+    "attack": 3,
+    "description": "Start of battle:\nuse SummonTreant\ntwice",
+    "houses": [
+        "Druids"
+    ],
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "Repeat",
+            "effect": {
+                "type": "UseAbility",
+                "name": "SummonTreant"
+            },
+            "count": {
+                "type": "Const",
+                "value": 2
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/layered_triangles.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#873901",
+                "u_color_1": "#dc6612",
+                "u_radius": 1.1,
+                "u_alpha": 1.0,
+                "u_spin_part": -0.1,
+                "u_move_speed": -0.5,
+                "u_size_amp": 0.1
+            },
+            "instances": 3,
+            "vertices": 1
+        }
+    }
+}

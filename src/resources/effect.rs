@@ -97,6 +97,11 @@ pub enum Effect {
         condition: Condition,
         effect: Box<EffectWrapped>,
     },
+    Summon {
+        unit: Box<PackedUnit>,
+        slot: Option<ExpressionInt>,
+        faction: Option<ExpressionFaction>,
+    },
 }
 
 impl Effect {
@@ -513,6 +518,22 @@ impl EffectWrapped {
                         .action_queue
                         .push_front(Action::new(context.clone(), effect.deref().clone()));
                 }
+            }
+            Effect::Summon {
+                unit,
+                slot,
+                faction,
+            } => {
+                let slot = slot
+                    .as_ref()
+                    .and_then(|x| x.calculate(&context, world, resources).ok())
+                    .unwrap_or_default() as usize;
+                let faction = faction
+                    .as_ref()
+                    .and_then(|x| x.calculate(&context, world, resources).ok())
+                    .unwrap_or_else(|| Faction::from_entity(context.target, world));
+                unit.unpack(world, resources, slot, faction, None);
+                SlotSystem::fill_gaps(world, resources, &hashset! { faction });
             }
         }
         Ok(match self.after.as_deref() {
