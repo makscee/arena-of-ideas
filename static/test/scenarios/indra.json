@@ -1,0 +1,76 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 9
+            },
+            {
+                "attack": 0,
+                "health": 10
+            },
+            {
+                "attack": 1,
+                "health": 1,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "AllTargets",
+                        "faction": {
+                            "type": "Owner"
+                        },
+                        "condition": {
+                            "type": "Not",
+                            "condition": {
+                                "type": "Same",
+                                "a": {
+                                    "type": "Owner"
+                                },
+                                "b": {
+                                    "type": "Target"
+                                }
+                            }
+                        },
+                        "effect": {
+                            "type": "UseAbility",
+                            "name": "Devour"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 20,
+                "health": 20
+            }
+        ]
+    },
+    "assert": {
+        "type": "Not",
+        "condition": {
+            "type": "Or",
+            "a": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": "Light"
+            },
+            "b": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": "Dark"
+            }
+        }
+    }
+}

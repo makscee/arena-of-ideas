@@ -1,4 +1,5 @@
 [
+    "test/scenarios/indra.json",
     "test/scenarios/druid.json",
     "test/scenarios/scrapper.json",
     "test/scenarios/medic.json",

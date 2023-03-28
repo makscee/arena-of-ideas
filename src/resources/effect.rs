@@ -1,3 +1,4 @@
+use geng::prelude::itertools::Itertools;
 use legion::EntityStore;
 
 use super::*;
@@ -93,6 +94,11 @@ pub enum Effect {
     RemoveTrigger,
     /// Do effect if a unit matches condition
     FindTarget {
+        faction: ExpressionFaction,
+        condition: Condition,
+        effect: Box<EffectWrapped>,
+    },
+    AllTargets {
         faction: ExpressionFaction,
         condition: Condition,
         effect: Box<EffectWrapped>,
@@ -513,6 +519,34 @@ impl EffectWrapped {
                         }
                     });
                 if let Some((target, _)) = target {
+                    context.target = target;
+                    resources
+                        .action_queue
+                        .push_front(Action::new(context.clone(), effect.deref().clone()));
+                }
+            }
+            Effect::AllTargets {
+                faction,
+                condition,
+                effect,
+            } => {
+                let faction = faction.calculate(&context, world, resources)?;
+                let targets = UnitSystem::collect_faction(world, faction)
+                    .into_iter()
+                    .filter_map(|(entity, _)| {
+                        ContextSystem::try_get_context(entity, world)
+                            .ok()
+                            .and_then(|mut x| {
+                                x.owner = context.owner;
+                                condition.calculate(&x, world, resources).ok()
+                            })
+                            .and_then(|x| match x {
+                                true => Some(entity),
+                                false => None,
+                            })
+                    })
+                    .collect_vec();
+                for target in targets {
                     context.target = target;
                     resources
                         .action_queue

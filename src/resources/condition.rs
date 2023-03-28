@@ -22,6 +22,10 @@ pub enum Condition {
         slot: ExpressionInt,
         faction: Faction,
     },
+    Same {
+        a: ExpressionEntity,
+        b: ExpressionEntity,
+    },
     IsCorpse {
         entity: ExpressionEntity,
     },
@@ -32,6 +36,10 @@ pub enum Condition {
         condition: Box<Condition>,
     },
     And {
+        a: Box<Condition>,
+        b: Box<Condition>,
+    },
+    Or {
         a: Box<Condition>,
         b: Box<Condition>,
     },
@@ -76,6 +84,8 @@ impl Condition {
             Condition::Not { condition } => Ok(!condition.calculate(context, world, resources)?),
             Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
                 && b.calculate(context, world, resources)?),
+            Condition::Or { a, b } => Ok(a.calculate(context, world, resources)?
+                || b.calculate(context, world, resources)?),
             Condition::Always => Ok(true),
             Condition::Chance { part } => Ok(random::<f32>() < *part),
             Condition::IsAlive { entity } => {
@@ -89,6 +99,8 @@ impl Condition {
                     Ok(false)
                 }
             }
+            Condition::Same { a, b } => Ok(a.calculate(context, world, resources)?
+                == b.calculate(context, world, resources)?),
         }
     }
 }

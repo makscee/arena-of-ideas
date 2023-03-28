@@ -8,41 +8,66 @@
         "light": {
             "units": [
                 {
-                    "name": "Forester",
-                    "health": 3,
-                    "attack": 3,
-                    "description": "Start of battle:\nuse SummonTreant\ntwice",
+                    "health": 5,
+                    "attack": 5
+                },
+                {
+                    "health": 5,
+                    "attack": 5
+                },
+                {
+                    "health": 5,
+                    "attack": 5
+                },
+                {
+                    "name": "Indra",
+                    "attack": 8,
+                    "health": 8,
+                    "description": "Start of battle:\nDevour\nALL allies",
                     "houses": [
-                        "Druids"
+                        "Demons"
                     ],
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "Repeat",
+                            "type": "AllTargets",
+                            "faction": {
+                                "type": "Owner"
+                            },
+                            "condition": {
+                                "type": "Not",
+                                "condition": {
+                                    "type": "Same",
+                                    "a": {
+                                        "type": "Owner"
+                                    },
+                                    "b": {
+                                        "type": "Target"
+                                    }
+                                }
+                            },
                             "effect": {
                                 "type": "UseAbility",
-                                "name": "SummonTreant"
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
+                                "name": "Devour"
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
+                            "instances": 4000,
                             "uniforms": {
-                                "u_color": "#873901",
-                                "u_color_1": "#dc6612",
-                                "u_radius": 1.1,
-                                "u_alpha": 1.0,
-                                "u_spin_part": -0.1,
-                                "u_move_speed": -0.5,
-                                "u_size_amp": 0.1
-                            },
-                            "instances": 3,
-                            "vertices": 1
+                                "u_start_color": "#000000ff",
+                                "u_end_color": "#8e0039ff",
+                                "u_scale": 0.5,
+                                "u_scale_over_t": -0.5,
+                                "u_velocity_over_t": -3.5,
+                                "u_trail_count": 40,
+                                "u_trail_shift": 0.1,
+                                "u_lifetime": 10.2,
+                                "u_velicity_mul": 12.2,
+                                "u_zoom": 0.3
+                            }
                         }
                     }
                 }
