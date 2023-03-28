@@ -4,10 +4,20 @@
     "abilities": {
         "Defense": {
             "effect": {
-                "type": "AddStatus",
-                "name": "Defense"
+                "type": "ChangeStatus",
+                "name": "Defense",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
             },
-            "description": "Reduce incoming damage by 1\nbut not less than 1"
+            "description": "Reduce incoming damage by 1\nbut not less than 1",
+            "default_vars": {
+                "Charges": 1
+            }
         }
     },
     "statuses": {

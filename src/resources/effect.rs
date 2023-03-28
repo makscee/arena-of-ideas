@@ -229,8 +229,8 @@ impl EffectWrapped {
                     .context("Failed to get Target")?;
                 if let Some(hp) = target.get_component_mut::<HealthComponent>().ok() {
                     hp.heal_damage(value);
-                    let color = context.vars.get_color(&VarName::Color);
                     if let Some(node) = node.as_mut() {
+                        let color = context.vars.get_color(&VarName::Color);
                         node.add_effect(VfxSystem::vfx_show_text(
                             resources,
                             &text,

@@ -19,7 +19,6 @@
             "uniforms": {
                 "u_color": "#9d0000",
                 "u_color_1": "#7183e6",
-                "u_inner_brightness": 0.5,
                 "u_radius": 0.8,
                 "u_alpha": 0.3,
                 "u_spin_part": 0.01,

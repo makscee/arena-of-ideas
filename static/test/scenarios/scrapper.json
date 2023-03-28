@@ -1,0 +1,54 @@
+{
+    "light": {
+        "units": [
+            {
+                "health": 10,
+                "attack": 1,
+                "houses": [
+                    "Warriors"
+                ],
+                "trigger": {
+                    "type": "AfterKill",
+                    "effect": {
+                        "type": "UseAbility",
+                        "name": "Defense",
+                        "vars": {
+                            "Charges": 3
+                        },
+                        "target": {
+                            "type": "Owner"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 10,
+                "health": 1
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

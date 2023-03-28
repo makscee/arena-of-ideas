@@ -8,43 +8,23 @@
         "light": {
             "units": [
                 {
+                    "name": "Scrapper",
+                    "description": "On Kill:\ngain Defense (3)",
                     "health": 10,
                     "attack": 1,
-                    "damage": 5
-                },
-                {
-                    "health": 10,
-                    "attack": 1,
-                    "damage": 5
-                },
-                {
-                    "health": 10,
-                    "attack": 1,
-                    "damage": 5
-                },
-                {
-                    "name": "Holy Priest",
-                    "attack": 3,
-                    "health": 10,
-                    "description": "End of turn\nMend (3)\nall allies",
                     "houses": [
-                        "Clerics"
+                        "Warriors"
                     ],
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "AfterKill",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Owner"
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "name": "Mend",
-                                "vars": {
-                                    "Charges": 3
-                                }
+                            "type": "UseAbility",
+                            "name": "Defense",
+                            "vars": {
+                                "Charges": 3
+                            },
+                            "target": {
+                                "type": "Owner"
                             }
                         }
                     },
@@ -52,29 +32,45 @@
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_color_1": "#87c9ff",
-                                "u_radius": 1.5,
-                                "u_alpha": 0.8,
-                                "u_spin_part": 0.03,
-                                "u_move_speed": 0.5
+                                "u_color": "#909090ff",
+                                "u_color_1": "#6a6a6a",
+                                "u_radius": 0.6,
+                                "u_alpha": 0.9,
+                                "u_spin_part": 0.3,
+                                "u_move_speed": 0.3
                             },
-                            "instances": 40,
+                            "instances": 10,
                             "vertices": 1
                         }
                     }
+                },
+                {
+                    "health": 10,
+                    "attack": 1
+                },
+                {
+                    "health": 10,
+                    "attack": 1
+                },
+                {
+                    "health": 10,
+                    "attack": 1
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "health": 9,
-                    "attack": 5
+                    "health": 1,
+                    "attack": 1
                 },
                 {
-                    "health": 9,
-                    "attack": 9
+                    "health": 1,
+                    "attack": 1
+                },
+                {
+                    "health": 1,
+                    "attack": 7
                 }
             ]
         }
