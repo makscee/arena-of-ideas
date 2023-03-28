@@ -40,6 +40,9 @@ pub enum ExpressionInt {
         ability: AbilityName,
         var: VarName,
     },
+    Negate {
+        value: Box<ExpressionInt>,
+    },
 }
 
 impl ExpressionInt {
@@ -87,6 +90,7 @@ impl ExpressionInt {
                 true => then.calculate(context, world, resources),
                 false => r#else.calculate(context, world, resources),
             },
+            ExpressionInt::Negate { value } => Ok(-value.calculate(context, world, resources)?),
         }
     }
 }

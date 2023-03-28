@@ -8,69 +8,26 @@
         "light": {
             "units": [
                 {
-                    "name": "Scrapper",
-                    "description": "On Kill:\ngain Defense (3)",
-                    "health": 10,
                     "attack": 1,
+                    "health": 5,
                     "houses": [
-                        "Warriors"
+                        "Vampires"
                     ],
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "AfterDamageDealt",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Defense",
-                            "vars": {
-                                "Charges": 3
-                            },
-                            "target": {
-                                "type": "Owner"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#909090ff",
-                                "u_color_1": "#6a6a6a",
-                                "u_radius": 0.6,
-                                "u_alpha": 0.9,
-                                "u_spin_part": 0.3,
-                                "u_move_speed": 0.3
-                            },
-                            "instances": 10,
-                            "vertices": 1
+                            "name": "SiphonLife"
                         }
                     }
-                },
-                {
-                    "health": 10,
-                    "attack": 1
-                },
-                {
-                    "health": 10,
-                    "attack": 1
-                },
-                {
-                    "health": 10,
-                    "attack": 1
                 }
             ]
         },
         "dark": {
             "units": [
                 {
-                    "health": 1,
+                    "health": 10,
                     "attack": 1
-                },
-                {
-                    "health": 1,
-                    "attack": 1
-                },
-                {
-                    "health": 1,
-                    "attack": 7
                 }
             ]
         }

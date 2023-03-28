@@ -68,7 +68,7 @@ impl System for GameOverSystem {
             resources.current_state = GameState::MainMenu;
             resources.transition_state = GameState::Shop;
             resources.factions_state = default();
-            resources.status_pool.clear_all_active();
+            StatusPool::clear_all_active(resources);
             resources.action_queue.clear();
             resources.floors.reset();
             UnitSystem::clear_factions(

@@ -119,7 +119,7 @@ impl UnitSystem {
         if unit.faction == Faction::Team {
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
-        resources.status_pool.clear_entity(&entity);
+        StatusPool::clear_entity(&entity, resources);
     }
 
     pub fn revive_corpse(
@@ -165,7 +165,7 @@ impl UnitSystem {
             .collect_vec();
         unit_entitites.iter().for_each(|entity| {
             world.remove(*entity);
-            resources.status_pool.clear_entity(entity);
+            StatusPool::clear_entity(entity, resources);
         });
         factions
             .into_iter()

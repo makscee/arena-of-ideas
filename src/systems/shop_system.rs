@@ -75,7 +75,7 @@ impl ShopSystem {
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Team});
-        resources.status_pool.clear_all_active();
+        StatusPool::clear_all_active(resources);
         resources.floors.reset();
         Self::init(world, resources);
     }

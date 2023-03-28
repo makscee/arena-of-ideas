@@ -8,35 +8,14 @@
                 "type": "List",
                 "effects": [
                     {
-                        "type": "If",
-                        "condition": {
-                            "type": "IsAlive",
-                            "entity": {
-                                "type": "Target"
+                        "type": "AddStatus",
+                        "name": "SiphonLifeLose",
+                        "after": {
+                            "type": "AddStatus",
+                            "name": "SiphonLifeGain",
+                            "target": {
+                                "type": "Owner"
                             }
-                        },
-                        "then": {
-                            "type": "Damage",
-                            "value": {
-                                "type": "Const",
-                                "value": 1
-                            },
-                            "on_hit": {
-                                "type": "Heal",
-                                "target": {
-                                    "type": "Owner"
-                                },
-                                "value": {
-                                    "type": "Const",
-                                    "value": 1
-                                },
-                                "after": {
-                                    "type": "ShowCurve"
-                                }
-                            }
-                        },
-                        "else": {
-                            "type": "Noop"
                         }
                     }
                 ]
@@ -44,13 +23,28 @@
         }
     },
     "statuses": {
-        "SiphonLife": {
+        "SiphonLifeGain": {
+            "description": "+1 Health",
             "trigger": {
                 "type": "ChangeVarInt",
                 "var": "HpValue",
                 "delta": {
                     "type": "Var",
                     "var": "Charges"
+                }
+            }
+        },
+        "SiphonLifeLose": {
+            "description": "-1 Health",
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Negate",
+                    "value": {
+                        "type": "Var",
+                        "var": "Charges"
+                    }
                 }
             }
         }

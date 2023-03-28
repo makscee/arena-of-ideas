@@ -5,8 +5,14 @@ use super::*;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Status {
     pub trigger: Trigger,
-    pub color: Option<Rgba<f32>>,
+    pub description: Option<String>,
+    #[serde(default = "default_color")]
+    pub color: Rgba<f32>,
     pub shader: Option<Shader>,
+}
+
+fn default_color() -> Rgba<f32> {
+    Rgba::WHITE
 }
 
 #[derive(Default, Debug)]
@@ -112,12 +118,10 @@ impl StatusPool {
             .into_iter()
             .filter_map(|(_, status, _)| match status.shader {
                 Some(mut shader) => {
-                    if let Some(status_color) = status.color {
-                        shader.parameters.uniforms.insert(
-                            VarName::Color.convert_to_uniform(),
-                            ShaderUniform::Color(status.color.unwrap()),
-                        );
-                    }
+                    shader.parameters.uniforms.insert(
+                        VarName::Color.convert_to_uniform(),
+                        ShaderUniform::Color(status.color),
+                    );
                     Some(shader)
                 }
                 None => None,
@@ -242,8 +246,7 @@ impl StatusPool {
                         .defined_statuses
                         .get(&status_name)
                         .unwrap()
-                        .color
-                        .unwrap();
+                        .color;
                     node.add_effect_by_key(
                         key,
                         VfxSystem::vfx_show_text(
@@ -261,22 +264,28 @@ impl StatusPool {
         }
     }
 
-    pub fn define_status(&mut self, name: String, mut status: Status) {
-        self.defined_statuses.insert(name, status);
+    pub fn define_status(name: String, status: Status, resources: &mut Resources) {
+        if let Some(description) = status.description.as_ref() {
+            resources
+                .definitions
+                .insert(name.clone(), status.color, description.clone());
+        }
+        resources.status_pool.defined_statuses.insert(name, status);
     }
 
-    pub fn clear_all_active(&mut self) {
-        self.active_statuses.clear();
+    pub fn clear_all_active(resources: &mut Resources) {
+        resources.status_pool.active_statuses.clear();
     }
 
-    pub fn clear_entity(&mut self, entity: &legion::Entity) {
-        self.active_statuses.remove(entity);
+    pub fn clear_entity(entity: &legion::Entity, resources: &mut Resources) {
+        resources.status_pool.active_statuses.remove(entity);
     }
 
-    pub fn clear_entity_by_changes(&mut self, entity: &legion::Entity) {
-        if let Some(statuses) = self.active_statuses.get(entity) {
+    pub fn clear_entity_by_changes(entity: &legion::Entity, resources: &mut Resources) {
+        let pool = &mut resources.status_pool;
+        if let Some(statuses) = pool.active_statuses.get(entity) {
             for (name, charges) in statuses.into_iter() {
-                self.status_changes
+                pool.status_changes
                     .push_back((*entity, name.clone(), -charges));
             }
         }

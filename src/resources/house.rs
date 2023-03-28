@@ -7,7 +7,7 @@ pub struct House {
     pub color: Rgba<f32>,
     pub abilities: HashMap<AbilityName, Ability>,
     #[serde(default)]
-    pub statuses: HashMap<AbilityName, Status>,
+    pub statuses: HashMap<String, Status>,
 }
 
 #[derive(
@@ -34,12 +34,8 @@ impl FileWatcherLoader for House {
         let house: House = futures::executor::block_on(load_json(path)).unwrap();
         house.statuses.iter().for_each(|(name, status)| {
             let mut status = status.clone();
-            if status.color.is_none() {
-                status.color = Some(house.color);
-            }
-            resources
-                .status_pool
-                .define_status(name.to_string(), status)
+            status.color = house.color;
+            StatusPool::define_status(name.to_string(), status, resources)
         });
         house.abilities.iter().for_each(|(name, ability)| {
             AbilityPool::define_ability(resources, name, ability, house.color, house.name);

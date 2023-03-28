@@ -287,9 +287,7 @@ impl EffectWrapped {
                 );
             }
             Effect::ClearStatuses => {
-                resources
-                    .status_pool
-                    .clear_entity_by_changes(&context.target);
+                StatusPool::clear_entity_by_changes(&context.target, resources);
             }
             Effect::UseAbility { name } => {
                 let owner_entry = world
