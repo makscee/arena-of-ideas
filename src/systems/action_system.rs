@@ -19,11 +19,11 @@ impl ActionSystem {
                 Self::tick(world, resources, &mut None)
             };
             ticks += 1;
-            if !ticked || ticks > 1000 {
-                if ticked {
-                    panic!("Exceeded ticks limit")
-                }
+            if !ticked {
                 break;
+            }
+            if ticks > 1000 {
+                panic!("Exceeded ticks limit")
             }
         }
     }

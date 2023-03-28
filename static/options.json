@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "walkthrough": true,
+    "walkthrough": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
@@ -21,20 +21,6 @@
                         "effect": {
                             "type": "List",
                             "effects": [
-                                {
-                                    "type": "UseAbility",
-                                    "house": "Vampires",
-                                    "name": "Devour",
-                                    "target": {
-                                        "type": "RandomUnit",
-                                        "faction": {
-                                            "type": "Opposite",
-                                            "faction": {
-                                                "type": "Owner"
-                                            }
-                                        }
-                                    }
-                                },
                                 {
                                     "type": "Damage",
                                     "value": {
@@ -92,7 +78,7 @@
         }
     },
     "fov": 14.0,
-    "initial_shop_fill": 5,
+    "initial_shop_fill": 2,
     "log": {
         "Action": true,
         "Effect": false,

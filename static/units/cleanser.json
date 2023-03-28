@@ -1,8 +1,8 @@
     {
         "name": "Cleanser",
         "description": "On Buy:\nDispel\nadjacent allies",
-        "health": 1,
-        "attack": 1,
+        "health": 5,
+        "attack": 2,
         "houses": [
             "Exorcists"
         ],

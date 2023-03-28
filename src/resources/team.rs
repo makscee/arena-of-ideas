@@ -39,6 +39,7 @@ impl Team {
     pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {
         let units = UnitSystem::collect_faction(world, *faction)
             .into_iter()
+            .sorted_by_key(|(_, unit)| unit.slot)
             .map(|(entity, _)| PackedUnit::pack(entity, world, resources))
             .collect_vec();
         let state = resources.factions_state.get_faction_state(faction);
@@ -52,7 +53,7 @@ impl Team {
 
 impl fmt::Display for Team {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let text = self.units.iter().map(|x| x.name.as_str()).join(", ");
+        let text = self.units.iter().map(|x| x.to_string()).join(", ");
         write!(f, "{}[{}]", self.name, text)
     }
 }

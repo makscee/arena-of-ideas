@@ -1,5 +1,3 @@
-use std::default;
-
 use geng::ui::*;
 use legion::EntityStore;
 

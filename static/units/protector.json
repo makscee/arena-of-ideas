@@ -1,8 +1,8 @@
     {
         "name": "Protector",
         "description": "On Buy:\ngive Shield\nto adjacent allies",
-        "health": 1,
-        "attack": 1,
+        "health": 3,
+        "attack": 2,
         "houses": [
             "Robots"
         ],

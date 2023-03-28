@@ -283,5 +283,15 @@
 			"}"
 		],
 		"description": "Ranom Enemy"
+	},
+	"Chance": {
+		"prefix": "chance",
+		"body": [
+			"{",
+			"    \"type\": \"Chance\",",
+			"    \"part\": ${1:0.5}",
+			"}"
+		],
+		"description": "Chance"
 	}
 }

@@ -137,7 +137,7 @@ impl Resources {
             Box::new(Options::loader),
         );
         HousePool::loader(self, &static_path().join("houses/_list.json"), watcher);
-        HeroPool::loader(self, &static_path().join("units/_list.json"), watcher);
+        HeroPool::loader(self, &static_path().join("units/"), watcher);
         Floors::loader(self, &static_path().join("floors.json"), watcher);
 
         self.logger.load(&self.options);

@@ -78,7 +78,7 @@ impl SlotSystem {
                         &mut node,
                         world,
                         EasingType::QuartInOut,
-                        0.5,
+                        0.8,
                     )
                 });
             nodes.push(node.finish(world, resources));

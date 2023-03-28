@@ -18,7 +18,7 @@ impl ContextSystem {
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &Resources,
-    ) {
+    ) -> Context {
         let entry = world.entry(entity).expect("Unit entity not found");
         let mut context = Context {
             vars: default(),
@@ -47,7 +47,8 @@ impl ContextSystem {
         // apply changes from active statuses
         context = Event::ModifyContext { context }.calculate(world, resources);
 
-        world.entry(entity).unwrap().add_component(context);
+        world.entry(entity).unwrap().add_component(context.clone());
+        context
     }
 
     pub fn try_get_context(
@@ -81,7 +82,9 @@ impl ContextSystem {
     ) {
         UnitSystem::collect_factions(world, factions)
             .into_iter()
-            .for_each(|(entity, _)| Self::refresh_entity(entity, world, resources));
+            .for_each(|(entity, _)| {
+                Self::refresh_entity(entity, world, resources);
+            });
     }
 
     pub fn refresh_all(world: &mut legion::World, resources: &Resources) {
@@ -91,6 +94,8 @@ impl ContextSystem {
             .map(|entity| entity.entity)
             .collect_vec()
             .into_iter()
-            .for_each(|entity| Self::refresh_entity(entity, world, resources));
+            .for_each(|entity| {
+                Self::refresh_entity(entity, world, resources);
+            });
     }
 }

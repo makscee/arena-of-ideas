@@ -210,17 +210,28 @@
             "units": [
                 {
                     "name": "Death Knight",
-                    "attack": 8,
+                    "attack": 5,
                     "health": 8,
+                    "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
                     ],
                     "trigger": {
                         "type": "AfterDamageDealt",
                         "effect": {
-                            "type": "UseAbility",
-                            "house": "Necromancers",
-                            "name": "Reanimate"
+                            "type": "If",
+                            "condition": {
+                                "type": "Chance",
+                                "part": 0.7
+                            },
+                            "then": {
+                                "type": "UseAbility",
+                                "house": "Necromancers",
+                                "name": "Reanimate"
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     },
                     "shader": {
@@ -242,17 +253,28 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 8,
+                    "attack": 5,
                     "health": 8,
+                    "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
                     ],
                     "trigger": {
                         "type": "AfterDamageDealt",
                         "effect": {
-                            "type": "UseAbility",
-                            "house": "Necromancers",
-                            "name": "Reanimate"
+                            "type": "If",
+                            "condition": {
+                                "type": "Chance",
+                                "part": 0.7
+                            },
+                            "then": {
+                                "type": "UseAbility",
+                                "house": "Necromancers",
+                                "name": "Reanimate"
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     },
                     "shader": {
@@ -274,17 +296,28 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 8,
+                    "attack": 5,
                     "health": 8,
+                    "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
                     ],
                     "trigger": {
                         "type": "AfterDamageDealt",
                         "effect": {
-                            "type": "UseAbility",
-                            "house": "Necromancers",
-                            "name": "Reanimate"
+                            "type": "If",
+                            "condition": {
+                                "type": "Chance",
+                                "part": 0.7
+                            },
+                            "then": {
+                                "type": "UseAbility",
+                                "house": "Necromancers",
+                                "name": "Reanimate"
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     },
                     "shader": {
@@ -306,17 +339,28 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 8,
+                    "attack": 5,
                     "health": 8,
+                    "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
                     ],
                     "trigger": {
                         "type": "AfterDamageDealt",
                         "effect": {
-                            "type": "UseAbility",
-                            "house": "Necromancers",
-                            "name": "Reanimate"
+                            "type": "If",
+                            "condition": {
+                                "type": "Chance",
+                                "part": 0.7
+                            },
+                            "then": {
+                                "type": "UseAbility",
+                                "house": "Necromancers",
+                                "name": "Reanimate"
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     },
                     "shader": {
@@ -469,8 +513,8 @@
                 {
                     "name": "Hound",
                     "description": "Start of Battle:\nDevour\nrandom enemy",
-                    "attack": 3,
-                    "health": 1,
+                    "attack": 12,
+                    "health": 12,
                     "houses": [
                         "Vampires"
                     ],
@@ -509,8 +553,8 @@
                 {
                     "name": "Hound",
                     "description": "Start of Battle:\nDevour\nrandom enemy",
-                    "attack": 3,
-                    "health": 1,
+                    "attack": 12,
+                    "health": 12,
                     "houses": [
                         "Vampires"
                     ],
@@ -554,7 +598,7 @@
                 {
                     "name": "Cheater",
                     "attack": 15,
-                    "health": 15,
+                    "health": 25,
                     "description": "After strike\ngain Shield",
                     "houses": [
                         "Robots"

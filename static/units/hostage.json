@@ -1,8 +1,8 @@
 {
     "name": "Hostage",
     "description": "Before Battle:\nSwap with random enemy",
-    "health": 7,
-    "attack": 7,
+    "health": 12,
+    "attack": 12,
     "houses": [
         "Thieves"
     ],

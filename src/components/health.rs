@@ -22,7 +22,7 @@ impl HealthComponent {
             return;
         }
         self.last_attacker = Some(attacker);
-        self.damage += amount;
+        self.damage = (self.damage + amount).min(i32::MAX as usize);
     }
 
     pub fn heal_damage(&mut self, amount: usize) {

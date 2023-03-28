@@ -1,8 +1,8 @@
 {
     "name": "Ghoul",
     "description": "On Buy: Devour\nally to the right",
-    "health": 1,
-    "attack": 2,
+    "health": 2,
+    "attack": 3,
     "houses": [
         "Vampires"
     ],

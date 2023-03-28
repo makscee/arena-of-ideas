@@ -64,8 +64,7 @@ impl UnitSystem {
     ) -> bool {
         Event::BeforeDeath { owner: entity }.send(world, resources);
         ActionSystem::run_ticks(world, resources, nodes);
-        ContextSystem::refresh_entity(entity, world, resources);
-        let context = ContextSystem::get_context(entity, world);
+        let context = ContextSystem::refresh_entity(entity, world, resources);
         if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {
             Self::turn_unit_into_corpse(entity, world, resources);
             return true;

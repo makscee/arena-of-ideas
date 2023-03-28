@@ -15,10 +15,11 @@ pub struct Shop {
 }
 
 impl Shop {
-    pub fn load_pool(world: &mut legion::World, resources: &mut Resources) {
-        todo!("new power sorting");
-        let mut sorted_by_power = VecDeque::from_iter(resources.hero_pool.all());
-        let heroes_per_extension = (sorted_by_power.len() as f32 / 10.0).ceil() as usize;
+    pub fn load_pool(resources: &mut Resources) {
+        let mut sorted_by_power = VecDeque::from_iter(resources.hero_pool.all_sorted());
+        let heroes_per_extension = (sorted_by_power.len() as f32
+            / (10.0_f32.min(resources.floors.count() as f32)))
+        .ceil() as usize;
         let mut cur_level = 0;
         resources.shop.level_extensions = vec![default()];
         while let Some(unit) = sorted_by_power.pop_front() {
@@ -41,6 +42,11 @@ impl Shop {
                 .unwrap()
                 .push(unit);
         }
+        resources
+            .shop
+            .level_extensions
+            .iter()
+            .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join(", ")));
     }
 
     pub fn load_level(resources: &mut Resources, level: usize) {

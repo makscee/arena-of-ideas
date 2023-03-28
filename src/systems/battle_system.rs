@@ -13,10 +13,11 @@ impl BattleSystem {
         resources: &mut Resources,
         nodes: &mut Option<Vec<CassetteNode>>,
     ) -> bool {
-        let mut ticks = 0;
         Self::add_intro(resources, nodes);
+        SlotSystem::move_to_slots_animated(world, resources, nodes);
         Event::BattleStart.send(world, resources);
         Self::spin(world, resources, nodes);
+        let mut ticks = 0;
         while Self::tick(world, resources, nodes) && ticks < 1000 {
             ticks += 1;
         }
@@ -209,19 +210,23 @@ impl BattleSystem {
 
         Self::spin(world, resources, nodes);
 
-        Event::AfterStrike {
-            owner: left,
-            target: right,
+        if UnitSystem::get_corpse(left, world).is_none() {
+            Event::AfterStrike {
+                owner: left,
+                target: right,
+            }
+            .send(world, resources);
+            Self::spin(world, resources, nodes);
         }
-        .send(world, resources);
-        Self::spin(world, resources, nodes);
 
-        Event::AfterStrike {
-            owner: right,
-            target: left,
+        if UnitSystem::get_corpse(right, world).is_none() {
+            Event::AfterStrike {
+                owner: right,
+                target: left,
+            }
+            .send(world, resources);
+            Self::spin(world, resources, nodes);
         }
-        .send(world, resources);
-        Self::spin(world, resources, nodes);
     }
 
     pub fn death_check(

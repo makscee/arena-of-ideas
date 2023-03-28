@@ -202,6 +202,7 @@ impl GameStateSystem {
             GameState::Battle => {
                 CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Battle;
+                resources.cassette.render_node.clear();
                 let mut tape = Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, &mut tape);
                 resources.cassette.add_tape_nodes(tape.unwrap());
@@ -211,14 +212,14 @@ impl GameStateSystem {
                 ContextSystem::refresh_factions(factions, world, resources);
                 let last_node = &mut default();
                 UnitSystem::draw_all_units_to_cassette_node(factions, last_node, world, resources);
-                last_node.duration = 2.0;
+                last_node.duration = 1.0;
                 resources
                     .cassette
                     .add_tape_nodes(vec![last_node.to_owned()]);
             }
             GameState::Shop => {
                 if resources.current_state == GameState::MainMenu {
-                    Shop::load_pool(world, resources);
+                    Shop::load_pool(resources);
                 }
                 ShopSystem::init(world, resources);
                 CassettePlayerSystem::init_world(world, resources);

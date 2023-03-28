@@ -60,7 +60,11 @@ impl ShaderSystem {
         // Get all Shader components from World for drawing
         let world_shaders: HashMap<legion::Entity, Shader> = HashMap::from_iter(
             <&EntityComponent>::query()
-                .filter(!component::<UnitComponent>() & component::<Shader>())
+                .filter(
+                    !component::<UnitComponent>()
+                        & !component::<CorpseComponent>()
+                        & component::<Shader>(),
+                )
                 .iter(world)
                 .map(|entity| {
                     (
