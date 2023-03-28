@@ -27,6 +27,7 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
+                        "name": "Devour",
                         "target": {
                             "type": "RandomUnit",
                             "faction": {

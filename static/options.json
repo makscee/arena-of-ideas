@@ -46,10 +46,6 @@
                             }
                         }
                     }
-                },
-                {
-                    "health": 10,
-                    "attack": 1
                 }
             ]
         },
@@ -71,6 +67,7 @@
     "initial_shop_fill": 2,
     "log": {
         "Action": true,
+        "ActionFail": true,
         "Effect": false,
         "Contexts": false,
         "Condition": false,

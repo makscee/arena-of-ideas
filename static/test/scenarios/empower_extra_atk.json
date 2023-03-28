@@ -14,7 +14,6 @@
                     "type": "BeforeStrike",
                     "effect": {
                         "type": "ChangeAbilityVarInt",
-                        "house": "Demons",
                         "ability": "Empower",
                         "var": "AttackExtra",
                         "delta": {

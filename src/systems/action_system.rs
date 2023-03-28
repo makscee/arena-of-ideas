@@ -56,8 +56,9 @@ impl ActionSystem {
             {
                 Ok(_) => {}
                 Err(error) => {
-                    dbg!(action);
-                    panic!("Action process error {}", error)
+                    resources
+                        .logger
+                        .log(&format!("{}", error), &LogContext::ActionFail);
                 }
             };
             true

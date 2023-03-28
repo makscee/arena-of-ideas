@@ -9,6 +9,7 @@ pub struct Logger {
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug, Deserialize, Hash)]
 pub enum LogContext {
     Action,
+    ActionFail,
     Effect,
     Condition,
     Trigger,

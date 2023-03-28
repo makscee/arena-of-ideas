@@ -129,19 +129,13 @@ impl EffectWrapped {
         resources: &mut Resources,
         node: &mut Option<CassetteNode>,
     ) -> Result<(), Error> {
-        let mut context = Context {
-            target: self
-                .target
-                .as_ref()
-                .and_then(|t| t.calculate(&context, world, resources).ok())
-                .unwrap_or(context.target),
-            owner: self
-                .owner
-                .as_ref()
-                .and_then(|t| t.calculate(&context, world, resources).ok())
-                .unwrap_or(context.owner),
-            ..context
-        };
+        let mut context = context.clone();
+        if let Some(target) = self.target.as_ref() {
+            context.target = target.calculate(&context, world, resources)?;
+        }
+        if let Some(owner) = self.owner.as_ref() {
+            context.owner = owner.calculate(&context, world, resources)?;
+        }
         if let Some(vars) = self.vars.as_ref() {
             context.vars.merge_mut(vars, true);
         }

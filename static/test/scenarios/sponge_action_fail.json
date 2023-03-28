@@ -1,0 +1,50 @@
+{
+    "light": {
+        "units": [
+            {
+                "health": 10,
+                "attack": 1,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "AfterStrike",
+                    "effect": {
+                        "type": "UseAbility",
+                        "name": "Empower",
+                        "target": {
+                            "type": "SlotRelative",
+                            "relation": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        },
+                        "vars": {
+                            "Charges": 5
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "health": 9,
+                "attack": 1
+            },
+            {
+                "health": 9,
+                "attack": 9
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

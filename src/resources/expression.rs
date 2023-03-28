@@ -150,10 +150,9 @@ impl ExpressionEntity {
                 let relation = relation.calculate(context, world, resources)?;
                 let slot = (unit.slot as i32 + relation) as usize;
                 let faction = unit.faction;
-                dbg!(unit, slot, faction);
                 SlotSystem::find_unit_by_slot(slot, &faction, world)
                     .and_then(|x| Some(x.0))
-                    .context(format!("No unit of {:?} found in {} slot", faction, slot))
+                    .context(format!("No unit of {:?} found in slot {}", faction, slot))
             }
         }
     }

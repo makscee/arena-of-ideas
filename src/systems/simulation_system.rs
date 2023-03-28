@@ -92,6 +92,7 @@ mod tests {
         let scenarios: Vec<(PathBuf, TestScenario)> = paths
             .into_iter()
             .map(|x| {
+                println!("Load scenario {:?}", x);
                 (
                     x.clone(),
                     futures::executor::block_on(load_json(static_path().join(x))).unwrap(),
