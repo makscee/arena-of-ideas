@@ -6,7 +6,7 @@ out float t;
 attribute vec2 a_pos;
 
 uniform float u_end_cut = 0;
-uniform float u_thickness = 0.3;
+uniform float u_thickness = 0.5;
 uniform vec2 u_from;
 uniform vec2 u_to;
 
@@ -21,7 +21,7 @@ void main() {
     vec4 bezier = bezierParentPartner(bezier_t, u_from, u_to, vec2(0, 1), 0.5);
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
-    b_pos += b_normal * height * t * t * (1.0 - bezier_t * .7);
+    b_pos += b_normal * height * t * t * (bezier_t * .7);
 
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(b_pos, 1.0);
     gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);

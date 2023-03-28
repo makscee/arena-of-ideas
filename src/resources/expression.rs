@@ -100,7 +100,7 @@ pub enum ExpressionEntity {
     Owner,
     FindUnit {
         slot: Box<ExpressionInt>,
-        faction: Faction,
+        faction: ExpressionFaction,
     },
     RandomUnit {
         faction: ExpressionFaction,
@@ -126,7 +126,8 @@ impl ExpressionEntity {
             ExpressionEntity::Owner => Ok(context.owner),
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
-                UnitSystem::collect_factions(world, &hashset! {*faction})
+                let faction = faction.calculate(context, world, resources)?;
+                UnitSystem::collect_faction(world, faction)
                     .into_iter()
                     .find_map(|(entity, unit)| match unit.slot == slot {
                         true => Some(entity),

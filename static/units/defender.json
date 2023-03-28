@@ -43,7 +43,9 @@
                                         "value": 1
                                     }
                                 },
-                                "faction": "Team"
+                                "faction": {
+                                    "type": "Owner"
+                                }
                             },
                             "house": "Warriors",
                             "name": "Defense"
@@ -83,7 +85,9 @@
                                         "value": -1
                                     }
                                 },
-                                "faction": "Team"
+                                "faction": {
+                                    "type": "Owner"
+                                }
                             },
                             "type": "UseAbility",
                             "house": "Warriors",

@@ -1,0 +1,43 @@
+{
+    "name": "Sergeant",
+    "description": "Turn start:\nEmpower (2)\nfirst ally",
+    "health": 3,
+    "attack": 3,
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "TurnStart",
+        "effect": {
+            "type": "UseAbility",
+            "house": "Demons",
+            "name": "Empower",
+            "target": {
+                "type": "FindUnit",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": {
+                    "type": "Owner"
+                }
+            },
+            "vars": {
+                "Charges": 3
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#98005b",
+                "u_circle_radius": 0.5,
+                "u_border": 0.6,
+                "u_circle_fbm": 0.25,
+                "u_circle_fbm_speed": 10.0,
+                "u_aa": 0.3
+            }
+        }
+    }
+}

@@ -43,7 +43,9 @@
                                     "value": 1
                                 }
                             },
-                            "faction": "Team"
+                            "faction": {
+                                "type": "Owner"
+                            }
                         },
                         "house": "Vampires",
                         "name": "Devour"
@@ -84,7 +86,9 @@
                                     "value": -1
                                 }
                             },
-                            "faction": "Team"
+                            "faction": {
+                                "type": "Owner"
+                            }
                         },
                         "house": "Vampires",
                         "name": "Devour"

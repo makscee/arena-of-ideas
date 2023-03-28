@@ -257,15 +257,16 @@ impl GameStateSystem {
                 BattleSystem::init_battle(&light, &dark, world, resources);
                 let mut tape = Some(Vec::<CassetteNode>::default());
                 BattleSystem::run_battle(world, resources, &mut tape);
+                let mut head = 0.0;
                 if resources.cassette.head > 0.0 {
-                    resources.cassette_play_mode = CassettePlayMode::Rewind {
-                        ts: resources.cassette.head,
-                    };
+                    resources.cassette_play_mode = CassettePlayMode::Stop;
+                    head = resources.cassette.head;
                 }
                 let tape = tape.unwrap();
                 dbg!(tape.len());
                 resources.cassette.clear();
                 resources.cassette.add_tape_nodes(tape);
+                resources.cassette.head = head;
                 dbg!(resources.cassette.length());
             }
         }

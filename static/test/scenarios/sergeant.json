@@ -1,0 +1,54 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 0,
+                "health": 4
+            },
+            {
+                "health": 3,
+                "attack": 3,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "TurnStart",
+                    "effect": {
+                        "type": "UseAbility",
+                        "house": "Demons",
+                        "name": "Empower",
+                        "target": {
+                            "type": "FindUnit",
+                            "slot": {
+                                "type": "Const",
+                                "value": 1
+                            },
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        },
+                        "vars": {
+                            "Charges": 3
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 9
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 2
+        },
+        "faction": "Light"
+    }
+}

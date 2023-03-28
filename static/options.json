@@ -10,42 +10,34 @@
             "units": [
                 {
                     "health": 10,
-                    "damage": 8,
-                    "attack": 9
+                    "attack": 1
                 },
                 {
-                    "name": "Priest",
+                    "name": "Sergeant",
+                    "description": "Turn start:\nEmpower (2)\nfirst ally",
                     "health": 3,
-                    "attack": 1,
-                    "description": "Turn end:\nMend (4)\ninjured ally",
+                    "attack": 3,
                     "houses": [
-                        "Clerics"
+                        "Demons"
                     ],
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "TurnStart",
                         "effect": {
-                            "type": "FindTarget",
-                            "faction": {
-                                "type": "Owner"
-                            },
-                            "condition": {
-                                "type": "MoreInt",
-                                "a": {
-                                    "type": "Var",
-                                    "var": "HpDamage"
-                                },
-                                "b": {
+                            "type": "UseAbility",
+                            "house": "Demons",
+                            "name": "Empower",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
                                     "type": "Const",
-                                    "value": 0
+                                    "value": 1
+                                },
+                                "faction": {
+                                    "type": "Owner"
                                 }
                             },
-                            "effect": {
-                                "type": "UseAbility",
-                                "house": "Clerics",
-                                "name": "Mend",
-                                "vars": {
-                                    "Charges": 9
-                                }
+                            "vars": {
+                                "Charges": 3
                             }
                         }
                     },
@@ -53,12 +45,12 @@
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 1.0
+                                "u_color": "#98005b",
+                                "u_circle_radius": 0.7,
+                                "u_border": 0.4,
+                                "u_circle_fbm": 0.15,
+                                "u_circle_fbm_speed": 10.0,
+                                "u_aa": 0.1
                             }
                         }
                     }

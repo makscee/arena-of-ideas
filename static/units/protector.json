@@ -43,7 +43,9 @@
                                         "value": 1
                                     }
                                 },
-                                "faction": "Team"
+                                "faction": {
+                                    "type": "Owner"
+                                }
                             },
                             "house": "Robots",
                             "name": "Shield"
@@ -83,7 +85,9 @@
                                         "value": -1
                                     }
                                 },
-                                "faction": "Team"
+                                "faction": {
+                                    "type": "Owner"
+                                }
                             },
                             "type": "UseAbility",
                             "house": "Robots",
