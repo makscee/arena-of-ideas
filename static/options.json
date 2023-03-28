@@ -6,55 +6,58 @@
     "custom_game": {
         "enable": true,
         "light": {
-            "name": "Dorks",
             "units": [
                 {
-                    "name": "Hell Sponge",
-                    "description": "After Strike:\nEmpower (5)\nally behind",
                     "health": 10,
+                    "attack": 1
+                },
+                {
+                    "name": "Medic",
+                    "health": 5,
                     "attack": 1,
+                    "description": "Turn end:\nMend (5)\nally in front",
                     "houses": [
-                        "Demons"
+                        "Clerics"
                     ],
                     "trigger": {
-                        "type": "AfterStrike",
+                        "type": "TurnEnd",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Empower",
+                            "name": "Mend",
+                            "vars": {
+                                "Charges": 5
+                            },
                             "target": {
                                 "type": "SlotRelative",
                                 "relation": {
                                     "type": "Const",
-                                    "value": 1
+                                    "value": -1
                                 }
-                            },
-                            "vars": {
-                                "Charges": 5
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#98005b",
-                                "u_circle_radius": 0.8,
-                                "u_border": 10.0,
-                                "u_circle_fbm": -1.0,
-                                "u_circle_fbm_speed": -2.0,
-                                "u_aa": 0.03
-                            }
+                                "u_color": "#ffffff",
+                                "u_color_1": "#87c9ff",
+                                "u_radius": 1.2,
+                                "u_alpha": 0.5,
+                                "u_spin_part": 0.0
+                            },
+                            "instances": 20,
+                            "vertices": 1
                         }
                     }
                 }
             ]
         },
         "dark": {
-            "name": "Dorks",
             "units": [
                 {
                     "health": 9,
-                    "attack": 1
+                    "attack": 5
                 },
                 {
                     "health": 9,
