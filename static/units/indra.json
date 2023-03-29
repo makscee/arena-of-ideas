@@ -37,15 +37,16 @@
             "instances": 4000,
             "uniforms": {
                 "u_start_color": "#000000ff",
-                "u_end_color": "#8e0039ff",
-                "u_scale": 0.5,
-                "u_scale_over_t": -0.5,
+                "u_end_color": "#ca0252ff",
+                "u_scale": 0.3,
+                "u_p_scale": 0.5,
+                "u_scale_over_t": -1.0,
                 "u_velocity_over_t": -3.5,
-                "u_trail_count": 40,
+                "u_trail_count": 1,
                 "u_trail_shift": 0.1,
                 "u_lifetime": 10.2,
-                "u_velicity_mul": 12.2,
-                "u_zoom": 0.3
+                "u_vel_fbm": 0.5,
+                "u_velicity_mul": 12.2
             }
         }
     }
