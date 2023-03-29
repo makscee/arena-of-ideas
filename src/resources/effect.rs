@@ -434,7 +434,7 @@ impl EffectWrapped {
                     .as_ref()
                     .and_then(|x| Some(x.calculate(&context, world, resources).ok()?))
                     .unwrap_or_default() as usize;
-                UnitSystem::revive_corpse(context.target, Some(slot), world, resources);
+                UnitSystem::revive_corpse(context.target, Some(slot), world);
             }
             Effect::Aoe { factions, effect } => {
                 let mut faction_values: Vec<Faction> = default();

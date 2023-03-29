@@ -59,6 +59,18 @@ impl System for GameStateSystem {
                 if resources.input.down_keys.contains(&geng::Key::S) {
                     SaveSystem::save(world, resources);
                 }
+                if resources.input.down_keys.contains(&geng::Key::P) {
+                    if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
+                        UnitSystem::delete_unit(entity, world, resources);
+                    }
+                    resources.hero_pool.list_top().clone().unpack(
+                        world,
+                        resources,
+                        1,
+                        Faction::Shop,
+                        Some(SlotSystem::get_position(1, &Faction::Shop)),
+                    );
+                }
             }
             GameState::Gallery => {
                 if resources.input.down_keys.contains(&geng::Key::G) {

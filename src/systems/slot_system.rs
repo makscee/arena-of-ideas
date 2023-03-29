@@ -111,12 +111,12 @@ impl SlotSystem {
         slot: usize,
         faction: &Faction,
         world: &legion::World,
-    ) -> Option<(legion::Entity, UnitComponent)> {
+    ) -> Option<legion::Entity> {
         <(&EntityComponent, &UnitComponent)>::query()
             .iter(world)
             .find_map(
                 |(entity, unit)| match unit.faction == *faction && unit.slot == slot {
-                    true => Some((entity.entity, unit.clone())),
+                    true => Some(entity.entity),
                     false => None,
                 },
             )

@@ -32,7 +32,6 @@ impl System for ShopSystem {
         Self::refresh_ui(resources);
         Self::refresh_cassette(world, resources);
         let mut tape = Some(Vec::<CassetteNode>::default());
-        SlotSystem::move_to_slots_animated(world, resources, &mut tape);
         ActionSystem::run_ticks(world, resources, &mut tape);
         BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut tape);
         ActionSystem::run_ticks(world, resources, &mut tape);

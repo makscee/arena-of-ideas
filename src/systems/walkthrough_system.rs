@@ -89,7 +89,7 @@ impl WalkthroughSystem {
                         if team.units.len() < SLOTS_COUNT {
                             SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team});
                         } else {
-                            if let Some((entity, _)) =
+                            if let Some(entity) =
                                 SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
                             {
                                 ShopSystem::sell(entity, resources, world);

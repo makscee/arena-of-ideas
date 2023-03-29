@@ -6,6 +6,7 @@ use super::*;
 pub struct HeroPool {
     heroes: HashMap<PathBuf, PackedUnit>,
     power: HashMap<String, f32>,
+    list_top: PathBuf,
 }
 
 impl HeroPool {
@@ -19,6 +20,10 @@ impl HeroPool {
 
     pub fn all(&self) -> Vec<PackedUnit> {
         self.heroes.values().cloned().collect_vec()
+    }
+
+    pub fn list_top(&self) -> &PackedUnit {
+        self.heroes.get(&self.list_top).unwrap()
     }
 
     pub fn all_sorted(&self) -> Vec<PackedUnit> {
@@ -37,13 +42,16 @@ impl HeroPool {
 
 impl FileWatcherLoader for HeroPool {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
-        let paths: Vec<PathBuf> =
-            futures::executor::block_on(load_json(path.join("_list.json"))).unwrap();
+        let mut path = path.clone();
+        path.set_file_name("_list.json");
+        watcher.watch_file(&path, Box::new(Self::loader));
+        let paths: Vec<PathBuf> = futures::executor::block_on(load_json(&path)).unwrap();
+        resources.hero_pool.list_top = static_path().join(paths.get(0).unwrap());
         paths.into_iter().for_each(|path| {
             PackedUnit::loader(resources, &static_path().join(path), watcher);
         });
-        resources.hero_pool.power =
-            futures::executor::block_on(load_json(path.join("_power.json"))).unwrap();
+        path.set_file_name("_power.json");
+        watcher.watch_file(&path, Box::new(Self::loader));
+        resources.hero_pool.power = futures::executor::block_on(load_json(path)).unwrap();
     }
 }

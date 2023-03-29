@@ -12,6 +12,7 @@ pub struct Shop {
     pub drop_entity: Option<legion::Entity>,
     pub drag_entity: Option<legion::Entity>,
     pub refresh_btn: Option<legion::Entity>,
+    pub load_new_hero: bool,
 }
 
 impl Shop {

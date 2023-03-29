@@ -120,12 +120,7 @@ impl UnitSystem {
         StatusPool::clear_entity(&entity, resources);
     }
 
-    pub fn revive_corpse(
-        entity: legion::Entity,
-        slot: Option<usize>,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) {
+    pub fn revive_corpse(entity: legion::Entity, slot: Option<usize>, world: &mut legion::World) {
         let mut entry = world.entry(entity).unwrap();
         let corpse = entry.get_component::<CorpseComponent>().unwrap().clone();
         entry.remove_component::<CorpseComponent>();
@@ -169,6 +164,15 @@ impl UnitSystem {
             .into_iter()
             .for_each(|f| resources.factions_state.clear(*f));
         unit_entitites
+    }
+
+    pub fn delete_unit(
+        entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        world.remove(entity);
+        StatusPool::clear_entity(&entity, resources);
     }
 
     pub fn collect_faction(world: &legion::World, faction: Faction) -> Vec<legion::Entity> {

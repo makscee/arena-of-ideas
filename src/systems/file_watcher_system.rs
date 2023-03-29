@@ -74,7 +74,13 @@ impl System for FileWatcherSystem {
             .drain()
             .collect_vec()
             .into_iter()
-            .for_each(|path| (loaders.get(&path).unwrap())(resources, &path, self));
+            .for_each(|path| {
+                (loaders
+                    .get(&path)
+                    .expect(&format!("Failed to find loader for {:?}", path)))(
+                    resources, &path, self,
+                )
+            });
         self.loaders.extend(loaders.drain());
 
         use std::sync::mpsc::TryRecvError;
