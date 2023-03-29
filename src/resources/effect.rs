@@ -312,8 +312,10 @@ impl EffectWrapped {
                     .is_none()
                 {
                     panic!(
-                        "Tried to use {} while not being a member of the {:?}",
-                        name, house
+                        "{} Tried to use {} while not being a member of the {:?}",
+                        owner_entry.get_component::<NameComponent>().unwrap().0,
+                        name,
+                        house
                     );
                 }
                 let defaults = &AbilityPool::get_default_vars(resources, name);

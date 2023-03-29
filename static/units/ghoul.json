@@ -4,7 +4,7 @@
     "health": 2,
     "attack": 3,
     "houses": [
-        "Vampires"
+        "Demons"
     ],
     "trigger": {
         "type": "Buy",

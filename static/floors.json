@@ -81,7 +81,7 @@
                 {
                     "name": "Tank",
                     "attack": 2,
-                    "health": 14,
+                    "health": 15,
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
@@ -99,7 +99,7 @@
                 {
                     "name": "Ranger",
                     "health": 2,
-                    "attack": 1,
+                    "attack": 2,
                     "description": "Turn end:\nShoot random\nenemy 3 times",
                     "houses": [
                         "Archers"
@@ -148,7 +148,7 @@
                     "name": "Priest",
                     "health": 2,
                     "attack": 1,
-                    "description": "Turn end:\nMend (2)\ninjured ally",
+                    "description": "Turn end:\nMend (3)\ninjured ally",
                     "houses": [
                         "Clerics"
                     ],
@@ -174,7 +174,7 @@
                                 "type": "UseAbility",
                                 "name": "Mend",
                                 "vars": {
-                                    "Charges": 2
+                                    "Charges": 3
                                 }
                             }
                         }
@@ -200,7 +200,7 @@
             "units": [
                 {
                     "name": "Death Knight",
-                    "attack": 5,
+                    "attack": 8,
                     "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
@@ -241,7 +241,7 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 5,
+                    "attack": 8,
                     "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
@@ -282,7 +282,7 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 5,
+                    "attack": 8,
                     "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
@@ -323,7 +323,7 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 5,
+                    "attack": 8,
                     "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
