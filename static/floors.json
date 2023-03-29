@@ -80,7 +80,7 @@
             "units": [
                 {
                     "name": "Tank",
-                    "attack": 4,
+                    "attack": 3,
                     "health": 20,
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",

@@ -1,16 +1,19 @@
 {
     "name": "Dracula",
-    "description": "After strike:\nuse Siphon Life",
+    "description": "Damage dealt:\nuse Siphon Life (3)",
     "attack": 1,
     "health": 3,
     "houses": [
         "Vampires"
     ],
     "trigger": {
-        "type": "AfterStrike",
+        "type": "AfterDamageDealt",
         "effect": {
             "type": "UseAbility",
-            "name": "SiphonLife"
+            "name": "SiphonLife",
+            "vars": {
+                "Charges": 3
+            }
         }
     },
     "shader": {

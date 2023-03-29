@@ -12,7 +12,7 @@ impl ActionSystem {
         loop {
             let ticked = if let Some(nodes) = nodes {
                 let mut node = CassetteNode::default();
-                node.skip_part = 0.5;
+                node.skip_part = 0.7;
                 let node = &mut Some(node);
                 let result = Self::tick(world, resources, node);
                 nodes.push(node.take().unwrap().finish(world, resources));
@@ -21,11 +21,6 @@ impl ActionSystem {
                 Self::tick(world, resources, &mut None)
             };
             if !ticked {
-                if ticks > 0 {
-                    if let Some(nodes) = nodes {
-                        nodes.last_mut().unwrap().skip_part = 0.0;
-                    }
-                }
                 break;
             }
             ticks += 1;

@@ -46,7 +46,7 @@ impl VfxSystem {
         delay: Time,
     ) -> VisualEffect {
         VisualEffect::new_delayed(
-            0.6,
+            1.5,
             delay,
             VisualEffectType::ShaderAnimation {
                 shader: resources

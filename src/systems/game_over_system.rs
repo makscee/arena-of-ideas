@@ -71,6 +71,7 @@ impl System for GameOverSystem {
             StatusPool::clear_all_active(resources);
             resources.action_queue.clear();
             resources.floors.reset();
+            Shop::load_pool(resources);
             UnitSystem::clear_factions(
                 world,
                 resources,

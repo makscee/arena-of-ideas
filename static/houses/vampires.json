@@ -7,16 +7,27 @@
             "effect": {
                 "type": "ShowCurve",
                 "after": {
-                    "type": "AddStatus",
+                    "type": "ChangeStatus",
                     "name": "SiphonLifeLose",
+                    "charges": {
+                        "type": "Var",
+                        "var": "Charges"
+                    },
                     "after": {
-                        "type": "AddStatus",
+                        "type": "ChangeStatus",
                         "name": "SiphonLifeGain",
+                        "charges": {
+                            "type": "Var",
+                            "var": "Charges"
+                        },
                         "target": {
                             "type": "Owner"
                         }
                     }
                 }
+            },
+            "default_vars": {
+                "Charges": 1
             }
         }
     },
