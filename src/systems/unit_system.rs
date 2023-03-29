@@ -58,11 +58,9 @@ impl UnitSystem {
         world: &legion::World,
         resources: &Resources,
     ) {
-        UnitSystem::collect_factions(world, factions)
-            .into_iter()
-            .for_each(|(entity, _)| {
-                Self::draw_unit_to_cassette_node(entity, node, world, resources)
-            });
+        for entity in UnitSystem::collect_factions(world, factions) {
+            Self::draw_unit_to_cassette_node(entity, node, world, resources)
+        }
     }
 
     pub fn process_death(
@@ -173,14 +171,31 @@ impl UnitSystem {
         unit_entitites
     }
 
-    pub fn collect_faction(
-        world: &legion::World,
-        faction: Faction,
-    ) -> HashMap<legion::Entity, UnitComponent> {
+    pub fn collect_faction(world: &legion::World, faction: Faction) -> Vec<legion::Entity> {
         Self::collect_factions(world, &hashset! {faction})
     }
 
     pub fn collect_factions(
+        world: &legion::World,
+        factions: &HashSet<Faction>,
+    ) -> Vec<legion::Entity> {
+        <(&UnitComponent, &EntityComponent)>::query()
+            .iter(world)
+            .filter_map(|(unit, entity)| match factions.contains(&unit.faction) {
+                true => Some(entity.entity),
+                false => None,
+            })
+            .collect_vec()
+    }
+
+    pub fn collect_faction_units(
+        world: &legion::World,
+        faction: Faction,
+    ) -> HashMap<legion::Entity, UnitComponent> {
+        Self::collect_factions_units(world, &hashset! {faction})
+    }
+
+    pub fn collect_factions_units(
         world: &legion::World,
         factions: &HashSet<Faction>,
     ) -> HashMap<legion::Entity, UnitComponent> {

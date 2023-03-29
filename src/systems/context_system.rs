@@ -82,7 +82,7 @@ impl ContextSystem {
     ) {
         UnitSystem::collect_factions(world, factions)
             .into_iter()
-            .for_each(|(entity, _)| {
+            .for_each(|entity| {
                 Self::refresh_entity(entity, world, resources);
             });
     }

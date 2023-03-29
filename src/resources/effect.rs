@@ -441,7 +441,7 @@ impl EffectWrapped {
                 for faction in factions {
                     faction_values.push(faction.calculate(&context, world, resources)?);
                 }
-                for (entity, _) in
+                for entity in
                     UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
                 {
                     let context = Context {
@@ -509,7 +509,7 @@ impl EffectWrapped {
                 let faction = faction.calculate(&context, world, resources)?;
                 let target = UnitSystem::collect_faction(world, faction)
                     .into_iter()
-                    .find(|(entity, _)| {
+                    .find(|entity| {
                         if let Some(context) = ContextSystem::try_get_context(*entity, world).ok() {
                             match condition.calculate(&context, world, resources) {
                                 Ok(value) => value,
@@ -519,7 +519,7 @@ impl EffectWrapped {
                             false
                         }
                     });
-                if let Some((target, _)) = target {
+                if let Some(target) = target {
                     context.target = target;
                     resources
                         .action_queue
@@ -534,7 +534,7 @@ impl EffectWrapped {
                 let faction = faction.calculate(&context, world, resources)?;
                 let targets = UnitSystem::collect_faction(world, faction)
                     .into_iter()
-                    .filter_map(|(entity, _)| {
+                    .filter_map(|entity| {
                         ContextSystem::try_get_context(entity, world)
                             .ok()
                             .and_then(|mut x| {

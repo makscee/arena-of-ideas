@@ -146,10 +146,7 @@ impl ShopSystem {
     }
 
     fn team_count(world: &legion::World) -> usize {
-        <&UnitComponent>::query()
-            .iter(world)
-            .filter(|unit| unit.faction == Faction::Team)
-            .count()
+        UnitSystem::collect_faction(world, Faction::Team).len()
     }
 
     pub fn buy(
@@ -266,8 +263,8 @@ impl ShopSystem {
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
         let case = UnitSystem::collect_faction(world, Faction::Shop);
         let packed_units = case
-            .keys()
-            .map(|entity| PackedUnit::pack(*entity, world, resources))
+            .into_iter()
+            .map(|entity| PackedUnit::pack(entity, world, resources))
             .collect_vec();
         UnitSystem::clear_faction(world, resources, Faction::Shop);
         resources.shop.pool.extend(packed_units.into_iter());

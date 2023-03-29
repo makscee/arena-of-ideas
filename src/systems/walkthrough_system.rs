@@ -68,7 +68,11 @@ impl WalkthroughSystem {
         let mut team = Team::new("light".to_string(), vec![]);
         let mut lost = false;
         loop {
-            let extra_units = ShopSystem::floor_money(resources.floors.current_ind()) / UNIT_COST;
+            let extra_units = {
+                let mut value = ShopSystem::floor_money(resources.floors.current_ind()) / UNIT_COST;
+                value += (value >= 3) as usize;
+                value
+            };
             let dark = resources.floors.current().clone();
             // println!("{} start...", dark.name);
             let floor_timer = Instant::now();
@@ -82,10 +86,14 @@ impl WalkthroughSystem {
                         team.unpack(&Faction::Team, world, resources);
                         Event::FloorEnd.send(world, resources);
                         let entity = shop_unit.unpack(world, resources, slot, Faction::Shop, None);
-                        if let Some((entity, _)) =
-                            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
-                        {
-                            ShopSystem::sell(entity, resources, world);
+                        if team.units.len() < SLOTS_COUNT {
+                            SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team});
+                        } else {
+                            if let Some((entity, _)) =
+                                SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
+                            {
+                                ShopSystem::sell(entity, resources, world);
+                            }
                         }
                         ShopSystem::buy(entity, slot, resources, world, &mut None);
                         let team = Team::pack(&Faction::Team, world, resources);

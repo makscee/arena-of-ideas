@@ -37,7 +37,7 @@ impl Team {
     }
 
     pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {
-        let units = UnitSystem::collect_faction(world, *faction)
+        let units = UnitSystem::collect_faction_units(world, *faction)
             .into_iter()
             .sorted_by_key(|(_, unit)| unit.slot)
             .map(|(entity, _)| PackedUnit::pack(entity, world, resources))
