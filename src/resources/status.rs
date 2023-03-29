@@ -222,16 +222,14 @@ impl StatusPool {
         resources: &mut Resources,
         node: &mut Option<CassetteNode>,
     ) {
-        let mut delay_per_charge = 0.1;
         let max_delay = 0.5;
+        let delay_per_charge = max_delay / resources.status_pool.status_changes.len() as f32;
         let key = "status_changes";
-        if let Some((entity, status_name, charges_delta)) =
+        let mut cnt = 0;
+        while let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()
         {
-            if charges_delta.abs() as f32 * delay_per_charge > max_delay {
-                delay_per_charge = max_delay / charges_delta.abs() as f32;
-            }
-            for i in 0..charges_delta.abs() {
+            for _ in 0..charges_delta.abs() {
                 let (text, color) = if charges_delta > 0 {
                     Self::add_status_charge(entity, &status_name, resources, world);
                     ("+", resources.options.colors.text_add_color)
@@ -256,11 +254,12 @@ impl StatusPool {
                             outline_color,
                             ContextSystem::try_get_position(entity, world).unwrap(),
                             1,
-                            delay_per_charge * i as f32,
+                            delay_per_charge * cnt as f32,
                         ),
                     );
                 }
             }
+            cnt += 1;
         }
     }
 

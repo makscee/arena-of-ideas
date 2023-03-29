@@ -338,9 +338,10 @@ impl EffectWrapped {
                     effect.after = Some(Box::new(AbilityPool::get_effect(resources, name)));
                     effect
                 };
-                resources
-                    .action_queue
-                    .push_front(Action::new(context.clone(), effect));
+                effect.process(context.clone(), world, resources, node)?;
+                // resources
+                //     .action_queue
+                //     .push_front(Action::new(context.clone(), effect));
             }
             Effect::SetHealth { value } => {
                 let value = value.calculate(&context, world, resources)?;
@@ -438,17 +439,15 @@ impl EffectWrapped {
                 for faction in factions {
                     faction_values.push(faction.calculate(&context, world, resources)?);
                 }
-                UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
-                    .iter()
-                    .for_each(|(entity, _)| {
-                        resources.action_queue.push_front(Action::new(
-                            Context {
-                                target: *entity,
-                                ..context.clone()
-                            },
-                            effect.deref().clone(),
-                        ));
-                    })
+                for (entity, _) in
+                    UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
+                {
+                    let context = Context {
+                        target: entity,
+                        ..context.clone()
+                    };
+                    effect.process(context, world, resources, node)?;
+                }
             }
             Effect::TakeVar {
                 var,

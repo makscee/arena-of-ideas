@@ -305,5 +305,20 @@
 			"}"
 		],
 		"description": "Slot Relative"
+	},
+	"Aoe": {
+		"prefix": "aoe",
+		"body": [
+			"{",
+			"    \"type\": \"Aoe\",",
+			"    \"factions\": [",
+			"        {",
+			"            \"type\": \"Owner\"",
+			"        }",
+			"    ],",
+			"    \"effect\": $TM_SELECTED_TEXT$1",
+			"}"
+		],
+		"description": "Aoe"
 	}
 }

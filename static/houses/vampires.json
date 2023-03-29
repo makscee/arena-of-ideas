@@ -5,20 +5,18 @@
         "SiphonLife": {
             "description": "Steal 1 HP\nfrom target",
             "effect": {
-                "type": "List",
-                "effects": [
-                    {
+                "type": "ShowCurve",
+                "after": {
+                    "type": "AddStatus",
+                    "name": "SiphonLifeLose",
+                    "after": {
                         "type": "AddStatus",
-                        "name": "SiphonLifeLose",
-                        "after": {
-                            "type": "AddStatus",
-                            "name": "SiphonLifeGain",
-                            "target": {
-                                "type": "Owner"
-                            }
+                        "name": "SiphonLifeGain",
+                        "target": {
+                            "type": "Owner"
                         }
                     }
-                ]
+                }
             }
         }
     },
