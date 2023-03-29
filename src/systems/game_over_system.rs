@@ -65,18 +65,7 @@ impl System for GameOverSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if self.need_restart {
             self.need_restart = false;
-            resources.current_state = GameState::MainMenu;
-            resources.transition_state = GameState::Shop;
-            resources.factions_state = default();
-            StatusPool::clear_all_active(resources);
-            resources.action_queue.clear();
-            resources.floors.reset();
-            Shop::load_pool(resources);
-            UnitSystem::clear_factions(
-                world,
-                resources,
-                &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team, },
-            );
+            Game::restart(world, resources);
         }
     }
 }

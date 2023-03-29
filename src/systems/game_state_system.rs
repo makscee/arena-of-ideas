@@ -28,7 +28,9 @@ impl System for GameStateSystem {
                 if resources.input.down_keys.contains(&geng::Key::R) {
                     resources.cassette.head = 0.0;
                 }
-                if resources.cassette.head > resources.cassette.length() {
+                if resources.cassette.head > resources.cassette.length()
+                    || resources.input.down_keys.contains(&geng::Key::Escape)
+                {
                     BattleSystem::finish_floor_battle(world, resources);
                 }
             }
@@ -46,10 +48,16 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::GameOver;
                 }
                 if resources.input.down_keys.contains(&geng::Key::R) {
-                    ShopSystem::restart(world, resources);
+                    Game::restart(world, resources);
                 }
                 if resources.input.down_keys.contains(&geng::Key::C) {
                     resources.shop.money += 100;
+                }
+                if resources.input.down_keys.contains(&geng::Key::L) {
+                    SaveSystem::load(world, resources);
+                }
+                if resources.input.down_keys.contains(&geng::Key::S) {
+                    SaveSystem::save(world, resources);
                 }
             }
             GameState::Gallery => {

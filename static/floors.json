@@ -11,12 +11,8 @@
                     "houses": [
                         "Snakes"
                     ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "name": "Poison"
-                        }
+                    "active_statuses": {
+                        "Poison": 1
                     },
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
@@ -47,13 +43,6 @@
                     "houses": [
                         "Snakes"
                     ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "name": "Poison"
-                        }
-                    },
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
@@ -70,7 +59,8 @@
                         }
                     },
                     "active_statuses": {
-                        "Shield": 1
+                        "Shield": 1,
+                        "Poison": 1
                     }
                 }
             ]

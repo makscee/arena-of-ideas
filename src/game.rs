@@ -46,6 +46,24 @@ impl Game {
             vars: default(),
         })
     }
+
+    pub fn reset(world: &mut legion::World, resources: &mut Resources) {
+        UnitSystem::clear_factions(
+            world,
+            resources,
+            &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team, },
+        );
+        StatusPool::clear_all_active(resources);
+        resources.floors.reset();
+        resources.action_queue.clear();
+        resources.factions_state = default();
+    }
+
+    pub fn restart(world: &mut legion::World, resources: &mut Resources) {
+        Self::reset(world, resources);
+        resources.current_state = GameState::MainMenu;
+        resources.transition_state = GameState::Shop;
+    }
 }
 
 impl geng::State for Game {

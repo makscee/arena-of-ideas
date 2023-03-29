@@ -32,6 +32,7 @@ impl System for ShopSystem {
         Self::refresh_ui(resources);
         Self::refresh_cassette(world, resources);
         let mut tape = Some(Vec::<CassetteNode>::default());
+        SlotSystem::move_to_slots_animated(world, resources, &mut tape);
         ActionSystem::run_ticks(world, resources, &mut tape);
         BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut tape);
         ActionSystem::run_ticks(world, resources, &mut tape);
@@ -71,13 +72,6 @@ impl ShopSystem {
 
     fn switch_to_shop(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Shop;
-    }
-
-    pub fn restart(world: &mut legion::World, resources: &mut Resources) {
-        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Team});
-        StatusPool::clear_all_active(resources);
-        resources.floors.reset();
-        Self::init(world, resources);
     }
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {

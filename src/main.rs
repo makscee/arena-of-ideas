@@ -36,6 +36,9 @@ fn setup_geng() -> Geng {
 fn static_path() -> PathBuf {
     run_dir().join("static")
 }
+fn save_path() -> PathBuf {
+    run_dir().join("save")
+}
 fn main() {
     let timer = Instant::now();
     logger::init();

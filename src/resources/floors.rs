@@ -28,6 +28,10 @@ impl Floors {
     pub fn count(&self) -> usize {
         self.teams.len()
     }
+
+    pub fn set(&mut self, ind: usize) {
+        self.current = ind;
+    }
 }
 
 impl FileWatcherLoader for Floors {
