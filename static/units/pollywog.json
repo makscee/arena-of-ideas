@@ -1,6 +1,6 @@
 {
     "name": "Pollywog",
-    "description": "Grow (2) after\nevery Battle",
+    "description": "Grow (3) after\nevery Battle",
     "attack": 1,
     "health": 1,
     "houses": [
@@ -16,7 +16,7 @@
             },
             "count": {
                 "type": "Const",
-                "value": 2
+                "value": 3
             }
         }
     },

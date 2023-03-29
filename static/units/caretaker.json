@@ -1,0 +1,39 @@
+{
+    "name": "Caretaker",
+    "description": "After battle:\nall allies gain\nGrow (1)",
+    "attack": 1,
+    "health": 1,
+    "houses": [
+        "Dragons"
+    ],
+    "trigger": {
+        "type": "FloorEnd",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "name": "Grow"
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/particle_emitter.glsl",
+        "parameters": {
+            "instances": 3000,
+            "uniforms": {
+                "u_end_color": "#ffffff",
+                "u_start_color": "#df9800ff",
+                "u_scale": 0.4,
+                "u_scale_over_t": -1.0,
+                "u_velocity_over_t": -3.3,
+                "u_trail_count": 1,
+                "u_lifetime": 10.2
+            }
+        }
+    }
+}

@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "walkthrough": true,
+    "walkthrough": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
@@ -20,18 +20,65 @@
                     "attack": 5
                 },
                 {
-                    "name": "Lilith",
-                    "description": "After every turn\nSiphonLife (1)\nevery enemy",
-                    "health": 8,
-                    "attack": 8,
+                    "name": "Caretaker",
+                    "description": "After battle:\nall allies gain\nGrow (1)",
+                    "attack": 1,
+                    "health": 1,
                     "houses": [
-                        "Vampires"
+                        "Dragons"
                     ],
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "FloorEnd",
                         "effect": {
                             "type": "Aoe",
                             "factions": [
+                                {
+                                    "type": "Owner"
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "name": "Grow"
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 3000,
+                            "uniforms": {
+                                "u_end_color": "#ffffff",
+                                "u_start_color": "#df9800ff",
+                                "u_scale": 0.4,
+                                "u_scale_over_t": -1.0,
+                                "u_velocity_over_t": -3.3,
+                                "u_trail_count": 1,
+                                "u_lifetime": 10.2
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "dark": {
+            "name": "Equalizer",
+            "units": [
+                {
+                    "name": "Equalizer",
+                    "attack": 20,
+                    "health": 20,
+                    "description": "Start of battle:\nDispel everyone",
+                    "houses": [
+                        "Exorcists"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                },
                                 {
                                     "type": "Opposite",
                                     "faction": {
@@ -41,49 +88,25 @@
                             ],
                             "effect": {
                                 "type": "UseAbility",
-                                "name": "SiphonLife"
+                                "name": "Dispel"
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
-                            "instances": 4000,
                             "uniforms": {
-                                "u_start_color": "#000000ff",
-                                "u_end_color": "#7f0000ff",
-                                "u_scale": 0.3,
-                                "u_p_scale": 0.5,
-                                "u_scale_over_t": -1.0,
-                                "u_velocity_over_t": -0.5,
-                                "u_trail_count": 15,
-                                "u_trail_shift": 0.1,
-                                "u_lifetime": 10.2,
-                                "u_vel_fbm": 0.3,
-                                "u_velicity_mul": 12.2
-                            }
+                                "u_color": "#000000",
+                                "u_color_1": "#f1f1f1",
+                                "u_radius": 2.1,
+                                "u_alpha": 0.1,
+                                "u_spin_part": 0.005,
+                                "u_move_speed": 1.0
+                            },
+                            "instances": 40,
+                            "vertices": 1
                         }
                     }
-                }
-            ]
-        },
-        "dark": {
-            "units": [
-                {
-                    "health": 10,
-                    "attack": 10
-                },
-                {
-                    "attack": 10,
-                    "health": 50
-                },
-                {
-                    "attack": 2,
-                    "health": 3
-                },
-                {
-                    "attack": 2,
-                    "health": 300
                 }
             ]
         }

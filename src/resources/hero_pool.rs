@@ -22,15 +22,16 @@ impl HeroPool {
     }
 
     pub fn all_sorted(&self) -> Vec<PackedUnit> {
-        let mut heroes = self.heroes.values().cloned().collect_vec();
-        heroes.sort_by(|a, b| {
-            self.power
-                .get(&a.name)
-                .unwrap()
-                .partial_cmp(self.power.get(&b.name).unwrap())
-                .unwrap()
-        });
-        heroes
+        self.heroes
+            .values()
+            .filter_map(|unit| {
+                self.power
+                    .get(&unit.name)
+                    .and_then(|x| Some((unit.clone(), x)))
+            })
+            .sorted_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .map(|x| x.0)
+            .collect_vec()
     }
 }
 

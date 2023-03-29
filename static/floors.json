@@ -80,8 +80,8 @@
             "units": [
                 {
                     "name": "Tank",
-                    "attack": 2,
-                    "health": 15,
+                    "attack": 4,
+                    "health": 20,
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
@@ -146,7 +146,7 @@
                 },
                 {
                     "name": "Priest",
-                    "health": 2,
+                    "health": 3,
                     "attack": 1,
                     "description": "Turn end:\nMend (3)\ninjured ally",
                     "houses": [
@@ -200,8 +200,8 @@
             "units": [
                 {
                     "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
+                    "attack": 10,
+                    "health": 10,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -241,8 +241,8 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
+                    "attack": 10,
+                    "health": 10,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -282,8 +282,8 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
+                    "attack": 10,
+                    "health": 10,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -323,8 +323,8 @@
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
+                    "attack": 10,
+                    "health": 10,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -506,7 +506,7 @@
                 {
                     "name": "Cheater",
                     "attack": 15,
-                    "health": 25,
+                    "health": 30,
                     "description": "After strike\ngain Shield",
                     "houses": [
                         "Robots"
@@ -533,6 +533,56 @@
                                 "u_move_speed": 3.3
                             },
                             "instances": 20,
+                            "vertices": 1
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Equalizer",
+            "units": [
+                {
+                    "name": "Equalizer",
+                    "attack": 20,
+                    "health": 20,
+                    "description": "Start of battle:\nDispel everyone",
+                    "houses": [
+                        "Exorcists"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                },
+                                {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "name": "Dispel"
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#000000",
+                                "u_color_1": "#f1f1f1",
+                                "u_radius": 2.1,
+                                "u_alpha": 0.1,
+                                "u_spin_part": 0.005,
+                                "u_move_speed": 1.0
+                            },
+                            "instances": 40,
                             "vertices": 1
                         }
                     }
@@ -760,15 +810,16 @@
                     "shader": {
                         "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
-                            "instances": 3000,
+                            "instances": 300,
                             "uniforms": {
-                                "u_start_color": "#FFD700",
+                                "u_start_color": "#ffe600",
                                 "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
+                                "u_scale": 1.5,
+                                "u_p_scale": 0.4,
+                                "u_scale_over_t": -2.0,
+                                "u_velocity_over_t": -0.3,
+                                "u_velicity_mul": 10.3,
+                                "u_lifetime": 5.2
                             }
                         }
                     }
@@ -790,15 +841,16 @@
                     "shader": {
                         "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
-                            "instances": 3000,
+                            "instances": 300,
                             "uniforms": {
-                                "u_start_color": "#FFD700",
+                                "u_start_color": "#ffe600",
                                 "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
+                                "u_scale": 1.5,
+                                "u_p_scale": 0.4,
+                                "u_scale_over_t": -2.0,
+                                "u_velocity_over_t": -0.3,
+                                "u_velicity_mul": 10.3,
+                                "u_lifetime": 5.2
                             }
                         }
                     }
@@ -820,15 +872,16 @@
                     "shader": {
                         "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
-                            "instances": 3000,
+                            "instances": 300,
                             "uniforms": {
-                                "u_start_color": "#FFD700",
+                                "u_start_color": "#ffe600",
                                 "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
+                                "u_scale": 1.5,
+                                "u_p_scale": 0.4,
+                                "u_scale_over_t": -2.0,
+                                "u_velocity_over_t": -0.3,
+                                "u_velicity_mul": 10.3,
+                                "u_lifetime": 5.2
                             }
                         }
                     }
@@ -850,15 +903,16 @@
                     "shader": {
                         "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
-                            "instances": 3000,
+                            "instances": 300,
                             "uniforms": {
-                                "u_start_color": "#FFD700",
+                                "u_start_color": "#ffe600",
                                 "u_end_color": "#ffffff",
-                                "u_scale": 0.5,
-                                "u_scale_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 10,
-                                "u_lifetime": 3.2
+                                "u_scale": 1.5,
+                                "u_p_scale": 0.4,
+                                "u_scale_over_t": -2.0,
+                                "u_velocity_over_t": -0.3,
+                                "u_velicity_mul": 10.3,
+                                "u_lifetime": 5.2
                             }
                         }
                     }
