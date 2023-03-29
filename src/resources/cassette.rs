@@ -24,12 +24,14 @@ impl Cassette {
     pub fn add_tape_nodes(&mut self, mut nodes: Vec<CassetteNode>) {
         let head = self.head;
         let last = self.last_mut();
-        if last.start + last.duration < head {
-            last.duration = head - last.start;
+        if last.end < head {
+            last.end = head;
         }
         nodes.drain(..).for_each(|mut node| {
-            let start = self.last().start + self.last().duration;
+            let last = self.last();
+            let start = last.start + (last.end - last.start) * (1.0 - last.skip_part);
             node.start = start;
+            node.end = node.start + node.end;
             self.tape.push(node);
         })
     }
@@ -44,17 +46,17 @@ impl Cassette {
 
     pub fn get_shaders(
         resources: &mut Resources,
-        mut world_shaders: HashMap<legion::Entity, Shader>,
+        mut entity_shaders: HashMap<legion::Entity, Shader>,
     ) -> Vec<Shader> {
         let cassette = &resources.cassette;
-        let mut node = cassette
-            .get_node_at_ts(cassette.head)
-            .and_then(|x| Some(x.merge(&cassette.render_node)))
-            .or(Some(cassette.render_node.clone()))
-            .unwrap();
+        let mut node = cassette.render_node.clone();
         let time = cassette.head - node.start;
-        world_shaders.extend(node.entity_shaders.clone().into_iter());
-        let mut entity_shaders = world_shaders;
+        Self::get_nodes_at_ts(cassette, cassette.head)
+            .into_iter()
+            .for_each(|x| {
+                node.merge_mut(x, true);
+            });
+        entity_shaders.extend(node.entity_shaders.clone().into_iter());
 
         // 1st phase: apply any changes to entity shaders uniforms
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
@@ -72,7 +74,10 @@ impl Cassette {
             };
         }
         UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
-        StatusSystem::add_active_statuses_panel_to_node(&mut node, resources);
+        node.add_effects(StatusSystem::get_active_statuses_panel_effects(
+            &node.active_statuses,
+            resources,
+        ));
 
         // 2nd phase: apply any other shaders that might need updated entity shaders uniforms
         let mut extra_shaders: Vec<Shader> = default();
@@ -124,7 +129,7 @@ impl Cassette {
 
     pub fn length(&self) -> Time {
         let last = self.last();
-        last.start + last.duration
+        last.end
     }
 
     pub fn clear(&mut self) {
@@ -141,18 +146,17 @@ impl Cassette {
         self.tape.last().unwrap()
     }
 
-    fn get_node_at_ts(&self, ts: Time) -> Option<&CassetteNode> {
-        if ts > self.length() {
-            return None;
+    fn get_nodes_at_ts(&self, ts: Time) -> Vec<&CassetteNode> {
+        let mut nodes: Vec<&CassetteNode> = default();
+        for node in self.tape.iter() {
+            if node.start > ts {
+                break;
+            }
+            if node.end > ts {
+                nodes.push(node);
+            }
         }
-        let index = match self
-            .tape
-            .binary_search_by_key(&r32(ts), |node| r32(node.start))
-        {
-            Ok(index) => index,
-            Err(index) => index - 1,
-        };
-        self.tape.get(index)
+        nodes
     }
 }
 
@@ -160,7 +164,8 @@ impl Cassette {
 
 pub struct CassetteNode {
     pub start: Time,
-    pub duration: Time,
+    pub end: Time,
+    pub skip_part: f32,
     pub entity_shaders: HashMap<legion::Entity, Shader>,
     active_statuses: HashMap<legion::Entity, HashMap<String, i32>>,
     effects: HashMap<String, Vec<VisualEffect>>,
@@ -171,7 +176,7 @@ impl CassetteNode {
         self.entity_shaders.insert(entity, shader);
     }
     pub fn add_effect_by_key(&mut self, key: &str, effect: VisualEffect) {
-        self.duration = self.duration.max(effect.duration + effect.delay);
+        self.end = self.end.max(self.start + effect.duration + effect.delay);
         let mut vec = self.effects.remove(key).unwrap_or_default();
         vec.push(effect);
         self.effects.insert(key.to_string(), vec);
@@ -198,40 +203,61 @@ impl CassetteNode {
     }
     pub fn clear(&mut self) {
         self.start = default();
-        self.duration = default();
+        self.end = default();
         self.entity_shaders.clear();
         self.effects.clear();
     }
     pub fn clear_entities(&mut self) {
         self.entity_shaders.clear();
     }
-    pub fn merge(&self, other: &CassetteNode) -> CassetteNode {
+    pub fn merge(&self, other: &CassetteNode, force: bool) -> CassetteNode {
         let mut node = self.clone();
-        node.merge_mut(other);
+        node.merge_mut(other, force);
         node
     }
-    pub fn merge_mut(&mut self, other: &CassetteNode) {
+    pub fn merge_mut(&mut self, other: &CassetteNode, force: bool) {
         let mut node = self;
-        node.duration = node.duration.max(node.duration);
+        let add_delay = other.start - node.start;
         for (key, other_effects) in other.effects.iter() {
             if key == DEFAULT_EFFECT_KEY {
                 let mut effects = node.effects.remove(key).unwrap_or_default();
-                effects.extend(other_effects.iter().cloned());
+                for mut effect in other_effects.iter().cloned() {
+                    effect.delay += add_delay;
+                    effects.push(effect);
+                }
                 node.effects.insert(key.clone(), effects);
             } else {
-                node.effects.insert(key.clone(), other_effects.clone());
+                if force || !node.effects.contains_key(key) {
+                    node.effects.insert(
+                        key.clone(),
+                        other_effects
+                            .iter()
+                            .map(|x| {
+                                let mut x = x.clone();
+                                x.delay += add_delay;
+                                x
+                            })
+                            .collect_vec(),
+                    );
+                }
             }
         }
+        node.start = node.start.min(other.start);
+        node.end = node.end.max(other.end);
         other.entity_shaders.iter().for_each(|(entity, shader)| {
-            node.entity_shaders.insert(*entity, shader.clone());
+            if force || !node.entity_shaders.contains_key(entity) {
+                node.entity_shaders.insert(*entity, shader.clone());
+            }
         });
         other
             .active_statuses
             .iter()
             .for_each(|(entity, other_statuses)| {
                 let mut statuses = node.active_statuses.remove(entity).unwrap_or_default();
-                other_statuses.iter().for_each(|(name, context)| {
-                    statuses.insert(name.clone(), context.clone());
+                other_statuses.iter().for_each(|(name, charges)| {
+                    if force || !statuses.contains_key(name) {
+                        statuses.insert(name.clone(), *charges);
+                    }
                 });
                 node.active_statuses.insert(*entity, statuses);
             })
@@ -244,27 +270,14 @@ impl CassetteNode {
             self.active_statuses.insert(entity, statuses.clone());
         }
     }
-    pub fn get_entity_statuses(&self, entity: &legion::Entity) -> Vec<(String, i32)> {
-        self.active_statuses
-            .get(entity)
-            .and_then(|statuses| {
-                Some(
-                    statuses
-                        .iter()
-                        .map(|(name, charges)| (name.clone(), *charges))
-                        .collect_vec(),
-                )
-            })
-            .unwrap_or_else(|| vec![])
-    }
     pub fn finish(mut self, world: &mut legion::World, resources: &Resources) -> Self {
-        if self.duration == 0.0 {
+        if self.end == 0.0 {
             return self;
         }
         let factions = &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team};
         ContextSystem::refresh_factions(factions, world, resources);
         UnitSystem::draw_all_units_to_cassette_node(factions, &mut self, world, resources);
-        self.add_effects(VfxSystem::vfx_battle_team_names(resources));
+        self.add_effects_by_key(TEAM_NAMES_KEY, VfxSystem::vfx_battle_team_names(resources));
         self
     }
 }

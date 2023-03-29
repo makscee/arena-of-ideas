@@ -27,7 +27,10 @@ impl BattleSystem {
     pub fn add_intro(resources: &Resources, nodes: &mut Option<Vec<CassetteNode>>) {
         if let Some(nodes) = nodes.as_mut() {
             let mut node = CassetteNode::default();
-            node.add_effects(VfxSystem::vfx_battle_team_names_animation(resources));
+            node.add_effects_by_key(
+                TEAM_NAMES_KEY,
+                VfxSystem::vfx_battle_team_names_animation(resources),
+            );
             nodes.push(node);
         }
     }
@@ -102,6 +105,7 @@ impl BattleSystem {
             Self::move_strikers(&StrikePhase::Release, left, right, world, resources, nodes);
             Self::add_strike_vfx(world, resources, nodes);
             Self::hit(left, right, nodes, world, resources);
+            Self::spin(world, resources, nodes);
             Self::move_strikers(&StrikePhase::Retract, left, right, world, resources, nodes);
             Event::TurnEnd.send(world, resources);
             Self::spin(world, resources, nodes);
@@ -122,12 +126,16 @@ impl BattleSystem {
             let mut node = CassetteNode::default();
             let (left_pos, right_pos) = Self::get_strikers_positions(phase);
             let (easing, duration) = match phase {
-                StrikePhase::Charge => (EasingType::QuartInOut, 1.5),
-                StrikePhase::Release => (EasingType::Linear, 0.1),
-                StrikePhase::Retract => (EasingType::QuartOut, 0.25),
+                StrikePhase::Charge => (EasingType::QuartInOut, 0.3),
+                StrikePhase::Release => (EasingType::Linear, 0.03),
+                StrikePhase::Retract => (EasingType::QuartOut, 0.10),
             };
-            VfxSystem::translate_animated(left, left_pos, &mut node, world, easing, duration);
-            VfxSystem::translate_animated(right, right_pos, &mut node, world, easing, duration);
+            if UnitSystem::get_corpse(left, world).is_none() {
+                VfxSystem::translate_animated(left, left_pos, &mut node, world, easing, duration);
+            }
+            if UnitSystem::get_corpse(right, world).is_none() {
+                VfxSystem::translate_animated(right, right_pos, &mut node, world, easing, duration);
+            }
             nodes.push(node.finish(world, resources));
         }
     }

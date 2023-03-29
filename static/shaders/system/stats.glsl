@@ -3,12 +3,15 @@
 out vec2 uv;
 attribute vec2 a_pos;
 uniform float u_angle_offset;
+uniform float u_damage_taken = 0;
+uniform float u_animate_on_damage = 0;
 
 void main() {
     init_fields();
     offset = rotateCW(vec2(0, -1), PI * (.23 - card * .07) * u_angle_offset) * 1.2 * (1 + card * 1.5);
     size = vec2(1 + card * .7);
     uv = get_uv(a_pos);
+    scale *= (1 + u_damage_taken * u_animate_on_damage);
     gl_Position = get_gl_position(uv);
 }
 #endif
@@ -26,8 +29,6 @@ uniform vec4 u_outline_color;
 uniform vec4 u_circle_color;
 
 uniform float u_text_scale = 1;
-uniform float u_damage_taken = 0;
-uniform float u_animate_on_damage = 0;
 uniform int u_value_modified;
 
 const float BORDER = 0.08;
@@ -48,7 +49,7 @@ void main() {
         text_color = u_text_color_increased;
     }
 
-    float text_scale = u_text_scale * (1 + u_damage_taken * u_animate_on_damage);
+    float text_scale = u_text_scale;
     float sdf = get_text_sdf(uv / text_scale * vec2(u_text_size.y / u_text_size.x, 1), u_text);
     text_color = get_text_color(sdf, text_color, u_outline_color, TEXT_BORDER, TEXT_INSIDE);
     gl_FragColor = alphaBlend(color, text_color);

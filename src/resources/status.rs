@@ -222,8 +222,8 @@ impl StatusPool {
         resources: &mut Resources,
         node: &mut Option<CassetteNode>,
     ) {
-        let mut delay_per_charge = 0.3;
-        let max_delay = 3.0;
+        let mut delay_per_charge = 0.1;
+        let max_delay = 0.5;
         let key = "status_changes";
         if let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()

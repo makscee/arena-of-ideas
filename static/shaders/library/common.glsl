@@ -15,7 +15,7 @@ uniform mat3 u_view_matrix;
 
 uniform float u_card = 0;
 float card;
-uniform float u_zoom = 1;
+uniform float u_zoom = 1; // only for internal use
 float zoom;
 uniform vec2 u_position = vec2(0);
 vec2 position;

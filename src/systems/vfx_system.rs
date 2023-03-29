@@ -2,7 +2,9 @@ use super::*;
 
 pub struct VfxSystem {}
 
-const BATTLE_INTRO_DURATION: Time = 1.0;
+pub const TEAM_NAMES_KEY: &str = "team_names";
+
+const BATTLE_INTRO_DURATION: Time = 0.6;
 
 /// Logic
 impl VfxSystem {
@@ -44,7 +46,7 @@ impl VfxSystem {
         delay: Time,
     ) -> VisualEffect {
         VisualEffect::new_delayed(
-            1.2,
+            0.6,
             delay,
             VisualEffectType::ShaderAnimation {
                 shader: resources
@@ -66,34 +68,6 @@ impl VfxSystem {
                 from: default(),
                 to: default(),
                 easing: EasingType::QuartOut,
-            },
-            0,
-        )
-    }
-    pub fn vfx_show_damage_text(
-        resources: &Resources,
-        text: &str,
-        color: Rgba<f32>,
-        position: vec2<f32>,
-    ) -> VisualEffect {
-        VisualEffect::new(
-            0.8,
-            VisualEffectType::ShaderAnimation {
-                shader: resources
-                    .options
-                    .shaders
-                    .text
-                    .clone()
-                    .set_uniform("u_position", ShaderUniform::Vec2(position))
-                    .set_uniform("u_offset_over_t", ShaderUniform::Vec2(vec2(0.0, -5.1)))
-                    .set_uniform("u_text", ShaderUniform::String((0, text.to_string())))
-                    .set_uniform("u_outline_color", ShaderUniform::Color(color))
-                    .set_uniform("u_alpha_over_t", ShaderUniform::Float(-1.0))
-                    .set_uniform("u_scale", ShaderUniform::Float(1.0))
-                    .set_uniform("u_scale_over_t", ShaderUniform::Float(-1.0)),
-                from: default(),
-                to: default(),
-                easing: EasingType::BackIn,
             },
             0,
         )
@@ -176,7 +150,7 @@ impl VfxSystem {
         let from = &resources.options.shaders.team_name_intro;
         let to = &resources.options.shaders.team_name;
         let mut from_vars = from.parameters.uniforms.clone();
-        let mut to_vars = to.parameters.uniforms.clone();
+        let to_vars = to.parameters.uniforms.clone();
         from_vars.merge_mut(&to_vars, false);
         effects.push(VisualEffect::new(
             BATTLE_INTRO_DURATION,

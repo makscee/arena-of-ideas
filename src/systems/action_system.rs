@@ -11,17 +11,24 @@ impl ActionSystem {
         let mut ticks = 0;
         loop {
             let ticked = if let Some(nodes) = nodes {
-                let node = &mut Some(CassetteNode::default());
+                let mut node = CassetteNode::default();
+                node.skip_part = 0.5;
+                let node = &mut Some(node);
                 let result = Self::tick(world, resources, node);
                 nodes.push(node.take().unwrap().finish(world, resources));
                 result
             } else {
                 Self::tick(world, resources, &mut None)
             };
-            ticks += 1;
             if !ticked {
+                if ticks > 0 {
+                    if let Some(nodes) = nodes {
+                        nodes.last_mut().unwrap().skip_part = 0.0;
+                    }
+                }
                 break;
             }
+            ticks += 1;
             if ticks > 1000 {
                 panic!("Exceeded ticks limit")
             }

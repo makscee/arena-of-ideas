@@ -7,9 +7,9 @@ attribute vec2 a_pos;
 uniform int u_trail_count = 1;
 uniform float u_lifetime = 1;
 uniform float u_trail_shift = 0.01;
-uniform float u_scale_over_t = 0;
 uniform float u_velicity_mul = 5;
 uniform float u_velocity_over_t = 1;
+uniform float u_vel_fbm = 0;
 
 flat out int p_index;
 flat out float p_t;
@@ -22,14 +22,16 @@ void main() {
     float time = u_game_time + u_lifetime * rand(p_index);
     p_t = time / u_lifetime - floor(time / u_lifetime) - trail_shift;
     p_t += mix(0.0, 1.0, float(p_t < 0.));
-    uv = a_pos;
+    uv = get_uv(a_pos);
     vec2 vel = rotateCW((randVec(p_index + 1) - vec2(0.5)), p_t * PI * u_velocity_over_t);
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= u_velicity_mul;
-    scale = max(scale + u_scale_over_t * p_t, 0.0) * radius;
-    vec2 pos = uv * scale + position + get_card_pos(vel * p_t) * zoom * radius;
-    vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
-    gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
+    vel *= 1. + fbm(vec2(u_game_time * 3) + randVec(p_index)) * u_vel_fbm;
+    gl_Position = get_gl_position(uv + vel * p_t);
+    // gl_Position = get_gl_position(uv + vel * p_t);
+    // vec2 pos = uv * scale + position + get_card_pos(vel * p_t) * zoom * radius;
+    // vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
+    // gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
 #endif
 
@@ -41,10 +43,12 @@ flat in float p_t;
 uniform vec4 u_start_color;
 uniform vec4 u_end_color;
 uniform float u_alpha = 1;
+uniform float u_scale_over_t = 0;
+uniform float u_p_scale = 1;
 
 void main() {
     float dist = length(uv);
-    if(dist > 1. || p_t < 0 || p_t > 1)
+    if(dist > u_p_scale * (1. + u_scale_over_t * p_t) || p_t < 0 || p_t > 1)
         discard;
     gl_FragColor = vec4(mix(u_start_color, u_end_color, p_t).rgb, u_alpha);
 }

@@ -212,7 +212,7 @@ impl GameStateSystem {
                 ContextSystem::refresh_factions(factions, world, resources);
                 let last_node = &mut default();
                 UnitSystem::draw_all_units_to_cassette_node(factions, last_node, world, resources);
-                last_node.duration = 1.0;
+                last_node.end = last_node.start + 1.0;
                 resources
                     .cassette
                     .add_tape_nodes(vec![last_node.to_owned()]);
