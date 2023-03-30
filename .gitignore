@@ -1,7 +1,7 @@
 /target/
 /Cargo.lock
 /static/local_configs/
-/save
+/save/
 .DS_Store
 static/.DS_Store
 static/one_unit_custom.json
