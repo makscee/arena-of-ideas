@@ -1,4 +1,5 @@
 use super::*;
+use regex::*;
 
 pub struct UnitSystem {}
 
@@ -50,6 +51,8 @@ impl UnitSystem {
             .push(NameSystem::get_entity_shader(entity, world, options));
         node.add_entity_shader(entity, unit_shader);
         node.save_entity_statuses(entity, statuses);
+        let definitions = UnitSystem::extract_definition_names(entity, world, resources);
+        node.save_entity_definitions(entity, definitions);
     }
 
     pub fn draw_all_units_to_cassette_node(
@@ -255,5 +258,28 @@ impl UnitSystem {
                 );
             }
         }
+    }
+
+    pub fn extract_definition_names(
+        entity: legion::Entity,
+        world: &legion::World,
+        resources: &Resources,
+    ) -> HashSet<String> {
+        if let Some(description) = world.entry_ref(entity).ok().and_then(|x| {
+            x.get_component::<DescriptionComponent>()
+                .ok()
+                .and_then(|x| Some(x.text.clone()))
+        }) {
+            let definitions_regex = Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap();
+            let mut definitions: HashSet<String> = default();
+            for definition in definitions_regex.captures_iter(&description) {
+                let definition = definition.index(0);
+                if resources.definitions.contains(definition) {
+                    definitions.insert(definition.to_string());
+                }
+            }
+            return definitions;
+        }
+        return default();
     }
 }

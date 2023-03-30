@@ -2,9 +2,11 @@ use super::*;
 
 pub struct StatusSystem {}
 
-const PANELS_KEY: &str = "panels";
 impl StatusSystem {
-    fn get_status_names_shaders(names: &Vec<(String, i32)>, resources: &Resources) -> Vec<Shader> {
+    fn get_status_names_shaders(
+        names: &HashMap<String, i32>,
+        resources: &Resources,
+    ) -> Vec<Shader> {
         names
             .iter()
             .filter_map(|(name, charges)| match resources.definitions.get(name) {
@@ -30,17 +32,17 @@ impl StatusSystem {
             })
             .collect_vec()
     }
-    fn get_definitions_shaders(names: &Vec<(String, i32)>, resources: &Resources) -> Vec<Shader> {
+    fn get_definitions_shaders(names: &Vec<&String>, resources: &Resources) -> Vec<Shader> {
         names
             .iter()
-            .filter_map(|(name, _)| match resources.definitions.get(name) {
+            .filter_map(|name| match resources.definitions.get(name) {
                 Some(def) => Some(vec![
                     resources
                         .options
                         .shaders
                         .definitions_panel_title
                         .clone()
-                        .set_uniform("u_text", ShaderUniform::String((2, name.clone())))
+                        .set_uniform("u_text", ShaderUniform::String((2, name.deref().clone())))
                         .set_uniform("u_outline_color", ShaderUniform::Color(def.color)),
                     resources
                         .options
@@ -58,50 +60,22 @@ impl StatusSystem {
             .collect_vec()
     }
 
-    fn get_status_names(
-        statuses: &HashMap<legion::Entity, HashMap<String, i32>>,
-        entity: &legion::Entity,
-    ) -> Vec<(String, i32)> {
-        statuses
-            .get(entity)
-            .and_then(|statuses| {
-                Some(
-                    statuses
-                        .iter()
-                        .map(|(name, charges)| (name.clone(), *charges))
-                        .collect_vec(),
-                )
-            })
-            .unwrap_or_else(|| vec![])
-    }
-
     pub fn get_active_statuses_panel_effects(
-        statuses: &HashMap<legion::Entity, HashMap<String, i32>>,
+        node: &CassetteNode,
         resources: &Resources,
     ) -> Vec<VisualEffect> {
         let mut effects: Vec<VisualEffect> = default();
-        if let Some(hovered) = resources.input.cur_hovered {
-            let names = Self::get_status_names(statuses, &hovered);
-            let name_shaders = Self::get_status_names_shaders(&names, resources);
+        if let Some(entity) = resources.input.cur_hovered {
+            let names = &node.get_active_statuses(entity);
+            let name_shaders = Self::get_status_names_shaders(names, resources);
+            let names = node.get_definitions(entity);
             let definition_shaders = Self::get_definitions_shaders(&names, resources);
             if !name_shaders.is_empty() {
                 let shader = resources.options.shaders.status_panel.clone();
                 effects.push(VisualEffect::new(
                     0.0,
-                    VisualEffectType::EntityExtraShaderConst {
-                        entity: hovered,
-                        shader,
-                    },
+                    VisualEffectType::EntityExtraShaderConst { entity, shader },
                     1000,
-                ));
-                let shader = resources.options.shaders.definitions_panel.clone();
-                effects.push(VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityExtraShaderConst {
-                        entity: hovered,
-                        shader,
-                    },
-                    1001,
                 ));
                 for (ind, mut shader) in name_shaders.into_iter().enumerate() {
                     shader
@@ -111,13 +85,18 @@ impl StatusSystem {
                         .insert("u_index".to_string(), ShaderUniform::Int(ind as i32));
                     effects.push(VisualEffect::new(
                         0.0,
-                        VisualEffectType::EntityExtraShaderConst {
-                            entity: hovered,
-                            shader,
-                        },
+                        VisualEffectType::EntityExtraShaderConst { entity, shader },
                         1001,
                     ));
                 }
+            }
+            if !definition_shaders.is_empty() {
+                let shader = resources.options.shaders.definitions_panel.clone();
+                effects.push(VisualEffect::new(
+                    0.0,
+                    VisualEffectType::EntityExtraShaderConst { entity, shader },
+                    1001,
+                ));
                 for (ind, mut shader) in definition_shaders.into_iter().enumerate() {
                     shader
                         .parameters
@@ -126,10 +105,7 @@ impl StatusSystem {
                         .insert("u_index".to_string(), ShaderUniform::Int(ind as i32 / 2));
                     effects.push(VisualEffect::new(
                         0.0,
-                        VisualEffectType::EntityExtraShaderConst {
-                            entity: hovered,
-                            shader,
-                        },
+                        VisualEffectType::EntityExtraShaderConst { entity, shader },
                         1002,
                     ))
                 }

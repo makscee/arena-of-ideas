@@ -56,7 +56,7 @@ impl Cassette {
             .for_each(|x| {
                 node.merge_mut(x, true);
             });
-        entity_shaders.extend(node.entity_shaders.clone().into_iter());
+        entity_shaders.extend(node.get_entities_shaders());
 
         // 1st phase: apply any changes to entity shaders uniforms
         for effect in node.effects.values().flatten().sorted_by_key(|x| x.order) {
@@ -75,8 +75,7 @@ impl Cassette {
         }
         UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
         node.add_effects(StatusSystem::get_active_statuses_panel_effects(
-            &node.active_statuses,
-            resources,
+            &node, resources,
         ));
 
         // 2nd phase: apply any other shaders that might need updated entity shaders uniforms
@@ -166,14 +165,58 @@ pub struct CassetteNode {
     pub start: Time,
     pub end: Time,
     pub skip_part: f32,
-    pub entity_shaders: HashMap<legion::Entity, Shader>,
-    active_statuses: HashMap<legion::Entity, HashMap<String, i32>>,
+    entities: HashMap<legion::Entity, EntityData>,
     effects: HashMap<String, Vec<VisualEffect>>,
+}
+
+#[derive(Clone, Debug)]
+struct EntityData {
+    pub shader: Shader,
+    pub statuses: HashMap<String, i32>,
+    pub definitions: HashSet<String>,
+}
+
+impl EntityData {
+    fn new(shader: Shader) -> Self {
+        Self {
+            shader,
+            statuses: default(),
+            definitions: default(),
+        }
+    }
 }
 
 impl CassetteNode {
     pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
-        self.entity_shaders.insert(entity, shader);
+        if let Some(data) = self.entities.get_mut(&entity) {
+            data.shader = shader;
+        } else {
+            self.entities.insert(entity, EntityData::new(shader));
+        }
+    }
+    pub fn get_entities_shaders(&self) -> HashMap<legion::Entity, Shader> {
+        HashMap::from_iter(
+            self.entities
+                .iter()
+                .map(|(entity, data)| (*entity, data.shader.clone())),
+        )
+    }
+    pub fn get_active_statuses(&self, entity: legion::Entity) -> HashMap<String, i32> {
+        if let Some(data) = self.entities.get(&entity) {
+            data.statuses.clone()
+        } else {
+            default()
+        }
+    }
+    pub fn get_definitions(&self, entity: legion::Entity) -> Vec<&String> {
+        if let Some(data) = self.entities.get(&entity) {
+            data.statuses
+                .keys()
+                .chain(data.definitions.iter())
+                .collect_vec()
+        } else {
+            default()
+        }
     }
     pub fn add_effect_by_key(&mut self, key: &str, effect: VisualEffect) {
         self.end = self.end.max(self.start + effect.duration + effect.delay);
@@ -204,11 +247,11 @@ impl CassetteNode {
     pub fn clear(&mut self) {
         self.start = default();
         self.end = default();
-        self.entity_shaders.clear();
+        self.entities.clear();
         self.effects.clear();
     }
     pub fn clear_entities(&mut self) {
-        self.entity_shaders.clear();
+        self.entities.clear();
     }
     pub fn merge(&self, other: &CassetteNode, force: bool) -> CassetteNode {
         let mut node = self.clone();
@@ -244,31 +287,23 @@ impl CassetteNode {
         }
         node.start = node.start.min(other.start);
         node.end = node.end.max(other.end);
-        other.entity_shaders.iter().for_each(|(entity, shader)| {
-            if force || !node.entity_shaders.contains_key(entity) {
-                node.entity_shaders.insert(*entity, shader.clone());
+        other.entities.iter().for_each(|(entity, shader)| {
+            if force || !node.entities.contains_key(entity) {
+                node.entities.insert(*entity, shader.clone());
             }
         });
-        other
-            .active_statuses
-            .iter()
-            .for_each(|(entity, other_statuses)| {
-                let mut statuses = node.active_statuses.remove(entity).unwrap_or_default();
-                other_statuses.iter().for_each(|(name, charges)| {
-                    if force || !statuses.contains_key(name) {
-                        statuses.insert(name.clone(), *charges);
-                    }
-                });
-                node.active_statuses.insert(*entity, statuses);
-            })
-    }
-    pub fn save_active_statuses(&mut self, pool: &StatusPool) {
-        self.active_statuses = pool.active_statuses.clone();
     }
     pub fn save_entity_statuses(&mut self, entity: legion::Entity, pool: &StatusPool) {
         if let Some(statuses) = pool.active_statuses.get(&entity) {
-            self.active_statuses.insert(entity, statuses.clone());
+            self.entities.get_mut(&entity).unwrap().statuses = statuses.clone();
         }
+    }
+    pub fn save_entity_definitions(
+        &mut self,
+        entity: legion::Entity,
+        definitions: HashSet<String>,
+    ) {
+        self.entities.get_mut(&entity).unwrap().definitions = definitions;
     }
     pub fn finish(mut self, world: &mut legion::World, resources: &Resources) -> Self {
         if self.end == 0.0 {

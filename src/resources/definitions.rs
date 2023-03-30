@@ -10,6 +10,9 @@ impl Definitions {
     pub fn insert(&mut self, key: String, color: Rgba<f32>, description: String) {
         self.0.insert(key, Definition { description, color });
     }
+    pub fn contains(&self, key: &str) -> bool {
+        self.0.contains_key(key)
+    }
 }
 
 pub struct Definition {

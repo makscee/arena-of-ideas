@@ -250,7 +250,8 @@
                     "u_text_border": 0.35
                 }
             },
-            "layer": "UI"
+            "layer": "Background",
+            "order": 100
         },
         "status_panel": {
             "path": "shaders/system/description_panel.glsl",
