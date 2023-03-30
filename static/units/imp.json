@@ -1,13 +1,13 @@
 {
     "name": "Imp",
-    "description": "Has Empower (3)",
-    "health": 1,
+    "description": "Has Empower (5)",
+    "health": 2,
     "attack": 2,
     "houses": [
         "Demons"
     ],
     "active_statuses": {
-        "Empower": 3
+        "Empower": 5
     },
     "shader": {
         "path": "shaders/vfx/circle.glsl",

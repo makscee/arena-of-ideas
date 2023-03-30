@@ -32,9 +32,10 @@ impl StatusSystem {
             })
             .collect_vec()
     }
-    fn get_definitions_shaders(names: &Vec<&String>, resources: &Resources) -> Vec<Shader> {
+    fn get_definitions_shaders(names: &HashSet<&String>, resources: &Resources) -> Vec<Shader> {
         names
             .iter()
+            .sorted()
             .filter_map(|name| match resources.definitions.get(name) {
                 Some(def) => Some(vec![
                     resources

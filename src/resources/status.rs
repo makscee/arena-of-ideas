@@ -33,6 +33,7 @@ impl StatusPool {
         <(&EntityComponent, &Trigger, &UnitComponent)>::query()
             .iter(world)
             .filter(|(_, _, unit)| factions.contains(&unit.faction))
+            .sorted_by_key(|(_, _, unit)| unit.slot)
             .for_each(|(entity, _, _)| {
                 Self::notify_entity(event, entity.entity, resources, world, None)
             });

@@ -30,7 +30,6 @@ impl SaveSystem {
             Ok(save) => {
                 Game::reset(world, resources);
                 save.team.unpack(&Faction::Team, world, resources);
-                Shop::load_pool(resources);
                 resources.floors.set(save.floor);
                 for level in 0..save.floor {
                     Shop::load_level(resources, level);

@@ -17,6 +17,7 @@ pub struct Shop {
 
 impl Shop {
     pub fn load_pool(resources: &mut Resources) {
+        resources.shop.pool.clear();
         let mut sorted_by_power = VecDeque::from_iter(resources.hero_pool.all_sorted());
         let heroes_per_extension = (sorted_by_power.len() as f32
             / (10.0_f32.min(resources.floors.count() as f32)))

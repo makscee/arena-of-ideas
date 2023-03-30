@@ -2,12 +2,12 @@
     "name": "Blesser",
     "attack": 1,
     "health": 1,
-    "description": "Start of turn:\ngive Shield to\nally in front",
+    "description": "End of turn:\ngive Shield to\nally in behind",
     "houses": [
         "Robots"
     ],
     "trigger": {
-        "type": "TurnStart",
+        "type": "TurnEnd",
         "effect": {
             "type": "UseAbility",
             "name": "Shield",
@@ -15,7 +15,7 @@
                 "type": "SlotRelative",
                 "relation": {
                     "type": "Const",
-                    "value": -1
+                    "value": 1
                 }
             }
         }

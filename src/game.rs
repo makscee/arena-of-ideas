@@ -57,6 +57,8 @@ impl Game {
         resources.floors.reset();
         resources.action_queue.clear();
         resources.factions_state = default();
+        resources.cassette.clear();
+        Shop::load_pool(resources);
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {

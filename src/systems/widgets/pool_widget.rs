@@ -45,15 +45,27 @@ impl geng::ui::Widget for PoolWidget<'_> {
             framebuffer_size,
             (cx.position.bottom_left() + cx.position.size() * vec2(0.2, 0.8)).map(|x| x as f32),
         );
+        let camera = &self.resources.camera.camera;
+        let offset = camera.fov / self.resources.shop.pool.len() as f32;
         self.resources
             .shop
             .pool
             .iter()
             .enumerate()
             .for_each(|(ind, unit)| {
-                let position = position + vec2(ind as f32 * 2.0, 0.0);
-                let mut shader = unit.shader.clone().unwrap();
-                UnitSystem::pack_shader(&mut shader, &self.resources.options);
+                let offset = ind as f32 * offset;
+                let position = position
+                    + vec2(
+                        offset,
+                        (offset * 0.5 + self.resources.global_time).sin() * 0.3,
+                    );
+                let shader = if let Some(shader) = &unit.shader {
+                    let mut shader = shader.clone();
+                    UnitSystem::pack_shader(&mut shader, &self.resources.options);
+                    shader
+                } else {
+                    self.resources.options.shaders.unit.clone()
+                };
                 for shader in ShaderSystem::flatten_shader_chain(shader) {
                     ShaderSystem::draw_shader_single(
                         &shader,

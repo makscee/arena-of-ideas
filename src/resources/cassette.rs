@@ -208,12 +208,9 @@ impl CassetteNode {
             default()
         }
     }
-    pub fn get_definitions(&self, entity: legion::Entity) -> Vec<&String> {
+    pub fn get_definitions(&self, entity: legion::Entity) -> HashSet<&String> {
         if let Some(data) = self.entities.get(&entity) {
-            data.statuses
-                .keys()
-                .chain(data.definitions.iter())
-                .collect_vec()
+            HashSet::from_iter(data.statuses.keys().chain(data.definitions.iter()))
         } else {
             default()
         }
