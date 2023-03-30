@@ -1,0 +1,38 @@
+{
+    "light": {
+        "units": [
+            {
+                "name": "name",
+                "attack": 1,
+                "health": 10,
+                "active_statuses": {
+                    "Shield": 10
+                }
+            }
+        ],
+        "ability_overrides": {
+            "Shield": {
+                "Reflection": 1
+            }
+        }
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 15,
+                "active_statuses": {
+                    "Shield": 10
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

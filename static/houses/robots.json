@@ -36,42 +36,59 @@
                     {
                         "type": "AfterIncomingDamage",
                         "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "If",
-                                    "target": {
-                                        "type": "Owner"
-                                    },
-                                    "owner": {
-                                        "type": "Target"
-                                    },
-                                    "condition": {
-                                        "type": "MoreInt",
-                                        "a": {
-                                            "type": "AbilityVar",
-                                            "house": "Robots",
-                                            "ability": "Shield",
-                                            "var": "Reflection"
-                                        },
-                                        "b": {
-                                            "type": "Const",
-                                            "value": 0
-                                        }
-                                    },
-                                    "then": {
-                                        "type": "Damage",
-                                        "value": {
-                                            "type": "Var",
-                                            "var": "Damage"
-                                        }
-                                    }
+                            "type": "If",
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Damage"
                                 },
-                                {
-                                    "type": "RemoveStatus",
-                                    "name": "Shield"
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
                                 }
-                            ]
+                            },
+                            "then": {
+                                "type": "List",
+                                "effects": [
+                                    {
+                                        "type": "If",
+                                        "target": {
+                                            "type": "Owner"
+                                        },
+                                        "owner": {
+                                            "type": "Target"
+                                        },
+                                        "condition": {
+                                            "type": "MoreInt",
+                                            "a": {
+                                                "type": "AbilityVar",
+                                                "house": "Robots",
+                                                "ability": "Shield",
+                                                "var": "Reflection"
+                                            },
+                                            "b": {
+                                                "type": "Const",
+                                                "value": 0
+                                            }
+                                        },
+                                        "then": {
+                                            "type": "Damage",
+                                            "value": {
+                                                "type": "Var",
+                                                "var": "Damage"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "RemoveStatus",
+                                        "name": "Shield"
+                                    }
+                                ]
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     }
                 ]

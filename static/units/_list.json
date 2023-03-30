@@ -1,4 +1,6 @@
 [
+    "units/abettor.json",
+    "units/blesser.json",
     "units/caretaker.json",
     "units/lilith.json",
     "units/indra.json",

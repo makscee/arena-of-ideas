@@ -34,6 +34,11 @@ impl Team {
                 team_name: self.name.clone(),
             },
         );
+        debug!(
+            "Unpack team {} {:?}",
+            self,
+            resources.factions_state.get_faction_state(faction)
+        );
     }
 
     pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {

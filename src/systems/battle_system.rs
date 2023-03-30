@@ -74,6 +74,15 @@ impl BattleSystem {
         UnitSystem::clear_factions(world, resources, factions);
     }
 
+    fn strickers_death_check(
+        left: legion::Entity,
+        right: legion::Entity,
+        world: &legion::World,
+    ) -> bool {
+        UnitSystem::get_corpse(left, world).is_some()
+            || UnitSystem::get_corpse(right, world).is_some()
+    }
+
     pub fn tick(
         world: &mut legion::World,
         resources: &mut Resources,
@@ -86,6 +95,9 @@ impl BattleSystem {
         if let Some((left, right)) = Self::find_hitters(world) {
             Event::TurnStart.send(world, resources);
             Self::spin(world, resources, nodes);
+            if Self::strickers_death_check(left, right, world) {
+                return true;
+            }
 
             Self::move_strikers(&StrikePhase::Charge, left, right, world, resources, nodes);
             Event::BeforeStrike {
@@ -94,6 +106,9 @@ impl BattleSystem {
             }
             .send(world, resources);
             Self::spin(world, resources, nodes);
+            if Self::strickers_death_check(left, right, world) {
+                return true;
+            }
 
             Event::BeforeStrike {
                 owner: right,
@@ -101,6 +116,9 @@ impl BattleSystem {
             }
             .send(world, resources);
             Self::spin(world, resources, nodes);
+            if Self::strickers_death_check(left, right, world) {
+                return true;
+            }
 
             Self::move_strikers(&StrikePhase::Release, left, right, world, resources, nodes);
             Self::add_strike_vfx(world, resources, nodes);

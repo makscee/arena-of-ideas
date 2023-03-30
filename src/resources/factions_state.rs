@@ -41,6 +41,7 @@ impl Default for FactionsState {
     }
 }
 
+#[derive(Debug)]
 pub struct FactionState {
     pub ability_overrides: HashMap<AbilityName, Vars>,
     pub team_name: String,

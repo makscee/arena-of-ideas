@@ -320,5 +320,34 @@
 			"}"
 		],
 		"description": "Aoe"
+	},
+	"Find Unit": {
+		"prefix": "find_unit",
+		"body": [
+			"{",
+			"    \"type\": \"FindUnit\",",
+			"    \"slot\": $1,",
+			"    \"faction\": {",
+			"        \"type\": \"Owner\"",
+			"    }",
+			"}"
+		],
+		"description": "Find Unit"
+	},
+	"New Unit": {
+		"prefix": "new_unit",
+		"body": [
+			"{",
+			"    \"name\": \"${1:name}\",",
+			"    \"attack\": ${2:1},",
+			"    \"health\": ${2:1},",
+			"    \"description\": \"$3\",",
+			"    \"houses\": [",
+			"        \"${4:Demons}\"",
+			"    ],",
+			"    \"trigger\": $5",
+			"}"
+		],
+		"description": "New Unit"
 	}
 }

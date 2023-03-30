@@ -1,0 +1,32 @@
+{
+    "name": "Abettor",
+    "attack": 3,
+    "health": 3,
+    "description": "End of turn:\nmake random\nally Shoot",
+    "houses": [
+        "Archers"
+    ],
+    "trigger": {
+        "type": "TurnStart",
+        "effect": {
+            "type": "UseAbility",
+            "name": "Shoot",
+            "force": true,
+            "owner": {
+                "type": "RandomUnit",
+                "faction": {
+                    "type": "Owner"
+                }
+            },
+            "target": {
+                "type": "RandomUnit",
+                "faction": {
+                    "type": "Opposite",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            }
+        }
+    }
+}

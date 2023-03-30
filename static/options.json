@@ -4,108 +4,31 @@
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
-                    "health": 50,
-                    "attack": 5
-                },
-                {
-                    "health": 5,
-                    "attack": 5
-                },
-                {
-                    "health": 5,
-                    "attack": 5
-                },
-                {
-                    "name": "Caretaker",
-                    "description": "After battle:\nall allies gain\nGrow (1)",
+                    "name": "name",
                     "attack": 1,
-                    "health": 1,
-                    "houses": [
-                        "Dragons"
-                    ],
-                    "trigger": {
-                        "type": "FloorEnd",
-                        "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Owner"
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "name": "Grow"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 3000,
-                            "uniforms": {
-                                "u_end_color": "#ffffff",
-                                "u_start_color": "#df9800ff",
-                                "u_scale": 0.4,
-                                "u_scale_over_t": -1.0,
-                                "u_velocity_over_t": -3.3,
-                                "u_trail_count": 1,
-                                "u_lifetime": 10.2
-                            }
-                        }
+                    "health": 12,
+                    "active_statuses": {
+                        "Shield": 10
                     }
                 }
-            ]
+            ],
+            "ability_overrides": {
+                "Shield": {
+                    "Reflection": 1
+                }
+            }
         },
         "dark": {
-            "name": "Equalizer",
             "units": [
                 {
-                    "name": "Equalizer",
-                    "attack": 20,
-                    "health": 20,
-                    "description": "Start of battle:\nDispel everyone",
-                    "houses": [
-                        "Exorcists"
-                    ],
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Owner"
-                                },
-                                {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "name": "Dispel"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#000000",
-                                "u_color_1": "#f1f1f1",
-                                "u_radius": 2.1,
-                                "u_alpha": 0.1,
-                                "u_spin_part": 0.005,
-                                "u_move_speed": 1.0
-                            },
-                            "instances": 40,
-                            "vertices": 1
-                        }
+                    "attack": 1,
+                    "health": 15,
+                    "active_statuses": {
+                        "Shield": 10
                     }
                 }
             ]
@@ -116,11 +39,11 @@
     "log": {
         "Action": true,
         "ActionFail": true,
-        "Effect": false,
+        "Effect": true,
         "Contexts": false,
         "Condition": false,
         "Trigger": false,
-        "Event": false,
+        "Event": true,
         "UnitCreation": true,
         "Measurement": false,
         "Test": false

@@ -53,6 +53,8 @@ pub enum Effect {
     },
     UseAbility {
         name: AbilityName,
+        #[serde(default)]
+        force: bool,
     },
     SetHealth {
         value: ExpressionInt,
@@ -140,16 +142,17 @@ impl EffectWrapped {
         resources: &mut Resources,
         node: &mut Option<CassetteNode>,
     ) -> Result<(), Error> {
-        let mut context = context.clone();
+        let mut updated_context = context.clone();
         if let Some(target) = self.target.as_ref() {
-            context.target = target.calculate(&context, world, resources)?;
+            updated_context.target = target.calculate(&context, world, resources)?;
         }
         if let Some(owner) = self.owner.as_ref() {
-            context.owner = owner.calculate(&context, world, resources)?;
+            updated_context.owner = owner.calculate(&context, world, resources)?;
         }
         if let Some(vars) = self.vars.as_ref() {
-            context.vars.merge_mut(vars, true);
+            updated_context.vars.merge_mut(vars, true);
         }
+        let mut context = updated_context;
         match &self.effect {
             Effect::Damage {
                 value,
@@ -300,19 +303,20 @@ impl EffectWrapped {
             Effect::ClearStatuses => {
                 StatusPool::clear_entity_by_changes(&context.target, resources);
             }
-            Effect::UseAbility { name } => {
+            Effect::UseAbility { name, force } => {
                 let owner_entry = world
                     .entry_ref(context.owner)
                     .context("Failed to get Owner")?;
                 let house = &AbilityPool::get_house_origin(resources, name);
-                if owner_entry
-                    .get_component::<HouseComponent>()?
-                    .houses
-                    .get(&house)
-                    .is_none()
+                if !force
+                    && owner_entry
+                        .get_component::<HouseComponent>()?
+                        .houses
+                        .get(&house)
+                        .is_none()
                 {
                     panic!(
-                        "{} Tried to use {} while not being a member of the {:?}",
+                        "{} tried to use {} while not being a member of the {:?}",
                         owner_entry.get_component::<NameComponent>().unwrap().0,
                         name,
                         house
