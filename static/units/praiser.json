@@ -1,0 +1,16 @@
+{
+    "name": "Praiser",
+    "attack": 4,
+    "health": 4,
+    "description": "Heroes sell for +1",
+    "houses": [
+        "Pirates"
+    ],
+    "trigger": {
+        "type": "Buy",
+        "effect": {
+            "type": "UseAbility",
+            "name": "Bargain"
+        }
+    }
+}
