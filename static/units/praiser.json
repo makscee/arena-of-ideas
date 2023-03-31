@@ -7,7 +7,7 @@
         "Pirates"
     ],
     "trigger": {
-        "type": "Buy",
+        "type": "OnBuy",
         "effect": {
             "type": "UseAbility",
             "name": "Bargain"

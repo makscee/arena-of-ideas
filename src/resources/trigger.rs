@@ -24,8 +24,10 @@ pub enum Trigger {
     ShopEnd { effect: EffectWrapped },
     TurnStart { effect: EffectWrapped },
     TurnEnd { effect: EffectWrapped },
-    Buy { effect: EffectWrapped },
-    Sell { effect: EffectWrapped },
+    OnBuy { effect: EffectWrapped },
+    OnSell { effect: EffectWrapped },
+    AnyBuy { effect: EffectWrapped },
+    AnySell { effect: EffectWrapped },
     BeforeStrike { effect: EffectWrapped },
     AfterStrike { effect: EffectWrapped },
     AddToTeam { effect: EffectWrapped },
@@ -81,11 +83,19 @@ impl Trigger {
                     trigger.catch_event(event, action_queue, context.clone(), logger)
                 });
             }
-            Trigger::Buy { .. } => match event {
+            Trigger::OnBuy { .. } => match event {
                 Event::Buy { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::Sell { .. } => match event {
+            Trigger::OnSell { .. } => match event {
+                Event::Sell { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::AnyBuy { .. } => match event {
+                Event::Buy { .. } => self.fire(action_queue, context, logger),
+                _ => {}
+            },
+            Trigger::AnySell { .. } => match event {
                 Event::Sell { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
@@ -183,8 +193,10 @@ impl Trigger {
             | Trigger::TurnEnd { effect }
             | Trigger::BeforeStrike { effect }
             | Trigger::AfterStrike { effect }
-            | Trigger::Buy { effect }
-            | Trigger::Sell { effect }
+            | Trigger::OnBuy { effect }
+            | Trigger::OnSell { effect }
+            | Trigger::AnyBuy { effect }
+            | Trigger::AnySell { effect }
             | Trigger::AddToTeam { effect }
             | Trigger::RemoveFromTeam { effect }
             | Trigger::OnStatusAdd { effect }

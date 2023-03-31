@@ -7,7 +7,7 @@
             "Exorcists"
         ],
         "trigger": {
-            "type": "Buy",
+            "type": "OnBuy",
             "effect": {
                 "type": "List",
                 "effects": [

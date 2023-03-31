@@ -85,84 +85,127 @@ pub enum Event {
 
 impl Event {
     pub fn send(&self, world: &legion::World, resources: &mut Resources) {
-        match self {
-            // Send event to every active status
-            Event::BattleEnd | Event::BattleStart | Event::TurnStart | Event::TurnEnd => {
-                let factions = hashset! {Faction::Light, Faction::Dark};
-                StatusPool::notify_all(self, &factions, resources, world);
-            }
-            Event::ShopStart | Event::ShopEnd => {
-                let factions = hashset! {Faction::Team};
-                StatusPool::notify_all(self, &factions, resources, world);
-            }
-            // Trigger owner status with owner context
-            Event::StatusAdd { status, owner }
-            | Event::StatusRemove { status, owner }
-            | Event::StatusChargeAdd { status, owner }
-            | Event::StatusChargeRemove { status, owner } => {
-                let context = ContextSystem::get_context(*owner, world)
-                    .add_var(VarName::StatusName, Var::String((0, status.clone())))
-                    .to_owned();
-                resources
-                    .status_pool
-                    .defined_statuses
-                    .get(status)
-                    .unwrap()
-                    .trigger
-                    .catch_event(
-                        self,
-                        &mut resources.action_queue,
-                        context,
-                        &resources.logger,
-                    );
-            }
-            // Trigger context.target with provided context
-            Event::BeforeIncomingDamage { context } | Event::AfterIncomingDamage { context } => {
-                StatusPool::notify_entity(
-                    self,
-                    context.target,
-                    resources,
-                    world,
-                    Some(context.clone()),
-                );
-            }
-            // Trigger context.owner with provided context
-            Event::AfterOutgoingDamage { context }
-            | Event::BeforeOutgoingDamage { context }
-            | Event::AfterDeath { context }
-            | Event::AfterDamageDealt { context } => {
-                StatusPool::notify_entity(
-                    self,
-                    context.owner,
-                    resources,
-                    world,
-                    Some(context.clone()),
-                );
-            }
-            Event::BeforeDeath { owner }
-            | Event::AfterBirth { owner }
-            | Event::Buy { owner }
-            | Event::Sell { owner }
-            | Event::AddToTeam { owner }
-            | Event::RemoveFromTeam { owner } => {
-                StatusPool::notify_entity(self, *owner, resources, world, None);
-            }
-            Event::BeforeStrike { owner, target }
-            | Event::AfterStrike { owner, target }
-            | Event::AfterKill { owner, target } => {
-                if let Some(owner_context) = ContextSystem::try_get_context(*owner, world).ok() {
-                    let context = Context {
-                        target: *target,
-                        ..owner_context
-                    };
-                    StatusPool::notify_entity(self, *owner, resources, world, Some(context));
+        let mut caught = false;
+        // Notify all Faction::Dark and Faction::Light
+        caught = caught
+            || match self {
+                Event::BattleEnd | Event::BattleStart | Event::TurnStart | Event::TurnEnd => {
+                    let factions = hashset! {Faction::Light, Faction::Dark};
+                    StatusPool::notify_all(self, &factions, resources, world);
+                    true
                 }
-            }
-            Event::ModifyOutgoingDamage { .. }
-            | Event::ModifyIncomingDamage { .. }
-            | Event::ModifyContext { .. } => {
-                panic!("Can't send event {:?}", self)
-            }
+                _ => false,
+            };
+
+        // Notify Faction::Team
+        caught = caught
+            || match self {
+                Event::ShopStart | Event::ShopEnd | Event::Sell { .. } | Event::Buy { .. } => {
+                    let factions = hashset! {Faction::Team};
+                    StatusPool::notify_all(self, &factions, resources, world);
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify specified status of owner
+        caught = caught
+            || match self {
+                Event::StatusAdd { status, owner }
+                | Event::StatusRemove { status, owner }
+                | Event::StatusChargeAdd { status, owner }
+                | Event::StatusChargeRemove { status, owner } => {
+                    let context = ContextSystem::get_context(*owner, world)
+                        .add_var(VarName::StatusName, Var::String((0, status.clone())))
+                        .to_owned();
+                    resources
+                        .status_pool
+                        .defined_statuses
+                        .get(status)
+                        .unwrap()
+                        .trigger
+                        .catch_event(
+                            self,
+                            &mut resources.action_queue,
+                            context,
+                            &resources.logger,
+                        );
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify context.target with provided context
+        caught = caught
+            || match self {
+                Event::BeforeIncomingDamage { context }
+                | Event::AfterIncomingDamage { context } => {
+                    StatusPool::notify_entity(
+                        self,
+                        context.target,
+                        resources,
+                        world,
+                        Some(context.clone()),
+                    );
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify context.owner with provided context
+        caught = caught
+            || match self {
+                Event::AfterOutgoingDamage { context }
+                | Event::BeforeOutgoingDamage { context }
+                | Event::AfterDeath { context }
+                | Event::AfterDamageDealt { context } => {
+                    StatusPool::notify_entity(
+                        self,
+                        context.owner,
+                        resources,
+                        world,
+                        Some(context.clone()),
+                    );
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify owner and set target
+        caught = caught
+            || match self {
+                Event::BeforeStrike { owner, target }
+                | Event::AfterStrike { owner, target }
+                | Event::AfterKill { owner, target } => {
+                    if let Some(owner_context) = ContextSystem::try_get_context(*owner, world).ok()
+                    {
+                        let context = Context {
+                            target: *target,
+                            ..owner_context
+                        };
+                        StatusPool::notify_entity(self, *owner, resources, world, Some(context));
+                    }
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify owner
+        caught = caught
+            || match self {
+                Event::BeforeDeath { owner }
+                | Event::AfterBirth { owner }
+                | Event::Buy { owner }
+                | Event::Sell { owner }
+                | Event::AddToTeam { owner }
+                | Event::RemoveFromTeam { owner } => {
+                    StatusPool::notify_entity(self, *owner, resources, world, None);
+                    true
+                }
+                _ => false,
+            };
+        if !caught {
+            panic!("{:?} was never caught", self)
         }
     }
 

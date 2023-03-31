@@ -7,7 +7,7 @@
         "Demons"
     ],
     "trigger": {
-        "type": "Buy",
+        "type": "OnBuy",
         "effect": {
             "type": "If",
             "condition": {

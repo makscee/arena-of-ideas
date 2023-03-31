@@ -10,7 +10,7 @@
         "Empower": 1
     },
     "trigger": {
-        "type": "Buy",
+        "type": "OnBuy",
         "effect": {
             "type": "ChangeAbilityVarInt",
             "ability": "Empower",

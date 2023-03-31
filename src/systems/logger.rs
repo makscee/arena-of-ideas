@@ -29,6 +29,7 @@ impl Logger {
                 false => None,
             },
         ));
+        debug!("Load logger {:?}", self);
     }
 
     pub fn log(&self, text: &str, context: &LogContext) {

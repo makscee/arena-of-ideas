@@ -1,13 +1,13 @@
 {
     "name": "Abomination",
-    "description": "On Buy:\nDevour\nadjacent allies",
+    "description": "On OnBuy:\nDevour\nadjacent allies",
     "health": 2,
     "attack": 2,
     "houses": [
         "Demons"
     ],
     "trigger": {
-        "type": "Buy",
+        "type": "OnBuy",
         "effect": {
             "type": "List",
             "effects": [

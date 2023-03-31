@@ -242,6 +242,7 @@ impl ShopSystem {
         vars.set_int(&VarName::G, 0);
         vars.set_int(&VarName::BuyPrice, 3);
         vars.set_int(&VarName::SellPrice, 1);
+        vars.set_int(&VarName::RerollPrice, 1);
 
         if resources.shop.refresh_btn.is_none() {
             let world_entity = WorldSystem::get_context(world).owner;
