@@ -66,8 +66,9 @@ impl AbilityPool {
         match resources
             .team_states
             .try_get_ability_overrides(faction, ability)
+            .and_then(|vars| vars.try_get(var))
         {
-            Some(vars) => vars.get(var).clone(),
+            Some(var) => var.clone(),
             None => match resources
                 .ability_pool
                 .default_vars

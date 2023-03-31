@@ -2,7 +2,7 @@
     "name": "Blesser",
     "attack": 1,
     "health": 1,
-    "description": "End of turn:\ngive Shield to\nally in behind",
+    "description": "End of turn:\ngive Shield to\nally behind",
     "houses": [
         "Robots"
     ],

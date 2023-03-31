@@ -2,24 +2,44 @@
     "name": "Philanthropist",
     "attack": 3,
     "health": 3,
-    "description": "Unit sold: give\n+1/+1 to other\nallies",
+    "description": "Unit sold: give\n+1/+1 to adjacent\nallies",
     "houses": [
         "Pirates"
     ],
     "trigger": {
         "type": "AnySell",
         "effect": {
-            "type": "Aoe",
-            "factions": [
+            "type": "List",
+            "effects": [
                 {
-                    "type": "Owner"
+                    "type": "AddStatus",
+                    "name": "Prosperity",
+                    "target": {
+                        "type": "SlotRelative",
+                        "relation": {
+                            "type": "Const",
+                            "value": -1
+                        }
+                    },
+                    "after": {
+                        "type": "ShowCurve"
+                    }
+                },
+                {
+                    "type": "AddStatus",
+                    "name": "Prosperity",
+                    "target": {
+                        "type": "SlotRelative",
+                        "relation": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    "after": {
+                        "type": "ShowCurve"
+                    }
                 }
-            ],
-            "exclude_self": true,
-            "effect": {
-                "type": "AddStatus",
-                "name": "Prosperity"
-            }
+            ]
         }
     }
 }
