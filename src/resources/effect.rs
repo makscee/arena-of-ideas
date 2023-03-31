@@ -102,6 +102,8 @@ pub enum Effect {
     Aoe {
         factions: Vec<ExpressionFaction>,
         effect: Box<EffectWrapped>,
+        #[serde(default)]
+        exclude_self: bool,
     },
     Revive {
         slot: Option<ExpressionInt>,
@@ -454,7 +456,11 @@ impl EffectWrapped {
                     .unwrap_or_default() as usize;
                 UnitSystem::revive_corpse(context.target, Some(slot), world);
             }
-            Effect::Aoe { factions, effect } => {
+            Effect::Aoe {
+                factions,
+                effect,
+                exclude_self,
+            } => {
                 let mut faction_values: Vec<Faction> = default();
                 for faction in factions {
                     faction_values.push(faction.calculate(&context, world, resources)?);
@@ -462,6 +468,9 @@ impl EffectWrapped {
                 for entity in
                     UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
                 {
+                    if *exclude_self && entity == context.owner {
+                        continue;
+                    }
                     let context = Context {
                         target: entity,
                         ..context.clone()

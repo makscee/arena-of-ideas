@@ -84,7 +84,11 @@ impl Trigger {
                 });
             }
             Trigger::OnBuy { .. } => match event {
-                Event::Buy { .. } => self.fire(action_queue, context, logger),
+                Event::Buy { owner } => {
+                    if context.owner == *owner {
+                        self.fire(action_queue, context, logger);
+                    }
+                }
                 _ => {}
             },
             Trigger::OnSell { .. } => match event {
@@ -92,7 +96,11 @@ impl Trigger {
                 _ => {}
             },
             Trigger::AnyBuy { .. } => match event {
-                Event::Buy { .. } => self.fire(action_queue, context, logger),
+                Event::Buy { owner } => {
+                    if context.owner != *owner {
+                        self.fire(action_queue, context, logger);
+                    }
+                }
                 _ => {}
             },
             Trigger::AnySell { .. } => match event {

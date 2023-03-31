@@ -1,0 +1,25 @@
+{
+    "name": "Philanthropist",
+    "attack": 3,
+    "health": 3,
+    "description": "Unit sold: give\n+1/+1 to other\nallies",
+    "houses": [
+        "Pirates"
+    ],
+    "trigger": {
+        "type": "AnySell",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "exclude_self": true,
+            "effect": {
+                "type": "AddStatus",
+                "name": "Prosperity"
+            }
+        }
+    }
+}
