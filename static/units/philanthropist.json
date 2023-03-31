@@ -13,7 +13,7 @@
             "effects": [
                 {
                     "type": "UseAbility",
-                    "name": "Prosper",
+                    "ability": "Prosper",
                     "target": {
                         "type": "SlotRelative",
                         "relation": {
@@ -24,7 +24,7 @@
                 },
                 {
                     "type": "UseAbility",
-                    "name": "Prosper",
+                    "ability": "Prosper",
                     "target": {
                         "type": "SlotRelative",
                         "relation": {

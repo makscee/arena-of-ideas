@@ -47,7 +47,7 @@
                                 "type": "Owner"
                             }
                         },
-                        "name": "Devour"
+                        "ability": "Devour"
                     },
                     "else": {
                         "type": "Noop"
@@ -89,7 +89,7 @@
                                 "type": "Owner"
                             }
                         },
-                        "name": "Devour"
+                        "ability": "Devour"
                     },
                     "else": {
                         "type": "Noop"

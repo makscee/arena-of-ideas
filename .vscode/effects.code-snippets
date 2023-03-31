@@ -68,17 +68,8 @@
 		"body": [
 			"{",
 			"    \"type\": \"If\",",
-			"    \"condition\": {",
-			"        \"type\": \"UnitHasStatus\",",
-			"        \"who\": \"Target\",",
-			"        \"status\": \"Freeze\"",
-			"    },",
-			"    \"then\": ",
-			"        $TM_SELECTED_TEXT$1",
-			"    ,",
-			"    \"else\": {",
-			"        \"type\": \"Noop\"",
-			"    }",
+			"    \"condition\": $1,",
+			"    \"then\": $TM_SELECTED_TEXT$2",
 			"}"
 		],
 		"description": "If"
@@ -409,5 +400,22 @@
 			"}"
 		],
 		"description": "Max"
+	},
+	"Change Status": {
+		"prefix": "change_status",
+		"body": [
+			"{",
+			"    \"type\": \"ChangeStatus\",",
+			"    \"name\": \"${1:Name}\",",
+			"    \"charges\": {",
+			"        \"type\": \"Var\",",
+			"        \"var\": \"Charges\"",
+			"    },",
+			"    \"after\": {",
+			"        \"type\": \"ShowCurve\"",
+			"    }",
+			"}"
+		],
+		"description": "Change Status"
 	}
 }

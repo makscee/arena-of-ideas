@@ -10,7 +10,7 @@
         "type": "AfterDamageDealt",
         "effect": {
             "type": "UseAbility",
-            "name": "LifeSteal",
+            "ability": "LifeSteal",
             "vars": {
                 "Charges": 3
             }

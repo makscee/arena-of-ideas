@@ -10,7 +10,7 @@
         "type": "OnBuy",
         "effect": {
             "type": "UseAbility",
-            "name": "Shield"
+            "ability": "Shield"
         }
     },
     "shader": {

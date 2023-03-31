@@ -10,7 +10,7 @@
         "type": "TurnEnd",
         "effect": {
             "type": "UseAbility",
-            "name": "Shield",
+            "ability": "Shield",
             "target": {
                 "type": "SlotRelative",
                 "relation": {

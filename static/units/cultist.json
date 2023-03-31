@@ -1,0 +1,37 @@
+{
+    "name": "Cultist",
+    "attack": 3,
+    "health": 3,
+    "description": "On buy:\ndouble Empower\nof ally to the right",
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "If",
+            "condition": {
+                "type": "HasStatus",
+                "name": "Empower"
+            },
+            "then": {
+                "type": "ChangeStatus",
+                "name": "Empower",
+                "charges": {
+                    "type": "StatusCharges",
+                    "name": "Empower"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "target": {
+                "type": "SlotRelative",
+                "relation": {
+                    "type": "Const",
+                    "value": -1
+                }
+            }
+        }
+    }
+}

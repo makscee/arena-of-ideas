@@ -19,7 +19,7 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
-                        "name": "Empower"
+                        "ability": "Empower"
                     }
                 }
             }

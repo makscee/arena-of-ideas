@@ -65,7 +65,7 @@ pub enum Effect {
         charges: ExpressionInt,
     },
     UseAbility {
-        name: AbilityName,
+        ability: AbilityName,
         #[serde(default)]
         force: bool,
     },
@@ -319,7 +319,10 @@ impl EffectWrapped {
             Effect::ClearStatuses => {
                 StatusPool::clear_entity_by_changes(&context.target, resources);
             }
-            Effect::UseAbility { name, force } => {
+            Effect::UseAbility {
+                ability: name,
+                force,
+            } => {
                 let owner_entry = world
                     .entry_ref(context.owner)
                     .context("Failed to get Owner")?;

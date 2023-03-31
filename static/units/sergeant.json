@@ -10,7 +10,7 @@
         "type": "TurnStart",
         "effect": {
             "type": "UseAbility",
-            "name": "Empower",
+            "ability": "Empower",
             "target": {
                 "type": "FindUnit",
                 "slot": {

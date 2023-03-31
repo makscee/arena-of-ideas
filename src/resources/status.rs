@@ -224,7 +224,13 @@ impl StatusPool {
         node: &mut Option<CassetteNode>,
     ) {
         let max_delay = 0.5;
-        let delay_per_charge = max_delay / resources.status_pool.status_changes.len() as f32;
+        let delay_per_charge = max_delay
+            / resources
+                .status_pool
+                .status_changes
+                .iter()
+                .map(|x| x.2)
+                .sum::<i32>() as f32;
         let key = "status_changes";
         let mut cnt = 0;
         while let Some((entity, status_name, charges_delta)) =
@@ -259,8 +265,8 @@ impl StatusPool {
                         ),
                     );
                 }
+                cnt += 1;
             }
-            cnt += 1;
         }
     }
 

@@ -13,7 +13,7 @@
                         "type": "Repeat",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "SummonTreant"
+                            "ability": "SummonTreant"
                         },
                         "count": {
                             "type": "Const",

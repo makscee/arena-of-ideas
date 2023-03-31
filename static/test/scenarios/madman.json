@@ -11,7 +11,7 @@
                     "type": "BeforeStrike",
                     "effect": {
                         "type": "UseAbility",
-                        "name": "Empower",
+                        "ability": "Empower",
                         "target": {
                             "type": "Owner"
                         },

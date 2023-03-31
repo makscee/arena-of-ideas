@@ -47,7 +47,7 @@
                                     "type": "Owner"
                                 }
                             },
-                            "name": "Shield"
+                            "ability": "Shield"
                         },
                         "else": {
                             "type": "Noop"
@@ -89,7 +89,7 @@
                                 }
                             },
                             "type": "UseAbility",
-                            "name": "Shield"
+                            "ability": "Shield"
                         },
                         "else": {
                             "type": "Noop"

@@ -48,6 +48,9 @@ pub enum ExpressionInt {
     Negate {
         value: Box<ExpressionInt>,
     },
+    StatusCharges {
+        name: String,
+    },
 }
 
 impl ExpressionInt {
@@ -101,6 +104,12 @@ impl ExpressionInt {
                 .get_vars(&faction.calculate(context, world, resources)?)
                 .try_get_int(var)
                 .context("Failed to get faction var"),
+            ExpressionInt::StatusCharges { name } => Ok(resources
+                .status_pool
+                .active_statuses
+                .get(&context.target)
+                .and_then(|x| x.get(name).cloned())
+                .unwrap_or_default()),
         }
     }
 }

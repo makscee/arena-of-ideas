@@ -11,7 +11,7 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
-                        "name": "Swap",
+                        "ability": "Swap",
                         "target": {
                             "type": "RandomUnit",
                             "faction": {

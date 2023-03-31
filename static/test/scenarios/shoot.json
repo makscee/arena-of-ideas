@@ -34,7 +34,7 @@
                         },
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Shoot"
+                            "ability": "Shoot"
                         }
                     }
                 }

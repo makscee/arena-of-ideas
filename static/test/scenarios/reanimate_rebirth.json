@@ -29,7 +29,7 @@
                     "type": "AfterDamageDealt",
                     "effect": {
                         "type": "UseAbility",
-                        "name": "Reanimate"
+                        "ability": "Reanimate"
                     }
                 }
             }

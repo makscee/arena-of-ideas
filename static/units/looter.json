@@ -10,7 +10,7 @@
         "type": "ShopStart",
         "effect": {
             "type": "UseAbility",
-            "name": "Bounty"
+            "ability": "Bounty"
         }
     }
 }

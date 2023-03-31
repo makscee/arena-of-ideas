@@ -47,7 +47,7 @@
                                     "type": "Owner"
                                 }
                             },
-                            "name": "Dispel"
+                            "ability": "Dispel"
                         },
                         "else": {
                             "type": "Noop"
@@ -89,7 +89,7 @@
                                 }
                             },
                             "type": "UseAbility",
-                            "name": "Dispel"
+                            "ability": "Dispel"
                         },
                         "else": {
                             "type": "Noop"

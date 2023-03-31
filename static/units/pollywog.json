@@ -12,7 +12,7 @@
             "type": "Repeat",
             "effect": {
                 "type": "UseAbility",
-                "name": "Grow"
+                "ability": "Grow"
             },
             "count": {
                 "type": "Const",

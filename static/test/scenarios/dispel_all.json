@@ -24,7 +24,7 @@
                         ],
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Dispel"
+                            "ability": "Dispel"
                         }
                     }
                 }

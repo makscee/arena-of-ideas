@@ -47,7 +47,7 @@
                                     "type": "Owner"
                                 }
                             },
-                            "name": "Defense"
+                            "ability": "Defense"
                         },
                         "else": {
                             "type": "Noop"
@@ -89,7 +89,7 @@
                                 }
                             },
                             "type": "UseAbility",
-                            "name": "Defense"
+                            "ability": "Defense"
                         },
                         "else": {
                             "type": "Noop"

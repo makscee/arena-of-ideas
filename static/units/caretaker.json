@@ -17,7 +17,7 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "name": "Grow"
+                "ability": "Grow"
             }
         }
     },

@@ -10,7 +10,7 @@
         "type": "AfterStrike",
         "effect": {
             "type": "UseAbility",
-            "name": "Empower",
+            "ability": "Empower",
             "target": {
                 "type": "SlotRelative",
                 "relation": {

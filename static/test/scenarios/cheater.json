@@ -19,7 +19,7 @@
                     "type": "AfterStrike",
                     "effect": {
                         "type": "UseAbility",
-                        "name": "Shield",
+                        "ability": "Shield",
                         "target": {
                             "type": "Owner"
                         }

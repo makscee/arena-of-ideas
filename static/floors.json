@@ -117,7 +117,7 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "name": "Shoot"
+                                    "ability": "Shoot"
                                 }
                             },
                             "count": {
@@ -168,7 +168,7 @@
                             },
                             "effect": {
                                 "type": "UseAbility",
-                                "name": "Mend",
+                                "ability": "Mend",
                                 "vars": {
                                     "Charges": 3
                                 }
@@ -214,7 +214,7 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "name": "Reanimate"
+                                "ability": "Reanimate"
                             },
                             "else": {
                                 "type": "Noop"
@@ -255,7 +255,7 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "name": "Reanimate"
+                                "ability": "Reanimate"
                             },
                             "else": {
                                 "type": "Noop"
@@ -296,7 +296,7 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "name": "Reanimate"
+                                "ability": "Reanimate"
                             },
                             "else": {
                                 "type": "Noop"
@@ -337,7 +337,7 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "name": "Reanimate"
+                                "ability": "Reanimate"
                             },
                             "else": {
                                 "type": "Noop"
@@ -434,7 +434,7 @@
                         "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Devour",
+                            "ability": "Devour",
                             "target": {
                                 "type": "RandomUnit",
                                 "faction": {
@@ -473,7 +473,7 @@
                         "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Devour",
+                            "ability": "Devour",
                             "target": {
                                 "type": "RandomUnit",
                                 "faction": {
@@ -519,7 +519,7 @@
                         "type": "AfterStrike",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Shield",
+                            "ability": "Shield",
                             "target": {
                                 "type": "Owner"
                             }
@@ -573,7 +573,7 @@
                             ],
                             "effect": {
                                 "type": "UseAbility",
-                                "name": "Dispel"
+                                "ability": "Dispel"
                             }
                         }
                     },
@@ -625,7 +625,7 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "name": "Shoot"
+                                    "ability": "Shoot"
                                 }
                             },
                             "count": {
@@ -674,7 +674,7 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "name": "Shoot"
+                                    "ability": "Shoot"
                                 }
                             },
                             "count": {
@@ -723,7 +723,7 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "name": "Shoot"
+                                    "ability": "Shoot"
                                 }
                             },
                             "count": {
@@ -772,7 +772,7 @@
                                 },
                                 "effect": {
                                     "type": "UseAbility",
-                                    "name": "Shoot"
+                                    "ability": "Shoot"
                                 }
                             },
                             "count": {
@@ -814,7 +814,7 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Immortality"
+                            "ability": "Immortality"
                         }
                     },
                     "shader": {
@@ -845,7 +845,7 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Immortality"
+                            "ability": "Immortality"
                         }
                     },
                     "shader": {
@@ -876,7 +876,7 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Immortality"
+                            "ability": "Immortality"
                         }
                     },
                     "shader": {
@@ -907,7 +907,7 @@
                         "type": "AfterBirth",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Immortality"
+                            "ability": "Immortality"
                         }
                     },
                     "shader": {

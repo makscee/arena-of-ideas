@@ -46,6 +46,9 @@ pub enum Condition {
     Chance {
         part: f32,
     },
+    HasStatus {
+        name: String,
+    },
 }
 
 impl Condition {
@@ -101,6 +104,11 @@ impl Condition {
             }
             Condition::Same { a, b } => Ok(a.calculate(context, world, resources)?
                 == b.calculate(context, world, resources)?),
+            Condition::HasStatus { name } => Ok(ExpressionInt::StatusCharges {
+                name: name.to_string(),
+            }
+            .calculate(context, world, resources)?
+                > 0),
         }
     }
 }

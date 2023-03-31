@@ -10,7 +10,7 @@
         "type": "AfterKill",
         "effect": {
             "type": "UseAbility",
-            "name": "Defense",
+            "ability": "Defense",
             "vars": {
                 "Charges": 3
             },

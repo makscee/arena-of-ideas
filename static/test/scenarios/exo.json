@@ -24,7 +24,7 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
-                        "name": "Dispel",
+                        "ability": "Dispel",
                         "target": {
                             "type": "RandomUnit",
                             "faction": {

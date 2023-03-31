@@ -13,7 +13,7 @@
                         "type": "Repeat",
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Shoot",
+                            "ability": "Shoot",
                             "target": {
                                 "type": "RandomUnit",
                                 "faction": {

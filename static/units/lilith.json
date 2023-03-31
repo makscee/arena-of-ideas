@@ -20,7 +20,7 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "name": "LifeSteal"
+                "ability": "LifeSteal"
             }
         }
     },

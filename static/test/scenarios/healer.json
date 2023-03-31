@@ -32,7 +32,7 @@
                         },
                         "effect": {
                             "type": "UseAbility",
-                            "name": "Mend",
+                            "ability": "Mend",
                             "vars": {
                                 "Charges": 9
                             }

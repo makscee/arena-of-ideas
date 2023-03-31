@@ -23,7 +23,7 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "name": "Empower",
+                "ability": "Empower",
                 "vars": {
                     "Charges": 6
                 }
