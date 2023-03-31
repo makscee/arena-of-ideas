@@ -92,7 +92,11 @@ impl Trigger {
                 _ => {}
             },
             Trigger::OnSell { .. } => match event {
-                Event::Sell { .. } => self.fire(action_queue, context, logger),
+                Event::Sell { owner } => {
+                    if context.owner == *owner {
+                        self.fire(action_queue, context, logger);
+                    }
+                }
                 _ => {}
             },
             Trigger::AnyBuy { .. } => match event {
@@ -104,7 +108,11 @@ impl Trigger {
                 _ => {}
             },
             Trigger::AnySell { .. } => match event {
-                Event::Sell { .. } => self.fire(action_queue, context, logger),
+                Event::Sell { owner } => {
+                    if context.owner != *owner {
+                        self.fire(action_queue, context, logger);
+                    }
+                }
                 _ => {}
             },
             Trigger::BeforeDeath { .. } => match event {

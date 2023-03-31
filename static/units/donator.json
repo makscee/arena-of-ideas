@@ -1,0 +1,24 @@
+{
+    "name": "Donator",
+    "attack": 2,
+    "health": 2,
+    "description": "On sell: give\n+1/+1 to everyone",
+    "houses": [
+        "Pirates"
+    ],
+    "trigger": {
+        "type": "OnSell",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "name": "Prosper"
+            }
+        }
+    }
+}

@@ -57,6 +57,16 @@
             "default_vars": {
                 "Charges": 1
             }
+        },
+        "Prosper": {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Prosperity",
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Give +1/+1"
         }
     },
     "statuses": {

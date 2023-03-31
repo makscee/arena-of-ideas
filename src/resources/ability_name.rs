@@ -20,6 +20,7 @@ pub enum AbilityName {
     Bounty,
     Discount,
     Bargain,
+    Prosper,
 }
 
 impl fmt::Display for AbilityName {

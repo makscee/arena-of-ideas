@@ -12,31 +12,25 @@
             "type": "List",
             "effects": [
                 {
-                    "type": "AddStatus",
-                    "name": "Prosperity",
+                    "type": "UseAbility",
+                    "name": "Prosper",
                     "target": {
                         "type": "SlotRelative",
                         "relation": {
                             "type": "Const",
                             "value": -1
                         }
-                    },
-                    "after": {
-                        "type": "ShowCurve"
                     }
                 },
                 {
-                    "type": "AddStatus",
-                    "name": "Prosperity",
+                    "type": "UseAbility",
+                    "name": "Prosper",
                     "target": {
                         "type": "SlotRelative",
                         "relation": {
                             "type": "Const",
                             "value": 1
                         }
-                    },
-                    "after": {
-                        "type": "ShowCurve"
                     }
                 }
             ]

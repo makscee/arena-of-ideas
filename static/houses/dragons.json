@@ -12,7 +12,10 @@
         "Grow": {
             "effect": {
                 "type": "AddStatus",
-                "name": "Grow"
+                "name": "Grow",
+                "after": {
+                    "type": "ShowCurve"
+                }
             },
             "description": "Gain +1/+1"
         }
