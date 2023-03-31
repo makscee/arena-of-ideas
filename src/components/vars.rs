@@ -33,6 +33,10 @@ pub enum VarName {
     GlobalTime,
     StatusName,
     Store,
+    G,
+    BuyPrice,
+    SellPrice,
+    RerollPrice,
 }
 
 impl VarName {
@@ -129,6 +133,15 @@ impl Vars {
             },
             None => None,
         }
+    }
+
+    pub fn change_int(&mut self, var: &VarName, delta: i32) {
+        let value = self.try_get_int(var).unwrap_or_default();
+        self.insert(*var, Var::Int(value + delta));
+    }
+
+    pub fn set_int(&mut self, var: &VarName, value: i32) {
+        self.insert(*var, Var::Int(value));
     }
 
     pub fn get_float(&self, var: &VarName) -> f32 {

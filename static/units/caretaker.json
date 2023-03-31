@@ -1,13 +1,13 @@
 {
     "name": "Caretaker",
-    "description": "After battle:\nall allies gain\nGrow (1)",
+    "description": "Shop start:\nall allies gain\nGrow (1)",
     "attack": 1,
     "health": 1,
     "houses": [
         "Dragons"
     ],
     "trigger": {
-        "type": "FloorEnd",
+        "type": "ShopStart",
         "effect": {
             "type": "Aoe",
             "factions": [

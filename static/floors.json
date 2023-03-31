@@ -1,7 +1,9 @@
 {
     "teams": [
         {
-            "name": "Snake",
+            "state": {
+                "name": "Snake"
+            },
             "units": [
                 {
                     "name": "Snake",
@@ -33,7 +35,9 @@
             ]
         },
         {
-            "name": "Shielded Snake",
+            "state": {
+                "name": "Shielded Snake"
+            },
             "units": [
                 {
                     "name": "Snake",
@@ -66,7 +70,9 @@
             ]
         },
         {
-            "name": "Party",
+            "state": {
+                "name": "Party"
+            },
             "units": [
                 {
                     "name": "Tank",
@@ -186,7 +192,9 @@
             ]
         },
         {
-            "name": "Knights of Death",
+            "state": {
+                "name": "Knights of Death"
+            },
             "units": [
                 {
                     "name": "Death Knight",
@@ -355,7 +363,9 @@
             ]
         },
         {
-            "name": "Golems",
+            "state": {
+                "name": "Golems"
+            },
             "units": [
                 {
                     "name": "Golem",
@@ -408,7 +418,9 @@
             ]
         },
         {
-            "name": "Hounds",
+            "state": {
+                "name": "Hounds"
+            },
             "units": [
                 {
                     "name": "Hound",
@@ -491,7 +503,9 @@
             ]
         },
         {
-            "name": "Cheater",
+            "state": {
+                "name": "Cheater"
+            },
             "units": [
                 {
                     "name": "Cheater",
@@ -530,7 +544,9 @@
             ]
         },
         {
-            "name": "Equalizer",
+            "state": {
+                "name": "Equalizer"
+            },
             "units": [
                 {
                     "name": "Equalizer",
@@ -580,7 +596,9 @@
             ]
         },
         {
-            "name": "Archers",
+            "state": {
+                "name": "Archers"
+            },
             "units": [
                 {
                     "name": "Archer",
@@ -781,7 +799,9 @@
             ]
         },
         {
-            "name": "Titans",
+            "state": {
+                "name": "Titans"
+            },
             "units": [
                 {
                     "name": "Titan",

@@ -10,7 +10,7 @@
         "type": "AfterDamageDealt",
         "effect": {
             "type": "UseAbility",
-            "name": "SiphonLife",
+            "name": "LifeSteal",
             "vars": {
                 "Charges": 3
             }

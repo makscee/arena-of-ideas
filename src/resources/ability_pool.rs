@@ -51,11 +51,10 @@ impl AbilityPool {
         var: VarName,
         value: Var,
     ) {
-        let mut state = resources.factions_state.remove_faction_state(faction);
-        let mut vars = state.ability_overrides.remove(ability).unwrap_or_default();
-        vars.insert(var, value);
-        state.ability_overrides.insert(*ability, vars);
-        resources.factions_state.set_faction_state(*faction, state);
+        resources
+            .team_states
+            .get_ability_vars_mut(faction, ability)
+            .insert(var, value);
     }
 
     pub fn get_var(
@@ -64,13 +63,21 @@ impl AbilityPool {
         ability: &AbilityName,
         var: &VarName,
     ) -> Var {
-        resources
-            .factions_state
-            .get_faction_state(faction)
-            .ability_overrides
-            .get(ability)
-            .and_then(|x| x.try_get(var).cloned())
-            .unwrap_or_else(|| Self::get_default_vars(resources, ability).get(var).clone())
+        match resources
+            .team_states
+            .try_get_ability_overrides(faction, ability)
+        {
+            Some(vars) => vars.get(var).clone(),
+            None => match resources
+                .ability_pool
+                .default_vars
+                .get(ability)
+                .and_then(|x| Some(x.get(var).clone()))
+            {
+                Some(var) => var,
+                None => panic!("Var {} not set default for {:?}", var, ability),
+            },
+        }
     }
 
     pub fn set_var_int(

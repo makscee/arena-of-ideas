@@ -63,7 +63,6 @@
                                             "type": "MoreInt",
                                             "a": {
                                                 "type": "AbilityVar",
-                                                "house": "Robots",
                                                 "ability": "Shield",
                                                 "var": "Reflection"
                                             },

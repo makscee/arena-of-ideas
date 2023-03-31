@@ -94,7 +94,6 @@
                                 },
                                 "b": {
                                     "type": "AbilityVar",
-                                    "house": "Demons",
                                     "ability": "Empower",
                                     "var": "AttackExtra"
                                 }

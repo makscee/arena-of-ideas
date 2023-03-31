@@ -13,10 +13,13 @@ pub enum AbilityName {
     Poison,
     Swap,
     Immortality,
-    SiphonLife,
+    LifeSteal,
     Empower,
     Mend,
     SummonTreant,
+    Bounty,
+    Discount,
+    Bargain,
 }
 
 impl fmt::Display for AbilityName {

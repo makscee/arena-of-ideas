@@ -137,14 +137,14 @@ impl VfxSystem {
 
     pub fn vfx_battle_team_names_animation(resources: &Resources) -> Vec<VisualEffect> {
         let light = resources
-            .factions_state
-            .get_faction_state(&Faction::Light)
-            .team_name
+            .team_states
+            .get_team_state(&Faction::Light)
+            .name
             .clone();
         let dark = resources
-            .factions_state
-            .get_faction_state(&Faction::Dark)
-            .team_name
+            .team_states
+            .get_team_state(&Faction::Dark)
+            .name
             .clone();
         let mut effects: Vec<VisualEffect> = default();
         let from = &resources.options.shaders.team_name_intro;
@@ -200,14 +200,14 @@ impl VfxSystem {
             return default();
         }
         let light = resources
-            .factions_state
-            .get_faction_state(&Faction::Light)
-            .team_name
+            .team_states
+            .get_team_state(&Faction::Light)
+            .name
             .clone();
         let dark = resources
-            .factions_state
-            .get_faction_state(&Faction::Dark)
-            .team_name
+            .team_states
+            .get_team_state(&Faction::Dark)
+            .name
             .clone();
         let shader = &resources.options.shaders.team_name;
         let dark_shader = shader

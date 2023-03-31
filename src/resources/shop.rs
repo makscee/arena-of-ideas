@@ -7,8 +7,7 @@ pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 #[derive(Default)]
 pub struct Shop {
     pub pool: Vec<PackedUnit>,
-    pub level_extensions: Vec<Vec<PackedUnit>>,
-    pub money: usize,
+    pub floor_extensions: Vec<Vec<PackedUnit>>,
     pub drop_entity: Option<legion::Entity>,
     pub drag_entity: Option<legion::Entity>,
     pub refresh_btn: Option<legion::Entity>,
@@ -23,11 +22,11 @@ impl Shop {
             / (10.0_f32.min(resources.floors.count() as f32)))
         .ceil() as usize;
         let mut cur_level = 0;
-        resources.shop.level_extensions = vec![default()];
+        resources.shop.floor_extensions = vec![default()];
         while let Some(unit) = sorted_by_power.pop_front() {
             if resources
                 .shop
-                .level_extensions
+                .floor_extensions
                 .get(cur_level)
                 .unwrap()
                 .len()
@@ -35,24 +34,24 @@ impl Shop {
                     + (cur_level == 0) as usize * resources.options.initial_shop_fill
             {
                 cur_level += 1;
-                resources.shop.level_extensions.push(default());
+                resources.shop.floor_extensions.push(default());
             }
             resources
                 .shop
-                .level_extensions
+                .floor_extensions
                 .get_mut(cur_level)
                 .unwrap()
                 .push(unit);
         }
         resources
             .shop
-            .level_extensions
+            .floor_extensions
             .iter()
             .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join(", ")));
     }
 
-    pub fn load_level(resources: &mut Resources, level: usize) {
-        if let Some(new_units) = resources.shop.level_extensions.get(level) {
+    pub fn load_floor(resources: &mut Resources, floor: usize) {
+        if let Some(new_units) = resources.shop.floor_extensions.get(floor) {
             resources.shop.pool.extend(
                 new_units
                     .iter()

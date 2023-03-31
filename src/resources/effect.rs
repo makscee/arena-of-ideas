@@ -32,12 +32,25 @@ pub enum Effect {
     },
     SetVarFaction {
         var: VarName,
+        #[serde(default)]
         value: ExpressionFaction,
     },
     ChangeAbilityVarInt {
         ability: AbilityName,
         var: VarName,
         delta: ExpressionInt,
+    },
+    ChangeFactionVarInt {
+        #[serde(default)]
+        faction: ExpressionFaction,
+        var: VarName,
+        delta: ExpressionInt,
+    },
+    SetFactionVarInt {
+        #[serde(default)]
+        faction: ExpressionFaction,
+        var: VarName,
+        value: ExpressionInt,
     },
     AddStatus {
         name: String,
@@ -108,7 +121,8 @@ pub enum Effect {
     Summon {
         unit: Box<PackedUnit>,
         slot: Option<ExpressionInt>,
-        faction: Option<ExpressionFaction>,
+        #[serde(default)]
+        faction: ExpressionFaction,
     },
 }
 
@@ -326,7 +340,7 @@ impl EffectWrapped {
                 let faction = Faction::from_entity(context.owner, world);
                 context.vars.merge_mut(defaults, false);
                 if let Some(overrides) = resources
-                    .factions_state
+                    .team_states
                     .try_get_ability_overrides(&faction, name)
                 {
                     context.vars.merge_mut(overrides, true);
@@ -567,12 +581,31 @@ impl EffectWrapped {
                     .as_ref()
                     .and_then(|x| x.calculate(&context, world, resources).ok())
                     .unwrap_or_default() as usize;
-                let faction = faction
-                    .as_ref()
-                    .and_then(|x| x.calculate(&context, world, resources).ok())
-                    .unwrap_or_else(|| Faction::from_entity(context.target, world));
+                let faction = faction.calculate(&context, world, resources)?;
                 unit.unpack(world, resources, slot, faction, None);
                 SlotSystem::fill_gaps(world, resources, &hashset! { faction });
+            }
+            Effect::ChangeFactionVarInt {
+                faction,
+                var,
+                delta,
+            } => {
+                let delta = delta.calculate(&context, world, resources)?;
+                resources
+                    .team_states
+                    .get_vars_mut(&faction.calculate(&context, world, resources)?)
+                    .change_int(var, delta);
+            }
+            Effect::SetFactionVarInt {
+                faction,
+                var,
+                value,
+            } => {
+                let value = value.calculate(&context, world, resources)?;
+                resources
+                    .team_states
+                    .get_vars_mut(&faction.calculate(&context, world, resources)?)
+                    .set_int(var, value);
             }
         }
         Ok(match self.after.as_deref() {

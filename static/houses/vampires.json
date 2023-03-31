@@ -2,7 +2,7 @@
     "name": "Vampires",
     "color": "#7f0000ff",
     "abilities": {
-        "SiphonLife": {
+        "LifeSteal": {
             "description": "Steal 1 HP\nfrom target",
             "effect": {
                 "type": "ShowCurve",

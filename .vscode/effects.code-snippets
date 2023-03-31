@@ -99,7 +99,7 @@
 		"body": [
 			"{",
 			"    \"type\": \"Var\",",
-			"    \"var\": \"$1$TM_SELECTED_TEXT\"",
+			"    \"var\": \"${1:Charges}\"",
 			"}"
 		],
 		"description": "Var"
@@ -248,7 +248,6 @@
 		"body": [
 			"{",
 			"    \"type\": \"AbilityVar\",",
-			"    \"house\": \"${1:Robots}\",",
 			"    \"ability\": \"${2:Shield}\",",
 			"    \"var\": \"${3:Reflection}\"",
 			"}"
@@ -349,5 +348,66 @@
 			"}"
 		],
 		"description": "New Unit"
+	},
+	"New House": {
+		"prefix": "new_house",
+		"body": [
+			"{",
+			"    \"name\": \"${1:Name}\",",
+			"    \"color\": \":#ffffff\",",
+			"    \"abilities\": {$2},",
+			"    \"statuses\": {}",
+			"}"
+		],
+		"description": "New House"
+	},
+	"New Ability": {
+		"prefix": "new_ability",
+		"body": [
+			"{",
+			"    \"effect\": {",
+			"        \"type\": \"ShowCurve\",",
+			"        \"after\": $TM_SELECTED_TEXT $1",
+			"    },",
+			"    \"description\": \"$2\",",
+			"    \"default_vars\": {",
+			"        \"Charges\": 1",
+			"    }",
+			"}"
+		],
+		"description": "New Ability"
+	},
+	"Change Faction Var Int": {
+		"prefix": "change_faction_var_int",
+		"body": [
+			"{",
+			"    \"type\": \"ChangeFactionVarInt\",",
+			"    \"var\": \"${1:Var}\",",
+			"    \"delta\": $TM_SELECTED_TEXT$2",
+			"}"
+		],
+		"description": "Change Faction Var Int"
+	},
+	"Set Faction Var Int": {
+		"prefix": "set_faction_var_int",
+		"body": [
+			"{",
+			"    \"type\": \"SetFactionVarInt\",",
+			"    \"var\": \"${1:G}\",",
+			"    \"value\": $2$TM_SELECTED_TEXT",
+			"}"
+		],
+		"description": "Set Faction Var Int"
+	},
+	"Max": {
+		"prefix": "max",
+		"body": [
+			"{",
+			"    \"type\": \"Max\",",
+			"    \"a\": $TM_SELECTED_TEXT$1,",
+			"    \"b\": $2",
+			"}"
+		],
+		"description": "Max"
 	}
 }

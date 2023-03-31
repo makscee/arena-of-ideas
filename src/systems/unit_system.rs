@@ -165,7 +165,7 @@ impl UnitSystem {
         });
         factions
             .into_iter()
-            .for_each(|f| resources.factions_state.clear(*f));
+            .for_each(|f| resources.team_states.clear(*f));
         unit_entitites
     }
 

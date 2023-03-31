@@ -1,0 +1,16 @@
+{
+    "name": "Looter",
+    "attack": 5,
+    "health": 5,
+    "description": "Shop start:\nuse Bounty (1)",
+    "houses": [
+        "Pirates"
+    ],
+    "trigger": {
+        "type": "ShopStart",
+        "effect": {
+            "type": "UseAbility",
+            "name": "Bounty"
+        }
+    }
+}

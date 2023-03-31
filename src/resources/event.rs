@@ -77,7 +77,8 @@ pub enum Event {
     },
     BattleStart,
     BattleEnd,
-    FloorEnd,
+    ShopStart,
+    ShopEnd,
     TurnStart,
     TurnEnd,
 }
@@ -90,7 +91,7 @@ impl Event {
                 let factions = hashset! {Faction::Light, Faction::Dark};
                 StatusPool::notify_all(self, &factions, resources, world);
             }
-            Event::FloorEnd => {
+            Event::ShopStart | Event::ShopEnd => {
                 let factions = hashset! {Faction::Team};
                 StatusPool::notify_all(self, &factions, resources, world);
             }

@@ -7,7 +7,7 @@
         "Dragons"
     ],
     "trigger": {
-        "type": "FloorEnd",
+        "type": "ShopStart",
         "effect": {
             "type": "Repeat",
             "effect": {

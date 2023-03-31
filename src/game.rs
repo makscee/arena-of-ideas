@@ -56,7 +56,7 @@ impl Game {
         StatusPool::clear_all_active(resources);
         resources.floors.reset();
         resources.action_queue.clear();
-        resources.factions_state = default();
+        resources.team_states = default();
         resources.cassette.clear();
         Shop::load_pool(resources);
     }

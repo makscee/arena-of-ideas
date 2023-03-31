@@ -8,8 +8,6 @@ pub struct ShopSystem {
     need_switch_battle: bool,
 }
 
-pub const UNIT_COST: usize = 3;
-
 impl System for ShopSystem {
     fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         resources.shop.drag_entity = None;
@@ -97,7 +95,7 @@ impl ShopSystem {
                                 .shop
                                 .pool
                                 .push(PackedUnit::pack(dropped, world, resources));
-                            resources.shop.money += 1;
+                            ShopSystem::change_g(resources, ShopSystem::sell_price(resources));
                             Self::sell(dropped, resources, world);
                             SlotSystem::refresh_slots_uniforms(world, &resources.options);
                             ContextSystem::refresh_all(world, resources);
@@ -120,12 +118,12 @@ impl ShopSystem {
                             &Faction::Team,
                             resources.input.mouse_pos,
                         );
-                        if resources.shop.money >= UNIT_COST
+                        if ShopSystem::get_g(resources) >= ShopSystem::buy_price(resources)
                             && slot.is_some()
                             && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
                             && Self::team_count(world) < SLOTS_COUNT
                         {
-                            resources.shop.money -= UNIT_COST;
+                            ShopSystem::change_g(resources, -ShopSystem::buy_price(resources));
                             let slot = slot.unwrap();
                             let tape = &mut Some(Vec::<CassetteNode>::default());
                             Self::buy(dropped, slot, resources, world, tape);
@@ -174,7 +172,7 @@ impl ShopSystem {
             .faction_colors
             .get(&Faction::Shop)
             .unwrap();
-        let text = format!("{} g", resources.shop.money.to_string());
+        let text = format!("{} g", Self::get_g(resources).to_string());
         resources.frame_shaders.push(
             resources
                 .options
@@ -198,16 +196,53 @@ impl ShopSystem {
         resources.cassette.render_node = node;
     }
 
-    pub fn floor_money(floor: usize) -> usize {
-        (UNIT_COST + floor + 1).min(10)
+    pub fn floor_money(floor: usize) -> i32 {
+        (4 + floor as i32).min(10)
     }
 
-    pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        let current_floor = resources.floors.current_ind();
-        Shop::load_level(resources, current_floor);
-        Self::reroll(world, resources);
-        WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
-        resources.shop.money = Self::floor_money(current_floor);
+    pub fn get_g(resources: &Resources) -> i32 {
+        resources
+            .team_states
+            .get_vars(&Faction::Team)
+            .get_int(&VarName::G)
+    }
+
+    pub fn change_g(resources: &mut Resources, delta: i32) {
+        resources
+            .team_states
+            .get_vars_mut(&Faction::Team)
+            .change_int(&VarName::G, delta)
+    }
+
+    pub fn sell_price(resources: &Resources) -> i32 {
+        resources
+            .team_states
+            .get_vars(&Faction::Team)
+            .get_int(&VarName::SellPrice)
+    }
+
+    pub fn buy_price(resources: &Resources) -> i32 {
+        resources
+            .team_states
+            .get_vars(&Faction::Team)
+            .get_int(&VarName::BuyPrice)
+    }
+
+    pub fn reroll_price(resources: &Resources) -> i32 {
+        resources
+            .team_states
+            .get_vars(&Faction::Team)
+            .get_int(&VarName::RerollPrice)
+    }
+
+    pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
+        Shop::load_pool(resources);
+        resources.team_states.clear(Faction::Team);
+        let vars = resources.team_states.get_vars_mut(&Faction::Team);
+        vars.set_int(&VarName::G, 0);
+        vars.set_int(&VarName::BuyPrice, 3);
+        vars.set_int(&VarName::SellPrice, 1);
+
         if resources.shop.refresh_btn.is_none() {
             let world_entity = WorldSystem::get_context(world).owner;
             fn refresh(
@@ -219,7 +254,7 @@ impl ShopSystem {
                 match event {
                     InputEvent::Click => {
                         ShopSystem::reroll(world, resources);
-                        resources.shop.money -= 1;
+                        ShopSystem::change_g(resources, -ShopSystem::reroll_price(resources));
                     }
                     InputEvent::HoverStart => ButtonSystem::change_icon_color(
                         entity,
@@ -249,6 +284,16 @@ impl ShopSystem {
                 .into(),
             );
         }
+    }
+
+    pub fn init_floor(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
+        let current_floor = resources.floors.current_ind();
+        if give_g {
+            Self::change_g(resources, Self::floor_money(current_floor));
+        }
+        Shop::load_floor(resources, current_floor);
+        Self::reroll(world, resources);
+        WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
         Self::refresh_cassette(world, resources);
     }

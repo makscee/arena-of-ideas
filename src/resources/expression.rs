@@ -3,7 +3,7 @@
 use super::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", deny_unknown_fields)]
 pub enum ExpressionInt {
     Sum {
         a: Box<ExpressionInt>,
@@ -39,6 +39,11 @@ pub enum ExpressionInt {
     AbilityVar {
         ability: AbilityName,
         var: VarName,
+    },
+    FactionVar {
+        var: VarName,
+        #[serde(default)]
+        faction: ExpressionFaction,
     },
     Negate {
         value: Box<ExpressionInt>,
@@ -91,6 +96,11 @@ impl ExpressionInt {
                 false => r#else.calculate(context, world, resources),
             },
             ExpressionInt::Negate { value } => Ok(-value.calculate(context, world, resources)?),
+            ExpressionInt::FactionVar { var, faction } => resources
+                .team_states
+                .get_vars(&faction.calculate(context, world, resources)?)
+                .try_get_int(var)
+                .context("Failed to get faction var"),
         }
     }
 }
@@ -168,6 +178,16 @@ pub enum ExpressionFaction {
     Parent,
     Opposite { faction: Box<ExpressionFaction> },
     Var { var: VarName },
+    Team,
+    Shop,
+    Light,
+    Dark,
+}
+
+impl Default for ExpressionFaction {
+    fn default() -> Self {
+        Self::Owner
+    }
 }
 
 impl ExpressionFaction {
@@ -189,6 +209,10 @@ impl ExpressionFaction {
                 .vars
                 .try_get_faction(var)
                 .context("Failed to get faction var"),
+            ExpressionFaction::Team => Ok(Faction::Team),
+            ExpressionFaction::Shop => Ok(Faction::Shop),
+            ExpressionFaction::Light => Ok(Faction::Light),
+            ExpressionFaction::Dark => Ok(Faction::Dark),
         }
     }
 }

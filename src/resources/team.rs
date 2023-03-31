@@ -3,22 +3,18 @@ use geng::prelude::itertools::Itertools;
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[serde(deny_unknown_fields)]
 pub struct Team {
-    #[serde(default = "default_name")]
-    pub name: String,
     pub units: Vec<PackedUnit>,
     #[serde(default)]
-    pub ability_overrides: HashMap<AbilityName, Vars>,
-}
-fn default_name() -> String {
-    "no_name".to_string()
+    pub state: TeamState,
 }
 
 impl Team {
     pub fn new(name: String, units: Vec<PackedUnit>) -> Self {
         Self {
-            name,
             units,
+            state: TeamState::new(name),
             ..default()
         }
     }
@@ -27,18 +23,10 @@ impl Team {
         for (slot, unit) in self.units.iter().enumerate() {
             unit.unpack(world, resources, slot + 1, *faction, None);
         }
-        resources.factions_state.set_faction_state(
-            *faction,
-            FactionState {
-                ability_overrides: self.ability_overrides.clone(),
-                team_name: self.name.clone(),
-            },
-        );
-        debug!(
-            "Unpack team {} {:?}",
-            self,
-            resources.factions_state.get_faction_state(faction)
-        );
+        resources
+            .team_states
+            .set_team_state(*faction, self.state.clone());
+        debug!("Unpack team {} {:?}", self, self.state);
     }
 
     pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {
@@ -47,18 +35,34 @@ impl Team {
             .sorted_by_key(|(_, unit)| unit.slot)
             .map(|(entity, _)| PackedUnit::pack(entity, world, resources))
             .collect_vec();
-        let state = resources.factions_state.get_faction_state(faction);
-        Team {
-            name: state.team_name.clone(),
-            units,
-            ability_overrides: state.ability_overrides.clone(),
-        }
+        let state = resources.team_states.get_team_state(faction).clone();
+        Team { units, state }
     }
 }
 
 impl fmt::Display for Team {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let text = self.units.iter().map(|x| x.to_string()).join(", ");
-        write!(f, "{}[{}]", self.name, text)
+        write!(f, "{}[{}]", self.state.name, text)
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct TeamState {
+    #[serde(default = "default_name")]
+    pub name: String,
+    #[serde(default)]
+    pub vars: Vars,
+    #[serde(default)]
+    pub ability_overrides: HashMap<AbilityName, Vars>,
+}
+
+impl TeamState {
+    pub fn new(name: String) -> Self {
+        Self { name, ..default() }
+    }
+}
+
+fn default_name() -> String {
+    "no_name".to_string()
 }

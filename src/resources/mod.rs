@@ -13,7 +13,6 @@ mod effect;
 mod event;
 mod expression;
 mod faction;
-mod factions_state;
 mod floors;
 mod fonts;
 mod hero_pool;
@@ -28,6 +27,7 @@ mod shader_programs;
 mod shop;
 mod status;
 mod team;
+mod team_states;
 mod trigger;
 mod visual_effect;
 
@@ -42,7 +42,6 @@ pub use effect::*;
 pub use event::*;
 pub use expression::*;
 pub use faction::*;
-pub use factions_state::*;
 pub use floors::*;
 pub use fonts::*;
 use geng::prelude::file::load_json;
@@ -58,6 +57,7 @@ pub use shader_programs::*;
 pub use shop::*;
 pub use status::*;
 pub use team::*;
+pub use team_states::*;
 pub use trigger::*;
 pub use visual_effect::*;
 
@@ -73,7 +73,7 @@ pub struct Resources {
     pub delta_time: Time,
     pub status_pool: StatusPool,
     pub ability_pool: AbilityPool,
-    pub factions_state: FactionsState,
+    pub team_states: TeamStates,
     pub action_queue: VecDeque<Action>,
     pub cassette: Cassette,
     pub cassette_play_mode: CassettePlayMode,
@@ -127,7 +127,7 @@ impl Resources {
             current_state: GameState::MainMenu,
             options,
             ability_pool: default(),
-            factions_state: default(),
+            team_states: default(),
         }
     }
 

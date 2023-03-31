@@ -51,7 +51,7 @@ impl System for GameStateSystem {
                     Game::restart(world, resources);
                 }
                 if resources.input.down_keys.contains(&geng::Key::C) {
-                    resources.shop.money += 100;
+                    ShopSystem::change_g(resources, 100);
                 }
                 if resources.input.down_keys.contains(&geng::Key::L) {
                     SaveSystem::load(world, resources);
@@ -189,13 +189,14 @@ impl GameStateSystem {
         match resources.current_state {
             GameState::MainMenu => {}
             GameState::Shop => {
+                Event::ShopEnd.send(world, resources);
                 resources.cassette.clear();
                 ShopSystem::clear_case(world, resources);
             }
             GameState::Battle => {
                 resources.cassette.clear();
                 Event::BattleEnd.send(world, resources);
-                Event::FloorEnd.send(world, resources);
+                Event::ShopStart.send(world, resources);
             }
             GameState::Gallery => {
                 resources.cassette.clear();
@@ -239,9 +240,9 @@ impl GameStateSystem {
             }
             GameState::Shop => {
                 if resources.current_state == GameState::MainMenu {
-                    Shop::load_pool(resources);
+                    ShopSystem::init_game(world, resources);
                 }
-                ShopSystem::init(world, resources);
+                ShopSystem::init_floor(world, resources, true);
                 CassettePlayerSystem::init_world(world, resources);
                 SlotSystem::init_world(
                     world,

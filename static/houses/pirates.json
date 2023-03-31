@@ -1,0 +1,63 @@
+{
+    "name": "Pirates",
+    "color": "#ffd700",
+    "abilities": {
+        "Bounty": {
+            "effect": {
+                "type": "ChangeFactionVarInt",
+                "var": "G",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            },
+            "description": "Increase G by 1",
+            "default_vars": {
+                "Charges": 1
+            }
+        },
+        "Bargain": {
+            "effect": {
+                "type": "ChangeFactionVarInt",
+                "var": "SellPrice",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            },
+            "description": "Units sell for +1 G",
+            "default_vars": {
+                "Charges": 1
+            }
+        },
+        "Discount": {
+            "effect": {
+                "type": "SetFactionVarInt",
+                "var": "BuyPrice",
+                "value": {
+                    "type": "Max",
+                    "a": {
+                        "type": "Const",
+                        "value": 1
+                    },
+                    "b": {
+                        "type": "Sub",
+                        "a": {
+                            "type": "FactionVar",
+                            "var": "BuyPrice"
+                        },
+                        "b": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    }
+                }
+            },
+            "description": "Units buy price -1\nbut not less than 1",
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {}
+}
