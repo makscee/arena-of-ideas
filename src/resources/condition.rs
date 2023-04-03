@@ -22,6 +22,10 @@ pub enum Condition {
         a: ExpressionInt,
         b: ExpressionInt,
     },
+    ModZero {
+        value: ExpressionInt,
+        r#mod: ExpressionInt,
+    },
     SlotOccupied {
         slot: ExpressionInt,
         faction: Faction,
@@ -79,6 +83,10 @@ impl Condition {
                 Ok(a.calculate(context, world, resources)?
                     > b.calculate(context, world, resources)?)
             }
+            Condition::ModZero { value, r#mod } => Ok(value
+                .calculate(context, world, resources)?
+                % r#mod.calculate(context, world, resources)?
+                == 0),
             Condition::SlotOccupied { slot, faction } => Ok(SlotSystem::find_unit_by_slot(
                 slot.calculate(context, world, resources)? as usize,
                 faction,

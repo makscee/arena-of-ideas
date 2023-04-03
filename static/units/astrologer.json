@@ -1,0 +1,40 @@
+{
+    "name": "Astrologer",
+    "attack": 3,
+    "health": 3,
+    "description": "On buy:\nallies with even\nHP Grow (2)",
+    "houses": [
+        "Dragons"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "AllTargets",
+            "faction": {
+                "type": "Owner"
+            },
+            "condition": {
+                "type": "ModZero",
+                "value": {
+                    "type": "EntityVar",
+                    "entity": {
+                        "type": "Target"
+                    },
+                    "var": "HpValue"
+                },
+                "mod": {
+                    "type": "Const",
+                    "value": 2
+                }
+            },
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Grow",
+                "charges": {
+                    "type": "Const",
+                    "value": 2
+                }
+            }
+        }
+    }
+}

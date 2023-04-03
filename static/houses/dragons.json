@@ -11,8 +11,12 @@
         },
         "Grow": {
             "effect": {
-                "type": "AddStatus",
+                "type": "ChangeStatus",
                 "name": "Growth",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
                 "after": {
                     "type": "ShowCurve"
                 }

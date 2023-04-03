@@ -1,4 +1,5 @@
 [
+    "test/scenarios/astrologer.json",
     "test/scenarios/pig_farmer.json",
     "test/scenarios/sustainer.json",
     "test/scenarios/avenger.json",
