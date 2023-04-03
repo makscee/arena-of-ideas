@@ -295,6 +295,7 @@ impl BattleSystem {
         cluster: &mut Option<NodeCluster>,
     ) {
         ContextSystem::refresh_factions(factions, world, resources);
+        let mut corpses = Vec::default();
         while let Some(dead_unit) = <(&EntityComponent, &Context)>::query()
             .filter(component::<UnitComponent>())
             .iter(world)
@@ -316,7 +317,11 @@ impl BattleSystem {
                     &format!("{:?} removed", dead_unit),
                     &LogContext::UnitCreation,
                 );
+                corpses.push(dead_unit);
             }
+        }
+        for entity in corpses {
+            Event::UnitDeath { target: entity }.send(world, resources);
         }
     }
 

@@ -1,0 +1,44 @@
+{
+    "name": "Avenger",
+    "attack": 3,
+    "health": 3,
+    "description": "Ally died:\nShoot 3\nrandom enemies",
+    "houses": [
+        "Archers"
+    ],
+    "trigger": {
+        "type": "AnyDeath",
+        "effect": {
+            "type": "If",
+            "condition": {
+                "type": "EqualsFaction",
+                "a": {
+                    "type": "Owner"
+                },
+                "b": {
+                    "type": "Target"
+                }
+            },
+            "then": {
+                "type": "Repeat",
+                "effect": {
+                    "type": "UseAbility",
+                    "ability": "Shoot",
+                    "target": {
+                        "type": "RandomUnit",
+                        "faction": {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        }
+                    }
+                },
+                "count": {
+                    "type": "Const",
+                    "value": 3
+                }
+            }
+        }
+    }
+}

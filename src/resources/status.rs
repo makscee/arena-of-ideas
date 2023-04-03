@@ -29,13 +29,14 @@ impl StatusPool {
         factions: &HashSet<Faction>,
         resources: &mut Resources,
         world: &legion::World,
+        target: Option<legion::Entity>,
     ) {
         <(&EntityComponent, &Trigger, &UnitComponent)>::query()
             .iter(world)
             .filter(|(_, _, unit)| factions.contains(&unit.faction))
             .sorted_by_key(|(_, _, unit)| unit.slot)
             .for_each(|(entity, _, _)| {
-                Self::notify_entity(event, entity.entity, resources, world, None)
+                Self::notify_entity(event, entity.entity, resources, world, None, target)
             });
     }
 
@@ -46,8 +47,12 @@ impl StatusPool {
         resources: &mut Resources,
         world: &legion::World,
         context: Option<Context>,
+        target: Option<legion::Entity>,
     ) {
-        let context = context.unwrap_or_else(|| ContextSystem::get_context(entity, world));
+        let mut context = context.unwrap_or_else(|| ContextSystem::get_context(entity, world));
+        if let Some(target) = target {
+            context.target = target;
+        }
         for (name, trigger, charges) in resources.status_pool.collect_triggers(&entity, world) {
             trigger.catch_event(
                 event,

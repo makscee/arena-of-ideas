@@ -1,0 +1,98 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 4
+            },
+            {
+                "attack": 3,
+                "health": 3,
+                "houses": [
+                    "Archers"
+                ],
+                "trigger": {
+                    "type": "AnyDeath",
+                    "effect": {
+                        "type": "If",
+                        "condition": {
+                            "type": "EqualsFaction",
+                            "a": {
+                                "type": "Owner"
+                            },
+                            "b": {
+                                "type": "Target"
+                            }
+                        },
+                        "then": {
+                            "type": "Repeat",
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Shoot",
+                                "target": {
+                                    "type": "RandomUnit",
+                                    "faction": {
+                                        "type": "Opposite",
+                                        "faction": {
+                                            "type": "Owner"
+                                        }
+                                    }
+                                }
+                            },
+                            "count": {
+                                "type": "Const",
+                                "value": 3
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 1,
+                "health": 1
+            },
+            {
+                "attack": 100,
+                "health": 9
+            }
+        ]
+    },
+    "assert": {
+        "type": "And",
+        "a": {
+            "type": "SlotOccupied",
+            "slot": {
+                "type": "Const",
+                "value": 1
+            },
+            "faction": "Light"
+        },
+        "b": {
+            "type": "Not",
+            "condition": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 2
+                },
+                "faction": "Light"
+            }
+        }
+    }
+}

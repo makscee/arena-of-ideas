@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use geng::prelude::rand::random;
 
 use super::*;
@@ -9,6 +11,10 @@ pub enum Condition {
     EqualsInt {
         a: ExpressionInt,
         b: ExpressionInt,
+    },
+    EqualsFaction {
+        a: ExpressionFaction,
+        b: ExpressionFaction,
     },
     LessInt {
         a: ExpressionInt,
@@ -64,6 +70,8 @@ impl Condition {
         );
         match self {
             Condition::EqualsInt { a, b } => Ok(a.calculate(context, world, resources)?
+                == b.calculate(context, world, resources)?),
+            Condition::EqualsFaction { a, b } => Ok(a.calculate(context, world, resources)?
                 == b.calculate(context, world, resources)?),
             Condition::LessInt { a, b } => {
                 Ok(a.calculate(context, world, resources)?

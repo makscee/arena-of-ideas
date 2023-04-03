@@ -36,6 +36,7 @@ pub enum Trigger {
     ModifyOutgoingDamage { value: ExpressionInt },
     ChangeVarInt { var: VarName, delta: ExpressionInt }, // Preferred for stat changes
     Noop,
+    AnyDeath { effect: EffectWrapped },
 }
 
 impl Default for Trigger {
@@ -110,6 +111,14 @@ impl Trigger {
             Trigger::AnySell { .. } => match event {
                 Event::Sell { owner } => {
                     if context.owner != *owner {
+                        self.fire(action_queue, context, logger);
+                    }
+                }
+                _ => {}
+            },
+            Trigger::AnyDeath { .. } => match event {
+                Event::UnitDeath { target } => {
+                    if context.owner != *target {
                         self.fire(action_queue, context, logger);
                     }
                 }
@@ -213,6 +222,7 @@ impl Trigger {
             | Trigger::OnSell { effect }
             | Trigger::AnyBuy { effect }
             | Trigger::AnySell { effect }
+            | Trigger::AnyDeath { effect }
             | Trigger::AddToTeam { effect }
             | Trigger::RemoveFromTeam { effect }
             | Trigger::OnStatusAdd { effect }

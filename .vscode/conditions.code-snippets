@@ -93,5 +93,19 @@
             "}"
         ],
         "description": "Condition Have Status"
+    },
+    "Condition Slot Occupied": {
+        "prefix": "condition_slot_occupied",
+        "body": [
+            "{",
+            "    \"type\": \"SlotOccupied\",",
+            "    \"slot\": {",
+            "        \"type\": \"Const\",",
+            "        \"value\": ${1:1}",
+            "    },",
+            "    \"faction\": \"${2:Dark}\"",
+            "}"
+        ],
+        "description": "Condition Slot Occupied"
     }
 }

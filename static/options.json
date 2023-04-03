@@ -5,102 +5,78 @@
     "rewind_add_speed": 10.0,
     "start_floor": 2,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
-                    "name": "name",
                     "attack": 1,
-                    "health": 12,
+                    "health": 4
+                },
+                {
+                    "attack": 3,
+                    "health": 3,
                     "houses": [
-                        "Clerics"
+                        "Archers"
                     ],
                     "trigger": {
-                        "type": "AfterStrike",
+                        "type": "AnyDeath",
                         "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Mend"
+                            "type": "If",
+                            "condition": {
+                                "type": "EqualsFaction",
+                                "a": {
+                                    "type": "Owner"
+                                },
+                                "b": {
+                                    "type": "Target"
+                                }
                             },
-                            "count": {
-                                "type": "Const",
-                                "value": 3
+                            "then": {
+                                "type": "Repeat",
+                                "effect": {
+                                    "type": "UseAbility",
+                                    "ability": "Shoot",
+                                    "target": {
+                                        "type": "RandomUnit",
+                                        "faction": {
+                                            "type": "Opposite",
+                                            "faction": {
+                                                "type": "Owner"
+                                            }
+                                        }
+                                    }
+                                },
+                                "count": {
+                                    "type": "Const",
+                                    "value": 3
+                                }
                             }
                         }
                     }
                 }
-            ],
-            "state": {
-                "ability_overrides": {
-                    "Shield": {
-                        "Reflection": 1
-                    }
-                }
-            }
+            ]
         },
         "dark": {
-            "state": {
-                "name": "Test"
-            },
             "units": [
                 {
                     "attack": 1,
-                    "health": 15,
-                    "houses": [
-                        "Demons"
-                    ],
-                    "trigger": {
-                        "type": "AfterStrike",
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "Repeat",
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "ability": "Empower"
-                                    },
-                                    "count": {
-                                        "type": "Const",
-                                        "value": 3
-                                    }
-                                },
-                                {
-                                    "type": "Aoe",
-                                    "factions": [
-                                        {
-                                            "type": "Owner"
-                                        }
-                                    ],
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "ability": "Empower"
-                                    }
-                                }
-                            ]
-                        }
-                    }
+                    "health": 1
                 },
                 {
-                    "name": "name",
                     "attack": 1,
                     "health": 1
                 },
                 {
-                    "name": "name",
                     "attack": 1,
                     "health": 1
                 },
                 {
-                    "name": "name",
                     "attack": 1,
                     "health": 1
                 },
                 {
-                    "name": "name",
-                    "attack": 1,
-                    "health": 1
+                    "attack": 100,
+                    "health": 9
                 }
             ]
         }

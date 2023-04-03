@@ -1,4 +1,5 @@
 [
+    "test/scenarios/avenger.json",
     "test/scenarios/shield_reflection.json",
     "test/scenarios/indra.json",
     "test/scenarios/druid.json",

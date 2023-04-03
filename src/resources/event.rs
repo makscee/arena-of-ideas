@@ -81,6 +81,9 @@ pub enum Event {
     ShopEnd,
     TurnStart,
     TurnEnd,
+    UnitDeath {
+        target: legion::Entity,
+    },
 }
 
 impl Event {
@@ -91,7 +94,18 @@ impl Event {
             || match self {
                 Event::BattleEnd | Event::BattleStart | Event::TurnStart | Event::TurnEnd => {
                     let factions = hashset! {Faction::Light, Faction::Dark};
-                    StatusPool::notify_all(self, &factions, resources, world);
+                    StatusPool::notify_all(self, &factions, resources, world, None);
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify all Faction::Dark and Faction::Light and set target
+        caught = caught
+            || match self {
+                Event::UnitDeath { target } => {
+                    let factions = hashset! {Faction::Light, Faction::Dark};
+                    StatusPool::notify_all(self, &factions, resources, world, Some(*target));
                     true
                 }
                 _ => false,
@@ -102,7 +116,7 @@ impl Event {
             || match self {
                 Event::ShopStart | Event::ShopEnd | Event::Sell { .. } | Event::Buy { .. } => {
                     let factions = hashset! {Faction::Team};
-                    StatusPool::notify_all(self, &factions, resources, world);
+                    StatusPool::notify_all(self, &factions, resources, world, None);
                     true
                 }
                 _ => false,
@@ -146,6 +160,7 @@ impl Event {
                         resources,
                         world,
                         Some(context.clone()),
+                        None,
                     );
                     true
                 }
@@ -165,6 +180,7 @@ impl Event {
                         resources,
                         world,
                         Some(context.clone()),
+                        None,
                     );
                     true
                 }
@@ -183,7 +199,14 @@ impl Event {
                             target: *target,
                             ..owner_context
                         };
-                        StatusPool::notify_entity(self, *owner, resources, world, Some(context));
+                        StatusPool::notify_entity(
+                            self,
+                            *owner,
+                            resources,
+                            world,
+                            Some(context),
+                            None,
+                        );
                     }
                     true
                 }
@@ -199,7 +222,7 @@ impl Event {
                 | Event::Sell { owner }
                 | Event::AddToTeam { owner }
                 | Event::RemoveFromTeam { owner } => {
-                    StatusPool::notify_entity(self, *owner, resources, world, None);
+                    StatusPool::notify_entity(self, *owner, resources, world, None, None);
                     true
                 }
                 _ => false,
