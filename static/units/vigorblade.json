@@ -1,0 +1,22 @@
+{
+    "name": "Vigorblade",
+    "attack": 4,
+    "health": 1,
+    "description": "Before strike:\ngain Vitality (5)",
+    "houses": [
+        "Clerics"
+    ],
+    "trigger": {
+        "type": "BeforeStrike",
+        "effect": {
+            "type": "UseAbility",
+            "target": {
+                "type": "Owner"
+            },
+            "ability": "Vitality",
+            "vars": {
+                "Charges": 5
+            }
+        }
+    }
+}

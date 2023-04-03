@@ -7,7 +7,7 @@
         "Pirates"
     ],
     "trigger": {
-        "type": "OnBuy",
+        "type": "ShopStart",
         "effect": {
             "type": "UseAbility",
             "ability": "Favor",

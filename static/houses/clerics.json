@@ -17,6 +17,35 @@
             "default_vars": {
                 "Charges": 1
             }
+        },
+        "Vitality": {
+            "description": "+1 HP",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Vitality",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {
+        "Vitality": {
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            }
         }
     }
 }
