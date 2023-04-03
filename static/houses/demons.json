@@ -17,7 +17,8 @@
             "description": "Next damage\nincreased by 1",
             "default_vars": {
                 "Charges": 1,
-                "AttackExtra": 0
+                "AttackExtra": 0,
+                "Persistent": 0
             }
         },
         "Devour": {
@@ -103,20 +104,35 @@
                     {
                         "type": "AfterOutgoingDamage",
                         "effect": {
-                            "type": "ChangeStatus",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "name": "Empower",
-                            "charges": {
-                                "type": "Sub",
+                            "type": "If",
+                            "condition": {
+                                "type": "LessInt",
                                 "a": {
-                                    "type": "Const",
-                                    "value": 0
+                                    "type": "AbilityVar",
+                                    "ability": "Empower",
+                                    "var": "Persistent"
                                 },
                                 "b": {
-                                    "type": "Var",
-                                    "var": "Charges"
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            "then": {
+                                "type": "ChangeStatus",
+                                "target": {
+                                    "type": "Owner"
+                                },
+                                "name": "Empower",
+                                "charges": {
+                                    "type": "Sub",
+                                    "a": {
+                                        "type": "Const",
+                                        "value": 0
+                                    },
+                                    "b": {
+                                        "type": "Var",
+                                        "var": "Charges"
+                                    }
                                 }
                             }
                         }

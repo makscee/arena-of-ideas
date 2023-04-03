@@ -1,0 +1,57 @@
+{
+    "name": "Diabolos",
+    "attack": 9,
+    "health": 9,
+    "description": "Empower doesn't\nget removed\nafter attack",
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "List",
+        "triggers": [
+            {
+                "type": "AddToTeam",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeAbilityVarInt",
+                            "ability": "Empower",
+                            "var": "Persistent",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        },
+                        {
+                            "type": "ShowText",
+                            "text": "+Empower Persistent"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "RemoveFromTeam",
+                "effect": {
+                    "type": "List",
+                    "effects": [
+                        {
+                            "type": "ChangeAbilityVarInt",
+                            "ability": "Empower",
+                            "var": "Persistent",
+                            "delta": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        },
+                        {
+                            "type": "ShowText",
+                            "text": "-Empower Persistent",
+                            "color": "#e70000"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
