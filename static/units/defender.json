@@ -1,6 +1,6 @@
     {
         "name": "Defender",
-        "description": "On Buy:\ngive Defense\nto adjacent allies",
+        "description": "On Buy:\ngive Defense (3)\nto adjacent allies",
         "health": 1,
         "attack": 1,
         "houses": [
@@ -47,7 +47,11 @@
                                     "type": "Owner"
                                 }
                             },
-                            "ability": "Defense"
+                            "ability": "Defense",
+                            "charges": {
+                                "type": "Const",
+                                "value": 3
+                            }
                         },
                         "else": {
                             "type": "Noop"
@@ -89,7 +93,11 @@
                                 }
                             },
                             "type": "UseAbility",
-                            "ability": "Defense"
+                            "ability": "Defense",
+                            "charges": {
+                                "type": "Const",
+                                "value": 3
+                            }
                         },
                         "else": {
                             "type": "Noop"

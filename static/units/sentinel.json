@@ -1,0 +1,24 @@
+{
+    "name": "Sentinel",
+    "attack": 1,
+    "health": 2,
+    "description": "On buy:\nDefense (1)\neveryone",
+    "houses": [
+        "Warriors"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Defense"
+            }
+        }
+    }
+}
