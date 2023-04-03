@@ -1,0 +1,59 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 6,
+                "health": 6,
+                "houses": [
+                    "Clerics"
+                ],
+                "trigger": {
+                    "type": "AfterStrike",
+                    "effect": {
+                        "type": "UseAbility",
+                        "ability": "Mend",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "charges": {
+                            "type": "Const",
+                            "value": 6
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 5,
+                "health": 5
+            },
+            {
+                "attack": 5,
+                "health": 5
+            },
+            {
+                "attack": 5,
+                "health": 5
+            },
+            {
+                "attack": 5,
+                "health": 5
+            },
+            {
+                "attack": 5,
+                "health": 5
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

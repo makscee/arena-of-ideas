@@ -1,0 +1,23 @@
+{
+    "name": "Sustainer",
+    "attack": 6,
+    "health": 6,
+    "description": "After strike:\nMend (6) self",
+    "houses": [
+        "Clerics"
+    ],
+    "trigger": {
+        "type": "AfterStrike",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Mend",
+            "target": {
+                "type": "Owner"
+            },
+            "charges": {
+                "type": "Const",
+                "value": 6
+            }
+        }
+    }
+}
