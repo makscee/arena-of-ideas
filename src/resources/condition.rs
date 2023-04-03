@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use geng::prelude::rand::random;
 
 use super::*;

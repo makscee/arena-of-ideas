@@ -3,7 +3,7 @@
     "walkthrough": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
-    "start_floor": 2,
+    "start_floor": 0,
     "custom_game": {
         "enable": false,
         "light": {

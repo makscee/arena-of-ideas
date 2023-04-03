@@ -1,0 +1,36 @@
+{
+    "name": "Fortifier",
+    "attack": 3,
+    "health": 3,
+    "description": "On buy:\ngive Shield to allies\nwith >15 HP",
+    "houses": [
+        "Robots"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "AllTargets",
+            "faction": {
+                "type": "Owner"
+            },
+            "condition": {
+                "type": "MoreInt",
+                "a": {
+                    "type": "EntityVar",
+                    "entity": {
+                        "type": "Target"
+                    },
+                    "var": "HpValue"
+                },
+                "b": {
+                    "type": "Const",
+                    "value": 15
+                }
+            },
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Shield"
+            }
+        }
+    }
+}

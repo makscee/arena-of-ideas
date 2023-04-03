@@ -74,7 +74,7 @@
         ],
         "description": "Var"
     },
-    "Ability Expression Var": {
+    "Expression Ability Var": {
         "prefix": "expression_ability_var",
         "body": [
             "{",
@@ -85,4 +85,17 @@
         ],
         "description": "Ability Var"
     },
+    "Expression Entity Var": {
+        "prefix": "expression_entity_var",
+        "body": [
+            "{",
+            "    \"type\": \"EntityVar\",",
+            "    \"entity\": {",
+            "        \"type\": \"${1:Target}\"",
+            "    },",
+            "    \"var\": \"${2:HpValue}\"",
+            "}"
+        ],
+        "description": "Expression Entity Var"
+    }
 }
