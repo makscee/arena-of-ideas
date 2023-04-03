@@ -1,0 +1,30 @@
+{
+    "name": "Lifeleech",
+    "attack": 3,
+    "health": 3,
+    "description": "Before strike:\nLifeSteal\nhalf HP",
+    "houses": [
+        "Vampires"
+    ],
+    "trigger": {
+        "type": "BeforeStrike",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "LifeSteal",
+            "charges": {
+                "type": "Div",
+                "a": {
+                    "type": "EntityVar",
+                    "entity": {
+                        "type": "Target"
+                    },
+                    "var": "HpValue"
+                },
+                "b": {
+                    "type": "Const",
+                    "value": 2
+                }
+            }
+        }
+    }
+}

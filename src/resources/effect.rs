@@ -68,6 +68,7 @@ pub enum Effect {
         ability: AbilityName,
         #[serde(default)]
         force: bool,
+        charges: Option<ExpressionInt>,
     },
     SetHealth {
         value: ExpressionInt,
@@ -326,6 +327,7 @@ impl EffectWrapped {
             Effect::UseAbility {
                 ability: name,
                 force,
+                charges,
             } => {
                 let owner_entry = world
                     .entry_ref(context.owner)
@@ -358,6 +360,12 @@ impl EffectWrapped {
                     VarName::Color,
                     Var::Color(resources.house_pool.get_color(house)),
                 );
+                if let Some(charges) = charges {
+                    context.vars.insert(
+                        VarName::Charges,
+                        Var::Int(charges.calculate(&context, world, resources)?),
+                    );
+                }
                 let effect = {
                     let mut effect = Effect::ShowText {
                         text: name.to_string(),

@@ -17,6 +17,10 @@ pub enum ExpressionInt {
         a: Box<ExpressionInt>,
         b: Box<ExpressionInt>,
     },
+    Div {
+        a: Box<ExpressionInt>,
+        b: Box<ExpressionInt>,
+    },
     Max {
         a: Box<ExpressionInt>,
         b: Box<ExpressionInt>,
@@ -72,6 +76,10 @@ impl ExpressionInt {
             ExpressionInt::Mul { a, b } => {
                 Ok(a.calculate(context, world, resources)?
                     * b.calculate(context, world, resources)?)
+            }
+            ExpressionInt::Div { a, b } => {
+                Ok(a.calculate(context, world, resources)?
+                    / b.calculate(context, world, resources)?)
             }
             ExpressionInt::Max { a, b } => Ok(a
                 .calculate(context, world, resources)?

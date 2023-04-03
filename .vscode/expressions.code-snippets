@@ -32,6 +32,17 @@
         ],
         "description": "Mul"
     },
+    "Expression Div": {
+        "prefix": "expression_div",
+        "body": [
+            "{",
+            "    \"type\": \"Div\",",
+            "    \"a\": $TM_SELECTED_TEXT$1,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Div"
+    },
     "Expression Max": {
         "prefix": "expression_max",
         "body": [

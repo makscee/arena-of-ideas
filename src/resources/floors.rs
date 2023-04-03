@@ -40,6 +40,6 @@ impl FileWatcherLoader for Floors {
         debug!("Load floors {:?}", path);
         let prev_current = resources.floors.current;
         resources.floors = futures::executor::block_on(load_json(path)).unwrap();
-        resources.floors.current = prev_current;
+        resources.floors.current = prev_current.max(resources.options.start_floor);
     }
 }

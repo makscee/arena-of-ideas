@@ -6,6 +6,7 @@ pub struct Options {
     pub rewind_speed: f32,
     pub rewind_add_speed: f32,
     pub initial_shop_fill: usize,
+    pub start_floor: usize,
     pub log: HashMap<LogContext, bool>,
     pub shaders: Shaders,
     pub images: Images,
