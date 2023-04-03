@@ -95,6 +95,10 @@ pub enum Effect {
     ShowText {
         text: String,
         color: Option<Rgba<f32>>,
+        #[serde(default)]
+        entity: ExpressionEntity,
+        #[serde(default)]
+        font: usize,
     },
     ShowCurve {
         color: Option<Rgba<f32>>,
@@ -156,7 +160,7 @@ impl EffectWrapped {
         context: Context,
         world: &mut legion::World,
         resources: &mut Resources,
-        node: &mut Option<CassetteNode>,
+        node: &mut Option<Node>,
     ) -> Result<(), Error> {
         let mut updated_context = context.clone();
         if let Some(target) = self.target.as_ref() {
@@ -192,21 +196,21 @@ impl EffectWrapped {
                 context = Event::ModifyIncomingDamage { context }.calculate(world, resources);
                 value = context.vars.get_int(&VarName::Damage).max(0) as usize;
                 let text = format!("-{}", value);
-                let mut target = world
-                    .entry(context.target)
-                    .context("Failed to get Target")?;
                 if let Some(node) = node.as_mut() {
-                    node.add_effect(VfxSystem::vfx_show_text(
+                    node.add_effect(VfxSystem::vfx_show_parent_text(
                         resources,
                         &text,
                         resources.options.colors.damage_text,
                         resources.options.colors.text_remove_color,
-                        target.get_component::<AreaComponent>().unwrap().position,
-                        0,
+                        context.target,
+                        1,
                         0.0,
                     ));
                 }
                 if value > 0 {
+                    let mut target = world
+                        .entry(context.target)
+                        .context("Failed to get Target")?;
                     let hp = target.get_component_mut::<HealthComponent>()?;
                     hp.deal_damage(value as usize, context.owner);
                     if let Some(node) = node.as_mut() {
@@ -261,12 +265,12 @@ impl EffectWrapped {
                     hp.heal_damage(value);
                     if let Some(node) = node.as_mut() {
                         let color = context.vars.get_color(&VarName::Color);
-                        node.add_effect(VfxSystem::vfx_show_text(
+                        node.add_effect(VfxSystem::vfx_show_parent_text(
                             resources,
                             &text,
                             resources.options.colors.damage_text,
                             color,
-                            target.get_component::<AreaComponent>().unwrap().position,
+                            context.target,
                             0,
                             0.0,
                         ));
@@ -356,17 +360,16 @@ impl EffectWrapped {
                 );
                 let effect = {
                     let mut effect = Effect::ShowText {
-                        text: format!("Use {}", name),
+                        text: name.to_string(),
                         color: None,
+                        entity: ExpressionEntity::Owner,
+                        font: 2,
                     }
                     .wrap();
                     effect.after = Some(Box::new(AbilityPool::get_effect(resources, name)));
                     effect
                 };
                 effect.process(context.clone(), world, resources, node)?;
-                // resources
-                //     .action_queue
-                //     .push_front(Action::new(context.clone(), effect));
             }
             Effect::SetHealth { value } => {
                 let value = value.calculate(&context, world, resources)?;
@@ -407,8 +410,12 @@ impl EffectWrapped {
                         .push_front(Action::new(context.clone(), r#else.deref().clone()));
                 }
             }
-            Effect::ShowText { text, color } => {
-                let position = context.vars.get_vec2(&VarName::Position);
+            Effect::ShowText {
+                text,
+                color,
+                entity,
+                font,
+            } => {
                 let color = color
                     .or_else(|| {
                         context
@@ -418,15 +425,28 @@ impl EffectWrapped {
                     })
                     .unwrap();
                 if let Some(node) = node.as_mut() {
-                    node.add_effect(VfxSystem::vfx_show_text(
-                        resources,
-                        &text,
-                        Rgba::WHITE,
-                        color,
-                        position,
-                        1,
-                        0.0,
-                    ));
+                    let entity = entity.calculate(&context, world, resources)?;
+                    node.add_effect(if UnitSystem::get_corpse(entity, world).is_some() {
+                        VfxSystem::vfx_show_text(
+                            resources,
+                            &text,
+                            Rgba::WHITE,
+                            color,
+                            context.vars.get_vec2(&VarName::Position),
+                            *font,
+                            0.0,
+                        )
+                    } else {
+                        VfxSystem::vfx_show_parent_text(
+                            resources,
+                            &text,
+                            Rgba::WHITE,
+                            color,
+                            entity,
+                            *font,
+                            0.0,
+                        )
+                    });
                 }
             }
             Effect::ShowCurve { color } => {
@@ -438,13 +458,14 @@ impl EffectWrapped {
                             .or_else(|| Some(context.vars.get_color(&VarName::HouseColor1)))
                     })
                     .unwrap();
-                let from = ContextSystem::try_get_position(context.owner, world)
-                    .context("Failed to get owner")?;
-                let to = ContextSystem::try_get_position(context.target, world)
-                    .context("Failed to get target")?;
 
                 if let Some(node) = node.as_mut() {
-                    node.add_effect(VfxSystem::vfx_show_curve(resources, from, to, color));
+                    node.add_effect(VfxSystem::vfx_show_curve(
+                        resources,
+                        context.owner,
+                        context.target,
+                        color,
+                    ));
                 }
             }
             Effect::Kill => {

@@ -3,7 +3,7 @@
     "color": "#fffedeff",
     "abilities": {
         "Dispel": {
-            "description": "Remove all statuses",
+            "description": "Remove\nall statuses",
             "effect": {
                 "type": "ClearStatuses",
                 "after": {

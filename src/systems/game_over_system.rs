@@ -13,16 +13,15 @@ impl GameOverSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        resources.cassette.clear();
         SlotSystem::clear_world(world);
-        let mut node = CassetteNode::default();
-        UnitSystem::draw_all_units_to_cassette_node(
-            &hashset! {Faction::Team},
-            &mut node,
-            world,
-            resources,
-        );
-        resources.cassette.render_node = node;
+        todo!("fix");
+        // let mut node = CassetteNode::default();
+        // UnitSystem::draw_all_units_to_cassette_node(
+        //     &hashset! {Faction::Team},
+        //     &mut node,
+        //     world,
+        //     resources,
+        // );
     }
 }
 
@@ -39,7 +38,7 @@ impl System for GameOverSystem {
         }
         Box::new(
             (
-                Text::new("Game Over!", resources.fonts.get_font(0), 70.0, Rgba::BLACK),
+                Text::new("Game Over!", resources.fonts.get_font(1), 70.0, Rgba::BLACK),
                 Text::new(
                     format!(
                         "{}",
@@ -48,7 +47,7 @@ impl System for GameOverSystem {
                             false => format!("Defeat! Floor #{}", resources.last_round),
                         }
                     ),
-                    resources.fonts.get_font(1),
+                    resources.fonts.get_font(0),
                     70.0,
                     Rgba::BLACK,
                 ),

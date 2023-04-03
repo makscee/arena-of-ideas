@@ -34,7 +34,7 @@
                 "health": 3,
                 "damage": 5,
                 "active_statuses": {
-                    "SiphonLifeGain": 3
+                    "LifeStealGain": 3
                 }
             }
         ]

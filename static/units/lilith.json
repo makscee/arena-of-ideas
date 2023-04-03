@@ -1,6 +1,6 @@
 {
     "name": "Lilith",
-    "description": "After every turn\nSiphonLife (1)\nevery enemy",
+    "description": "After every turn\nLifeSteal (1)\nevery enemy",
     "health": 8,
     "attack": 8,
     "houses": [

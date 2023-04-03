@@ -9,6 +9,7 @@ mod systems;
 use anyhow::{Error, Result};
 use components::*;
 use game::*;
+use geng::Key::*;
 use legion::query::*;
 use legion::EntityStore;
 use resources::{Resources, *};
@@ -54,7 +55,7 @@ fn main() {
     Game::init_world(&mut resources, &mut world);
 
     let mut theme = geng.ui_theme();
-    theme.font = resources.fonts.get_font(1);
+    theme.font = resources.fonts.get_font(0);
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
     if resources.options.walkthrough {

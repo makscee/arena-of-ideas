@@ -34,7 +34,7 @@ impl StatsUiSystem {
                 .stats
                 .clone()
                 .set_uniform("u_angle_offset", ShaderUniform::Float(1.0))
-                .set_uniform("u_text", ShaderUniform::String((0, hp_value.to_string())))
+                .set_uniform("u_text", ShaderUniform::String((1, hp_value.to_string())))
                 .set_uniform("u_value_modified", ShaderUniform::Int(hp_modified))
                 .set_uniform("u_animate_on_damage", ShaderUniform::Float(1.0))
                 .set_uniform(
@@ -49,7 +49,7 @@ impl StatsUiSystem {
                 .set_uniform("u_value_modified", ShaderUniform::Int(attack_modified))
                 .set_uniform(
                     "u_text",
-                    ShaderUniform::String((0, attack_value.to_string())),
+                    ShaderUniform::String((1, attack_value.to_string())),
                 )
                 .set_uniform(
                     "u_circle_color",

@@ -6,16 +6,14 @@ impl ActionSystem {
     pub fn run_ticks(
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
     ) {
         let mut ticks = 0;
         loop {
-            let ticked = if let Some(nodes) = nodes {
-                let mut node = CassetteNode::default();
-                node.skip_part = 0.7;
-                let node = &mut Some(node);
+            let ticked = if let Some(cluster) = cluster {
+                let node = &mut Some(Node::default());
                 let result = Self::tick(world, resources, node);
-                nodes.push(node.take().unwrap().finish(world, resources));
+                cluster.push(node.take().unwrap().finish_full(world, resources));
                 result
             } else {
                 Self::tick(world, resources, &mut None)
@@ -33,7 +31,7 @@ impl ActionSystem {
     pub fn tick(
         world: &mut legion::World,
         resources: &mut Resources,
-        node: &mut Option<CassetteNode>,
+        node: &mut Option<Node>,
     ) -> bool {
         let result = if !resources.status_pool.status_changes.is_empty() {
             ContextSystem::refresh_all(world, resources);

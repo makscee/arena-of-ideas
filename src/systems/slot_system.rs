@@ -7,7 +7,7 @@ pub const PULL_FORCE: f32 = 7.0;
 pub const SHOP_POSITION: vec2<f32> = vec2(-30.0, 0.0);
 pub const SHOP_TEAM_OFFSET: vec2<f32> = vec2(0.0, -3.0);
 pub const SHOP_CASE_OFFSET: vec2<f32> = vec2(0.0, 3.0);
-pub const STRIKER_OFFSET: vec2<f32> = vec2(3.5, 0.0);
+pub const STRIKER_OFFSET: vec2<f32> = vec2(5.5, 0.0);
 pub const TEAM_OFFSET: vec2<f32> = vec2(2.5, 4.0);
 pub const BATTLEFIELD_POSITION: vec2<f32> = vec2(0.0, 0.0);
 
@@ -56,10 +56,10 @@ impl SlotSystem {
     pub fn move_to_slots_animated(
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
     ) {
-        if let Some(nodes) = nodes {
-            let mut node = CassetteNode::default();
+        if let Some(cluster) = cluster {
+            let mut node = Node::default();
             <(&EntityComponent, &UnitComponent, &AreaComponent)>::query()
                 .iter(world)
                 .filter_map(|(entity, unit, area)| {
@@ -81,7 +81,7 @@ impl SlotSystem {
                         0.8,
                     )
                 });
-            nodes.push(node.finish(world, resources));
+            cluster.push(node.finish_full(world, resources));
         }
     }
 

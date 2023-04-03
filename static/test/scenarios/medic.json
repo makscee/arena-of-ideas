@@ -1,6 +1,5 @@
 {
     "light": {
-        "name": "Dorks",
         "units": [
             {
                 "health": 10,

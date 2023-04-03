@@ -133,6 +133,12 @@ pub enum ExpressionEntity {
     },
 }
 
+impl Default for ExpressionEntity {
+    fn default() -> Self {
+        Self::Owner
+    }
+}
+
 impl ExpressionEntity {
     pub fn calculate(
         &self,

@@ -28,12 +28,16 @@ impl System for ShopSystem {
             self.need_switch_battle = false;
         }
         Self::refresh_ui(resources);
-        Self::refresh_cassette(world, resources);
-        let mut tape = Some(Vec::<CassetteNode>::default());
-        ActionSystem::run_ticks(world, resources, &mut tape);
-        BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut tape);
-        ActionSystem::run_ticks(world, resources, &mut tape);
-        resources.cassette.add_tape_nodes(tape.unwrap());
+        Self::refresh_tape(world, resources);
+        let mut cluster = Some(NodeCluster::default());
+        ActionSystem::run_ticks(world, resources, &mut cluster);
+        BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut cluster);
+        ActionSystem::run_ticks(world, resources, &mut cluster);
+
+        resources
+            .tape_player
+            .tape
+            .push_to_queue(cluster.unwrap(), resources.tape_player.head);
     }
 
     fn ui<'a>(
@@ -125,9 +129,8 @@ impl ShopSystem {
                         {
                             ShopSystem::change_g(resources, -ShopSystem::buy_price(resources));
                             let slot = slot.unwrap();
-                            let tape = &mut Some(Vec::<CassetteNode>::default());
-                            Self::buy(dropped, slot, resources, world, tape);
-                            ContextSystem::refresh_all(world, resources);
+                            let mut cluster = Some(NodeCluster::default());
+                            Self::buy(dropped, slot, resources, world, &mut cluster);
                         }
                     }
                     _ => {}
@@ -145,7 +148,7 @@ impl ShopSystem {
         slot: usize,
         resources: &mut Resources,
         world: &mut legion::World,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
     ) {
         let mut entry = world.entry_mut(entity).unwrap();
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
@@ -156,7 +159,7 @@ impl ShopSystem {
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
         ContextSystem::refresh_all(world, resources);
-        SlotSystem::move_to_slots_animated(world, resources, nodes);
+        SlotSystem::move_to_slots_animated(world, resources, cluster);
     }
 
     pub fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
@@ -181,19 +184,19 @@ impl ShopSystem {
                 .clone()
                 .set_uniform("u_position", ShaderUniform::Vec2(position))
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
-                .set_uniform("u_text", ShaderUniform::String((1, text))),
+                .set_uniform("u_text", ShaderUniform::String((0, text))),
         )
     }
 
-    fn refresh_cassette(world: &legion::World, resources: &mut Resources) {
-        let mut node = CassetteNode::default();
-        UnitSystem::draw_all_units_to_cassette_node(
+    fn refresh_tape(world: &legion::World, resources: &mut Resources) {
+        let mut node = Node::default();
+        UnitSystem::draw_all_units_to_node(
             &hashset! {Faction::Shop, Faction::Team, Faction::Light, Faction::Dark},
             &mut node,
             world,
             resources,
         );
-        resources.cassette.render_node = node;
+        resources.tape_player.tape.persistent_node = node;
     }
 
     pub fn floor_money(floor: usize) -> i32 {
@@ -212,6 +215,12 @@ impl ShopSystem {
             .team_states
             .get_vars_mut(&Faction::Team)
             .change_int(&VarName::G, delta)
+    }
+
+    pub fn reset_g(resources: &mut Resources) {
+        resources
+            .team_states
+            .set_var(&Faction::Team, VarName::G, Var::Int(0))
     }
 
     pub fn sell_price(resources: &Resources) -> i32 {
@@ -296,7 +305,7 @@ impl ShopSystem {
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
-        Self::refresh_cassette(world, resources);
+        Self::refresh_tape(world, resources);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {

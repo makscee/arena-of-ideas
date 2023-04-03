@@ -11,27 +11,40 @@ impl BattleSystem {
     pub fn run_battle(
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        tape: &mut Option<Tape>,
     ) -> bool {
-        Self::add_intro(resources, nodes);
-        SlotSystem::move_to_slots_animated(world, resources, nodes);
+        Self::add_intro(resources, tape);
+        let mut cluster = match tape {
+            Some(_) => Some(NodeCluster::default()),
+            None => None,
+        };
+        SlotSystem::move_to_slots_animated(world, resources, &mut cluster);
         Event::BattleStart.send(world, resources);
-        Self::spin(world, resources, nodes);
+        Self::spin(world, resources, &mut cluster);
+        if let Some(tape) = tape {
+            tape.push(cluster.unwrap());
+        }
         let mut ticks = 0;
-        while Self::tick(world, resources, nodes) && ticks < 1000 {
+        while Self::tick(world, resources, tape) && ticks < 1000 {
             ticks += 1;
         }
         Self::battle_won(world)
     }
 
-    pub fn add_intro(resources: &Resources, nodes: &mut Option<Vec<CassetteNode>>) {
-        if let Some(nodes) = nodes.as_mut() {
-            let mut node = CassetteNode::default();
+    pub fn add_intro(resources: &Resources, tape: &mut Option<Tape>) {
+        if let Some(tape) = tape.as_mut() {
+            let mut node = Node::default();
             node.add_effects_by_key(
-                TEAM_NAMES_KEY,
+                TEAM_NAMES_KEY.to_string(),
                 VfxSystem::vfx_battle_team_names_animation(resources),
             );
-            nodes.push(node);
+            let mut cluster = NodeCluster::new(node.finish_empty());
+            cluster.set_duration(1.0);
+            tape.push(cluster);
+            tape.persistent_node.add_effects_by_key(
+                TEAM_NAMES_KEY.to_string(),
+                VfxSystem::vfx_battle_team_names(resources),
+            );
         }
     }
 
@@ -86,26 +99,29 @@ impl BattleSystem {
     pub fn tick(
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        tape: &mut Option<Tape>,
     ) -> bool {
         let factions = &hashset! {Faction::Light, Faction::Dark};
         SlotSystem::fill_gaps(world, resources, factions);
-        Self::spin(world, resources, nodes);
-        SlotSystem::move_to_slots_animated(world, resources, nodes);
+        let mut cluster = match tape {
+            Some(_) => Some(NodeCluster::default()),
+            None => None,
+        };
+        Self::spin(world, resources, &mut cluster);
+        SlotSystem::move_to_slots_animated(world, resources, &mut cluster);
         if let Some((left, right)) = Self::find_hitters(world) {
             Event::TurnStart.send(world, resources);
-            Self::spin(world, resources, nodes);
+            Self::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
                 return true;
             }
 
-            Self::move_strikers(&StrikePhase::Charge, left, right, world, resources, nodes);
             Event::BeforeStrike {
                 owner: left,
                 target: right,
             }
             .send(world, resources);
-            Self::spin(world, resources, nodes);
+            Self::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
                 return true;
             }
@@ -115,61 +131,78 @@ impl BattleSystem {
                 target: left,
             }
             .send(world, resources);
-            Self::spin(world, resources, nodes);
+            Self::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
                 return true;
             }
+            if let Some(tape) = tape {
+                tape.push({
+                    let mut cluster = cluster.unwrap();
+                    cluster.set_duration(0.5);
+                    cluster
+                });
+                cluster = Some(NodeCluster::default());
+            }
 
-            Self::move_strikers(&StrikePhase::Release, left, right, world, resources, nodes);
-            Self::add_strike_vfx(world, resources, nodes);
-            Self::hit(left, right, nodes, world, resources);
-            Self::spin(world, resources, nodes);
-            Self::move_strikers(&StrikePhase::Retract, left, right, world, resources, nodes);
+            let (left_hit_pos, right_hit_pos) = (vec2(-1.0, 0.0), vec2(1.0, 0.0));
+
+            if let Some(tape) = tape {
+                let mut node = Node::default();
+                VfxSystem::translate_animated(
+                    left,
+                    left_hit_pos,
+                    &mut node,
+                    world,
+                    EasingType::Linear,
+                    0.03,
+                );
+                VfxSystem::translate_animated(
+                    right,
+                    right_hit_pos,
+                    &mut node,
+                    world,
+                    EasingType::Linear,
+                    0.03,
+                );
+                let mut cluster = NodeCluster::new(node.finish_full(world, resources));
+                cluster.set_duration(0.5);
+                tape.push(cluster);
+            }
+
+            let duration = 1.5;
+            if let Some(cluster) = &mut cluster {
+                let mut node = Node::default();
+                VfxSystem::translate_animated(
+                    left,
+                    SlotSystem::get_position(1, &Faction::Light),
+                    &mut node,
+                    world,
+                    EasingType::QuartOut,
+                    duration,
+                );
+                VfxSystem::translate_animated(
+                    right,
+                    SlotSystem::get_position(1, &Faction::Dark),
+                    &mut node,
+                    world,
+                    EasingType::QuartOut,
+                    duration,
+                );
+                Self::add_strike_vfx(world, resources, &mut node);
+                cluster.push(node.finish_full(world, resources));
+            }
+            Self::hit(left, right, &mut cluster, world, resources);
+            Self::spin(world, resources, &mut cluster);
             Event::TurnEnd.send(world, resources);
-            Self::spin(world, resources, nodes);
+            Self::spin(world, resources, &mut cluster);
+            if let Some(tape) = tape {
+                let mut cluster = cluster.unwrap();
+                cluster.set_duration(duration);
+                tape.push(cluster);
+            }
             return true;
         }
         false
-    }
-
-    fn move_strikers(
-        phase: &StrikePhase,
-        left: legion::Entity,
-        right: legion::Entity,
-        world: &mut legion::World,
-        resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
-    ) {
-        if let Some(nodes) = nodes {
-            let mut node = CassetteNode::default();
-            let (left_pos, right_pos) = Self::get_strikers_positions(phase);
-            let (easing, duration) = match phase {
-                StrikePhase::Charge => (EasingType::QuartInOut, 0.3),
-                StrikePhase::Release => (EasingType::Linear, 0.03),
-                StrikePhase::Retract => (EasingType::QuartOut, 0.10),
-            };
-            if UnitSystem::get_corpse(left, world).is_none() {
-                VfxSystem::translate_animated(left, left_pos, &mut node, world, easing, duration);
-            }
-            if UnitSystem::get_corpse(right, world).is_none() {
-                VfxSystem::translate_animated(right, right_pos, &mut node, world, easing, duration);
-            }
-            nodes.push(node.finish(world, resources));
-        }
-    }
-
-    fn get_strikers_positions(phase: &StrikePhase) -> (vec2<f32>, vec2<f32>) {
-        let left = vec2(-1.0, 1.0);
-        let right = vec2(1.0, 1.0);
-        let left_slot = SlotSystem::get_position(1, &Faction::Light);
-        let right_slot = SlotSystem::get_position(1, &Faction::Dark);
-
-        let delta = match phase {
-            StrikePhase::Charge => vec2(4.5, 0.0),
-            StrikePhase::Release => vec2(-right_slot.x + 1.0, 0.0),
-            StrikePhase::Retract => vec2::ZERO,
-        };
-        (delta * left + left_slot, delta * right + right_slot)
     }
 
     pub fn find_hitters(world: &legion::World) -> Option<(legion::Entity, legion::Entity)> {
@@ -194,21 +227,21 @@ impl BattleSystem {
     pub fn spin(
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
     ) {
         let factions = hashset! {Faction::Light, Faction::Dark};
-        ActionSystem::run_ticks(world, resources, nodes);
-        Self::death_check(&factions, world, resources, nodes);
+        ActionSystem::run_ticks(world, resources, cluster);
+        Self::death_check(&factions, world, resources, cluster);
     }
 
     pub fn hit(
         left: legion::Entity,
         right: legion::Entity,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        Self::spin(world, resources, nodes);
+        Self::spin(world, resources, cluster);
         if let Ok(mut context_left) = ContextSystem::try_get_context(left, world) {
             if let Ok(mut context_right) = ContextSystem::try_get_context(right, world) {
                 context_left.owner = left;
@@ -234,7 +267,7 @@ impl BattleSystem {
             }
         }
 
-        Self::spin(world, resources, nodes);
+        Self::spin(world, resources, cluster);
 
         if UnitSystem::get_corpse(left, world).is_none() {
             Event::AfterStrike {
@@ -242,7 +275,7 @@ impl BattleSystem {
                 target: right,
             }
             .send(world, resources);
-            Self::spin(world, resources, nodes);
+            Self::spin(world, resources, cluster);
         }
 
         if UnitSystem::get_corpse(right, world).is_none() {
@@ -251,7 +284,7 @@ impl BattleSystem {
                 target: left,
             }
             .send(world, resources);
-            Self::spin(world, resources, nodes);
+            Self::spin(world, resources, cluster);
         }
     }
 
@@ -259,7 +292,7 @@ impl BattleSystem {
         factions: &HashSet<Faction>,
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
     ) {
         ContextSystem::refresh_factions(factions, world, resources);
         while let Some(dead_unit) = <(&EntityComponent, &Context)>::query()
@@ -278,7 +311,7 @@ impl BattleSystem {
             resources
                 .logger
                 .log(&format!("{:?} dead", dead_unit), &LogContext::UnitCreation);
-            if UnitSystem::process_death(dead_unit, world, resources, nodes) {
+            if UnitSystem::process_death(dead_unit, world, resources, cluster) {
                 resources.logger.log(
                     &format!("{:?} removed", dead_unit),
                     &LogContext::UnitCreation,
@@ -287,17 +320,9 @@ impl BattleSystem {
         }
     }
 
-    fn add_strike_vfx(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
-    ) {
-        if let Some(nodes) = nodes.as_mut() {
-            let position = BATTLEFIELD_POSITION;
-            let mut node: CassetteNode = default();
-            node.add_effect(VfxSystem::vfx_strike(resources, position));
-            nodes.push(node.finish(world, resources));
-        }
+    fn add_strike_vfx(world: &mut legion::World, resources: &mut Resources, node: &mut Node) {
+        let position = BATTLEFIELD_POSITION;
+        node.add_effect(VfxSystem::vfx_strike(resources, position));
     }
 }
 
@@ -311,7 +336,7 @@ impl System for BattleSystem {
         Box::new(
             (Text::new(
                 format!("Floor #{}", resources.floors.current_ind()),
-                resources.fonts.get_font(0),
+                resources.fonts.get_font(1),
                 70.0,
                 Rgba::WHITE,
             ),)

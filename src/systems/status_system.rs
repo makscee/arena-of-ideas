@@ -4,10 +4,10 @@ pub struct StatusSystem {}
 
 impl StatusSystem {
     fn get_status_names_shaders(
-        names: &HashMap<String, i32>,
+        statuses: &HashMap<String, i32>,
         resources: &Resources,
     ) -> Vec<Shader> {
-        names
+        statuses
             .iter()
             .filter_map(|(name, charges)| match resources.definitions.get(name) {
                 Some(def) => Some(
@@ -19,7 +19,7 @@ impl StatusSystem {
                         .set_uniform(
                             "u_text",
                             ShaderUniform::String((
-                                1,
+                                0,
                                 match *charges > 1 {
                                     true => format!("{} ({})", name, charges),
                                     false => name.clone(),
@@ -32,7 +32,12 @@ impl StatusSystem {
             })
             .collect_vec()
     }
-    fn get_definitions_shaders(names: &HashSet<&String>, resources: &Resources) -> Vec<Shader> {
+    fn get_definitions_shaders(
+        names: &HashSet<String>,
+        statuses: &HashMap<String, i32>,
+        resources: &Resources,
+    ) -> Vec<Shader> {
+        let names: HashSet<&String> = HashSet::from_iter(names.iter().chain(statuses.keys()));
         names
             .iter()
             .sorted()
@@ -52,7 +57,7 @@ impl StatusSystem {
                         .clone()
                         .set_uniform(
                             "u_text",
-                            ShaderUniform::String((1, def.description.clone())),
+                            ShaderUniform::String((0, def.description.clone())),
                         ),
                 ]),
                 None => None,
@@ -62,15 +67,17 @@ impl StatusSystem {
     }
 
     pub fn get_active_statuses_panel_effects(
-        node: &CassetteNode,
+        node: &Node,
         resources: &Resources,
     ) -> Vec<VisualEffect> {
         let mut effects: Vec<VisualEffect> = default();
         if let Some(entity) = resources.input.cur_hovered {
-            let names = &node.get_active_statuses(entity);
-            let name_shaders = Self::get_status_names_shaders(names, resources);
-            let names = node.get_definitions(entity);
-            let definition_shaders = Self::get_definitions_shaders(&names, resources);
+            let empty = HashMap::default();
+            let statuses = node.get_entity_statuses(&entity).unwrap_or(&empty);
+            let name_shaders = Self::get_status_names_shaders(statuses, resources);
+            let empty = HashSet::default();
+            let names = node.get_entity_definitions(&entity).unwrap_or(&empty);
+            let definition_shaders = Self::get_definitions_shaders(names, statuses, resources);
             if !name_shaders.is_empty() {
                 let shader = resources.options.shaders.status_panel.clone();
                 effects.push(VisualEffect::new(

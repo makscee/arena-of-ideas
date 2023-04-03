@@ -221,7 +221,7 @@ impl StatusPool {
     pub fn process_status_changes(
         world: &legion::World,
         resources: &mut Resources,
-        node: &mut Option<CassetteNode>,
+        node: &mut Option<Node>,
     ) {
         let max_delay = 0.5;
         let delay_per_charge = max_delay
@@ -231,7 +231,6 @@ impl StatusPool {
                 .iter()
                 .map(|x| x.2)
                 .sum::<i32>() as f32;
-        let key = "status_changes";
         let mut cnt = 0;
         while let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()
@@ -252,18 +251,15 @@ impl StatusPool {
                         .get(&status_name)
                         .unwrap()
                         .color;
-                    node.add_effect_by_key(
-                        key,
-                        VfxSystem::vfx_show_text(
-                            resources,
-                            &text,
-                            color,
-                            outline_color,
-                            ContextSystem::try_get_position(entity, world).unwrap(),
-                            1,
-                            delay_per_charge * cnt as f32,
-                        ),
-                    );
+                    node.add_effect(VfxSystem::vfx_show_parent_text(
+                        resources,
+                        &text,
+                        color,
+                        outline_color,
+                        entity,
+                        0,
+                        delay_per_charge * cnt as f32,
+                    ));
                 }
                 cnt += 1;
             }

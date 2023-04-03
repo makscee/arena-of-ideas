@@ -73,7 +73,7 @@ impl geng::ui::Widget for PoolWidget<'_> {
                         self.resources,
                         ugli::uniforms! {
                             u_global_time: self.resources.global_time,
-                            u_game_time: self.resources.cassette.head,
+                            u_game_time: self.resources.tape_player.head,
                             u_position: position,
                             u_radius: 0.6 * self.height,
                         },

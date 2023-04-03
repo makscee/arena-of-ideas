@@ -19,9 +19,9 @@ impl UnitSystem {
             .clone()
     }
 
-    pub fn draw_unit_to_cassette_node(
+    pub fn draw_unit_to_node(
         entity: legion::Entity,
-        node: &mut CassetteNode,
+        node: &mut Node,
         world: &legion::World,
         resources: &Resources,
     ) {
@@ -55,14 +55,14 @@ impl UnitSystem {
         node.save_entity_definitions(entity, definitions);
     }
 
-    pub fn draw_all_units_to_cassette_node(
+    pub fn draw_all_units_to_node(
         factions: &HashSet<Faction>,
-        node: &mut CassetteNode,
+        node: &mut Node,
         world: &legion::World,
         resources: &Resources,
     ) {
         for entity in UnitSystem::collect_factions(world, factions) {
-            Self::draw_unit_to_cassette_node(entity, node, world, resources)
+            Self::draw_unit_to_node(entity, node, world, resources)
         }
     }
 
@@ -70,10 +70,10 @@ impl UnitSystem {
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
-        nodes: &mut Option<Vec<CassetteNode>>,
+        cluster: &mut Option<NodeCluster>,
     ) -> bool {
         Event::BeforeDeath { owner: entity }.send(world, resources);
-        ActionSystem::run_ticks(world, resources, nodes);
+        ActionSystem::run_ticks(world, resources, cluster);
         let context = ContextSystem::refresh_entity(entity, world, resources);
         if context.vars.get_int(&VarName::HpValue) <= context.vars.get_int(&VarName::HpDamage) {
             Self::turn_unit_into_corpse(entity, world, resources);

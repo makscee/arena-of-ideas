@@ -7,7 +7,6 @@ mod action_system;
 mod battle_system;
 mod button_system;
 mod camera_system;
-mod cassette_player_system;
 mod context_system;
 mod file_watcher_system;
 mod gallery_system;
@@ -24,6 +23,7 @@ mod simulation_system;
 mod slot_system;
 mod stats_ui_system;
 mod status_system;
+mod tape_player_system;
 mod time_system;
 mod unit_system;
 mod vfx_system;
@@ -34,7 +34,6 @@ mod world_system;
 pub use action_system::*;
 pub use battle_system::*;
 pub use camera_system::*;
-pub use cassette_player_system::*;
 pub use context_system::*;
 pub use file_watcher_system::*;
 pub use gallery_system::*;
@@ -51,6 +50,7 @@ pub use simulation_system::*;
 pub use slot_system::*;
 pub use stats_ui_system::*;
 pub use status_system::*;
+pub use tape_player_system::*;
 pub use time_system::*;
 pub use unit_system::*;
 pub use vfx_system::*;
@@ -90,46 +90,22 @@ impl Game {
         let mut global_systems: Vec<Box<dyn System>> = Vec::default();
         let mut game_state = GameStateSystem::new();
         game_state.add_systems(GameState::MainMenu, vec![]);
-        game_state.add_systems(
-            GameState::Battle,
-            vec![
-                Box::new(CassettePlayerSystem::new(false)),
-                Box::new(BattleSystem::new()),
-            ],
-        );
-        game_state.add_systems(
-            GameState::CustomGame,
-            vec![Box::new(CassettePlayerSystem::new(false))],
-        );
+        game_state.add_systems(GameState::Battle, vec![Box::new(BattleSystem::new())]);
+        game_state.add_systems(GameState::CustomGame, vec![]);
         game_state.add_systems(
             GameState::Shop,
-            vec![
-                Box::new(ShopSystem::new()),
-                Box::new(PoolUiSystem::new()),
-                Box::new(CassettePlayerSystem::new(true)),
-            ],
+            vec![Box::new(ShopSystem::new()), Box::new(PoolUiSystem::new())],
         );
-        game_state.add_systems(
-            GameState::Gallery,
-            vec![
-                Box::new(GallerySystem::new()),
-                Box::new(CassettePlayerSystem::new(true)),
-            ],
-        );
-        game_state.add_systems(
-            GameState::GameOver,
-            vec![
-                Box::new(GameOverSystem::new()),
-                Box::new(CassettePlayerSystem::new(true)),
-            ],
-        );
+        game_state.add_systems(GameState::Gallery, vec![Box::new(GallerySystem::new())]);
+        game_state.add_systems(GameState::GameOver, vec![Box::new(GameOverSystem::new())]);
 
         global_systems.push(Box::new(TimeSystem::new()));
         global_systems.push(Box::new(CameraSystem::new()));
         global_systems.push(Box::new(ContextSystem::new()));
-        global_systems.push(Box::new(ShaderSystem::new()));
+        global_systems.push(Box::new(TapePlayerSystem::new()));
         global_systems.push(Box::new(SlotSystem::new()));
         global_systems.push(Box::new(InputSystem::new()));
+        global_systems.push(Box::new(ShaderSystem::new()));
         global_systems.push(Box::new(game_state));
         global_systems
     }

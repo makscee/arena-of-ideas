@@ -4,15 +4,29 @@
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
                     "name": "name",
                     "attack": 1,
                     "health": 12,
-                    "active_statuses": {
-                        "Shield": 10
+                    "houses": [
+                        "Clerics"
+                    ],
+                    "trigger": {
+                        "type": "AfterStrike",
+                        "effect": {
+                            "type": "Repeat",
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Mend"
+                            },
+                            "count": {
+                                "type": "Const",
+                                "value": 3
+                            }
+                        }
                     }
                 }
             ],
@@ -25,13 +39,67 @@
             }
         },
         "dark": {
+            "state": {
+                "name": "Test"
+            },
             "units": [
                 {
                     "attack": 1,
                     "health": 15,
-                    "active_statuses": {
-                        "Shield": 10
+                    "houses": [
+                        "Demons"
+                    ],
+                    "trigger": {
+                        "type": "AfterStrike",
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "Repeat",
+                                    "effect": {
+                                        "type": "UseAbility",
+                                        "ability": "Empower"
+                                    },
+                                    "count": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                },
+                                {
+                                    "type": "Aoe",
+                                    "factions": [
+                                        {
+                                            "type": "Owner"
+                                        }
+                                    ],
+                                    "effect": {
+                                        "type": "UseAbility",
+                                        "ability": "Empower"
+                                    }
+                                }
+                            ]
+                        }
                     }
+                },
+                {
+                    "name": "name",
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "name",
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "name",
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "name",
+                    "attack": 1,
+                    "health": 1
                 }
             ]
         }
@@ -228,7 +296,7 @@
                     ],
                     "u_outline_color": "#404040",
                     "u_text": [
-                        1,
+                        0,
                         "3 g"
                     ],
                     "u_text_inside": 0.45,
@@ -244,7 +312,7 @@
                     "u_scale": 1.5,
                     "u_outline_color": "#404040",
                     "u_text": [
-                        1,
+                        0,
                         "3 g"
                     ],
                     "u_align": -1.0,

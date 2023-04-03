@@ -57,7 +57,7 @@ impl Game {
         resources.floors.reset();
         resources.action_queue.clear();
         resources.team_states = default();
-        resources.cassette.clear();
+        resources.tape_player.clear();
         Shop::load_pool(resources);
     }
 
@@ -129,7 +129,7 @@ impl geng::State for Game {
         fps /= self.fps.len() as f32;
         let fps = Text::new(
             format!("{:.0}", fps),
-            self.resources.fonts.get_font(1),
+            self.resources.fonts.get_font(0),
             32.0,
             Rgba::WHITE,
         )

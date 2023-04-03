@@ -30,9 +30,9 @@ impl GallerySystem {
     fn redraw_units(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let heroes = self.current_heroes.len();
         self.current_heroes[heroes - 1] = self.wanted_hero;
-        resources.cassette.render_node.clear();
+        // resources.cassette.render_node.clear();
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
-        resources.cassette.render_node.clear_key(CARD_ANIMATION_KEY);
+        // resources.cassette.render_node.clear_key(CARD_ANIMATION_KEY);
         for (ind, template_ind) in self.current_heroes.iter().enumerate() {
             let template_key = self.paths[*template_ind].clone();
             let position = vec2(
@@ -105,7 +105,7 @@ impl GallerySystem {
 
 impl System for GallerySystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if resources.input.down_keys.contains(&geng::Key::Escape) {
+        if resources.input.down_keys.contains(&Escape) {
             self.clear();
         }
         // if self.paths.is_empty() {
@@ -129,18 +129,18 @@ impl System for GallerySystem {
             self.need_redraw = true;
         }
 
-        if resources.input.down_keys.contains(&geng::Key::Enter) {
+        if resources.input.down_keys.contains(&Enter) {
             self.current_heroes.push(self.wanted_hero + 1);
         }
 
-        if resources.input.down_keys.contains(&geng::Key::Left) {
+        if resources.input.down_keys.contains(&Left) {
             let length = self.paths.len();
             self.wanted_hero = (self.wanted_hero + length - 1) % length;
         }
-        if resources.input.down_keys.contains(&geng::Key::Right) {
+        if resources.input.down_keys.contains(&Right) {
             self.wanted_hero = (self.wanted_hero + 1) % self.paths.len();
         }
-        if resources.input.down_keys.contains(&geng::Key::Down) {
+        if resources.input.down_keys.contains(&Down) {
             self.need_redraw = true;
             resources.camera.camera.fov *= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
@@ -151,7 +151,7 @@ impl System for GallerySystem {
                 ),
             )
         }
-        if resources.input.down_keys.contains(&geng::Key::Up) {
+        if resources.input.down_keys.contains(&Up) {
             self.need_redraw = true;
             resources.camera.camera.fov /= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
@@ -162,7 +162,7 @@ impl System for GallerySystem {
                 ),
             )
         }
-        if resources.input.down_keys.contains(&geng::Key::C) {
+        if resources.input.down_keys.contains(&C) {
             self.need_redraw = true;
             WorldSystem::set_var(
                 world,
@@ -171,7 +171,7 @@ impl System for GallerySystem {
             )
         }
 
-        if resources.input.down_keys.contains(&geng::Key::Space) {
+        if resources.input.down_keys.contains(&Space) {
             self.is_card = !self.is_card;
             self.need_card_animation = true;
             self.need_redraw = true;

@@ -8,14 +8,14 @@
                 "type": "ShowCurve",
                 "after": {
                     "type": "ChangeStatus",
-                    "name": "SiphonLifeLose",
+                    "name": "LifeStealLose",
                     "charges": {
                         "type": "Var",
                         "var": "Charges"
                     },
                     "after": {
                         "type": "ChangeStatus",
-                        "name": "SiphonLifeGain",
+                        "name": "LifeStealGain",
                         "charges": {
                             "type": "Var",
                             "var": "Charges"
@@ -32,7 +32,7 @@
         }
     },
     "statuses": {
-        "SiphonLifeGain": {
+        "LifeStealGain": {
             "description": "+1 Health",
             "trigger": {
                 "type": "ChangeVarInt",
@@ -43,7 +43,7 @@
                 }
             }
         },
-        "SiphonLifeLose": {
+        "LifeStealLose": {
             "description": "-1 Health",
             "trigger": {
                 "type": "ChangeVarInt",

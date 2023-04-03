@@ -11,7 +11,7 @@ impl VfxSystem {
     pub fn translate_animated(
         entity: legion::Entity,
         position: vec2<f32>,
-        node: &mut CassetteNode,
+        node: &mut Node,
         world: &mut legion::World,
         easing: EasingType,
         duration: Time,
@@ -49,28 +49,61 @@ impl VfxSystem {
             1.5,
             delay,
             VisualEffectType::ShaderAnimation {
-                shader: resources
-                    .options
-                    .shaders
-                    .text
-                    .clone()
-                    .set_uniform("u_position", ShaderUniform::Vec2(position))
-                    .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, 0.5)))
-                    .set_uniform("u_offset_over_t", ShaderUniform::Vec2(vec2(0.0, 1.8)))
-                    .set_uniform("u_text", ShaderUniform::String((font, text.to_string())))
-                    .set_uniform("u_color", ShaderUniform::Color(color))
-                    .set_uniform("u_outline_color", ShaderUniform::Color(outline_color))
-                    .set_uniform("u_outline_fade", ShaderUniform::Float(1.0))
-                    .set_uniform("u_text_border", ShaderUniform::Float(0.1))
-                    .set_uniform("u_alpha", ShaderUniform::Float(8.0))
-                    .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
-                    .set_uniform("u_scale", ShaderUniform::Float(0.6)),
+                shader: Self::get_show_text_shader(resources, text, font, color, outline_color)
+                    .set_uniform("u_position", ShaderUniform::Vec2(position)),
                 from: default(),
                 to: default(),
                 easing: EasingType::QuartOut,
             },
             0,
         )
+    }
+
+    pub fn vfx_show_parent_text(
+        resources: &Resources,
+        text: &str,
+        color: Rgba<f32>,
+        outline_color: Rgba<f32>,
+        parent: legion::Entity,
+        font: usize,
+        delay: Time,
+    ) -> VisualEffect {
+        VisualEffect::new_delayed(
+            1.5,
+            delay,
+            VisualEffectType::EntityExtraShaderAnimation {
+                entity: parent,
+                shader: Self::get_show_text_shader(resources, text, font, color, outline_color),
+                from: default(),
+                to: default(),
+                easing: EasingType::QuartOut,
+            },
+            0,
+        )
+    }
+
+    fn get_show_text_shader(
+        resources: &Resources,
+        text: &str,
+        font: usize,
+        color: Rgba<f32>,
+        outline_color: Rgba<f32>,
+    ) -> Shader {
+        resources
+            .options
+            .shaders
+            .text
+            .clone()
+            .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, 0.5)))
+            .set_uniform("u_offset_over_t", ShaderUniform::Vec2(vec2(0.0, 1.8)))
+            .set_uniform("u_text", ShaderUniform::String((font, text.to_string())))
+            .set_uniform("u_color", ShaderUniform::Color(color))
+            .set_uniform("u_outline_color", ShaderUniform::Color(outline_color))
+            .set_uniform("u_outline_fade", ShaderUniform::Float(1.0))
+            .set_uniform("u_text_border", ShaderUniform::Float(0.1))
+            .set_uniform("u_alpha", ShaderUniform::Float(8.0))
+            .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
+            .set_uniform("u_scale", ShaderUniform::Float(0.6))
     }
 
     pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> VisualEffect {
@@ -93,21 +126,21 @@ impl VfxSystem {
 
     pub fn vfx_show_curve(
         resources: &Resources,
-        from: vec2<f32>,
-        to: vec2<f32>,
+        from: legion::Entity,
+        to: legion::Entity,
         color: Rgba<f32>,
     ) -> VisualEffect {
         VisualEffect::new(
             1.0,
-            VisualEffectType::ShaderAnimation {
+            VisualEffectType::EntityPairExtraShaderAnimation {
+                entity_from: from,
+                entity_to: to,
                 shader: resources
                     .options
                     .shaders
                     .curve
                     .clone()
-                    .set_uniform("u_color", ShaderUniform::Color(color))
-                    .set_uniform("u_from", ShaderUniform::Vec2(from))
-                    .set_uniform("u_to", ShaderUniform::Vec2(to)),
+                    .set_uniform("u_color", ShaderUniform::Color(color)),
                 from: default(),
                 to: default(),
                 easing: EasingType::Linear,

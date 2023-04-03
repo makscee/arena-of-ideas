@@ -72,7 +72,7 @@ impl TeamStates {
 
 impl Default for TeamStates {
     fn default() -> Self {
-        let states = HashMap::from_iter(enum_iterator::all::<Faction>().map(|f| (f, default())));
+        let states = HashMap::from_iter(Faction::all().map(|f| (f, default())));
         Self { states }
     }
 }

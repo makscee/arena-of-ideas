@@ -38,6 +38,8 @@ impl FileWatcherLoader for Floors {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::loader));
         debug!("Load floors {:?}", path);
+        let prev_current = resources.floors.current;
         resources.floors = futures::executor::block_on(load_json(path)).unwrap();
+        resources.floors.current = prev_current;
     }
 }

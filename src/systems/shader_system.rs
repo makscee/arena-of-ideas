@@ -81,16 +81,16 @@ impl ShaderSystem {
                 }),
         );
 
-        let shaders = Cassette::get_shaders(resources, world_shaders)
+        let shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
             .collect_vec();
 
         for shader in shaders {
             let uniforms = ugli::uniforms!(
-                u_game_time: match resources.cassette_play_mode {
-                    CassettePlayMode::Play | CassettePlayMode::Rewind { .. } => resources.cassette.head,
-                    CassettePlayMode::Stop => resources.global_time,
+                u_game_time: match resources.tape_player.mode {
+                    TapePlayMode::Play => resources.tape_player.head,
+                    TapePlayMode::Stop { .. } => resources.global_time
                 },
                 u_global_time: resources.global_time,
             );

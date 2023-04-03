@@ -52,6 +52,14 @@ pub enum VisualEffectType {
         to: ShaderUniforms,
         easing: EasingType,
     },
+    EntityPairExtraShaderAnimation {
+        entity_from: legion::Entity,
+        entity_to: legion::Entity,
+        shader: Shader,
+        from: ShaderUniforms,
+        to: ShaderUniforms,
+        easing: EasingType,
+    },
     /// Draw extra shader using uniforms of existing Shader of Entity
     EntityExtraShaderConst {
         entity: legion::Entity,
@@ -124,6 +132,49 @@ impl VisualEffectType {
                 }
                 _ => None,
             },
+            VisualEffectType::EntityPairExtraShaderAnimation {
+                shader,
+                from,
+                to,
+                easing,
+                entity_from,
+                entity_to,
+            } => {
+                if let Some(from_shader) = entity_shaders.get(entity_from) {
+                    if let Some(to_shader) = entity_shaders.get(entity_to) {
+                        let mut shader = shader.clone();
+                        let mut uniforms = from_shader
+                            .parameters
+                            .uniforms
+                            .merge(&shader.parameters.uniforms)
+                            .merge(&ShaderUniforms::mix(from, to, easing.f(t)));
+                        uniforms.insert(
+                            "u_from".to_string(),
+                            from_shader
+                                .parameters
+                                .uniforms
+                                .get(&VarName::Position.convert_to_uniform())
+                                .cloned()
+                                .unwrap(),
+                        );
+                        uniforms.insert(
+                            "u_to".to_string(),
+                            to_shader
+                                .parameters
+                                .uniforms
+                                .get(&VarName::Position.convert_to_uniform())
+                                .cloned()
+                                .unwrap(),
+                        );
+                        shader.parameters = ShaderParameters {
+                            uniforms,
+                            ..shader.parameters
+                        };
+                        return Some(shader);
+                    }
+                }
+                None
+            }
             VisualEffectType::EntityExtraShaderConst { entity, shader } => {
                 match entity_shaders.get(entity) {
                     Some(entity_shader) => {

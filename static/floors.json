@@ -370,7 +370,7 @@
                 {
                     "name": "Golem",
                     "attack": 10,
-                    "health": 15,
+                    "health": 20,
                     "houses": [
                         "Warriors"
                     ],
@@ -394,7 +394,31 @@
                 {
                     "name": "Golem",
                     "attack": 10,
-                    "health": 15,
+                    "health": 20,
+                    "houses": [
+                        "Warriors"
+                    ],
+                    "active_statuses": {
+                        "Defense": 99
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#737373",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 0.3,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Golem",
+                    "attack": 10,
+                    "health": 20,
                     "houses": [
                         "Warriors"
                     ],

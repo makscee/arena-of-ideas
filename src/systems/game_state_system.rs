@@ -25,41 +25,41 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Battle => {
-                if resources.input.down_keys.contains(&geng::Key::R) {
-                    resources.cassette.head = 0.0;
+                if resources.input.down_keys.contains(&R) {
+                    resources.tape_player.head = 0.0;
                 }
-                if resources.cassette.head > resources.cassette.length()
-                    || resources.input.down_keys.contains(&geng::Key::Escape)
+                if resources.tape_player.tape.length() + 1.0 < resources.tape_player.head
+                    || resources.input.down_keys.contains(&Escape)
                 {
                     BattleSystem::finish_floor_battle(world, resources);
                 }
             }
             GameState::Shop => {
-                if resources.input.down_keys.contains(&geng::Key::Space) {
+                if resources.input.down_keys.contains(&Space) {
                     ShopSystem::switch_to_battle(world, resources);
                     resources.transition_state = GameState::Battle;
                 }
 
-                if resources.input.down_keys.contains(&geng::Key::G) {
+                if resources.input.down_keys.contains(&G) {
                     resources.transition_state = GameState::Gallery;
                 }
 
-                if resources.input.down_keys.contains(&geng::Key::O) {
+                if resources.input.down_keys.contains(&O) {
                     resources.transition_state = GameState::GameOver;
                 }
-                if resources.input.down_keys.contains(&geng::Key::R) {
+                if resources.input.down_keys.contains(&R) {
                     Game::restart(world, resources);
                 }
-                if resources.input.down_keys.contains(&geng::Key::C) {
+                if resources.input.down_keys.contains(&C) {
                     ShopSystem::change_g(resources, 100);
                 }
-                if resources.input.down_keys.contains(&geng::Key::L) {
+                if resources.input.down_keys.contains(&L) {
                     SaveSystem::load(world, resources);
                 }
-                if resources.input.down_keys.contains(&geng::Key::S) {
+                if resources.input.down_keys.contains(&S) {
                     SaveSystem::save(world, resources);
                 }
-                if resources.input.down_keys.contains(&geng::Key::P) {
+                if resources.input.down_keys.contains(&P) {
                     if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
                         UnitSystem::delete_unit(entity, world, resources);
                     }
@@ -73,19 +73,19 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Gallery => {
-                if resources.input.down_keys.contains(&geng::Key::G) {
+                if resources.input.down_keys.contains(&G) {
                     resources.transition_state = GameState::Shop;
                 }
             }
             GameState::GameOver => {
-                if resources.input.down_keys.contains(&geng::Key::Enter) {
+                if resources.input.down_keys.contains(&Enter) {
                     resources.transition_state = GameState::Shop;
                 }
             }
             GameState::CustomGame => {
-                if resources.input.down_keys.contains(&geng::Key::R) {
+                if resources.input.down_keys.contains(&R) {
                     resources.transition_state = GameState::MainMenu;
-                    resources.cassette.head = 0.0;
+                    resources.tape_player.head = 0.0;
                 }
             }
         }
@@ -190,16 +190,17 @@ impl GameStateSystem {
             GameState::MainMenu => {}
             GameState::Shop => {
                 Event::ShopEnd.send(world, resources);
-                resources.cassette.clear();
+                resources.tape_player.clear();
                 ShopSystem::clear_case(world, resources);
+                ShopSystem::reset_g(resources);
             }
             GameState::Battle => {
-                resources.cassette.clear();
+                resources.tape_player.clear();
                 Event::BattleEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
             }
             GameState::Gallery => {
-                resources.cassette.clear();
+                resources.tape_player.clear();
                 resources.action_queue.clear();
                 resources.status_pool.status_changes.clear();
                 resources.camera.camera.fov = resources.options.fov;
@@ -221,29 +222,18 @@ impl GameStateSystem {
         match resources.transition_state {
             GameState::MainMenu => {}
             GameState::Battle => {
-                CassettePlayerSystem::init_world(world, resources);
                 resources.camera.focus = Focus::Battle;
-                resources.cassette.render_node.clear();
-                let mut tape = Some(Vec::<CassetteNode>::default());
+                let mut tape = Some(Tape::default());
                 BattleSystem::run_battle(world, resources, &mut tape);
-                resources.cassette.add_tape_nodes(tape.unwrap());
-                resources.cassette_play_mode = CassettePlayMode::Play;
-                resources.cassette.head = 0.0;
-                let factions = &hashset! {Faction::Light, Faction::Dark};
-                ContextSystem::refresh_factions(factions, world, resources);
-                let last_node = &mut default();
-                UnitSystem::draw_all_units_to_cassette_node(factions, last_node, world, resources);
-                last_node.end = last_node.start + 1.0;
-                resources
-                    .cassette
-                    .add_tape_nodes(vec![last_node.to_owned()]);
+                resources.tape_player.clear();
+                resources.tape_player.tape = tape.unwrap();
             }
             GameState::Shop => {
                 if resources.current_state == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                 }
                 ShopSystem::init_floor(world, resources, true);
-                CassettePlayerSystem::init_world(world, resources);
+                // CassettePlayerSystem::init_world(world, resources);
                 SlotSystem::init_world(
                     world,
                     &resources.options,
@@ -276,19 +266,12 @@ impl GameStateSystem {
                     .expect("Light team not set for custom game in options.json");
                 BattleSystem::clear_world(world, resources);
                 BattleSystem::init_battle(&light, &dark, world, resources);
-                let mut tape = Some(Vec::<CassetteNode>::default());
+                let mut tape = Some(Tape::default());
                 BattleSystem::run_battle(world, resources, &mut tape);
-                let mut head = 0.0;
-                if resources.cassette.head > 0.0 {
-                    resources.cassette_play_mode = CassettePlayMode::Stop;
-                    head = resources.cassette.head;
-                }
                 let tape = tape.unwrap();
-                dbg!(tape.len());
-                resources.cassette.clear();
-                resources.cassette.add_tape_nodes(tape);
-                resources.cassette.head = head;
-                dbg!(resources.cassette.length());
+                dbg!(tape.length());
+                resources.tape_player.clear();
+                resources.tape_player.tape = tape;
             }
         }
         resources.current_state = resources.transition_state.clone();

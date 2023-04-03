@@ -1,3 +1,4 @@
+use geng::prelude::file::load_json;
 use std::{collections::VecDeque, rc::Rc};
 
 use super::*;
@@ -6,7 +7,6 @@ mod ability;
 mod ability_name;
 mod ability_pool;
 mod camera;
-mod cassette;
 mod condition;
 mod definitions;
 mod effect;
@@ -26,6 +26,8 @@ mod packed_unit;
 mod shader_programs;
 mod shop;
 mod status;
+mod tape;
+mod tape_player;
 mod team;
 mod team_states;
 mod trigger;
@@ -35,7 +37,6 @@ pub use ability::*;
 pub use ability_name::*;
 pub use ability_pool::*;
 pub use camera::*;
-pub use cassette::*;
 pub use condition::*;
 pub use definitions::*;
 pub use effect::*;
@@ -44,7 +45,6 @@ pub use expression::*;
 pub use faction::*;
 pub use floors::*;
 pub use fonts::*;
-use geng::prelude::file::load_json;
 pub use hero_pool::*;
 pub use house::*;
 pub use house_pool::*;
@@ -56,6 +56,8 @@ pub use packed_unit::*;
 pub use shader_programs::*;
 pub use shop::*;
 pub use status::*;
+pub use tape::*;
+pub use tape_player::*;
 pub use team::*;
 pub use team_states::*;
 pub use trigger::*;
@@ -75,8 +77,7 @@ pub struct Resources {
     pub ability_pool: AbilityPool,
     pub team_states: TeamStates,
     pub action_queue: VecDeque<Action>,
-    pub cassette: Cassette,
-    pub cassette_play_mode: CassettePlayMode,
+    pub tape_player: TapePlayer,
     pub frame_shaders: Vec<Shader>,
 
     pub shop: Shop,
@@ -111,7 +112,7 @@ impl Resources {
             delta_time: default(),
             action_queue: default(),
             status_pool: default(),
-            cassette: default(),
+            tape_player: default(),
             shop: default(),
             frame_shaders: default(),
             input: default(),
@@ -122,7 +123,6 @@ impl Resources {
             game_won: default(),
             last_round: default(),
             hero_pool: default(),
-            cassette_play_mode: CassettePlayMode::Play,
             transition_state: GameState::MainMenu,
             current_state: GameState::MainMenu,
             options,

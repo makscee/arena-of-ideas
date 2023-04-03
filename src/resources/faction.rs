@@ -43,4 +43,7 @@ impl Faction {
             Faction::Gallery => Faction::Gallery,
         }
     }
+    pub fn all() -> impl Iterator<Item = Faction> {
+        enum_iterator::all::<Faction>()
+    }
 }

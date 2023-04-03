@@ -116,7 +116,7 @@ impl Event {
                 | Event::StatusChargeAdd { status, owner }
                 | Event::StatusChargeRemove { status, owner } => {
                     let context = ContextSystem::get_context(*owner, world)
-                        .add_var(VarName::StatusName, Var::String((0, status.clone())))
+                        .add_var(VarName::StatusName, Var::String((1, status.clone())))
                         .to_owned();
                     resources
                         .status_pool
