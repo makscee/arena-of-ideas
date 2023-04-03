@@ -1,0 +1,29 @@
+{
+    "name": "Carer",
+    "attack": 1,
+    "health": 1,
+    "description": "Shop start:\ngive Shield to\nall Shieldless",
+    "houses": [
+        "Robots"
+    ],
+    "trigger": {
+        "type": "ShopStart",
+        "effect": {
+            "type": "AllTargets",
+            "faction": {
+                "type": "Owner"
+            },
+            "condition": {
+                "type": "Not",
+                "condition": {
+                    "type": "HaveStatus",
+                    "name": "Shield"
+                }
+            },
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Shield"
+            }
+        }
+    }
+}
