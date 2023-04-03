@@ -1,35 +1,31 @@
 {
-    "name": "Cultist",
-    "attack": 3,
-    "health": 3,
-    "description": "On buy:\ndouble Empower\nof ally to the right",
+    "name": "Enabler",
+    "attack": 2,
+    "health": 2,
+    "description": "On buy: give\n+1/+1 to all\nallies for\neach Empower",
     "houses": [
         "Demons"
     ],
     "trigger": {
         "type": "OnBuy",
         "effect": {
-            "type": "If",
+            "type": "AllTargets",
+            "faction": {
+                "type": "Owner"
+            },
             "condition": {
                 "type": "HaveStatus",
                 "name": "Empower"
             },
-            "then": {
+            "effect": {
                 "type": "ChangeStatus",
-                "name": "Empower",
+                "name": "DarkGrowth",
                 "charges": {
                     "type": "StatusCharges",
                     "name": "Empower"
                 },
                 "after": {
                     "type": "ShowCurve"
-                }
-            },
-            "target": {
-                "type": "SlotRelative",
-                "relation": {
-                    "type": "Const",
-                    "value": -1
                 }
             }
         }

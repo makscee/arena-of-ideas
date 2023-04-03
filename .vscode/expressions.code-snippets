@@ -1,0 +1,77 @@
+{
+    "Expression Sum": {
+        "prefix": "expression_sum",
+        "body": [
+            "{",
+            "    \"type\": \"Sum\",",
+            "    \"a\": $TM_SELECTED_TEXT$1,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Sum"
+    },
+    "Expression Sub": {
+        "prefix": "expression_sub",
+        "body": [
+            "{",
+            "    \"type\": \"Sub\",",
+            "    \"a\": $TM_SELECTED_TEXT$1,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Sub"
+    },
+    "Expression Mul": {
+        "prefix": "expression_mul",
+        "body": [
+            "{",
+            "    \"type\": \"Mul\",",
+            "    \"a\": $TM_SELECTED_TEXT$1,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Mul"
+    },
+    "Expression Max": {
+        "prefix": "expression_max",
+        "body": [
+            "{",
+            "    \"type\": \"Max\",",
+            "    \"a\": $TM_SELECTED_TEXT$1,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Max"
+    },
+    "Expression Const": {
+        "prefix": "expression_const",
+        "body": [
+            "{",
+            "    \"type\": \"Const\",",
+            "    \"value\": ${1:1}",
+            "}"
+        ],
+        "description": "Const"
+    },
+    "Expression Var": {
+        "prefix": "expression_var",
+        "body": [
+            "{",
+            "    \"type\": \"Var\",",
+            "    \"var\": \"${1:Charges}\"",
+            "}"
+        ],
+        "description": "Var"
+    },
+    "Ability Expression Var": {
+        "prefix": "expression_ability_var",
+        "body": [
+            "{",
+            "    \"type\": \"AbilityVar\",",
+            "    \"ability\": \"${2:Shield}\",",
+            "    \"var\": \"${3:Reflection}\"",
+            "}"
+        ],
+        "description": "Ability Var"
+    },
+}

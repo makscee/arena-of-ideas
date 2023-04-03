@@ -127,6 +127,30 @@
                 "path": "shaders/status/default_status.glsl",
                 "layer": "Unit"
             }
+        },
+        "DarkGrowth": {
+            "description": "+1/+1",
+            "trigger": {
+                "type": "List",
+                "triggers": [
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "HpValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    },
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    }
+                ]
+            }
         }
     }
 }

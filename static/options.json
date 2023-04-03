@@ -4,7 +4,7 @@
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "units": [
                 {

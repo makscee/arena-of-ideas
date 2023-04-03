@@ -1,13 +1,4 @@
 {
-	"Condition Always": {
-		"prefix": "condition_always",
-		"body": [
-			"{",
-			"    \"type\": \"Always\"",
-			"}"
-		],
-		"description": "Condition Always"
-	},
 	"List": {
 		"prefix": "list",
 		"body": [
@@ -20,49 +11,6 @@
 		],
 		"description": "Condition Always"
 	},
-	"Sum": {
-		"prefix": "sum",
-		"body": [
-			"{",
-			"    \"type\": \"Sum\",",
-			"    \"a\": $TM_SELECTED_TEXT$1,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "Sum"
-	},
-	"Sub": {
-		"prefix": "sub",
-		"body": [
-			"{",
-			"    \"type\": \"Sub\",",
-			"    \"a\": $TM_SELECTED_TEXT$1,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "Sub"
-	},
-	"Mul": {
-		"prefix": "mul",
-		"body": [
-			"{",
-			"    \"type\": \"Mul\",",
-			"    \"a\": $TM_SELECTED_TEXT$1,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "Mul"
-	},
-	"Const": {
-		"prefix": "const",
-		"body": [
-			"{",
-			"    \"type\": \"Const\",",
-			"    \"value\": ${1:1}",
-			"}"
-		],
-		"description": "Const"
-	},
 	"If": {
 		"prefix": "if",
 		"body": [
@@ -73,59 +21,6 @@
 			"}"
 		],
 		"description": "If"
-	},
-	"Equal": {
-		"prefix": "equal",
-		"body": [
-			"{",
-			"    \"type\": \"Equal\",",
-			"    \"a\": $1$TM_SELECTED_TEXT,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "Equal"
-	},
-	"Var": {
-		"prefix": "var",
-		"body": [
-			"{",
-			"    \"type\": \"Var\",",
-			"    \"var\": \"${1:Charges}\"",
-			"}"
-		],
-		"description": "Var"
-	},
-	"And": {
-		"prefix": "and",
-		"body": [
-			"{",
-			"    \"type\": \"And\",",
-			"    \"a\": $1$TM_SELECTED_TEXT,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "And"
-	},
-	"Or": {
-		"prefix": "or",
-		"body": [
-			"{",
-			"    \"type\": \"Or\",",
-			"    \"a\": $1$TM_SELECTED_TEXT,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "Or"
-	},
-	"Not": {
-		"prefix": "not",
-		"body": [
-			"{",
-			"    \"type\": \"Not\",",
-			"    \"condition\": $TM_SELECTED_TEXT $1",
-			"}"
-		],
-		"description": "Not"
 	},
 	"Remove status": {
 		"prefix": "remove_status",
@@ -145,17 +40,6 @@
 			"}"
 		],
 		"description": "Noop"
-	},
-	"More Int": {
-		"prefix": "more_int",
-		"body": [
-			"{",
-			"    \"type\": \"MoreInt\",",
-			"    \"a\": $1$TM_SELECTED_TEXT,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "MoreInt"
 	},
 	"Use Ability": {
 		"prefix": "use_ability",
@@ -186,18 +70,6 @@
 			"}"
 		],
 		"description": "Add Status"
-	},
-	"Is Corpse": {
-		"prefix": "is_corpse",
-		"body": [
-			"{",
-			"    \"type\": \"IsCorpse\",",
-			"    \"entity\": {",
-			"        \"type\": \"${1:Target}\"",
-			"    }",
-			"}"
-		],
-		"description": "Is Corpse"
 	},
 	"Repeat": {
 		"prefix": "repeat",
@@ -234,17 +106,6 @@
 		],
 		"description": "Show Curve"
 	},
-	"Ability Var": {
-		"prefix": "ability_var",
-		"body": [
-			"{",
-			"    \"type\": \"AbilityVar\",",
-			"    \"ability\": \"${2:Shield}\",",
-			"    \"var\": \"${3:Reflection}\"",
-			"}"
-		],
-		"description": "Ability Var"
-	},
 	"Change Ability Var Int": {
 		"prefix": "change_ability_var_int",
 		"body": [
@@ -272,16 +133,6 @@
 			"}"
 		],
 		"description": "Ranom Enemy"
-	},
-	"Chance": {
-		"prefix": "chance",
-		"body": [
-			"{",
-			"    \"type\": \"Chance\",",
-			"    \"part\": ${1:0.5}",
-			"}"
-		],
-		"description": "Chance"
 	},
 	"Slot Relative": {
 		"prefix": "slot_relative",
@@ -390,17 +241,6 @@
 		],
 		"description": "Set Faction Var Int"
 	},
-	"Max": {
-		"prefix": "max",
-		"body": [
-			"{",
-			"    \"type\": \"Max\",",
-			"    \"a\": $TM_SELECTED_TEXT$1,",
-			"    \"b\": $2",
-			"}"
-		],
-		"description": "Max"
-	},
 	"Change Status": {
 		"prefix": "change_status",
 		"body": [
@@ -417,5 +257,26 @@
 			"}"
 		],
 		"description": "Change Status"
+	},
+	"All Targets": {
+		"prefix": "all_targets",
+		"body": [
+			"{",
+			"    \"type\": \"AllTargets\",",
+			"    \"faction\": $1,",
+			"    \"condition\": $2,",
+			"    \"effect\": $TM_SELECTED_TEXT$3",
+			"}"
+		],
+		"description": "All Targets"
+	},
+	"Faction Owner": {
+		"prefix": "faction_owner",
+		"body": [
+			"{",
+			"    \"type\":\"Owner\"",
+			"}"
+		],
+		"description": "Faction Owner"
 	}
 }

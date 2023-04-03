@@ -12,7 +12,7 @@
         "Grow": {
             "effect": {
                 "type": "AddStatus",
-                "name": "Grow",
+                "name": "Growth",
                 "after": {
                     "type": "ShowCurve"
                 }
@@ -21,7 +21,8 @@
         }
     },
     "statuses": {
-        "Grow": {
+        "Growth": {
+            "description": "+1/+1",
             "trigger": {
                 "type": "List",
                 "triggers": [

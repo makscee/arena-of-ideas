@@ -1,0 +1,97 @@
+{
+    "Condition Always": {
+        "prefix": "condition_always",
+        "body": [
+            "{",
+            "    \"type\": \"Always\"",
+            "}"
+        ],
+        "description": "Condition Always"
+    },
+    "Condition Equal": {
+        "prefix": "condition_equal",
+        "body": [
+            "{",
+            "    \"type\": \"Equal\",",
+            "    \"a\": $1$TM_SELECTED_TEXT,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Equal"
+    },
+    "Condition And": {
+        "prefix": "condition_and",
+        "body": [
+            "{",
+            "    \"type\": \"And\",",
+            "    \"a\": $1$TM_SELECTED_TEXT,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "And"
+    },
+    "Condition Or": {
+        "prefix": "condition_or",
+        "body": [
+            "{",
+            "    \"type\": \"Or\",",
+            "    \"a\": $1$TM_SELECTED_TEXT,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "Or"
+    },
+    "Condition Not": {
+        "prefix": "condition_not",
+        "body": [
+            "{",
+            "    \"type\": \"Not\",",
+            "    \"condition\": $TM_SELECTED_TEXT $1",
+            "}"
+        ],
+        "description": "Not"
+    },
+    "Condition More Int": {
+        "prefix": "condition_more_int",
+        "body": [
+            "{",
+            "    \"type\": \"MoreInt\",",
+            "    \"a\": $1$TM_SELECTED_TEXT,",
+            "    \"b\": $2",
+            "}"
+        ],
+        "description": "MoreInt"
+    },
+    "Condition Is Corpse": {
+        "prefix": "condition_is_corpse",
+        "body": [
+            "{",
+            "    \"type\": \"IsCorpse\",",
+            "    \"entity\": {",
+            "        \"type\": \"${1:Target}\"",
+            "    }",
+            "}"
+        ],
+        "description": "Is Corpse"
+    },
+    "Condition Chance": {
+        "prefix": "condition_chance",
+        "body": [
+            "{",
+            "    \"type\": \"Chance\",",
+            "    \"part\": ${1:0.5}",
+            "}"
+        ],
+        "description": "Chance"
+    },
+    "Condition Have Status": {
+        "prefix": "condition_have_status",
+        "body": [
+            "{",
+            "    \"type\": \"HaveStatus\",",
+            "    \"name\": \"${1:Empower}\"",
+            "}"
+        ],
+        "description": "Condition Have Status"
+    }
+}
