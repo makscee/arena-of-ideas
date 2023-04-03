@@ -1,0 +1,19 @@
+{
+    "name": "Patron",
+    "attack": 4,
+    "health": 4,
+    "description": "Shop start:\nuse Favor (2)",
+    "houses": [
+        "Pirates"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Favor",
+            "vars": {
+                "Charges": 2
+            }
+        }
+    }
+}

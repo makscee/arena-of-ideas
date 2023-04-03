@@ -67,6 +67,20 @@
                 }
             },
             "description": "Give +1/+1"
+        },
+        "Favor": {
+            "description": "Give 1 free reroll",
+            "effect": {
+                "type": "ChangeFactionVarInt",
+                "var": "FreeRerolls",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
         }
     },
     "statuses": {

@@ -244,6 +244,22 @@ impl ShopSystem {
             .get_int(&VarName::RerollPrice)
     }
 
+    fn is_reroll_affordable(resources: &Resources) -> bool {
+        let vars = resources.team_states.get_vars(&Faction::Team);
+        vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
+            || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
+    }
+
+    fn deduct_reroll_cost(resources: &mut Resources) {
+        let vars = resources.team_states.get_vars_mut(&Faction::Team);
+        let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
+        if free_rerolls > 0 {
+            vars.insert(VarName::FreeRerolls, Var::Int(free_rerolls - 1));
+        } else {
+            vars.change_int(&VarName::G, -vars.get_int(&VarName::RerollPrice));
+        }
+    }
+
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         Shop::load_pool(resources);
         resources.team_states.clear(Faction::Team);
@@ -263,8 +279,10 @@ impl ShopSystem {
             ) {
                 match event {
                     InputEvent::Click => {
-                        ShopSystem::reroll(world, resources);
-                        ShopSystem::change_g(resources, -ShopSystem::reroll_price(resources));
+                        if ShopSystem::is_reroll_affordable(resources) {
+                            ShopSystem::reroll(world, resources);
+                            ShopSystem::deduct_reroll_cost(resources);
+                        }
                     }
                     InputEvent::HoverStart => ButtonSystem::change_icon_color(
                         entity,

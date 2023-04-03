@@ -37,6 +37,7 @@ pub enum VarName {
     BuyPrice,
     SellPrice,
     RerollPrice,
+    FreeRerolls,
 }
 
 impl VarName {
