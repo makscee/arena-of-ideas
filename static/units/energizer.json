@@ -1,0 +1,24 @@
+{
+    "name": "Energizer",
+    "attack": 1,
+    "health": 2,
+    "description": "On buy:\nEmpower everyone",
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Empower"
+            }
+        }
+    }
+}
