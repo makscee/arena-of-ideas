@@ -1,0 +1,66 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 1,
+                "health": 5
+            },
+            {
+                "attack": 2,
+                "health": 2,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "AddStatus",
+                                "name": "DarkVitality"
+                            },
+                            {
+                                "type": "UseAbility",
+                                "ability": "Devour"
+                            }
+                        ],
+                        "target": {
+                            "type": "FindUnit",
+                            "slot": {
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            },
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 11,
+                "health": 12
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Light"
+    }
+}

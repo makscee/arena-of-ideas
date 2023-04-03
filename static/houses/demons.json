@@ -151,6 +151,17 @@
                     }
                 ]
             }
+        },
+        "DarkVitality": {
+            "description": "Double HP",
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Var",
+                    "var": "HpValue"
+                }
+            }
         }
     }
 }

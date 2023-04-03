@@ -1,0 +1,63 @@
+{
+    "name": "Pig Farmer",
+    "attack": 2,
+    "health": 2,
+    "description": "On buy:\ndouble right ally HP\nthen Devour",
+    "houses": [
+        "Demons"
+    ],
+    "trigger": {
+        "type": "OnBuy",
+        "effect": {
+            "type": "If",
+            "condition": {
+                "type": "SlotOccupied",
+                "faction": "Team",
+                "slot": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "Var",
+                        "var": "Slot"
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": -1
+                    }
+                }
+            },
+            "then": {
+                "type": "List",
+                "effects": [
+                    {
+                        "type": "AddStatus",
+                        "name": "DarkVitality"
+                    },
+                    {
+                        "type": "UseAbility",
+                        "ability": "Devour"
+                    }
+                ],
+                "target": {
+                    "type": "FindUnit",
+                    "slot": {
+                        "type": "Sum",
+                        "a": {
+                            "type": "Var",
+                            "var": "Slot"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": -1
+                        }
+                    },
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            },
+            "else": {
+                "type": "Noop"
+            }
+        }
+    }
+}
