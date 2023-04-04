@@ -6,6 +6,7 @@ use super::*;
 #[derive(Default)]
 pub struct ShopSystem {
     need_switch_battle: bool,
+    drag_to_sell: bool,
 }
 
 impl System for ShopSystem {
@@ -89,6 +90,23 @@ impl System for ShopSystem {
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),
         );
+        if self.drag_to_sell {
+            resources.frame_shaders.push(
+                resources
+                    .options
+                    .shaders
+                    .shop_sell_field
+                    .clone()
+                    .set_uniform("u_position", ShaderUniform::Vec2(SHOP_POSITION))
+                    .set_uniform(
+                        "u_text",
+                        ShaderUniform::String((
+                            0,
+                            format!("Sell: {} g", Self::sell_price(resources)),
+                        )),
+                    ),
+            )
+        }
     }
 }
 
@@ -110,6 +128,7 @@ impl ShopSystem {
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
         SlotSystem::set_hovered_slot(world, &Faction::Team, SLOTS_COUNT + 1);
+        self.drag_to_sell = false;
         if let Some(dragged) = resources.shop.drag_entity {
             if let Some(slot) =
                 SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos)
@@ -119,6 +138,13 @@ impl ShopSystem {
                 }
                 SlotSystem::set_hovered_slot(world, &Faction::Team, slot);
             }
+            self.drag_to_sell = world
+                .entry_ref(dragged)
+                .unwrap()
+                .get_component::<UnitComponent>()
+                .unwrap()
+                .faction
+                == Faction::Team;
         }
         if let Some(dropped) = resources.shop.drop_entity {
             if let Some(entry) = world.entry(dropped) {

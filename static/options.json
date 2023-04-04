@@ -441,6 +441,43 @@
                 }
             },
             "layer": "UI"
+        },
+        "shop_sell_field": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#fbc000",
+                    "u_size": [
+                        50.0,
+                        10.0
+                    ],
+                    "u_align": [
+                        0.0,
+                        1.0
+                    ]
+                }
+            },
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_scale": 1.5,
+                            "u_outline_color": "#404040",
+                            "u_mid_border": 0.05,
+                            "u_align": 0.0,
+                            "u_outline_fade": 1.0,
+                            "u_offset": [
+                                0.0,
+                                3.0
+                            ],
+                            "u_text_inside": 0.45,
+                            "u_text_border": 0.3
+                        }
+                    }
+                }
+            ],
+            "layer": "UI"
         }
     },
     "images": {
