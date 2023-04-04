@@ -111,7 +111,7 @@ float get_text_sdf(vec2 uv, sampler2D sampler) {
     return texture2D(sampler, text_uv).x;
 }
 
-vec4 alphaBlend(vec4 c1, vec4 c2) {
+vec4 alpha_blend(vec4 c1, vec4 c2) {
     return vec4(mix(c1.rgb, c2.rgb, c2.a), clamp(max(c1.a, c2.a), 0., 1.));
 }
 
@@ -119,35 +119,35 @@ float luminance(vec4 color) {
     return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
 }
 
-vec2 N22(vec2 p) {
+vec2 n22(vec2 p) {
     vec3 a = fract(p.xyx * vec3(123.34, 234.34, 345.65));
     a += dot(a, a + 34.45);
     return fract(vec2(a.x * a.y, a.y * a.z));
 }
 
 float rand(int i) {
-    return N22(vec2(i * .001)).x;
+    return n22(vec2(i * .001)).x;
 }
 
-vec2 randVec(int i) {
-    return N22(vec2(i * .001));
+vec2 rand_vec(int i) {
+    return n22(vec2(i * .001));
 }
 
-vec2 randCircle(int i) {
+vec2 rand_circle(int i) {
     float r2p = rand(i) * PI * 2.;
     return vec2(cos(r2p), sin(r2p));
 }
 
-float invSquare(float t) {
+float inv_square(float t) {
     return 1. - (t - 1.) * (t - 1.);
 }
 
-vec2 rotateCW(vec2 p, float a) {
+vec2 rotate_cw(vec2 p, float a) {
     mat2 m = mat2(cos(a), -sin(a), sin(a), cos(a));
     return p * m;
 }
 
-float vecAngle(vec2 v) {
+float vec_angle(vec2 v) {
     if(v == vec2(0.))
         return 0.;
     float r = acos(dot(normalize(v), vec2(0., 1.)));
@@ -178,7 +178,7 @@ float vecAngle(vec2 v) {
 //     return mix(c1, c2, t * 2 - float(colorInd));
 // }
 
-vec3 hueShift(vec3 color, float hueAdjust) // hue in radians
+vec3 hue_shift(vec3 color, float hueAdjust) // hue in radians
 {
     const vec3 kRGBToYPrime = vec3(0.299, 0.587, 0.114);
     const vec3 kRGBToI = vec3(0.596, -0.275, -0.321);
@@ -213,14 +213,14 @@ float aliase(float left, float right, float smear, float t) {
     return min(smoothstep(left - smear, left + smear, t), smoothstep(right + smear, right - smear, t));
 }
 
-vec2 toBezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
+vec2 to_bezier(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
     float t2 = t * t;
     float one_minus_t = 1.0 - t;
     float one_minus_t2 = one_minus_t * one_minus_t;
     return (P0 * one_minus_t2 * one_minus_t + P1 * 3.0 * t * one_minus_t2 + P2 * 3.0 * t2 * one_minus_t + P3 * t2 * t);
 }
 
-vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
+vec2 to_bezier_normal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
     float t2 = t * t;
     vec2 tangent = P0 * (-3 * t2 + 6 * t - 3) +
         P1 * (9 * t2 - 12 * t + 3) +
@@ -229,17 +229,17 @@ vec2 toBezierNormal(float t, vec2 P0, vec2 P1, vec2 P2, vec2 P3) {
     return normalize(vec2(tangent.y, -tangent.x));
 }
 
-vec4 bezierParentPartner(float t, vec2 parent, vec2 partner, vec2 direction, float curvature) {
+vec4 bezier_parent_partner(float t, vec2 parent, vec2 partner, vec2 direction, float curvature) {
     // vec2 dir = normalize(parent - partner);
     vec2 dir = direction * curvature;
     vec2 p0 = parent;
     vec2 p1 = parent + dir;
     vec2 p2 = partner + dir;
     vec2 p3 = partner;
-    return vec4(toBezier(t, p0, p1, p2, p3), toBezierNormal(t, p0, p1, p2, p3));
+    return vec4(to_bezier(t, p0, p1, p2, p3), to_bezier_normal(t, p0, p1, p2, p3));
 }
 
-float colorHash(vec3 color) {
+float color_hash(vec3 color) {
     return fract(color.r * 100.123 + color.g * 22.1512 + color.b * 420.6969);
 }
 
@@ -248,42 +248,42 @@ float distance1d(float x, float size) {
     return max(-size - x, x - size);
 }
 
-float toPoint(vec2 p, vec2 o) {
+float to_point(vec2 p, vec2 o) {
     return length(p - o);
 }
 
-float toSegment(vec2 p, vec2 a, vec2 b) {
+float to_segment(vec2 p, vec2 a, vec2 b) {
     vec2 v = normalize(b - a);
     vec2 n = vec2(v.y, -v.x);
     return dot(p - a, n);
 }
 
-float triangleSDF(vec2 uv, float size, float rotation) {
-    uv = rotateCW(uv, rotation * PI * 2);
+float triangle_sdf(vec2 uv, float size, float rotation) {
+    uv = rotate_cw(uv, rotation * PI * 2);
     vec2 p = uv;
     float angle = PI * 7 / 6;
     vec2 p1 = vec2(cos(angle), sin(angle)) * size;
     angle = -PI / 6;
     vec2 p2 = vec2(cos(angle), sin(angle)) * size;
     vec2 p3 = vec2(0., size);
-    float d1 = toSegment(p, p1, p2);
-    float d2 = toSegment(p, p2, p3);
-    float d3 = toSegment(p, p3, p1);
+    float d1 = to_segment(p, p1, p2);
+    float d2 = to_segment(p, p2, p3);
+    float d3 = to_segment(p, p3, p1);
     float d = max(max(d1, d2), d3);
     if(dot(p - p1, p1 - p2) > 0.0 && dot(p - p1, p1 - p3) > 0.0) {
-        d = toPoint(p, p1);
+        d = to_point(p, p1);
     }
     if(dot(p - p2, p2 - p1) > 0.0 && dot(p - p2, p2 - p3) > 0.0) {
-        d = toPoint(p, p2);
+        d = to_point(p, p2);
     }
     if(dot(p - p3, p3 - p1) > 0.0 && dot(p - p3, p3 - p2) > 0.0) {
-        d = toPoint(p, p3);
+        d = to_point(p, p3);
     }
     return d;
 }
 
 float rectangle_sdf(vec2 uv, vec2 size, float rotation) {
-    uv = rotateCW(uv, rotation * PI * 2);
+    uv = rotate_cw(uv, rotation * PI * 2);
     float dx = distance1d(uv.x, size.x);
     float dy = distance1d(uv.y, size.y);
 
@@ -295,14 +295,14 @@ float rectangle_sdf(vec2 uv, vec2 size, float rotation) {
     return d;
 }
 
-float squareSDF(vec2 uv, float size, float rotation) {
+float square_sdf(vec2 uv, float size, float rotation) {
     return rectangle_sdf(uv, vec2(size, size), rotation);
 }
 
-float squareSDF(vec2 uv, float size) {
-    return squareSDF(uv, size, 0.);
+float square_sdf(vec2 uv, float size) {
+    return square_sdf(uv, size, 0.);
 }
 
-float circleSDF(vec2 uv, float radius) {
+float circle_sdf(vec2 uv, float radius) {
     return length(uv) - radius;
 }

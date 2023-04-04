@@ -18,7 +18,7 @@ void main() {
     float bezier_t = pos.x;
 
     bezier_t = u_end_cut * .5 + bezier_t * (1. - u_end_cut);
-    vec4 bezier = bezierParentPartner(bezier_t, u_from, u_to, vec2(0, 1), 0.5);
+    vec4 bezier = bezier_parent_partner(bezier_t, u_from, u_to, vec2(0, 1), 0.5);
     vec2 b_pos = bezier.xy;
     vec2 b_normal = bezier.zw;
     b_pos += b_normal * height * t * t * (bezier_t * .7);

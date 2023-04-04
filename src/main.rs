@@ -40,6 +40,9 @@ fn static_path() -> PathBuf {
 fn save_path() -> PathBuf {
     run_dir().join("save")
 }
+fn ts_nano() -> i64 {
+    chrono::prelude::Utc::now().timestamp_nanos()
+}
 fn main() {
     let timer = Instant::now();
     logger::init();

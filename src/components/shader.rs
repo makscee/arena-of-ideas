@@ -1,7 +1,7 @@
 use super::*;
 
 /// Component to link to a shader program with specific parameters
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Shader {
     pub path: PathBuf, // static path
@@ -15,19 +15,21 @@ pub struct Shader {
     pub chain_before: Box<Vec<Shader>>,
     #[serde(default)]
     pub chain_after: Box<Vec<Shader>>,
+    #[serde(skip)]
+    pub ts: i64,
 }
 
 impl Shader {
-    pub fn set_uniform(mut self, key: &str, value: ShaderUniform) -> Shader {
+    pub fn set_uniform(mut self, key: &str, value: ShaderUniform) -> Self {
         self.parameters.uniforms.insert(String::from(key), value);
         self
     }
-    pub fn set_uniform_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Shader {
+    pub fn set_uniform_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Self {
         self.parameters.uniforms.insert(String::from(key), value);
         self
     }
 
-    pub fn merge_uniforms(mut self, uniforms: &ShaderUniforms, force: bool) -> Shader {
+    pub fn merge_uniforms(mut self, uniforms: &ShaderUniforms, force: bool) -> Self {
         self.parameters.uniforms.merge_mut(uniforms, force);
         self
     }
@@ -39,6 +41,7 @@ pub enum ShaderLayer {
     Unit,
     Vfx,
     UI,
+    Hover,
 }
 
 impl Default for ShaderLayer {

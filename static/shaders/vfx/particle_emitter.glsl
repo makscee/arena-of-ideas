@@ -23,10 +23,10 @@ void main() {
     p_t = time / u_lifetime - floor(time / u_lifetime) - trail_shift;
     p_t += mix(0.0, 1.0, float(p_t < 0.));
     uv = get_uv(a_pos);
-    vec2 vel = rotateCW((randVec(p_index + 1) - vec2(0.5)), p_t * PI * u_velocity_over_t);
+    vec2 vel = rotate_cw((rand_vec(p_index + 1) - vec2(0.5)), p_t * PI * u_velocity_over_t);
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= u_velicity_mul;
-    vel *= 1. + fbm(vec2(u_game_time * 3) + randVec(p_index)) * u_vel_fbm;
+    vel *= 1. + fbm(vec2(u_game_time * 3) + rand_vec(p_index)) * u_vel_fbm;
     gl_Position = get_gl_position(uv + vel * p_t);
     // gl_Position = get_gl_position(uv + vel * p_t);
     // vec2 pos = uv * scale + position + get_card_pos(vel * p_t) * zoom * radius;

@@ -33,17 +33,19 @@ impl ShaderSystem {
         entity: legion::Entity,
         context: Option<&Context>,
     ) -> Option<Shader> {
-        match world
-            .entry_ref(entity)
-            .ok()
-            .and_then(|x| x.get_component::<Shader>().ok().cloned())
-        {
-            Some(mut shader) => Some({
+        match world.entry_ref(entity).ok().and_then(|x| {
+            x.get_component::<Shader>()
+                .ok()
+                .cloned()
+                .and_then(|shader| Some((x.get_component::<EntityComponent>().unwrap().ts, shader)))
+        }) {
+            Some((ts, mut shader)) => Some({
                 if let Some(context) = context {
                     shader
                         .parameters
                         .uniforms
                         .merge_mut(&context.vars.clone().into(), true);
+                    shader.ts = ts;
                 }
                 shader
             }),
@@ -84,6 +86,7 @@ impl ShaderSystem {
         let shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
+            .sorted_by_key(|x| (x.layer.index(), x.order, x.ts))
             .collect_vec();
 
         for shader in shaders {

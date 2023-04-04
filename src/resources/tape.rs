@@ -81,15 +81,12 @@ impl Tape {
             extra_shaders.extend(effect.r#type.process(t, &mut entity_shaders));
         }
 
-        let mut entity_shaders_vec = entity_shaders
-            .into_iter()
-            .sorted_by_key(|(entity, shader)| {
-                (shader.layer.index(), shader.order, format!("{:?}", entity))
-            })
-            .collect_vec();
-
         let mut hovered_entity = None;
-        for (entity, shader) in entity_shaders_vec.iter().rev() {
+        for (entity, shader) in entity_shaders
+            .iter_mut()
+            .sorted_by_key(|(_, shader)| (shader.layer, shader.order, shader.ts))
+            .rev()
+        {
             if let Some(area) = AreaComponent::from_shader(shader) {
                 if area.contains(resources.input.mouse_pos) {
                     hovered_entity = Some(*entity);
@@ -97,20 +94,13 @@ impl Tape {
                 }
             }
         }
-        if let Some(hovered) = InputSystem::set_hovered_entity(hovered_entity, resources) {
-            let last_ind = entity_shaders_vec.len() - 1;
-            if let Some(hovered_ind) = entity_shaders_vec.iter().position(|x| x.0 == hovered) {
-                entity_shaders_vec.swap(hovered_ind, last_ind);
-            }
+        if let Some(entity) = InputSystem::set_hovered_entity(hovered_entity, resources) {
+            entity_shaders.get_mut(&entity).unwrap().layer = ShaderLayer::Hover;
         }
 
-        entity_shaders_vec
-            .into_iter()
-            .map(|x| x.1)
-            .chain(extra_shaders)
-            .enumerate()
-            .sorted_by_key(|(ind, shader)| (shader.layer.index(), shader.order, *ind))
-            .map(|x| x.1)
+        entity_shaders
+            .into_values()
+            .chain(extra_shaders.into_iter())
             .collect_vec()
     }
 

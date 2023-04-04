@@ -155,7 +155,7 @@ impl SlotSystem {
                 world
                     .entry(entity)
                     .unwrap()
-                    .add_component(EntityComponent { entity });
+                    .add_component(EntityComponent::new(entity));
             })
         }
         Self::refresh_slots_uniforms(world, options);

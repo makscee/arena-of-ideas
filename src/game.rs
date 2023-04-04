@@ -38,7 +38,7 @@ impl Game {
         let shader = resources.options.shaders.field.clone();
         let entity = world.push((shader,));
         let mut entry = world.entry(entity).unwrap();
-        entry.add_component(EntityComponent { entity });
+        entry.add_component(EntityComponent::new(entity));
         entry.add_component(Context {
             owner: entity,
             target: entity,

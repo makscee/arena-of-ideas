@@ -52,11 +52,11 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec4 text_bg = vec4(field_color, uv.y < 0);
     vec4 text_color = get_text_color(text_sdf, vec4(text_base_color, 1), vec4(outline_color, .7), TEXT_BORDER, TEXT_INSIDE);
     vec4 card_color = vec4(field_color, 0);
-    card_color = alphaBlend(card_color, text_bg);
-    card_color = alphaBlend(card_color, border_color);
-    card_color = alphaBlend(card_color, text_color);
+    card_color = alpha_blend(card_color, text_bg);
+    card_color = alpha_blend(card_color, border_color);
+    card_color = alpha_blend(card_color, text_color);
     card_color.a = min(card_color.a, u_card);
-    return alphaBlend(unit_color, card_color);
+    return alpha_blend(unit_color, card_color);
 }
 
 void main() {
@@ -66,13 +66,13 @@ void main() {
     float dmg_t = u_damage_taken;
     vec4 color = vec4(field_color, 0);
     float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
-    color = alphaBlend(color, vec4(u_faction_color.rgb, alpha));
+    color = alpha_blend(color, vec4(u_faction_color.rgb, alpha));
     if(len > THICKNESS + SPREAD)
         color.a = 0;
     if(dmg_t > 0. && len < 0.) {
         vec2 v = floor(uv * 8 * (0.5 + dmg_t));
-        float r = N22(v + vec2(floor(u_global_time * 20) / 20)).x;
-        color = alphaBlend(color, vec4(r, r, r, dmg_t));
+        float r = n22(v + vec2(floor(u_global_time * 20) / 20)).x;
+        color = alpha_blend(color, vec4(r, r, r, dmg_t));
     }
     color.a *= (1 + u_hovered);
     gl_FragColor = draw_card(color, uv);

@@ -270,7 +270,6 @@ impl GameStateSystem {
                 BattleSystem::run_battle(world, resources, &mut tape);
                 let tape = tape.unwrap();
                 dbg!(tape.length());
-                resources.tape_player.clear();
                 resources.tape_player.tape = tape;
             }
         }

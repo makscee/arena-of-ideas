@@ -33,7 +33,7 @@ impl ButtonSystem {
                 .merge_uniforms(&uniforms, true),
         ));
         let mut entry = world.entry(entity).unwrap();
-        entry.add_component(EntityComponent { entity });
+        entry.add_component(EntityComponent::new(entity));
         entry.add_component(Context {
             owner: entity,
             target: entity,

@@ -22,7 +22,7 @@ void main() {
     vec2 icon_uv = uv * .5 + .5;
     vec4 icon_color = u_icon_color;
     icon_color.a = texture2D(u_texture, icon_uv).x;
-    color = alphaBlend(color, icon_color);
+    color = alpha_blend(color, icon_color);
     gl_FragColor = color * (1. + u_hovered);
 }
 #endif

@@ -57,7 +57,7 @@ void main() {
     float outline_fade = smoothstep(u_text_inside, u_text_border, sdf) * u_outline_fade;
     text_color.a -= outline_fade;
     text_color.a = clamp((text_color.a * u_alpha + u_alpha_over_t * u_t) * float(text_color.a > 0.), 0., 1.);
-    color = alphaBlend(color, text_color);
+    color = alpha_blend(color, text_color);
     gl_FragColor = color;
 }
 #endif

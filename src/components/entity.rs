@@ -4,10 +4,12 @@ use super::*;
 #[derive(Debug)]
 pub struct EntityComponent {
     pub entity: legion::Entity,
+    pub ts: i64,
 }
 
 impl EntityComponent {
     pub fn new(entity: legion::Entity) -> Self {
-        Self { entity }
+        let ts = ts_nano();
+        Self { entity, ts }
     }
 }

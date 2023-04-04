@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "walkthrough": true,
+    "walkthrough": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "start_floor": 0,
@@ -424,6 +424,16 @@
         },
         "tape_indicator": {
             "path": "shaders/system/tape_indicator.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_position": [
+                        0.0,
+                        -3.0
+                    ],
+                    "u_color": "#9266CC",
+                    "u_padding": 3.0
+                }
+            },
             "layer": "UI"
         }
     },

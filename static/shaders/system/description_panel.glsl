@@ -34,7 +34,7 @@ void main() {
 
     float alpha = max(border, background);
     vec4 color = vec4(u_color.rgb, alpha);
-    color = alphaBlend(color, text_color);
+    color = alpha_blend(color, text_color);
     gl_FragColor = color;
 }
 #endif
