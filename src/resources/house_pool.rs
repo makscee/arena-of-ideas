@@ -23,7 +23,7 @@ impl FileWatcherLoader for HousePool {
                 static_path().join(name)
             })
             .for_each(|path| {
-                House::loader(resources, &static_path().join(path), watcher);
+                House::loader(resources, &path, watcher);
             });
     }
 }

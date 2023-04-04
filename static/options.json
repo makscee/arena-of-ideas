@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "walkthrough": false,
+    "walkthrough": true,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "start_floor": 0,
@@ -420,6 +420,10 @@
         },
         "corner_button": {
             "path": "shaders/widgets/corner_button.glsl",
+            "layer": "UI"
+        },
+        "tape_indicator": {
+            "path": "shaders/system/tape_indicator.glsl",
             "layer": "UI"
         }
     },

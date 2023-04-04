@@ -20,13 +20,19 @@ impl Team {
     }
 
     pub fn unpack(&self, faction: &Faction, world: &mut legion::World, resources: &mut Resources) {
+        let mut entities = vec![];
         for (slot, unit) in self.units.iter().enumerate() {
-            unit.unpack(world, resources, slot + 1, *faction, None);
+            entities.push(unit.unpack(world, resources, slot + 1, *faction, None));
         }
         resources
             .team_states
             .set_team_state(*faction, self.state.clone());
-        debug!("Unpack team {} {:?}", self, self.state);
+        debug!(
+            "Unpack team {} {:?} {}",
+            self,
+            self.state,
+            entities.into_iter().map(|x| format!("{:?}", x)).join(", ")
+        );
     }
 
     pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {
