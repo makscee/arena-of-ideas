@@ -1,5 +1,3 @@
-use std::collections::{hash_map::Entry, VecDeque};
-
 use geng::prelude::{itertools::Itertools, ugli::SingleUniform};
 use legion::EntityStore;
 
@@ -8,10 +6,6 @@ use super::*;
 pub struct ShaderSystem {}
 
 impl System for ShaderSystem {
-    fn update(&mut self, _world: &mut legion::World, resources: &mut Resources) {
-        resources.frame_shaders.clear();
-    }
-
     fn draw(
         &self,
         world: &legion::World,
@@ -20,6 +14,8 @@ impl System for ShaderSystem {
     ) {
         self.draw_all_shaders(world, resources, framebuffer);
     }
+
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
 }
 
 impl ShaderSystem {

@@ -27,7 +27,6 @@ impl System for ShopSystem {
             }
             self.need_switch_battle = false;
         }
-        Self::refresh_ui(resources);
         Self::refresh_tape(world, resources);
         let mut cluster = Some(NodeCluster::default());
         ActionSystem::run_ticks(world, resources, &mut cluster);
@@ -56,6 +55,40 @@ impl System for ShopSystem {
         );
         self.need_switch_battle = switch_button.was_clicked() || self.need_switch_battle;
         Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
+    }
+    fn draw(
+        &self,
+        world: &legion::World,
+        resources: &mut Resources,
+        framebuffer: &mut ugli::Framebuffer,
+    ) {
+        let position = SlotSystem::get_position(0, &Faction::Shop);
+        let text_color = *resources
+            .options
+            .colors
+            .faction_colors
+            .get(&Faction::Shop)
+            .unwrap();
+        let text = format!("{} g", Self::get_g(resources).to_string());
+        let money_indicator = &resources.options.shaders.money_indicator;
+        resources.frame_shaders.push(
+            money_indicator
+                .clone()
+                .set_uniform("u_position", ShaderUniform::Vec2(position))
+                .set_uniform("u_color", ShaderUniform::Color(text_color))
+                .set_uniform("u_text", ShaderUniform::String((0, text))),
+        );
+        let position = Self::reroll_btn_position() + vec2(1.0, 0.0);
+        let text = format!("{} g", Self::reroll_price(resources).to_string());
+        let money_indicator = &resources.options.shaders.money_indicator;
+        resources.frame_shaders.push(
+            money_indicator
+                .clone()
+                .set_uniform("u_scale", ShaderUniform::Float(0.5))
+                .set_uniform("u_position", ShaderUniform::Vec2(position))
+                .set_uniform("u_color", ShaderUniform::Color(text_color))
+                .set_uniform("u_text", ShaderUniform::String((0, text))),
+        );
     }
 }
 
@@ -167,27 +200,6 @@ impl ShopSystem {
         UnitSystem::turn_unit_into_corpse(entity, world, resources);
     }
 
-    fn refresh_ui(resources: &mut Resources) {
-        let position = SlotSystem::get_position(0, &Faction::Shop);
-        let text_color = *resources
-            .options
-            .colors
-            .faction_colors
-            .get(&Faction::Shop)
-            .unwrap();
-        let text = format!("{} g", Self::get_g(resources).to_string());
-        resources.frame_shaders.push(
-            resources
-                .options
-                .shaders
-                .money_indicator
-                .clone()
-                .set_uniform("u_position", ShaderUniform::Vec2(position))
-                .set_uniform("u_color", ShaderUniform::Color(text_color))
-                .set_uniform("u_text", ShaderUniform::String((0, text))),
-        )
-    }
-
     fn refresh_tape(world: &legion::World, resources: &mut Resources) {
         let mut node = Node::default();
         UnitSystem::draw_all_units_to_node(
@@ -238,10 +250,12 @@ impl ShopSystem {
     }
 
     pub fn reroll_price(resources: &Resources) -> i32 {
-        resources
-            .team_states
-            .get_vars(&Faction::Team)
-            .get_int(&VarName::RerollPrice)
+        let vars = resources.team_states.get_vars(&Faction::Team);
+        if vars.get_int(&VarName::FreeRerolls) > 0 {
+            0
+        } else {
+            vars.get_int(&VarName::RerollPrice)
+        }
     }
 
     fn is_reroll_affordable(resources: &Resources) -> bool {
@@ -268,6 +282,7 @@ impl ShopSystem {
         vars.set_int(&VarName::BuyPrice, 3);
         vars.set_int(&VarName::SellPrice, 1);
         vars.set_int(&VarName::RerollPrice, 1);
+        vars.set_int(&VarName::FreeRerolls, 0);
 
         if resources.shop.refresh_btn.is_none() {
             let world_entity = WorldSystem::get_context(world).owner;
@@ -305,13 +320,17 @@ impl ShopSystem {
                 resources.options.images.refresh_icon.clone(),
                 resources.options.colors.btn_normal,
                 refresh,
-                SlotSystem::get_position(0, &Faction::Shop) + vec2(0.0, -2.0),
+                Self::reroll_btn_position(),
                 &hashmap! {
                     "u_scale" => ShaderUniform::Float(1.1),
                 }
                 .into(),
             );
         }
+    }
+
+    fn reroll_btn_position() -> vec2<f32> {
+        SlotSystem::get_position(0, &Faction::Shop) + vec2(0.0, -2.0)
     }
 
     pub fn init_floor(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
