@@ -39,6 +39,7 @@ impl ButtonSystem {
             target: entity,
             parent: Some(world_entity),
             vars: default(),
+            trace: "button".to_string(),
         });
         resources.input.listeners.insert(entity, listener);
         entity

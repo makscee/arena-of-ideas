@@ -59,6 +59,7 @@ impl StatusPool {
                 &mut resources.action_queue,
                 context
                     .clone()
+                    .trace(&event.to_string())
                     .add_var(VarName::StatusName, Var::String((0, name.clone())))
                     .add_var(VarName::Charges, Var::Int(charges))
                     .to_owned(),

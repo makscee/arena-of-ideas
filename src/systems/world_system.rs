@@ -14,6 +14,7 @@ impl WorldSystem {
             target: world_entity,
             parent: None,
             vars,
+            trace: "world".to_string(),
         });
         world_entity
     }

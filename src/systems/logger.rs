@@ -34,7 +34,7 @@ impl Logger {
 
     pub fn log(&self, text: &str, context: &LogContext) {
         if self.is_context_enabled(context) {
-            println!("{:?} {}", context, text);
+            println!("{:?}: {}", context, text);
         }
     }
 

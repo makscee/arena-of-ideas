@@ -44,6 +44,7 @@ impl Game {
             target: entity,
             parent: Some(world_entity),
             vars: default(),
+            trace: "field".to_string(),
         })
     }
 

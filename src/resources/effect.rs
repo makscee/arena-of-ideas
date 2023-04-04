@@ -1,9 +1,10 @@
 use geng::prelude::itertools::Itertools;
 use legion::EntityStore;
+use strum_macros::AsRefStr;
 
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, AsRefStr)]
 #[serde(tag = "type")]
 #[serde(deny_unknown_fields)]
 pub enum Effect {
@@ -133,6 +134,91 @@ pub enum Effect {
     },
 }
 
+impl Display for Effect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Effect::Repeat { count, effect } => write!(f, "{}-{}", self.as_ref(), count),
+            Effect::SetVarInt { var, value } => write!(f, "{}-{}", self.as_ref(), var),
+            Effect::SetVarFaction { var, value } => {
+                write!(f, "{} {}-{}", self.as_ref(), var, value)
+            }
+            Effect::ChangeAbilityVarInt {
+                ability,
+                var,
+                delta,
+            } => write!(f, "{} {} {}-{}", self.as_ref(), ability, var, delta),
+            Effect::ChangeFactionVarInt {
+                faction,
+                var,
+                delta,
+            } => write!(f, "{} {} {}-{}", self.as_ref(), faction, var, delta),
+            Effect::SetFactionVarInt {
+                faction,
+                var,
+                value,
+            } => write!(f, "{} {} {}-{}", self.as_ref(), faction, var, value),
+            Effect::AddStatus { name } | Effect::RemoveStatus { name } => {
+                write!(f, "{} {}", self.as_ref(), name)
+            }
+            Effect::ChangeStatus { name, charges } => {
+                write!(f, "{} {}-{}", self.as_ref(), name, charges)
+            }
+            Effect::UseAbility {
+                ability,
+                force,
+                charges,
+            } => write!(f, "{} {}", self.as_ref(), ability),
+            Effect::SetHealth { value } | Effect::SetAttack { value } => {
+                write!(f, "{} {}", self.as_ref(), value)
+            }
+            Effect::SetFaction { faction } => write!(f, "{} {}", self.as_ref(), faction),
+            Effect::SetSlot { slot } => write!(f, "{} {}", self.as_ref(), slot),
+            Effect::TakeVar {
+                var,
+                new_name,
+                entity,
+                effect,
+            } => write!(
+                f,
+                "{} {} {} {}",
+                self.as_ref(),
+                var,
+                new_name
+                    .and_then(|x| Some(x.to_string()))
+                    .unwrap_or_default(),
+                entity
+            ),
+            Effect::ShowText {
+                text,
+                color,
+                entity,
+                font,
+            } => write!(f, "{} {}", self.as_ref(), text),
+            Effect::Aoe {
+                factions,
+                effect,
+                exclude_self,
+            } => write!(f, "{} {}", self.as_ref(), factions.iter().join(",")),
+            Effect::FindTarget {
+                faction,
+                condition,
+                effect,
+            } => write!(f, "{} {}", self.as_ref(), faction),
+            Effect::AllTargets {
+                faction,
+                condition,
+                effect,
+            } => write!(f, "{} {}", self.as_ref(), faction),
+            Effect::Summon {
+                unit,
+                slot,
+                faction,
+            } => write!(f, "{} {}-{}", self.as_ref(), unit.name, faction),
+            _ => write!(f, "{}", self.as_ref()),
+        }
+    }
+}
+
 impl Effect {
     pub fn wrap(self) -> EffectWrapped {
         EffectWrapped {
@@ -163,7 +249,7 @@ impl EffectWrapped {
         resources: &mut Resources,
         node: &mut Option<Node>,
     ) -> Result<(), Error> {
-        let mut updated_context = context.clone();
+        let mut updated_context = context.clone().trace(&self.effect.to_string());
         if let Some(target) = self.target.as_ref() {
             updated_context.target = target.calculate(&context, world, resources)?;
         }
@@ -174,6 +260,13 @@ impl EffectWrapped {
             updated_context.vars.merge_mut(vars, true);
         }
         let mut context = updated_context;
+        resources.logger.log(
+            &format!(
+                "{} o:{:?} t:{:?}",
+                context.trace, context.owner, context.target
+            ),
+            &LogContext::Effect,
+        );
         match &self.effect {
             Effect::Damage {
                 value,
@@ -233,7 +326,7 @@ impl EffectWrapped {
                         ));
                     }
                     resources.logger.log(
-                        &format!("Entity#{:?} {} damage taken", context.target, value),
+                        &format!("{:?} {} damage taken", context.target, value),
                         &LogContext::Effect,
                     );
                     if let Some(effect) = then {
@@ -503,11 +596,7 @@ impl EffectWrapped {
                     if *exclude_self && entity == context.owner {
                         continue;
                     }
-                    let context = Context {
-                        target: entity,
-                        ..context.clone()
-                    };
-                    effect.process(context, world, resources, node)?;
+                    effect.process(context.clone().set_target(entity), world, resources, node)?;
                 }
             }
             Effect::TakeVar {
@@ -517,18 +606,19 @@ impl EffectWrapped {
                 effect,
             } => resources.action_queue.push_front(Action::new(
                 {
-                    let mut vars = context.vars.clone();
-                    vars.insert(
-                        new_name.unwrap_or(*var),
-                        ContextSystem::get_context(
-                            entity.calculate(&context, world, resources)?,
-                            world,
+                    context
+                        .clone()
+                        .add_var(
+                            new_name.unwrap_or(*var),
+                            ContextSystem::get_context(
+                                entity.calculate(&context, world, resources)?,
+                                world,
+                            )
+                            .vars
+                            .get(&var)
+                            .clone(),
                         )
-                        .vars
-                        .get(&var)
-                        .clone(),
-                    );
-                    Context { vars, ..context }
+                        .to_owned()
                 },
                 effect.deref().clone(),
             )),
@@ -650,7 +740,7 @@ impl EffectWrapped {
             }
         }
         Ok(match self.after.as_deref() {
-            Some(after) => Self::process(after, context, world, resources, node)?,
+            Some(after) => Self::process(after, context.trace("after"), world, resources, node)?,
             None => (),
         })
     }

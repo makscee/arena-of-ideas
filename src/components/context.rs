@@ -6,6 +6,7 @@ pub struct Context {
     pub target: legion::Entity, // any entity
     pub parent: Option<legion::Entity>, // World -> Unit -> Status
     pub vars: Vars,
+    pub trace: String,
 }
 
 impl Context {
@@ -27,6 +28,16 @@ impl Context {
 
     pub fn add_var(&mut self, var: VarName, value: Var) -> &mut Self {
         self.vars.insert(var, value);
+        self
+    }
+
+    pub fn trace(mut self, step: &str) -> Self {
+        self.trace = format!("{} -> {}", self.trace, step);
+        self
+    }
+
+    pub fn set_target(mut self, target: legion::Entity) -> Self {
+        self.target = target;
         self
     }
 }

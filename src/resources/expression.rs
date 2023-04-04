@@ -1,8 +1,10 @@
+use strum_macros::Display;
+
 /// Expression is anything that can return a value.
 /// For each return type there should be one enum
 use super::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Display)]
 #[serde(tag = "type", deny_unknown_fields)]
 pub enum ExpressionInt {
     Sum {
@@ -122,7 +124,7 @@ impl ExpressionInt {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Display)]
 #[serde(tag = "type")]
 pub enum ExpressionEntity {
     World,
@@ -193,7 +195,7 @@ impl ExpressionEntity {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Display)]
 #[serde(tag = "type")]
 pub enum ExpressionFaction {
     Owner,

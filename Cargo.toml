@@ -15,6 +15,8 @@ strfmt = "0.2.2"
 enum-utils = "0.1.2"
 legion = "0.4.0"
 enum-iterator = "1.4.0"
+strum = "0.24.1"
+strum_macros = "0.24.1"
 
 [patch.crates-io]
 # Temp workaround until update in geng, as this issue is already fixed upstream

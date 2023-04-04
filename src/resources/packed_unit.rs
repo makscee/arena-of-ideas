@@ -106,6 +106,7 @@ impl PackedUnit {
             target: entity,
             parent: Some(world_entity),
             vars: default(),
+            trace: self.name.clone(),
         });
         if let Some(shader) = &self.shader {
             entry.add_component(shader.clone());

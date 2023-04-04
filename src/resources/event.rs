@@ -1,6 +1,8 @@
+use strum_macros::AsRefStr;
+
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug, AsRefStr)]
 pub enum Event {
     StatusAdd {
         status: String,
@@ -84,6 +86,54 @@ pub enum Event {
     UnitDeath {
         target: legion::Entity,
     },
+}
+
+impl Display for Event {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Event::StatusAdd { status, owner }
+            | Event::StatusRemove { status, owner }
+            | Event::StatusChargeAdd { status, owner }
+            | Event::StatusChargeRemove { status, owner } => {
+                write!(f, "{} {} o:{:?}", self.as_ref(), status, owner)
+            }
+            Event::ModifyIncomingDamage { context }
+            | Event::ModifyOutgoingDamage { context }
+            | Event::ModifyContext { context }
+            | Event::BeforeIncomingDamage { context }
+            | Event::AfterIncomingDamage { context }
+            | Event::BeforeOutgoingDamage { context }
+            | Event::AfterOutgoingDamage { context }
+            | Event::AfterDamageDealt { context }
+            | Event::AfterDeath { context } => {
+                write!(
+                    f,
+                    "{} o:{:?} t:{:?}",
+                    self.as_ref(),
+                    context.owner,
+                    context.target
+                )
+            }
+            Event::BeforeDeath { owner }
+            | Event::AfterBirth { owner }
+            | Event::Buy { owner }
+            | Event::Sell { owner }
+            | Event::AddToTeam { owner }
+            | Event::RemoveFromTeam { owner } => write!(f, "{} o:{:?}", self.as_ref(), owner),
+            Event::BeforeStrike { owner, target }
+            | Event::AfterStrike { owner, target }
+            | Event::AfterKill { owner, target } => {
+                write!(f, "{} o:{:?} t:{:?}", self.as_ref(), owner, target)
+            }
+            Event::BattleStart
+            | Event::BattleEnd
+            | Event::ShopStart
+            | Event::ShopEnd
+            | Event::TurnStart
+            | Event::TurnEnd => write!(f, "{}", self.as_ref()),
+            Event::UnitDeath { target } => write!(f, "{} t:{:?}", self.as_ref(), target),
+        }
+    }
 }
 
 impl Event {

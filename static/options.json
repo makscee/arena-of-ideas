@@ -5,7 +5,7 @@
     "rewind_add_speed": 10.0,
     "start_floor": 0,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
@@ -90,11 +90,11 @@
     "fov": 14.0,
     "initial_shop_fill": 5,
     "log": {
-        "Action": true,
+        "Action": false,
         "ActionFail": true,
         "Effect": true,
         "Contexts": false,
-        "Condition": false,
+        "Condition": true,
         "Trigger": false,
         "Event": true,
         "UnitCreation": true,

@@ -1,6 +1,8 @@
+use strum_macros::Display;
+
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, Display)]
 pub enum VarName {
     Damage,
     HpOriginalValue,
@@ -231,12 +233,6 @@ impl From<Vars> for ShaderUniforms {
             };
         });
         ShaderUniforms::from(map)
-    }
-}
-
-impl fmt::Display for VarName {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

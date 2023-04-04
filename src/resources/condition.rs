@@ -67,7 +67,10 @@ impl Condition {
         resources: &Resources,
     ) -> Result<bool, Error> {
         resources.logger.log(
-            &format!("Calculating condition {:?} {:?}", self, context),
+            &format!(
+                "Calculating condition {:?} o:{:?} t:{:?}",
+                self, context.owner, context.target
+            ),
             &LogContext::Condition,
         );
         match self {
