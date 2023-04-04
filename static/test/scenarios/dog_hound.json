@@ -1,0 +1,102 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 2,
+                "health": 1,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "List",
+                        "effects": [
+                            {
+                                "type": "UseAbility",
+                                "ability": "Devour",
+                                "target": {
+                                    "type": "RandomUnit",
+                                    "faction": {
+                                        "type": "Opposite",
+                                        "faction": {
+                                            "type": "Owner"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "type": "Damage",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 20
+                                },
+                                "target": {
+                                    "type": "Owner"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "attack": 12,
+                "health": 12,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "UseAbility",
+                        "ability": "Devour",
+                        "target": {
+                            "type": "RandomUnit",
+                            "faction": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "attack": 12,
+                "health": 12,
+                "houses": [
+                    "Demons"
+                ],
+                "trigger": {
+                    "type": "BattleStart",
+                    "effect": {
+                        "type": "UseAbility",
+                        "ability": "Devour",
+                        "target": {
+                            "type": "RandomUnit",
+                            "faction": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "assert": {
+        "type": "SlotOccupied",
+        "slot": {
+            "type": "Const",
+            "value": 1
+        },
+        "faction": "Dark"
+    }
+}

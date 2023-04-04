@@ -13,7 +13,11 @@ impl ActionSystem {
             let ticked = if let Some(cluster) = cluster {
                 let node = &mut Some(Node::default());
                 let result = Self::tick(world, resources, node);
-                cluster.push(node.take().unwrap().finish_full(world, resources));
+                cluster.push(
+                    node.take()
+                        .unwrap()
+                        .lock(NodeLockType::Full { world, resources }),
+                );
                 result
             } else {
                 Self::tick(world, resources, &mut None)

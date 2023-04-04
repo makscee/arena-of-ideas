@@ -81,7 +81,7 @@ impl SlotSystem {
                         0.8,
                     )
                 });
-            cluster.push(node.finish_full(world, resources));
+            cluster.push(node.lock(NodeLockType::Full { world, resources }));
         }
     }
 

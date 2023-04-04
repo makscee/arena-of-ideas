@@ -52,6 +52,7 @@ pub struct Shaders {
     pub corner_button: Shader,
     pub team_name: Shader,
     pub team_name_intro: Shader,
+    pub tape_indicator: Shader,
 }
 
 #[derive(Deserialize, Debug)]

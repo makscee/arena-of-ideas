@@ -38,7 +38,7 @@ impl BattleSystem {
                 TEAM_NAMES_KEY.to_string(),
                 VfxSystem::vfx_battle_team_names_animation(resources),
             );
-            let mut cluster = NodeCluster::new(node.finish_empty());
+            let mut cluster = NodeCluster::new(node.lock(NodeLockType::Empty));
             cluster.set_duration(1.0);
             tape.push(cluster);
             tape.persistent_node.add_effects_by_key(
@@ -164,7 +164,8 @@ impl BattleSystem {
                     EasingType::Linear,
                     0.03,
                 );
-                let mut cluster = NodeCluster::new(node.finish_full(world, resources));
+                let mut cluster =
+                    NodeCluster::new(node.lock(NodeLockType::Full { world, resources }));
                 cluster.set_duration(0.5);
                 tape.push(cluster);
             }
@@ -189,7 +190,7 @@ impl BattleSystem {
                     duration,
                 );
                 Self::add_strike_vfx(world, resources, &mut node);
-                cluster.push(node.finish_full(world, resources));
+                cluster.push(node.lock(NodeLockType::Full { world, resources }));
             }
             Self::hit(left, right, &mut cluster, world, resources);
             Self::spin(world, resources, &mut cluster);

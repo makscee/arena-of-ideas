@@ -343,7 +343,7 @@ impl Node {
     }
 
     pub fn duration(&self) -> Time {
-        self.duration.expect("Node is not finished")
+        self.duration.expect("Node is not locked")
     }
 
     pub fn set_max_duration(&mut self, duration: Time) {
@@ -363,29 +363,42 @@ impl Node {
         self.duration = Some(duration);
     }
 
-    pub fn finish_full(self, world: &mut legion::World, resources: &Resources) -> Self {
-        self.finish(world, resources, &HashSet::from_iter(Faction::all()))
-    }
-
-    pub fn finish(
-        mut self,
-        world: &mut legion::World,
-        resources: &Resources,
-        factions: &HashSet<Faction>,
-    ) -> Self {
-        self = self.finish_empty();
-        ContextSystem::refresh_factions(factions, world, resources);
-        UnitSystem::draw_all_units_to_node(factions, &mut self, world, resources);
-        self
-    }
-
-    pub fn finish_empty(mut self) -> Self {
+    pub fn lock(mut self, lock_type: NodeLockType) -> Self {
         self.duration = Some(
             self.all_effects()
                 .map(|x| x.duration + x.delay)
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default(),
         );
+        match lock_type {
+            NodeLockType::Full { world, resources } => {
+                let render_factions = HashSet::from_iter(Faction::all());
+                ContextSystem::refresh_factions(&render_factions, world, resources);
+                UnitSystem::draw_all_units_to_node(&render_factions, &mut self, world, resources);
+            }
+            NodeLockType::Factions {
+                factions,
+                world,
+                resources,
+            } => {
+                ContextSystem::refresh_factions(&factions, world, resources);
+                UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+            }
+            NodeLockType::Empty => {}
+        }
         self
     }
+}
+
+pub enum NodeLockType<'a> {
+    Full {
+        world: &'a mut legion::World,
+        resources: &'a mut Resources,
+    },
+    Factions {
+        factions: HashSet<Faction>,
+        world: &'a mut legion::World,
+        resources: &'a mut Resources,
+    },
+    Empty,
 }
