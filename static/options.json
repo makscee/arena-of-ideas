@@ -18,6 +18,12 @@
                     "houses": [
                         "Archers"
                     ],
+                    "active_statuses": {
+                        "Shield": 1,
+                        "Empower": 1,
+                        "Growth": 1,
+                        "Immortality": 1
+                    },
                     "trigger": {
                         "type": "AnyDeath",
                         "effect": {

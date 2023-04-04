@@ -120,15 +120,22 @@ impl StatusPool {
     }
 
     pub fn get_entity_shaders(&self, entity: &legion::Entity) -> Vec<Shader> {
+        let mut index = -1;
         self.collect_statuses(entity)
             .into_iter()
             .filter_map(|(_, status, _)| match status.shader {
-                Some(mut shader) => {
-                    shader.parameters.uniforms.insert(
-                        VarName::Color.convert_to_uniform(),
-                        ShaderUniform::Color(status.color),
-                    );
-                    Some(shader)
+                Some(shader) => {
+                    index += 1;
+                    Some(
+                        shader.merge_uniforms(
+                            &hashmap! {
+                                "u_color" => ShaderUniform::Color(status.color),
+                                "u_index" => ShaderUniform::Int(index as i32),
+                            }
+                            .into(),
+                            true,
+                        ),
+                    )
                 }
                 None => None,
             })
