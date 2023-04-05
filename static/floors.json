@@ -198,8 +198,8 @@
             "units": [
                 {
                     "name": "Death Knight",
-                    "attack": 10,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -232,15 +232,15 @@
                                 "u_spin_part": 0.01,
                                 "u_move_speed": 1.0
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     }
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 10,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -273,15 +273,15 @@
                                 "u_spin_part": 0.01,
                                 "u_move_speed": 1.0
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     }
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 10,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -314,15 +314,15 @@
                                 "u_spin_part": 0.01,
                                 "u_move_speed": 1.0
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     }
                 },
                 {
                     "name": "Death Knight",
-                    "attack": 10,
-                    "health": 10,
+                    "attack": 8,
+                    "health": 8,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -355,7 +355,7 @@
                                 "u_spin_part": 0.01,
                                 "u_move_speed": 1.0
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     }
@@ -370,7 +370,7 @@
                 {
                     "name": "Golem",
                     "attack": 10,
-                    "health": 20,
+                    "health": 10,
                     "houses": [
                         "Warriors"
                     ],
@@ -394,7 +394,7 @@
                 {
                     "name": "Golem",
                     "attack": 10,
-                    "health": 20,
+                    "health": 10,
                     "houses": [
                         "Warriors"
                     ],
@@ -418,7 +418,7 @@
                 {
                     "name": "Golem",
                     "attack": 10,
-                    "health": 20,
+                    "health": 10,
                     "houses": [
                         "Warriors"
                     ],
@@ -574,8 +574,8 @@
             "units": [
                 {
                     "name": "Equalizer",
-                    "attack": 20,
-                    "health": 20,
+                    "attack": 25,
+                    "health": 25,
                     "description": "Start of battle:\nDispel everyone",
                     "houses": [
                         "Exorcists"
@@ -626,8 +626,8 @@
             "units": [
                 {
                     "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
+                    "health": 6,
+                    "attack": 6,
                     "description": "Turn end:\nShoot random\nenemy 2 times",
                     "houses": [
                         "Archers"
@@ -675,8 +675,8 @@
                 },
                 {
                     "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
+                    "health": 6,
+                    "attack": 6,
                     "description": "Turn end:\nShoot random\nenemy 2 times",
                     "houses": [
                         "Archers"
@@ -724,8 +724,8 @@
                 },
                 {
                     "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
+                    "health": 6,
+                    "attack": 6,
                     "description": "Turn end:\nShoot random\nenemy 2 times",
                     "houses": [
                         "Archers"
@@ -773,8 +773,8 @@
                 },
                 {
                     "name": "Archer",
-                    "health": 4,
-                    "attack": 4,
+                    "health": 6,
+                    "attack": 6,
                     "description": "Turn end:\nShoot random\nenemy 2 times",
                     "houses": [
                         "Archers"

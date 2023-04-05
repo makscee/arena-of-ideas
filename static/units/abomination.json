@@ -1,6 +1,6 @@
 {
     "name": "Abomination",
-    "description": "On OnBuy:\nDevour\nadjacent allies",
+    "description": "On Buy:\nDevour\nadjacent allies",
     "health": 2,
     "attack": 2,
     "houses": [

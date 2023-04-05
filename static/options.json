@@ -5,7 +5,7 @@
     "rewind_add_speed": 10.0,
     "start_floor": 0,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "units": [
                 {
@@ -454,7 +454,8 @@
                     "u_align": [
                         0.0,
                         1.0
-                    ]
+                    ],
+                    "u_alpha": 0.5
                 }
             },
             "chain_after": [

@@ -16,7 +16,9 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 
+uniform float u_alpha = 1;
+
 void main() {
-    gl_FragColor = u_color;
+    gl_FragColor = vec4(u_color.rgb, u_alpha);
 }
 #endif

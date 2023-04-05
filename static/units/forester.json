@@ -2,7 +2,7 @@
     "name": "Forester",
     "health": 3,
     "attack": 3,
-    "description": "Start of battle:\nuse SummonTreant twice",
+    "description": "Start of battle:\nuse SummonTreant\ntwice",
     "houses": [
         "Druids"
     ],

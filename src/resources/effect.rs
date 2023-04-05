@@ -137,8 +137,8 @@ pub enum Effect {
 impl Display for Effect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Effect::Repeat { count, effect } => write!(f, "{}-{}", self.as_ref(), count),
-            Effect::SetVarInt { var, value } => write!(f, "{}-{}", self.as_ref(), var),
+            Effect::Repeat { count, .. } => write!(f, "{}-{}", self.as_ref(), count),
+            Effect::SetVarInt { var, .. } => write!(f, "{}-{}", self.as_ref(), var),
             Effect::SetVarFaction { var, value } => {
                 write!(f, "{} {}-{}", self.as_ref(), var, value)
             }
@@ -163,11 +163,7 @@ impl Display for Effect {
             Effect::ChangeStatus { name, charges } => {
                 write!(f, "{} {}-{}", self.as_ref(), name, charges)
             }
-            Effect::UseAbility {
-                ability,
-                force,
-                charges,
-            } => write!(f, "{} {}", self.as_ref(), ability),
+            Effect::UseAbility { ability, .. } => write!(f, "{} {}", self.as_ref(), ability),
             Effect::SetHealth { value } | Effect::SetAttack { value } => {
                 write!(f, "{} {}", self.as_ref(), value)
             }
@@ -177,7 +173,7 @@ impl Display for Effect {
                 var,
                 new_name,
                 entity,
-                effect,
+                ..
             } => write!(
                 f,
                 "{} {} {} {}",
@@ -188,32 +184,15 @@ impl Display for Effect {
                     .unwrap_or_default(),
                 entity
             ),
-            Effect::ShowText {
-                text,
-                color,
-                entity,
-                font,
-            } => write!(f, "{} {}", self.as_ref(), text),
-            Effect::Aoe {
-                factions,
-                effect,
-                exclude_self,
-            } => write!(f, "{} {}", self.as_ref(), factions.iter().join(",")),
-            Effect::FindTarget {
-                faction,
-                condition,
-                effect,
-            } => write!(f, "{} {}", self.as_ref(), faction),
-            Effect::AllTargets {
-                faction,
-                condition,
-                effect,
-            } => write!(f, "{} {}", self.as_ref(), faction),
-            Effect::Summon {
-                unit,
-                slot,
-                faction,
-            } => write!(f, "{} {}-{}", self.as_ref(), unit.name, faction),
+            Effect::ShowText { text, .. } => write!(f, "{} {}", self.as_ref(), text),
+            Effect::Aoe { factions, .. } => {
+                write!(f, "{} {}", self.as_ref(), factions.iter().join(","))
+            }
+            Effect::FindTarget { faction, .. } => write!(f, "{} {}", self.as_ref(), faction),
+            Effect::AllTargets { faction, .. } => write!(f, "{} {}", self.as_ref(), faction),
+            Effect::Summon { unit, faction, .. } => {
+                write!(f, "{} {}-{}", self.as_ref(), unit.name, faction)
+            }
             _ => write!(f, "{}", self.as_ref()),
         }
     }
@@ -656,18 +635,18 @@ impl EffectWrapped {
                 effect,
             } => {
                 let faction = faction.calculate(&context, world, resources)?;
-                let target = UnitSystem::collect_faction(world, faction)
-                    .into_iter()
-                    .find(|entity| {
-                        if let Some(context) = ContextSystem::try_get_context(*entity, world).ok() {
-                            match condition.calculate(&context, world, resources) {
-                                Ok(value) => value,
-                                Err(_) => false,
-                            }
-                        } else {
-                            false
+                let mut units = UnitSystem::collect_faction(world, faction);
+                units.shuffle(&mut thread_rng());
+                let target = units.into_iter().find(|entity| {
+                    if let Some(context) = ContextSystem::try_get_context(*entity, world).ok() {
+                        match condition.calculate(&context, world, resources) {
+                            Ok(value) => value,
+                            Err(_) => false,
                         }
-                    });
+                    } else {
+                        false
+                    }
+                });
                 if let Some(target) = target {
                     context.target = target;
                     resources

@@ -14,14 +14,9 @@ impl GameOverSystem {
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
         SlotSystem::clear_world(world);
-        todo!("fix");
-        // let mut node = CassetteNode::default();
-        // UnitSystem::draw_all_units_to_cassette_node(
-        //     &hashset! {Faction::Team},
-        //     &mut node,
-        //     world,
-        //     resources,
-        // );
+        let mut node = Node::default();
+        UnitSystem::draw_all_units_to_node(&hashset! {Faction::Team}, &mut node, world, resources);
+        resources.tape_player.tape.persistent_node = node;
     }
 }
 
@@ -29,7 +24,7 @@ impl System for GameOverSystem {
     fn ui<'a>(
         &'a mut self,
         cx: &'a ui::Controller,
-        world: &'a legion::World,
+        _: &'a legion::World,
         resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         let restart = Button::new(cx, "Restart");

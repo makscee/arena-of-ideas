@@ -59,7 +59,7 @@ impl System for ShopSystem {
     }
     fn draw(
         &self,
-        world: &legion::World,
+        _: &legion::World,
         resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
@@ -131,7 +131,7 @@ impl ShopSystem {
         self.drag_to_sell = false;
         if let Some(dragged) = resources.shop.drag_entity {
             if let Some(slot) =
-                SlotSystem::get_horizontal_hovered_slot(&Faction::Team, resources.input.mouse_pos)
+                SlotSystem::get_hovered_slot(&Faction::Team, resources.input.mouse_pos)
             {
                 if SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team}) {
                     SlotSystem::refresh_slots_uniforms(world, &resources.options);
@@ -162,10 +162,9 @@ impl ShopSystem {
                             Self::sell(dropped, resources, world);
                             SlotSystem::refresh_slots_uniforms(world, &resources.options);
                             ContextSystem::refresh_all(world, resources);
-                        } else if let Some(slot) = SlotSystem::get_horizontal_hovered_slot(
-                            &Faction::Team,
-                            resources.input.mouse_pos,
-                        ) {
+                        } else if let Some(slot) =
+                            SlotSystem::get_hovered_slot(&Faction::Team, resources.input.mouse_pos)
+                        {
                             world
                                 .entry_mut(dropped)
                                 .unwrap()
@@ -177,10 +176,8 @@ impl ShopSystem {
                         }
                     }
                     Faction::Shop => {
-                        let slot = SlotSystem::get_horizontal_hovered_slot(
-                            &Faction::Team,
-                            resources.input.mouse_pos,
-                        );
+                        let slot =
+                            SlotSystem::get_hovered_slot(&Faction::Team, resources.input.mouse_pos);
                         if ShopSystem::get_g(resources) >= ShopSystem::buy_price(resources)
                             && slot.is_some()
                             && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
