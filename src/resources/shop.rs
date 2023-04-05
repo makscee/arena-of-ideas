@@ -19,8 +19,8 @@ impl Shop {
         resources.shop.pool.clear();
         let mut sorted_by_power = VecDeque::from_iter(resources.hero_pool.all_sorted());
         let heroes_per_extension = (sorted_by_power.len() as f32
-            / (10.0_f32.min(resources.floors.count() as f32)))
-        .ceil() as usize;
+            / (resources.floors.count() as f32 - 3.0))
+            .ceil() as usize;
         let mut cur_level = 0;
         resources.shop.floor_extensions = vec![default()];
         while let Some(unit) = sorted_by_power.pop_front() {

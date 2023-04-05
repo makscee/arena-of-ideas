@@ -1,8 +1,8 @@
 {
     "name": "Scrapper",
     "description": "On Kill:\ngain Defense (3)",
-    "health": 10,
-    "attack": 1,
+    "health": 8,
+    "attack": 4,
     "houses": [
         "Warriors"
     ],

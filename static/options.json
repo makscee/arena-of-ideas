@@ -88,7 +88,7 @@
         }
     },
     "fov": 14.0,
-    "initial_shop_fill": 5,
+    "initial_shop_fill": 2,
     "log": {
         "Action": false,
         "ActionFail": true,
@@ -455,7 +455,7 @@
                         0.0,
                         1.0
                     ],
-                    "u_alpha": 0.5
+                    "u_alpha": 0.3
                 }
             },
             "chain_after": [
@@ -473,7 +473,8 @@
                                 3.0
                             ],
                             "u_text_inside": 0.45,
-                            "u_text_border": 0.3
+                            "u_text_border": 0.3,
+                            "u_alpha": 1.0
                         }
                     }
                 }
