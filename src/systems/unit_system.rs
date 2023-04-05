@@ -33,7 +33,13 @@ impl UnitSystem {
             }
             None => options.shaders.unit.clone(),
         };
-
+        let ts = world
+            .entry_ref(entity)
+            .unwrap()
+            .get_component::<EntityComponent>()
+            .unwrap()
+            .ts;
+        unit_shader.ts = ts;
         let context = ContextSystem::get_context(entity, world);
         unit_shader
             .parameters
