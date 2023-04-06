@@ -12,7 +12,7 @@ impl BattleSystem {
         world: &mut legion::World,
         resources: &mut Resources,
         tape: &mut Option<Tape>,
-    ) -> bool {
+    ) -> usize {
         Self::add_intro(resources, tape);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
@@ -28,7 +28,8 @@ impl BattleSystem {
         while Self::tick(world, resources, tape) && ticks < 1000 {
             ticks += 1;
         }
-        Self::battle_won(world, resources)
+
+        Self::battle_score(world, resources)
     }
 
     pub fn add_intro(resources: &Resources, tape: &mut Option<Tape>) {
@@ -57,13 +58,11 @@ impl BattleSystem {
         Self::clear_world(world, resources);
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
-        dark.unpack(&Faction::Dark, world, resources);
-        dark.unpack(&Faction::Dark, world, resources);
     }
 
-    pub fn battle_won(world: &legion::World, resources: &Resources) -> bool {
+    pub fn battle_score(world: &legion::World, resources: &Resources) -> usize {
         let (killed, size) = Self::get_score(world, resources);
-        killed >= size
+        killed / size
     }
 
     pub fn get_score(world: &legion::World, resources: &Resources) -> (usize, usize) {
@@ -74,23 +73,22 @@ impl BattleSystem {
     }
 
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
-        resources.game_won = Self::battle_won(world, resources);
+        resources.last_score = Self::battle_score(world, resources);
         resources.last_round = resources.ladder.current_ind();
-        if !resources.game_won {
-            resources.transition_state = GameState::GameOver;
-        } else {
+        if resources.last_score > 0 {
             if resources.ladder.next() {
                 resources.transition_state = GameState::Shop;
             } else {
                 resources.transition_state = GameState::GameOver;
             }
+        } else {
+            resources.transition_state = GameState::GameOver;
         }
         Self::clear_world(world, resources);
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {
-        let factions = &hashset! {Faction::Dark, Faction::Light};
-        UnitSystem::clear_factions(world, resources, factions);
+        UnitSystem::clear_factions(world, resources, &Faction::battle());
     }
 
     fn strickers_death_check(
@@ -107,7 +105,7 @@ impl BattleSystem {
         resources: &mut Resources,
         tape: &mut Option<Tape>,
     ) -> bool {
-        let factions = &hashset! {Faction::Light, Faction::Dark};
+        let factions = &Faction::battle();
         SlotSystem::fill_gaps(world, resources, factions);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
@@ -236,9 +234,8 @@ impl BattleSystem {
         resources: &mut Resources,
         cluster: &mut Option<NodeCluster>,
     ) {
-        let factions = hashset! {Faction::Light, Faction::Dark};
         ActionSystem::run_ticks(world, resources, cluster);
-        Self::death_check(&factions, world, resources, cluster);
+        Self::death_check(&Faction::battle(), world, resources, cluster);
     }
 
     pub fn hit(
@@ -332,7 +329,7 @@ impl BattleSystem {
         }
     }
 
-    fn add_strike_vfx(world: &mut legion::World, resources: &mut Resources, node: &mut Node) {
+    fn add_strike_vfx(_: &mut legion::World, resources: &mut Resources, node: &mut Node) {
         let position = BATTLEFIELD_POSITION;
         node.add_effect(VfxSystem::vfx_strike(resources, position));
     }
@@ -358,13 +355,13 @@ impl BattleSystem {
 impl System for BattleSystem {
     fn ui<'a>(
         &'a mut self,
-        cx: &'a ui::Controller,
-        world: &'a legion::World,
+        _: &'a ui::Controller,
+        _: &'a legion::World,
         resources: &'a Resources,
     ) -> Box<dyn ui::Widget + 'a> {
         Box::new(
             (Text::new(
-                format!("Floor #{}", resources.ladder.current_ind()),
+                format!("Level #{}", resources.ladder.current_ind()),
                 resources.fonts.get_font(1),
                 70.0,
                 Rgba::WHITE,
@@ -374,6 +371,4 @@ impl System for BattleSystem {
                 .uniform_padding(32.0),
         )
     }
-
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
 }

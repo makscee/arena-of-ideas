@@ -9,7 +9,7 @@ impl SimulationSystem {
         world: &mut legion::World,
         resources: &mut Resources,
         assert: Option<&Condition>,
-    ) -> bool {
+    ) -> usize {
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
         BattleSystem::run_battle(world, resources, &mut None);
@@ -23,9 +23,9 @@ impl SimulationSystem {
                     let dark = Team::pack(&Faction::Dark, world, resources);
                     dbg!((light, dark));
                 }
-                result
+                1
             }
-            None => BattleSystem::battle_won(world, resources),
+            None => BattleSystem::battle_score(world, resources),
         };
         BattleSystem::clear_world(world, resources);
         resources.action_queue.clear();
@@ -72,15 +72,10 @@ mod tests {
             trigger: default(),
             active_statuses: default(),
             shader: default(),
+            rank: default(),
         };
         let light = Team::new(String::from("light"), vec![unit.clone()]);
-        assert!(SimulationSystem::run_battle(
-            &light,
-            &light,
-            &mut world,
-            &mut resources,
-            None
-        ))
+        assert!(SimulationSystem::run_battle(&light, &light, &mut world, &mut resources, None) > 0)
     }
 
     #[test]
@@ -110,7 +105,7 @@ mod tests {
                     &mut world,
                     &mut resources,
                     Some(&scenario.assert),
-                ),
+                ) > 0,
                 "Scenario {:?} failed assert: {:?}",
                 path,
                 scenario.assert

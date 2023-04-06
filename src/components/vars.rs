@@ -41,6 +41,7 @@ pub enum VarName {
     RerollPrice,
     FreeRerolls,
     Persistent,
+    Rank,
 }
 
 impl VarName {

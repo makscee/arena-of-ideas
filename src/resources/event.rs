@@ -143,8 +143,7 @@ impl Event {
         caught = caught
             || match self {
                 Event::BattleEnd | Event::BattleStart | Event::TurnStart | Event::TurnEnd => {
-                    let factions = hashset! {Faction::Light, Faction::Dark};
-                    StatusPool::notify_all(self, &factions, resources, world, None);
+                    StatusPool::notify_all(self, &Faction::battle(), resources, world, None);
                     true
                 }
                 _ => false,
@@ -154,8 +153,13 @@ impl Event {
         caught = caught
             || match self {
                 Event::UnitDeath { target } => {
-                    let factions = hashset! {Faction::Light, Faction::Dark};
-                    StatusPool::notify_all(self, &factions, resources, world, Some(*target));
+                    StatusPool::notify_all(
+                        self,
+                        &Faction::battle(),
+                        resources,
+                        world,
+                        Some(*target),
+                    );
                     true
                 }
                 _ => false,

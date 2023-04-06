@@ -15,7 +15,7 @@ impl System for ShaderSystem {
         self.draw_all_shaders(world, resources, framebuffer);
     }
 
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
+    fn update(&mut self, _: &mut legion::World, _: &mut Resources) {}
 }
 
 impl ShaderSystem {

@@ -49,11 +49,7 @@ impl Game {
     }
 
     pub fn reset(world: &mut legion::World, resources: &mut Resources) {
-        UnitSystem::clear_factions(
-            world,
-            resources,
-            &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team, },
-        );
+        UnitSystem::clear_factions(world, resources, &Faction::all());
         StatusPool::clear_all_active(resources);
         resources.ladder.reset();
         resources.action_queue.clear();

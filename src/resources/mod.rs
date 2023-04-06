@@ -81,7 +81,7 @@ pub struct Resources {
     pub frame_shaders: Vec<Shader>,
 
     pub shop: Shop,
-    pub game_won: bool,
+    pub last_score: usize,
     pub last_round: usize,
     pub ladder: Ladder,
 
@@ -120,7 +120,7 @@ impl Resources {
             definitions: default(),
             ladder: default(),
             reload_triggered: default(),
-            game_won: default(),
+            last_score: default(),
             last_round: default(),
             hero_pool: default(),
             transition_state: GameState::MainMenu,

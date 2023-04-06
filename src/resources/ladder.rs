@@ -9,7 +9,16 @@ pub struct Ladder {
 
 impl Ladder {
     pub fn generate_team(&self) -> Team {
-        self.teams[self.current].clone().into()
+        let mut team: Team = self.teams[self.current].clone().into();
+        let size = team.units.len();
+        for rank in 1..=2 {
+            for i in 0..size {
+                let mut unit = team.units[i].clone();
+                unit.rank = rank;
+                team.units.push(unit);
+            }
+        }
+        team
     }
 
     pub fn current_ind(&self) -> usize {

@@ -9,8 +9,7 @@ impl TimeSystem {
 }
 
 impl System for TimeSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    fn update(&mut self, _: &mut legion::World, resources: &mut Resources) {
         resources.global_time += resources.delta_time;
-        WorldSystem::set_time(resources.global_time, world);
     }
 }

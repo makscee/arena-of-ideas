@@ -23,8 +23,7 @@ impl GallerySystem {
 }
 
 const ZOOM_MULTIPLIER: f32 = 1.5;
-const UNIT_SPACING: f32 = 3.0;
-const CARD_ANIMATION_KEY: &str = "gallery_card_animation";
+// const UNIT_SPACING: f32 = 3.0;
 
 impl GallerySystem {
     fn redraw_units(&mut self, world: &mut legion::World, resources: &mut Resources) {
@@ -33,59 +32,59 @@ impl GallerySystem {
         // resources.cassette.render_node.clear();
         UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
         // resources.cassette.render_node.clear_key(CARD_ANIMATION_KEY);
-        for (ind, template_ind) in self.current_heroes.iter().enumerate() {
-            let template_key = self.paths[*template_ind].clone();
-            let position = vec2(
-                UNIT_SPACING * ind as f32 - (heroes - 1) as f32 * 0.5 * UNIT_SPACING,
-                0.0,
-            );
-            // let entity = UnitTemplatesPool::create_unit_entity(
-            //     &template_key,
-            //     resources,
-            //     world,
-            //     Faction::Gallery,
-            //     0,
-            //     position,
-            // );
-            // if self.need_card_animation {
-            //     resources.cassette.parallel_node.add_effect_by_key(
-            //         CARD_ANIMATION_KEY,
-            //         VisualEffect::new_delayed(
-            //             1.0,
-            //             resources.cassette.head,
-            //             VisualEffectType::EntityShaderAnimation {
-            //                 entity: entity,
-            //                 from: hashmap! {
-            //                     "u_card" => ShaderUniform::Float(if self.is_card {0.0} else {1.0})
-            //                 }
-            //                 .into(),
-            //                 to: hashmap! {
-            //                     "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
-            //                 }
-            //                 .into(),
-            //                 easing: EasingType::QuartInOut,
-            //             },
-            //             -1,
-            //         ),
-            //     );
-            // }
-            // resources.cassette.parallel_node.add_effect_by_key(
-            //     CARD_ANIMATION_KEY,
-            //     VisualEffect::new(
-            //         0.0,
-            //         VisualEffectType::EntityShaderConst {
-            //             entity,
-            //             uniforms: hashmap! {
-            //                 "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
-            //             }
-            //             .into(),
-            //         },
-            //         -2,
-            //     ),
-            // );
-        }
-        self.need_card_animation = false;
-        ContextSystem::refresh_all(world, resources);
+        // for (ind, template_ind) in self.current_heroes.iter().enumerate() {
+        // let template_key = self.paths[*template_ind].clone();
+        // let position = vec2(
+        //     UNIT_SPACING * ind as f32 - (heroes - 1) as f32 * 0.5 * UNIT_SPACING,
+        //     0.0,
+        // );
+        // let entity = UnitTemplatesPool::create_unit_entity(
+        //     &template_key,
+        //     resources,
+        //     world,
+        //     Faction::Gallery,
+        //     0,
+        //     position,
+        // );
+        // if self.need_card_animation {
+        //     resources.cassette.parallel_node.add_effect_by_key(
+        //         CARD_ANIMATION_KEY,
+        //         VisualEffect::new_delayed(
+        //             1.0,
+        //             resources.cassette.head,
+        //             VisualEffectType::EntityShaderAnimation {
+        //                 entity: entity,
+        //                 from: hashmap! {
+        //                     "u_card" => ShaderUniform::Float(if self.is_card {0.0} else {1.0})
+        //                 }
+        //                 .into(),
+        //                 to: hashmap! {
+        //                     "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
+        //                 }
+        //                 .into(),
+        //                 easing: EasingType::QuartInOut,
+        //             },
+        //             -1,
+        //         ),
+        //     );
+        // }
+        // resources.cassette.parallel_node.add_effect_by_key(
+        //     CARD_ANIMATION_KEY,
+        //     VisualEffect::new(
+        //         0.0,
+        //         VisualEffectType::EntityShaderConst {
+        //             entity,
+        //             uniforms: hashmap! {
+        //                 "u_card" => ShaderUniform::Float(if self.is_card {1.0} else {0.0})
+        //             }
+        //             .into(),
+        //         },
+        //         -2,
+        //     ),
+        // );
+        // }
+        // self.need_card_animation = false;
+        // ContextSystem::refresh_all(world, resources);
         // UnitSystem::draw_all_units_to_cassette_node(
         //     world,
         //     &resources.options,

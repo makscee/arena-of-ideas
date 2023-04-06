@@ -62,7 +62,9 @@ pub trait System {
     fn pre_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         #![allow(unused_variables)]
     }
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources);
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        #![allow(unused_variables)]
+    }
     fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         #![allow(unused_variables)]
     }
@@ -86,7 +88,7 @@ pub trait System {
 }
 
 impl Game {
-    pub fn create_systems(resources: &mut Resources) -> Vec<Box<dyn System>> {
+    pub fn create_systems(_: &mut Resources) -> Vec<Box<dyn System>> {
         let mut global_systems: Vec<Box<dyn System>> = Vec::default();
         let mut game_state = GameStateSystem::new();
         game_state.add_systems(GameState::MainMenu, vec![]);

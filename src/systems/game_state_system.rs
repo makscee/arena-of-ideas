@@ -207,11 +207,7 @@ impl GameStateSystem {
                 resources.status_pool.status_changes.clear();
                 resources.camera.camera.fov = resources.options.fov;
                 WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
-                SlotSystem::init_world(
-                    world,
-                    resources,
-                    hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
-                );
+                SlotSystem::init_world(world, resources, Faction::all());
             }
             GameState::GameOver => {
                 resources.camera.camera.fov = resources.options.fov;

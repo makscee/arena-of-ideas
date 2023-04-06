@@ -10,7 +10,7 @@ pub struct ShopSystem {
 }
 
 impl System for ShopSystem {
-    fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    fn post_update(&mut self, _: &mut legion::World, resources: &mut Resources) {
         resources.shop.drag_entity = None;
         resources.shop.drop_entity = None;
     }
@@ -55,14 +55,18 @@ impl System for ShopSystem {
             },
         );
         self.need_switch_battle = switch_button.was_clicked() || self.need_switch_battle;
-        Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
+        let last_score = (Text::new(
+            format!("Last score: {}", resources.last_score),
+            resources.fonts.get_font(1),
+            70.0,
+            Rgba::BLACK,
+        ),)
+            .column()
+            .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
+            .uniform_padding(32.0);
+        Box::new((switch_button.place(vec2(1.0, 0.0)), last_score).stack())
     }
-    fn draw(
-        &self,
-        _: &legion::World,
-        resources: &mut Resources,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
+    fn draw(&self, _: &legion::World, resources: &mut Resources, _: &mut ugli::Framebuffer) {
         let position = SlotSystem::get_position(0, &Faction::Shop);
         let text_color = *resources
             .options
@@ -122,7 +126,7 @@ impl ShopSystem {
         BattleSystem::init_battle(&light, &dark, world, resources);
     }
 
-    fn switch_to_shop(world: &mut legion::World, resources: &mut Resources) {
+    fn switch_to_shop(_: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Shop;
     }
 
@@ -229,12 +233,7 @@ impl ShopSystem {
 
     fn refresh_tape(world: &legion::World, resources: &mut Resources) {
         let mut node = Node::default();
-        UnitSystem::draw_all_units_to_node(
-            &hashset! {Faction::Shop, Faction::Team, Faction::Light, Faction::Dark},
-            &mut node,
-            world,
-            resources,
-        );
+        UnitSystem::draw_all_units_to_node(&Faction::all(), &mut node, world, resources);
         resources.tape_player.tape.persistent_node = node;
     }
 
@@ -365,6 +364,11 @@ impl ShopSystem {
         if give_g {
             Self::change_g(resources, Self::floor_money(current_floor));
         }
+        resources
+            .team_states
+            .get_team_state_mut(&Faction::Team)
+            .vars
+            .set_int(&VarName::FreeRerolls, resources.last_score as i32);
         Shop::load_floor(resources, current_floor);
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));

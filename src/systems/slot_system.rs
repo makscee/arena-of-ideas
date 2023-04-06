@@ -20,7 +20,7 @@ impl SlotSystem {
         let faction_mul: vec2<f32> = vec2(
             match faction {
                 Faction::Light => -1.0,
-                Faction::Dark => 1.0,
+                Faction::Dark { .. } => 1.0,
                 Faction::Team => -1.0,
                 Faction::Shop => -1.0,
                 Faction::Gallery => 0.0,
@@ -28,7 +28,7 @@ impl SlotSystem {
             1.0,
         );
         match faction {
-            Faction::Light | Faction::Dark => {
+            Faction::Light | Faction::Dark { .. } => {
                 return match slot == 1 {
                     true => STRIKER_OFFSET,
                     false => vec2(slot as f32 - 1.0, 1.0) * TEAM_OFFSET,
@@ -93,18 +93,6 @@ impl SlotSystem {
             }
         }
         None
-    }
-
-    pub fn get_slot_entity(world: &legion::World, faction: Faction, slot: usize) -> legion::Entity {
-        <(&SlotComponent, &EntityComponent)>::query()
-            .iter(world)
-            .find_map(|(slot_component, entity)| {
-                match slot_component.slot == slot && slot_component.faction == faction {
-                    true => Some(entity.entity),
-                    false => None,
-                }
-            })
-            .unwrap()
     }
 
     pub fn find_unit_by_slot(
@@ -215,27 +203,6 @@ impl SlotSystem {
                     ),
                 )
             })
-    }
-
-    pub fn get_slot_filled_visual_effects(world: &legion::World) -> Vec<VisualEffect> {
-        let filled_slots = Self::get_filled_slots(world);
-        <(&SlotComponent, &EntityComponent)>::query()
-            .iter(world)
-            .map(|(slot, entity)| {
-                VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityShaderConst {
-                        entity: entity.entity,
-                        uniforms: hashmap! {"u_filled" => ShaderUniform::Float(match filled_slots.contains(&(slot.faction, slot.slot)) {
-                            true => 1.0,
-                            false => 0.0,
-                        })}
-                        .into(),
-                    },
-                    0,
-                )
-            })
-            .collect_vec()
     }
 
     pub fn make_gap(

@@ -33,14 +33,6 @@ impl WorldSystem {
             .for_each(|(_, context)| context.vars.insert(name, value.clone()));
     }
 
-    pub fn get_var_float(world: &legion::World, name: &VarName) -> f32 {
-        let var = Self::get_vars(world).get(name);
-        match var {
-            Var::Float(value) => *value,
-            _ => panic!("Wrong var type {:?}", var),
-        }
-    }
-
     pub fn get_var_vec2(world: &legion::World, name: &VarName) -> vec2<f32> {
         let var = Self::get_vars(world).get(name);
         match var {
@@ -55,13 +47,5 @@ impl WorldSystem {
             .collect_vec()[0]
             .1
             .vars
-    }
-
-    pub fn set_time(ts: Time, world: &mut legion::World) {
-        Self::set_var(world, VarName::GlobalTime, Var::Float(ts));
-    }
-
-    pub fn get_time(world: &legion::World) -> Time {
-        Self::get_var_float(world, &VarName::GlobalTime)
     }
 }

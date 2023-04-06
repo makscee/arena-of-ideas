@@ -33,6 +33,7 @@ uniform sampler2D u_description;
 uniform vec2 u_description_size;
 uniform vec4 u_house_color1;
 uniform vec4 u_faction_color;
+uniform int u_rank;
 
 vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
     vec2 uv = uv / mix(3, 1, u_card);
@@ -63,11 +64,13 @@ void main() {
     init_fields();
     vec2 uv = get_card_uv(uv);
     float len = length(uv) - 1.;
+    len += sin(vec_angle(uv) * 20 + u_game_time * 3) * (0.01 + 0.05 * (u_rank));
     float dmg_t = u_damage_taken;
     vec4 color = vec4(field_color, 0);
-    float alpha = max(smoothstep(THICKNESS, THICKNESS * .5, abs(len)), GLOW * smoothstep(THICKNESS + SPREAD, THICKNESS, abs(len)));
-    color = alpha_blend(color, vec4(u_faction_color.rgb, alpha));
-    if(len > THICKNESS + SPREAD)
+    float thickness = THICKNESS;
+    float alpha = max(smoothstep(thickness, thickness * .5, abs(len)), GLOW * smoothstep(thickness + SPREAD, thickness, abs(len)));
+    color = alpha_blend(color, vec4(u_faction_color.rgb * (1. - u_rank * 0.2), alpha));
+    if(len > thickness + SPREAD)
         color.a = 0;
     if(dmg_t > 0. && len < 0.) {
         vec2 v = floor(uv * 8 * (0.5 + dmg_t));

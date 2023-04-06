@@ -101,10 +101,8 @@ impl UnitSystem {
             .get_component::<HealthComponent>()
             .unwrap()
             .last_attacker();
-        let corpse = CorpseComponent {
-            faction: unit.faction,
-            killer: killer.unwrap_or(entity),
-        };
+        let faction = unit.faction;
+        let corpse: CorpseComponent = CorpseComponent::from_unit(unit, killer.unwrap_or(entity));
         entry.add_component(corpse);
         let corpse_context = ContextSystem::get_context(entity, world);
 
@@ -123,7 +121,7 @@ impl UnitSystem {
             }
             .send(world, resources);
         }
-        if unit.faction == Faction::Team {
+        if faction == Faction::Team {
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
         StatusPool::clear_entity(&entity, resources);
@@ -133,9 +131,8 @@ impl UnitSystem {
         let mut entry = world.entry(entity).unwrap();
         let corpse = entry.get_component::<CorpseComponent>().unwrap().clone();
         entry.remove_component::<CorpseComponent>();
-        let slot = slot.unwrap_or_default();
-        let faction = corpse.faction;
-        let unit = UnitComponent { slot, faction };
+        let mut unit: UnitComponent = corpse.into();
+        unit.slot = slot.unwrap_or_default();
         entry.add_component(unit);
         entry
             .get_component_mut::<HealthComponent>()

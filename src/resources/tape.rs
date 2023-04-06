@@ -120,14 +120,12 @@ impl Tape {
 
     fn try_get_cluster(&self, ts: Time) -> Option<(Time, &NodeCluster)> {
         let mut start_ts = 0.0;
-        let mut ind = 0;
         for cluster in self.cluster_chain.iter() {
             let duration = cluster.get_duration();
             if start_ts + duration > ts {
                 return Some((start_ts, cluster));
             }
             start_ts += duration;
-            ind += 1;
         }
         None
     }
@@ -365,7 +363,7 @@ impl Node {
         );
         match lock_type {
             NodeLockType::Full { world, resources } => {
-                let render_factions = HashSet::from_iter(Faction::all());
+                let render_factions = HashSet::from_iter(Faction::all_iter());
                 ContextSystem::refresh_factions(&render_factions, world, resources);
                 UnitSystem::draw_all_units_to_node(&render_factions, &mut self, world, resources);
             }

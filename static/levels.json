@@ -27,7 +27,7 @@
                                 "u_spin_part": 0.01,
                                 "u_move_speed": 1.3
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     }
@@ -58,7 +58,7 @@
                                 "u_spin_part": 0.01,
                                 "u_move_speed": 1.3
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     },
@@ -612,7 +612,7 @@
                                 "u_spin_part": 0.005,
                                 "u_move_speed": 1.0
                             },
-                            "instances": 40,
+                            "instances": 20,
                             "vertices": 1
                         }
                     }

@@ -45,14 +45,14 @@ impl ButtonSystem {
         entity
     }
 
-    pub fn change_icon(entity: legion::Entity, world: &mut legion::World, icon: &Image) {
-        Self::change_uniform(
-            entity,
-            world,
-            "u_texture".to_string(),
-            ShaderUniform::Texture(icon.clone()),
-        );
-    }
+    // pub fn change_icon(entity: legion::Entity, world: &mut legion::World, icon: &Image) {
+    //     Self::change_uniform(
+    //         entity,
+    //         world,
+    //         "u_texture".to_string(),
+    //         ShaderUniform::Texture(icon.clone()),
+    //     );
+    // }
 
     pub fn change_icon_color(entity: legion::Entity, world: &mut legion::World, color: Rgba<f32>) {
         Self::change_uniform(

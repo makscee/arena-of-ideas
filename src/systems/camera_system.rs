@@ -11,7 +11,7 @@ impl CameraSystem {
 const CAMERA_FOLLOW_SPEED: f32 = 10.0;
 
 impl System for CameraSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    fn update(&mut self, _: &mut legion::World, resources: &mut Resources) {
         let camera = &mut resources.camera;
         let need_pos = match camera.focus {
             Focus::Shop => SHOP_POSITION,

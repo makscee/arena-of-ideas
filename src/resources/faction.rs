@@ -1,7 +1,18 @@
+use strum_macros::EnumString;
+
 use super::*;
 
 #[derive(
-    Clone, Copy, Deserialize, Serialize, Debug, PartialEq, Eq, Hash, enum_iterator::Sequence,
+    Clone,
+    Copy,
+    Deserialize,
+    Serialize,
+    Debug,
+    Eq,
+    PartialEq,
+    Hash,
+    enum_iterator::Sequence,
+    EnumString,
 )]
 pub enum Faction {
     Light,
@@ -43,7 +54,16 @@ impl Faction {
             Faction::Gallery => Faction::Gallery,
         }
     }
-    pub fn all() -> impl Iterator<Item = Faction> {
+    pub fn all_iter() -> impl Iterator<Item = Faction> {
         enum_iterator::all::<Faction>()
+    }
+    pub fn all() -> HashSet<Faction> {
+        HashSet::from_iter(Self::all_iter())
+    }
+    pub fn battle() -> HashSet<Faction> {
+        hashset! {Faction::Light, Faction::Dark}
+    }
+    pub fn shop() -> HashSet<Faction> {
+        hashset! {Faction::Team, Faction::Shop}
     }
 }

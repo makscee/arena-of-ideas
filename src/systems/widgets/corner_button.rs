@@ -107,5 +107,5 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
             },
         );
     }
-    fn handle_event(&mut self, event: &geng::Event) {}
+    fn handle_event(&mut self, _: &geng::Event) {}
 }

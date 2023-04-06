@@ -38,7 +38,7 @@
                 "u_spin_part": 0.015,
                 "u_move_speed": 0.3
             },
-            "instances": 40,
+            "instances": 20,
             "vertices": 1
         }
     }

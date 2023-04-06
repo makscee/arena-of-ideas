@@ -103,7 +103,3 @@ impl TeamState {
         Self { name, ..default() }
     }
 }
-
-fn default_name() -> String {
-    "no_name".to_string()
-}

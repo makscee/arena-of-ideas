@@ -18,6 +18,8 @@ pub struct PackedUnit {
     #[serde(default)]
     pub active_statuses: HashMap<String, i32>,
     pub shader: Option<Shader>,
+    #[serde(default)]
+    pub rank: u8,
 }
 fn default_name() -> String {
     "no_name".to_string()
@@ -56,6 +58,7 @@ impl PackedUnit {
             .cloned()
             .unwrap_or_default();
         let shader = entry.get_component::<Shader>().ok().cloned();
+        let rank = entry.get_component::<UnitComponent>().unwrap().rank;
 
         Self {
             name,
@@ -67,6 +70,7 @@ impl PackedUnit {
             trigger,
             active_statuses,
             shader,
+            rank,
         }
     }
 
@@ -89,7 +93,7 @@ impl PackedUnit {
                 position.unwrap_or(vec2::ZERO),
             ),
             self.trigger.clone(),
-            UnitComponent { slot, faction },
+            UnitComponent::new(slot, faction, self.rank),
         ));
         resources.logger.log(
             &format!(

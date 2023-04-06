@@ -37,7 +37,7 @@ impl System for GameOverSystem {
                 Text::new(
                     format!(
                         "{}",
-                        match resources.game_won {
+                        match resources.last_score > 0 {
                             true => "Victory!".to_string(),
                             false => format!("Defeat! Floor #{}", resources.last_round),
                         }

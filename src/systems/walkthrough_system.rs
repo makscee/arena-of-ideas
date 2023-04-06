@@ -77,7 +77,7 @@ impl WalkthroughSystem {
             let shop_case = pool
                 .values()
                 .choose_multiple(&mut thread_rng(), DEFAULT_SLOTS * extra_units);
-            let mut battle_result = false;
+            let mut battle_result = 0;
             for _ in 0..MAX_ARRANGE_TRIES {
                 let mut new_units = vec![];
                 for _ in 0..extra_units {
@@ -107,12 +107,12 @@ impl WalkthroughSystem {
                 battle_result =
                     SimulationSystem::run_battle(&new_team, &dark, world, resources, None);
                 resources.action_queue.clear();
-                if battle_result {
+                if battle_result > 0 {
                     team = new_team;
                     break;
                 }
             }
-            if !battle_result || !resources.ladder.next() {
+            if battle_result == 0 || !resources.ladder.next() {
                 break;
             }
         }
