@@ -569,9 +569,12 @@ impl EffectWrapped {
                 for faction in factions {
                     faction_values.push(faction.calculate(&context, world, resources)?);
                 }
-                for entity in
-                    UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
-                {
+                for entity in UnitSystem::collect_factions(
+                    world,
+                    resources,
+                    &HashSet::from_iter(faction_values),
+                    false,
+                ) {
                     if *exclude_self && entity == context.owner {
                         continue;
                     }
@@ -635,7 +638,7 @@ impl EffectWrapped {
                 effect,
             } => {
                 let faction = faction.calculate(&context, world, resources)?;
-                let mut units = UnitSystem::collect_faction(world, faction);
+                let mut units = UnitSystem::collect_faction(world, resources, faction, false);
                 units.shuffle(&mut thread_rng());
                 let target = units.into_iter().find(|entity| {
                     if let Some(context) = ContextSystem::try_get_context(*entity, world).ok() {
@@ -660,7 +663,7 @@ impl EffectWrapped {
                 effect,
             } => {
                 let faction = faction.calculate(&context, world, resources)?;
-                let targets = UnitSystem::collect_faction(world, faction)
+                let targets = UnitSystem::collect_faction(world, resources, faction, false)
                     .into_iter()
                     .filter_map(|entity| {
                         ContextSystem::try_get_context(entity, world)

@@ -60,7 +60,9 @@ impl System for GameStateSystem {
                     SaveSystem::save(world, resources);
                 }
                 if resources.input.down_keys.contains(&P) {
-                    if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
+                    if let Some(entity) =
+                        SlotSystem::find_unit_by_slot(1, &Faction::Shop, world, resources)
+                    {
                         UnitSystem::delete_unit(entity, world, resources);
                     }
                     resources.hero_pool.list_top().clone().unpack(
@@ -207,7 +209,7 @@ impl GameStateSystem {
                 WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
                 SlotSystem::init_world(
                     world,
-                    &resources.options,
+                    resources,
                     hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
                 );
             }
@@ -236,7 +238,7 @@ impl GameStateSystem {
                 // CassettePlayerSystem::init_world(world, resources);
                 SlotSystem::init_world(
                     world,
-                    &resources.options,
+                    resources,
                     hashset![Faction::Shop, Faction::Team, Faction::Dark, Faction::Light,],
                 );
                 resources.camera.focus = Focus::Shop;

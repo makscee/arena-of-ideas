@@ -25,7 +25,7 @@ impl SimulationSystem {
                 }
                 result
             }
-            None => BattleSystem::battle_won(world),
+            None => BattleSystem::battle_won(world, resources),
         };
         BattleSystem::clear_world(world, resources);
         resources.action_queue.clear();

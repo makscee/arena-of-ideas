@@ -6,7 +6,7 @@ impl WalkthroughSystem {
     pub fn run_simulation(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
         let mut results: HashMap<String, (usize, usize)> = default();
-        let mut floors: Vec<usize> = vec![0; resources.floors.count() + 1];
+        let mut floors: Vec<usize> = vec![0; resources.ladder.count() + 1];
         let mut i: usize = 0;
         loop {
             i += 1;
@@ -33,10 +33,10 @@ impl WalkthroughSystem {
             );
 
             for (i, name) in resources
-                .floors
+                .ladder
                 .teams
                 .iter()
-                .map(|x| x.state.name.clone())
+                .map(|x| x.team.state.name.clone())
                 .chain(Some("Game Over".to_string()))
                 .enumerate()
             {
@@ -68,15 +68,15 @@ impl WalkthroughSystem {
         const MAX_ARRANGE_TRIES: usize = 5;
         loop {
             let extra_units = {
-                let mut value = ShopSystem::floor_money(resources.floors.current_ind()) / buy_price;
+                let mut value = ShopSystem::floor_money(resources.ladder.current_ind()) / buy_price;
                 value += value * sell_price / buy_price;
                 value
             } as usize;
-            let dark = resources.floors.current().clone();
+            let dark = resources.ladder.generate_team();
 
             let shop_case = pool
                 .values()
-                .choose_multiple(&mut thread_rng(), SLOTS_COUNT * extra_units);
+                .choose_multiple(&mut thread_rng(), DEFAULT_SLOTS * extra_units);
             let mut battle_result = false;
             for _ in 0..MAX_ARRANGE_TRIES {
                 let mut new_units = vec![];
@@ -86,15 +86,15 @@ impl WalkthroughSystem {
                 team.unpack(&Faction::Team, world, resources);
                 Event::ShopEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
-                let slots = (1..=SLOTS_COUNT).choose_multiple(&mut thread_rng(), extra_units);
+                let slots = (1..=DEFAULT_SLOTS).choose_multiple(&mut thread_rng(), extra_units);
                 for (i, unit) in new_units.into_iter().enumerate() {
                     let slot = *slots.get(i).unwrap();
                     let entity = unit.unpack(world, resources, slot, Faction::Shop, None);
-                    if team.units.len() + i < SLOTS_COUNT {
+                    if team.units.len() + i < DEFAULT_SLOTS {
                         SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team});
                     } else {
                         if let Some(entity) =
-                            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
+                            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world, resources)
                         {
                             ShopSystem::sell(entity, resources, world);
                         }
@@ -112,12 +112,12 @@ impl WalkthroughSystem {
                     break;
                 }
             }
-            if !battle_result || !resources.floors.next() {
+            if !battle_result || !resources.ladder.next() {
                 break;
             }
         }
-        let floor_reached = resources.floors.current_ind();
-        resources.floors.reset();
+        let floor_reached = resources.ladder.current_ind();
+        resources.ladder.reset();
         (floor_reached, team)
     }
 }

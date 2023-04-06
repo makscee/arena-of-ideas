@@ -10,6 +10,28 @@ pub struct Team {
     pub state: TeamState,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct ReplicatedTeam {
+    #[serde(flatten)]
+    pub team: Team,
+    #[serde(default)]
+    pub replications: usize,
+}
+
+impl From<ReplicatedTeam> for Team {
+    fn from(value: ReplicatedTeam) -> Self {
+        let mut team = value.team;
+        let size = team.units.len();
+        for _ in 1..value.replications {
+            for i in 0..size {
+                team.units.push(team.units[i].clone())
+            }
+        }
+        team.state.slots = team.units.len();
+        team
+    }
+}
+
 impl Team {
     pub fn new(name: String, units: Vec<PackedUnit>) -> Self {
         Self {
@@ -53,14 +75,27 @@ impl fmt::Display for Team {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TeamState {
-    #[serde(default = "default_name")]
+    #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub vars: Vars,
     #[serde(default)]
     pub ability_overrides: HashMap<AbilityName, Vars>,
+    #[serde(default)]
+    pub slots: usize,
+}
+
+impl Default for TeamState {
+    fn default() -> Self {
+        Self {
+            name: String::from("no_name"),
+            vars: Default::default(),
+            ability_overrides: Default::default(),
+            slots: DEFAULT_SLOTS,
+        }
+    }
 }
 
 impl TeamState {

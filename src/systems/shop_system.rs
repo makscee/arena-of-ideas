@@ -118,7 +118,7 @@ impl ShopSystem {
     pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         let light = Team::pack(&Faction::Team, world, resources);
-        let dark = resources.floors.current().clone();
+        let dark = resources.ladder.generate_team();
         BattleSystem::init_battle(&light, &dark, world, resources);
     }
 
@@ -127,16 +127,19 @@ impl ShopSystem {
     }
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        SlotSystem::set_hovered_slot(world, &Faction::Team, SLOTS_COUNT + 1);
+        let team_faction = Faction::Team;
+        SlotSystem::set_hovered_slot(world, &team_faction, DEFAULT_SLOTS + 1);
         self.drag_to_sell = false;
         if let Some(dragged) = resources.shop.drag_entity {
             if let Some(slot) =
-                SlotSystem::get_hovered_slot(&Faction::Team, resources.input.mouse_pos)
+                SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos)
             {
-                if SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team}) {
+                if SlotSystem::find_unit_by_slot(slot, &team_faction, world, resources).is_some()
+                    && SlotSystem::make_gap(world, resources, slot, &hashset! {team_faction})
+                {
                     SlotSystem::refresh_slots_uniforms(world, &resources.options);
                 }
-                SlotSystem::set_hovered_slot(world, &Faction::Team, slot);
+                SlotSystem::set_hovered_slot(world, &team_faction, slot);
             }
             self.drag_to_sell = world
                 .entry_ref(dragged)
@@ -144,7 +147,7 @@ impl ShopSystem {
                 .get_component::<UnitComponent>()
                 .unwrap()
                 .faction
-                == Faction::Team;
+                == team_faction;
         }
         if let Some(dropped) = resources.shop.drop_entity {
             if let Some(entry) = world.entry(dropped) {
@@ -163,7 +166,7 @@ impl ShopSystem {
                             SlotSystem::refresh_slots_uniforms(world, &resources.options);
                             ContextSystem::refresh_all(world, resources);
                         } else if let Some(slot) =
-                            SlotSystem::get_hovered_slot(&Faction::Team, resources.input.mouse_pos)
+                            SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos)
                         {
                             world
                                 .entry_mut(dropped)
@@ -172,16 +175,16 @@ impl ShopSystem {
                                 .unwrap()
                                 .slot = slot;
                         } else {
-                            SlotSystem::fill_gaps(world, resources, &hashset! {Faction::Team});
+                            SlotSystem::fill_gaps(world, resources, &hashset! {team_faction});
                         }
                     }
                     Faction::Shop => {
                         let slot =
-                            SlotSystem::get_hovered_slot(&Faction::Team, resources.input.mouse_pos);
+                            SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos);
                         if ShopSystem::get_g(resources) >= ShopSystem::buy_price(resources)
                             && slot.is_some()
                             && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
-                            && Self::team_count(world) < SLOTS_COUNT
+                            && !Self::team_full(world, resources)
                         {
                             ShopSystem::change_g(resources, -ShopSystem::buy_price(resources));
                             let slot = slot.unwrap();
@@ -195,8 +198,9 @@ impl ShopSystem {
         }
     }
 
-    fn team_count(world: &legion::World) -> usize {
-        UnitSystem::collect_faction(world, Faction::Team).len()
+    fn team_full(world: &legion::World, resources: &Resources) -> bool {
+        UnitSystem::collect_faction(world, resources, Faction::Team, false).len()
+            >= resources.team_states.get_team_state(&Faction::Team).slots
     }
 
     pub fn buy(
@@ -357,7 +361,7 @@ impl ShopSystem {
     }
 
     pub fn init_floor(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
-        let current_floor = resources.floors.current_ind();
+        let current_floor = resources.ladder.current_ind();
         if give_g {
             Self::change_g(resources, Self::floor_money(current_floor));
         }
@@ -369,7 +373,7 @@ impl ShopSystem {
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
-        let case = UnitSystem::collect_faction(world, Faction::Shop);
+        let case = UnitSystem::collect_faction(world, resources, Faction::Shop, false);
         let packed_units = case
             .into_iter()
             .map(|entity| PackedUnit::pack(entity, world, resources))
@@ -379,7 +383,7 @@ impl ShopSystem {
     }
 
     pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
-        for slot in 0..SLOTS_COUNT {
+        for slot in 0..DEFAULT_SLOTS {
             if resources.shop.pool.is_empty() {
                 return;
             }

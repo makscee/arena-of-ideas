@@ -94,6 +94,7 @@ impl Condition {
                 slot.calculate(context, world, resources)? as usize,
                 faction,
                 world,
+                resources,
             )
             .is_some()),
             Condition::IsCorpse { entity } => Ok(UnitSystem::get_corpse(

@@ -15,7 +15,7 @@ impl SaveSystem {
         let team = Team::pack(&Faction::Team, world, resources);
         let save = SaveData {
             team,
-            floor: resources.floors.current_ind(),
+            floor: resources.ladder.current_ind(),
         };
         let save = serde_json::to_string_pretty(&save).unwrap();
         match write(path(), save) {
@@ -30,7 +30,7 @@ impl SaveSystem {
             Ok(save) => {
                 Game::reset(world, resources);
                 save.team.unpack(&Faction::Team, world, resources);
-                resources.floors.set(save.floor);
+                resources.ladder.set(save.floor);
                 for level in 0..save.floor {
                     Shop::load_floor(resources, level);
                 }

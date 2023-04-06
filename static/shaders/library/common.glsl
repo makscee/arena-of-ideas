@@ -1,4 +1,4 @@
-uniform vec4 u_color;
+uniform vec4 u_color = vec4(1, 0, 1, 1);
 uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;

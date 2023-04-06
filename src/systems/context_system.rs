@@ -80,7 +80,7 @@ impl ContextSystem {
         world: &mut legion::World,
         resources: &Resources,
     ) {
-        UnitSystem::collect_factions(world, factions)
+        UnitSystem::collect_factions(world, resources, factions, false)
             .into_iter()
             .for_each(|entity| {
                 Self::refresh_entity(entity, world, resources);

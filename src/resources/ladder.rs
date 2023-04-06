@@ -1,19 +1,23 @@
 use super::*;
 
-#[derive(Deserialize, Debug, Clone, Default)]
-pub struct Floors {
+#[derive(Deserialize, Debug, Default)]
+pub struct Ladder {
     #[serde(default)]
     current: usize,
-    pub teams: Vec<Team>,
+    pub teams: Vec<ReplicatedTeam>,
 }
 
-impl Floors {
-    pub fn current(&self) -> &Team {
-        &self.teams[self.current]
+impl Ladder {
+    pub fn generate_team(&self) -> Team {
+        self.teams[self.current].clone().into()
     }
 
     pub fn current_ind(&self) -> usize {
         self.current
+    }
+
+    pub fn current_replications(&self) -> usize {
+        self.teams[self.current].replications
     }
 
     pub fn reset(&mut self) {
@@ -34,12 +38,12 @@ impl Floors {
     }
 }
 
-impl FileWatcherLoader for Floors {
+impl FileWatcherLoader for Ladder {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::loader));
         debug!("Load floors {:?}", path);
-        let prev_current = resources.floors.current;
-        resources.floors = futures::executor::block_on(load_json(path)).unwrap();
-        resources.floors.current = prev_current.max(resources.options.start_floor);
+        let prev_current = resources.ladder.current;
+        resources.ladder = futures::executor::block_on(load_json(path)).unwrap();
+        resources.ladder.current = prev_current.max(resources.options.start_floor);
     }
 }

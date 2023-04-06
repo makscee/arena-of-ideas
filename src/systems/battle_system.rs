@@ -28,7 +28,7 @@ impl BattleSystem {
         while Self::tick(world, resources, tape) && ticks < 1000 {
             ticks += 1;
         }
-        Self::battle_won(world)
+        Self::battle_won(world, resources)
     }
 
     pub fn add_intro(resources: &Resources, tape: &mut Option<Tape>) {
@@ -57,23 +57,29 @@ impl BattleSystem {
         Self::clear_world(world, resources);
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
+        dark.unpack(&Faction::Dark, world, resources);
+        dark.unpack(&Faction::Dark, world, resources);
     }
 
-    pub fn battle_won(world: &legion::World) -> bool {
-        <&UnitComponent>::query()
-            .iter(world)
-            .filter(|unit| unit.faction == Faction::Dark)
-            .count()
-            == 0
+    pub fn battle_won(world: &legion::World, resources: &Resources) -> bool {
+        let (killed, size) = Self::get_score(world, resources);
+        killed >= size
+    }
+
+    pub fn get_score(world: &legion::World, resources: &Resources) -> (usize, usize) {
+        let faction = Faction::Dark;
+        let size = resources.team_states.get_team_state(&faction).slots;
+        let killed = size * 3 - UnitSystem::collect_faction(world, resources, faction, true).len();
+        (killed, size)
     }
 
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
-        resources.game_won = Self::battle_won(world);
-        resources.last_round = resources.floors.current_ind();
+        resources.game_won = Self::battle_won(world, resources);
+        resources.last_round = resources.ladder.current_ind();
         if !resources.game_won {
             resources.transition_state = GameState::GameOver;
         } else {
-            if resources.floors.next() {
+            if resources.ladder.next() {
                 resources.transition_state = GameState::Shop;
             } else {
                 resources.transition_state = GameState::GameOver;
@@ -330,6 +336,23 @@ impl BattleSystem {
         let position = BATTLEFIELD_POSITION;
         node.add_effect(VfxSystem::vfx_strike(resources, position));
     }
+
+    fn score_shader(world: &legion::World, resources: &Resources) -> Shader {
+        let (killed, size) = Self::get_score(world, resources);
+        resources
+            .options
+            .shaders
+            .battle_score_indicator
+            .clone()
+            .set_uniform(
+                "u_position",
+                ShaderUniform::Vec2(SlotSystem::get_position(1, &Faction::Dark)),
+            )
+            .set_uniform(
+                "u_text",
+                ShaderUniform::String((1, format!("{}/{}", killed, size))),
+            )
+    }
 }
 
 impl System for BattleSystem {
@@ -341,7 +364,7 @@ impl System for BattleSystem {
     ) -> Box<dyn ui::Widget + 'a> {
         Box::new(
             (Text::new(
-                format!("Floor #{}", resources.floors.current_ind()),
+                format!("Floor #{}", resources.ladder.current_ind()),
                 resources.fonts.get_font(1),
                 70.0,
                 Rgba::WHITE,
@@ -353,10 +376,4 @@ impl System for BattleSystem {
     }
 
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {}
-}
-
-enum StrikePhase {
-    Charge,
-    Release,
-    Retract,
 }

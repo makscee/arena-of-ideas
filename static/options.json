@@ -480,6 +480,16 @@
                 }
             ],
             "layer": "UI"
+        },
+        "battle_score_indicator": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#9266CC"
+                }
+            },
+            "layer": "Background",
+            "order": 10
         }
     },
     "images": {

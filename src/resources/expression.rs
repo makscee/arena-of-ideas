@@ -169,7 +169,7 @@ impl ExpressionEntity {
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
                 let faction = faction.calculate(context, world, resources)?;
-                SlotSystem::find_unit_by_slot(slot, &faction, world)
+                SlotSystem::find_unit_by_slot(slot, &faction, world, resources)
                     .context(format!("No unit of {:?} found in {} slot", faction, slot))
             }
             ExpressionEntity::RandomUnit { faction } => {
@@ -188,7 +188,7 @@ impl ExpressionEntity {
                 let relation = relation.calculate(context, world, resources)?;
                 let slot = (unit.slot as i32 + relation) as usize;
                 let faction = unit.faction;
-                SlotSystem::find_unit_by_slot(slot, &faction, world)
+                SlotSystem::find_unit_by_slot(slot, &faction, world, resources)
                     .context(format!("No unit of {:?} found in slot {}", faction, slot))
             }
         }

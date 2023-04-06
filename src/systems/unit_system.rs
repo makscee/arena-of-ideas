@@ -67,7 +67,7 @@ impl UnitSystem {
         world: &legion::World,
         resources: &Resources,
     ) {
-        for entity in UnitSystem::collect_factions(world, factions) {
+        for entity in UnitSystem::collect_factions(world, resources, factions, false) {
             Self::draw_unit_to_node(entity, node, world, resources)
         }
     }
@@ -184,19 +184,31 @@ impl UnitSystem {
         StatusPool::clear_entity(&entity, resources);
     }
 
-    pub fn collect_faction(world: &legion::World, faction: Faction) -> Vec<legion::Entity> {
-        Self::collect_factions(world, &hashset! {faction})
+    pub fn collect_faction(
+        world: &legion::World,
+        resources: &Resources,
+        faction: Faction,
+        force: bool,
+    ) -> Vec<legion::Entity> {
+        Self::collect_factions(world, resources, &hashset! {faction}, force)
     }
 
     pub fn collect_factions(
         world: &legion::World,
+        resources: &Resources,
         factions: &HashSet<Faction>,
+        force: bool,
     ) -> Vec<legion::Entity> {
         <(&UnitComponent, &EntityComponent)>::query()
             .iter(world)
-            .filter_map(|(unit, entity)| match factions.contains(&unit.faction) {
-                true => Some(entity.entity),
-                false => None,
+            .filter_map(|(unit, entity)| {
+                match factions.contains(&unit.faction)
+                    && (force
+                        || unit.slot <= resources.team_states.get_team_state(&unit.faction).slots)
+                {
+                    true => Some(entity.entity),
+                    false => None,
+                }
             })
             .collect_vec()
     }

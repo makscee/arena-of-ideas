@@ -11,8 +11,7 @@ pub struct Tape {
 
 #[derive(Default)]
 struct ClusterQueue {
-    pub clusters: VecDeque<NodeCluster>,
-    pub start_ts: Time,
+    pub clusters: Vec<(Time, NodeCluster)>,
 }
 
 #[derive(Default)]
@@ -59,8 +58,8 @@ impl Tape {
             let cluster_node = cluster.generate_node(ts - start_ts);
             node.merge(&cluster_node, start_ts, true);
         }
-        if let Some(queue_node) = self.cluster_queue.get_node(ts) {
-            node.merge_effects(&queue_node, self.cluster_queue.start_ts, true);
+        if let Some((start_ts, queue_node)) = self.cluster_queue.get_node(ts) {
+            node.merge_effects(&queue_node, start_ts, true);
             node.merge_entities(&queue_node, false);
         }
         entity_shaders.extend(node.get_entity_shaders());
@@ -142,6 +141,7 @@ impl NodeCluster {
         }
     }
 
+    /// ts: [0.0 -> duration]
     pub fn generate_node(&self, ts: Time) -> Node {
         let mut result: Node = default();
         let mut cur_ts = 0.0;
@@ -197,25 +197,28 @@ impl NodeCluster {
 
 impl ClusterQueue {
     pub fn push(&mut self, cluster: NodeCluster, head: Time) {
-        if self.clusters.is_empty() {
-            self.start_ts = head;
-        }
-        self.clusters.push_back(cluster);
+        self.clusters.push((head, cluster));
     }
 
-    pub fn get_node(&mut self, head: Time) -> Option<Node> {
-        while let Some(front) = self.clusters.pop_front() {
-            let ts = head - self.start_ts;
-            let duration = front.get_duration();
-            if duration < ts {
-                self.start_ts += duration;
-                continue;
+    pub fn get_node(&mut self, head: Time) -> Option<(Time, Node)> {
+        let mut node = Node::default();
+        let mut start_ts: Option<Time> = None;
+        self.clusters.retain(|(cluster_start, cluster)| {
+            let duration = cluster.get_duration();
+            if cluster_start + duration < head {
+                return false;
             }
-            let node = front.generate_node(ts);
-            self.clusters.push_front(front);
-            return Some(node);
-        }
-        None
+            if start_ts.is_none() {
+                start_ts = Some(*cluster_start);
+            }
+            node.merge(
+                &cluster.generate_node(head - cluster_start),
+                cluster_start - start_ts.unwrap(),
+                true,
+            );
+            true
+        });
+        start_ts.and_then(|x| Some((x, node)))
     }
 }
 

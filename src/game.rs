@@ -55,7 +55,7 @@ impl Game {
             &hashset! {Faction::Light, Faction::Dark, Faction::Shop, Faction::Team, },
         );
         StatusPool::clear_all_active(resources);
-        resources.floors.reset();
+        resources.ladder.reset();
         resources.action_queue.clear();
         resources.team_states = default();
         resources.tape_player.clear();

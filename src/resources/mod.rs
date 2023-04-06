@@ -13,7 +13,6 @@ mod effect;
 mod event;
 mod expression;
 mod faction;
-mod floors;
 mod fonts;
 mod hero_pool;
 mod house;
@@ -21,6 +20,7 @@ mod house_pool;
 mod image;
 mod image_textures;
 mod input;
+mod ladder;
 mod options;
 mod packed_unit;
 mod shader_programs;
@@ -43,7 +43,6 @@ pub use effect::*;
 pub use event::*;
 pub use expression::*;
 pub use faction::*;
-pub use floors::*;
 pub use fonts::*;
 pub use hero_pool::*;
 pub use house::*;
@@ -51,6 +50,7 @@ pub use house_pool::*;
 pub use image::*;
 pub use image_textures::*;
 pub use input::*;
+pub use ladder::*;
 pub use options::*;
 pub use packed_unit::*;
 pub use shader_programs::*;
@@ -83,7 +83,7 @@ pub struct Resources {
     pub shop: Shop,
     pub game_won: bool,
     pub last_round: usize,
-    pub floors: Floors,
+    pub ladder: Ladder,
 
     pub house_pool: HousePool,
     pub hero_pool: HeroPool,
@@ -118,7 +118,7 @@ impl Resources {
             input: default(),
             house_pool: default(),
             definitions: default(),
-            floors: default(),
+            ladder: default(),
             reload_triggered: default(),
             game_won: default(),
             last_round: default(),
@@ -138,7 +138,7 @@ impl Resources {
         );
         HousePool::loader(self, &static_path().join("houses/_list.json"), watcher);
         HeroPool::loader(self, &static_path().join("units/_list.json"), watcher);
-        Floors::loader(self, &static_path().join("floors.json"), watcher);
+        Ladder::loader(self, &static_path().join("levels.json"), watcher);
 
         self.logger.load(&self.options);
     }
