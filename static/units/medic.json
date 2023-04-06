@@ -2,7 +2,7 @@
     "name": "Medic",
     "health": 5,
     "attack": 1,
-    "description": "Turn end:\nMend (8)\nally in front",
+    "description": "Turn end:\nMend (8)\nfront adjacent ally",
     "houses": [
         "Clerics"
     ],

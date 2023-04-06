@@ -2,12 +2,12 @@
     "name": "Indra",
     "attack": 8,
     "health": 8,
-    "description": "Start of battle:\nDevour\nALL allies",
+    "description": "On buy:\nDevour\nALL allies",
     "houses": [
         "Demons"
     ],
     "trigger": {
-        "type": "BattleStart",
+        "type": "OnBuy",
         "effect": {
             "type": "AllTargets",
             "faction": {

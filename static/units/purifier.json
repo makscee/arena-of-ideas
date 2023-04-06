@@ -1,7 +1,7 @@
 {
     "name": "Purifier",
-    "attack": 3,
-    "health": 6,
+    "attack": 9,
+    "health": 9,
     "description": "Start of battle:\nDispel everyone",
     "houses": [
         "Exorcists"

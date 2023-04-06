@@ -1,8 +1,8 @@
 {
     "name": "Looter",
-    "attack": 5,
-    "health": 5,
-    "description": "Shop start:\nuse Bounty (1)",
+    "attack": 2,
+    "health": 2,
+    "description": "Shop start:\nuse Bounty (2)",
     "houses": [
         "Pirates"
     ],
@@ -10,7 +10,11 @@
         "type": "ShopStart",
         "effect": {
             "type": "UseAbility",
-            "ability": "Bounty"
+            "ability": "Bounty",
+            "charges": {
+                "type": "Const",
+                "value": 2
+            }
         }
     }
 }

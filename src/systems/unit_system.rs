@@ -196,37 +196,39 @@ impl UnitSystem {
         factions: &HashSet<Faction>,
         force: bool,
     ) -> Vec<legion::Entity> {
-        <(&UnitComponent, &EntityComponent)>::query()
-            .iter(world)
-            .filter_map(|(unit, entity)| {
-                match factions.contains(&unit.faction)
-                    && (force
-                        || unit.slot <= resources.team_states.get_team_state(&unit.faction).slots)
-                {
-                    true => Some(entity.entity),
-                    false => None,
-                }
-            })
+        Self::collect_factions_units(world, resources, factions, force)
+            .into_iter()
+            .map(|(entity, _)| entity)
             .collect_vec()
     }
 
     pub fn collect_faction_units(
         world: &legion::World,
+        resources: &Resources,
         faction: Faction,
+        force: bool,
     ) -> HashMap<legion::Entity, UnitComponent> {
-        Self::collect_factions_units(world, &hashset! {faction})
+        Self::collect_factions_units(world, resources, &hashset! {faction}, force)
     }
 
     pub fn collect_factions_units(
         world: &legion::World,
+        resources: &Resources,
         factions: &HashSet<Faction>,
+        force: bool,
     ) -> HashMap<legion::Entity, UnitComponent> {
         HashMap::from_iter(
             <(&UnitComponent, &EntityComponent)>::query()
                 .iter(world)
-                .filter_map(|(unit, entity)| match factions.contains(&unit.faction) {
-                    true => Some((entity.entity, unit.clone())),
-                    false => None,
+                .filter_map(|(unit, entity)| {
+                    match factions.contains(&unit.faction)
+                        && (force
+                            || unit.slot
+                                <= resources.team_states.get_team_state(&unit.faction).slots)
+                    {
+                        true => Some((entity.entity, unit.clone())),
+                        false => None,
+                    }
                 }),
         )
     }

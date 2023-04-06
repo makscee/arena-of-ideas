@@ -1,7 +1,7 @@
 {
     "name": "Lifeleech",
-    "attack": 3,
-    "health": 3,
+    "attack": 2,
+    "health": 2,
     "description": "Before strike:\nLifeSteal\nhalf HP",
     "houses": [
         "Vampires"

@@ -88,6 +88,6 @@ pub struct Colors {
 #[derive(Deserialize, Debug)]
 pub struct CustomGameConfig {
     pub enable: bool,
-    pub light: Option<Team>,
-    pub dark: Option<Team>,
+    pub light: Option<ReplicatedTeam>,
+    pub dark: Option<ReplicatedTeam>,
 }

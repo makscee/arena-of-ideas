@@ -41,7 +41,12 @@ impl Team {
         }
     }
 
-    pub fn unpack(&self, faction: &Faction, world: &mut legion::World, resources: &mut Resources) {
+    pub fn unpack(
+        &self,
+        faction: &Faction,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> Vec<legion::Entity> {
         let mut entities = vec![];
         for (slot, unit) in self.units.iter().enumerate() {
             entities.push(unit.unpack(world, resources, slot + 1, *faction, None));
@@ -53,12 +58,13 @@ impl Team {
             "Unpack team {} {:?} {}",
             self,
             self.state,
-            entities.into_iter().map(|x| format!("{:?}", x)).join(", ")
+            entities.iter().map(|x| format!("{:?}", x)).join(", ")
         );
+        entities
     }
 
     pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> Team {
-        let units = UnitSystem::collect_faction_units(world, *faction)
+        let units = UnitSystem::collect_faction_units(world, resources, *faction, false)
             .into_iter()
             .sorted_by_key(|(_, unit)| unit.slot)
             .map(|(entity, _)| PackedUnit::pack(entity, world, resources))
@@ -76,14 +82,11 @@ impl fmt::Display for Team {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
 pub struct TeamState {
-    #[serde(default)]
     pub name: String,
-    #[serde(default)]
     pub vars: Vars,
-    #[serde(default)]
     pub ability_overrides: HashMap<AbilityName, Vars>,
-    #[serde(default)]
     pub slots: usize,
 }
 

@@ -9,12 +9,9 @@
     "trigger": {
         "type": "ShopStart",
         "effect": {
-            "type": "Repeat",
-            "effect": {
-                "type": "UseAbility",
-                "ability": "Grow"
-            },
-            "count": {
+            "type": "UseAbility",
+            "ability": "Grow",
+            "charges": {
                 "type": "Const",
                 "value": 3
             }

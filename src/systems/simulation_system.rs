@@ -25,7 +25,7 @@ impl SimulationSystem {
                 }
                 1
             }
-            None => BattleSystem::battle_score(world, resources),
+            None => Ladder::get_score(world, resources),
         };
         BattleSystem::clear_world(world, resources);
         resources.action_queue.clear();

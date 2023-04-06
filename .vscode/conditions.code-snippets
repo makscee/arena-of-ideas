@@ -1,6 +1,6 @@
 {
     "Condition Always": {
-        "prefix": "condition_always",
+        "prefix": "always_condition",
         "body": [
             "{",
             "    \"type\": \"Always\"",
@@ -9,7 +9,7 @@
         "description": "Condition Always"
     },
     "Condition Equal": {
-        "prefix": "condition_equal",
+        "prefix": "equal_condition",
         "body": [
             "{",
             "    \"type\": \"Equal\",",
@@ -20,7 +20,7 @@
         "description": "Equal"
     },
     "Condition And": {
-        "prefix": "condition_and",
+        "prefix": "and_condition",
         "body": [
             "{",
             "    \"type\": \"And\",",
@@ -31,7 +31,7 @@
         "description": "And"
     },
     "Condition Or": {
-        "prefix": "condition_or",
+        "prefix": "or_condition",
         "body": [
             "{",
             "    \"type\": \"Or\",",
@@ -42,7 +42,7 @@
         "description": "Or"
     },
     "Condition Not": {
-        "prefix": "condition_not",
+        "prefix": "not_condition",
         "body": [
             "{",
             "    \"type\": \"Not\",",
@@ -52,7 +52,7 @@
         "description": "Not"
     },
     "Condition More Int": {
-        "prefix": "condition_more_int",
+        "prefix": "more_int_condition",
         "body": [
             "{",
             "    \"type\": \"MoreInt\",",
@@ -63,7 +63,7 @@
         "description": "MoreInt"
     },
     "Condition Is Corpse": {
-        "prefix": "condition_is_corpse",
+        "prefix": "is_corpse_condition",
         "body": [
             "{",
             "    \"type\": \"IsCorpse\",",
@@ -75,7 +75,7 @@
         "description": "Is Corpse"
     },
     "Condition Chance": {
-        "prefix": "condition_chance",
+        "prefix": "chance_condition",
         "body": [
             "{",
             "    \"type\": \"Chance\",",
@@ -85,7 +85,7 @@
         "description": "Chance"
     },
     "Condition Have Status": {
-        "prefix": "condition_have_status",
+        "prefix": "have_status_condition",
         "body": [
             "{",
             "    \"type\": \"HaveStatus\",",
@@ -95,7 +95,7 @@
         "description": "Condition Have Status"
     },
     "Condition Slot Occupied": {
-        "prefix": "condition_slot_occupied",
+        "prefix": "slot_occupied_condition",
         "body": [
             "{",
             "    \"type\": \"SlotOccupied\",",

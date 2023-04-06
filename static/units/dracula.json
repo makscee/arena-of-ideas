@@ -1,6 +1,6 @@
 {
     "name": "Dracula",
-    "description": "Damage dealt:\nuse Siphon Life (3)",
+    "description": "Damage dealt:\nuse LifeSteal (3)",
     "attack": 1,
     "health": 3,
     "houses": [

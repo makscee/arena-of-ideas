@@ -1,6 +1,6 @@
 {
     "name": "Hell Sponge",
-    "description": "After Strike:\nEmpower (5)\nally behind",
+    "description": "After Strike:\nEmpower (3)\nall allies",
     "health": 10,
     "attack": 1,
     "houses": [
@@ -9,17 +9,19 @@
     "trigger": {
         "type": "AfterStrike",
         "effect": {
-            "type": "UseAbility",
-            "ability": "Empower",
-            "target": {
-                "type": "SlotRelative",
-                "relation": {
-                    "type": "Const",
-                    "value": 1
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
                 }
-            },
-            "vars": {
-                "Charges": 5
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Empower",
+                "charges": {
+                    "type": "Const",
+                    "value": 3
+                }
             }
         }
     },

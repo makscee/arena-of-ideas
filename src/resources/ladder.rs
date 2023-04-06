@@ -5,11 +5,14 @@ pub struct Ladder {
     #[serde(default)]
     current: usize,
     pub teams: Vec<ReplicatedTeam>,
+    #[serde(default)]
+    tracked_units: Vec<Vec<legion::Entity>>,
 }
 
 impl Ladder {
-    pub fn generate_team(&self) -> Team {
-        let mut team: Team = self.teams[self.current].clone().into();
+    pub fn generate_team(resources: &Resources) -> Team {
+        let ladder = &resources.ladder;
+        let mut team: Team = ladder.teams[ladder.current].clone().into();
         let size = team.units.len();
         for rank in 1..=2 {
             for i in 0..size {
@@ -19,6 +22,29 @@ impl Ladder {
             }
         }
         team
+    }
+
+    pub fn track_team(world: &legion::World, resources: &mut Resources) {
+        resources.ladder.tracked_units = vec![default(); 3];
+        for (entity, unit) in
+            UnitSystem::collect_faction_units(world, resources, Faction::Dark, true)
+        {
+            resources.ladder.tracked_units[unit.rank as usize].push(entity);
+        }
+    }
+
+    pub fn get_score(world: &legion::World, resources: &Resources) -> usize {
+        let mut score = 0;
+        for entities in resources.ladder.tracked_units.iter() {
+            if entities
+                .iter()
+                .all(|x| UnitSystem::get_corpse(*x, world).is_some())
+            {
+                score += 1;
+            }
+        }
+
+        score
     }
 
     pub fn current_ind(&self) -> usize {

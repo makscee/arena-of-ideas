@@ -1,6 +1,6 @@
 {
     "Expression Sum": {
-        "prefix": "expression_sum",
+        "prefix": "sum_expression",
         "body": [
             "{",
             "    \"type\": \"Sum\",",
@@ -11,7 +11,7 @@
         "description": "Sum"
     },
     "Expression Sub": {
-        "prefix": "expression_sub",
+        "prefix": "sub_expression",
         "body": [
             "{",
             "    \"type\": \"Sub\",",
@@ -22,7 +22,7 @@
         "description": "Sub"
     },
     "Expression Mul": {
-        "prefix": "expression_mul",
+        "prefix": "mul_expression",
         "body": [
             "{",
             "    \"type\": \"Mul\",",
@@ -33,7 +33,7 @@
         "description": "Mul"
     },
     "Expression Div": {
-        "prefix": "expression_div",
+        "prefix": "div_expression",
         "body": [
             "{",
             "    \"type\": \"Div\",",
@@ -44,7 +44,7 @@
         "description": "Div"
     },
     "Expression Max": {
-        "prefix": "expression_max",
+        "prefix": "max_expression",
         "body": [
             "{",
             "    \"type\": \"Max\",",
@@ -55,7 +55,7 @@
         "description": "Max"
     },
     "Expression Const": {
-        "prefix": "expression_const",
+        "prefix": "const_expression",
         "body": [
             "{",
             "    \"type\": \"Const\",",
@@ -65,7 +65,7 @@
         "description": "Const"
     },
     "Expression Var": {
-        "prefix": "expression_var",
+        "prefix": "var_expression",
         "body": [
             "{",
             "    \"type\": \"Var\",",
@@ -75,7 +75,7 @@
         "description": "Var"
     },
     "Expression Ability Var": {
-        "prefix": "expression_ability_var",
+        "prefix": "ability_var_expression",
         "body": [
             "{",
             "    \"type\": \"AbilityVar\",",
@@ -86,7 +86,7 @@
         "description": "Ability Var"
     },
     "Expression Entity Var": {
-        "prefix": "expression_entity_var",
+        "prefix": "entity_var_expression",
         "body": [
             "{",
             "    \"type\": \"EntityVar\",",

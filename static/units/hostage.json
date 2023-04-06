@@ -1,6 +1,6 @@
 {
     "name": "Hostage",
-    "description": "Before Battle:\nSwap with random enemy",
+    "description": "Battle start:\nSwap with random enemy",
     "health": 12,
     "attack": 12,
     "houses": [

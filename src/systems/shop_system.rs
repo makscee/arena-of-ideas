@@ -122,7 +122,7 @@ impl ShopSystem {
     pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         let light = Team::pack(&Faction::Team, world, resources);
-        let dark = resources.ladder.generate_team();
+        let dark = Ladder::generate_team(resources);
         BattleSystem::init_battle(&light, &dark, world, resources);
     }
 

@@ -1,13 +1,13 @@
 {
     "name": "Scrapper",
-    "description": "On Kill:\ngain Defense (3)",
+    "description": "After strike:\ngain Defense (3)",
     "health": 8,
     "attack": 4,
     "houses": [
         "Warriors"
     ],
     "trigger": {
-        "type": "AfterKill",
+        "type": "AfterStrike",
         "effect": {
             "type": "UseAbility",
             "ability": "Defense",

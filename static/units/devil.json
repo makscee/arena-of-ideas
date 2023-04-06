@@ -2,7 +2,7 @@
     "name": "Devil",
     "attack": 6,
     "health": 6,
-    "description": "Start of battle:\nEmpower (6)\neveryone",
+    "description": "Start of battle:\nEmpower (66)\neveryone",
     "houses": [
         "Demons"
     ],
@@ -25,7 +25,7 @@
                 "type": "UseAbility",
                 "ability": "Empower",
                 "vars": {
-                    "Charges": 6
+                    "Charges": 66
                 }
             }
         }

@@ -2,7 +2,7 @@
     "name": "Captain",
     "attack": 3,
     "health": 6,
-    "description": "Start of battle:\nEmpower all allies",
+    "description": "Start of battle:\nEmpower (3) all allies",
     "houses": [
         "Demons"
     ],
@@ -17,7 +17,11 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "ability": "Empower"
+                "ability": "Empower",
+                "charges": {
+                    "type": "Const",
+                    "value": 3
+                }
             }
         }
     },

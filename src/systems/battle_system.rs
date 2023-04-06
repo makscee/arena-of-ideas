@@ -14,6 +14,7 @@ impl BattleSystem {
         tape: &mut Option<Tape>,
     ) -> usize {
         Self::add_intro(resources, tape);
+        Ladder::track_team(world, resources);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
             None => None,
@@ -29,7 +30,7 @@ impl BattleSystem {
             ticks += 1;
         }
 
-        Self::battle_score(world, resources)
+        Ladder::get_score(world, resources)
     }
 
     pub fn add_intro(resources: &Resources, tape: &mut Option<Tape>) {
@@ -60,20 +61,8 @@ impl BattleSystem {
         dark.unpack(&Faction::Dark, world, resources);
     }
 
-    pub fn battle_score(world: &legion::World, resources: &Resources) -> usize {
-        let (killed, size) = Self::get_score(world, resources);
-        killed / size
-    }
-
-    pub fn get_score(world: &legion::World, resources: &Resources) -> (usize, usize) {
-        let faction = Faction::Dark;
-        let size = resources.team_states.get_team_state(&faction).slots;
-        let killed = size * 3 - UnitSystem::collect_faction(world, resources, faction, true).len();
-        (killed, size)
-    }
-
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
-        resources.last_score = Self::battle_score(world, resources);
+        resources.last_score = Ladder::get_score(world, resources);
         resources.last_round = resources.ladder.current_ind();
         if resources.last_score > 0 {
             if resources.ladder.next() {
@@ -332,23 +321,6 @@ impl BattleSystem {
     fn add_strike_vfx(_: &mut legion::World, resources: &mut Resources, node: &mut Node) {
         let position = BATTLEFIELD_POSITION;
         node.add_effect(VfxSystem::vfx_strike(resources, position));
-    }
-
-    fn score_shader(world: &legion::World, resources: &Resources) -> Shader {
-        let (killed, size) = Self::get_score(world, resources);
-        resources
-            .options
-            .shaders
-            .battle_score_indicator
-            .clone()
-            .set_uniform(
-                "u_position",
-                ShaderUniform::Vec2(SlotSystem::get_position(1, &Faction::Dark)),
-            )
-            .set_uniform(
-                "u_text",
-                ShaderUniform::String((1, format!("{}/{}", killed, size))),
-            )
     }
 }
 

@@ -255,13 +255,15 @@ impl GameStateSystem {
                     .custom_game
                     .light
                     .clone()
-                    .expect("Light team not set for custom game in options.json");
+                    .expect("Light team not set for custom game in options.json")
+                    .into();
                 let dark = resources
                     .options
                     .custom_game
                     .dark
                     .clone()
-                    .expect("Light team not set for custom game in options.json");
+                    .expect("Light team not set for custom game in options.json")
+                    .into();
                 BattleSystem::clear_world(world, resources);
                 BattleSystem::init_battle(&light, &dark, world, resources);
                 let mut tape = Some(Tape::default());

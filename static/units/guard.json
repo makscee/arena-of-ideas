@@ -1,6 +1,6 @@
 {
     "name": "Guard",
-    "description": "On Buy:\ngain Shield",
+    "description": "On Buy:\ngain Shield\ntwice",
     "health": 1,
     "attack": 3,
     "houses": [
@@ -9,8 +9,15 @@
     "trigger": {
         "type": "OnBuy",
         "effect": {
-            "type": "UseAbility",
-            "ability": "Shield"
+            "type": "Repeat",
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Shield"
+            },
+            "count": {
+                "type": "Const",
+                "value": 2
+            }
         }
     },
     "shader": {

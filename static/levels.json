@@ -2,8 +2,36 @@
     "teams": [
         {
             "state": {
-                "name": "Snake"
+                "name": "Bugs"
             },
+            "replications": 2,
+            "units": [
+                {
+                    "name": "Bug",
+                    "attack": 1,
+                    "health": 1,
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#895435",
+                                "u_color_1": "#000000",
+                                "u_radius": 0.5,
+                                "u_spin_part": 0.05,
+                                "u_move_speed": 5.3
+                            },
+                            "instances": 20,
+                            "vertices": 1
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "state": {
+                "name": "Snakes"
+            },
+            "replications": 2,
             "units": [
                 {
                     "name": "Snake",
@@ -36,8 +64,9 @@
         },
         {
             "state": {
-                "name": "Shielded Snake"
+                "name": "Shielded Snakes"
             },
+            "replications": 2,
             "units": [
                 {
                     "name": "Snake",
@@ -71,121 +100,26 @@
         },
         {
             "state": {
-                "name": "Party"
+                "name": "Big Bugs"
             },
+            "replications": 4,
             "units": [
                 {
-                    "name": "Tank",
-                    "attack": 3,
-                    "health": 20,
+                    "name": "Big Bug",
+                    "attack": 6,
+                    "health": 6,
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#7b4e00",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Ranger",
-                    "health": 2,
-                    "attack": 2,
-                    "description": "Turn end:\nShoot random\nenemy 3 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot"
-                                }
+                                "u_color": "#895435",
+                                "u_color_1": "#000000",
+                                "u_radius": 0.9,
+                                "u_spin_part": 0.05,
+                                "u_move_speed": 5.3
                             },
-                            "count": {
-                                "type": "Const",
-                                "value": 3
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Priest",
-                    "health": 3,
-                    "attack": 1,
-                    "description": "Turn end:\nMend (3)\ninjured ally",
-                    "houses": [
-                        "Clerics"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "FindTarget",
-                            "faction": {
-                                "type": "Owner"
-                            },
-                            "condition": {
-                                "type": "MoreInt",
-                                "a": {
-                                    "type": "Var",
-                                    "var": "HpDamage"
-                                },
-                                "b": {
-                                    "type": "Const",
-                                    "value": 0
-                                }
-                            },
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Mend",
-                                "vars": {
-                                    "Charges": 3
-                                }
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 1.0
-                            }
+                            "instances": 20,
+                            "vertices": 1
                         }
                     }
                 }
@@ -195,130 +129,8 @@
             "state": {
                 "name": "Knights of Death"
             },
+            "replications": 4,
             "units": [
-                {
-                    "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
-                    "description": "On hit:\n70% chance to\napply Reanimate",
-                    "houses": [
-                        "Necromancers"
-                    ],
-                    "trigger": {
-                        "type": "AfterDamageDealt",
-                        "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "Chance",
-                                "part": 0.7
-                            },
-                            "then": {
-                                "type": "UseAbility",
-                                "ability": "Reanimate"
-                            },
-                            "else": {
-                                "type": "Noop"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#4B0082",
-                                "u_color_1": "#7183e6",
-                                "u_radius": 0.8,
-                                "u_alpha": 0.3,
-                                "u_spin_part": 0.01,
-                                "u_move_speed": 1.0
-                            },
-                            "instances": 20,
-                            "vertices": 1
-                        }
-                    }
-                },
-                {
-                    "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
-                    "description": "On hit:\n70% chance to\napply Reanimate",
-                    "houses": [
-                        "Necromancers"
-                    ],
-                    "trigger": {
-                        "type": "AfterDamageDealt",
-                        "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "Chance",
-                                "part": 0.7
-                            },
-                            "then": {
-                                "type": "UseAbility",
-                                "ability": "Reanimate"
-                            },
-                            "else": {
-                                "type": "Noop"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#4B0082",
-                                "u_color_1": "#7183e6",
-                                "u_radius": 0.8,
-                                "u_alpha": 0.3,
-                                "u_spin_part": 0.01,
-                                "u_move_speed": 1.0
-                            },
-                            "instances": 20,
-                            "vertices": 1
-                        }
-                    }
-                },
-                {
-                    "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
-                    "description": "On hit:\n70% chance to\napply Reanimate",
-                    "houses": [
-                        "Necromancers"
-                    ],
-                    "trigger": {
-                        "type": "AfterDamageDealt",
-                        "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "Chance",
-                                "part": 0.7
-                            },
-                            "then": {
-                                "type": "UseAbility",
-                                "ability": "Reanimate"
-                            },
-                            "else": {
-                                "type": "Noop"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#4B0082",
-                                "u_color_1": "#7183e6",
-                                "u_radius": 0.8,
-                                "u_alpha": 0.3,
-                                "u_spin_part": 0.01,
-                                "u_move_speed": 1.0
-                            },
-                            "instances": 20,
-                            "vertices": 1
-                        }
-                    }
-                },
                 {
                     "name": "Death Knight",
                     "attack": 8,
@@ -366,59 +178,12 @@
             "state": {
                 "name": "Golems"
             },
+            "replications": 2,
             "units": [
                 {
                     "name": "Golem",
-                    "attack": 10,
-                    "health": 10,
-                    "houses": [
-                        "Warriors"
-                    ],
-                    "active_statuses": {
-                        "Defense": 99
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Golem",
-                    "attack": 10,
-                    "health": 10,
-                    "houses": [
-                        "Warriors"
-                    ],
-                    "active_statuses": {
-                        "Defense": 99
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Golem",
-                    "attack": 10,
-                    "health": 10,
+                    "attack": 9,
+                    "health": 9,
                     "houses": [
                         "Warriors"
                     ],
@@ -445,46 +210,8 @@
             "state": {
                 "name": "Hounds"
             },
+            "replications": 2,
             "units": [
-                {
-                    "name": "Hound",
-                    "description": "Start of Battle:\nDevour\nrandom enemy",
-                    "attack": 12,
-                    "health": 12,
-                    "houses": [
-                        "Demons"
-                    ],
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Devour",
-                            "target": {
-                                "type": "RandomUnit",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#b60000",
-                                "u_circle_radius": 0.4,
-                                "u_border": 0.6,
-                                "u_circle_fbm": -1.9,
-                                "u_circle_fbm_speed": 2.0,
-                                "u_aa": 0.2,
-                                "u_padding": 2.0
-                            }
-                        }
-                    }
-                },
                 {
                     "name": "Hound",
                     "description": "Start of Battle:\nDevour\nrandom enemy",
@@ -623,154 +350,8 @@
             "state": {
                 "name": "Archers"
             },
+            "replications": 4,
             "units": [
-                {
-                    "name": "Archer",
-                    "health": 6,
-                    "attack": 6,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Archer",
-                    "health": 6,
-                    "attack": 6,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Archer",
-                    "health": 6,
-                    "attack": 6,
-                    "description": "Turn end:\nShoot random\nenemy 2 times",
-                    "houses": [
-                        "Archers"
-                    ],
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot"
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#00690e",
-                                "u_radius": 0.9,
-                                "u_border": 0.5,
-                                "u_circle_fbm": 0.3,
-                                "u_aa": 1.5,
-                                "u_circle_fbm_speed": 1.0,
-                                "u_padding": 3.0
-                            }
-                        }
-                    }
-                },
                 {
                     "name": "Archer",
                     "health": 6,
@@ -824,106 +405,13 @@
         },
         {
             "state": {
-                "name": "Titans"
+                "name": "Titan"
             },
             "units": [
                 {
                     "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
-                    "houses": [
-                        "Titans"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Immortality"
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 300,
-                            "uniforms": {
-                                "u_start_color": "#ffe600",
-                                "u_end_color": "#ffffff",
-                                "u_scale": 1.5,
-                                "u_p_scale": 0.4,
-                                "u_scale_over_t": -2.0,
-                                "u_velocity_over_t": -0.3,
-                                "u_velicity_mul": 10.3,
-                                "u_lifetime": 5.2
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
-                    "houses": [
-                        "Titans"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Immortality"
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 300,
-                            "uniforms": {
-                                "u_start_color": "#ffe600",
-                                "u_end_color": "#ffffff",
-                                "u_scale": 1.5,
-                                "u_p_scale": 0.4,
-                                "u_scale_over_t": -2.0,
-                                "u_velocity_over_t": -0.3,
-                                "u_velicity_mul": 10.3,
-                                "u_lifetime": 5.2
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
-                    "houses": [
-                        "Titans"
-                    ],
-                    "trigger": {
-                        "type": "AfterBirth",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Immortality"
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 300,
-                            "uniforms": {
-                                "u_start_color": "#ffe600",
-                                "u_end_color": "#ffffff",
-                                "u_scale": 1.5,
-                                "u_p_scale": 0.4,
-                                "u_scale_over_t": -2.0,
-                                "u_velocity_over_t": -0.3,
-                                "u_velicity_mul": 10.3,
-                                "u_lifetime": 5.2
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Titan",
-                    "attack": 10,
-                    "health": 15,
+                    "attack": 25,
+                    "health": 25,
                     "houses": [
                         "Titans"
                     ],

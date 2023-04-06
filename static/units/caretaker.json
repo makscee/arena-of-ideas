@@ -1,6 +1,6 @@
 {
     "name": "Caretaker",
-    "description": "Shop start:\nall allies gain\nGrow (1)",
+    "description": "Shop start:\nall allies gain\nGrow (3)",
     "attack": 1,
     "health": 1,
     "houses": [
@@ -17,7 +17,11 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "ability": "Grow"
+                "ability": "Grow",
+                "charges": {
+                    "type": "Const",
+                    "value": 3
+                }
             }
         }
     },
