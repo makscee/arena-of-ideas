@@ -11,7 +11,7 @@ void main() {
     offset = rotate_cw(vec2(0, -1), PI * (.23 - card * .07) * u_angle_offset) * 1.2 * (1 + card * 1.5);
     box = vec2(1 + card * .7);
     uv = get_uv(a_pos);
-    scale *= (1 + u_damage_taken * u_animate_on_damage);
+    size *= (1 + u_damage_taken * u_animate_on_damage);
     gl_Position = get_gl_position(uv);
 }
 #endif

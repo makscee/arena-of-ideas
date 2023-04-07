@@ -29,6 +29,8 @@ uniform float u_padding = 0;
 float padding;
 uniform float u_scale = 1;
 float scale;
+uniform float u_size = 1;
+float size;
 
 /// Setup
 vec2 get_card_uv(vec2 uv) {
@@ -83,6 +85,7 @@ void init_fields() {
     box = mix(vec2(1), box, float(length(box) > 0));
     padding = u_padding;
     scale = u_scale;
+    size = u_size;
     float field = get_field_value(position);
     base_color = mix(light_color, dark_color, field);
     field_color = mix(light_color, dark_color, 1 - field);
@@ -93,7 +96,7 @@ vec2 get_uv(vec2 a_pos) {
 }
 
 vec4 get_gl_position(vec2 uv) {
-    vec2 pos = uv * box * scale + offset;
+    vec2 pos = uv * box * scale * size + offset;
     pos = get_card_pos(pos);
     pos *= zoom;
     pos += position;

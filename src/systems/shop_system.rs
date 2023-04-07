@@ -89,7 +89,7 @@ impl System for ShopSystem {
         resources.frame_shaders.push(
             money_indicator
                 .clone()
-                .set_uniform("u_scale", ShaderUniform::Float(0.5))
+                .set_uniform("u_size", ShaderUniform::Float(0.5))
                 .set_uniform("u_position", ShaderUniform::Vec2(position))
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),
@@ -348,7 +348,7 @@ impl ShopSystem {
                 refresh,
                 Self::reroll_btn_position(),
                 &hashmap! {
-                    "u_scale" => ShaderUniform::Float(1.1),
+                    "u_size" => ShaderUniform::Float(1.1),
                 }
                 .into(),
             );

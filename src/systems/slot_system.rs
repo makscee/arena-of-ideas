@@ -171,10 +171,6 @@ impl SlotSystem {
                         false => 0.0,
                     }),
                 );
-                // todo: save slot shaders to cassette
-                // if !filled && (slot.faction == Faction::Dark || slot.faction == Faction::Light) {
-                //     shader.set_uniform_ref("u_scale", ShaderUniform::Float(0.0));
-                // }
                 shader.chain_after.clear();
                 if filled && slot.faction == Faction::Shop {
                     shader

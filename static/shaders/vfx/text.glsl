@@ -9,22 +9,22 @@ uniform int u_index = 0;
 uniform vec2 u_index_offset = vec2(0);
 uniform vec2 u_card_offset = vec2(0);
 uniform float u_align;
-uniform float u_card_scale = 0;
+uniform float u_card_size = 0;
 uniform float u_max_width = 100;
 
 uniform vec2 u_position_over_t = vec2(0);
 uniform vec2 u_offset_over_t = vec2(0);
-uniform float u_scale_over_t = 0;
+uniform float u_size_over_t = 0;
 
 void main() {
     init_fields();
     position += u_position_over_t * u_t;
-    scale += u_scale_over_t * u_t;
+    size += u_size_over_t * u_t;
     vec2 rel = vec2(u_text_size.x / u_text_size.y, 1);
     rel = mix(rel, vec2(u_max_width, u_max_width / rel.x), float(rel.x > u_max_width));
     offset += u_index * u_index_offset + u_offset_over_t * u_t;
     offset += vec2(-rel.x * .5 * u_align, 0) + u_card_offset * card;
-    scale += u_card_scale * card;
+    size += u_card_size * card;
     box = rel;
     uv = get_uv(a_pos);
     gl_Position = get_gl_position(uv);

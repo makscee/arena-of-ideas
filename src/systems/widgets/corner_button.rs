@@ -93,7 +93,7 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
                     u_box: cx.position.size().map(|x| x as f32) * 0.5,
                     u_color: button_color,
                     u_icon_color: icon_color,
-                    u_scale: scale,
+                    u_size: scale,
                     u_corner: self.corner,
                 },
                 geng::camera2d_uniforms(

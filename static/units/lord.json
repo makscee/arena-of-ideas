@@ -32,7 +32,7 @@
             "uniforms": {
                 "u_start_color": "#FFD700",
                 "u_end_color": "#8e0039ff",
-                "u_scale": 0.3,
+                "u_size": 0.3,
                 "u_scale_over_t": -0.3,
                 "u_velocity_over_t": 0.3,
                 "u_trail_count": 2,

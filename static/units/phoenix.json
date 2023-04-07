@@ -16,7 +16,7 @@
             "uniforms": {
                 "u_start_color": "#ff4400",
                 "u_end_color": "#b9b9b9",
-                "u_scale": 0.4,
+                "u_size": 0.4,
                 "u_scale_over_t": -0.5,
                 "u_velocity_over_t": 0.0,
                 "u_trail_count": 10,

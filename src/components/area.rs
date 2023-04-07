@@ -17,7 +17,7 @@ impl VarsProvider for AreaComponent {
         vars.insert(VarName::Position, Var::Vec2(self.position));
         match self.r#type {
             AreaType::Circle { radius } => vars.insert(VarName::Radius, Var::Float(radius)),
-            AreaType::Rectangle { size } => vars.insert(VarName::Size, Var::Vec2(size)),
+            AreaType::Rectangle { size } => vars.insert(VarName::Box, Var::Vec2(size)),
         }
     }
 }

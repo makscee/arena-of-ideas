@@ -103,7 +103,7 @@ impl VfxSystem {
             .set_uniform("u_text_border", ShaderUniform::Float(0.1))
             .set_uniform("u_alpha", ShaderUniform::Float(8.0))
             .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
-            .set_uniform("u_scale", ShaderUniform::Float(0.6))
+            .set_uniform("u_size", ShaderUniform::Float(0.6))
     }
 
     pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> VisualEffect {

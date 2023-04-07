@@ -429,7 +429,7 @@
                             "uniforms": {
                                 "u_start_color": "#ffe600",
                                 "u_end_color": "#ffffff",
-                                "u_scale": 1.5,
+                                "u_size": 1.5,
                                 "u_p_scale": 0.4,
                                 "u_scale_over_t": -2.0,
                                 "u_velocity_over_t": -0.3,

@@ -28,10 +28,6 @@ void main() {
     vel *= u_velicity_mul;
     vel *= 1. + fbm(vec2(u_game_time * 3) + rand_vec(p_index)) * u_vel_fbm;
     gl_Position = get_gl_position(uv + vel * p_t);
-    // gl_Position = get_gl_position(uv + vel * p_t);
-    // vec2 pos = uv * scale + position + get_card_pos(vel * p_t) * zoom * radius;
-    // vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1);
-    // gl_Position = vec4(p_pos.xy, 0.0, p_pos.z);
 }
 #endif
 
@@ -43,12 +39,12 @@ flat in float p_t;
 uniform vec4 u_start_color;
 uniform vec4 u_end_color;
 uniform float u_alpha = 1;
-uniform float u_scale_over_t = 0;
+uniform float u_size_over_t = 0;
 uniform float u_p_scale = 1;
 
 void main() {
     float dist = length(uv);
-    if(dist > u_p_scale * (1. + u_scale_over_t * p_t) || p_t < 0 || p_t > 1)
+    if(dist > u_p_scale * (1. + u_size_over_t * p_t) || p_t < 0 || p_t > 1)
         discard;
     gl_FragColor = vec4(mix(u_start_color, u_end_color, p_t).rgb, u_alpha);
 }

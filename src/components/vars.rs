@@ -14,6 +14,7 @@ pub enum VarName {
     AttackExtra,
     Position,
     Radius,
+    Box,
     Size,
     Test,
     Faction,

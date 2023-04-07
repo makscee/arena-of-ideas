@@ -22,7 +22,7 @@ void main() {
     if(length(uv) > SIZE) {
         discard;
     }
-    float len_fbm = length(vec2(fbm(uv * u_scale + vec2(u_game_time * 2, sin(u_game_time))) * 3));
+    float len_fbm = length(vec2(fbm(uv * u_size + vec2(u_game_time * 2, sin(u_game_time))) * 3));
     vec4 color = vec4(u_color.rgb, len_fbm * (1 - len));
     gl_FragColor = color;
 }
