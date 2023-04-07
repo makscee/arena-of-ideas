@@ -8,7 +8,7 @@ attribute vec2 a_pos;
 void main() {
     init_fields();
     uv = get_uv(a_pos);
-    size = mix(size, size * 1.1, u_hovered);
+    box = mix(box, box * 1.1, u_hovered);
     gl_Position = get_gl_position(uv);
 }
 #endif

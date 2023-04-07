@@ -25,7 +25,7 @@ void main() {
     offset += u_index * u_index_offset + u_offset_over_t * u_t;
     offset += vec2(-rel.x * .5 * u_align, 0) + u_card_offset * card;
     scale += u_card_scale * card;
-    size = rel;
+    box = rel;
     uv = get_uv(a_pos);
     gl_Position = get_gl_position(uv);
 }

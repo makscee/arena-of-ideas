@@ -7,7 +7,7 @@ uniform float u_circle_radius = 1;
 void main() {
     init_fields();
     uv = get_uv(a_pos);
-    size = vec2(radius * u_circle_radius);
+    box = vec2(radius * u_circle_radius);
     gl_Position = get_gl_position(uv);
 }
 #endif

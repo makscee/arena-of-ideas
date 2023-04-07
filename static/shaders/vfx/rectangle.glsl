@@ -8,7 +8,7 @@ uniform vec2 u_align = vec2(0);
 void main() {
     init_fields();
     uv = get_uv(a_pos);
-    position += u_align * size;
+    position += u_align * box;
     gl_Position = get_gl_position(uv);
 }
 #endif

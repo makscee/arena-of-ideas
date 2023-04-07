@@ -19,13 +19,13 @@ const float BORDER_THICKNESS = 0.1;
 
 void main() {
     init_fields();
-    vec2 border_thickness = BORDER_THICKNESS / u_size;
+    vec2 border_thickness = BORDER_THICKNESS / u_box;
     float border = float(abs(uv.x) > 1 - border_thickness.x || abs(uv.y) > 1 - border_thickness.y);
     border = max(border, float(abs(uv.y - 0.7) < border_thickness.y * .5));
     border = border * smoothstep(-.9, .5, uv.y);
     float background = smoothstep(-.9, 1.7, uv.y);
 
-    vec2 text_uv = uv * 2.5 / vec2(size.y / size.x, 1);
+    vec2 text_uv = uv * 2.5 / vec2(box.y / box.x, 1);
     text_uv.x /= u_title_size.x / u_title_size.y;
     vec2 text_position = vec2(0.0, 2.0);
     text_uv -= text_position;

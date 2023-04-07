@@ -21,8 +21,8 @@ uniform vec2 u_position = vec2(0);
 vec2 position;
 uniform vec2 u_offset = vec2(0, 0);
 vec2 offset;
-uniform vec2 u_size = vec2(0);
-vec2 size;
+uniform vec2 u_box = vec2(0);
+vec2 box;
 uniform float u_radius = 0;
 float radius;
 uniform float u_padding = 0;
@@ -77,10 +77,10 @@ void init_fields() {
     zoom = u_zoom;
     position = u_position;
     offset = u_offset;
-    size = u_size;
+    box = u_box;
     radius = u_radius;
-    size = vec2(max(size.x, u_radius), max(size.y, u_radius));
-    size = mix(vec2(1), size, float(length(size) > 0));
+    box = vec2(max(box.x, u_radius), max(box.y, u_radius));
+    box = mix(vec2(1), box, float(length(box) > 0));
     padding = u_padding;
     scale = u_scale;
     float field = get_field_value(position);
@@ -93,7 +93,7 @@ vec2 get_uv(vec2 a_pos) {
 }
 
 vec4 get_gl_position(vec2 uv) {
-    vec2 pos = uv * size * scale + offset;
+    vec2 pos = uv * box * scale + offset;
     pos = get_card_pos(pos);
     pos *= zoom;
     pos += position;
@@ -244,8 +244,8 @@ float color_hash(vec3 color) {
 }
 
 /// Shapes
-float distance1d(float x, float size) {
-    return max(-size - x, x - size);
+float distance1d(float x, float box) {
+    return max(-box - x, x - box);
 }
 
 float to_point(vec2 p, vec2 o) {
@@ -258,14 +258,14 @@ float to_segment(vec2 p, vec2 a, vec2 b) {
     return dot(p - a, n);
 }
 
-float triangle_sdf(vec2 uv, float size, float rotation) {
+float triangle_sdf(vec2 uv, float box, float rotation) {
     uv = rotate_cw(uv, rotation * PI * 2);
     vec2 p = uv;
     float angle = PI * 7 / 6;
-    vec2 p1 = vec2(cos(angle), sin(angle)) * size;
+    vec2 p1 = vec2(cos(angle), sin(angle)) * box;
     angle = -PI / 6;
-    vec2 p2 = vec2(cos(angle), sin(angle)) * size;
-    vec2 p3 = vec2(0., size);
+    vec2 p2 = vec2(cos(angle), sin(angle)) * box;
+    vec2 p3 = vec2(0., box);
     float d1 = to_segment(p, p1, p2);
     float d2 = to_segment(p, p2, p3);
     float d3 = to_segment(p, p3, p1);
@@ -282,10 +282,10 @@ float triangle_sdf(vec2 uv, float size, float rotation) {
     return d;
 }
 
-float rectangle_sdf(vec2 uv, vec2 size, float rotation) {
+float rectangle_sdf(vec2 uv, vec2 box, float rotation) {
     uv = rotate_cw(uv, rotation * PI * 2);
-    float dx = distance1d(uv.x, size.x);
-    float dy = distance1d(uv.y, size.y);
+    float dx = distance1d(uv.x, box.x);
+    float dy = distance1d(uv.y, box.y);
 
     float d = max(dx, dy);
     if(sign(dx) > 0.0 && sign(dy) > 0.0) {
@@ -295,12 +295,12 @@ float rectangle_sdf(vec2 uv, vec2 size, float rotation) {
     return d;
 }
 
-float square_sdf(vec2 uv, float size, float rotation) {
-    return rectangle_sdf(uv, vec2(size, size), rotation);
+float square_sdf(vec2 uv, float box, float rotation) {
+    return rectangle_sdf(uv, vec2(box, box), rotation);
 }
 
-float square_sdf(vec2 uv, float size) {
-    return square_sdf(uv, size, 0.);
+float square_sdf(vec2 uv, float box) {
+    return square_sdf(uv, box, 0.);
 }
 
 float circle_sdf(vec2 uv, float radius) {
