@@ -16,7 +16,6 @@ impl System for ShopSystem {
     }
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         self.handle_drag(world, resources);
-        SlotSystem::refresh_slots_uniforms(world, &resources.options);
         if self.need_switch_battle {
             match resources.camera.focus {
                 Focus::Shop => {
@@ -67,7 +66,7 @@ impl System for ShopSystem {
         Box::new((switch_button.place(vec2(1.0, 0.0)), last_score).stack())
     }
     fn draw(&self, _: &legion::World, resources: &mut Resources, _: &mut ugli::Framebuffer) {
-        let position = SlotSystem::get_position(0, &Faction::Shop);
+        let position = SlotSystem::get_position(0, &Faction::Shop, resources);
         let text_color = *resources
             .options
             .colors
@@ -83,7 +82,7 @@ impl System for ShopSystem {
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),
         );
-        let position = Self::reroll_btn_position() + vec2(1.0, 0.0);
+        let position = Self::reroll_btn_position(resources) + vec2(1.0, 0.0);
         let text = format!("{} g", Self::reroll_price(resources).to_string());
         let money_indicator = &resources.options.shaders.money_indicator;
         resources.frame_shaders.push(
@@ -132,18 +131,16 @@ impl ShopSystem {
 
     fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let team_faction = Faction::Team;
-        SlotSystem::set_hovered_slot(world, &team_faction, DEFAULT_SLOTS + 1);
+        SlotSystem::reset_hovered_slot(resources);
         self.drag_to_sell = false;
         if let Some(dragged) = resources.shop.drag_entity {
             if let Some(slot) =
-                SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos)
+                SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos, resources)
             {
-                if SlotSystem::find_unit_by_slot(slot, &team_faction, world, resources).is_some()
-                    && SlotSystem::make_gap(world, resources, slot, &hashset! {team_faction})
-                {
-                    SlotSystem::refresh_slots_uniforms(world, &resources.options);
+                if SlotSystem::find_unit_by_slot(slot, &team_faction, world, resources).is_some() {
+                    SlotSystem::make_gap(world, resources, slot, &hashset! {team_faction});
                 }
-                SlotSystem::set_hovered_slot(world, &team_faction, slot);
+                SlotSystem::set_hovered_slot(Faction::Team, slot, resources);
             }
             self.drag_to_sell = world
                 .entry_ref(dragged)
@@ -167,11 +164,12 @@ impl ShopSystem {
                                 .push(PackedUnit::pack(dropped, world, resources));
                             ShopSystem::change_g(resources, ShopSystem::sell_price(resources));
                             Self::sell(dropped, resources, world);
-                            SlotSystem::refresh_slots_uniforms(world, &resources.options);
                             ContextSystem::refresh_all(world, resources);
-                        } else if let Some(slot) =
-                            SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos)
-                        {
+                        } else if let Some(slot) = SlotSystem::get_hovered_slot(
+                            &team_faction,
+                            resources.input.mouse_pos,
+                            resources,
+                        ) {
                             world
                                 .entry_mut(dropped)
                                 .unwrap()
@@ -183,11 +181,14 @@ impl ShopSystem {
                         }
                     }
                     Faction::Shop => {
-                        let slot =
-                            SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos);
+                        let slot = SlotSystem::get_hovered_slot(
+                            &team_faction,
+                            resources.input.mouse_pos,
+                            resources,
+                        );
                         if ShopSystem::get_g(resources) >= ShopSystem::buy_price(resources)
                             && slot.is_some()
-                            && resources.input.mouse_pos.y < SHOP_POSITION.y + SHOP_CASE_OFFSET.y
+                            && resources.input.mouse_pos.y < SHOP_POSITION.y
                             && !Self::team_full(world, resources)
                         {
                             ShopSystem::change_g(resources, -ShopSystem::buy_price(resources));
@@ -232,8 +233,10 @@ impl ShopSystem {
     }
 
     fn refresh_tape(world: &legion::World, resources: &mut Resources) {
+        let factions = hashset! { Faction::Light, Faction::Dark, Faction::Team, Faction::Shop};
         let mut node = Node::default();
-        UnitSystem::draw_all_units_to_node(&Faction::all(), &mut node, world, resources);
+        let units = UnitSystem::draw_all_units_to_node(&factions, &mut node, world, resources);
+        SlotSystem::draw_slots_to_node(&mut node, &factions, &units, resources);
         resources.tape_player.tape.persistent_node = node;
     }
 
@@ -339,24 +342,25 @@ impl ShopSystem {
                 }
             }
 
-            ButtonSystem::create_button(
+            let entity = ButtonSystem::create_button(
                 world,
                 world_entity,
                 resources,
                 resources.options.images.refresh_icon.clone(),
                 resources.options.colors.btn_normal,
                 refresh,
-                Self::reroll_btn_position(),
+                Self::reroll_btn_position(resources),
                 &hashmap! {
                     "u_size" => ShaderUniform::Float(1.1),
                 }
                 .into(),
             );
+            resources.shop.refresh_btn = Some(entity);
         }
     }
 
-    fn reroll_btn_position() -> vec2<f32> {
-        SlotSystem::get_position(0, &Faction::Shop) + vec2(0.0, -2.0)
+    fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
+        SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
     }
 
     pub fn init_floor(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
@@ -387,14 +391,14 @@ impl ShopSystem {
     }
 
     pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
-        for slot in 0..DEFAULT_SLOTS {
+        for slot in 0..MAX_SLOTS {
             if resources.shop.pool.is_empty() {
                 return;
             }
             let slot = slot + 1;
             let mut rng = rand::thread_rng();
             let ind: usize = rng.gen_range(0..resources.shop.pool.len());
-            let position = SlotSystem::get_position(slot, &Faction::Shop);
+            let position = SlotSystem::get_position(slot, &Faction::Shop, resources);
             resources.shop.pool.remove(ind).unpack(
                 world,
                 resources,
@@ -408,6 +412,5 @@ impl ShopSystem {
     pub fn reroll(world: &mut legion::World, resources: &mut Resources) {
         Self::clear_case(world, resources);
         Self::fill_case(world, resources);
-        SlotSystem::refresh_slots_uniforms(world, &resources.options);
     }
 }

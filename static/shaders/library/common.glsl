@@ -96,9 +96,10 @@ vec2 get_uv(vec2 a_pos) {
 }
 
 vec4 get_gl_position(vec2 uv) {
-    vec2 pos = uv * box * scale * size + offset;
+    vec2 pos = uv * box * size + offset;
     pos = get_card_pos(pos);
     pos *= zoom;
+    pos *= scale;
     pos += position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     return vec4(p_pos.xy, 0.0, p_pos.z);

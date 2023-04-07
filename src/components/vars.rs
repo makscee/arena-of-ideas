@@ -16,6 +16,7 @@ pub enum VarName {
     Radius,
     Box,
     Size,
+    Scale,
     Test,
     Faction,
     FactionColor,

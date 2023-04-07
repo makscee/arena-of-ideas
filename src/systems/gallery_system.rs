@@ -30,7 +30,7 @@ impl GallerySystem {
         let heroes = self.current_heroes.len();
         self.current_heroes[heroes - 1] = self.wanted_hero;
         // resources.cassette.render_node.clear();
-        UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
+        // UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
         // resources.cassette.render_node.clear_key(CARD_ANIMATION_KEY);
         // for (ind, template_ind) in self.current_heroes.iter().enumerate() {
         // let template_key = self.paths[*template_ind].clone();

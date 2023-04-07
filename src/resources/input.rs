@@ -4,6 +4,7 @@ pub struct Input {
     pub cur_hovered: Option<legion::Entity>,
     pub prev_hovered: Option<legion::Entity>,
     pub hover_data: HashMap<legion::Entity, (bool, Time)>,
+    pub hovered_slot: Option<(Faction, usize)>,
 
     pub cur_dragged: Option<legion::Entity>,
 
@@ -34,6 +35,7 @@ impl Default for Input {
             cur_hovered: default(),
             prev_hovered: default(),
             cur_dragged: default(),
+            hovered_slot: default(),
         }
     }
 }

@@ -66,10 +66,12 @@ impl UnitSystem {
         node: &mut Node,
         world: &legion::World,
         resources: &Resources,
-    ) {
-        for entity in UnitSystem::collect_factions(world, resources, factions, false) {
-            Self::draw_unit_to_node(entity, node, world, resources)
+    ) -> HashMap<legion::Entity, UnitComponent> {
+        let units = UnitSystem::collect_factions_units(world, resources, factions, false);
+        for (entity, _) in units.iter() {
+            Self::draw_unit_to_node(*entity, node, world, resources)
         }
+        units
     }
 
     pub fn process_death(
@@ -248,7 +250,7 @@ impl UnitSystem {
             let faction_value = shader
                 .parameters
                 .uniforms
-                .get_float(&VarName::Faction.convert_to_uniform());
+                .try_get_float(&VarName::Faction.convert_to_uniform());
             if let Some(faction_value) = faction_value {
                 let mut card_value: f32 = match faction_value == Faction::Shop.float_value() {
                     true => 1.0,
@@ -272,6 +274,15 @@ impl UnitSystem {
                 shader.parameters.uniforms.insert(
                     VarName::Zoom.convert_to_uniform(),
                     ShaderUniform::Float(1.0 + hover_value * 1.4),
+                );
+                let slot = shader
+                    .parameters
+                    .uniforms
+                    .try_get_int(&VarName::Slot.convert_to_uniform())
+                    .unwrap();
+                shader.parameters.uniforms.insert(
+                    VarName::Scale.convert_to_uniform(),
+                    ShaderUniform::Float(SlotSystem::get_scale(slot, faction_value, resources)),
                 );
             }
         }

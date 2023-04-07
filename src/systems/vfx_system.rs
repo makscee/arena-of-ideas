@@ -205,12 +205,12 @@ impl VfxSystem {
         from_vars.0.insert(
             key.clone(),
             ShaderUniform::Vec2(
-                from_vars.get_vec2(key).unwrap() * vec2(-1.0, 1.0) + vec2(0.0, -2.0),
+                from_vars.try_get_vec2(key).unwrap() * vec2(-1.0, 1.0) + vec2(0.0, -2.0),
             ),
         );
         to_vars.0.insert(
             key.clone(),
-            ShaderUniform::Vec2(to_vars.get_vec2(key).unwrap() * vec2(-1.0, 1.0)),
+            ShaderUniform::Vec2(to_vars.try_get_vec2(key).unwrap() * vec2(-1.0, 1.0)),
         );
         effects.push(VisualEffect::new(
             BATTLE_INTRO_DURATION,
@@ -249,7 +249,7 @@ impl VfxSystem {
         let light_pos = shader
             .parameters
             .uniforms
-            .get_vec2(&VarName::Position.convert_to_uniform())
+            .try_get_vec2(&VarName::Position.convert_to_uniform())
             .unwrap()
             * vec2(-1.0, 1.0);
         let light_shader = shader

@@ -43,7 +43,12 @@ impl ShaderPrograms {
         let paths: Vec<PathBuf> = futures::executor::block_on(load_json(path)).unwrap();
         paths.into_iter().for_each(|path| {
             Self::shader_library_program_loader(resources, &static_path().join(path), watcher);
-        })
+        });
+        ShaderPrograms::loader(
+            resources,
+            &static_path().join("shaders/_list.json"),
+            watcher,
+        );
     }
 
     fn shader_library_program_loader(

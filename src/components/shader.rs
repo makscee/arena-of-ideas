@@ -167,16 +167,23 @@ impl ShaderUniforms {
         self.0.get(key)
     }
 
-    pub fn get_vec2(&self, key: &str) -> Option<vec2<f32>> {
+    pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {
         self.get(key).and_then(|v| match v {
             ShaderUniform::Vec2(v) => Some(*v),
             _ => None,
         })
     }
 
-    pub fn get_float(&self, key: &str) -> Option<f32> {
+    pub fn try_get_float(&self, key: &str) -> Option<f32> {
         self.get(key).and_then(|v| match v {
             ShaderUniform::Float(v) => Some(*v),
+            _ => None,
+        })
+    }
+
+    pub fn try_get_int(&self, key: &str) -> Option<i32> {
+        self.get(key).and_then(|v| match v {
+            ShaderUniform::Int(v) => Some(*v),
             _ => None,
         })
     }

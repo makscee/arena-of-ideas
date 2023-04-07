@@ -150,7 +150,6 @@ impl Resources {
             &static_path().join("shaders/library/_list.json"),
             watcher,
         );
-        ShaderPrograms::loader(self, &static_path().join("shaders/_list.json"), watcher);
         self.fonts = Fonts::new(geng);
         ImageTextures::loader(self, &static_path().join("images/_list.json"), watcher);
     }

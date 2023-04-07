@@ -127,7 +127,7 @@ impl WalkthroughSystem {
 
             let shop_case = pool
                 .values()
-                .choose_multiple(&mut thread_rng(), DEFAULT_SLOTS * extra_units);
+                .choose_multiple(&mut thread_rng(), MAX_SLOTS * extra_units);
             for shop_unit in shop_case.iter() {
                 let (pick, show) = pick_show_count.remove(&shop_unit.name).unwrap_or_default();
                 pick_show_count.insert(shop_unit.name.clone(), (pick, show + 1));
@@ -143,11 +143,11 @@ impl WalkthroughSystem {
                 team.unpack(&Faction::Team, world, resources);
                 Event::ShopEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
-                let slots = (1..=DEFAULT_SLOTS).choose_multiple(&mut thread_rng(), extra_units);
+                let slots = (1..=MAX_SLOTS).choose_multiple(&mut thread_rng(), extra_units);
                 for (i, unit) in new_units.iter().enumerate() {
                     let slot = *slots.get(i).unwrap();
                     let entity = unit.unpack(world, resources, slot, Faction::Shop, None);
-                    if team.units.len() + i < DEFAULT_SLOTS {
+                    if team.units.len() + i < MAX_SLOTS {
                         SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team});
                     } else {
                         if let Some(entity) =

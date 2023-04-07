@@ -19,7 +19,6 @@ pub enum Faction {
     Dark,
     Team,
     Shop,
-    Gallery,
 }
 
 impl Faction {
@@ -32,7 +31,6 @@ impl Faction {
             Faction::Light => 1.0,
             Faction::Team => 2.0,
             Faction::Shop => 3.0,
-            Faction::Gallery => 4.0,
         }
     }
     pub fn from_entity(entity: legion::Entity, world: &legion::World) -> Faction {
@@ -51,7 +49,6 @@ impl Faction {
             Faction::Dark => Faction::Light,
             Faction::Team => Faction::Shop,
             Faction::Shop => Faction::Team,
-            Faction::Gallery => Faction::Gallery,
         }
     }
     pub fn all_iter() -> impl Iterator<Item = Faction> {

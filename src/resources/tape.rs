@@ -148,7 +148,7 @@ impl NodeCluster {
                 break;
             }
             let node_duration = node.duration();
-            if cur_ts + node_duration > ts {
+            if cur_ts + node_duration > ts || node_duration == 0.0 {
                 result.merge_effects(node, cur_ts, true);
             }
             result.merge_entities(node, true);
@@ -363,9 +363,11 @@ impl Node {
         );
         match lock_type {
             NodeLockType::Full { world, resources } => {
-                let render_factions = HashSet::from_iter(Faction::all_iter());
-                ContextSystem::refresh_factions(&render_factions, world, resources);
-                UnitSystem::draw_all_units_to_node(&render_factions, &mut self, world, resources);
+                let factions = HashSet::from_iter(Faction::all_iter());
+                ContextSystem::refresh_factions(&factions, world, resources);
+                let units =
+                    UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+                SlotSystem::draw_slots_to_node(&mut self, &factions, &units, resources);
             }
             NodeLockType::Factions {
                 factions,
@@ -373,7 +375,9 @@ impl Node {
                 resources,
             } => {
                 ContextSystem::refresh_factions(&factions, world, resources);
-                UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+                let units =
+                    UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+                SlotSystem::draw_slots_to_node(&mut self, &factions, &units, resources);
             }
             NodeLockType::Empty => {}
         }

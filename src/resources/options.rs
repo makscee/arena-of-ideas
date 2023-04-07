@@ -1,6 +1,7 @@
 use super::*;
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Options {
     pub fov: f32,
     pub rewind_speed: f32,
@@ -11,6 +12,7 @@ pub struct Options {
     pub shaders: Shaders,
     pub images: Images,
     pub colors: Colors,
+    pub floats: Floats,
     pub custom_game: CustomGameConfig,
     pub walkthrough: bool,
     pub player_team_name: String,
@@ -90,4 +92,15 @@ pub struct CustomGameConfig {
     pub enable: bool,
     pub light: Option<ReplicatedTeam>,
     pub dark: Option<ReplicatedTeam>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Floats {
+    pub slots_battle_team_position: vec2<f32>,
+    pub slots_shop_team_position: vec2<f32>,
+    pub slots_striker_position: vec2<f32>,
+    pub slots_battle_team_spacing: vec2<f32>,
+    pub slots_shop_spacing: vec2<f32>,
+    pub slots_battle_team_scale: f32,
+    pub slots_striker_scale: f32,
 }

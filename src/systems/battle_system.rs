@@ -137,7 +137,8 @@ impl BattleSystem {
                 cluster = Some(NodeCluster::default());
             }
 
-            let (left_hit_pos, right_hit_pos) = (vec2(-1.0, 0.0), vec2(1.0, 0.0));
+            let scale = resources.options.floats.slots_striker_scale;
+            let (left_hit_pos, right_hit_pos) = (vec2(-1.0 * scale, 0.0), vec2(1.0 * scale, 0.0));
 
             if let Some(tape) = tape {
                 let mut node = Node::default();
@@ -159,6 +160,7 @@ impl BattleSystem {
                 );
                 let mut cluster =
                     NodeCluster::new(node.lock(NodeLockType::Full { world, resources }));
+                cluster.push(Node::default().lock(NodeLockType::Full { world, resources }));
                 cluster.set_duration(0.5);
                 tape.push(cluster);
             }
@@ -168,7 +170,7 @@ impl BattleSystem {
                 let mut node = Node::default();
                 VfxSystem::translate_animated(
                     left,
-                    SlotSystem::get_position(1, &Faction::Light),
+                    SlotSystem::get_position(1, &Faction::Light, resources),
                     &mut node,
                     world,
                     EasingType::QuartOut,
@@ -176,7 +178,7 @@ impl BattleSystem {
                 );
                 VfxSystem::translate_animated(
                     right,
-                    SlotSystem::get_position(1, &Faction::Dark),
+                    SlotSystem::get_position(1, &Faction::Dark, resources),
                     &mut node,
                     world,
                     EasingType::QuartOut,

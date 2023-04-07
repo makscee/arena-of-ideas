@@ -66,7 +66,7 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 4,
+            "replications": 8,
             "units": [
                 {
                     "name": "Big Bug",
@@ -90,7 +90,7 @@
             ]
         }
     },
-    "fov": 14.0,
+    "fov": 16.0,
     "initial_shop_fill": 2,
     "log": {
         "Action": false,
@@ -189,8 +189,8 @@
             "parameters": {
                 "uniforms": {
                     "u_position": [
-                        11.0,
-                        1.0
+                        10.0,
+                        6.0
                     ],
                     "u_align": 1.0,
                     "u_color": "#000000",
@@ -265,7 +265,7 @@
                 "uniforms": {
                     "u_box": [
                         1.2,
-                        1.6
+                        1.3
                     ]
                 }
             },
@@ -520,5 +520,29 @@
         "rewind_forward_icon": {
             "path": "images/rewind_forward_icon.png"
         }
+    },
+    "floats": {
+        "slots_shop_team_position": [
+            9.0,
+            4.0
+        ],
+        "slots_striker_position": [
+            7.0,
+            0.0
+        ],
+        "slots_battle_team_position": [
+            9.0,
+            -10.0
+        ],
+        "slots_battle_team_spacing": [
+            0.45,
+            2.0
+        ],
+        "slots_shop_spacing": [
+            -2.5,
+            0.0
+        ],
+        "slots_battle_team_scale": 0.7,
+        "slots_striker_scale": 2.0
     }
 }

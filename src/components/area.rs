@@ -36,27 +36,34 @@ impl AreaComponent {
     }
 
     pub fn from_shader(shader: &Shader) -> Option<Self> {
+        let scale = shader
+            .parameters
+            .uniforms
+            .try_get_float(&VarName::Scale.convert_to_uniform())
+            .unwrap_or(1.0);
         shader
             .parameters
             .uniforms
-            .get_vec2(&VarName::Position.convert_to_uniform())
+            .try_get_vec2(&VarName::Position.convert_to_uniform())
             .and_then(|position| {
                 if let Some(radius) = shader
                     .parameters
                     .uniforms
-                    .get_float(&VarName::Radius.convert_to_uniform())
+                    .try_get_float(&VarName::Radius.convert_to_uniform())
                 {
                     Some(Self {
-                        r#type: AreaType::Circle { radius },
+                        r#type: AreaType::Circle {
+                            radius: radius * scale,
+                        },
                         position,
                     })
                 } else if let Some(size) = shader
                     .parameters
                     .uniforms
-                    .get_vec2(&VarName::Size.convert_to_uniform())
+                    .try_get_vec2(&VarName::Box.convert_to_uniform())
                 {
                     Some(Self {
-                        r#type: AreaType::Rectangle { size },
+                        r#type: AreaType::Rectangle { size: size * scale },
                         position,
                     })
                 } else {

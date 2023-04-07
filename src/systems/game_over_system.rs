@@ -13,7 +13,6 @@ impl GameOverSystem {
     }
 
     pub fn init(world: &mut legion::World, resources: &mut Resources) {
-        SlotSystem::clear_world(world);
         let mut node = Node::default();
         UnitSystem::draw_all_units_to_node(&hashset! {Faction::Team}, &mut node, world, resources);
         resources.tape_player.tape.persistent_node = node;

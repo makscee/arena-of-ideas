@@ -11,6 +11,7 @@ pub struct Team {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct ReplicatedTeam {
     #[serde(flatten)]
     pub team: Team,
@@ -96,7 +97,7 @@ impl Default for TeamState {
             name: String::from("no_name"),
             vars: Default::default(),
             ability_overrides: Default::default(),
-            slots: DEFAULT_SLOTS,
+            slots: MAX_SLOTS,
         }
     }
 }
