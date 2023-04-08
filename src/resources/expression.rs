@@ -174,13 +174,9 @@ impl ExpressionEntity {
             }
             ExpressionEntity::RandomUnit { faction } => {
                 let faction = faction.calculate(context, world, resources)?;
-                <(&UnitComponent, &EntityComponent)>::query()
-                    .iter(world)
-                    .filter_map(|(unit, entity)| match unit.faction == faction {
-                        true => Some(entity.entity),
-                        false => None,
-                    })
+                UnitSystem::collect_faction(world, resources, faction, false)
                     .choose(&mut thread_rng())
+                    .copied()
                     .context(format!("No units of {:?} found", faction))
             }
             ExpressionEntity::SlotRelative { relation } => {

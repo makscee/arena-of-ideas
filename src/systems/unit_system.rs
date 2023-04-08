@@ -151,7 +151,21 @@ impl UnitSystem {
         resources: &mut Resources,
         factions: &HashSet<Faction>,
     ) -> Vec<legion::Entity> {
-        let unit_entitites = <(&EntityComponent, &UnitComponent)>::query()
+        let unit_entitites = Self::collect_entities(factions, world);
+        unit_entitites
+            .iter()
+            .for_each(|entity| Self::delete_unit(*entity, world, resources));
+        factions
+            .into_iter()
+            .for_each(|f| resources.team_states.clear(*f));
+        unit_entitites
+    }
+
+    pub fn collect_entities(
+        factions: &HashSet<Faction>,
+        world: &legion::World,
+    ) -> Vec<legion::Entity> {
+        <(&EntityComponent, &UnitComponent)>::query()
             .iter(world)
             .map(|(entity, unit)| (entity.entity, unit.faction))
             .chain(
@@ -163,15 +177,11 @@ impl UnitSystem {
                 true => Some(entity.clone()),
                 false => None,
             })
-            .collect_vec();
-        unit_entitites.iter().for_each(|entity| {
-            world.remove(*entity);
-            StatusPool::clear_entity(entity, resources);
-        });
-        factions
-            .into_iter()
-            .for_each(|f| resources.team_states.clear(*f));
-        unit_entitites
+            .collect_vec()
+    }
+
+    pub fn unit_on_field(unit: &UnitComponent, resources: &Resources) -> bool {
+        resources.team_states.get_slots(&unit.faction) >= unit.slot
     }
 
     pub fn delete_unit(

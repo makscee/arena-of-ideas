@@ -77,4 +77,13 @@ impl ButtonSystem {
             .uniforms;
         uniforms.insert(key, value);
     }
+
+    pub fn remove_button(
+        entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        world.remove(entity);
+        resources.input.listeners.remove(&entity);
+    }
 }

@@ -49,6 +49,10 @@ impl TeamStates {
             .get(ability)
     }
 
+    pub fn get_slots(&self, faction: &Faction) -> usize {
+        self.states.get(faction).unwrap().slots
+    }
+
     pub fn remove_team_state(&mut self, faction: &Faction) -> TeamState {
         self.states.remove(faction).unwrap()
     }

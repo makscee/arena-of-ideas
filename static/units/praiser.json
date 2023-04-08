@@ -2,7 +2,7 @@
     "name": "Praiser",
     "attack": 4,
     "health": 4,
-    "description": "Heroes sell for +1",
+    "description": "On buy:\nHeroes sell for 2 g",
     "houses": [
         "Pirates"
     ],

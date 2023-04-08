@@ -33,7 +33,7 @@
                 "u_end_color": "#ffffff",
                 "u_start_color": "#df9800ff",
                 "u_size": 0.4,
-                "u_scale_over_t": -1.0,
+                "u_size_over_t": -1.0,
                 "u_velocity_over_t": -3.3,
                 "u_trail_count": 1,
                 "u_lifetime": 10.2

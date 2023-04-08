@@ -41,7 +41,8 @@ impl SlotSystem {
                     + spacing * slot as f32
             }
             Faction::Shop => {
-                SHOP_POSITION + floats.slots_shop_team_position + spacing * slot as f32
+                let offset = (MAX_SLOTS - resources.team_states.get_slots(faction)) / 2;
+                SHOP_POSITION + floats.slots_shop_team_position + spacing * (slot + offset) as f32
             }
         }
     }
@@ -118,12 +119,15 @@ impl SlotSystem {
         }
         <(&EntityComponent, &UnitComponent)>::query()
             .iter(world)
-            .find_map(
-                |(entity, unit)| match unit.faction == *faction && unit.slot == slot {
+            .find_map(|(entity, unit)| {
+                match unit.faction == *faction
+                    && unit.slot == slot
+                    && UnitSystem::unit_on_field(unit, resources)
+                {
                     true => Some(entity.entity),
                     false => None,
-                },
-            )
+                }
+            })
     }
 
     pub fn draw_slots_to_node(

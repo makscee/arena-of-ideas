@@ -124,6 +124,7 @@ impl WalkthroughSystem {
                 value
             } as usize;
             let dark = Ladder::generate_team(resources);
+            let max_slots = resources.team_states.get_slots(&Faction::Team);
 
             let shop_case = pool
                 .values()
@@ -143,11 +144,11 @@ impl WalkthroughSystem {
                 team.unpack(&Faction::Team, world, resources);
                 Event::ShopEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
-                let slots = (1..=MAX_SLOTS).choose_multiple(&mut thread_rng(), extra_units);
+                let slots = (1..=max_slots).choose_multiple(&mut thread_rng(), extra_units);
                 for (i, unit) in new_units.iter().enumerate() {
                     let slot = *slots.get(i).unwrap();
                     let entity = unit.unpack(world, resources, slot, Faction::Shop, None);
-                    if team.units.len() + i < MAX_SLOTS {
+                    if team.units.len() + i < max_slots {
                         SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team});
                     } else {
                         if let Some(entity) =

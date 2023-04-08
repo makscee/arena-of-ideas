@@ -437,7 +437,7 @@
                 "uniforms": {
                     "u_position": [
                         0.0,
-                        -3.0
+                        -4.0
                     ],
                     "u_color": "#9266CC",
                     "u_padding": 3.0
@@ -523,7 +523,7 @@
     },
     "floats": {
         "slots_shop_team_position": [
-            9.0,
+            12.0,
             4.0
         ],
         "slots_striker_position": [
@@ -543,6 +543,6 @@
             0.0
         ],
         "slots_battle_team_scale": 0.7,
-        "slots_striker_scale": 2.0
+        "slots_striker_scale": 1.5
     }
 }

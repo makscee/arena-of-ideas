@@ -312,59 +312,71 @@ impl ShopSystem {
         vars.set_int(&VarName::SellPrice, 1);
         vars.set_int(&VarName::RerollPrice, 1);
         vars.set_int(&VarName::FreeRerolls, 0);
+    }
 
-        if resources.shop.refresh_btn.is_none() {
-            let world_entity = WorldSystem::get_context(world).owner;
-            fn refresh(
-                entity: legion::Entity,
-                resources: &mut Resources,
-                world: &mut legion::World,
-                event: InputEvent,
-            ) {
-                match event {
-                    InputEvent::Click => {
-                        if ShopSystem::is_reroll_affordable(resources) {
-                            ShopSystem::reroll(world, resources);
-                            ShopSystem::deduct_reroll_cost(resources);
-                        }
-                    }
-                    InputEvent::HoverStart => ButtonSystem::change_icon_color(
-                        entity,
-                        world,
-                        resources.options.colors.btn_hovered,
-                    ),
-                    InputEvent::HoverStop => ButtonSystem::change_icon_color(
-                        entity,
-                        world,
-                        resources.options.colors.btn_normal,
-                    ),
-                    _ => {}
-                }
-            }
-
-            let entity = ButtonSystem::create_button(
-                world,
-                world_entity,
-                resources,
-                resources.options.images.refresh_icon.clone(),
-                resources.options.colors.btn_normal,
-                refresh,
-                Self::reroll_btn_position(resources),
-                &hashmap! {
-                    "u_size" => ShaderUniform::Float(1.1),
-                }
-                .into(),
-            );
-            resources.shop.refresh_btn = Some(entity);
+    fn create_reroll_btn(world: &mut legion::World, resources: &mut Resources) {
+        if let Some(entity) = resources.shop.refresh_btn {
+            ButtonSystem::remove_button(entity, world, resources);
         }
+        let world_entity = WorldSystem::get_context(world).owner;
+        fn refresh(
+            entity: legion::Entity,
+            resources: &mut Resources,
+            world: &mut legion::World,
+            event: InputEvent,
+        ) {
+            match event {
+                InputEvent::Click => {
+                    if ShopSystem::is_reroll_affordable(resources) {
+                        ShopSystem::reroll(world, resources);
+                        ShopSystem::deduct_reroll_cost(resources);
+                    }
+                }
+                InputEvent::HoverStart => ButtonSystem::change_icon_color(
+                    entity,
+                    world,
+                    resources.options.colors.btn_hovered,
+                ),
+                InputEvent::HoverStop => ButtonSystem::change_icon_color(
+                    entity,
+                    world,
+                    resources.options.colors.btn_normal,
+                ),
+                _ => {}
+            }
+        }
+
+        let entity = ButtonSystem::create_button(
+            world,
+            world_entity,
+            resources,
+            resources.options.images.refresh_icon.clone(),
+            resources.options.colors.btn_normal,
+            refresh,
+            Self::reroll_btn_position(resources),
+            &hashmap! {
+                "u_size" => ShaderUniform::Float(1.1),
+            }
+            .into(),
+        );
+        resources.shop.refresh_btn = Some(entity);
     }
 
     fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
         SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
     }
 
+    fn set_slots(slots: usize, resources: &mut Resources) {
+        dbg!(slots);
+        resources
+            .team_states
+            .get_team_state_mut(&Faction::Shop)
+            .slots = slots;
+    }
+
     pub fn init_floor(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
         let current_floor = resources.ladder.current_ind();
+        Self::set_slots((current_floor + 3).min(6), resources);
         if give_g {
             Self::change_g(resources, Self::floor_money(current_floor));
         }
@@ -378,6 +390,7 @@ impl ShopSystem {
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
         Self::refresh_tape(world, resources);
+        Self::create_reroll_btn(world, resources);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
@@ -386,16 +399,18 @@ impl ShopSystem {
             .into_iter()
             .map(|entity| PackedUnit::pack(entity, world, resources))
             .collect_vec();
-        UnitSystem::clear_faction(world, resources, Faction::Shop);
+        UnitSystem::collect_entities(&hashset! {Faction::Shop}, world)
+            .into_iter()
+            .for_each(|x| UnitSystem::delete_unit(x, world, resources));
         resources.shop.pool.extend(packed_units.into_iter());
     }
 
     pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
-        for slot in 0..MAX_SLOTS {
+        let slots = resources.team_states.get_slots(&Faction::Shop);
+        for slot in 1..=slots {
             if resources.shop.pool.is_empty() {
                 return;
             }
-            let slot = slot + 1;
             let mut rng = rand::thread_rng();
             let ind: usize = rng.gen_range(0..resources.shop.pool.len());
             let position = SlotSystem::get_position(slot, &Faction::Shop, resources);

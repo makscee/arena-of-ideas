@@ -25,7 +25,7 @@
                 "u_start_color": "#00ed3f",
                 "u_end_color": "#000000",
                 "u_size": 0.3,
-                "u_scale_over_t": -0.5,
+                "u_size_over_t": -0.5,
                 "u_velocity_over_t": 0.3,
                 "u_trail_count": 4,
                 "u_lifetime": 3.2

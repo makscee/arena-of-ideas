@@ -11,24 +11,21 @@
                     "var": "Charges"
                 }
             },
-            "description": "Increase G by 1",
+            "description": "Increase g by 1",
             "default_vars": {
                 "Charges": 1
             }
         },
         "Bargain": {
             "effect": {
-                "type": "ChangeFactionVarInt",
+                "type": "SetFactionVarInt",
                 "var": "SellPrice",
-                "delta": {
-                    "type": "Var",
-                    "var": "Charges"
+                "value": {
+                    "type": "Const",
+                    "value": 2
                 }
             },
-            "description": "Units sell for +1 G",
-            "default_vars": {
-                "Charges": 1
-            }
+            "description": "Units sell for 2 g"
         },
         "Discount": {
             "effect": {

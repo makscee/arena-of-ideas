@@ -102,12 +102,12 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 4,
+            "replications": 8,
             "units": [
                 {
                     "name": "Big Bug",
-                    "attack": 6,
-                    "health": 6,
+                    "attack": 4,
+                    "health": 4,
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
@@ -133,8 +133,8 @@
             "units": [
                 {
                     "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
+                    "attack": 12,
+                    "health": 12,
                     "description": "On hit:\n70% chance to\napply Reanimate",
                     "houses": [
                         "Necromancers"
@@ -215,8 +215,8 @@
                 {
                     "name": "Hound",
                     "description": "Start of Battle:\nDevour\nrandom enemy",
-                    "attack": 12,
-                    "health": 12,
+                    "attack": 20,
+                    "health": 20,
                     "houses": [
                         "Demons"
                     ],
@@ -260,7 +260,7 @@
             "units": [
                 {
                     "name": "Cheater",
-                    "attack": 15,
+                    "attack": 20,
                     "health": 30,
                     "description": "After strike\ngain Shield",
                     "houses": [
@@ -301,8 +301,8 @@
             "units": [
                 {
                     "name": "Equalizer",
-                    "attack": 25,
-                    "health": 25,
+                    "attack": 40,
+                    "health": 40,
                     "description": "Start of battle:\nDispel everyone",
                     "houses": [
                         "Exorcists"
@@ -350,7 +350,7 @@
             "state": {
                 "name": "Archers"
             },
-            "replications": 4,
+            "replications": 5,
             "units": [
                 {
                     "name": "Archer",
@@ -410,8 +410,8 @@
             "units": [
                 {
                     "name": "Titan",
-                    "attack": 25,
-                    "health": 25,
+                    "attack": 40,
+                    "health": 40,
                     "houses": [
                         "Titans"
                     ],
@@ -431,7 +431,7 @@
                                 "u_end_color": "#ffffff",
                                 "u_size": 1.5,
                                 "u_p_scale": 0.4,
-                                "u_scale_over_t": -2.0,
+                                "u_size_over_t": -2.0,
                                 "u_velocity_over_t": -0.3,
                                 "u_velicity_mul": 10.3,
                                 "u_lifetime": 5.2

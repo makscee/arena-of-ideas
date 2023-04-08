@@ -46,7 +46,7 @@ impl VfxSystem {
         delay: Time,
     ) -> VisualEffect {
         VisualEffect::new_delayed(
-            1.5,
+            1.0,
             delay,
             VisualEffectType::ShaderAnimation {
                 shader: Self::get_show_text_shader(resources, text, font, color, outline_color)
@@ -69,7 +69,7 @@ impl VfxSystem {
         delay: Time,
     ) -> VisualEffect {
         VisualEffect::new_delayed(
-            1.5,
+            1.0,
             delay,
             VisualEffectType::EntityExtraShaderAnimation {
                 entity: parent,

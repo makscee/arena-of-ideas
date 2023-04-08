@@ -352,9 +352,7 @@ impl EffectWrapped {
             }
             Effect::Repeat { count, effect } => {
                 for _ in 0..count.calculate(&context, world, resources)? {
-                    resources
-                        .action_queue
-                        .push_front(Action::new(context.clone(), effect.deref().clone()));
+                    effect.process(context.clone(), world, resources, node)?;
                 }
             }
             Effect::Debug { message } => debug!("Debug effect: {}", message),
@@ -651,10 +649,7 @@ impl EffectWrapped {
                     }
                 });
                 if let Some(target) = target {
-                    context.target = target;
-                    resources
-                        .action_queue
-                        .push_front(Action::new(context.clone(), effect.deref().clone()));
+                    effect.process(context.clone().set_target(target), world, resources, node)?
                 }
             }
             Effect::AllTargets {
@@ -679,10 +674,7 @@ impl EffectWrapped {
                     })
                     .collect_vec();
                 for target in targets {
-                    context.target = target;
-                    resources
-                        .action_queue
-                        .push_front(Action::new(context.clone(), effect.deref().clone()));
+                    effect.process(context.clone().set_target(target), world, resources, node)?;
                 }
             }
             Effect::Summon {
