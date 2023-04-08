@@ -64,6 +64,7 @@ impl BattleSystem {
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.last_score = Ladder::get_score(world, resources);
         resources.last_round = resources.ladder.current_ind();
+        resources.total_score += resources.last_score;
         if resources.last_score > 0 {
             if resources.ladder.next() {
                 resources.transition_state = GameState::Shop;

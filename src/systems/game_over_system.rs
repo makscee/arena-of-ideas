@@ -32,7 +32,7 @@ impl System for GameOverSystem {
         }
         Box::new(
             (
-                Text::new("Game Over!", resources.fonts.get_font(1), 70.0, Rgba::BLACK),
+                Text::new("Game Over!", resources.fonts.get_font(1), 50.0, Rgba::BLACK),
                 Text::new(
                     format!(
                         "{}",
@@ -43,6 +43,12 @@ impl System for GameOverSystem {
                     ),
                     resources.fonts.get_font(0),
                     70.0,
+                    Rgba::BLACK,
+                ),
+                Text::new(
+                    format!("Total score: {}", resources.total_score),
+                    resources.fonts.get_font(0),
+                    90.0,
                     Rgba::BLACK,
                 ),
                 restart

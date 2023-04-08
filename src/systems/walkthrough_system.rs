@@ -5,20 +5,20 @@ pub struct WalkthroughSystem {}
 impl WalkthroughSystem {
     pub fn run_simulation(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
-        let mut avg_levels: HashMap<String, (usize, usize)> = default();
+        let mut avg_score: HashMap<String, (usize, usize)> = default();
         let mut floors: Vec<usize> = vec![0; resources.ladder.count() + 1];
         let mut i: usize = 0;
         let mut total_pick_data: HashMap<String, (usize, usize)> = default();
         loop {
             i += 1;
             let run_timer = Instant::now();
-            let (floor, team, pick_data) = Self::run_single(world, resources);
+            let (floor, total_score, team, pick_data) = Self::run_single(world, resources);
             *floors.get_mut(floor).unwrap() += 1;
             for unit in team.units.iter() {
-                let mut result = avg_levels.remove(&unit.name).unwrap_or_default();
-                result.0 += floor;
+                let mut result = avg_score.remove(&unit.name).unwrap_or_default();
+                result.0 += total_score;
                 result.1 += 1;
-                avg_levels.insert(unit.name.clone(), result);
+                avg_score.insert(unit.name.clone(), result);
             }
             for (name, data) in pick_data {
                 let mut total_data = total_pick_data.remove(&name).unwrap_or_default();
@@ -33,15 +33,15 @@ impl WalkthroughSystem {
                 .sorted_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
                 .collect_vec();
 
-            println!("\nAvg level reached:");
-            let mut avg_levels = avg_levels
+            println!("\nAvg score reached:");
+            let mut avg_score = avg_score
                 .iter()
                 .map(|(name, (floors, games))| (name, *floors as f32 / *games as f32))
                 .collect_vec();
-            avg_levels.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+            avg_score.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
             println!(
                 "{}",
-                avg_levels
+                avg_score
                     .iter()
                     .map(|(name, avg_flr)| format!("\"{}\": {:.3}", name, avg_flr))
                     .join(",\n"),
@@ -63,7 +63,7 @@ impl WalkthroughSystem {
                     .enumerate()
                     .map(|(ind, (name, _, _, _))| (name.deref().clone(), ind as f32)),
             );
-            for (i, (name, _)) in avg_levels.into_iter().enumerate() {
+            for (i, (name, _)) in avg_score.into_iter().enumerate() {
                 let mut data = sorting.remove(name).unwrap_or_default();
                 data = (data + i as f32) * 0.5;
                 sorting.insert(name.clone(), data);
@@ -102,7 +102,7 @@ impl WalkthroughSystem {
     fn run_single(
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> (usize, Team, HashMap<String, (usize, usize)>) {
+    ) -> (usize, usize, Team, HashMap<String, (usize, usize)>) {
         let pool: HashMap<String, PackedUnit> = HashMap::from_iter(
             resources
                 .hero_pool
@@ -117,6 +117,7 @@ impl WalkthroughSystem {
         let sell_price = ShopSystem::sell_price(resources);
         const MAX_ARRANGE_TRIES: usize = 5;
         let mut pick_show_count = HashMap::default();
+        let mut total_result = 0;
         loop {
             let extra_units = {
                 let mut value = ShopSystem::floor_money(resources.ladder.current_ind()) / buy_price;
@@ -180,10 +181,11 @@ impl WalkthroughSystem {
                 picked
                     .iter()
                     .for_each(|name| pick_show_count.get_mut(name).unwrap().0 += 1);
+                total_result += battle_result;
             }
         }
         let level_reached = resources.ladder.current_ind();
         resources.ladder.reset();
-        (level_reached, team, pick_show_count)
+        (level_reached, total_result, team, pick_show_count)
     }
 }

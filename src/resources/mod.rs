@@ -82,6 +82,7 @@ pub struct Resources {
 
     pub shop: Shop,
     pub last_score: usize,
+    pub total_score: usize,
     pub last_round: usize,
     pub ladder: Ladder,
 
@@ -121,6 +122,7 @@ impl Resources {
             ladder: default(),
             reload_triggered: default(),
             last_score: default(),
+            total_score: default(),
             last_round: default(),
             hero_pool: default(),
             transition_state: GameState::MainMenu,
