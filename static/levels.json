@@ -4,7 +4,7 @@
             "state": {
                 "name": "Bugs"
             },
-            "replications": 2,
+            "replications": 1,
             "units": [
                 {
                     "name": "Bug",

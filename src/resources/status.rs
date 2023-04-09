@@ -203,7 +203,7 @@ impl StatusPool {
         status: &String,
         resources: &mut Resources,
         world: &legion::World,
-    ) {
+    ) -> bool {
         let mut entity_statuses = resources
             .status_pool
             .active_statuses
@@ -216,14 +216,17 @@ impl StatusPool {
                 owner: entity,
             }
             .send(world, resources);
+        } else if charges == 0 {
+            return false;
         }
         Event::StatusChargeRemove {
             status: status.to_string(),
             owner: entity,
         }
         .send(world, resources);
-        if charges > 1 {
-            entity_statuses.insert(status.to_string(), charges - 1);
+        let charges = charges - 1;
+        if charges > 0 {
+            entity_statuses.insert(status.to_string(), charges);
         } else {
             entity_statuses.remove(status);
         }
@@ -231,6 +234,7 @@ impl StatusPool {
             .status_pool
             .active_statuses
             .insert(entity, entity_statuses);
+        true
     }
 
     pub fn process_status_changes(
@@ -251,32 +255,36 @@ impl StatusPool {
             resources.status_pool.status_changes.pop_front()
         {
             for _ in 0..charges_delta.abs() {
+                let show;
                 let (text, color) = if charges_delta > 0 {
+                    show = true;
                     Self::add_status_charge(entity, &status_name, resources, world);
                     ("+", resources.options.colors.text_add_color)
                 } else {
-                    Self::remove_status_charge(entity, &status_name, resources, world);
+                    show = Self::remove_status_charge(entity, &status_name, resources, world);
                     ("-", resources.options.colors.text_remove_color)
                 };
-                if let Some(node) = node.as_mut() {
-                    let text = format!("{}{}", text, &status_name);
-                    let outline_color = resources
-                        .status_pool
-                        .defined_statuses
-                        .get(&status_name)
-                        .unwrap()
-                        .color;
-                    node.add_effect(VfxSystem::vfx_show_parent_text(
-                        resources,
-                        &text,
-                        color,
-                        outline_color,
-                        entity,
-                        0,
-                        delay_per_charge * cnt as f32,
-                    ));
+                if show {
+                    if let Some(node) = node.as_mut() {
+                        let text = format!("{}{}", text, &status_name);
+                        let outline_color = resources
+                            .status_pool
+                            .defined_statuses
+                            .get(&status_name)
+                            .unwrap()
+                            .color;
+                        node.add_effect(VfxSystem::vfx_show_parent_text(
+                            resources,
+                            &text,
+                            color,
+                            outline_color,
+                            entity,
+                            0,
+                            delay_per_charge * cnt as f32,
+                        ));
+                        cnt += 1;
+                    }
                 }
-                cnt += 1;
             }
         }
     }

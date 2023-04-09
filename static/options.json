@@ -5,9 +5,9 @@
     "rewind_add_speed": 10.0,
     "start_floor": 0,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
-            "replications": 8,
+            "replications": 1,
             "units": [
                 {
                     "name": "Shikari",
@@ -67,7 +67,7 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 4,
+            "replications": 2,
             "units": [
                 {
                     "name": "Big Bug",

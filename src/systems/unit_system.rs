@@ -306,21 +306,21 @@ impl UnitSystem {
                         .uniforms
                         .try_get_vec2(&VarName::Position.convert_to_uniform())
                         .unwrap();
-                    let offset = vec2(0.5, 0.5)
-                        - resources
-                            .camera
-                            .camera
-                            .world_to_screen(resources.camera.framebuffer_size, position)
-                            .unwrap()
-                            / resources.camera.framebuffer_size;
-                    shader.parameters.uniforms.insert(
-                        VarName::Position.convert_to_uniform(),
-                        ShaderUniform::Vec2(mix_vec(
-                            position,
-                            position + offset * resources.camera.camera.fov,
-                            card_value,
-                        )),
-                    );
+                    if let Some(world_pos) = resources
+                        .camera
+                        .camera
+                        .world_to_screen(resources.camera.framebuffer_size, position)
+                    {
+                        let offset = vec2(0.5, 0.5) - world_pos / resources.camera.framebuffer_size;
+                        shader.parameters.uniforms.insert(
+                            VarName::Position.convert_to_uniform(),
+                            ShaderUniform::Vec2(mix_vec(
+                                position,
+                                position + offset * resources.camera.camera.fov,
+                                card_value,
+                            )),
+                        );
+                    }
                 }
             }
         }
