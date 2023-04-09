@@ -64,4 +64,28 @@ impl Shop {
             )
         }
     }
+
+    pub fn pool_len(resources: &Resources) -> usize {
+        resources.shop.pool.len()
+    }
+
+    pub fn unpack_pool_unit(
+        ind: usize,
+        slot: usize,
+        resources: &mut Resources,
+        world: &mut legion::World,
+    ) -> legion::Entity {
+        let unit = resources.shop.pool.remove(ind);
+        unit.unpack(world, resources, slot, Faction::Shop, None)
+    }
+
+    pub fn pack_unit_into_pool(
+        entity: legion::Entity,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let unit = PackedUnit::pack(entity, world, resources);
+        UnitSystem::delete_unit(entity, world, resources);
+        resources.shop.pool.push(unit);
+    }
 }

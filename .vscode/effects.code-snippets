@@ -45,8 +45,12 @@
 		"prefix": "use_ability",
 		"body": [
 			"{",
-			"  \"type\": \"UseAbility\",",
-			"  \"ability\": \"${1:Poison}\"",
+			"    \"type\": \"UseAbility\",",
+			"    \"ability\": \"${1:Shoot}\",",
+			"    \"charges\": {",
+			"        \"type\": \"Const\",",
+			"        \"value\": ${2:1}",
+			"    }",
 			"}"
 		],
 		"description": "Use Ability"

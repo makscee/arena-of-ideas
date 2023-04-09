@@ -7,55 +7,56 @@
     "custom_game": {
         "enable": false,
         "light": {
+            "replications": 8,
             "units": [
                 {
-                    "attack": 1,
-                    "health": 4
-                },
-                {
-                    "attack": 3,
-                    "health": 3,
+                    "name": "Shikari",
+                    "description": "Battle Start:\nShoot random enemy\n5 times",
+                    "attack": 2,
+                    "health": 1,
                     "houses": [
                         "Archers"
                     ],
                     "active_statuses": {
                         "Shield": 1,
                         "Empower": 1,
-                        "Growth": 1,
                         "Immortality": 1
                     },
                     "trigger": {
-                        "type": "AnyDeath",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "EqualsFaction",
-                                "a": {
-                                    "type": "Owner"
-                                },
-                                "b": {
-                                    "type": "Target"
-                                }
-                            },
-                            "then": {
-                                "type": "Repeat",
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot",
-                                    "target": {
-                                        "type": "RandomUnit",
+                            "type": "Repeat",
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Shoot",
+                                "target": {
+                                    "type": "RandomUnit",
+                                    "faction": {
+                                        "type": "Opposite",
                                         "faction": {
-                                            "type": "Opposite",
-                                            "faction": {
-                                                "type": "Owner"
-                                            }
+                                            "type": "Owner"
                                         }
                                     }
-                                },
-                                "count": {
-                                    "type": "Const",
-                                    "value": 3
                                 }
+                            },
+                            "count": {
+                                "type": "Const",
+                                "value": 5
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "instances": 1500,
+                            "uniforms": {
+                                "u_start_color": "#FFD700",
+                                "u_end_color": "#3c8d21ff",
+                                "u_size": 0.3,
+                                "u_size_over_t": -0.3,
+                                "u_velocity_over_t": 0.3,
+                                "u_trail_count": 2,
+                                "u_lifetime": 1.2
                             }
                         }
                     }
@@ -66,12 +67,15 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 8,
+            "replications": 4,
             "units": [
                 {
                     "name": "Big Bug",
                     "attack": 5,
                     "health": 5,
+                    "active_statuses": {
+                        "Shield": 1
+                    },
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
@@ -93,7 +97,7 @@
     "fov": 16.0,
     "initial_shop_fill": 2,
     "log": {
-        "Action": false,
+        "Action": true,
         "ActionFail": true,
         "Effect": true,
         "Contexts": false,

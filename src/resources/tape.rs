@@ -72,14 +72,6 @@ impl Tape {
             effect.r#type.process(t, &mut entity_shaders);
         }
 
-        UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
-
-        let mut extra_shaders: Vec<Shader> = default();
-        for effect in shader_effects {
-            let t = (ts - effect.delay) / effect.duration;
-            extra_shaders.extend(effect.r#type.process(t, &mut entity_shaders));
-        }
-
         let mut hovered_entity = None;
         for (entity, shader) in entity_shaders
             .iter_mut()
@@ -95,6 +87,13 @@ impl Tape {
         }
         if let Some(entity) = InputSystem::set_hovered_entity(hovered_entity, resources) {
             entity_shaders.get_mut(&entity).unwrap().layer = ShaderLayer::Hover;
+        }
+
+        UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
+        let mut extra_shaders: Vec<Shader> = default();
+        for effect in shader_effects {
+            let t = (ts - effect.delay) / effect.duration;
+            extra_shaders.extend(effect.r#type.process(t, &mut entity_shaders));
         }
 
         entity_shaders

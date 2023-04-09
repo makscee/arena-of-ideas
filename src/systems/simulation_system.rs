@@ -22,8 +22,10 @@ impl SimulationSystem {
                     let light = Team::pack(&Faction::Light, world, resources);
                     let dark = Team::pack(&Faction::Dark, world, resources);
                     dbg!((light, dark));
+                    0
+                } else {
+                    1
                 }
-                1
             }
             None => Ladder::get_score(world, resources),
         };

@@ -138,6 +138,7 @@ impl Display for Event {
 
 impl Event {
     pub fn send(&self, world: &legion::World, resources: &mut Resources) {
+        resources.logger.log(&self.to_string(), &LogContext::Event);
         let mut caught = false;
         // Notify all Faction::Dark and Faction::Light
         caught = caught

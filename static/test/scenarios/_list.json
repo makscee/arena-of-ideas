@@ -1,4 +1,5 @@
 [
+    "test/scenarios/abettor.json",
     "test/scenarios/dog_hound.json",
     "test/scenarios/diabolos.json",
     "test/scenarios/astrologer.json",

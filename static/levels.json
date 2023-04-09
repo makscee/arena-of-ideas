@@ -390,24 +390,9 @@
                     "trigger": {
                         "type": "TurnEnd",
                         "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "FindTarget",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                },
-                                "condition": {
-                                    "type": "Always"
-                                },
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot"
-                                }
-                            },
-                            "count": {
+                            "type": "UseAbility",
+                            "ability": "Shoot",
+                            "charges": {
                                 "type": "Const",
                                 "value": 2
                             }

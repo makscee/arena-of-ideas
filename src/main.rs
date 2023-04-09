@@ -43,6 +43,12 @@ fn save_path() -> PathBuf {
 fn ts_nano() -> i64 {
     chrono::prelude::Utc::now().timestamp_nanos()
 }
+fn mix(a: f32, b: f32, t: f32) -> f32 {
+    a * (1.0 - t) + b * t
+}
+fn mix_vec(a: vec2<f32>, b: vec2<f32>, t: f32) -> vec2<f32> {
+    vec2(mix(a.x, b.x, t), mix(a.y, b.y, t))
+}
 fn main() {
     let timer = Instant::now();
     logger::init();

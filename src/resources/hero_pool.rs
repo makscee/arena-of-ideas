@@ -18,12 +18,28 @@ impl HeroPool {
         self.heroes.get(path).unwrap()
     }
 
+    pub fn find_by_name(&self, name: &str) -> Option<&PackedUnit> {
+        self.heroes.values().find(|x| x.name.eq(name))
+    }
+
     pub fn all(&self) -> Vec<PackedUnit> {
         self.heroes.values().cloned().collect_vec()
     }
 
     pub fn list_top(&self) -> &PackedUnit {
         self.heroes.get(&self.list_top).unwrap()
+    }
+
+    pub fn names_sorted(&self) -> Vec<String> {
+        self.power
+            .iter()
+            .sorted_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .map(|(name, _)| name.clone())
+            .collect_vec()
+    }
+
+    pub fn len(&self) -> usize {
+        self.heroes.len()
     }
 
     pub fn all_sorted(&self) -> Vec<PackedUnit> {

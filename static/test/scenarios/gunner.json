@@ -10,21 +10,9 @@
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {
-                        "type": "Repeat",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Shoot",
-                            "target": {
-                                "type": "RandomUnit",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            }
-                        },
-                        "count": {
+                        "type": "UseAbility",
+                        "ability": "Shoot",
+                        "charges": {
                             "type": "Const",
                             "value": 3
                         }

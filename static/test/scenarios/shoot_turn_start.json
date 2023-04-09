@@ -11,16 +11,7 @@
                     "type": "TurnStart",
                     "effect": {
                         "type": "UseAbility",
-                        "ability": "Shoot",
-                        "target": {
-                            "type": "RandomUnit",
-                            "faction": {
-                                "type": "Opposite",
-                                "faction": {
-                                    "type": "Owner"
-                                }
-                            }
-                        }
+                        "ability": "Shoot"
                     }
                 }
             }

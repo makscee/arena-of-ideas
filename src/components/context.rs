@@ -40,4 +40,9 @@ impl Context {
         self.target = target;
         self
     }
+
+    pub fn set_owner(mut self, owner: legion::Entity) -> Self {
+        self.owner = owner;
+        self
+    }
 }

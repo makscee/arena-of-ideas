@@ -22,19 +22,11 @@
                 "trigger": {
                     "type": "TurnEnd",
                     "effect": {
-                        "type": "FindTarget",
-                        "faction": {
-                            "type": "Opposite",
-                            "faction": {
-                                "type": "Owner"
-                            }
-                        },
-                        "condition": {
-                            "type": "Always"
-                        },
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Shoot"
+                        "type": "UseAbility",
+                        "ability": "Shoot",
+                        "charges": {
+                            "type": "Const",
+                            "value": 1
                         }
                     }
                 }

@@ -132,6 +132,10 @@ pub enum Effect {
         #[serde(default)]
         faction: ExpressionFaction,
     },
+    LoadOwner {
+        entity: ExpressionEntity,
+        effect: Box<EffectWrapped>,
+    },
 }
 
 impl Display for Effect {
@@ -638,9 +642,10 @@ impl EffectWrapped {
                 let faction = faction.calculate(&context, world, resources)?;
                 let mut units = UnitSystem::collect_faction(world, resources, faction, false);
                 units.shuffle(&mut thread_rng());
+                let owner = context.owner;
                 let target = units.into_iter().find(|entity| {
                     if let Some(context) = ContextSystem::try_get_context(*entity, world).ok() {
-                        match condition.calculate(&context, world, resources) {
+                        match condition.calculate(&context.set_owner(owner), world, resources) {
                             Ok(value) => value,
                             Err(_) => false,
                         }
@@ -711,6 +716,18 @@ impl EffectWrapped {
                     .team_states
                     .get_vars_mut(&faction.calculate(&context, world, resources)?)
                     .set_int(var, value);
+            }
+            Effect::LoadOwner { entity, effect } => {
+                context = {
+                    let mut new_context = ContextSystem::try_get_context(
+                        entity.calculate(&context, world, resources)?,
+                        world,
+                    )
+                    .context(format!("Failed to get context for new owner {:?}", entity))?;
+                    new_context.target = context.target;
+                    new_context
+                };
+                Self::process(effect, context.clone(), world, resources, node)?;
             }
         }
         Ok(match self.after.as_deref() {

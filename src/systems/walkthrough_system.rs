@@ -33,7 +33,7 @@ impl WalkthroughSystem {
                 .sorted_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
                 .collect_vec();
 
-            println!("\nAvg score reached:");
+            println!("\nAvg score:");
             let mut avg_score = avg_score
                 .iter()
                 .map(|(name, (floors, games))| (name, *floors as f32 / *games as f32))

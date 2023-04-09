@@ -1,6 +1,6 @@
 {
     "name": "Shikari",
-    "description": "Battle Start:\nShoot random enemy\n5 times",
+    "description": "Battle Start:\nShoot (5)",
     "attack": 2,
     "health": 1,
     "houses": [
@@ -9,21 +9,9 @@
     "trigger": {
         "type": "BattleStart",
         "effect": {
-            "type": "Repeat",
-            "effect": {
-                "type": "UseAbility",
-                "ability": "Shoot",
-                "target": {
-                    "type": "RandomUnit",
-                    "faction": {
-                        "type": "Opposite",
-                        "faction": {
-                            "type": "Owner"
-                        }
-                    }
-                }
-            },
-            "count": {
+            "type": "UseAbility",
+            "ability": "Shoot",
+            "charges": {
                 "type": "Const",
                 "value": 5
             }

@@ -394,33 +394,46 @@ impl ShopSystem {
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
-        let case = UnitSystem::collect_faction(world, resources, Faction::Shop, false);
-        let packed_units = case
+        let level = resources.ladder.current_ind();
+
+        UnitSystem::collect_faction(world, resources, Faction::Shop, false)
             .into_iter()
-            .map(|entity| PackedUnit::pack(entity, world, resources))
-            .collect_vec();
-        UnitSystem::collect_entities(&hashset! {Faction::Shop}, world)
-            .into_iter()
-            .for_each(|x| UnitSystem::delete_unit(x, world, resources));
-        resources.shop.pool.extend(packed_units.into_iter());
+            .for_each(|entity| {
+                if level != 0 {
+                    Shop::pack_unit_into_pool(entity, world, resources)
+                } else {
+                    UnitSystem::delete_unit(entity, world, resources)
+                }
+            })
     }
 
     pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
         let slots = resources.team_states.get_slots(&Faction::Shop);
-        for slot in 1..=slots {
-            if resources.shop.pool.is_empty() {
-                return;
+        let level = resources.ladder.current_ind();
+        if level == 0 {
+            let top_units = resources
+                .hero_pool
+                .names_sorted()
+                .split_at(resources.hero_pool.len() - 10)
+                .1
+                .into_iter()
+                .cloned()
+                .choose_multiple(&mut thread_rng(), slots);
+            for (slot, name) in top_units.into_iter().enumerate() {
+                let slot = slot + 1;
+                let unit = resources.hero_pool.find_by_name(&name).unwrap().clone();
+                unit.unpack(world, resources, slot, Faction::Shop, None);
             }
-            let mut rng = rand::thread_rng();
-            let ind: usize = rng.gen_range(0..resources.shop.pool.len());
-            let position = SlotSystem::get_position(slot, &Faction::Shop, resources);
-            resources.shop.pool.remove(ind).unpack(
-                world,
-                resources,
-                slot,
-                Faction::Shop,
-                Some(position),
-            );
+        } else {
+            for slot in 1..=slots {
+                let pool_len = Shop::pool_len(resources);
+                if pool_len == 0 {
+                    return;
+                }
+                let mut rng = rand::thread_rng();
+                let ind = rng.gen_range(0..pool_len);
+                Shop::unpack_pool_unit(ind, slot, resources, world);
+            }
         }
     }
 

@@ -3,6 +3,7 @@ use super::*;
 pub struct Camera {
     pub camera: geng::Camera2d,
     pub pos: vec2<f32>,
+    pub framebuffer_size: vec2<f32>,
     pub focus: Focus,
 }
 
@@ -22,6 +23,7 @@ impl Camera {
         Self {
             camera,
             pos,
+            framebuffer_size: vec2::ZERO,
             focus: Focus::Shop,
         }
     }

@@ -3,31 +3,50 @@
     "color": "#3c8d21ff",
     "abilities": {
         "Shoot": {
-            "description": "Deal attack damage\nto target",
+            "description": "Deal attack damage\nto random enemy",
             "effect": {
-                "type": "If",
-                "condition": {
-                    "type": "Not",
-                    "condition": {
-                        "type": "IsCorpse",
-                        "entity": {
-                            "type": "Target"
+                "type": "Repeat",
+                "effect": {
+                    "target": {
+                        "type": "RandomUnit",
+                        "faction": {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
                         }
-                    }
-                },
-                "then": {
-                    "type": "Damage",
-                    "value": {
-                        "type": "Var",
-                        "var": "AttackValue"
                     },
-                    "after": {
-                        "type": "ShowCurve"
+                    "type": "If",
+                    "condition": {
+                        "type": "Not",
+                        "condition": {
+                            "type": "IsCorpse",
+                            "entity": {
+                                "type": "Target"
+                            }
+                        }
+                    },
+                    "then": {
+                        "type": "Damage",
+                        "value": {
+                            "type": "Var",
+                            "var": "AttackValue"
+                        },
+                        "after": {
+                            "type": "ShowCurve"
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
                 },
-                "else": {
-                    "type": "Noop"
+                "count": {
+                    "type": "Var",
+                    "var": "Charges"
                 }
+            },
+            "default_vars": {
+                "Charges": 1
             }
         }
     }

@@ -2,29 +2,28 @@
     "name": "Abettor",
     "attack": 3,
     "health": 3,
-    "description": "End of turn:\nmake random\nally Shoot",
+    "description": "Start of turn:\nmake random\nally Shoot",
     "houses": [
         "Archers"
     ],
     "trigger": {
         "type": "TurnStart",
         "effect": {
-            "type": "UseAbility",
-            "ability": "Shoot",
-            "force": true,
-            "owner": {
+            "type": "LoadOwner",
+            "entity": {
                 "type": "RandomUnit",
                 "faction": {
                     "type": "Owner"
-                }
+                },
+                "exclude_self": true
             },
-            "target": {
-                "type": "RandomUnit",
-                "faction": {
-                    "type": "Opposite",
-                    "faction": {
-                        "type": "Owner"
-                    }
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Shoot",
+                "force": true,
+                "charges": {
+                    "type": "Const",
+                    "value": 1
                 }
             }
         }

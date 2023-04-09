@@ -1,6 +1,6 @@
 {
     "name": "Gunner",
-    "description": "After strike:\nShoot random enemy\n3 times",
+    "description": "After strike:\nShoot (3)",
     "attack": 2,
     "health": 4,
     "houses": [
@@ -9,21 +9,9 @@
     "trigger": {
         "type": "AfterStrike",
         "effect": {
-            "type": "Repeat",
-            "effect": {
-                "type": "UseAbility",
-                "ability": "Shoot",
-                "target": {
-                    "type": "RandomUnit",
-                    "faction": {
-                        "type": "Opposite",
-                        "faction": {
-                            "type": "Owner"
-                        }
-                    }
-                }
-            },
-            "count": {
+            "type": "UseAbility",
+            "ability": "Shoot",
+            "charges": {
                 "type": "Const",
                 "value": 3
             }

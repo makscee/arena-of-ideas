@@ -292,8 +292,36 @@ impl UnitSystem {
                     .unwrap();
                 shader.parameters.uniforms.insert(
                     VarName::Scale.convert_to_uniform(),
-                    ShaderUniform::Float(SlotSystem::get_scale(slot, faction_value, resources)),
+                    ShaderUniform::Float(mix(
+                        SlotSystem::get_scale(slot, faction_value, resources),
+                        1.0,
+                        card_value,
+                    )),
                 );
+                if faction_value == Faction::Dark.float_value()
+                    || faction_value == Faction::Light.float_value()
+                {
+                    let position = shader
+                        .parameters
+                        .uniforms
+                        .try_get_vec2(&VarName::Position.convert_to_uniform())
+                        .unwrap();
+                    let offset = vec2(0.5, 0.5)
+                        - resources
+                            .camera
+                            .camera
+                            .world_to_screen(resources.camera.framebuffer_size, position)
+                            .unwrap()
+                            / resources.camera.framebuffer_size;
+                    shader.parameters.uniforms.insert(
+                        VarName::Position.convert_to_uniform(),
+                        ShaderUniform::Vec2(mix_vec(
+                            position,
+                            position + offset * resources.camera.camera.fov,
+                            card_value,
+                        )),
+                    );
+                }
             }
         }
     }

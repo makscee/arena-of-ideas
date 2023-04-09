@@ -140,6 +140,7 @@ impl geng::State for Game {
     }
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        self.resources.camera.framebuffer_size = framebuffer.size().map(|x| x as f32);
         self.resources.input.mouse_pos = self.resources.camera.camera.screen_to_world(
             framebuffer.size().map(|x| x as f32),
             self.resources
