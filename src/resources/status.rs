@@ -217,6 +217,10 @@ impl StatusPool {
             }
             .send(world, resources);
         } else if charges == 0 {
+            resources
+                .status_pool
+                .active_statuses
+                .insert(entity, entity_statuses);
             return false;
         }
         Event::StatusChargeRemove {
