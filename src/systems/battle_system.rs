@@ -107,6 +107,9 @@ impl BattleSystem {
             Event::TurnStart.send(world, resources);
             Self::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
+                if let Some(tape) = tape {
+                    tape.push(cluster.unwrap());
+                }
                 return true;
             }
 
@@ -117,6 +120,9 @@ impl BattleSystem {
             .send(world, resources);
             Self::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
+                if let Some(tape) = tape {
+                    tape.push(cluster.unwrap());
+                }
                 return true;
             }
 
@@ -127,6 +133,9 @@ impl BattleSystem {
             .send(world, resources);
             Self::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
+                if let Some(tape) = tape {
+                    tape.push(cluster.unwrap());
+                }
                 return true;
             }
             if let Some(tape) = tape {

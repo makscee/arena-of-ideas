@@ -241,7 +241,7 @@ impl ShopSystem {
     }
 
     pub fn floor_money(floor: usize) -> i32 {
-        (4 + floor as i32).min(10)
+        (3 + floor as i32).min(10)
     }
 
     pub fn get_g(resources: &Resources) -> i32 {

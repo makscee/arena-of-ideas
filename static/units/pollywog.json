@@ -1,6 +1,6 @@
 {
     "name": "Pollywog",
-    "description": "Grow (3) after\nevery Battle",
+    "description": "Grow (4) after\nevery Battle",
     "attack": 1,
     "health": 1,
     "houses": [
@@ -13,7 +13,7 @@
             "ability": "Grow",
             "charges": {
                 "type": "Const",
-                "value": 3
+                "value": 4
             }
         }
     },
