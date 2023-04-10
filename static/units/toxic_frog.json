@@ -1,0 +1,12 @@
+{
+    "name": "Toxic Frog",
+    "attack": 1,
+    "health": 1,
+    "description": "On deal damage:\nkill",
+    "houses": [
+        "Snakes"
+    ],
+    "active_statuses": {
+        "Poison": 1
+    }
+}
