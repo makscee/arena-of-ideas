@@ -156,7 +156,7 @@ impl SlotSystem {
     }
 
     fn get_shader(slot: usize, faction: &Faction, filled: bool, resources: &Resources) -> Shader {
-        resources
+        let mut shader = resources
             .options
             .shaders
             .slot
@@ -181,7 +181,17 @@ impl SlotSystem {
             .set_uniform(
                 "u_hovered",
                 ShaderUniform::Float(Self::is_slot_hovered(faction, slot, resources) as i32 as f32),
-            )
+            );
+        if *faction == Faction::Shop {
+            shader
+                .chain_after
+                .push(resources.options.shaders.slot_price.clone().set_uniform(
+                    "u_text",
+                    ShaderUniform::String((0, format!("{} g", ShopSystem::buy_price(resources)))),
+                ));
+        }
+
+        shader
     }
 
     pub fn set_hovered_slot(faction: Faction, slot: usize, resources: &mut Resources) {

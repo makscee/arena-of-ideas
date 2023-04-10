@@ -279,6 +279,9 @@ impl ShopSystem {
     }
 
     pub fn reroll_price(resources: &Resources) -> i32 {
+        if resources.ladder.current_ind() == 0 {
+            return 0;
+        }
         let vars = resources.team_states.get_vars(&Faction::Team);
         if vars.get_int(&VarName::FreeRerolls) > 0 {
             0
@@ -294,6 +297,9 @@ impl ShopSystem {
     }
 
     fn deduct_reroll_cost(resources: &mut Resources) {
+        if resources.ladder.current_ind() == 0 {
+            return;
+        }
         let vars = resources.team_states.get_vars_mut(&Faction::Team);
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
