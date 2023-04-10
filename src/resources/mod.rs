@@ -6,6 +6,7 @@ use super::*;
 mod ability;
 mod ability_name;
 mod ability_pool;
+mod battle_data;
 mod camera;
 mod condition;
 mod definitions;
@@ -36,6 +37,7 @@ mod visual_effect;
 pub use ability::*;
 pub use ability_name::*;
 pub use ability_pool::*;
+pub use battle_data::*;
 pub use camera::*;
 pub use condition::*;
 pub use definitions::*;
@@ -80,7 +82,8 @@ pub struct Resources {
     pub tape_player: TapePlayer,
     pub frame_shaders: Vec<Shader>,
 
-    pub shop: Shop,
+    pub shop_data: ShopData,
+    pub battle_data: BattleData,
     pub last_score: usize,
     pub total_score: usize,
     pub last_round: usize,
@@ -114,7 +117,8 @@ impl Resources {
             action_queue: default(),
             status_pool: default(),
             tape_player: default(),
-            shop: default(),
+            shop_data: default(),
+            battle_data: default(),
             frame_shaders: default(),
             input: default(),
             house_pool: default(),

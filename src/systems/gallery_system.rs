@@ -26,9 +26,9 @@ const ZOOM_MULTIPLIER: f32 = 1.5;
 // const UNIT_SPACING: f32 = 3.0;
 
 impl GallerySystem {
-    fn redraw_units(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        let heroes = self.current_heroes.len();
-        self.current_heroes[heroes - 1] = self.wanted_hero;
+    fn redraw_units(&mut self, _: &mut legion::World, _: &mut Resources) {
+        // let heroes = self.current_heroes.len();
+        // self.current_heroes[heroes - 1] = self.wanted_hero;
         // resources.cassette.render_node.clear();
         // UnitSystem::clear_factions(world, resources, &hashset! {Faction::Gallery});
         // resources.cassette.render_node.clear_key(CARD_ANIMATION_KEY);

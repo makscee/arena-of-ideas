@@ -46,9 +46,9 @@ impl geng::ui::Widget for PoolWidget<'_> {
             (cx.position.bottom_left() + cx.position.size() * vec2(0.2, 0.8)).map(|x| x as f32),
         );
         let camera = &self.resources.camera.camera;
-        let offset = camera.fov / self.resources.shop.pool.len() as f32;
+        let offset = camera.fov / self.resources.shop_data.pool.len() as f32;
         self.resources
-            .shop
+            .shop_data
             .pool
             .iter()
             .enumerate()

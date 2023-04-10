@@ -142,10 +142,10 @@ impl PackedUnit {
                         resources.input.mouse_pos;
                     Some(())
                 });
-                resources.shop.drag_entity = Some(entity);
+                resources.shop_data.drag_entity = Some(entity);
             }
             InputEvent::DragStop => {
-                resources.shop.drop_entity = Some(entity);
+                resources.shop_data.drop_entity = Some(entity);
             }
             _ => {}
         };

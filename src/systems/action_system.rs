@@ -62,7 +62,7 @@ impl ActionSystem {
                 Err(error) => {
                     resources
                         .logger
-                        .log(&format!("{}", error), &LogContext::ActionFail);
+                        .log(&error.to_string(), &LogContext::ActionFail);
                 }
             };
             true

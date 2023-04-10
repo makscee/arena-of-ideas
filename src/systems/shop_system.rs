@@ -11,8 +11,8 @@ pub struct ShopSystem {
 
 impl System for ShopSystem {
     fn post_update(&mut self, _: &mut legion::World, resources: &mut Resources) {
-        resources.shop.drag_entity = None;
-        resources.shop.drop_entity = None;
+        resources.shop_data.drag_entity = None;
+        resources.shop_data.drop_entity = None;
     }
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         self.handle_drag(world, resources);
@@ -133,7 +133,7 @@ impl ShopSystem {
         let team_faction = Faction::Team;
         SlotSystem::reset_hovered_slot(resources);
         self.drag_to_sell = false;
-        if let Some(dragged) = resources.shop.drag_entity {
+        if let Some(dragged) = resources.shop_data.drag_entity {
             if let Some(slot) =
                 SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos, resources)
             {
@@ -150,7 +150,7 @@ impl ShopSystem {
                 .faction
                 == team_faction;
         }
-        if let Some(dropped) = resources.shop.drop_entity {
+        if let Some(dropped) = resources.shop_data.drop_entity {
             if let Some(entry) = world.entry(dropped) {
                 let unit = entry.get_component::<UnitComponent>().unwrap();
                 match unit.faction {
@@ -159,7 +159,7 @@ impl ShopSystem {
                             > SHOP_POSITION.y
                         {
                             resources
-                                .shop
+                                .shop_data
                                 .pool
                                 .push(PackedUnit::pack(dropped, world, resources));
                             ShopSystem::change_g(resources, ShopSystem::sell_price(resources));
@@ -303,8 +303,8 @@ impl ShopSystem {
         }
     }
 
-    pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
-        Shop::load_pool(resources);
+    pub fn init_game(_: &mut legion::World, resources: &mut Resources) {
+        ShopData::load_pool(resources);
         resources.team_states.clear(Faction::Team);
         let vars = resources.team_states.get_vars_mut(&Faction::Team);
         vars.set_int(&VarName::G, 0);
@@ -315,7 +315,7 @@ impl ShopSystem {
     }
 
     fn create_reroll_btn(world: &mut legion::World, resources: &mut Resources) {
-        if let Some(entity) = resources.shop.refresh_btn {
+        if let Some(entity) = resources.shop_data.refresh_btn {
             ButtonSystem::remove_button(entity, world, resources);
         }
         let world_entity = WorldSystem::get_context(world).owner;
@@ -359,7 +359,7 @@ impl ShopSystem {
             }
             .into(),
         );
-        resources.shop.refresh_btn = Some(entity);
+        resources.shop_data.refresh_btn = Some(entity);
     }
 
     fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
@@ -385,7 +385,7 @@ impl ShopSystem {
             .get_team_state_mut(&Faction::Team)
             .vars
             .set_int(&VarName::FreeRerolls, resources.last_score as i32);
-        Shop::load_floor(resources, current_floor);
+        ShopData::load_floor(resources, current_floor);
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
@@ -400,7 +400,7 @@ impl ShopSystem {
             .into_iter()
             .for_each(|entity| {
                 if level != 0 {
-                    Shop::pack_unit_into_pool(entity, world, resources)
+                    ShopData::pack_unit_into_pool(entity, world, resources)
                 } else {
                     UnitSystem::delete_unit(entity, world, resources)
                 }
@@ -426,13 +426,13 @@ impl ShopSystem {
             }
         } else {
             for slot in 1..=slots {
-                let pool_len = Shop::pool_len(resources);
+                let pool_len = ShopData::pool_len(resources);
                 if pool_len == 0 {
                     return;
                 }
                 let mut rng = rand::thread_rng();
                 let ind = rng.gen_range(0..pool_len);
-                Shop::unpack_pool_unit(ind, slot, resources, world);
+                ShopData::unpack_pool_unit(ind, slot, resources, world);
             }
         }
     }

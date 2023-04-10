@@ -2,10 +2,6 @@ use super::*;
 
 pub struct VfxSystem {}
 
-pub const TEAM_NAMES_KEY: &str = "team_names";
-
-const BATTLE_INTRO_DURATION: Time = 0.6;
-
 /// Logic
 impl VfxSystem {
     pub fn translate_animated(
@@ -168,70 +164,7 @@ impl VfxSystem {
         )
     }
 
-    pub fn vfx_battle_team_names_animation(resources: &Resources) -> Vec<VisualEffect> {
-        let light = resources
-            .team_states
-            .get_team_state(&Faction::Light)
-            .name
-            .clone();
-        let dark = resources
-            .team_states
-            .get_team_state(&Faction::Dark)
-            .name
-            .clone();
-        let mut effects: Vec<VisualEffect> = default();
-        let from = &resources.options.shaders.team_name_intro;
-        let to = &resources.options.shaders.team_name;
-        let mut from_vars = from.parameters.uniforms.clone();
-        let to_vars = to.parameters.uniforms.clone();
-        from_vars.merge_mut(&to_vars, false);
-        effects.push(VisualEffect::new(
-            BATTLE_INTRO_DURATION,
-            VisualEffectType::ShaderAnimation {
-                shader: from
-                    .clone()
-                    .set_uniform("u_text", ShaderUniform::String((2, dark.clone()))),
-                from: from_vars.clone(),
-                to: to_vars.clone(),
-                easing: EasingType::QuartInOut,
-            },
-            0,
-        ));
-        let key = &VarName::Position.convert_to_uniform();
-        let mut from_vars = from.parameters.uniforms.clone();
-        let mut to_vars = to.parameters.uniforms.clone();
-        to_vars.insert("u_align".to_string(), ShaderUniform::Float(-1.0));
-        from_vars.merge_mut(&to_vars, false);
-        from_vars.0.insert(
-            key.clone(),
-            ShaderUniform::Vec2(
-                from_vars.try_get_vec2(key).unwrap() * vec2(-1.0, 1.0) + vec2(0.0, -2.0),
-            ),
-        );
-        to_vars.0.insert(
-            key.clone(),
-            ShaderUniform::Vec2(to_vars.try_get_vec2(key).unwrap() * vec2(-1.0, 1.0)),
-        );
-        effects.push(VisualEffect::new(
-            BATTLE_INTRO_DURATION,
-            VisualEffectType::ShaderAnimation {
-                shader: from
-                    .clone()
-                    .set_uniform("u_align", ShaderUniform::Float(-1.0))
-                    .set_uniform("u_text", ShaderUniform::String((2, light.clone()))),
-                from: from_vars,
-                to: to_vars,
-                easing: EasingType::QuartInOut,
-            },
-            0,
-        ));
-        effects
-    }
-
-    pub fn vfx_battle_team_names(resources: &Resources) -> Vec<VisualEffect> {
-        if resources.transition_state == GameState::Shop {
-            return default();
-        }
+    pub fn vfx_battle_team_names(resources: &Resources) -> (Shader, Shader) {
         let light = resources
             .team_states
             .get_team_state(&Faction::Light)
@@ -260,21 +193,6 @@ impl VfxSystem {
                 ShaderUniform::Vec2(light_pos),
             )
             .set_uniform("u_text", ShaderUniform::String((2, light)));
-        vec![
-            VisualEffect::new(
-                0.0,
-                VisualEffectType::ShaderConst {
-                    shader: dark_shader,
-                },
-                0,
-            ),
-            VisualEffect::new(
-                0.0,
-                VisualEffectType::ShaderConst {
-                    shader: light_shader,
-                },
-                0,
-            ),
-        ]
+        (light_shader, dark_shader)
     }
 }

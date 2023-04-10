@@ -32,7 +32,7 @@ impl SaveSystem {
                 save.team.unpack(&Faction::Team, world, resources);
                 resources.ladder.set(save.floor);
                 for level in 0..save.floor {
-                    Shop::load_floor(resources, level);
+                    ShopData::load_floor(resources, level);
                 }
                 ShopSystem::init_floor(world, resources, false);
                 debug!("Loaded {}", save.team);

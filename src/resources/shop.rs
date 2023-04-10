@@ -5,7 +5,7 @@ use super::*;
 pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 
 #[derive(Default)]
-pub struct Shop {
+pub struct ShopData {
     pub pool: Vec<PackedUnit>,
     pub floor_extensions: Vec<Vec<PackedUnit>>,
     pub drop_entity: Option<legion::Entity>,
@@ -14,18 +14,18 @@ pub struct Shop {
     pub load_new_hero: bool,
 }
 
-impl Shop {
+impl ShopData {
     pub fn load_pool(resources: &mut Resources) {
-        resources.shop.pool.clear();
+        resources.shop_data.pool.clear();
         let mut sorted_by_power = VecDeque::from_iter(resources.hero_pool.all_sorted());
         let heroes_per_extension = (sorted_by_power.len() as f32
             / (resources.ladder.count() as f32 - 3.0))
             .ceil() as usize;
         let mut cur_level = 0;
-        resources.shop.floor_extensions = vec![default()];
+        resources.shop_data.floor_extensions = vec![default()];
         while let Some(unit) = sorted_by_power.pop_front() {
             if resources
-                .shop
+                .shop_data
                 .floor_extensions
                 .get(cur_level)
                 .unwrap()
@@ -34,25 +34,25 @@ impl Shop {
                     + (cur_level == 0) as usize * resources.options.initial_shop_fill
             {
                 cur_level += 1;
-                resources.shop.floor_extensions.push(default());
+                resources.shop_data.floor_extensions.push(default());
             }
             resources
-                .shop
+                .shop_data
                 .floor_extensions
                 .get_mut(cur_level)
                 .unwrap()
                 .push(unit);
         }
         resources
-            .shop
+            .shop_data
             .floor_extensions
             .iter()
             .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join(", ")));
     }
 
     pub fn load_floor(resources: &mut Resources, floor: usize) {
-        if let Some(new_units) = resources.shop.floor_extensions.get(floor) {
-            resources.shop.pool.extend(
+        if let Some(new_units) = resources.shop_data.floor_extensions.get(floor) {
+            resources.shop_data.pool.extend(
                 new_units
                     .iter()
                     .map(|unit| {
@@ -66,7 +66,7 @@ impl Shop {
     }
 
     pub fn pool_len(resources: &Resources) -> usize {
-        resources.shop.pool.len()
+        resources.shop_data.pool.len()
     }
 
     pub fn unpack_pool_unit(
@@ -75,7 +75,7 @@ impl Shop {
         resources: &mut Resources,
         world: &mut legion::World,
     ) -> legion::Entity {
-        let unit = resources.shop.pool.remove(ind);
+        let unit = resources.shop_data.pool.remove(ind);
         unit.unpack(world, resources, slot, Faction::Shop, None)
     }
 
@@ -86,6 +86,6 @@ impl Shop {
     ) {
         let unit = PackedUnit::pack(entity, world, resources);
         UnitSystem::delete_unit(entity, world, resources);
-        resources.shop.pool.push(unit);
+        resources.shop_data.pool.push(unit);
     }
 }

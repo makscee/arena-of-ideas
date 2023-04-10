@@ -56,7 +56,7 @@ impl Game {
         resources.team_states = default();
         resources.tape_player.clear();
         resources.total_score = default();
-        Shop::load_pool(resources);
+        ShopData::load_pool(resources);
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {

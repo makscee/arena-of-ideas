@@ -13,8 +13,8 @@ impl BattleSystem {
         resources: &mut Resources,
         tape: &mut Option<Tape>,
     ) -> usize {
-        Self::add_intro(resources, tape);
         Ladder::track_team(world, resources);
+        Self::create_tape_entities(world, resources, tape);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
             None => None,
@@ -27,26 +27,79 @@ impl BattleSystem {
         }
         let mut ticks = 0;
         while Self::tick(world, resources, tape) && ticks < 1000 {
+            Self::update_score(world, resources, tape);
             ticks += 1;
         }
-
+        Self::clear_tape_entities(world, resources, tape);
         Ladder::get_score(world, resources)
     }
 
-    pub fn add_intro(resources: &Resources, tape: &mut Option<Tape>) {
-        if let Some(tape) = tape.as_mut() {
-            let mut node = Node::default();
-            node.add_effects_by_key(
-                TEAM_NAMES_KEY.to_string(),
-                VfxSystem::vfx_battle_team_names_animation(resources),
-            );
-            let mut cluster = NodeCluster::new(node.lock(NodeLockType::Empty));
-            cluster.set_duration(1.0);
-            tape.push(cluster);
-            tape.persistent_node.add_effects_by_key(
-                TEAM_NAMES_KEY.to_string(),
-                VfxSystem::vfx_battle_team_names(resources),
-            );
+    fn create_tape_entities(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        tape: &mut Option<Tape>,
+    ) {
+        if tape.is_none() {
+            return;
+        }
+
+        let entity = Self::push_tape_shader_entity(
+            resources.options.shaders.battle_score_indicator.clone(),
+            world,
+        );
+        resources.battle_data.score_entity = Some(entity);
+        Self::update_score(world, resources, tape);
+
+        let (left, right) = VfxSystem::vfx_battle_team_names(resources);
+        let names = (
+            Self::push_tape_shader_entity(left, world),
+            Self::push_tape_shader_entity(right, world),
+        );
+        resources.battle_data.team_names_entitities = Some(names);
+    }
+
+    fn push_tape_shader_entity(shader: Shader, world: &mut legion::World) -> legion::Entity {
+        let entity = world.push((shader,));
+        world
+            .entry(entity)
+            .unwrap()
+            .add_component(TapeEntityComponent { entity });
+        entity
+    }
+
+    fn clear_tape_entities(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        tape: &mut Option<Tape>,
+    ) {
+        if tape.is_none() {
+            return;
+        }
+        if let Some(entity) = resources.battle_data.score_entity {
+            world.remove(entity);
+        }
+        if let Some((left, right)) = resources.battle_data.team_names_entitities {
+            world.remove(left);
+            world.remove(right);
+        }
+    }
+
+    fn update_score(world: &mut legion::World, resources: &Resources, tape: &mut Option<Tape>) {
+        if tape.is_none() {
+            return;
+        }
+        let score = Ladder::get_score_units(world, resources);
+        if let Some(mut entry) = resources
+            .battle_data
+            .score_entity
+            .and_then(|x| world.entry(x))
+        {
+            if let Ok(shader) = entry.get_component_mut::<Shader>() {
+                shader.set_uniform_ref(
+                    "u_text",
+                    ShaderUniform::String((1, format!("{}/{}", score.0, score.1))),
+                );
+            }
         }
     }
 

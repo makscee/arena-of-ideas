@@ -47,6 +47,20 @@ impl Ladder {
         score
     }
 
+    pub fn get_score_units(world: &legion::World, resources: &Resources) -> (usize, usize) {
+        let units = &resources.ladder.tracked_units;
+        let total = units[0].len();
+        let killed = units
+            .iter()
+            .flatten()
+            .map(|entity| match UnitSystem::get_corpse(*entity, world) {
+                Some(_) => 1,
+                None => 0,
+            })
+            .sum::<usize>();
+        (killed, total)
+    }
+
     pub fn current_ind(&self) -> usize {
         self.current
     }

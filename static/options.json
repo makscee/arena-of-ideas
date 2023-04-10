@@ -5,61 +5,13 @@
     "rewind_add_speed": 10.0,
     "start_floor": 0,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "replications": 1,
             "units": [
                 {
-                    "name": "Shikari",
-                    "description": "Battle Start:\nShoot random enemy\n5 times",
-                    "attack": 2,
-                    "health": 1,
-                    "houses": [
-                        "Archers"
-                    ],
-                    "active_statuses": {
-                        "Shield": 1,
-                        "Empower": 1,
-                        "Immortality": 1
-                    },
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "Repeat",
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Shoot",
-                                "target": {
-                                    "type": "RandomUnit",
-                                    "faction": {
-                                        "type": "Opposite",
-                                        "faction": {
-                                            "type": "Owner"
-                                        }
-                                    }
-                                }
-                            },
-                            "count": {
-                                "type": "Const",
-                                "value": 5
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
-                        "parameters": {
-                            "instances": 1500,
-                            "uniforms": {
-                                "u_start_color": "#FFD700",
-                                "u_end_color": "#3c8d21ff",
-                                "u_size": 0.3,
-                                "u_size_over_t": -0.3,
-                                "u_velocity_over_t": 0.3,
-                                "u_trail_count": 2,
-                                "u_lifetime": 1.2
-                            }
-                        }
-                    }
+                    "attack": 10,
+                    "health": 100
                 }
             ]
         },
@@ -67,7 +19,7 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 2,
+            "replications": 5,
             "units": [
                 {
                     "name": "Big Bug",
@@ -492,7 +444,16 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_color": "#9266CC"
+                    "u_color": "#666fcc",
+                    "u_offset": [
+                        0.0,
+                        5.0
+                    ],
+                    "u_outline_color": "#404040",
+                    "u_mid_border_color": "#ffffff",
+                    "u_mid_border": 0.05,
+                    "u_size": 1.5,
+                    "u_outline_fade": 1.0
                 }
             },
             "layer": "Background",

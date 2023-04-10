@@ -61,6 +61,7 @@ impl ShaderSystem {
                 .filter(
                     !component::<UnitComponent>()
                         & !component::<CorpseComponent>()
+                        & !component::<TapeEntityComponent>()
                         & component::<Shader>(),
                 )
                 .iter(world)

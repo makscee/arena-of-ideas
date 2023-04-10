@@ -360,27 +360,38 @@ impl Node {
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default(),
         );
-        match lock_type {
-            NodeLockType::Full { world, resources } => {
-                let factions = HashSet::from_iter(Faction::all_iter());
-                ContextSystem::refresh_factions(&factions, world, resources);
-                let units =
-                    UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
-                SlotSystem::draw_slots_to_node(&mut self, &factions, &units, resources);
-            }
-            NodeLockType::Factions {
-                factions,
+        let lock_type = match lock_type {
+            NodeLockType::Full { world, resources } => NodeLockType::Factions {
+                factions: HashSet::from_iter(Faction::all_iter()),
                 world,
                 resources,
+            },
+            _ => lock_type,
+        };
+        match lock_type {
+            NodeLockType::Factions {
+                world,
+                resources,
+                factions,
             } => {
                 ContextSystem::refresh_factions(&factions, world, resources);
                 let units =
                     UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
                 SlotSystem::draw_slots_to_node(&mut self, &factions, &units, resources);
+                Self::draw_all_tape_entities_to_node(&mut self, world);
             }
             NodeLockType::Empty => {}
+            _ => panic!("Wrong lock type"),
         }
         self
+    }
+
+    fn draw_all_tape_entities_to_node(node: &mut Node, world: &legion::World) {
+        <(&TapeEntityComponent, &Shader)>::query()
+            .iter(world)
+            .for_each(|(entity, shader)| {
+                node.add_entity_shader(entity.entity, shader.clone());
+            })
     }
 }
 
