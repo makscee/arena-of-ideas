@@ -278,7 +278,7 @@ impl EffectWrapped {
                         resources,
                         &text,
                         resources.options.colors.damage_text,
-                        resources.options.colors.text_remove,
+                        resources.options.colors.deletion,
                         context.target,
                         1,
                         0.0,

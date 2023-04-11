@@ -60,6 +60,7 @@ pub struct Shaders {
     pub battle_score_indicator: Shader,
     pub battle_over_panel_bg: Shader,
     pub battle_over_panel_title: Shader,
+    pub battle_over_panel_star: Shader,
 }
 
 #[derive(Deserialize, Debug)]
@@ -86,10 +87,11 @@ pub struct Colors {
     pub btn_active: Rgba<f32>,
     pub btn_hovered: Rgba<f32>,
     pub damage_text: Rgba<f32>,
-    pub text_add: Rgba<f32>,
-    pub text_remove: Rgba<f32>,
+    pub addition: Rgba<f32>,
+    pub deletion: Rgba<f32>,
     pub victory: Rgba<f32>,
     pub defeat: Rgba<f32>,
+    pub star: Rgba<f32>,
 }
 
 #[derive(Deserialize, Debug)]

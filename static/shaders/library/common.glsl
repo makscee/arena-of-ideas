@@ -32,6 +32,7 @@ float scale;
 uniform float u_size = 1;
 float size;
 uniform float u_ui = 0;
+uniform float u_aspect_ratio;
 
 /// Setup
 vec2 get_card_uv(vec2 uv) {

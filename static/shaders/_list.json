@@ -1,4 +1,5 @@
 [
+    "shaders/vfx/star.glsl",
     "shaders/vfx/rectangle.glsl",
     "shaders/system/tape_indicator.glsl",
     "shaders/system/unit.glsl",

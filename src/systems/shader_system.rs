@@ -86,13 +86,19 @@ impl ShaderSystem {
             .sorted_by_key(|x| (x.layer.index(), x.order, x.ts))
             .collect_vec();
 
+        let game_time = match resources.tape_player.mode {
+            TapePlayMode::Play => resources.tape_player.head,
+            TapePlayMode::Stop { .. } => resources.global_time,
+        };
+        let aspect_ratio = {
+            let size = resources.camera.framebuffer_size;
+            size.x / size.y
+        };
         for shader in shaders {
             let uniforms = ugli::uniforms!(
-                u_game_time: match resources.tape_player.mode {
-                    TapePlayMode::Play => resources.tape_player.head,
-                    TapePlayMode::Stop { .. } => resources.global_time
-                },
+                u_game_time: game_time,
                 u_global_time: resources.global_time,
+                u_aspect_ratio: aspect_ratio,
             );
             Self::draw_shader(shader, framebuffer, resources, uniforms);
         }

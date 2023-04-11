@@ -263,10 +263,10 @@ impl StatusPool {
                 let (text, color) = if charges_delta > 0 {
                     show = true;
                     Self::add_status_charge(entity, &status_name, resources, world);
-                    ("+", resources.options.colors.text_add)
+                    ("+", resources.options.colors.addition)
                 } else {
                     show = Self::remove_status_charge(entity, &status_name, resources, world);
-                    ("-", resources.options.colors.text_remove)
+                    ("-", resources.options.colors.deletion)
                 };
                 if show {
                     if let Some(node) = node.as_mut() {

@@ -82,6 +82,11 @@ impl ShaderUniforms {
         self
     }
 
+    pub fn insert_float_ref(&mut self, key: &str, value: f32) -> &mut Self {
+        self.insert_ref(key, ShaderUniform::Float(value));
+        self
+    }
+
     pub fn insert_color_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Color(value));
         self
@@ -94,6 +99,11 @@ impl ShaderUniforms {
 
     pub fn insert_vec(mut self, key: &str, value: vec2<f32>) -> Self {
         self.insert_vec_ref(key, value);
+        self
+    }
+
+    pub fn insert_float(mut self, key: &str, value: f32) -> Self {
+        self.insert_float_ref(key, value);
         self
     }
 
