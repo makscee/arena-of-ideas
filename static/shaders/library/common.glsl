@@ -31,6 +31,7 @@ uniform float u_scale = 1;
 float scale;
 uniform float u_size = 1;
 float size;
+uniform float u_ui = 0;
 
 /// Setup
 vec2 get_card_uv(vec2 uv) {
@@ -98,11 +99,12 @@ vec2 get_uv(vec2 a_pos) {
 vec4 get_gl_position(vec2 uv) {
     vec2 pos = uv * box * size + offset;
     pos = get_card_pos(pos);
-    pos *= zoom;
-    pos *= scale;
+    pos *= zoom * scale;
     pos += position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
-    return vec4(p_pos.xy, 0.0, p_pos.z);
+    vec4 cam_pos = vec4(p_pos.xy, 0.0, p_pos.z);
+    vec4 ui_pos = vec4(pos, 0.0, 1.0);
+    return mix(cam_pos, ui_pos, u_ui);
 }
 
 const float TEXT_AA = 0.01;

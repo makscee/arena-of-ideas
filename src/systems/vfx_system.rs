@@ -47,9 +47,7 @@ impl VfxSystem {
             VisualEffectType::ShaderAnimation {
                 shader: Self::get_show_text_shader(resources, text, font, color, outline_color)
                     .set_uniform("u_position", ShaderUniform::Vec2(position)),
-                from: default(),
-                to: default(),
-                easing: EasingType::QuartOut,
+                animation: AnimatedShaderUniforms::empty(EasingType::QuartOut),
             },
             0,
         )
@@ -70,9 +68,7 @@ impl VfxSystem {
             VisualEffectType::EntityExtraShaderAnimation {
                 entity: parent,
                 shader: Self::get_show_text_shader(resources, text, font, color, outline_color),
-                from: default(),
-                to: default(),
-                easing: EasingType::QuartOut,
+                animation: AnimatedShaderUniforms::empty(EasingType::QuartOut),
             },
             0,
         )
@@ -112,9 +108,7 @@ impl VfxSystem {
                     .strike
                     .clone()
                     .set_uniform("u_position", ShaderUniform::Vec2(position)),
-                from: default(),
-                to: default(),
-                easing: EasingType::Linear,
+                animation: default(),
             },
             0,
         )
@@ -137,9 +131,7 @@ impl VfxSystem {
                     .curve
                     .clone()
                     .set_uniform("u_color", ShaderUniform::Color(color)),
-                from: default(),
-                to: default(),
-                easing: EasingType::Linear,
+                animation: default(),
             },
             0,
         )
@@ -156,9 +148,11 @@ impl VfxSystem {
             duration,
             VisualEffectType::EntityShaderAnimation {
                 entity,
-                from: hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
-                to: hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
-                easing,
+                animation: AnimatedShaderUniforms::from_to(
+                    hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),
+                    hashmap! {"u_position" => ShaderUniform::Vec2(to)}.into(),
+                    easing,
+                ),
             },
             0,
         )

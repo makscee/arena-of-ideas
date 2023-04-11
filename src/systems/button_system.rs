@@ -55,18 +55,13 @@ impl ButtonSystem {
     // }
 
     pub fn change_icon_color(entity: legion::Entity, world: &mut legion::World, color: Rgba<f32>) {
-        Self::change_uniform(
-            entity,
-            world,
-            "u_icon_color".to_string(),
-            ShaderUniform::Color(color),
-        );
+        Self::change_uniform(entity, world, "u_icon_color", ShaderUniform::Color(color));
     }
 
     pub fn change_uniform(
         entity: legion::Entity,
         world: &mut legion::World,
-        key: String,
+        key: &str,
         value: ShaderUniform,
     ) {
         let mut entry = world.entry(entity).unwrap();
@@ -75,7 +70,7 @@ impl ButtonSystem {
             .unwrap()
             .parameters
             .uniforms;
-        uniforms.insert(key, value);
+        uniforms.insert_ref(key, value);
     }
 
     pub fn remove_button(

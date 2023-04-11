@@ -52,7 +52,7 @@ void main() {
     init_fields();
     vec4 color = vec4(0);
     float sdf = get_text_sdf(uv, u_text);
-    sdf = mix(sdf, min(u_text_inside - u_mid_border, sdf + fbm(uv + vec2(u_game_time)) * u_outline_fbm), float(sdf < u_text_inside - u_mid_border));
+    sdf = mix(sdf, min(u_text_inside - u_mid_border, sdf + fbm(uv + vec2(u_game_time, 0)) * u_outline_fbm), float(sdf < u_text_inside - u_mid_border));
     vec4 text_color = get_text_color(sdf, u_color, u_outline_color, u_text_border, u_text_inside);
     float mid_border = smoothstep(u_mid_border, 0., abs(sdf - u_text_inside));
     text_color = mix(text_color, u_mid_border_color, mid_border);

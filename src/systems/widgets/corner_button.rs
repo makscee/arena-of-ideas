@@ -24,7 +24,7 @@ impl<'a> CornerButtonWidget<'a> {
         }
     }
 
-    pub fn place(mut self, corner: vec2<f64>) -> Box<dyn Widget + 'a> {
+    pub fn place(mut self, corner: vec2<f64>) -> Box<dyn geng::ui::Widget + 'a> {
         self.corner = corner.map(|x| x as f32);
         self.flex_align(vec2(None, None), corner).boxed()
     }
@@ -56,8 +56,8 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
         struct Vertex {
             a_pos: vec2<f32>,
         }
-        let button_color = self.resources.options.colors.corner_button_color;
-        let icon_color = self.resources.options.colors.corner_button_icon_color;
+        let button_color = self.resources.options.colors.corner_button;
+        let icon_color = self.resources.options.colors.corner_button_icon;
         let scale = 1.0
             + match self.sense.hovered_time {
                 Some(value) => (0.4 - value * value * 0.5).clamp_min(0.2) as f32,

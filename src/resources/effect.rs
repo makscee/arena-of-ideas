@@ -278,7 +278,7 @@ impl EffectWrapped {
                         resources,
                         &text,
                         resources.options.colors.damage_text,
-                        resources.options.colors.text_remove_color,
+                        resources.options.colors.text_remove,
                         context.target,
                         1,
                         0.0,
@@ -295,15 +295,17 @@ impl EffectWrapped {
                             1.0,
                             VisualEffectType::EntityShaderAnimation {
                                 entity: context.target,
-                                from: hashmap! {
-                                    "u_damage_taken" => ShaderUniform::Float(1.0),
-                                }
-                                .into(),
-                                to: hashmap! {
-                                    "u_damage_taken" => ShaderUniform::Float(0.0),
-                                }
-                                .into(),
-                                easing: EasingType::Linear,
+                                animation: AnimatedShaderUniforms::from_to(
+                                    hashmap! {
+                                        "u_damage_taken" => ShaderUniform::Float(1.0),
+                                    }
+                                    .into(),
+                                    hashmap! {
+                                        "u_damage_taken" => ShaderUniform::Float(0.0),
+                                    }
+                                    .into(),
+                                    EasingType::Linear,
+                                ),
                             },
                             0,
                         ));

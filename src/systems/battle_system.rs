@@ -1,3 +1,5 @@
+use crate::resources::Widget;
+
 use super::*;
 use geng::ui::*;
 
@@ -31,7 +33,9 @@ impl BattleSystem {
             ticks += 1;
         }
         Self::clear_tape_entities(world, resources, tape);
-        Ladder::get_score(world, resources)
+        let score = Ladder::get_score(world, resources);
+        Self::add_outro(score, resources, tape);
+        score
     }
 
     fn create_tape_entities(
@@ -100,6 +104,13 @@ impl BattleSystem {
                     ShaderUniform::String((1, format!("{}/{}", score.0, score.1))),
                 );
             }
+        }
+    }
+
+    fn add_outro(score: usize, resources: &Resources, tape: &mut Option<Tape>) {
+        if let Some(tape) = tape {
+            let node = Widget::BattleOverPanel { score }.generate_node(&resources.options);
+            tape.push(NodeCluster::new(node.lock(NodeLockType::Empty)));
         }
     }
 

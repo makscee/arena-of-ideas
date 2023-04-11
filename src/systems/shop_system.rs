@@ -70,7 +70,7 @@ impl System for ShopSystem {
         let text_color = *resources
             .options
             .colors
-            .faction_colors
+            .factions
             .get(&Faction::Shop)
             .unwrap();
         let text = format!("{} g", Self::get_g(resources).to_string());
@@ -275,7 +275,8 @@ impl ShopSystem {
         resources
             .team_states
             .get_vars(&Faction::Team)
-            .get_int(&VarName::BuyPrice)
+            .try_get_int(&VarName::BuyPrice)
+            .unwrap_or_default()
     }
 
     pub fn reroll_price(resources: &Resources) -> i32 {

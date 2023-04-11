@@ -6,6 +6,7 @@ use super::*;
 mod ability;
 mod ability_name;
 mod ability_pool;
+mod animated_shader_uniforms;
 mod battle_data;
 mod camera;
 mod condition;
@@ -25,6 +26,7 @@ mod ladder;
 mod options;
 mod packed_unit;
 mod shader_programs;
+mod shader_uniforms;
 mod shop;
 mod status;
 mod tape;
@@ -33,10 +35,12 @@ mod team;
 mod team_states;
 mod trigger;
 mod visual_effect;
+mod widget;
 
 pub use ability::*;
 pub use ability_name::*;
 pub use ability_pool::*;
+pub use animated_shader_uniforms::*;
 pub use battle_data::*;
 pub use camera::*;
 pub use condition::*;
@@ -56,6 +60,7 @@ pub use ladder::*;
 pub use options::*;
 pub use packed_unit::*;
 pub use shader_programs::*;
+pub use shader_uniforms::*;
 pub use shop::*;
 pub use status::*;
 pub use tape::*;
@@ -64,6 +69,7 @@ pub use team::*;
 pub use team_states::*;
 pub use trigger::*;
 pub use visual_effect::*;
+pub use widget::*;
 
 pub struct Resources {
     pub logger: Logger,

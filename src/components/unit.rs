@@ -28,7 +28,7 @@ impl VarsProvider for UnitComponent {
                 *resources
                     .options
                     .colors
-                    .faction_colors
+                    .factions
                     .get(&self.faction)
                     .unwrap(),
             ),

@@ -1,10 +1,13 @@
 use super::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct VisualEffect {
     pub duration: Time,
+    #[serde(default)]
     pub delay: Time,
+    #[serde(flatten)]
     pub r#type: VisualEffectType,
+    #[serde(default)]
     pub order: i32,
 }
 
@@ -23,22 +26,19 @@ impl VisualEffect {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type")]
 pub enum VisualEffectType {
     ShaderAnimation {
         shader: Shader,
-        from: ShaderUniforms,
-        to: ShaderUniforms,
-        easing: EasingType,
+        animation: AnimatedShaderUniforms,
     },
     ShaderConst {
         shader: Shader,
     },
     EntityShaderAnimation {
         entity: legion::Entity,
-        from: ShaderUniforms,
-        to: ShaderUniforms,
-        easing: EasingType,
+        animation: AnimatedShaderUniforms,
     },
     EntityShaderConst {
         entity: legion::Entity,
@@ -48,17 +48,13 @@ pub enum VisualEffectType {
     EntityExtraShaderAnimation {
         entity: legion::Entity,
         shader: Shader,
-        from: ShaderUniforms,
-        to: ShaderUniforms,
-        easing: EasingType,
+        animation: AnimatedShaderUniforms,
     },
     EntityPairExtraShaderAnimation {
         entity_from: legion::Entity,
         entity_to: legion::Entity,
         shader: Shader,
-        from: ShaderUniforms,
-        to: ShaderUniforms,
-        easing: EasingType,
+        animation: AnimatedShaderUniforms,
     },
     /// Draw extra shader using uniforms of existing Shader of Entity
     EntityExtraShaderConst {
@@ -70,75 +66,43 @@ pub enum VisualEffectType {
 impl VisualEffectType {
     pub fn process(
         &self,
-        t: f32,
+        t: Time,
         entity_shaders: &mut HashMap<legion::Entity, Shader>,
     ) -> Option<Shader> {
         match self {
-            VisualEffectType::ShaderAnimation {
-                shader,
-                from,
-                to,
-                easing,
-            } => {
-                let mut shader = shader.clone();
-                shader.parameters = ShaderParameters {
-                    uniforms: shader.parameters.uniforms.merge(&ShaderUniforms::mix(
-                        from,
-                        to,
-                        easing.f(t),
-                    )),
-                    ..shader.parameters
-                };
-                Some(shader)
+            VisualEffectType::ShaderAnimation { shader, animation } => {
+                Some(shader.clone().merge_uniforms(&animation.get_mixed(t), true))
             }
-            VisualEffectType::EntityShaderAnimation {
-                entity,
-                from,
-                to,
-                easing,
-            } => {
+            VisualEffectType::EntityShaderAnimation { entity, animation } => {
                 if let Some(shader) = entity_shaders.get_mut(entity) {
-                    shader.parameters.uniforms = shader
-                        .parameters
-                        .uniforms
-                        .merge(&ShaderUniforms::mix(from, to, easing.f(t)));
+                    shader.merge_uniforms_ref(&animation.get_mixed(t), true);
                 }
                 None
             }
             VisualEffectType::EntityShaderConst { entity, uniforms } => {
                 if let Some(shader) = entity_shaders.get_mut(entity) {
-                    shader.parameters.uniforms = shader.parameters.uniforms.merge(&uniforms);
+                    shader.merge_uniforms_ref(&uniforms, true);
                 }
                 None
             }
             VisualEffectType::EntityExtraShaderAnimation {
                 entity,
                 shader,
-                from,
-                to,
-                easing,
+                animation,
             } => match entity_shaders.get(entity) {
-                Some(entity_shader) => {
-                    let mut shader = shader.clone();
-                    shader.parameters = ShaderParameters {
-                        uniforms: entity_shader
-                            .parameters
-                            .uniforms
-                            .merge(&shader.parameters.uniforms)
-                            .merge(&ShaderUniforms::mix(from, to, easing.f(t))),
-                        ..shader.parameters
-                    };
-                    Some(shader)
-                }
+                Some(entity_shader) => Some(
+                    shader
+                        .clone()
+                        .merge_uniforms(&entity_shader.parameters.uniforms, false)
+                        .merge_uniforms(&animation.get_mixed(t), true),
+                ),
                 _ => None,
             },
             VisualEffectType::EntityPairExtraShaderAnimation {
-                shader,
-                from,
-                to,
-                easing,
                 entity_from,
                 entity_to,
+                shader,
+                animation,
             } => {
                 if let Some(from_shader) = entity_shaders.get(entity_from) {
                     if let Some(to_shader) = entity_shaders.get(entity_to) {
@@ -147,9 +111,9 @@ impl VisualEffectType {
                             .parameters
                             .uniforms
                             .merge(&shader.parameters.uniforms)
-                            .merge(&ShaderUniforms::mix(from, to, easing.f(t)));
-                        uniforms.insert(
-                            "u_from".to_string(),
+                            .merge(&animation.get_mixed(t));
+                        uniforms.insert_ref(
+                            "u_from",
                             from_shader
                                 .parameters
                                 .uniforms
@@ -157,8 +121,8 @@ impl VisualEffectType {
                                 .cloned()
                                 .unwrap(),
                         );
-                        uniforms.insert(
-                            "u_to".to_string(),
+                        uniforms.insert_ref(
+                            "u_to",
                             to_shader
                                 .parameters
                                 .uniforms
@@ -166,10 +130,7 @@ impl VisualEffectType {
                                 .cloned()
                                 .unwrap(),
                         );
-                        shader.parameters = ShaderParameters {
-                            uniforms,
-                            ..shader.parameters
-                        };
+                        shader.parameters.uniforms = uniforms;
                         return Some(shader);
                     }
                 }
@@ -177,44 +138,15 @@ impl VisualEffectType {
             }
             VisualEffectType::EntityExtraShaderConst { entity, shader } => {
                 match entity_shaders.get(entity) {
-                    Some(entity_shader) => {
-                        let mut shader = shader.clone();
-                        shader.parameters = ShaderParameters {
-                            uniforms: entity_shader
-                                .parameters
-                                .uniforms
-                                .merge(&shader.parameters.uniforms),
-                            ..shader.parameters
-                        };
-                        Some(shader)
-                    }
+                    Some(entity_shader) => Some(
+                        shader
+                            .clone()
+                            .merge_uniforms(&entity_shader.parameters.uniforms, false),
+                    ),
                     _ => None,
                 }
             }
             VisualEffectType::ShaderConst { shader } => Some(shader.clone()),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum EasingType {
-    Linear,
-    QuartOut,
-    QuartIn,
-    QuartInOut,
-    CubicIn,
-    BackIn,
-}
-
-impl EasingType {
-    pub fn f(&self, t: f32) -> f32 {
-        match self {
-            EasingType::Linear => tween::Tweener::linear(0.0, 1.0, 1.0).move_to(t),
-            EasingType::QuartOut => tween::Tweener::quart_out(0.0, 1.0, 1.0).move_to(t),
-            EasingType::QuartIn => tween::Tweener::quart_in(0.0, 1.0, 1.0).move_to(t),
-            EasingType::QuartInOut => tween::Tweener::quart_in_out(0.0, 1.0, 1.0).move_to(t),
-            EasingType::CubicIn => tween::Tweener::cubic_in(0.0, 1.0, 1.0).move_to(t),
-            EasingType::BackIn => tween::Tweener::back_in(0.0, 1.0, 1.0).move_to(t),
         }
     }
 }

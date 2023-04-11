@@ -106,6 +106,7 @@ impl ShaderSystem {
     ) where
         U: ugli::Uniforms,
     {
+        // todo: measure top avg execution time
         let chain = Self::flatten_shader_chain(shader);
         for shader in chain.into_iter() {
             let texts = shader

@@ -16,7 +16,7 @@ impl<'a> PoolWidget<'a> {
             height,
         }
     }
-    pub fn place(self) -> Box<dyn Widget + 'a> {
+    pub fn place(self) -> Box<dyn geng::ui::Widget + 'a> {
         self.flex_align(vec2(Some(1.0), None), vec2(0.0, 1.0))
             .fixed_size(vec2(0.0, 400.0))
             .boxed()

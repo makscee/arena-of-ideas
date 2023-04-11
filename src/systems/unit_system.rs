@@ -277,12 +277,12 @@ impl UnitSystem {
                 .abs();
                 card_value = card_value.max(hover_value);
 
-                shader.parameters.uniforms.insert(
-                    VarName::Card.convert_to_uniform(),
+                shader.parameters.uniforms.insert_ref(
+                    &VarName::Card.convert_to_uniform(),
                     ShaderUniform::Float(card_value),
                 );
-                shader.parameters.uniforms.insert(
-                    VarName::Zoom.convert_to_uniform(),
+                shader.parameters.uniforms.insert_ref(
+                    &VarName::Zoom.convert_to_uniform(),
                     ShaderUniform::Float(1.0 + hover_value * 1.4),
                 );
                 let slot = shader
@@ -290,8 +290,8 @@ impl UnitSystem {
                     .uniforms
                     .try_get_int(&VarName::Slot.convert_to_uniform())
                     .unwrap();
-                shader.parameters.uniforms.insert(
-                    VarName::Scale.convert_to_uniform(),
+                shader.parameters.uniforms.insert_ref(
+                    &VarName::Scale.convert_to_uniform(),
                     ShaderUniform::Float(mix(
                         SlotSystem::get_scale(slot, faction_value, resources),
                         1.0,
@@ -312,8 +312,8 @@ impl UnitSystem {
                         .world_to_screen(resources.camera.framebuffer_size, position)
                     {
                         let offset = vec2(0.5, 0.5) - world_pos / resources.camera.framebuffer_size;
-                        shader.parameters.uniforms.insert(
-                            VarName::Position.convert_to_uniform(),
+                        shader.parameters.uniforms.insert_ref(
+                            &VarName::Position.convert_to_uniform(),
                             ShaderUniform::Vec2(mix_vec(
                                 position,
                                 position + offset * resources.camera.camera.fov,

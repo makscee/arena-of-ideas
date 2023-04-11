@@ -3,16 +3,17 @@ use super::*;
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Options {
+    pub shaders: Shaders,
+    pub images: Images,
+    pub colors: Colors,
+    pub floats: Floats,
+    // pub visual_effects: VisualEffects,
     pub fov: f32,
     pub rewind_speed: f32,
     pub rewind_add_speed: f32,
     pub initial_shop_fill: usize,
     pub start_floor: usize,
     pub log: HashMap<LogContext, bool>,
-    pub shaders: Shaders,
-    pub images: Images,
-    pub colors: Colors,
-    pub floats: Floats,
     pub custom_game: CustomGameConfig,
     pub walkthrough: bool,
     pub player_team_name: String,
@@ -57,6 +58,8 @@ pub struct Shaders {
     pub tape_indicator: Shader,
     pub shop_sell_field: Shader,
     pub battle_score_indicator: Shader,
+    pub battle_over_panel_bg: Shader,
+    pub battle_over_panel_title: Shader,
 }
 
 #[derive(Deserialize, Debug)]
@@ -73,18 +76,20 @@ pub struct Images {
 
 #[derive(Deserialize, Debug)]
 pub struct Colors {
-    pub faction_colors: HashMap<Faction, Rgba<f32>>,
+    pub factions: HashMap<Faction, Rgba<f32>>,
     pub inactive: Rgba<f32>,
-    pub stats_attack_color: Rgba<f32>,
-    pub stats_hp_color: Rgba<f32>,
-    pub corner_button_color: Rgba<f32>,
-    pub corner_button_icon_color: Rgba<f32>,
+    pub stats_attack: Rgba<f32>,
+    pub stats_hp: Rgba<f32>,
+    pub corner_button: Rgba<f32>,
+    pub corner_button_icon: Rgba<f32>,
     pub btn_normal: Rgba<f32>,
     pub btn_active: Rgba<f32>,
     pub btn_hovered: Rgba<f32>,
     pub damage_text: Rgba<f32>,
-    pub text_add_color: Rgba<f32>,
-    pub text_remove_color: Rgba<f32>,
+    pub text_add: Rgba<f32>,
+    pub text_remove: Rgba<f32>,
+    pub victory: Rgba<f32>,
+    pub defeat: Rgba<f32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -104,3 +109,6 @@ pub struct Floats {
     pub slots_battle_team_scale: f32,
     pub slots_striker_scale: f32,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct VisualEffects {}
