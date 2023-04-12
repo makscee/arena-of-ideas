@@ -106,8 +106,8 @@ impl Game {
         global_systems.push(Box::new(ContextSystem::new()));
         global_systems.push(Box::new(TapePlayerSystem::new()));
         global_systems.push(Box::new(SlotSystem::new()));
-        global_systems.push(Box::new(InputSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));
+        global_systems.push(Box::new(InputSystem::new()));
         global_systems.push(Box::new(game_state));
         global_systems
     }

@@ -1,130 +1,55 @@
 use super::*;
 
-pub struct InputSystem {
-    press_start: Option<vec2<f32>>,
-    is_dragging: bool,
-}
+pub struct InputSystem {}
 
 impl InputSystem {
     pub fn new() -> Self {
-        Self {
-            press_start: default(),
-            is_dragging: false,
-        }
+        Self {}
     }
 
-    pub fn set_hovered_entity(
-        entity: Option<legion::Entity>,
-        resources: &mut Resources,
-    ) -> Option<legion::Entity> {
-        resources.input.prev_hovered = resources.input.cur_hovered;
-        if resources.input.cur_hovered == entity
-            || resources
-                .input
-                .pressed_mouse_buttons
-                .contains(&geng::MouseButton::Left)
-        {
-            return resources.input.cur_hovered;
-        }
-
-        if let Some(prev_hovered) = resources.input.cur_hovered {
-            resources
-                .input
-                .hover_data
-                .insert(prev_hovered, (false, resources.global_time));
-        }
-        match entity {
-            Some(entity) => {
-                resources
-                    .input
-                    .hover_data
-                    .insert(entity, (true, resources.global_time));
-            }
-            None => {}
-        }
-
-        resources.input.cur_hovered = entity;
-        return resources.input.cur_hovered;
-    }
-
-    fn send_event(
-        resources: &mut Resources,
+    pub fn process_shaders(
+        shaders: &mut Vec<Shader>,
         world: &mut legion::World,
-        entity: legion::Entity,
-        event: InputEvent,
+        resources: &mut Resources,
     ) {
-        resources
-            .input
-            .listeners
-            .get(&entity)
-            .cloned()
-            .and_then(|f| {
-                (f)(entity, resources, world, event);
-                Some(())
-            });
+        Self::update_frame_data(shaders, resources);
+        Self::handle_events(shaders, world, resources)
     }
 
-    pub fn handle_events(&mut self, world: &mut legion::World, resources: &mut Resources) {
+    pub fn update_frame_data<'a>(shaders: &mut Vec<Shader>, resources: &mut Resources) {
+        let (prev, cur) = &mut resources.input.frame_data;
+        mem::swap(prev, cur);
+        cur.mouse = resources.input.mouse_pos;
+        if resources
+            .input
+            .pressed_mouse_buttons
+            .contains(&geng::MouseButton::Left)
+        {
+            if prev.state == InputState::Drag {
+                cur.state = InputState::Drag;
+                cur.attention = prev.attention.clone();
+                return;
+            }
+            if prev.state == InputState::Press {
+                cur.state = match prev.mouse == cur.mouse {
+                    true => InputState::Press,
+                    false => InputState::Drag,
+                };
+                cur.attention = prev.attention.clone();
+                return;
+            }
+        }
+
         if resources
             .input
             .down_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
-            self.press_start = Some(resources.input.mouse_pos);
-        }
-        resources.input.cur_dragged = None;
-
-        if let Some(hovered) = resources.input.cur_hovered {
-            if resources
-                .input
-                .down_mouse_buttons
-                .contains(&geng::MouseButton::Left)
-            {
-                Self::send_event(resources, world, hovered, InputEvent::PressStart);
+            if prev.state == InputState::Hover {
+                cur.state = InputState::Press;
+                cur.attention = prev.attention.clone();
+                return;
             }
-            if resources
-                .input
-                .pressed_mouse_buttons
-                .contains(&geng::MouseButton::Left)
-            {
-                Self::send_event(resources, world, hovered, InputEvent::Press);
-                if let Some(press_start) = self.press_start {
-                    if !self.is_dragging && (press_start - resources.input.mouse_pos).len() > 0.01 {
-                        self.is_dragging = true;
-                        Self::send_event(resources, world, hovered, InputEvent::DragStart);
-                    }
-                }
-                if self.is_dragging {
-                    Self::send_event(resources, world, hovered, InputEvent::Drag);
-                    resources.input.cur_dragged = Some(hovered);
-                }
-            }
-            if resources
-                .input
-                .up_mouse_buttons
-                .contains(&geng::MouseButton::Left)
-            {
-                Self::send_event(resources, world, hovered, InputEvent::PressStop);
-                if !self.is_dragging {
-                    Self::send_event(resources, world, hovered, InputEvent::Click);
-                } else {
-                    Self::send_event(resources, world, hovered, InputEvent::DragStop);
-                }
-            }
-            if resources.input.cur_hovered != resources.input.prev_hovered {
-                Self::send_event(resources, world, hovered, InputEvent::HoverStart);
-            }
-            Self::send_event(resources, world, hovered, InputEvent::Hover);
-        }
-        if resources.input.prev_hovered.is_some()
-            && resources.input.prev_hovered != resources.input.cur_hovered
-        {
-            Self::send_event(
-                resources,
-                world,
-                resources.input.prev_hovered.unwrap(),
-                InputEvent::HoverStop,
-            );
         }
 
         if resources
@@ -132,14 +57,172 @@ impl InputSystem {
             .up_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
-            self.press_start = None;
-            self.is_dragging = false;
+            if prev.state == InputState::Press {
+                cur.state = InputState::Click;
+                cur.attention = prev.attention.clone();
+                return;
+            }
+            if prev.state == InputState::Drag {
+                cur.state = InputState::Hover;
+                cur.attention = prev.attention.clone();
+                return;
+            }
+        }
+        cur.attention = None;
+        cur.state = InputState::None;
+
+        let mut hovered = None;
+        for shader in shaders.iter().rev() {
+            if shader.entity.is_some() {
+                if let Some(area) = AreaComponent::from_shader(shader) {
+                    if area.contains(resources.input.mouse_pos) {
+                        hovered = Some(shader);
+                        break;
+                    }
+                }
+            }
+        }
+        if let Some(hovered) = hovered {
+            cur.attention = hovered.entity;
+            cur.state = InputState::Hover;
+        }
+    }
+
+    pub fn handle_events<'a>(
+        shaders: &mut Vec<Shader>,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let (prev, cur) = &resources.input.frame_data.clone();
+        let mut prev_shader = None;
+        let mut cur_shader = None;
+        if cur.attention.is_some() || prev.attention.is_some() {
+            for (ind, shader) in shaders.iter_mut().enumerate() {
+                if let Some(entity) = shader.entity.as_ref() {
+                    if let Some(prev) = prev.attention {
+                        if prev == *entity {
+                            prev_shader = Some(ind);
+                        }
+                    }
+                    if let Some(cur) = cur.attention {
+                        if cur == *entity {
+                            cur_shader = Some(ind);
+                        }
+                    }
+                }
+            }
+        }
+
+        match cur.state {
+            InputState::None => {}
+            InputState::Hover => {
+                Self::send_event(InputEvent::Hover, cur_shader, shaders, resources, world)
+            }
+            InputState::Press => {
+                Self::send_event(InputEvent::Press, cur_shader, shaders, resources, world)
+            }
+            InputState::Click => {
+                Self::send_event(InputEvent::Click, cur_shader, shaders, resources, world)
+            }
+            InputState::Drag => {
+                if cur.mouse != prev.mouse {
+                    Self::send_event(
+                        InputEvent::Drag {
+                            delta: cur.mouse - prev.mouse,
+                        },
+                        cur_shader,
+                        shaders,
+                        resources,
+                        world,
+                    );
+                }
+            }
+        }
+
+        if cur.state != prev.state || cur.attention != prev.attention {
+            match prev.state {
+                InputState::None | InputState::Click => {}
+                InputState::Hover => {
+                    Self::send_event(
+                        InputEvent::HoverStop,
+                        prev_shader,
+                        shaders,
+                        resources,
+                        world,
+                    );
+                }
+                InputState::Press => Self::send_event(
+                    InputEvent::PressStop,
+                    prev_shader,
+                    shaders,
+                    resources,
+                    world,
+                ),
+                InputState::Drag => {
+                    Self::send_event(InputEvent::DragStop, prev_shader, shaders, resources, world)
+                }
+            }
+
+            match cur.state {
+                InputState::None | InputState::Click => {}
+                InputState::Hover => Self::send_event(
+                    InputEvent::HoverStart,
+                    cur_shader,
+                    shaders,
+                    resources,
+                    world,
+                ),
+                InputState::Press => Self::send_event(
+                    InputEvent::PressStart,
+                    cur_shader,
+                    shaders,
+                    resources,
+                    world,
+                ),
+                InputState::Drag => {
+                    Self::send_event(InputEvent::DragStart, cur_shader, shaders, resources, world)
+                }
+            };
+        }
+    }
+
+    fn send_event(
+        event: InputEvent,
+        ind: Option<usize>,
+        shaders: &mut Vec<Shader>,
+        resources: &mut Resources,
+        world: &mut legion::World,
+    ) {
+        if let Some(ind) = ind {
+            let mut shader = shaders.remove(ind);
+            let entity = shader.entity.unwrap();
+            match &event {
+                InputEvent::HoverStart
+                | InputEvent::HoverStop
+                | InputEvent::DragStart
+                | InputEvent::DragStop
+                | InputEvent::PressStart
+                | InputEvent::PressStop
+                | InputEvent::Click => {
+                    resources
+                        .input
+                        .input_events
+                        .insert(entity, (event.clone(), resources.global_time));
+                }
+                _ => {}
+            }
+            if let Some(f) = shader.input_handler {
+                (f)(event, entity, &mut shader, resources, world);
+            }
+            shaders.insert(ind, shader);
         }
     }
 }
 
 impl System for InputSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        self.handle_events(world, resources);
+        let mut shaders = mem::take(&mut resources.prepared_shaders);
+        Self::process_shaders(&mut shaders, world, resources);
+        resources.prepared_shaders = shaders;
     }
 }

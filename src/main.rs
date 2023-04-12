@@ -49,6 +49,9 @@ fn mix(a: f32, b: f32, t: f32) -> f32 {
 fn mix_vec(a: vec2<f32>, b: vec2<f32>, t: f32) -> vec2<f32> {
     vec2(mix(a.x, b.x, t), mix(a.y, b.y, t))
 }
+fn new_entity() -> legion::Entity {
+    legion::world::Allocate::new().next().unwrap()
+}
 fn main() {
     let timer = Instant::now();
     logger::init();

@@ -223,7 +223,7 @@ impl SlotSystem {
             .iter_mut(world)
             .sorted_by_key(|(unit, _)| unit.slot)
             .for_each(|(unit, entity)| {
-                if resources.input.cur_dragged.as_ref() != Some(&entity.entity) {
+                if !resources.input.frame_data.1.is_dragged(entity.entity) {
                     if let Some(slot) = current_slot.get_mut(&unit.faction) {
                         *slot = *slot + 1;
                         if *slot == gap_slot {
@@ -250,9 +250,14 @@ impl SlotSystem {
 
 impl System for SlotSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        <(&UnitComponent, &mut AreaComponent)>::query()
+        <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
             .iter_mut(world)
-            .for_each(|(unit, area)| {
+            .for_each(|(unit, area, entity)| {
+                if resources.input.frame_data.1.is_dragged(entity.entity)
+                    || resources.input.frame_data.1.is_hovered(entity.entity)
+                {
+                    return;
+                }
                 let need_pos = Self::get_unit_position(unit, resources);
                 area.position += (need_pos - area.position) * PULL_FORCE * resources.delta_time;
             })

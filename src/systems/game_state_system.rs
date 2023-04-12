@@ -28,7 +28,7 @@ impl System for GameStateSystem {
                 if resources.input.down_keys.contains(&R) {
                     resources.tape_player.head = 0.0;
                 }
-                if resources.tape_player.tape.length() + 1.0 < resources.tape_player.head
+                if resources.tape_player.tape.length() < resources.tape_player.head
                     || resources.input.down_keys.contains(&Escape)
                 {
                     BattleSystem::finish_floor_battle(world, resources);

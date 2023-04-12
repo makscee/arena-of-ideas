@@ -34,7 +34,7 @@ impl BattleSystem {
         }
         Self::clear_tape_entities(world, resources, tape);
         let score = Ladder::get_score(world, resources);
-        Self::add_outro(score, resources, tape);
+        Self::add_outro(score, world, resources, tape);
         score
     }
 
@@ -107,10 +107,17 @@ impl BattleSystem {
         }
     }
 
-    fn add_outro(score: usize, resources: &Resources, tape: &mut Option<Tape>) {
+    fn add_outro(
+        score: usize,
+        world: &mut legion::World,
+        resources: &mut Resources,
+        tape: &mut Option<Tape>,
+    ) {
         if let Some(tape) = tape {
             let node = Widget::BattleOverPanel { score }.generate_node(&resources.options);
-            tape.push(NodeCluster::new(node.lock(NodeLockType::Empty)));
+            tape.push(NodeCluster::new(
+                node.lock(NodeLockType::Full { world, resources }),
+            ));
         }
     }
 

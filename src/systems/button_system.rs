@@ -41,7 +41,7 @@ impl ButtonSystem {
             vars: default(),
             trace: "button".to_string(),
         });
-        resources.input.listeners.insert(entity, listener);
+        // resources.input.listeners.insert(entity, listener);
         entity
     }
 
@@ -79,6 +79,5 @@ impl ButtonSystem {
         resources: &mut Resources,
     ) {
         world.remove(entity);
-        resources.input.listeners.remove(&entity);
     }
 }

@@ -10,10 +10,6 @@ pub struct ShopSystem {
 }
 
 impl System for ShopSystem {
-    fn post_update(&mut self, _: &mut legion::World, resources: &mut Resources) {
-        resources.shop_data.drag_entity = None;
-        resources.shop_data.drop_entity = None;
-    }
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         self.handle_drag(world, resources);
         if self.need_switch_battle {
@@ -200,6 +196,7 @@ impl ShopSystem {
                     _ => {}
                 }
             }
+            resources.shop_data.drop_entity = None;
         }
     }
 

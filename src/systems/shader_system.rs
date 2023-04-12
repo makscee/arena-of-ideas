@@ -8,14 +8,16 @@ pub struct ShaderSystem {}
 impl System for ShaderSystem {
     fn draw(
         &self,
-        world: &legion::World,
+        _: &legion::World,
         resources: &mut Resources,
         framebuffer: &mut ugli::Framebuffer,
     ) {
-        self.draw_all_shaders(world, resources, framebuffer);
+        Self::draw_prepared_shaders(framebuffer, resources);
     }
 
-    fn update(&mut self, _: &mut legion::World, _: &mut Resources) {}
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        Self::prepare_shaders(world, resources);
+    }
 }
 
 impl ShaderSystem {
@@ -49,12 +51,7 @@ impl ShaderSystem {
         }
     }
 
-    pub fn draw_all_shaders(
-        &self,
-        world: &legion::World,
-        resources: &mut Resources,
-        framebuffer: &mut ugli::Framebuffer,
-    ) {
+    pub fn prepare_shaders(world: &mut legion::World, resources: &mut Resources) {
         // Get all Shader components from World for drawing
         let world_shaders: HashMap<legion::Entity, Shader> = HashMap::from_iter(
             <&EntityComponent>::query()
@@ -84,8 +81,14 @@ impl ShaderSystem {
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
             .sorted_by_key(|x| (x.layer.index(), x.order, x.ts))
+            .map(|x| Self::flatten_shader_chain(x))
+            .flatten()
             .collect_vec();
 
+        resources.prepared_shaders = shaders;
+    }
+
+    fn draw_prepared_shaders(framebuffer: &mut ugli::Framebuffer, resources: &mut Resources) {
         let game_time = match resources.tape_player.mode {
             TapePlayMode::Play => resources.tape_player.head,
             TapePlayMode::Stop { .. } => resources.global_time,
@@ -94,83 +97,80 @@ impl ShaderSystem {
             let size = resources.camera.framebuffer_size;
             size.x / size.y
         };
-        for shader in shaders {
-            let uniforms = ugli::uniforms!(
-                u_game_time: game_time,
-                u_global_time: resources.global_time,
-                u_aspect_ratio: aspect_ratio,
-            );
-            Self::draw_shader(shader, framebuffer, resources, uniforms);
+        let uniforms = ugli::uniforms!(
+            u_game_time: game_time,
+            u_global_time: resources.global_time,
+            u_aspect_ratio: aspect_ratio,
+        );
+        let shaders = mem::take(&mut resources.prepared_shaders);
+        for shader in shaders.iter() {
+            Self::draw_shader(shader, framebuffer, resources, uniforms.clone());
         }
     }
 
     pub fn draw_shader<U>(
-        shader: Shader,
+        shader: &Shader,
         framebuffer: &mut ugli::Framebuffer,
         resources: &mut Resources,
         uniforms: U,
     ) where
         U: ugli::Uniforms,
     {
-        // todo: measure top avg execution time
-        let chain = Self::flatten_shader_chain(shader);
-        for shader in chain.into_iter() {
-            let texts = shader
-                .parameters
-                .uniforms
-                .0
-                .iter()
-                .filter_map(|(key, uniform)| match uniform {
-                    ShaderUniform::String((font, text)) => {
-                        Some((*font, text, key, format!("{}_size", key)))
-                    }
-                    _ => None,
-                })
-                .collect_vec();
-            resources.fonts.load_textures(
-                texts
-                    .iter()
-                    .map(|(font, text, _, _)| (*font, *text))
-                    .collect_vec(),
-            );
-            let images = shader
-                .parameters
-                .uniforms
-                .0
-                .iter()
-                .filter_map(|(key, uniform)| match uniform {
-                    ShaderUniform::Texture(image) => Some((image, key)),
-                    _ => None,
-                })
-                .collect_vec();
-            let mut texture_uniforms = SingleUniformVec::default();
-            let mut texture_size_uniforms = SingleUniformVec::default();
-            for (font, text, key, size_key) in texts.iter() {
-                if text.is_empty() {
-                    continue;
+        let texts = shader
+            .parameters
+            .uniforms
+            .0
+            .iter()
+            .filter_map(|(key, uniform)| match uniform {
+                ShaderUniform::String((font, text)) => {
+                    Some((*font, text, key, format!("{}_size", key)))
                 }
-                let texture = resources.fonts.get_texture(*font, text);
-                texture_uniforms.0.push(SingleUniform::new(key, texture));
-                texture_size_uniforms.0.push(SingleUniform::new(
-                    size_key.as_str(),
-                    texture.and_then(|texture| Some(texture.size().map(|x| x as f32))),
-                ));
+                _ => None,
+            })
+            .collect_vec();
+        resources.fonts.load_textures(
+            texts
+                .iter()
+                .map(|(font, text, _, _)| (*font, *text))
+                .collect_vec(),
+        );
+        let images = shader
+            .parameters
+            .uniforms
+            .0
+            .iter()
+            .filter_map(|(key, uniform)| match uniform {
+                ShaderUniform::Texture(image) => Some((image, key)),
+                _ => None,
+            })
+            .collect_vec();
+        let mut texture_uniforms = SingleUniformVec::default();
+        let mut texture_size_uniforms = SingleUniformVec::default();
+        for (font, text, key, size_key) in texts.iter() {
+            if text.is_empty() {
+                continue;
             }
-            for (image, key) in images {
-                let texture = resources.image_textures.get_texture(image);
-                if texture.is_none() {
-                    panic!("Can't find texture {:?}", image);
-                }
-                texture_uniforms.0.push(SingleUniform::new(key, texture));
-            }
-
-            Self::draw_shader_single(
-                &shader,
-                framebuffer,
-                resources,
-                (&uniforms, &texture_uniforms, &texture_size_uniforms),
-            );
+            let texture = resources.fonts.get_texture(*font, text);
+            texture_uniforms.0.push(SingleUniform::new(key, texture));
+            texture_size_uniforms.0.push(SingleUniform::new(
+                size_key.as_str(),
+                texture.and_then(|texture| Some(texture.size().map(|x| x as f32))),
+            ));
         }
+        for (image, key) in images {
+            let texture = resources.image_textures.get_texture(image);
+            if texture.is_none() {
+                panic!("Can't find texture {:?}", image);
+            }
+            texture_uniforms.0.push(SingleUniform::new(key, texture));
+        }
+
+        Self::draw_shader_single(
+            shader,
+            framebuffer,
+            resources,
+            (&uniforms, &texture_uniforms, &texture_size_uniforms),
+        );
     }
 
     pub fn draw_shader_single<U>(

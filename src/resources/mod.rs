@@ -21,7 +21,7 @@ mod house;
 mod house_pool;
 mod image;
 mod image_textures;
-mod input;
+mod input_data;
 mod ladder;
 mod options;
 mod packed_unit;
@@ -55,7 +55,7 @@ pub use house::*;
 pub use house_pool::*;
 pub use image::*;
 pub use image_textures::*;
-pub use input::*;
+pub use input_data::*;
 pub use ladder::*;
 pub use options::*;
 pub use packed_unit::*;
@@ -87,6 +87,7 @@ pub struct Resources {
     pub action_queue: VecDeque<Action>,
     pub tape_player: TapePlayer,
     pub frame_shaders: Vec<Shader>,
+    pub prepared_shaders: Vec<Shader>,
 
     pub shop_data: ShopData,
     pub battle_data: BattleData,
@@ -102,7 +103,7 @@ pub struct Resources {
     pub current_state: GameState,
     pub transition_state: GameState,
 
-    pub input: Input,
+    pub input: InputData,
     pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Option<Geng>,
@@ -140,6 +141,7 @@ impl Resources {
             options,
             ability_pool: default(),
             team_states: default(),
+            prepared_shaders: default(),
         }
     }
 

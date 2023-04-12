@@ -1,7 +1,7 @@
 use super::*;
 
 /// Component to link to a shader program with specific parameters
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Shader {
     pub path: PathBuf, // static path
@@ -17,6 +17,25 @@ pub struct Shader {
     pub chain_after: Box<Vec<Shader>>,
     #[serde(skip)]
     pub ts: i64,
+    #[serde(skip)]
+    pub entity: Option<legion::Entity>,
+    #[serde(skip)]
+    pub input_handler: Option<Handler>,
+}
+
+impl Debug for Shader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Shader")
+            .field("path", &self.path)
+            .field("parameters", &self.parameters)
+            .field("layer", &self.layer)
+            .field("order", &self.order)
+            .field("chain_before", &self.chain_before)
+            .field("chain_after", &self.chain_after)
+            .field("ts", &self.ts)
+            .field("entity", &self.entity)
+            .finish()
+    }
 }
 
 impl Shader {

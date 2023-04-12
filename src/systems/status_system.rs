@@ -71,7 +71,7 @@ impl StatusSystem {
         resources: &Resources,
     ) -> Vec<VisualEffect> {
         let mut effects: Vec<VisualEffect> = default();
-        if let Some(entity) = resources.input.cur_hovered {
+        if let Some(entity) = resources.input.frame_data.1.get_hovered() {
             let empty = HashMap::default();
             let statuses = node.get_entity_statuses(&entity).unwrap_or(&empty);
             let name_shaders = Self::get_status_names_shaders(statuses, resources);

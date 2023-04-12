@@ -120,35 +120,9 @@ impl PackedUnit {
             .status_pool
             .active_statuses
             .insert(entity, self.active_statuses.clone());
-        resources
-            .input
-            .listeners
-            .insert(entity, Self::unit_drag_listener);
         ContextSystem::refresh_entity(entity, world, resources);
         Event::AfterBirth { owner: entity }.send(world, resources);
         entity
-    }
-
-    fn unit_drag_listener(
-        entity: legion::Entity,
-        resources: &mut Resources,
-        world: &mut legion::World,
-        event: InputEvent,
-    ) {
-        match event {
-            InputEvent::Drag { .. } => {
-                world.entry_mut(entity).ok().and_then(|mut entry| {
-                    entry.get_component_mut::<AreaComponent>().unwrap().position =
-                        resources.input.mouse_pos;
-                    Some(())
-                });
-                resources.shop_data.drag_entity = Some(entity);
-            }
-            InputEvent::DragStop => {
-                resources.shop_data.drop_entity = Some(entity);
-            }
-            _ => {}
-        };
     }
 }
 

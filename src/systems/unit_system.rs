@@ -21,41 +21,46 @@ impl UnitSystem {
 
     pub fn draw_unit_to_node(
         entity: legion::Entity,
+        unit: &UnitComponent,
         node: &mut Node,
         world: &legion::World,
         resources: &Resources,
     ) {
         let options = &resources.options;
-        let mut unit_shader = match ShaderSystem::get_entity_shader(world, entity, None) {
+        let mut shader = match ShaderSystem::get_entity_shader(world, entity, None) {
             Some(mut shader) => {
                 Self::pack_shader(&mut shader, options);
                 shader
             }
             None => options.shaders.unit.clone(),
         };
+        if unit.faction == Faction::Shop || unit.faction == Faction::Team {
+            shader.input_handler = Some(Self::unit_input_handler);
+        }
+        shader.entity = Some(entity);
         let ts = world
             .entry_ref(entity)
             .unwrap()
             .get_component::<EntityComponent>()
             .unwrap()
             .ts;
-        unit_shader.ts = ts;
+        shader.ts = ts;
         let context = ContextSystem::get_context(entity, world);
-        unit_shader
+        shader
             .parameters
             .uniforms
             .merge_mut(&context.vars.clone().into(), true);
         let statuses = &resources.status_pool;
-        unit_shader
+        shader
             .chain_before
             .extend(statuses.get_entity_shaders(&entity));
-        unit_shader
+        shader
             .chain_after
             .extend(StatsUiSystem::get_entity_shaders(&context.vars, options));
-        unit_shader
+        shader
             .chain_after
             .push(NameSystem::get_entity_shader(entity, world, options));
-        node.add_entity_shader(entity, unit_shader);
+        node.add_entity_shader(entity, shader);
         node.save_entity_statuses(entity, statuses);
         let definitions = UnitSystem::extract_definition_names(entity, world, resources);
         node.save_entity_definitions(entity, definitions);
@@ -68,8 +73,8 @@ impl UnitSystem {
         resources: &Resources,
     ) -> HashMap<legion::Entity, UnitComponent> {
         let units = UnitSystem::collect_factions_units(world, resources, factions, false);
-        for (entity, _) in units.iter() {
-            Self::draw_unit_to_node(*entity, node, world, resources)
+        for (entity, unit) in units.iter() {
+            Self::draw_unit_to_node(*entity, unit, node, world, resources)
         }
         units
     }
@@ -268,9 +273,14 @@ impl UnitSystem {
                 };
                 let hover_value = resources
                     .input
-                    .hover_data
+                    .input_events
                     .get(entity)
-                    .unwrap_or(&(false, -1000.0));
+                    .and_then(|x| match x.0 {
+                        InputEvent::HoverStart => Some((true, x.1)),
+                        InputEvent::HoverStop => Some((false, x.1)),
+                        _ => None,
+                    })
+                    .unwrap_or((false, -1000.0));
                 let hover_value = (1.0
                     - hover_value.0 as u8 as f32
                     - ((resources.global_time - hover_value.1) / CARD_ANIMATION_TIME).min(1.0))
@@ -298,32 +308,35 @@ impl UnitSystem {
                         card_value,
                     )),
                 );
-                if faction_value == Faction::Dark.float_value()
-                    || faction_value == Faction::Light.float_value()
-                {
-                    let position = shader
-                        .parameters
-                        .uniforms
-                        .try_get_vec2(&VarName::Position.convert_to_uniform())
-                        .unwrap();
-                    if let Some(world_pos) = resources
-                        .camera
-                        .camera
-                        .world_to_screen(resources.camera.framebuffer_size, position)
-                    {
-                        let offset = vec2(0.5, 0.5) - world_pos / resources.camera.framebuffer_size;
-                        shader.parameters.uniforms.insert_ref(
-                            &VarName::Position.convert_to_uniform(),
-                            ShaderUniform::Vec2(mix_vec(
-                                position,
-                                position + offset * resources.camera.camera.fov,
-                                card_value,
-                            )),
-                        );
+            }
+        }
+    }
+
+    fn unit_input_handler(
+        event: InputEvent,
+        entity: legion::Entity,
+        _: &mut Shader,
+        resources: &mut Resources,
+        world: &mut legion::World,
+    ) {
+        match event {
+            InputEvent::DragStart => {
+                resources.shop_data.drag_entity = Some(entity);
+            }
+            InputEvent::DragStop => {
+                resources.shop_data.drag_entity = None;
+                resources.shop_data.drop_entity = Some(entity);
+                debug!("Drop unit");
+            }
+            InputEvent::Drag { delta } => {
+                if let Some(mut entry) = world.entry(entity) {
+                    if let Ok(area) = entry.get_component_mut::<AreaComponent>() {
+                        area.position += delta;
                     }
                 }
             }
-        }
+            _ => {}
+        };
     }
 
     pub fn extract_definition_names(
