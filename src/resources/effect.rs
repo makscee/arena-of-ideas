@@ -695,7 +695,7 @@ impl EffectWrapped {
                     .unwrap_or_default() as usize;
                 let faction = faction.calculate(&context, world, resources)?;
                 unit.unpack(world, resources, slot, faction, None);
-                SlotSystem::fill_gaps(world, resources, &hashset! { faction });
+                SlotSystem::fill_gaps(faction, world);
             }
             Effect::ChangeFactionVarInt {
                 faction,

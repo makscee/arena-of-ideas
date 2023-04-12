@@ -2,7 +2,6 @@ use super::*;
 
 pub struct InputData {
     pub input_events: HashMap<legion::Entity, (InputEvent, Time)>,
-    pub hovered_slot: Option<(Faction, usize)>,
 
     pub frame_data: (InputFrameData, InputFrameData),
 
@@ -72,7 +71,6 @@ impl Default for InputFrameData {
 impl Default for InputData {
     fn default() -> Self {
         Self {
-            hovered_slot: default(),
             frame_data: default(),
             down_keys: default(),
             pressed_keys: default(),

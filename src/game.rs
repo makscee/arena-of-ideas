@@ -21,7 +21,7 @@ impl Game {
             world,
             resources,
             systems,
-            fps: VecDeque::from_iter((0..30).map(|x| x as f32)),
+            fps: VecDeque::from_iter((0..30).map(|_| 0.0)),
         }
     }
 
@@ -57,6 +57,7 @@ impl Game {
         resources.tape_player.clear();
         resources.total_score = default();
         ShopData::load_pool(resources);
+        world.clear();
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {

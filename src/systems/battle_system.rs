@@ -166,8 +166,9 @@ impl BattleSystem {
         resources: &mut Resources,
         tape: &mut Option<Tape>,
     ) -> bool {
-        let factions = &Faction::battle();
-        SlotSystem::fill_gaps(world, resources, factions);
+        for faction in Faction::battle() {
+            SlotSystem::fill_gaps(faction, world);
+        }
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
             None => None,

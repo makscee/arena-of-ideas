@@ -19,7 +19,7 @@ impl UnitComponent {
 
 impl VarsProvider for UnitComponent {
     fn extend_vars(&self, vars: &mut Vars, resources: &Resources) {
-        vars.insert(VarName::Faction, Var::Float(self.faction.float_value()));
+        vars.insert(VarName::Faction, Var::Float(self.faction.into()));
         vars.insert(VarName::Slot, Var::Int(self.slot as i32));
         vars.insert(VarName::Rank, Var::Int(self.rank as i32));
         vars.insert(

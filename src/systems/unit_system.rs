@@ -19,6 +19,15 @@ impl UnitSystem {
             .clone()
     }
 
+    pub fn set_slot(entity: legion::Entity, slot: usize, world: &mut legion::World) {
+        world
+            .entry_mut(entity)
+            .unwrap()
+            .get_component_mut::<UnitComponent>()
+            .unwrap()
+            .slot = slot
+    }
+
     pub fn draw_unit_to_node(
         entity: legion::Entity,
         unit: &UnitComponent,
@@ -267,9 +276,10 @@ impl UnitSystem {
                 .uniforms
                 .try_get_float(&VarName::Faction.convert_to_uniform());
             if let Some(faction_value) = faction_value {
-                let mut card_value: f32 = match faction_value == Faction::Shop.float_value() {
-                    true => 1.0,
-                    false => 0.0,
+                let faction = Faction::from(faction_value);
+                let mut card_value: f32 = match faction {
+                    Faction::Shop => 1.0,
+                    _ => 0.0,
                 };
                 let hover_value = resources
                     .input
@@ -299,11 +309,11 @@ impl UnitSystem {
                     .parameters
                     .uniforms
                     .try_get_int(&VarName::Slot.convert_to_uniform())
-                    .unwrap();
+                    .unwrap() as usize;
                 shader.parameters.uniforms.insert_ref(
                     &VarName::Scale.convert_to_uniform(),
                     ShaderUniform::Float(mix(
-                        SlotSystem::get_scale(slot, faction_value, resources),
+                        SlotSystem::get_scale(slot, faction, resources),
                         1.0,
                         card_value,
                     )),
@@ -326,12 +336,13 @@ impl UnitSystem {
             InputEvent::DragStop => {
                 resources.shop_data.drag_entity = None;
                 resources.shop_data.drop_entity = Some(entity);
-                debug!("Drop unit");
+                SlotSystem::handle_unit_drop(entity, world, resources);
             }
             InputEvent::Drag { delta } => {
                 if let Some(mut entry) = world.entry(entity) {
                     if let Ok(area) = entry.get_component_mut::<AreaComponent>() {
                         area.position += delta;
+                        SlotSystem::handle_unit_drag(entity, world, resources);
                     }
                 }
             }

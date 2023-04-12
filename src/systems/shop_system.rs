@@ -11,7 +11,6 @@ pub struct ShopSystem {
 
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        self.handle_drag(world, resources);
         if self.need_switch_battle {
             match resources.camera.focus {
                 Focus::Shop => {
@@ -125,116 +124,60 @@ impl ShopSystem {
         resources.camera.focus = Focus::Shop;
     }
 
-    fn handle_drag(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        let team_faction = Faction::Team;
-        SlotSystem::reset_hovered_slot(resources);
-        self.drag_to_sell = false;
-        if let Some(dragged) = resources.shop_data.drag_entity {
-            if let Some(slot) =
-                SlotSystem::get_hovered_slot(&team_faction, resources.input.mouse_pos, resources)
-            {
-                if SlotSystem::find_unit_by_slot(slot, &team_faction, world, resources).is_some() {
-                    SlotSystem::make_gap(world, resources, slot, &hashset! {team_faction});
-                }
-                SlotSystem::set_hovered_slot(Faction::Team, slot, resources);
-            }
-            self.drag_to_sell = world
-                .entry_ref(dragged)
-                .unwrap()
-                .get_component::<UnitComponent>()
-                .unwrap()
-                .faction
-                == team_faction;
-        }
-        if let Some(dropped) = resources.shop_data.drop_entity {
-            if let Some(entry) = world.entry(dropped) {
-                let unit = entry.get_component::<UnitComponent>().unwrap();
-                match unit.faction {
-                    Faction::Team => {
-                        if entry.get_component::<AreaComponent>().unwrap().position.y
-                            > SHOP_POSITION.y
-                        {
-                            resources
-                                .shop_data
-                                .pool
-                                .push(PackedUnit::pack(dropped, world, resources));
-                            ShopSystem::change_g(resources, ShopSystem::sell_price(resources));
-                            Self::sell(dropped, resources, world);
-                            ContextSystem::refresh_all(world, resources);
-                        } else if let Some(slot) = SlotSystem::get_hovered_slot(
-                            &team_faction,
-                            resources.input.mouse_pos,
-                            resources,
-                        ) {
-                            world
-                                .entry_mut(dropped)
-                                .unwrap()
-                                .get_component_mut::<UnitComponent>()
-                                .unwrap()
-                                .slot = slot;
-                        } else {
-                            SlotSystem::fill_gaps(world, resources, &hashset! {team_faction});
-                        }
-                    }
-                    Faction::Shop => {
-                        let slot = SlotSystem::get_hovered_slot(
-                            &team_faction,
-                            resources.input.mouse_pos,
-                            resources,
-                        );
-                        if ShopSystem::get_g(resources) >= ShopSystem::buy_price(resources)
-                            && slot.is_some()
-                            && resources.input.mouse_pos.y < SHOP_POSITION.y
-                            && !Self::team_full(world, resources)
-                        {
-                            ShopSystem::change_g(resources, -ShopSystem::buy_price(resources));
-                            let slot = slot.unwrap();
-                            let mut cluster = Some(NodeCluster::default());
-                            Self::buy(dropped, slot, resources, world, &mut cluster);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            resources.shop_data.drop_entity = None;
-        }
-    }
-
     fn team_full(world: &legion::World, resources: &Resources) -> bool {
         UnitSystem::collect_faction(world, resources, Faction::Team, false).len()
             >= resources.team_states.get_team_state(&Faction::Team).slots
     }
 
-    pub fn buy(
+    pub fn try_buy(
         entity: legion::Entity,
         slot: usize,
         resources: &mut Resources,
         world: &mut legion::World,
-        cluster: &mut Option<NodeCluster>,
+    ) {
+        if !Self::team_full(world, resources)
+            && Self::get_g(resources) >= Self::buy_price(resources)
+        {
+            Self::do_buy(entity, slot, resources, world);
+            Self::change_g(resources, -Self::buy_price(resources));
+        }
+    }
+
+    pub fn do_buy(
+        entity: legion::Entity,
+        slot: usize,
+        resources: &mut Resources,
+        world: &mut legion::World,
     ) {
         let mut entry = world.entry_mut(entity).unwrap();
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
 
-        ContextSystem::refresh_entity(entity, world, resources);
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
-        ContextSystem::refresh_all(world, resources);
-        SlotSystem::move_to_slots_animated(world, resources, cluster);
     }
 
-    pub fn sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
+    pub fn try_sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
+        ShopSystem::change_g(resources, ShopSystem::sell_price(resources));
+        resources
+            .shop_data
+            .pool
+            .push(PackedUnit::pack(entity, world, resources));
+        Self::do_sell(entity, resources, world);
+    }
+
+    pub fn do_sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         Event::Sell { owner: entity }.send(world, resources);
         UnitSystem::turn_unit_into_corpse(entity, world, resources);
     }
 
-    fn refresh_tape(world: &legion::World, resources: &mut Resources) {
-        let factions = hashset! { Faction::Light, Faction::Dark, Faction::Team, Faction::Shop};
-        let mut node = Node::default();
-        let units = UnitSystem::draw_all_units_to_node(&factions, &mut node, world, resources);
-        SlotSystem::draw_slots_to_node(&mut node, &factions, &units, resources);
-        resources.tape_player.tape.persistent_node = node;
+    fn refresh_tape(world: &mut legion::World, resources: &mut Resources) {
+        resources.tape_player.tape.persistent_node = Node::default().lock(NodeLockType::Factions {
+            factions: Faction::all(),
+            world,
+            resources,
+        });
     }
 
     pub fn floor_money(floor: usize) -> i32 {
@@ -371,7 +314,6 @@ impl ShopSystem {
     }
 
     fn set_slots(slots: usize, resources: &mut Resources) {
-        dbg!(slots);
         resources
             .team_states
             .get_team_state_mut(&Faction::Shop)
@@ -393,7 +335,6 @@ impl ShopSystem {
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
-        Self::refresh_tape(world, resources);
         Self::create_reroll_btn(world, resources);
     }
 

@@ -1,3 +1,4 @@
+use geng::prelude::itertools::Itertools;
 use strum_macros::EnumString;
 
 use super::*;
@@ -21,17 +22,24 @@ pub enum Faction {
     Shop,
 }
 
+impl From<f32> for Faction {
+    fn from(value: f32) -> Self {
+        *Faction::all_iter()
+            .collect_vec()
+            .get(value as usize)
+            .unwrap()
+    }
+}
+
+impl Into<f32> for Faction {
+    fn into(self) -> f32 {
+        self as i32 as f32
+    }
+}
+
 impl Faction {
     pub fn color(&self, options: &Options) -> Rgba<f32> {
         *options.colors.factions.get(self).unwrap()
-    }
-    pub fn float_value(&self) -> f32 {
-        match self {
-            Faction::Dark => 0.0,
-            Faction::Light => 1.0,
-            Faction::Team => 2.0,
-            Faction::Shop => 3.0,
-        }
     }
     pub fn from_entity(entity: legion::Entity, world: &legion::World) -> Faction {
         if let Ok(entry) = world.entry_ref(entity) {

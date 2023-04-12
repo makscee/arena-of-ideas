@@ -150,15 +150,15 @@ impl WalkthroughSystem {
                     let slot = *slots.get(i).unwrap();
                     let entity = unit.unpack(world, resources, slot, Faction::Shop, None);
                     if team.units.len() + i < max_slots {
-                        SlotSystem::make_gap(world, resources, slot, &hashset! {Faction::Team});
+                        SlotSystem::make_gap(Faction::Team, slot, world, resources);
                     } else {
                         if let Some(entity) =
                             SlotSystem::find_unit_by_slot(slot, &Faction::Team, world, resources)
                         {
-                            ShopSystem::sell(entity, resources, world);
+                            ShopSystem::do_sell(entity, resources, world);
                         }
                     }
-                    ShopSystem::buy(entity, slot, resources, world, &mut None);
+                    ShopSystem::do_buy(entity, slot, resources, world);
                     ActionSystem::run_ticks(world, resources, &mut None);
                 }
                 let new_team = Team::pack(&Faction::Team, world, resources);

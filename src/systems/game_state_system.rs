@@ -228,6 +228,7 @@ impl GameStateSystem {
             GameState::Shop => {
                 if resources.current_state == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
+                    SlotSystem::create_entries(world, resources);
                 }
                 ShopSystem::init_floor(world, resources, true);
                 resources.camera.focus = Focus::Shop;

@@ -2,3 +2,9 @@
 pub struct TapeEntityComponent {
     pub entity: legion::Entity,
 }
+
+impl TapeEntityComponent {
+    pub fn new(entity: legion::Entity) -> Self {
+        Self { entity }
+    }
+}
