@@ -17,11 +17,11 @@ impl InputSystem {
     }
 
     pub fn update_frame_data<'a>(shaders: &mut Vec<Shader>, resources: &mut Resources) {
-        let (prev, cur) = &mut resources.input.frame_data;
+        let (prev, cur) = &mut resources.input_data.frame_data;
         mem::swap(prev, cur);
-        cur.mouse = resources.input.mouse_pos;
+        cur.mouse = resources.input_data.mouse_pos;
         if resources
-            .input
+            .input_data
             .pressed_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
@@ -41,7 +41,7 @@ impl InputSystem {
         }
 
         if resources
-            .input
+            .input_data
             .down_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
@@ -53,7 +53,7 @@ impl InputSystem {
         }
 
         if resources
-            .input
+            .input_data
             .up_mouse_buttons
             .contains(&geng::MouseButton::Left)
         {
@@ -75,7 +75,7 @@ impl InputSystem {
         for shader in shaders.iter().rev() {
             if shader.entity.is_some() {
                 if let Some(area) = AreaComponent::from_shader(shader) {
-                    if area.contains(resources.input.mouse_pos) {
+                    if area.contains(resources.input_data.mouse_pos) {
                         hovered = Some(shader);
                         break;
                     }
@@ -93,7 +93,7 @@ impl InputSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let (prev, cur) = &resources.input.frame_data.clone();
+        let (prev, cur) = &resources.input_data.frame_data.clone();
         let mut prev_shader = None;
         let mut cur_shader = None;
         if cur.attention.is_some() || prev.attention.is_some() {
@@ -205,7 +205,7 @@ impl InputSystem {
                 | InputEvent::PressStop
                 | InputEvent::Click => {
                     resources
-                        .input
+                        .input_data
                         .input_events
                         .insert(entity, (event.clone(), resources.global_time));
                 }
@@ -215,6 +215,13 @@ impl InputSystem {
                 (f)(event, entity, &mut shader, world, resources);
             }
             shaders.insert(ind, shader);
+            match &event {
+                InputEvent::HoverStart => resources.input_data.hovered_entity = Some(entity),
+                InputEvent::HoverStop => resources.input_data.dragged_entity = None,
+                InputEvent::DragStart => resources.input_data.dragged_entity = Some(entity),
+                InputEvent::DragStop => resources.input_data.dragged_entity = None,
+                _ => {}
+            }
         }
     }
 }

@@ -8,9 +8,6 @@ pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 pub struct ShopData {
     pub pool: Vec<PackedUnit>,
     pub floor_extensions: Vec<Vec<PackedUnit>>,
-    pub drop_entity: Option<legion::Entity>,
-    pub drag_entity: Option<legion::Entity>,
-    pub refresh_btn: Option<legion::Entity>,
     pub load_new_hero: bool,
 }
 

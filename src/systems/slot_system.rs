@@ -249,7 +249,8 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        if let Some((slot, faction)) = Self::get_hovered_slot(resources.input.mouse_pos, resources)
+        if let Some((slot, faction)) =
+            Self::get_hovered_slot(resources.input_data.mouse_pos, resources)
         {
             if faction == Faction::Team {
                 Self::make_gap(faction, slot, world, resources, Some(entity));
@@ -262,7 +263,8 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        if let Some((slot, faction)) = Self::get_hovered_slot(resources.input.mouse_pos, resources)
+        if let Some((slot, faction)) =
+            Self::get_hovered_slot(resources.input_data.mouse_pos, resources)
         {
             let unit_faction = UnitSystem::get_unit(entity, world).faction;
             if faction == Faction::Team && unit_faction == Faction::Shop {
@@ -338,6 +340,12 @@ impl SlotSystem {
     ) {
         let filled: HashSet<(Faction, usize)> =
             HashSet::from_iter(units.iter().map(|(_, unit)| (unit.faction, unit.slot)));
+        let mut hovered = None;
+        if let Some(dragged) = resources.input_data.dragged_entity {
+            if units.contains_key(&dragged) {
+                hovered = Self::get_hovered_slot(resources.input_data.mouse_pos, resources);
+            }
+        }
         for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
             if !factions.contains(&slot.faction) {
                 continue;
@@ -345,11 +353,18 @@ impl SlotSystem {
             let filled = filled.contains(&(slot.faction, slot.slot)) as i32 as f32;
             let enabled =
                 (slot.slot <= resources.team_states.get_slots(&slot.faction)) as i32 as f32;
+            let hovered = if let Some(hovered) = hovered {
+                ((slot.slot, slot.faction) == hovered) as i32 as f32
+            } else {
+                0.0
+            };
+
             shader
                 .parameters
                 .uniforms
                 .insert_float_ref("u_filled", filled)
-                .insert_float_ref("u_enabled", enabled);
+                .insert_float_ref("u_enabled", enabled)
+                .insert_float_ref("u_hovered", hovered);
         }
     }
 }
@@ -359,7 +374,7 @@ impl System for SlotSystem {
         <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
             .iter_mut(world)
             .for_each(|(unit, area, entity)| {
-                if resources.input.frame_data.1.is_dragged(entity.entity) {
+                if resources.input_data.frame_data.1.is_dragged(entity.entity) {
                     return;
                 }
                 let need_pos = Self::get_unit_position(unit, resources);

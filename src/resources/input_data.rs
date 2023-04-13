@@ -5,6 +5,9 @@ pub struct InputData {
 
     pub frame_data: (InputFrameData, InputFrameData),
 
+    pub dragged_entity: Option<legion::Entity>,
+    pub hovered_entity: Option<legion::Entity>,
+
     pub down_keys: HashSet<geng::Key>,
     pub pressed_keys: HashSet<geng::Key>,
     pub down_mouse_buttons: HashSet<geng::MouseButton>,
@@ -79,6 +82,8 @@ impl Default for InputData {
             pressed_mouse_buttons: default(),
             mouse_pos: vec2::ZERO,
             input_events: default(),
+            dragged_entity: default(),
+            hovered_entity: default(),
         }
     }
 }

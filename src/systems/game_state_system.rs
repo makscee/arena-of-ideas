@@ -25,41 +25,41 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Battle => {
-                if resources.input.down_keys.contains(&R) {
+                if resources.input_data.down_keys.contains(&R) {
                     resources.tape_player.head = 0.0;
                 }
                 if resources.tape_player.tape.length() < resources.tape_player.head
-                    || resources.input.down_keys.contains(&Escape)
+                    || resources.input_data.down_keys.contains(&Escape)
                 {
                     BattleSystem::finish_floor_battle(world, resources);
                 }
             }
             GameState::Shop => {
-                if resources.input.down_keys.contains(&Space) {
+                if resources.input_data.down_keys.contains(&Space) {
                     ShopSystem::switch_to_battle(world, resources);
                     resources.transition_state = GameState::Battle;
                 }
 
-                if resources.input.down_keys.contains(&G) {
+                if resources.input_data.down_keys.contains(&G) {
                     resources.transition_state = GameState::Gallery;
                 }
 
-                if resources.input.down_keys.contains(&O) {
+                if resources.input_data.down_keys.contains(&O) {
                     resources.transition_state = GameState::GameOver;
                 }
-                if resources.input.down_keys.contains(&R) {
+                if resources.input_data.down_keys.contains(&R) {
                     resources.transition_state = GameState::MainMenu;
                 }
-                if resources.input.down_keys.contains(&C) {
+                if resources.input_data.down_keys.contains(&C) {
                     ShopSystem::change_g(resources, 100);
                 }
-                if resources.input.down_keys.contains(&L) {
+                if resources.input_data.down_keys.contains(&L) {
                     SaveSystem::load(world, resources);
                 }
-                if resources.input.down_keys.contains(&S) {
+                if resources.input_data.down_keys.contains(&S) {
                     SaveSystem::save(world, resources);
                 }
-                if resources.input.down_keys.contains(&P) {
+                if resources.input_data.down_keys.contains(&P) {
                     if let Some(entity) =
                         SlotSystem::find_unit_by_slot(1, &Faction::Shop, world, resources)
                     {
@@ -75,17 +75,17 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Gallery => {
-                if resources.input.down_keys.contains(&G) {
+                if resources.input_data.down_keys.contains(&G) {
                     resources.transition_state = GameState::Shop;
                 }
             }
             GameState::GameOver => {
-                if resources.input.down_keys.contains(&Enter) {
+                if resources.input_data.down_keys.contains(&Enter) {
                     resources.transition_state = GameState::Shop;
                 }
             }
             GameState::CustomGame => {
-                if resources.input.down_keys.contains(&R) {
+                if resources.input_data.down_keys.contains(&R) {
                     resources.transition_state = GameState::MainMenu;
                     resources.tape_player.head = 0.0;
                 }

@@ -20,12 +20,12 @@ impl System for TapePlayerSystem {
             TapePlayMode::Play => 1.0,
             TapePlayMode::Stop => 0.0,
         };
-        if resources.input.pressed_keys.contains(&Left) {
+        if resources.input_data.pressed_keys.contains(&Left) {
             need_velocity = -REWIND_SPEED;
-        } else if resources.input.pressed_keys.contains(&Right) {
+        } else if resources.input_data.pressed_keys.contains(&Right) {
             need_velocity = REWIND_SPEED;
         }
-        if resources.input.down_keys.contains(&Space) {
+        if resources.input_data.down_keys.contains(&Space) {
             player.mode = match player.mode {
                 TapePlayMode::Play => TapePlayMode::Stop,
                 TapePlayMode::Stop => TapePlayMode::Play,

@@ -282,7 +282,7 @@ impl UnitSystem {
                     _ => 0.0,
                 };
                 let hover_value = resources
-                    .input
+                    .input_data
                     .input_events
                     .get(entity)
                     .and_then(|x| match x.0 {
@@ -330,12 +330,7 @@ impl UnitSystem {
         resources: &mut Resources,
     ) {
         match event {
-            InputEvent::DragStart => {
-                resources.shop_data.drag_entity = Some(entity);
-            }
             InputEvent::DragStop => {
-                resources.shop_data.drag_entity = None;
-                resources.shop_data.drop_entity = Some(entity);
                 SlotSystem::handle_unit_drop(entity, world, resources);
             }
             InputEvent::Drag { delta } => {

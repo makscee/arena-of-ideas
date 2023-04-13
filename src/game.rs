@@ -35,11 +35,7 @@ impl Game {
         world: &mut legion::World,
         world_entity: legion::Entity,
     ) {
-        let shader = resources
-            .options
-            .shaders
-            .field
-            .clone();
+        let shader = resources.options.shaders.field.clone();
         let entity = world.push((shader,));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
@@ -84,36 +80,42 @@ impl geng::State for Game {
         self.systems
             .iter_mut()
             .for_each(|s| s.post_update(&mut self.world, &mut self.resources));
-        self.resources.input.down_keys.clear();
-        self.resources.input.down_mouse_buttons.clear();
-        self.resources.input.up_mouse_buttons.clear();
+        self.resources.input_data.down_keys.clear();
+        self.resources.input_data.down_mouse_buttons.clear();
+        self.resources.input_data.up_mouse_buttons.clear();
     }
 
     fn handle_event(&mut self, event: geng::Event) {
         match event {
             geng::Event::KeyDown { key } => {
-                self.resources.input.down_keys.insert(key);
-                self.resources.input.pressed_keys.insert(key);
+                self.resources.input_data.down_keys.insert(key);
+                self.resources.input_data.pressed_keys.insert(key);
             }
 
             geng::Event::KeyUp { key } => {
-                self.resources.input.pressed_keys.remove(&key);
+                self.resources.input_data.pressed_keys.remove(&key);
             }
 
             geng::Event::MouseDown {
                 position: _,
                 button,
             } => {
-                self.resources.input.down_mouse_buttons.insert(button);
-                self.resources.input.pressed_mouse_buttons.insert(button);
+                self.resources.input_data.down_mouse_buttons.insert(button);
+                self.resources
+                    .input_data
+                    .pressed_mouse_buttons
+                    .insert(button);
             }
 
             geng::Event::MouseUp {
                 position: _,
                 button,
             } => {
-                self.resources.input.pressed_mouse_buttons.remove(&button);
-                self.resources.input.up_mouse_buttons.insert(button);
+                self.resources
+                    .input_data
+                    .pressed_mouse_buttons
+                    .remove(&button);
+                self.resources.input_data.up_mouse_buttons.insert(button);
             }
 
             _ => {}
@@ -146,7 +148,7 @@ impl geng::State for Game {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.resources.camera.framebuffer_size = framebuffer.size().map(|x| x as f32);
-        self.resources.input.mouse_pos = self.resources.camera.camera.screen_to_world(
+        self.resources.input_data.mouse_pos = self.resources.camera.camera.screen_to_world(
             framebuffer.size().map(|x| x as f32),
             self.resources
                 .geng

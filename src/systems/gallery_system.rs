@@ -104,7 +104,7 @@ impl GallerySystem {
 
 impl System for GallerySystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if resources.input.down_keys.contains(&Escape) {
+        if resources.input_data.down_keys.contains(&Escape) {
             self.clear();
         }
         // if self.paths.is_empty() {
@@ -128,18 +128,18 @@ impl System for GallerySystem {
             self.need_redraw = true;
         }
 
-        if resources.input.down_keys.contains(&Enter) {
+        if resources.input_data.down_keys.contains(&Enter) {
             self.current_heroes.push(self.wanted_hero + 1);
         }
 
-        if resources.input.down_keys.contains(&Left) {
+        if resources.input_data.down_keys.contains(&Left) {
             let length = self.paths.len();
             self.wanted_hero = (self.wanted_hero + length - 1) % length;
         }
-        if resources.input.down_keys.contains(&Right) {
+        if resources.input_data.down_keys.contains(&Right) {
             self.wanted_hero = (self.wanted_hero + 1) % self.paths.len();
         }
-        if resources.input.down_keys.contains(&Down) {
+        if resources.input_data.down_keys.contains(&Down) {
             self.need_redraw = true;
             resources.camera.camera.fov *= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
@@ -150,7 +150,7 @@ impl System for GallerySystem {
                 ),
             )
         }
-        if resources.input.down_keys.contains(&Up) {
+        if resources.input_data.down_keys.contains(&Up) {
             self.need_redraw = true;
             resources.camera.camera.fov /= ZOOM_MULTIPLIER;
             WorldSystem::set_var(
@@ -161,7 +161,7 @@ impl System for GallerySystem {
                 ),
             )
         }
-        if resources.input.down_keys.contains(&C) {
+        if resources.input_data.down_keys.contains(&C) {
             self.need_redraw = true;
             WorldSystem::set_var(
                 world,
@@ -170,7 +170,7 @@ impl System for GallerySystem {
             )
         }
 
-        if resources.input.down_keys.contains(&Space) {
+        if resources.input_data.down_keys.contains(&Space) {
             self.is_card = !self.is_card;
             self.need_card_animation = true;
             self.need_redraw = true;

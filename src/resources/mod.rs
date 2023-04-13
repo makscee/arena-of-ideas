@@ -103,7 +103,7 @@ pub struct Resources {
     pub current_state: GameState,
     pub transition_state: GameState,
 
-    pub input: InputData,
+    pub input_data: InputData,
     pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Option<Geng>,
@@ -127,7 +127,7 @@ impl Resources {
             shop_data: default(),
             battle_data: default(),
             frame_shaders: default(),
-            input: default(),
+            input_data: default(),
             house_pool: default(),
             definitions: default(),
             ladder: default(),
