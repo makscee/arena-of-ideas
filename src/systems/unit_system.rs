@@ -44,7 +44,7 @@ impl UnitSystem {
             None => options.shaders.unit.clone(),
         };
         if unit.faction == Faction::Shop || unit.faction == Faction::Team {
-            shader.input_handler = Some(Self::unit_input_handler);
+            shader.input_handlers.push(Self::unit_input_handler);
         }
         shader.entity = Some(entity);
         let ts = world
@@ -274,7 +274,7 @@ impl UnitSystem {
             let faction_value = shader
                 .parameters
                 .uniforms
-                .try_get_float(&VarName::Faction.convert_to_uniform());
+                .try_get_float(&VarName::Faction.uniform());
             if let Some(faction_value) = faction_value {
                 let faction = Faction::from(faction_value);
                 let mut card_value: f32 = match faction {
@@ -297,21 +297,21 @@ impl UnitSystem {
                 .abs();
                 card_value = card_value.max(hover_value);
 
+                shader
+                    .parameters
+                    .uniforms
+                    .insert_ref(&VarName::Card.uniform(), ShaderUniform::Float(card_value));
                 shader.parameters.uniforms.insert_ref(
-                    &VarName::Card.convert_to_uniform(),
-                    ShaderUniform::Float(card_value),
-                );
-                shader.parameters.uniforms.insert_ref(
-                    &VarName::Zoom.convert_to_uniform(),
+                    &VarName::Zoom.uniform(),
                     ShaderUniform::Float(1.0 + hover_value * 1.4),
                 );
                 let slot = shader
                     .parameters
                     .uniforms
-                    .try_get_int(&VarName::Slot.convert_to_uniform())
+                    .try_get_int(&VarName::Slot.uniform())
                     .unwrap() as usize;
                 shader.parameters.uniforms.insert_ref(
-                    &VarName::Scale.convert_to_uniform(),
+                    &VarName::Scale.uniform(),
                     ShaderUniform::Float(mix(
                         SlotSystem::get_scale(slot, faction, resources),
                         1.0,
@@ -326,8 +326,8 @@ impl UnitSystem {
         event: InputEvent,
         entity: legion::Entity,
         _: &mut Shader,
-        resources: &mut Resources,
         world: &mut legion::World,
+        resources: &mut Resources,
     ) {
         match event {
             InputEvent::DragStart => {

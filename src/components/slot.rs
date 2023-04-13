@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct SlotComponent {
     pub slot: usize,
     pub faction: Faction,

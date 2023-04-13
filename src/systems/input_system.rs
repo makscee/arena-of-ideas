@@ -211,8 +211,8 @@ impl InputSystem {
                 }
                 _ => {}
             }
-            if let Some(f) = shader.input_handler {
-                (f)(event, entity, &mut shader, resources, world);
+            for f in shader.input_handlers.clone() {
+                (f)(event, entity, &mut shader, world, resources);
             }
             shaders.insert(ind, shader);
         }

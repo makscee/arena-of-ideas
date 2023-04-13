@@ -34,8 +34,6 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 
-uniform vec4 u_outline_color;
-
 uniform sampler2D u_text;
 
 uniform float u_text_inside = 0.5;

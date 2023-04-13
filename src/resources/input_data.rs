@@ -41,7 +41,7 @@ impl InputFrameData {
     }
 }
 
-pub type Handler = fn(InputEvent, legion::Entity, &mut Shader, &mut Resources, &mut legion::World);
+pub type Handler = fn(InputEvent, legion::Entity, &mut Shader, &mut legion::World, &mut Resources);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum InputState {
@@ -83,7 +83,7 @@ impl Default for InputData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum InputEvent {
     HoverStart,
     Hover,

@@ -56,8 +56,8 @@ impl geng::ui::Widget for CornerButtonWidget<'_> {
         struct Vertex {
             a_pos: vec2<f32>,
         }
-        let button_color = self.resources.options.colors.corner_button;
-        let icon_color = self.resources.options.colors.corner_button_icon;
+        let button_color = self.resources.options.colors.button;
+        let icon_color = self.resources.options.colors.primary;
         let scale = 1.0
             + match self.sense.hovered_time {
                 Some(value) => (0.4 - value * value * 0.5).clamp_min(0.2) as f32,

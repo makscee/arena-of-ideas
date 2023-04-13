@@ -8,7 +8,6 @@
     "shaders/system/strike.glsl",
     "shaders/system/slot.glsl",
     "shaders/system/description_panel.glsl",
-    "shaders/system/button.glsl",
     "shaders/system/icon.glsl",
     "shaders/vfx/circle.glsl",
     "shaders/vfx/layered_triangles.glsl",

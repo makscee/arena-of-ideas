@@ -26,7 +26,7 @@ impl Game {
     }
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
-        let world_entity = WorldSystem::init_world_entity(world);
+        let world_entity = WorldSystem::init_world_entity(world, &resources.options);
         Self::init_field(resources, world, world_entity);
     }
 
@@ -35,17 +35,22 @@ impl Game {
         world: &mut legion::World,
         world_entity: legion::Entity,
     ) {
-        let shader = resources.options.shaders.field.clone();
+        let shader = resources
+            .options
+            .shaders
+            .field
+            .clone();
         let entity = world.push((shader,));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
-        entry.add_component(Context {
+        let context = Context {
             owner: entity,
             target: entity,
             parent: Some(world_entity),
             vars: default(),
             trace: "field".to_string(),
-        })
+        };
+        entry.add_component(context)
     }
 
     pub fn reset(world: &mut legion::World, resources: &mut Resources) {
@@ -63,8 +68,6 @@ impl Game {
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
         Self::reset(world, resources);
         Self::init_world(resources, world);
-        resources.current_state = GameState::MainMenu;
-        resources.transition_state = GameState::Shop;
     }
 }
 

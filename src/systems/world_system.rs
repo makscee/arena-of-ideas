@@ -3,12 +3,15 @@ use super::*;
 pub struct WorldSystem {}
 
 impl WorldSystem {
-    pub fn init_world_entity(world: &mut legion::World) -> legion::Entity {
+    pub fn init_world_entity(world: &mut legion::World, options: &Options) -> legion::Entity {
         let world_entity = world.push((WorldComponent {},));
         let mut world_entry = world.entry(world_entity).unwrap();
         world_entry.add_component(EntityComponent::new(world_entity));
         let mut vars = Vars::default();
         vars.insert(VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
+        vars.set_color(&VarName::BackgroundLight, options.colors.background_light);
+        vars.set_color(&VarName::BackgroundDark, options.colors.background_dark);
+        vars.set_color(&VarName::Outline, options.colors.outline);
         world_entry.add_component(Context {
             owner: world_entity,
             target: world_entity,

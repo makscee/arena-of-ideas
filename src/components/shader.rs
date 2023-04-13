@@ -20,7 +20,7 @@ pub struct Shader {
     #[serde(skip)]
     pub entity: Option<legion::Entity>,
     #[serde(skip)]
-    pub input_handler: Option<Handler>,
+    pub input_handlers: Vec<Handler>,
 }
 
 impl Debug for Shader {

@@ -25,7 +25,6 @@ uniform vec2 u_text_size;
 uniform vec4 u_text_color_default;
 uniform vec4 u_text_color_decreased;
 uniform vec4 u_text_color_increased;
-uniform vec4 u_outline_color;
 uniform vec4 u_circle_color;
 
 uniform float u_text_scale = 1;

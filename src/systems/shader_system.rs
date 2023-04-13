@@ -225,7 +225,26 @@ impl ShaderSystem {
                 .merge_mut(&shader.parameters.uniforms, false);
         });
 
-        [before, vec![shader], after].concat()
+        let mut result = [before, vec![shader], after].concat();
+        if result.len() == 1 {
+            return result;
+        }
+        let mut changed = true;
+        while changed {
+            changed = false;
+            result = result
+                .into_iter()
+                .map(|x| {
+                    let vec = Self::flatten_shader_chain(x);
+                    if vec.len() > 1 {
+                        changed = true;
+                    }
+                    vec
+                })
+                .flatten()
+                .collect_vec();
+        }
+        result
     }
 
     pub fn get_quad(vertices: usize, geng: &Geng) -> ugli::VertexBuffer<draw_2d::Vertex> {

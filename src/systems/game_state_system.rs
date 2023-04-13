@@ -48,7 +48,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::GameOver;
                 }
                 if resources.input.down_keys.contains(&R) {
-                    Game::restart(world, resources);
+                    resources.transition_state = GameState::MainMenu;
                 }
                 if resources.input.down_keys.contains(&C) {
                     ShopSystem::change_g(resources, 100);
@@ -217,7 +217,9 @@ impl GameStateSystem {
 
         //transition to
         match resources.transition_state {
-            GameState::MainMenu => {}
+            GameState::MainMenu => {
+                Game::restart(world, resources);
+            }
             GameState::Battle => {
                 resources.camera.focus = Focus::Battle;
                 let mut tape = Some(Tape::default());

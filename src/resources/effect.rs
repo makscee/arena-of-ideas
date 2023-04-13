@@ -277,7 +277,7 @@ impl EffectWrapped {
                     node.add_effect(VfxSystem::vfx_show_parent_text(
                         resources,
                         &text,
-                        resources.options.colors.damage_text,
+                        resources.options.colors.damage,
                         resources.options.colors.deletion,
                         context.target,
                         1,
@@ -347,7 +347,7 @@ impl EffectWrapped {
                         node.add_effect(VfxSystem::vfx_show_parent_text(
                             resources,
                             &text,
-                            resources.options.colors.damage_text,
+                            resources.options.colors.damage,
                             color,
                             context.target,
                             0,

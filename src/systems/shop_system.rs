@@ -77,7 +77,6 @@ impl System for ShopSystem {
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),
         );
-        let position = Self::reroll_btn_position(resources) + vec2(1.0, 0.0);
         let text = format!("{} g", Self::reroll_price(resources).to_string());
         let money_indicator = &resources.options.shaders.money_indicator;
         resources.frame_shaders.push(
@@ -261,58 +260,6 @@ impl ShopSystem {
         vars.set_int(&VarName::FreeRerolls, 0);
     }
 
-    fn create_reroll_btn(world: &mut legion::World, resources: &mut Resources) {
-        if let Some(entity) = resources.shop_data.refresh_btn {
-            ButtonSystem::remove_button(entity, world, resources);
-        }
-        let world_entity = WorldSystem::get_context(world).owner;
-        fn refresh(
-            entity: legion::Entity,
-            resources: &mut Resources,
-            world: &mut legion::World,
-            event: InputEvent,
-        ) {
-            match event {
-                InputEvent::Click => {
-                    if ShopSystem::is_reroll_affordable(resources) {
-                        ShopSystem::reroll(world, resources);
-                        ShopSystem::deduct_reroll_cost(resources);
-                    }
-                }
-                InputEvent::HoverStart => ButtonSystem::change_icon_color(
-                    entity,
-                    world,
-                    resources.options.colors.btn_hovered,
-                ),
-                InputEvent::HoverStop => ButtonSystem::change_icon_color(
-                    entity,
-                    world,
-                    resources.options.colors.btn_normal,
-                ),
-                _ => {}
-            }
-        }
-
-        let entity = ButtonSystem::create_button(
-            world,
-            world_entity,
-            resources,
-            resources.options.images.refresh_icon.clone(),
-            resources.options.colors.btn_normal,
-            refresh,
-            Self::reroll_btn_position(resources),
-            &hashmap! {
-                "u_size" => ShaderUniform::Float(1.1),
-            }
-            .into(),
-        );
-        resources.shop_data.refresh_btn = Some(entity);
-    }
-
-    fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
-        SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
-    }
-
     fn set_slots(slots: usize, resources: &mut Resources) {
         resources
             .team_states
@@ -335,7 +282,6 @@ impl ShopSystem {
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
-        Self::create_reroll_btn(world, resources);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {

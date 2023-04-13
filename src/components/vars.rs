@@ -44,10 +44,13 @@ pub enum VarName {
     FreeRerolls,
     Persistent,
     Rank,
+    BackgroundLight,
+    BackgroundDark,
+    Outline,
 }
 
 impl VarName {
-    pub fn convert_to_uniform(&self) -> String {
+    pub fn uniform(&self) -> String {
         let mut name = "u".to_string();
         for c in self.to_string().chars() {
             if c.is_uppercase() {
@@ -110,6 +113,10 @@ impl Vars {
             },
             None => None,
         }
+    }
+
+    pub fn set_color(&mut self, var: &VarName, value: Rgba<f32>) {
+        self.insert(*var, Var::Color(value));
     }
 
     pub fn get_vec2(&self, var: &VarName) -> vec2<f32> {
@@ -209,7 +216,7 @@ impl From<Vars> for ShaderUniforms {
     fn from(value: Vars) -> Self {
         let mut map: HashMap<String, ShaderUniform> = default();
         value.0.iter().for_each(|(name, value)| {
-            let name = name.convert_to_uniform();
+            let name = name.uniform();
             match value {
                 Var::Int(v) => {
                     map.insert(name, ShaderUniform::Int(*v));

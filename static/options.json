@@ -62,25 +62,30 @@
     },
     "colors": {
         "factions": {
-            "Dark": "#ffffff",
-            "Light": "#000000",
-            "Shop": "#fbc000",
-            "Team": "#e70083"
+            "Dark": "#798EA4",
+            "Light": "#1B1B1B",
+            "Shop": "#FFD700",
+            "Team": "#B9D9EB"
         },
-        "damage_text": "#ffffff",
-        "inactive": "#aeaeae",
-        "stats_attack": "#ffc400",
-        "stats_hp": "#d20505",
-        "corner_button_icon": "#fffafa",
-        "corner_button": "#2f2f2f",
-        "btn_normal": "#ff8b2c",
-        "btn_hovered": "#fff42c",
-        "btn_active": "#1bfc79",
-        "victory": "#00CED1",
-        "defeat": "#8B0000",
-        "addition": "#00FF7F",
-        "deletion": "#FF2400",
-        "star": "#FFD700"
+        "background_light": "#E7E7E7",
+        "background_dark": "#232323",
+        "inactive": "#BDBDBD",
+        "active": "#1F3A4F",
+        "hovered": "#FFD700",
+        "pressed": "#B9D9EB",
+        "outline": "#1F3A4F",
+        "primary": "#232323",
+        "secondary": "#6495ED",
+        "stats_attack": "#FFA500",
+        "stats_health": "#FF6347",
+        "damage": "#FF4D4D",
+        "addition": "#B9D9EB",
+        "deletion": "#D44333",
+        "victory": "#E7E7E7",
+        "defeat": "#FF6666",
+        "star": "#FFD700",
+        "button": "#6495ED",
+        "text": "#ffffff"
     },
     "shaders": {
         "unit": {
@@ -96,8 +101,6 @@
             "path": "shaders/system/field.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_color_1": "#000000",
-                    "u_color_2": "#ffffff",
                     "u_padding": 100.0
                 }
             },
@@ -379,7 +382,35 @@
             "layer": "UI"
         },
         "button": {
-            "path": "shaders/system/button.glsl",
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_sdf_cut": 0.5,
+                    "u_sdf_border": 0.35,
+                    "u_aa": 0.05,
+                    "u_box": [
+                        1.0,
+                        0.4
+                    ],
+                    "u_size": 0.5
+                }
+            },
+            "layer": "UI"
+        },
+        "button_text": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_size": 0.3,
+                    "u_text_inside": 0.5,
+                    "u_text_border": 0.4,
+                    "u_outline_color": "#404040"
+                }
+            },
+            "layer": "UI"
+        },
+        "button_icon": {
+            "path": "shaders/system/icon.glsl",
             "layer": "UI"
         },
         "icon": {
@@ -549,6 +580,7 @@
             0.0
         ],
         "slots_battle_team_scale": 0.7,
-        "slots_striker_scale": 1.5
+        "slots_striker_scale": 1.5,
+        "slot_info_offset": 2.0
     }
 }

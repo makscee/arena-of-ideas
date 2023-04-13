@@ -176,16 +176,13 @@ impl VfxSystem {
         let light_pos = shader
             .parameters
             .uniforms
-            .try_get_vec2(&VarName::Position.convert_to_uniform())
+            .try_get_vec2(&VarName::Position.uniform())
             .unwrap()
             * vec2(-1.0, 1.0);
         let light_shader = shader
             .clone()
             .set_uniform("u_align", ShaderUniform::Float(-1.0))
-            .set_uniform(
-                &VarName::Position.convert_to_uniform(),
-                ShaderUniform::Vec2(light_pos),
-            )
+            .set_uniform(&VarName::Position.uniform(), ShaderUniform::Vec2(light_pos))
             .set_uniform("u_text", ShaderUniform::String((2, light)));
         (light_shader, dark_shader)
     }

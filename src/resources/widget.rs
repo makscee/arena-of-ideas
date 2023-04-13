@@ -55,7 +55,7 @@ impl Widget {
                     0,
                 ));
 
-                uniforms.insert_color_ref("u_color", Rgba::WHITE);
+                uniforms.insert_color_ref("u_color", options.colors.background_dark);
                 let animation = AnimatedShaderUniforms::empty(EasingType::Linear)
                     .add_key_frame(
                         0.05,

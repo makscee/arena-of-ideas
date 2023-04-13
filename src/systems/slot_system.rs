@@ -149,6 +149,7 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &Resources,
     ) {
+        let entity = world.push((SlotComponent::new(slot, faction),));
         let position = Self::get_position(slot, &faction, resources);
         let color = faction.color(&resources.options);
         let scale = Self::get_scale(slot, faction, resources);
@@ -159,19 +160,85 @@ impl SlotSystem {
             .insert_color_ref("u_color", color)
             .insert_vec_ref("u_position", position)
             .insert_float_ref("u_scale", scale);
-        if faction == Faction::Shop {
-            shader
-                .chain_after
-                .push(resources.options.shaders.slot_price.clone().set_uniform(
-                    "u_text",
-                    ShaderUniform::String((0, format!("{} g", ShopSystem::buy_price(resources)))),
-                ));
-        }
-        let entity = world.push((shader,));
+        match faction {
+            Faction::Light => {}
+            Faction::Dark => {}
+            Faction::Team => {
+                Self::add_slot_activation_btn(&mut shader, "Sell", None, entity, resources);
+            }
+            Faction::Shop => {
+                shader
+                    .chain_after
+                    .push(resources.options.shaders.slot_price.clone().set_uniform(
+                        "u_text",
+                        ShaderUniform::String((
+                            0,
+                            format!("{} g", ShopSystem::buy_price(resources)),
+                        )),
+                    ));
+            }
+        };
 
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(TapeEntityComponent::new(entity));
-        entry.add_component(SlotComponent::new(slot, faction));
+        entry.add_component(shader);
+    }
+
+    fn add_slot_activation_btn(
+        shader: &mut Shader,
+        text: &str,
+        icon: Option<Image>,
+        entity: legion::Entity,
+        resources: &Resources,
+    ) {
+        let button = ButtonSystem::create_button(
+            Some(text),
+            icon,
+            Self::activation_handler,
+            entity,
+            &resources.options,
+        );
+        shader.chain_after.push(button.set_uniform(
+            "u_offset",
+            ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
+        ));
+    }
+
+    fn activation_handler(
+        event: InputEvent,
+        entity: legion::Entity,
+        _: &mut Shader,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        match event {
+            InputEvent::Click => {
+                let slot = world
+                    .entry(entity)
+                    .unwrap()
+                    .get_component::<SlotComponent>()
+                    .unwrap()
+                    .clone();
+                Self::handle_slot_activation(slot.slot, slot.faction, world, resources);
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_slot_activation(
+        slot: usize,
+        faction: Faction,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        match faction {
+            Faction::Team => {
+                if let Some(entity) = Self::find_unit_by_slot(slot, &faction, world, resources) {
+                    ShopSystem::try_sell(entity, resources, world);
+                }
+            }
+            _ => {}
+        }
     }
 
     pub fn handle_unit_drag(

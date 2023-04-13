@@ -1,83 +1,68 @@
 use super::*;
 
-pub struct ButtonSystem {}
+pub struct ButtonSystem;
 
 impl ButtonSystem {
     pub fn create_button(
-        world: &mut legion::World,
-        world_entity: legion::Entity,
-        resources: &mut Resources,
-        icon: Image,
-        color: Rgba<f32>,
-        listener: fn(legion::Entity, &mut Resources, &mut legion::World, InputEvent),
-        position: vec2<f32>,
-        uniforms: &ShaderUniforms,
-    ) -> legion::Entity {
-        let entity = world.push((
-            AreaComponent {
-                r#type: AreaType::Rectangle {
-                    size: vec2(1.0, 1.0),
-                },
-                position,
-            },
-            resources
-                .options
-                .shaders
-                .icon
-                .clone()
-                .set_uniform("u_texture", ShaderUniform::Texture(icon))
-                .set_uniform(
-                    "u_icon_color",
-                    ShaderUniform::Color(Rgba::try_from(color).unwrap()),
-                )
-                .merge_uniforms(&uniforms, true),
-        ));
-        let mut entry = world.entry(entity).unwrap();
-        entry.add_component(EntityComponent::new(entity));
-        entry.add_component(Context {
-            owner: entity,
-            target: entity,
-            parent: Some(world_entity),
-            vars: default(),
-            trace: "button".to_string(),
-        });
-        // resources.input.listeners.insert(entity, listener);
-        entity
-    }
-
-    // pub fn change_icon(entity: legion::Entity, world: &mut legion::World, icon: &Image) {
-    //     Self::change_uniform(
-    //         entity,
-    //         world,
-    //         "u_texture".to_string(),
-    //         ShaderUniform::Texture(icon.clone()),
-    //     );
-    // }
-
-    pub fn change_icon_color(entity: legion::Entity, world: &mut legion::World, color: Rgba<f32>) {
-        Self::change_uniform(entity, world, "u_icon_color", ShaderUniform::Color(color));
-    }
-
-    pub fn change_uniform(
+        text: Option<&str>,
+        icon: Option<Image>,
+        handler: Handler,
         entity: legion::Entity,
-        world: &mut legion::World,
-        key: &str,
-        value: ShaderUniform,
-    ) {
-        let mut entry = world.entry(entity).unwrap();
-        let uniforms = &mut entry
-            .get_component_mut::<Shader>()
-            .unwrap()
+        options: &Options,
+    ) -> Shader {
+        let mut button = options.shaders.button.clone();
+        button
+            .input_handlers
+            .extend([Self::button_handler, handler]);
+        if let Some(text) = text {
+            button.chain_after.push(
+                options
+                    .shaders
+                    .button_text
+                    .clone()
+                    .set_uniform("u_color", ShaderUniform::Color(options.colors.text))
+                    .set_uniform("u_text", ShaderUniform::String((1, text.to_string()))),
+            );
+        }
+        if let Some(icon) = icon {
+            button.chain_after.push(
+                options
+                    .shaders
+                    .button_icon
+                    .clone()
+                    .set_uniform("u_texture", ShaderUniform::Texture(icon)),
+            );
+        }
+        button
             .parameters
-            .uniforms;
-        uniforms.insert_ref(key, value);
+            .uniforms
+            .insert_color_ref(&VarName::Color.uniform(), options.colors.button);
+        button.entity = Some(entity);
+
+        button
     }
 
-    pub fn remove_button(
-        entity: legion::Entity,
-        world: &mut legion::World,
+    fn button_handler(
+        event: InputEvent,
+        _: legion::Entity,
+        shader: &mut Shader,
+        _: &mut legion::World,
         resources: &mut Resources,
     ) {
-        world.remove(entity);
+        match event {
+            InputEvent::Hover => {
+                shader
+                    .parameters
+                    .uniforms
+                    .insert_color_ref(&VarName::Color.uniform(), resources.options.colors.hovered);
+            }
+            InputEvent::Press => {
+                shader
+                    .parameters
+                    .uniforms
+                    .insert_color_ref(&VarName::Color.uniform(), resources.options.colors.pressed);
+            }
+            _ => {}
+        };
     }
 }

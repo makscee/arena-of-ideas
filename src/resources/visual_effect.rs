@@ -117,7 +117,7 @@ impl VisualEffectType {
                             from_shader
                                 .parameters
                                 .uniforms
-                                .get(&VarName::Position.convert_to_uniform())
+                                .get(&VarName::Position.uniform())
                                 .cloned()
                                 .unwrap(),
                         );
@@ -126,7 +126,7 @@ impl VisualEffectType {
                             to_shader
                                 .parameters
                                 .uniforms
-                                .get(&VarName::Position.convert_to_uniform())
+                                .get(&VarName::Position.uniform())
                                 .cloned()
                                 .unwrap(),
                         );

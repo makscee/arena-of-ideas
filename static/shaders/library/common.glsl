@@ -5,8 +5,9 @@ uniform float u_global_time;
 uniform vec2 u_field_position;
 uniform float u_t = 0;
 
-vec3 light_color = vec3(1);
-vec3 dark_color = vec3(0);
+uniform vec4 u_outline_color;
+uniform vec4 u_background_light;
+uniform vec4 u_background_dark;
 vec3 base_color;
 vec3 field_color;
 
@@ -89,8 +90,8 @@ void init_fields() {
     scale = u_scale;
     size = u_size;
     float field = get_field_value(position);
-    base_color = mix(light_color, dark_color, field);
-    field_color = mix(light_color, dark_color, 1 - field);
+    base_color = mix(u_background_light.rgb, u_background_dark.rgb, field);
+    field_color = mix(u_background_light.rgb, u_background_dark.rgb, 1 - field);
 }
 
 vec2 get_uv(vec2 a_pos) {
