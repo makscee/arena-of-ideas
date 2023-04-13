@@ -11,7 +11,7 @@ impl WorldSystem {
         vars.insert(VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
         vars.set_color(&VarName::BackgroundLight, options.colors.background_light);
         vars.set_color(&VarName::BackgroundDark, options.colors.background_dark);
-        vars.set_color(&VarName::Outline, options.colors.outline);
+        vars.set_color(&VarName::OutlineColor, options.colors.outline);
         world_entry.add_component(Context {
             owner: world_entity,
             target: world_entity,

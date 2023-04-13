@@ -148,7 +148,7 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &Resources,
     ) {
-        let entity = world.push((SlotComponent::new(slot, faction),));
+        let entity = world.push((SlotComponent::new(slot, faction), TapeEntityComponent {}));
         let position = Self::get_position(slot, &faction, resources);
         let color = faction.color(&resources.options);
         let scale = Self::get_scale(slot, faction, resources);
@@ -179,7 +179,7 @@ impl SlotSystem {
         };
 
         let mut entry = world.entry(entity).unwrap();
-        entry.add_component(TapeEntityComponent::new(entity));
+        entry.add_component(EntityComponent::new(entity));
         entry.add_component(shader);
     }
 

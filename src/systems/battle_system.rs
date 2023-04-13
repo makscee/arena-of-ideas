@@ -63,11 +63,11 @@ impl BattleSystem {
     }
 
     fn push_tape_shader_entity(shader: Shader, world: &mut legion::World) -> legion::Entity {
-        let entity = world.push((shader,));
+        let entity = world.push((shader, TapeEntityComponent {}));
         world
             .entry(entity)
             .unwrap()
-            .add_component(TapeEntityComponent { entity });
+            .add_component(EntityComponent::new(entity));
         entity
     }
 

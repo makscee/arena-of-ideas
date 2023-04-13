@@ -46,7 +46,7 @@ pub enum VarName {
     Rank,
     BackgroundLight,
     BackgroundDark,
-    Outline,
+    OutlineColor,
 }
 
 impl VarName {

@@ -370,7 +370,8 @@ impl Node {
     }
 
     fn draw_all_tape_entities_to_node(node: &mut Node, world: &legion::World) {
-        <(&TapeEntityComponent, &Shader)>::query()
+        <(&EntityComponent, &Shader)>::query()
+            .filter(component::<TapeEntityComponent>())
             .iter(world)
             .for_each(|(entity, shader)| {
                 node.add_entity_shader(entity.entity, shader.clone());

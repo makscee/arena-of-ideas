@@ -6,7 +6,6 @@ use super::*;
 #[derive(Default)]
 pub struct ShopSystem {
     need_switch_battle: bool,
-    drag_to_sell: bool,
 }
 
 impl System for ShopSystem {
@@ -83,27 +82,13 @@ impl System for ShopSystem {
             money_indicator
                 .clone()
                 .set_uniform("u_size", ShaderUniform::Float(0.5))
-                .set_uniform("u_position", ShaderUniform::Vec2(position))
+                .set_uniform(
+                    "u_position",
+                    ShaderUniform::Vec2(Self::reroll_btn_position(resources) + vec2(1.0, 0.0)),
+                )
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),
         );
-        if self.drag_to_sell {
-            resources.frame_shaders.push(
-                resources
-                    .options
-                    .shaders
-                    .shop_sell_field
-                    .clone()
-                    .set_uniform("u_position", ShaderUniform::Vec2(SHOP_POSITION))
-                    .set_uniform(
-                        "u_text",
-                        ShaderUniform::String((
-                            0,
-                            format!("Sell: {} g", Self::sell_price(resources)),
-                        )),
-                    ),
-            )
-        }
     }
 }
 
@@ -230,6 +215,13 @@ impl ShopSystem {
         }
     }
 
+    fn try_reroll(world: &mut legion::World, resources: &mut Resources) {
+        if Self::is_reroll_affordable(resources) {
+            Self::reroll(world, resources);
+            Self::deduct_reroll_cost(resources);
+        }
+    }
+
     fn is_reroll_affordable(resources: &Resources) -> bool {
         let vars = resources.team_states.get_vars(&Faction::Team);
         vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
@@ -249,7 +241,7 @@ impl ShopSystem {
         }
     }
 
-    pub fn init_game(_: &mut legion::World, resources: &mut Resources) {
+    pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         ShopData::load_pool(resources);
         resources.team_states.clear(Faction::Team);
         let vars = resources.team_states.get_vars_mut(&Faction::Team);
@@ -258,6 +250,41 @@ impl ShopSystem {
         vars.set_int(&VarName::SellPrice, 1);
         vars.set_int(&VarName::RerollPrice, 1);
         vars.set_int(&VarName::FreeRerolls, 0);
+        Self::create_reroll_button(world, resources);
+    }
+
+    fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
+        SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
+    }
+
+    fn create_reroll_button(world: &mut legion::World, resources: &Resources) {
+        fn reroll_handler(
+            event: InputEvent,
+            entity: legion::Entity,
+            _: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                InputEvent::Click => ShopSystem::try_reroll(world, resources),
+                _ => {}
+            }
+        }
+        let entity = world.push((TapeEntityComponent {},));
+        let mut button = ButtonSystem::create_button(
+            Some("reroll"),
+            None,
+            reroll_handler,
+            entity,
+            &resources.options,
+        );
+        button.parameters.uniforms.insert_vec_ref(
+            &VarName::Position.uniform(),
+            Self::reroll_btn_position(resources),
+        );
+        let mut entry = world.entry(entity).unwrap();
+        entry.add_component(button);
+        entry.add_component(EntityComponent::new(entity));
     }
 
     fn set_slots(slots: usize, resources: &mut Resources) {
