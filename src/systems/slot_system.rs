@@ -179,6 +179,12 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        if let Some((slot, faction)) = Self::get_hovered_slot(resources.input.mouse_pos, resources)
+        {
+            if faction == Faction::Team {
+                Self::make_gap(faction, slot, world, resources, Some(entity));
+            }
+        }
     }
 
     pub fn handle_unit_drop(
@@ -193,6 +199,10 @@ impl SlotSystem {
                 ShopSystem::try_buy(entity, slot, resources, world);
             } else if faction == Faction::Shop && unit_faction == Faction::Team {
                 ShopSystem::try_sell(entity, resources, world);
+            } else if faction == unit_faction {
+                if Self::make_gap(faction, slot, world, resources, Some(entity)) {
+                    UnitSystem::set_slot(entity, slot, world);
+                }
             }
         }
     }
@@ -214,20 +224,24 @@ impl SlotSystem {
         slot: usize,
         world: &mut legion::World,
         resources: &mut Resources,
+        ignore: Option<legion::Entity>,
     ) -> bool {
         let slots = resources.team_states.get_slots(&faction);
-        let units = UnitSystem::collect_faction_units(world, resources, faction, false);
+        let mut units = UnitSystem::collect_faction_units(world, resources, faction, false);
+        if let Some(ignore) = ignore {
+            units.remove(&ignore);
+        }
         if units.len() >= slots {
             return false;
         }
-        let mut units_slots: Vec<Option<legion::Entity>> = vec![None; slots];
+        let mut units_slots: Vec<Option<legion::Entity>> = vec![None; slots + 1];
         units
             .into_iter()
             .for_each(|(entity, unit)| units_slots[unit.slot] = Some(entity));
-        if units_slots[slots].is_none() {
+        if units_slots[slot].is_none() {
             return true;
         }
-        for empty in slot - 1..0 {
+        for empty in (1..slot).rev() {
             if units_slots[empty].is_none() {
                 for i in empty..slot {
                     UnitSystem::set_slot(units_slots[i + 1].unwrap(), i, world);
@@ -235,10 +249,10 @@ impl SlotSystem {
                 return true;
             }
         }
-        for empty in slot + 1..slots {
+        for empty in (slot + 1)..=slots {
             if units_slots[empty].is_none() {
-                for i in empty..slot {
-                    UnitSystem::set_slot(units_slots[i - 1].unwrap(), i, world);
+                for i in slot..empty {
+                    UnitSystem::set_slot(units_slots[i].unwrap(), i + 1, world);
                 }
                 return true;
             }

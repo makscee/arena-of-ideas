@@ -62,6 +62,7 @@ impl Game {
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {
         Self::reset(world, resources);
+        Self::init_world(resources, world);
         resources.current_state = GameState::MainMenu;
         resources.transition_state = GameState::Shop;
     }

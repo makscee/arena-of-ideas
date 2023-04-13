@@ -25,7 +25,7 @@ impl UnitSystem {
             .unwrap()
             .get_component_mut::<UnitComponent>()
             .unwrap()
-            .slot = slot
+            .slot = slot;
     }
 
     pub fn draw_unit_to_node(
