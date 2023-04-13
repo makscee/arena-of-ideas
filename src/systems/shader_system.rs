@@ -116,10 +116,12 @@ impl ShaderSystem {
     ) where
         U: ugli::Uniforms,
     {
+        if !shader.is_enabled() {
+            return;
+        }
         let texts = shader
             .parameters
             .uniforms
-            .0
             .iter()
             .filter_map(|(key, uniform)| match uniform {
                 ShaderUniform::String((font, text)) => {
@@ -137,7 +139,6 @@ impl ShaderSystem {
         let images = shader
             .parameters
             .uniforms
-            .0
             .iter()
             .filter_map(|(key, uniform)| match uniform {
                 ShaderUniform::Texture(image) => Some((image, key)),

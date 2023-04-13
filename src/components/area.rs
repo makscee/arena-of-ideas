@@ -36,6 +36,9 @@ impl AreaComponent {
     }
 
     pub fn from_shader(shader: &Shader) -> Option<Self> {
+        if !shader.is_enabled() {
+            return None;
+        }
         let uniforms = &shader.parameters.uniforms;
         let scale = uniforms
             .try_get_float(&VarName::Scale.uniform())

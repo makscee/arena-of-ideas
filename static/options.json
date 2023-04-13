@@ -248,7 +248,10 @@
                         "3 g"
                     ],
                     "u_text_inside": 0.45,
-                    "u_text_border": 0.35
+                    "u_text_border": 0.35,
+                    "mapping": {
+                        "u_enabled": "u_filled"
+                    }
                 }
             },
             "layer": "UI"

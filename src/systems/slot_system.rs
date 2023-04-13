@@ -42,8 +42,7 @@ impl SlotSystem {
                     + spacing * slot as f32
             }
             Faction::Shop => {
-                let offset = (MAX_SLOTS - resources.team_states.get_slots(faction)) / 2;
-                SHOP_POSITION + floats.slots_shop_team_position + spacing * (slot + offset) as f32
+                SHOP_POSITION + floats.slots_shop_team_position + spacing * (slot + 2) as f32
             }
         }
     }
@@ -191,13 +190,17 @@ impl SlotSystem {
         entity: legion::Entity,
         resources: &Resources,
     ) {
-        let button = ButtonSystem::create_button(
+        let mut button = ButtonSystem::create_button(
             Some(text),
             icon,
             Self::activation_handler,
             entity,
             &resources.options,
         );
+        button
+            .parameters
+            .uniforms
+            .add_mapping("u_enabled", "u_filled");
         shader.chain_after.push(button.set_uniform(
             "u_offset",
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
@@ -326,6 +329,29 @@ impl SlotSystem {
         }
         panic!("Failed to make a slot gap")
     }
+
+    pub fn refresh_slots(
+        factions: &HashSet<Faction>,
+        units: &HashMap<legion::Entity, UnitComponent>,
+        world: &mut legion::World,
+        resources: &Resources,
+    ) {
+        let filled: HashSet<(Faction, usize)> =
+            HashSet::from_iter(units.iter().map(|(_, unit)| (unit.faction, unit.slot)));
+        for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
+            if !factions.contains(&slot.faction) {
+                continue;
+            }
+            let filled = filled.contains(&(slot.faction, slot.slot)) as i32 as f32;
+            let enabled =
+                (slot.slot <= resources.team_states.get_slots(&slot.faction)) as i32 as f32;
+            shader
+                .parameters
+                .uniforms
+                .insert_float_ref("u_filled", filled)
+                .insert_float_ref("u_enabled", enabled);
+        }
+    }
 }
 
 impl System for SlotSystem {
@@ -333,9 +359,7 @@ impl System for SlotSystem {
         <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
             .iter_mut(world)
             .for_each(|(unit, area, entity)| {
-                if resources.input.frame_data.1.is_dragged(entity.entity)
-                    || resources.input.frame_data.1.is_hovered(entity.entity)
-                {
+                if resources.input.frame_data.1.is_dragged(entity.entity) {
                     return;
                 }
                 let need_pos = Self::get_unit_position(unit, resources);

@@ -32,6 +32,7 @@ uniform float u_scale = 1;
 float scale;
 uniform float u_size = 1;
 float size;
+
 uniform float u_ui = 0;
 uniform float u_aspect_ratio;
 

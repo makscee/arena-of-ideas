@@ -89,8 +89,7 @@ impl StatusSystem {
                     shader
                         .parameters
                         .uniforms
-                        .0
-                        .insert("u_index".to_string(), ShaderUniform::Int(ind as i32));
+                        .insert_int_ref("u_index", ind as i32);
                     effects.push(VisualEffect::new(
                         0.0,
                         VisualEffectType::EntityExtraShaderConst { entity, shader },
@@ -109,8 +108,7 @@ impl StatusSystem {
                     shader
                         .parameters
                         .uniforms
-                        .0
-                        .insert("u_index".to_string(), ShaderUniform::Int(ind as i32 / 2));
+                        .insert_int_ref("u_index", ind as i32 / 2);
                     effects.push(VisualEffect::new(
                         0.0,
                         VisualEffectType::EntityExtraShaderConst { entity, shader },

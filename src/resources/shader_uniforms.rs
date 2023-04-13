@@ -1,21 +1,25 @@
 use super::*;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
-pub struct ShaderUniforms(pub HashMap<String, ShaderUniform>);
+pub struct ShaderUniforms {
+    #[serde(flatten)]
+    data: HashMap<String, ShaderUniform>,
+    #[serde(default)]
+    mapping: HashMap<String, String>,
+}
 
 impl ShaderUniforms {
     pub fn merge(&self, other: &ShaderUniforms) -> Self {
         let mut result: ShaderUniforms = self.clone();
         other
-            .0
             .iter()
             .for_each(|(key, value)| result.insert_ref(key, value.clone()));
         result
     }
 
     pub fn merge_mut(&mut self, other: &ShaderUniforms, force: bool) -> &mut Self {
-        other.0.iter().for_each(|(key, value)| {
-            if force || !self.0.contains_key(key) {
+        other.iter().for_each(|(key, value)| {
+            if force || !self.data.contains_key(key) {
                 self.insert_ref(key, value.clone());
             }
         });
@@ -24,7 +28,7 @@ impl ShaderUniforms {
 
     pub fn mix(a: &Self, b: &Self, t: f32) -> Self {
         let mut result: ShaderUniforms = default();
-        for (key, value) in a.0.iter() {
+        for (key, value) in a.data.iter() {
             let a = value;
             let b = b.get(key).unwrap_or(a);
             match (a, b) {
@@ -74,7 +78,7 @@ impl ShaderUniforms {
     }
 
     pub fn insert_ref(&mut self, key: &str, value: ShaderUniform) {
-        self.0.insert(key.to_string(), value);
+        self.data.insert(key.to_string(), value);
     }
 
     pub fn insert_vec_ref(&mut self, key: &str, value: vec2<f32>) -> &mut Self {
@@ -84,6 +88,11 @@ impl ShaderUniforms {
 
     pub fn insert_float_ref(&mut self, key: &str, value: f32) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Float(value));
+        self
+    }
+
+    pub fn insert_int_ref(&mut self, key: &str, value: i32) -> &mut Self {
+        self.insert_ref(key, ShaderUniform::Int(value));
         self
     }
 
@@ -107,13 +116,19 @@ impl ShaderUniforms {
         self
     }
 
+    pub fn insert_int(mut self, key: &str, value: i32) -> Self {
+        self.insert_int_ref(key, value);
+        self
+    }
+
     pub fn insert_color(mut self, key: &str, value: Rgba<f32>) -> Self {
         self.insert_color_ref(key, value);
         self
     }
 
     pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
-        self.0.get(key)
+        self.data
+            .get(self.mapping.get(key).unwrap_or(&key.to_string()))
     }
 
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {
@@ -136,21 +151,35 @@ impl ShaderUniforms {
             _ => None,
         })
     }
+
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
+        self.data.keys().map(|key| (key, self.get(key).unwrap()))
+    }
+
+    pub fn add_mapping(&mut self, from: &str, to: &str) {
+        self.mapping.insert(from.to_string(), to.to_string());
+    }
 }
 
 impl From<HashMap<&str, ShaderUniform>> for ShaderUniforms {
     fn from(value: HashMap<&str, ShaderUniform>) -> Self {
-        Self(HashMap::from_iter(
-            value
-                .into_iter()
-                .map(|(key, value)| (key.to_string(), value)),
-        ))
+        Self {
+            data: HashMap::from_iter(
+                value
+                    .into_iter()
+                    .map(|(key, value)| (key.to_string(), value)),
+            ),
+            mapping: default(),
+        }
     }
 }
 
 impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
     fn from(value: HashMap<String, ShaderUniform>) -> Self {
-        Self(value)
+        Self {
+            data: value,
+            mapping: default(),
+        }
     }
 }
 

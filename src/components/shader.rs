@@ -57,6 +57,14 @@ impl Shader {
         self.parameters.uniforms.merge_mut(uniforms, force);
         self
     }
+
+    pub fn is_enabled(&self) -> bool {
+        if let Some(enabled) = self.parameters.uniforms.try_get_float("u_enabled") {
+            enabled > 0.0
+        } else {
+            true
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
@@ -112,7 +120,7 @@ impl ugli::Uniforms for ShaderParameters {
     where
         C: ugli::UniformVisitor,
     {
-        for (name, value) in &self.uniforms.0 {
+        for (name, value) in self.uniforms.iter() {
             visitor.visit(name, value);
         }
     }

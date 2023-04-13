@@ -358,7 +358,9 @@ impl Node {
                 factions,
             } => {
                 ContextSystem::refresh_factions(&factions, world, resources);
-                UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+                let units =
+                    UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+                SlotSystem::refresh_slots(&factions, &units, world, resources);
                 Self::draw_all_tape_entities_to_node(&mut self, world);
             }
             NodeLockType::Empty => {}
