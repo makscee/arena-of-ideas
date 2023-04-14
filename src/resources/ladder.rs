@@ -90,7 +90,7 @@ impl Ladder {
 impl FileWatcherLoader for Ladder {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::loader));
-        debug!("Load floors {:?}", path);
+        debug!("Load floors {path:?}");
         let prev_current = resources.ladder.current;
         resources.ladder = futures::executor::block_on(load_json(path)).unwrap();
         resources.ladder.current = prev_current.max(resources.options.start_floor);

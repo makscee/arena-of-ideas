@@ -67,6 +67,12 @@
             "Shop": "#FFD700",
             "Team": "#86C4E4"
         },
+        "rarities": {
+            "Common": "#B2B2B2",
+            "Rare": "#70B0FF",
+            "Epic": "#782fc1",
+            "Legendary": "#ffae00"
+        },
         "background_light": "#F2F2F2",
         "background_dark": "#222222",
         "inactive": "#C4C4C4",
@@ -87,11 +93,7 @@
         "defeat": "#FF6666",
         "star": "#FFD700",
         "button": "#6495ED",
-        "text": "#FFFFFF",
-        "common": "#B2B2B2",
-        "rare": "#70B0FF",
-        "epic": "#6600CC",
-        "legendary": "#FFD700"
+        "text": "#FFFFFF"
     },
     "shaders": {
         "unit": {

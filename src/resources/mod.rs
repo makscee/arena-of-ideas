@@ -8,6 +8,8 @@ mod ability_name;
 mod ability_pool;
 mod animated_shader_uniforms;
 mod battle_data;
+mod bonus_effect;
+mod bonus_effect_pool;
 mod camera;
 mod condition;
 mod definitions;
@@ -42,6 +44,8 @@ pub use ability_name::*;
 pub use ability_pool::*;
 pub use animated_shader_uniforms::*;
 pub use battle_data::*;
+pub use bonus_effect::*;
+pub use bonus_effect_pool::*;
 pub use camera::*;
 pub use condition::*;
 pub use definitions::*;
@@ -98,6 +102,7 @@ pub struct Resources {
 
     pub house_pool: HousePool,
     pub hero_pool: HeroPool,
+    pub bonus_pool: BonusEffectPool,
     pub definitions: Definitions,
 
     pub current_state: GameState,
@@ -142,6 +147,7 @@ impl Resources {
             ability_pool: default(),
             team_states: default(),
             prepared_shaders: default(),
+            bonus_pool: default(),
         }
     }
 
@@ -150,9 +156,10 @@ impl Resources {
             &static_path().join("options.json"),
             Box::new(Options::loader),
         );
-        HousePool::loader(self, &static_path().join("houses/_list.json"), watcher);
+        HousePool::loader(self, &static_path(), watcher);
         HeroPool::loader(self, &static_path().join("units/_list.json"), watcher);
         Ladder::loader(self, &static_path().join("levels.json"), watcher);
+        BonusEffectPool::loader(self, &static_path().join("bonuses.json"), watcher);
 
         self.logger.load(&self.options);
     }

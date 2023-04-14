@@ -82,6 +82,7 @@ pub struct Images {
 #[derive(Deserialize, Debug)]
 pub struct Colors {
     pub factions: HashMap<Faction, Rgba<f32>>,
+    pub rarities: HashMap<Rarity, Rgba<f32>>,
     pub background_light: Rgba<f32>,
     pub background_dark: Rgba<f32>,
     pub inactive: Rgba<f32>,
@@ -103,10 +104,6 @@ pub struct Colors {
     pub star: Rgba<f32>,
     pub button: Rgba<f32>,
     pub text: Rgba<f32>,
-    pub common: Rgba<f32>,
-    pub rare: Rgba<f32>,
-    pub epic: Rgba<f32>,
-    pub legendary: Rgba<f32>,
 }
 
 #[derive(Deserialize, Debug)]

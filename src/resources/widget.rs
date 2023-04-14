@@ -6,8 +6,8 @@ pub enum Widget {
     BattleOverPanel {
         score: usize,
     },
-    MultipleChoicePanel {
-        buttons: Vec<String>,
+    BonusChoicePanel {
+        bonuses: Vec<BonusEffect>,
         entity: legion::Entity,
     },
 }
@@ -273,7 +273,7 @@ impl Widget {
 
                 node
             }
-            Widget::MultipleChoicePanel { buttons, entity } => {
+            Widget::BonusChoicePanel { bonuses, entity } => {
                 let mut node = Node::default();
                 let bg = options.shaders.choice_panel.clone();
                 let initial_uniforms: ShaderUniforms = hashmap! {
@@ -307,7 +307,7 @@ impl Widget {
                 shader.input_handlers.push(ButtonSystem::button_handler);
                 shader
                     .input_handlers
-                    .push(|event, _, shader, _, resources| match event {
+                    .push(|event, _, shader, world, resources| match event {
                         InputEvent::Click => {
                             if let Some(panel) = resources
                                 .tape_player
@@ -316,27 +316,30 @@ impl Widget {
                                 .get_mut(&shader.parent.unwrap())
                             {
                                 if panel.set_open(false, resources.tape_player.head) {
-                                    let index = shader.parameters.uniforms.try_get_int("u_index");
-                                    dbg!("Choice {:?}", index);
+                                    let ind =
+                                        shader.parameters.uniforms.try_get_int("u_index").unwrap()
+                                            as usize;
+                                    debug!("Panel make selection: {ind}");
+                                    BonusEffectPool::make_selection(ind, world, resources);
                                 }
                             }
                         }
                         _ => {}
                     });
-                for (ind, button) in buttons.iter().enumerate() {
-                    let (color, rarity) = match ind {
-                        1 => (options.colors.rare, "Rare"),
-                        2 => (options.colors.epic, "Epic"),
-                        3 => (options.colors.legendary, "Legendary"),
-                        _ => (options.colors.common, "Common"),
-                    };
+                for (ind, bonus) in bonuses.iter().enumerate() {
+                    let color = *options.colors.rarities.get(&bonus.rarity).unwrap();
+                    let rarity = format!("{:?}", bonus.rarity);
+                    let mut text = bonus.description.clone();
+                    if let Some((_, target)) = &bonus.target {
+                        text += format!(" to {target}").as_str();
+                    }
                     let initial_uniforms: ShaderUniforms = hashmap! {
                         "u_color" => ShaderUniform::Color(color),
-                        "u_position" => ShaderUniform::Vec2(vec2((ind as f32) * 0.1, (buttons.len() as f32 * 0.5 - ind as f32) * 0.25)),
+                        "u_position" => ShaderUniform::Vec2(vec2((ind as f32) * 0.1, (bonuses.len() as f32 * 0.5 - ind as f32) * 0.25)),
                         "u_box" => ShaderUniform::Vec2(vec2(2.0, 0.0)),
                         "u_index" => ShaderUniform::Int(ind as i32),
                         "u_open" => ShaderUniform::Float(0.0),
-                        "u_text" => ShaderUniform::String((0, button.clone())),
+                        "u_text" => ShaderUniform::String((0, text)),
                         "u_rarity_text" =>ShaderUniform::String((1, rarity.to_string())),
                         "u_text_color" => ShaderUniform::Color(options.colors.text),
                     }

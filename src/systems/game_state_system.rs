@@ -59,6 +59,9 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&S) {
                     SaveSystem::save(world, resources);
                 }
+                if resources.input_data.down_keys.contains(&B) {
+                    BonusEffectPool::load_widget(world, resources);
+                }
                 if resources.input_data.down_keys.contains(&P) {
                     if let Some(entity) =
                         SlotSystem::find_unit_by_slot(1, &Faction::Shop, world, resources)

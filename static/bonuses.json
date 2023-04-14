@@ -1,0 +1,107 @@
+{
+    "effects": [
+        {
+            "effect": {
+                "type": "Aoe",
+                "factions": [
+                    {
+                        "type": "Team"
+                    }
+                ],
+                "effect": {
+                    "type": "AddStatus",
+                    "name": "Growth"
+                }
+            },
+            "rarity": "Rare",
+            "description": "Give +1/+1 to everyone"
+        },
+        {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Growth"
+            },
+            "rarity": "Common",
+            "single_target": true,
+            "description": "Give +1/+1"
+        },
+        {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Shield"
+            },
+            "rarity": "Rare",
+            "single_target": true,
+            "description": "Give Shield"
+        },
+        {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Growth",
+                "charges": {
+                    "type": "Const",
+                    "value": 3
+                }
+            },
+            "rarity": "Rare",
+            "single_target": true,
+            "description": "Give +3/+3"
+        },
+        {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Growth",
+                "charges": {
+                    "type": "Const",
+                    "value": 5
+                }
+            },
+            "rarity": "Epic",
+            "single_target": true,
+            "description": "Give +5/+5"
+        },
+        {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Growth",
+                "charges": {
+                    "type": "Const",
+                    "value": 10
+                }
+            },
+            "rarity": "Legendary",
+            "single_target": true,
+            "description": "Give +10/+10"
+        },
+        {
+            "effect": {
+                "type": "Aoe",
+                "factions": [
+                    {
+                        "type": "Team"
+                    }
+                ],
+                "effect": {
+                    "type": "AddStatus",
+                    "name": "Shield"
+                }
+            },
+            "rarity": "Rare",
+            "description": "Give Shield to everyone"
+        },
+        {
+            "effect": {
+                "type": "ChangeSlots",
+                "faction": {
+                    "type": "Team"
+                },
+                "delta": {
+                    "type": "Const",
+                    "value": 1
+                }
+            },
+            "rarity": "Legendary",
+            "description": "+1 hero slot"
+        }
+    ]
+}

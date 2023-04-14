@@ -136,6 +136,10 @@ pub enum Effect {
         entity: ExpressionEntity,
         effect: Box<EffectWrapped>,
     },
+    ChangeSlots {
+        faction: ExpressionFaction,
+        delta: ExpressionInt,
+    },
 }
 
 impl Display for Effect {
@@ -194,6 +198,9 @@ impl Display for Effect {
             }
             Effect::FindTarget { faction, .. } => write!(f, "{} {}", self.as_ref(), faction),
             Effect::AllTargets { faction, .. } => write!(f, "{} {}", self.as_ref(), faction),
+            Effect::ChangeSlots { faction, delta } => {
+                write!(f, "{} {faction} {delta}", self.as_ref())
+            }
             Effect::Summon { unit, faction, .. } => {
                 write!(f, "{} {}-{}", self.as_ref(), unit.name, faction)
             }
@@ -730,6 +737,15 @@ impl EffectWrapped {
                     new_context
                 };
                 Self::process(effect, context.clone(), world, resources, node)?;
+            }
+            Effect::ChangeSlots { faction, delta } => {
+                let faction = &faction.calculate(&context, world, resources)?;
+                resources.team_states.set_slots(
+                    faction,
+                    (resources.team_states.get_slots(faction) as i32
+                        + delta.calculate(&context, world, resources)?)
+                        as usize,
+                );
             }
         }
         Ok(match self.after.as_deref() {

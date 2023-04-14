@@ -97,7 +97,7 @@ impl Default for TeamState {
             name: String::from("no_name"),
             vars: Default::default(),
             ability_overrides: Default::default(),
-            slots: MAX_SLOTS,
+            slots: 3,
         }
     }
 }

@@ -311,20 +311,6 @@ impl ShopSystem {
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
         ContextSystem::refresh_all(world, resources);
-
-        let entity = new_entity();
-        let ts = resources.tape_player.head;
-        let panel = Widget::MultipleChoicePanel {
-            buttons: vec![
-                "+1 slot".to_string(),
-                "Start of battle: give Shield (5) to all allies".to_string(),
-                "+3/+3 to everyone".to_string(),
-            ],
-            entity,
-        }
-        .generate_node(&resources.options);
-        let panel = NodePanel::new(panel, ts);
-        resources.tape_player.tape.panels.insert(entity, panel);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {

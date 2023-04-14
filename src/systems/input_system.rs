@@ -220,7 +220,7 @@ impl InputSystem {
             shaders.insert(ind, shader);
             match &event {
                 InputEvent::HoverStart => resources.input_data.hovered_entity = Some(entity),
-                InputEvent::HoverStop => resources.input_data.dragged_entity = None,
+                InputEvent::HoverStop => resources.input_data.hovered_entity = None,
                 InputEvent::DragStart => resources.input_data.dragged_entity = Some(entity),
                 InputEvent::DragStop => resources.input_data.dragged_entity = None,
                 _ => {}
