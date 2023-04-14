@@ -28,9 +28,10 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&R) {
                     resources.tape_player.head = 0.0;
                 }
-                if resources.tape_player.tape.length() < resources.tape_player.head
-                    || resources.input_data.down_keys.contains(&Escape)
-                {
+                if resources.input_data.down_keys.contains(&Escape) {
+                    resources.tape_player.head = resources.tape_player.tape.length() - 3.0;
+                }
+                if resources.tape_player.tape.length() < resources.tape_player.head {
                     BattleSystem::finish_floor_battle(world, resources);
                 }
             }
@@ -60,7 +61,7 @@ impl System for GameStateSystem {
                     SaveSystem::save(world, resources);
                 }
                 if resources.input_data.down_keys.contains(&B) {
-                    BonusEffectPool::load_widget(world, resources);
+                    BonusEffectPool::load_widget(5, world, resources);
                 }
                 if resources.input_data.down_keys.contains(&P) {
                     if let Some(entity) =
@@ -234,6 +235,7 @@ impl GameStateSystem {
                 if resources.current_state == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
+                    resources.team_states.set_slots(&Faction::Sacrifice, 1);
                 }
                 ShopSystem::init_floor(world, resources, true);
                 resources.camera.focus = Focus::Shop;

@@ -18,19 +18,19 @@ impl SlotSystem {
         let faction_mul: vec2<f32> = vec2(
             match faction {
                 Faction::Light => -1.0,
-                Faction::Dark => 1.0,
-                Faction::Team => 1.0,
-                Faction::Shop => 1.0,
+                Faction::Dark | Faction::Team | Faction::Shop | Faction::Sacrifice => 1.0,
             },
             1.0,
         );
         let spacing: vec2<f32> = match faction {
             Faction::Dark | Faction::Light => floats.slots_battle_team_spacing,
             Faction::Team | Faction::Shop => floats.slots_shop_spacing,
+            Faction::Sacrifice => floats.slots_sacrifice_spacing,
         };
+        let slot = slot as i32 - 1;
         match faction {
             Faction::Light | Faction::Dark => {
-                return match slot == 1 {
+                return match slot == 0 {
                     true => floats.slots_striker_position,
                     false => floats.slots_battle_team_position + spacing * slot as f32,
                 } * faction_mul
@@ -42,7 +42,10 @@ impl SlotSystem {
                     + spacing * slot as f32
             }
             Faction::Shop => {
-                SHOP_POSITION + floats.slots_shop_team_position + spacing * (slot + 2) as f32
+                SHOP_POSITION + floats.slots_shop_team_position + spacing * (slot + 1) as f32
+            }
+            Faction::Sacrifice => {
+                SHOP_POSITION + floats.slots_sacrifice_position + spacing * slot as f32
             }
         }
     }
@@ -100,7 +103,7 @@ impl SlotSystem {
         let mut result = None;
         let mut min_distance = f32::MAX;
         for faction in Faction::all_iter() {
-            for slot in 1..=MAX_SLOTS {
+            for slot in 1..=resources.team_states.get_slots(&faction) {
                 let slot_pos = Self::get_position(slot, &faction, resources);
                 let distance = (mouse_pos - slot_pos).len();
                 if distance < SLOT_HOVER_DISTANCE && distance < min_distance {
@@ -160,10 +163,20 @@ impl SlotSystem {
             .insert_vec_ref("u_position", position)
             .insert_float_ref("u_scale", scale);
         match faction {
-            Faction::Light => {}
-            Faction::Dark => {}
+            Faction::Light | Faction::Dark => {}
             Faction::Team => {
                 Self::add_slot_activation_btn(&mut shader, "Sell", None, entity, resources);
+            }
+            Faction::Sacrifice => {
+                if slot == 1 {
+                    Self::add_slot_activation_btn(
+                        &mut shader,
+                        "Sacrifice",
+                        None,
+                        entity,
+                        resources,
+                    );
+                }
             }
             Faction::Shop => {
                 shader
@@ -240,6 +253,13 @@ impl SlotSystem {
                     ShopSystem::try_sell(entity, resources, world);
                 }
             }
+            Faction::Sacrifice => {
+                let units = UnitSystem::collect_faction(world, resources, faction, false);
+                BonusEffectPool::load_widget(units.len(), world, resources);
+                for unit in units {
+                    UnitSystem::delete_unit(unit, world, resources);
+                }
+            }
             _ => {}
         }
     }
@@ -274,6 +294,19 @@ impl SlotSystem {
             } else if faction == unit_faction {
                 if Self::make_gap(faction, slot, world, resources, Some(entity)) {
                     UnitSystem::set_slot(entity, slot, world);
+                }
+            } else if faction == Faction::Sacrifice && unit_faction == Faction::Team
+                || faction == Faction::Team && unit_faction == Faction::Sacrifice
+            {
+                if SlotSystem::find_unit_by_slot(slot, &faction, world, resources).is_none() {
+                    UnitSystem::set_faction(entity, faction, world);
+                    UnitSystem::set_slot(entity, slot, world);
+                    let units =
+                        UnitSystem::collect_faction(world, resources, Faction::Sacrifice, false)
+                            .len();
+                    resources
+                        .team_states
+                        .set_slots(&Faction::Sacrifice, units + 1);
                 }
             }
         }

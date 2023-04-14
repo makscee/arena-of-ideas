@@ -50,16 +50,8 @@ impl System for ShopSystem {
             },
         );
         self.need_switch_battle = switch_button.was_clicked() || self.need_switch_battle;
-        let last_score = (Text::new(
-            format!("Last score: {}", resources.last_score),
-            resources.fonts.get_font(1),
-            70.0,
-            Rgba::BLACK,
-        ),)
-            .column()
-            .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
-            .uniform_padding(32.0);
-        Box::new((switch_button.place(vec2(1.0, 0.0)), last_score).stack())
+
+        Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
     }
     fn draw(&self, _: &legion::World, resources: &mut Resources, _: &mut ugli::Framebuffer) {
         let position = SlotSystem::get_position(0, &Faction::Shop, resources);
@@ -86,7 +78,7 @@ impl System for ShopSystem {
                 .set_uniform("u_size", ShaderUniform::Float(0.5))
                 .set_uniform(
                     "u_position",
-                    ShaderUniform::Vec2(Self::reroll_btn_position(resources) + vec2(1.0, 0.0)),
+                    ShaderUniform::Vec2(Self::reroll_btn_position(resources) + vec2(1.5, 0.0)),
                 )
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),

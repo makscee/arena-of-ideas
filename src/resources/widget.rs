@@ -274,6 +274,7 @@ impl Widget {
                 node
             }
             Widget::BonusChoicePanel { bonuses, entity } => {
+                let duration = Some(1.0);
                 let mut node = Node::default();
                 let bg = options.shaders.choice_panel.clone();
                 let initial_uniforms: ShaderUniforms = hashmap! {
@@ -293,7 +294,7 @@ impl Widget {
                     .add_key_frame(1.0, initial_uniforms.clone(), EasingType::BackIn);
 
                 node.add_effect(TimedEffect::new(
-                    Some(1.0),
+                    duration,
                     Animation::ShaderAnimation {
                         shader: bg,
                         animation,
@@ -344,8 +345,9 @@ impl Widget {
                         "u_text_color" => ShaderUniform::Color(options.colors.text),
                     }
                     .into();
+                    let time_offset = ind as f32 * 0.1;
                     let animation = AnimatedShaderUniforms::empty()
-                        .add_key_frame(0.0, initial_uniforms.clone(), default())
+                        .add_key_frame(time_offset.min(0.4), initial_uniforms.clone(), default())
                         .add_key_frame(
                             0.5,
                             initial_uniforms
@@ -354,12 +356,16 @@ impl Widget {
                                 .insert_float("u_open", 1.0),
                             EasingType::QuadOut,
                         )
-                        .add_key_frame(1.0, initial_uniforms.clone(), EasingType::QuadIn);
+                        .add_key_frame(
+                            1.0 - time_offset.min(0.4),
+                            initial_uniforms.clone(),
+                            EasingType::QuadIn,
+                        );
 
                     shader.entity = Some(new_entity());
 
                     node.add_effect(TimedEffect::new(
-                        Some(1.0),
+                        duration,
                         Animation::ShaderAnimation {
                             shader: shader.clone(),
                             animation,

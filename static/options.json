@@ -7,11 +7,11 @@
     "custom_game": {
         "enable": false,
         "light": {
-            "replications": 1,
+            "replications": 8,
             "units": [
                 {
                     "attack": 10,
-                    "health": 100
+                    "health": 15
                 }
             ]
         },
@@ -19,29 +19,11 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 5,
+            "replications": 8,
             "units": [
                 {
-                    "name": "Big Bug",
-                    "attack": 5,
-                    "health": 5,
-                    "active_statuses": {
-                        "Shield": 1
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#895435",
-                                "u_color_1": "#000000",
-                                "u_radius": 0.9,
-                                "u_spin_part": 0.05,
-                                "u_move_speed": 5.3
-                            },
-                            "instances": 20,
-                            "vertices": 1
-                        }
-                    }
+                    "attack": 10,
+                    "health": 15
                 }
             ]
         }
@@ -65,7 +47,8 @@
             "Dark": "#E6E6E6",
             "Light": "#1D1D1D",
             "Shop": "#FFD700",
-            "Team": "#86C4E4"
+            "Team": "#86C4E4",
+            "Sacrifice": "#C0392B"
         },
         "rarities": {
             "Common": "#B2B2B2",
@@ -87,7 +70,7 @@
         "stats_attack": "#FFA500",
         "stats_health": "#FF4D4D",
         "damage": "#FF4D4D",
-        "addition": "#86C4E4",
+        "addition": "#cdeeff",
         "deletion": "#C0392B",
         "victory": "#FFFFFF",
         "defeat": "#FF6666",
@@ -268,15 +251,16 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_size": 1.5,
+                    "u_size": 1.2,
                     "u_outline_color": "#404040",
                     "u_text": [
                         0,
                         "3 g"
                     ],
-                    "u_align": -1.0,
+                    "u_align": 0.0,
                     "u_text_inside": 0.45,
-                    "u_text_border": 0.35
+                    "u_text_border": 0.35,
+                    "u_max_width": 1.0
                 }
             },
             "layer": "Background",
@@ -546,7 +530,10 @@
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_ui": 1.0
+                    "u_ui": 1.0,
+                    "u_aa": 0.002,
+                    "u_sdf_border": -0.05,
+                    "u_outline_color": "#1F3A4F"
                 }
             },
             "layer": "UI",
@@ -634,7 +621,7 @@
     },
     "floats": {
         "slots_shop_team_position": [
-            12.0,
+            6.0,
             4.0
         ],
         "slots_striker_position": [
@@ -643,7 +630,11 @@
         ],
         "slots_battle_team_position": [
             9.0,
-            -10.0
+            -8.0
+        ],
+        "slots_sacrifice_position": [
+            10.0,
+            -4.0
         ],
         "slots_battle_team_spacing": [
             0.45,
@@ -652,6 +643,10 @@
         "slots_shop_spacing": [
             -2.5,
             0.0
+        ],
+        "slots_sacrifice_spacing": [
+            0.0,
+            2.7
         ],
         "slots_battle_team_scale": 0.7,
         "slots_striker_scale": 1.5,

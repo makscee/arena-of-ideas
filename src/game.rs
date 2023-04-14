@@ -55,7 +55,6 @@ impl Game {
         resources.ladder.reset();
         resources.action_queue.clear();
         resources.team_states = default();
-        resources.tape_player.clear();
         resources.total_score = default();
         ShopData::load_pool(resources);
         world.clear();

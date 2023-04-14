@@ -28,6 +28,31 @@ impl UnitSystem {
             .slot = slot;
     }
 
+    pub fn set_faction(entity: legion::Entity, faction: Faction, world: &mut legion::World) {
+        world
+            .entry_mut(entity)
+            .unwrap()
+            .get_component_mut::<UnitComponent>()
+            .unwrap()
+            .faction = faction;
+    }
+
+    pub fn unit_string(entity: legion::Entity, world: &legion::World) -> String {
+        let context = ContextSystem::get_context(entity, world);
+        let name = world
+            .entry_ref(entity)
+            .unwrap()
+            .get_component::<NameComponent>()
+            .unwrap()
+            .0
+            .clone();
+        format!(
+            "{name} {}/{}",
+            context.vars.get_int(&VarName::HpValue),
+            context.vars.get_int(&VarName::AttackValue)
+        )
+    }
+
     pub fn draw_unit_to_node(
         entity: legion::Entity,
         unit: &UnitComponent,
@@ -43,7 +68,10 @@ impl UnitSystem {
             }
             None => options.shaders.unit.clone(),
         };
-        if unit.faction == Faction::Shop || unit.faction == Faction::Team {
+        if unit.faction == Faction::Shop
+            || unit.faction == Faction::Team
+            || unit.faction == Faction::Sacrifice
+        {
             shader.input_handlers.push(Self::unit_input_handler);
         }
         shader.entity = Some(entity);

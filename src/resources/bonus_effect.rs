@@ -8,10 +8,12 @@ pub struct BonusEffect {
     #[serde(default)]
     pub single_target: bool,
     #[serde(skip)]
-    pub target: Option<(legion::Entity, PackedUnit)>,
+    pub target: Option<(legion::Entity, String)>,
 }
 
-#[derive(Clone, Copy, Deserialize, Serialize, Debug, Eq, PartialEq, Hash)]
+#[derive(
+    Clone, Copy, Deserialize, Serialize, Debug, Eq, PartialEq, Hash, enum_iterator::Sequence,
+)]
 pub enum Rarity {
     Common,
     Rare,
