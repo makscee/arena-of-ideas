@@ -42,7 +42,7 @@ impl ButtonSystem {
         button
     }
 
-    fn button_handler(
+    pub fn button_handler(
         event: InputEvent,
         _: legion::Entity,
         shader: &mut Shader,

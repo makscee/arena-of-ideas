@@ -20,6 +20,8 @@ pub struct Shader {
     #[serde(skip)]
     pub entity: Option<legion::Entity>,
     #[serde(skip)]
+    pub parent: Option<legion::Entity>,
+    #[serde(skip)]
     pub input_handlers: Vec<Handler>,
 }
 
@@ -89,6 +91,7 @@ impl ShaderLayer {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ShaderParameters {
     #[serde(default = "vertices_default")]
     pub vertices: usize,

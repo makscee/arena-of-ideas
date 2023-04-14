@@ -21,8 +21,8 @@ void main() {
 in vec2 uv;
 
 uniform float u_alpha = 1;
-uniform float u_sdf_border = -0.1;
-uniform float u_aa = 0;
+uniform float u_sdf_border = 0.5;
+uniform float u_aa = 0.005;
 
 void main() {
     float sdf = rectangle_sdf(uv, u_box, 0);

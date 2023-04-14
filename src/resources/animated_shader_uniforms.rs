@@ -8,10 +8,10 @@ pub struct AnimatedShaderUniforms {
 }
 
 impl AnimatedShaderUniforms {
-    pub fn empty(easing: EasingType) -> Self {
+    pub fn empty() -> Self {
         Self {
             key_frames: default(),
-            easing,
+            easing: EasingType::Linear,
         }
     }
 
@@ -31,12 +31,12 @@ impl AnimatedShaderUniforms {
     }
 
     pub fn get_mixed(&self, t: Time) -> ShaderUniforms {
-        if t < 0.0 || t > 1.0 {
-            panic!("Wrong t range {}", t);
+        let mut result = default();
+        if t < 0.0 {
+            return result;
         }
         let mut t = self.easing.f(t);
 
-        let mut result = default();
         for (i, left) in self.key_frames.iter().enumerate().rev() {
             if left.t < t {
                 if let Some(right) = self.key_frames.get(i + 1) {

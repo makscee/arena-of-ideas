@@ -40,14 +40,14 @@ impl VfxSystem {
         position: vec2<f32>,
         font: usize,
         delay: Time,
-    ) -> VisualEffect {
-        VisualEffect::new_delayed(
-            1.0,
+    ) -> TimedEffect {
+        TimedEffect::new_delayed(
+            Some(1.0),
             delay,
-            VisualEffectType::ShaderAnimation {
+            Animation::ShaderAnimation {
                 shader: Self::get_show_text_shader(resources, text, font, color, outline_color)
                     .set_uniform("u_position", ShaderUniform::Vec2(position)),
-                animation: AnimatedShaderUniforms::empty(EasingType::QuartOut),
+                animation: AnimatedShaderUniforms::empty(),
             },
             0,
         )
@@ -61,14 +61,14 @@ impl VfxSystem {
         parent: legion::Entity,
         font: usize,
         delay: Time,
-    ) -> VisualEffect {
-        VisualEffect::new_delayed(
-            1.0,
+    ) -> TimedEffect {
+        TimedEffect::new_delayed(
+            Some(1.0),
             delay,
-            VisualEffectType::EntityExtraShaderAnimation {
+            Animation::EntityExtraShaderAnimation {
                 entity: parent,
                 shader: Self::get_show_text_shader(resources, text, font, color, outline_color),
-                animation: AnimatedShaderUniforms::empty(EasingType::QuartOut),
+                animation: AnimatedShaderUniforms::empty(),
             },
             0,
         )
@@ -98,10 +98,10 @@ impl VfxSystem {
             .set_uniform("u_size", ShaderUniform::Float(0.6))
     }
 
-    pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> VisualEffect {
-        VisualEffect::new(
-            0.5,
-            VisualEffectType::ShaderAnimation {
+    pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> TimedEffect {
+        TimedEffect::new(
+            Some(0.5),
+            Animation::ShaderAnimation {
                 shader: resources
                     .options
                     .shaders
@@ -119,10 +119,10 @@ impl VfxSystem {
         from: legion::Entity,
         to: legion::Entity,
         color: Rgba<f32>,
-    ) -> VisualEffect {
-        VisualEffect::new(
-            1.0,
-            VisualEffectType::EntityPairExtraShaderAnimation {
+    ) -> TimedEffect {
+        TimedEffect::new(
+            Some(1.0),
+            Animation::EntityPairExtraShaderAnimation {
                 entity_from: from,
                 entity_to: to,
                 shader: resources
@@ -143,10 +143,10 @@ impl VfxSystem {
         to: vec2<f32>,
         easing: EasingType,
         duration: Time,
-    ) -> VisualEffect {
-        VisualEffect::new(
-            duration,
-            VisualEffectType::EntityShaderAnimation {
+    ) -> TimedEffect {
+        TimedEffect::new(
+            Some(duration),
+            Animation::EntityShaderAnimation {
                 entity,
                 animation: AnimatedShaderUniforms::from_to(
                     hashmap! {"u_position" => ShaderUniform::Vec2(from)}.into(),

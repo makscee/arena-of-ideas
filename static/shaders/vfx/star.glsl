@@ -8,6 +8,7 @@ uniform vec2 u_align = vec2(0);
 void main() {
     init_fields();
     uv = get_uv(a_pos);
+    box.x /= mix(1., u_aspect_ratio, u_ui);
     position += u_align * box;
     gl_Position = get_gl_position(uv);
 }
@@ -33,10 +34,7 @@ uniform float u_alpha = 1;
 uniform float u_outline = 0;
 
 void main() {
-    vec2 uv = uv;
-    uv.x *= mix(1., u_aspect_ratio, u_ui);
     float sdf = sdf_star5(uv, 1, 0.5);
-
     vec4 color = vec4(u_color.rgb, float(sdf < 0));
     vec4 outline_color = vec4(u_outline_color.rgb, float(sdf > -u_outline));
     color = alpha_blend(color, outline_color);

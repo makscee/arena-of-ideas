@@ -1,26 +1,31 @@
 use super::*;
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct VisualEffect {
-    pub duration: Time,
+pub struct TimedEffect {
+    pub duration: Option<Time>,
     #[serde(default)]
     pub delay: Time,
     #[serde(flatten)]
-    pub r#type: VisualEffectType,
+    pub animation: Animation,
     #[serde(default)]
     pub order: i32,
 }
 
-impl VisualEffect {
-    pub fn new(duration: Time, r#type: VisualEffectType, order: i32) -> Self {
-        Self::new_delayed(duration, 0.0, r#type, order)
+impl TimedEffect {
+    pub fn new(duration: Option<Time>, animation: Animation, order: i32) -> Self {
+        Self::new_delayed(duration, 0.0, animation, order)
     }
 
-    pub fn new_delayed(duration: Time, delay: Time, r#type: VisualEffectType, order: i32) -> Self {
+    pub fn new_delayed(
+        duration: Option<Time>,
+        delay: Time,
+        animation: Animation,
+        order: i32,
+    ) -> Self {
         Self {
             duration,
             delay,
-            r#type,
+            animation,
             order,
         }
     }
@@ -28,7 +33,7 @@ impl VisualEffect {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
-pub enum VisualEffectType {
+pub enum Animation {
     ShaderAnimation {
         shader: Shader,
         animation: AnimatedShaderUniforms,
@@ -63,29 +68,33 @@ pub enum VisualEffectType {
     },
 }
 
-impl VisualEffectType {
-    pub fn process(
-        &self,
-        t: Time,
-        entity_shaders: &mut HashMap<legion::Entity, Shader>,
-    ) -> Option<Shader> {
+impl Animation {
+    pub fn update_entities(&self, t: Time, entity_shaders: &mut HashMap<legion::Entity, Shader>) {
         match self {
-            VisualEffectType::ShaderAnimation { shader, animation } => {
-                Some(shader.clone().merge_uniforms(&animation.get_mixed(t), true))
-            }
-            VisualEffectType::EntityShaderAnimation { entity, animation } => {
+            Animation::EntityShaderAnimation { entity, animation } => {
                 if let Some(shader) = entity_shaders.get_mut(entity) {
                     shader.merge_uniforms_ref(&animation.get_mixed(t), true);
                 }
-                None
             }
-            VisualEffectType::EntityShaderConst { entity, uniforms } => {
+            Animation::EntityShaderConst { entity, uniforms } => {
                 if let Some(shader) = entity_shaders.get_mut(entity) {
                     shader.merge_uniforms_ref(&uniforms, true);
                 }
-                None
             }
-            VisualEffectType::EntityExtraShaderAnimation {
+            _ => {}
+        }
+    }
+
+    pub fn generate_shaders(
+        &self,
+        t: Time,
+        entity_shaders: &HashMap<legion::Entity, Shader>,
+    ) -> Option<Shader> {
+        match self {
+            Animation::ShaderAnimation { shader, animation } => {
+                Some(shader.clone().merge_uniforms(&animation.get_mixed(t), true))
+            }
+            Animation::EntityExtraShaderAnimation {
                 entity,
                 shader,
                 animation,
@@ -98,7 +107,7 @@ impl VisualEffectType {
                 ),
                 _ => None,
             },
-            VisualEffectType::EntityPairExtraShaderAnimation {
+            Animation::EntityPairExtraShaderAnimation {
                 entity_from,
                 entity_to,
                 shader,
@@ -136,7 +145,7 @@ impl VisualEffectType {
                 }
                 None
             }
-            VisualEffectType::EntityExtraShaderConst { entity, shader } => {
+            Animation::EntityExtraShaderConst { entity, shader } => {
                 match entity_shaders.get(entity) {
                     Some(entity_shader) => Some(
                         shader
@@ -146,7 +155,8 @@ impl VisualEffectType {
                     _ => None,
                 }
             }
-            VisualEffectType::ShaderConst { shader } => Some(shader.clone()),
+            Animation::ShaderConst { shader } => Some(shader.clone()),
+            _ => None,
         }
     }
 }

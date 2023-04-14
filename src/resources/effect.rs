@@ -291,9 +291,9 @@ impl EffectWrapped {
                     let hp = target.get_component_mut::<HealthComponent>()?;
                     hp.deal_damage(value as usize, context.owner);
                     if let Some(node) = node.as_mut() {
-                        node.add_effect(VisualEffect::new(
-                            1.0,
-                            VisualEffectType::EntityShaderAnimation {
+                        node.add_effect(TimedEffect::new(
+                            Some(1.0),
+                            Animation::EntityShaderAnimation {
                                 entity: context.target,
                                 animation: AnimatedShaderUniforms::from_to(
                                     hashmap! {

@@ -1,5 +1,3 @@
-use self::button_system::ButtonSystem;
-
 use super::*;
 use geng::prelude::itertools::Itertools;
 
@@ -33,6 +31,7 @@ mod world_system;
 
 pub use action_system::*;
 pub use battle_system::*;
+pub use button_system::*;
 pub use camera_system::*;
 pub use context_system::*;
 pub use file_watcher_system::*;

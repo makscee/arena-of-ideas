@@ -148,16 +148,21 @@ impl geng::State for Game {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.resources.camera.framebuffer_size = framebuffer.size().map(|x| x as f32);
-        self.resources.input_data.mouse_pos = self.resources.camera.camera.screen_to_world(
-            framebuffer.size().map(|x| x as f32),
-            self.resources
-                .geng
-                .as_ref()
-                .unwrap()
-                .window()
-                .mouse_pos()
-                .map(|x| x as f32),
-        );
+        let mouse_pos = self
+            .resources
+            .geng
+            .as_ref()
+            .unwrap()
+            .window()
+            .mouse_pos()
+            .map(|x| x as f32);
+        self.resources.input_data.mouse_screen_pos =
+            mouse_pos / self.resources.camera.framebuffer_size * 2.0 - vec2(1.0, 1.0);
+        self.resources.input_data.mouse_world_pos = self
+            .resources
+            .camera
+            .camera
+            .screen_to_world(framebuffer.size().map(|x| x as f32), mouse_pos);
         ugli::clear(framebuffer, Some(Rgba::BLACK), None, None);
         self.systems
             .iter()

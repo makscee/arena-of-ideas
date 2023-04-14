@@ -13,7 +13,8 @@ pub struct InputData {
     pub down_mouse_buttons: HashSet<geng::MouseButton>,
     pub up_mouse_buttons: HashSet<geng::MouseButton>,
     pub pressed_mouse_buttons: HashSet<geng::MouseButton>,
-    pub mouse_pos: vec2<f32>,
+    pub mouse_world_pos: vec2<f32>,
+    pub mouse_screen_pos: vec2<f32>,
 }
 
 #[derive(Clone)]
@@ -80,7 +81,8 @@ impl Default for InputData {
             down_mouse_buttons: default(),
             up_mouse_buttons: default(),
             pressed_mouse_buttons: default(),
-            mouse_pos: vec2::ZERO,
+            mouse_world_pos: vec2::ZERO,
+            mouse_screen_pos: vec2::ZERO,
             input_events: default(),
             dragged_entity: default(),
             hovered_entity: default(),

@@ -35,42 +35,53 @@ impl AreaComponent {
         }
     }
 
-    pub fn from_shader(shader: &Shader) -> Option<Self> {
+    pub fn shader_hovered(
+        shader: &Shader,
+        mouse_screen: vec2<f32>,
+        mouse_world: vec2<f32>,
+    ) -> bool {
         if !shader.is_enabled() {
-            return None;
+            return false;
         }
         let uniforms = &shader.parameters.uniforms;
         let scale = uniforms
             .try_get_float(&VarName::Scale.uniform())
             .unwrap_or(1.0);
-        uniforms
+
+        let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
+        let position = uniforms
             .try_get_vec2(&VarName::Position.uniform())
-            .and_then(|position| {
-                let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
-                let position = position + offset;
-                if let Some(radius) = shader
-                    .parameters
-                    .uniforms
-                    .try_get_float(&VarName::Radius.uniform())
-                {
-                    Some(Self {
-                        r#type: AreaType::Circle {
-                            radius: radius * scale,
-                        },
-                        position,
-                    })
-                } else if let Some(size) = shader
-                    .parameters
-                    .uniforms
-                    .try_get_vec2(&VarName::Box.uniform())
-                {
-                    Some(Self {
-                        r#type: AreaType::Rectangle { size: size * scale },
-                        position,
-                    })
-                } else {
-                    None
-                }
-            })
+            .unwrap_or(vec2::ZERO)
+            + offset;
+        let mouse_pos = if uniforms.try_get_float("u_ui").unwrap_or_default() == 1.0 {
+            mouse_screen
+        } else {
+            mouse_world
+        };
+        if let Some(radius) = shader
+            .parameters
+            .uniforms
+            .try_get_float(&VarName::Radius.uniform())
+        {
+            Self {
+                r#type: AreaType::Circle {
+                    radius: radius * scale,
+                },
+                position,
+            }
+            .contains(mouse_pos)
+        } else if let Some(size) = shader
+            .parameters
+            .uniforms
+            .try_get_vec2(&VarName::Box.uniform())
+        {
+            Self {
+                r#type: AreaType::Rectangle { size: size * scale },
+                position,
+            }
+            .contains(mouse_pos)
+        } else {
+            false
+        }
     }
 }

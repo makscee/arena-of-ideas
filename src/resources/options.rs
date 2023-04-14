@@ -63,6 +63,8 @@ pub struct Shaders {
     pub battle_over_panel_bg: Shader,
     pub battle_over_panel_title: Shader,
     pub battle_over_panel_star: Shader,
+    pub choice_panel: Shader,
+    pub choice_panel_option: Shader,
 }
 
 #[derive(Deserialize, Debug)]
@@ -89,6 +91,8 @@ pub struct Colors {
     pub outline: Rgba<f32>,
     pub primary: Rgba<f32>,
     pub secondary: Rgba<f32>,
+    pub accent: Rgba<f32>,
+    pub background: Rgba<f32>,
     pub stats_attack: Rgba<f32>,
     pub stats_health: Rgba<f32>,
     pub damage: Rgba<f32>,
@@ -99,6 +103,10 @@ pub struct Colors {
     pub star: Rgba<f32>,
     pub button: Rgba<f32>,
     pub text: Rgba<f32>,
+    pub common: Rgba<f32>,
+    pub rare: Rgba<f32>,
+    pub epic: Rgba<f32>,
+    pub legendary: Rgba<f32>,
 }
 
 #[derive(Deserialize, Debug)]

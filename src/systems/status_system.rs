@@ -69,8 +69,8 @@ impl StatusSystem {
     pub fn get_active_statuses_panel_effects(
         node: &Node,
         resources: &Resources,
-    ) -> Vec<VisualEffect> {
-        let mut effects: Vec<VisualEffect> = default();
+    ) -> Vec<TimedEffect> {
+        let mut effects: Vec<TimedEffect> = default();
         if let Some(entity) = resources.input_data.frame_data.1.get_hovered() {
             let empty = HashMap::default();
             let statuses = node.get_entity_statuses(&entity).unwrap_or(&empty);
@@ -80,9 +80,9 @@ impl StatusSystem {
             let definition_shaders = Self::get_definitions_shaders(names, statuses, resources);
             if !name_shaders.is_empty() {
                 let shader = resources.options.shaders.status_panel.clone();
-                effects.push(VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityExtraShaderConst { entity, shader },
+                effects.push(TimedEffect::new(
+                    None,
+                    Animation::EntityExtraShaderConst { entity, shader },
                     1000,
                 ));
                 for (ind, mut shader) in name_shaders.into_iter().enumerate() {
@@ -90,18 +90,18 @@ impl StatusSystem {
                         .parameters
                         .uniforms
                         .insert_int_ref("u_index", ind as i32);
-                    effects.push(VisualEffect::new(
-                        0.0,
-                        VisualEffectType::EntityExtraShaderConst { entity, shader },
+                    effects.push(TimedEffect::new(
+                        None,
+                        Animation::EntityExtraShaderConst { entity, shader },
                         1001,
                     ));
                 }
             }
             if !definition_shaders.is_empty() {
                 let shader = resources.options.shaders.definitions_panel.clone();
-                effects.push(VisualEffect::new(
-                    0.0,
-                    VisualEffectType::EntityExtraShaderConst { entity, shader },
+                effects.push(TimedEffect::new(
+                    None,
+                    Animation::EntityExtraShaderConst { entity, shader },
                     1001,
                 ));
                 for (ind, mut shader) in definition_shaders.into_iter().enumerate() {
@@ -109,9 +109,9 @@ impl StatusSystem {
                         .parameters
                         .uniforms
                         .insert_int_ref("u_index", ind as i32 / 2);
-                    effects.push(VisualEffect::new(
-                        0.0,
-                        VisualEffectType::EntityExtraShaderConst { entity, shader },
+                    effects.push(TimedEffect::new(
+                        None,
+                        Animation::EntityExtraShaderConst { entity, shader },
                         1002,
                     ))
                 }

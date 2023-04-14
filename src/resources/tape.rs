@@ -4,9 +4,16 @@ use geng::prelude::itertools::Itertools;
 
 #[derive(Default)]
 pub struct Tape {
-    pub persistent_node: Node,       // always rendered
-    cluster_chain: Vec<NodeCluster>, // for recording
-    cluster_queue: ClusterQueue,     // for one time play
+    pub persistent_node: Node,                      // always rendered
+    pub panels: HashMap<legion::Entity, NodePanel>, // rendered on top until removed
+    cluster_chain: Vec<NodeCluster>,                // for recording
+    cluster_queue: ClusterQueue,                    // for one time play
+}
+
+pub struct NodePanel {
+    open: bool,
+    pub node: Node,
+    ts: Time,
 }
 
 #[derive(Default)]
@@ -24,8 +31,8 @@ pub struct NodeCluster {
 #[derive(Default, Clone)]
 pub struct Node {
     entities: HashMap<legion::Entity, EntityData>,
-    key_effects: HashMap<String, Vec<VisualEffect>>,
-    effects: Vec<VisualEffect>,
+    key_effects: HashMap<String, Vec<TimedEffect>>,
+    effects: Vec<TimedEffect>,
     duration: Option<Time>,
 }
 
@@ -62,21 +69,23 @@ impl Tape {
             node.merge_effects(&queue_node, start_ts, true);
             node.merge_entities(&queue_node, false);
         }
+        self.panels
+            .retain(|_, panel| panel.join_node(&mut node, ts));
         entity_shaders.extend(node.get_entity_shaders());
         node.add_effects(StatusSystem::get_active_statuses_panel_effects(
             &node, resources,
         ));
-        let (update_effects, shader_effects) = node.split_effects(ts);
-        for effect in update_effects {
-            let t = (ts - effect.delay) / effect.duration;
-            effect.r#type.process(t, &mut entity_shaders);
-        }
 
+        for effect in node.all_effects() {
+            let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
+            effect.animation.update_entities(t, &mut entity_shaders);
+        }
         UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
+
         let mut extra_shaders: Vec<Shader> = default();
-        for effect in shader_effects {
-            let t = (ts - effect.delay) / effect.duration;
-            extra_shaders.extend(effect.r#type.process(t, &mut entity_shaders));
+        for effect in node.all_effects() {
+            let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
+            extra_shaders.extend(effect.animation.generate_shaders(t, &entity_shaders));
         }
 
         entity_shaders
@@ -110,6 +119,47 @@ impl Tape {
             start_ts += duration;
         }
         None
+    }
+}
+
+impl NodePanel {
+    pub fn new(node: Node, ts: Time) -> Self {
+        Self {
+            open: true,
+            node,
+            ts,
+        }
+    }
+
+    pub fn join_node(&self, node: &mut Node, ts: Time) -> bool {
+        let t = match self.open {
+            true => {
+                if ts > self.ts {
+                    (ts - self.ts).min(0.5)
+                } else {
+                    return true;
+                }
+            }
+            false => {
+                if ts > self.ts + 0.5 {
+                    return false;
+                } else {
+                    0.5 + ts - self.ts
+                }
+            }
+        };
+        node.merge(&self.node, ts - t, true);
+        true
+    }
+
+    pub fn set_open(&mut self, value: bool, ts: Time) -> bool {
+        if self.open != value {
+            self.open = value;
+            self.ts = ts;
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -203,21 +253,21 @@ impl ClusterQueue {
 }
 
 impl Node {
-    pub fn add_effect_by_key(&mut self, key: String, effect: VisualEffect) {
+    pub fn add_effect_by_key(&mut self, key: String, effect: TimedEffect) {
         self.add_effects_by_key(key, vec![effect])
     }
 
-    pub fn add_effects_by_key(&mut self, key: String, effects: Vec<VisualEffect>) {
+    pub fn add_effects_by_key(&mut self, key: String, effects: Vec<TimedEffect>) {
         let mut key_effects = self.key_effects.remove(&key).unwrap_or_default();
         key_effects.extend(effects);
         self.key_effects.insert(key, key_effects);
     }
 
-    pub fn add_effect(&mut self, effect: VisualEffect) {
+    pub fn add_effect(&mut self, effect: TimedEffect) {
         self.effects.push(effect);
     }
 
-    pub fn add_effects(&mut self, effects: Vec<VisualEffect>) {
+    pub fn add_effects(&mut self, effects: Vec<TimedEffect>) {
         self.effects.extend(effects)
     }
 
@@ -280,27 +330,10 @@ impl Node {
         )
     }
 
-    pub fn all_effects(&self) -> impl Iterator<Item = &VisualEffect> {
+    pub fn all_effects(&self) -> impl Iterator<Item = &TimedEffect> {
         self.effects
             .iter()
             .chain(self.key_effects.values().flatten())
-    }
-
-    pub fn split_effects(&self, ts: Time) -> (Vec<&VisualEffect>, Vec<&VisualEffect>) {
-        let mut update_effects = Vec::default();
-        let mut shader_effects = Vec::default();
-        for effect in self
-            .all_effects()
-            .filter(|x| x.duration == 0.0 || x.delay < ts && x.duration + x.delay > ts)
-        {
-            match effect.r#type {
-                VisualEffectType::EntityShaderAnimation { .. }
-                | VisualEffectType::EntityShaderConst { .. } => update_effects.push(effect),
-                _ => shader_effects.push(effect),
-            }
-        }
-
-        (update_effects, shader_effects)
     }
 
     pub fn get_entity_statuses(&self, entity: &legion::Entity) -> Option<&HashMap<String, i32>> {
@@ -331,7 +364,9 @@ impl Node {
             .chain(self.key_effects.values_mut().flatten())
         {
             effect.delay *= mul;
-            effect.duration *= mul;
+            if let Some(mut duration) = effect.duration {
+                duration *= mul;
+            }
         }
         self.duration = Some(duration);
     }
@@ -339,7 +374,7 @@ impl Node {
     pub fn lock(mut self, lock_type: NodeLockType) -> Self {
         self.duration = Some(
             self.all_effects()
-                .map(|x| x.duration + x.delay)
+                .map(|x| x.duration.unwrap_or_default() + x.delay)
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default(),
         );

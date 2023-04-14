@@ -19,7 +19,7 @@ impl InputSystem {
     pub fn update_frame_data<'a>(shaders: &mut Vec<Shader>, resources: &mut Resources) {
         let (prev, cur) = &mut resources.input_data.frame_data;
         mem::swap(prev, cur);
-        cur.mouse = resources.input_data.mouse_pos;
+        cur.mouse = resources.input_data.mouse_world_pos;
         if resources
             .input_data
             .pressed_mouse_buttons
@@ -74,14 +74,17 @@ impl InputSystem {
         let mut hovered = None;
         for shader in shaders.iter().rev() {
             if shader.entity.is_some() {
-                if let Some(area) = AreaComponent::from_shader(shader) {
-                    if area.contains(resources.input_data.mouse_pos) {
-                        hovered = Some(shader);
-                        break;
-                    }
+                if AreaComponent::shader_hovered(
+                    shader,
+                    resources.input_data.mouse_screen_pos,
+                    resources.input_data.mouse_world_pos,
+                ) {
+                    hovered = Some(shader);
+                    break;
                 }
             }
         }
+
         if let Some(hovered) = hovered {
             cur.attention = hovered.entity;
             cur.state = InputState::Hover;

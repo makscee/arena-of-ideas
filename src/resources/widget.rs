@@ -3,7 +3,13 @@ use super::*;
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
 pub enum Widget {
-    BattleOverPanel { score: usize },
+    BattleOverPanel {
+        score: usize,
+    },
+    MultipleChoicePanel {
+        buttons: Vec<String>,
+        entity: legion::Entity,
+    },
 }
 
 impl Widget {
@@ -25,7 +31,7 @@ impl Widget {
                     .battle_over_panel_bg
                     .clone()
                     .merge_uniforms(&uniforms, false);
-                let animation = AnimatedShaderUniforms::empty(EasingType::Linear)
+                let animation = AnimatedShaderUniforms::empty()
                     .add_key_frame(
                         0.0,
                         uniforms.clone().insert_vec("u_box", vec2(1.0, 0.0)),
@@ -46,9 +52,9 @@ impl Widget {
                         uniforms.clone().insert_vec("u_box", vec2(1.0, 0.0)),
                         EasingType::CubicIn,
                     );
-                node.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation {
+                node.add_effect(TimedEffect::new(
+                    Some(3.0),
+                    Animation::ShaderAnimation {
                         shader: shader.clone(),
                         animation,
                     },
@@ -56,7 +62,7 @@ impl Widget {
                 ));
 
                 uniforms.insert_color_ref("u_color", options.colors.background_dark);
-                let animation = AnimatedShaderUniforms::empty(EasingType::Linear)
+                let animation = AnimatedShaderUniforms::empty()
                     .add_key_frame(
                         0.05,
                         uniforms.insert_vec_ref("u_box", vec2(1.0, 0.0)).clone(),
@@ -73,9 +79,9 @@ impl Widget {
                         uniforms.insert_vec_ref("u_box", vec2(1.0, 0.0)).clone(),
                         EasingType::CubicIn,
                     );
-                node.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation { shader, animation },
+                node.add_effect(TimedEffect::new(
+                    Some(3.0),
+                    Animation::ShaderAnimation { shader, animation },
                     0,
                 ));
 
@@ -89,7 +95,7 @@ impl Widget {
                     .battle_over_panel_title
                     .clone()
                     .merge_uniforms(&uniforms, true);
-                let animation = AnimatedShaderUniforms::empty(EasingType::Linear)
+                let animation = AnimatedShaderUniforms::empty()
                     .add_key_frame(
                         0.1,
                         uniforms
@@ -112,9 +118,9 @@ impl Widget {
                             .clone(),
                         EasingType::CubicIn,
                     );
-                node.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation { shader, animation },
+                node.add_effect(TimedEffect::new(
+                    Some(3.0),
+                    Animation::ShaderAnimation { shader, animation },
                     0,
                 ));
 
@@ -131,7 +137,7 @@ impl Widget {
                     .clone()
                     .merge_uniforms(&initial_uniforms, true);
                 let mut uniforms = initial_uniforms.clone();
-                let mut animation = AnimatedShaderUniforms::empty(EasingType::Linear)
+                let mut animation = AnimatedShaderUniforms::empty()
                     .add_key_frame(0.2, uniforms.clone(), EasingType::Linear)
                     .add_key_frame(
                         0.4,
@@ -166,9 +172,9 @@ impl Widget {
                             .clone(),
                         EasingType::CubicIn,
                     );
-                node.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation {
+                node.add_effect(TimedEffect::new(
+                    Some(3.0),
+                    Animation::ShaderAnimation {
                         shader: shader.clone(),
                         animation,
                     },
@@ -176,7 +182,7 @@ impl Widget {
                 ));
 
                 let mut uniforms = initial_uniforms.clone();
-                let mut animation = AnimatedShaderUniforms::empty(EasingType::Linear)
+                let mut animation = AnimatedShaderUniforms::empty()
                     .add_key_frame(0.2, uniforms.clone(), EasingType::Linear)
                     .add_key_frame(
                         0.45,
@@ -211,9 +217,9 @@ impl Widget {
                             .clone(),
                         EasingType::CubicIn,
                     );
-                node.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation {
+                node.add_effect(TimedEffect::new(
+                    Some(3.0),
+                    Animation::ShaderAnimation {
                         shader: shader.clone(),
                         animation,
                     },
@@ -221,7 +227,7 @@ impl Widget {
                 ));
 
                 let mut uniforms = initial_uniforms.clone();
-                let mut animation = AnimatedShaderUniforms::empty(EasingType::Linear)
+                let mut animation = AnimatedShaderUniforms::empty()
                     .add_key_frame(0.2, uniforms.clone(), EasingType::Linear)
                     .add_key_frame(
                         0.5,
@@ -256,14 +262,108 @@ impl Widget {
                             .clone(),
                         EasingType::CubicIn,
                     );
-                node.add_effect(VisualEffect::new(
-                    3.0,
-                    VisualEffectType::ShaderAnimation {
+                node.add_effect(TimedEffect::new(
+                    Some(3.0),
+                    Animation::ShaderAnimation {
                         shader: shader.clone(),
                         animation,
                     },
                     0,
                 ));
+
+                node
+            }
+            Widget::MultipleChoicePanel { buttons, entity } => {
+                let mut node = Node::default();
+                let bg = options.shaders.choice_panel.clone();
+                let initial_uniforms: ShaderUniforms = hashmap! {
+                    "u_color" => ShaderUniform::Color(options.colors.background),
+                    "u_offset" => ShaderUniform::Vec2(vec2::ZERO),
+                    "u_box" => ShaderUniform::Vec2(vec2(1.0, 0.0)),
+                }
+                .into();
+
+                let animation = AnimatedShaderUniforms::empty()
+                    .add_key_frame(0.0, initial_uniforms.clone(), default())
+                    .add_key_frame(
+                        0.5,
+                        initial_uniforms.clone().insert_vec("u_box", vec2(1.0, 0.9)),
+                        EasingType::QuadOut,
+                    )
+                    .add_key_frame(1.0, initial_uniforms.clone(), EasingType::BackIn);
+
+                node.add_effect(TimedEffect::new(
+                    Some(1.0),
+                    Animation::ShaderAnimation {
+                        shader: bg,
+                        animation,
+                    },
+                    0,
+                ));
+
+                let mut shader = options.shaders.choice_panel_option.clone();
+                shader.parent = Some(*entity);
+
+                shader.input_handlers.push(ButtonSystem::button_handler);
+                shader
+                    .input_handlers
+                    .push(|event, _, shader, _, resources| match event {
+                        InputEvent::Click => {
+                            if let Some(panel) = resources
+                                .tape_player
+                                .tape
+                                .panels
+                                .get_mut(&shader.parent.unwrap())
+                            {
+                                if panel.set_open(false, resources.tape_player.head) {
+                                    let index = shader.parameters.uniforms.try_get_int("u_index");
+                                    dbg!("Choice {:?}", index);
+                                }
+                            }
+                        }
+                        _ => {}
+                    });
+                for (ind, button) in buttons.iter().enumerate() {
+                    let (color, rarity) = match ind {
+                        1 => (options.colors.rare, "Rare"),
+                        2 => (options.colors.epic, "Epic"),
+                        3 => (options.colors.legendary, "Legendary"),
+                        _ => (options.colors.common, "Common"),
+                    };
+                    let initial_uniforms: ShaderUniforms = hashmap! {
+                        "u_color" => ShaderUniform::Color(color),
+                        "u_position" => ShaderUniform::Vec2(vec2((ind as f32) * 0.1, (buttons.len() as f32 * 0.5 - ind as f32) * 0.25)),
+                        "u_box" => ShaderUniform::Vec2(vec2(2.0, 0.0)),
+                        "u_index" => ShaderUniform::Int(ind as i32),
+                        "u_open" => ShaderUniform::Float(0.0),
+                        "u_text" => ShaderUniform::String((0, button.clone())),
+                        "u_rarity_text" =>ShaderUniform::String((1, rarity.to_string())),
+                        "u_text_color" => ShaderUniform::Color(options.colors.text),
+                    }
+                    .into();
+                    let animation = AnimatedShaderUniforms::empty()
+                        .add_key_frame(0.0, initial_uniforms.clone(), default())
+                        .add_key_frame(
+                            0.5,
+                            initial_uniforms
+                                .clone()
+                                .insert_vec("u_box", vec2(2.0, 0.1))
+                                .insert_float("u_open", 1.0),
+                            EasingType::QuadOut,
+                        )
+                        .add_key_frame(1.0, initial_uniforms.clone(), EasingType::QuadIn);
+
+                    shader.entity = Some(new_entity());
+
+                    node.add_effect(TimedEffect::new(
+                        Some(1.0),
+                        Animation::ShaderAnimation {
+                            shader: shader.clone(),
+                            animation,
+                        },
+                        0,
+                    ));
+                }
 
                 node
             }

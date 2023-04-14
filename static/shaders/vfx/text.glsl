@@ -1,5 +1,6 @@
 #include <common.glsl>
 uniform vec2 u_text_size;
+uniform float u_align = 0;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -8,7 +9,6 @@ attribute vec2 a_pos;
 uniform int u_index = 0;
 uniform vec2 u_index_offset = vec2(0);
 uniform vec2 u_card_offset = vec2(0);
-uniform float u_align;
 uniform float u_card_size = 0;
 uniform float u_max_width = 100;
 
@@ -21,11 +21,13 @@ void main() {
     position += u_position_over_t * u_t;
     size += u_size_over_t * u_t;
     vec2 rel = vec2(u_text_size.x / u_text_size.y, 1);
+    rel.x /= mix(1., u_aspect_ratio, u_ui);
     rel = mix(rel, vec2(u_max_width, u_max_width / rel.x), float(rel.x > u_max_width));
     offset += u_index * u_index_offset + u_offset_over_t * u_t;
-    offset += vec2(-rel.x * .5 * u_align, 0) + u_card_offset * card;
+    offset += u_card_offset * card;
     size += u_card_size * card;
     box = rel;
+    offset.x -= size * box.x * u_align;
     uv = get_uv(a_pos);
     gl_Position = get_gl_position(uv);
 }
@@ -37,12 +39,12 @@ in vec2 uv;
 uniform sampler2D u_text;
 
 uniform float u_text_inside = 0.5;
-uniform float u_text_border = 0.3;
+uniform float u_text_border = 0.35;
 uniform float u_alpha = 1;
 uniform float u_alpha_over_t = 0;
 uniform float u_outline_fade = 0;
-uniform float u_mid_border = 0;
-uniform float u_outline_fbm = 0.15;
+uniform float u_mid_border = 0.0;
+uniform float u_outline_fbm = 0.05;
 uniform vec4 u_mid_border_color = vec4(0, 0, 0, 1);
 const float AA = 0.03;
 

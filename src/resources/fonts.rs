@@ -23,7 +23,7 @@ impl Fonts {
             Rc::new(
                 geng::font::Ttf::new(
                     geng,
-                    include_bytes!("../../static/font/zorque.ttf"),
+                    include_bytes!("../../static/font/roboto_black.ttf"),
                     geng::font::ttf::Options {
                         pixel_size: 32.0,
                         max_distance: 0.25,
@@ -35,6 +35,17 @@ impl Fonts {
                 geng::font::Ttf::new(
                     geng,
                     include_bytes!("../../static/font/amontesa.ttf"),
+                    geng::font::ttf::Options {
+                        pixel_size: 32.0,
+                        max_distance: 0.25,
+                    },
+                )
+                .unwrap(),
+            ),
+            Rc::new(
+                geng::font::Ttf::new(
+                    geng,
+                    include_bytes!("../../static/font/zorque.ttf"),
                     geng::font::ttf::Options {
                         pixel_size: 32.0,
                         max_distance: 0.25,

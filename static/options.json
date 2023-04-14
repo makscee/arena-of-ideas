@@ -62,30 +62,36 @@
     },
     "colors": {
         "factions": {
-            "Dark": "#798EA4",
-            "Light": "#1B1B1B",
+            "Dark": "#E6E6E6",
+            "Light": "#1D1D1D",
             "Shop": "#FFD700",
-            "Team": "#B9D9EB"
+            "Team": "#86C4E4"
         },
-        "background_light": "#E7E7E7",
-        "background_dark": "#232323",
-        "inactive": "#BDBDBD",
-        "active": "#1F3A4F",
+        "background_light": "#F2F2F2",
+        "background_dark": "#222222",
+        "inactive": "#C4C4C4",
+        "active": "#1D1D1D",
         "hovered": "#FFD700",
-        "pressed": "#B9D9EB",
-        "outline": "#1F3A4F",
-        "primary": "#232323",
-        "secondary": "#6495ED",
+        "pressed": "#86C4E4",
+        "outline": "#1D1D1D",
+        "primary": "#FFFFFF",
+        "secondary": "#FFA500",
+        "accent": "#FF6F61",
+        "background": "#E5E5E5",
         "stats_attack": "#FFA500",
-        "stats_health": "#FF6347",
+        "stats_health": "#FF4D4D",
         "damage": "#FF4D4D",
-        "addition": "#B9D9EB",
-        "deletion": "#D44333",
-        "victory": "#E7E7E7",
+        "addition": "#86C4E4",
+        "deletion": "#C0392B",
+        "victory": "#FFFFFF",
         "defeat": "#FF6666",
         "star": "#FFD700",
         "button": "#6495ED",
-        "text": "#ffffff"
+        "text": "#FFFFFF",
+        "common": "#B2B2B2",
+        "rare": "#70B0FF",
+        "epic": "#6600CC",
+        "legendary": "#FFD700"
     },
     "shaders": {
         "unit": {
@@ -533,6 +539,69 @@
             },
             "layer": "UI",
             "order": 1002
+        },
+        "choice_panel": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_ui": 1.0
+                }
+            },
+            "layer": "UI",
+            "order": 1000
+        },
+        "choice_panel_option": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_ui": 1.0,
+                    "u_sdf_border": -0.015,
+                    "u_aa": 0.002,
+                    "u_outline_color": "#1F3A4F",
+                    "u_scale": 1.0,
+                    "u_open": 0.0
+                }
+            },
+            "layer": "UI",
+            "order": 1001,
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_size": 0.05,
+                            "u_color": "#ffffff",
+                            "u_align": -1.0,
+                            "u_offset": [
+                                -0.8,
+                                0.0
+                            ],
+                            "mapping": {
+                                "u_scale": "u_open",
+                                "u_color": "u_text_color"
+                            }
+                        }
+                    }
+                },
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_size": 0.04,
+                            "u_align": 1.0,
+                            "u_offset": [
+                                -0.83,
+                                0.0
+                            ],
+                            "u_outline_color": "#ffffff",
+                            "mapping": {
+                                "u_scale": "u_open",
+                                "u_text": "u_rarity_text"
+                            }
+                        }
+                    }
+                }
+            ]
         }
     },
     "images": {

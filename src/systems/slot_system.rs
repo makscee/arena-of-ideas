@@ -250,7 +250,7 @@ impl SlotSystem {
         resources: &mut Resources,
     ) {
         if let Some((slot, faction)) =
-            Self::get_hovered_slot(resources.input_data.mouse_pos, resources)
+            Self::get_hovered_slot(resources.input_data.mouse_world_pos, resources)
         {
             if faction == Faction::Team {
                 Self::make_gap(faction, slot, world, resources, Some(entity));
@@ -264,7 +264,7 @@ impl SlotSystem {
         resources: &mut Resources,
     ) {
         if let Some((slot, faction)) =
-            Self::get_hovered_slot(resources.input_data.mouse_pos, resources)
+            Self::get_hovered_slot(resources.input_data.mouse_world_pos, resources)
         {
             let unit_faction = UnitSystem::get_unit(entity, world).faction;
             if faction == Faction::Team && unit_faction == Faction::Shop {
@@ -343,7 +343,7 @@ impl SlotSystem {
         let mut hovered = None;
         if let Some(dragged) = resources.input_data.dragged_entity {
             if units.contains_key(&dragged) {
-                hovered = Self::get_hovered_slot(resources.input_data.mouse_pos, resources);
+                hovered = Self::get_hovered_slot(resources.input_data.mouse_world_pos, resources);
             }
         }
         for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {

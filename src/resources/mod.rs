@@ -33,8 +33,8 @@ mod tape;
 mod tape_player;
 mod team;
 mod team_states;
+mod timed_effect;
 mod trigger;
-mod visual_effect;
 mod widget;
 
 pub use ability::*;
@@ -67,8 +67,8 @@ pub use tape::*;
 pub use tape_player::*;
 pub use team::*;
 pub use team_states::*;
+pub use timed_effect::*;
 pub use trigger::*;
-pub use visual_effect::*;
 pub use widget::*;
 
 pub struct Resources {
