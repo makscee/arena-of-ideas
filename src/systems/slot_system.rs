@@ -259,6 +259,7 @@ impl SlotSystem {
                 for unit in units {
                     UnitSystem::delete_unit(unit, world, resources);
                 }
+                resources.team_states.set_slots(&Faction::Sacrifice, 1);
             }
             _ => {}
         }

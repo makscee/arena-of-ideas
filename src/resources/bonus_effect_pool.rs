@@ -11,6 +11,7 @@ pub struct BonusEffectPool {
 
 impl BonusEffectPool {
     pub fn load_widget(value: usize, world: &legion::World, resources: &mut Resources) {
+        debug!("Load bonus choice widget {value}");
         let entity = new_entity();
         let ts = resources.tape_player.head;
         Self::load_bonuses(value, world, resources);

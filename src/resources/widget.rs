@@ -276,10 +276,11 @@ impl Widget {
             Widget::BonusChoicePanel { bonuses, entity } => {
                 let duration = Some(1.0);
                 let mut node = Node::default();
-                let bg = options.shaders.choice_panel.clone();
+                let mut bg = options.shaders.choice_panel.clone();
+                let position = bg.parameters.uniforms.try_get_vec2("u_position").unwrap();
+                bg.entity = Some(new_entity());
                 let initial_uniforms: ShaderUniforms = hashmap! {
                     "u_color" => ShaderUniform::Color(options.colors.background),
-                    "u_offset" => ShaderUniform::Vec2(vec2::ZERO),
                     "u_box" => ShaderUniform::Vec2(vec2(1.0, 0.0)),
                 }
                 .into();
@@ -288,7 +289,9 @@ impl Widget {
                     .add_key_frame(0.0, initial_uniforms.clone(), default())
                     .add_key_frame(
                         0.5,
-                        initial_uniforms.clone().insert_vec("u_box", vec2(1.0, 0.9)),
+                        initial_uniforms
+                            .clone()
+                            .insert_vec("u_box", vec2(1.0, 0.55)),
                         EasingType::QuadOut,
                     )
                     .add_key_frame(1.0, initial_uniforms.clone(), EasingType::BackIn);
@@ -336,7 +339,7 @@ impl Widget {
                     }
                     let initial_uniforms: ShaderUniforms = hashmap! {
                         "u_color" => ShaderUniform::Color(color),
-                        "u_position" => ShaderUniform::Vec2(vec2((ind as f32) * 0.1, (bonuses.len() as f32 * 0.5 - ind as f32) * 0.25)),
+                        "u_position" => ShaderUniform::Vec2(position + vec2((ind as f32) * 0.1, ((bonuses.len() as f32 - 1.0) * 0.5 - ind as f32) * 0.25)),
                         "u_box" => ShaderUniform::Vec2(vec2(2.0, 0.0)),
                         "u_index" => ShaderUniform::Int(ind as i32),
                         "u_open" => ShaderUniform::Float(0.0),

@@ -66,61 +66,67 @@ impl ExpressionInt {
         world: &legion::World,
         resources: &Resources,
     ) -> Result<i32, Error> {
-        match self {
-            ExpressionInt::Sum { a, b } => {
-                Ok(a.calculate(context, world, resources)?
-                    + b.calculate(context, world, resources)?)
-            }
-            ExpressionInt::Sub { a, b } => {
-                Ok(a.calculate(context, world, resources)?
-                    - b.calculate(context, world, resources)?)
-            }
-            ExpressionInt::Mul { a, b } => {
-                Ok(a.calculate(context, world, resources)?
-                    * b.calculate(context, world, resources)?)
-            }
-            ExpressionInt::Div { a, b } => {
-                Ok(a.calculate(context, world, resources)?
-                    / b.calculate(context, world, resources)?)
-            }
-            ExpressionInt::Max { a, b } => Ok(a
-                .calculate(context, world, resources)?
-                .max(b.calculate(context, world, resources)?)),
-            ExpressionInt::Const { value } => Ok(*value),
-            ExpressionInt::Var { var } => {
-                context.vars.try_get_int(var).context("Failed to find var")
-            }
-            ExpressionInt::EntityVar { var, entity } => {
-                ContextSystem::try_get_context(entity.calculate(context, world, resources)?, world)?
-                    .vars
-                    .try_get_int(var)
-                    .context(format!("Var not found {}", var))
-            }
-            ExpressionInt::AbilityVar { ability, var } => {
-                let faction = Faction::from_entity(context.owner, world);
-                Ok(AbilityPool::get_var_int(resources, &faction, ability, var))
-            }
-            ExpressionInt::If {
-                condition,
-                then,
-                r#else,
-            } => match condition.calculate(context, world, resources)? {
-                true => then.calculate(context, world, resources),
-                false => r#else.calculate(context, world, resources),
-            },
-            ExpressionInt::Negate { value } => Ok(-value.calculate(context, world, resources)?),
-            ExpressionInt::FactionVar { var, faction } => resources
-                .team_states
-                .get_vars(&faction.calculate(context, world, resources)?)
+        resources.logger.log(
+            &format!(
+                "Calculating int expression {:?} o:{:?} t:{:?}",
+                self, context.owner, context.target
+            ),
+            &LogContext::Expression,
+        );
+        let result =
+            match self {
+                ExpressionInt::Sum { a, b } => Ok(a.calculate(context, world, resources)?
+                    + b.calculate(context, world, resources)?),
+                ExpressionInt::Sub { a, b } => Ok(a.calculate(context, world, resources)?
+                    - b.calculate(context, world, resources)?),
+                ExpressionInt::Mul { a, b } => Ok(a.calculate(context, world, resources)?
+                    * b.calculate(context, world, resources)?),
+                ExpressionInt::Div { a, b } => Ok(a.calculate(context, world, resources)?
+                    / b.calculate(context, world, resources)?),
+                ExpressionInt::Max { a, b } => Ok(a
+                    .calculate(context, world, resources)?
+                    .max(b.calculate(context, world, resources)?)),
+                ExpressionInt::Const { value } => Ok(*value),
+                ExpressionInt::Var { var } => {
+                    context.vars.try_get_int(var).context("Failed to find var")
+                }
+                ExpressionInt::EntityVar { var, entity } => ContextSystem::try_get_context(
+                    entity.calculate(context, world, resources)?,
+                    world,
+                )?
+                .vars
                 .try_get_int(var)
-                .context("Failed to get faction var"),
-            ExpressionInt::StatusCharges { name } => Ok(resources
-                .status_pool
-                .active_statuses
-                .get(&context.target)
-                .and_then(|x| x.get(name).cloned())
-                .unwrap_or_default()),
-        }
+                .context(format!("Var not found {}", var)),
+                ExpressionInt::AbilityVar { ability, var } => {
+                    let faction = Faction::from_entity(context.owner, world);
+                    Ok(AbilityPool::get_var_int(resources, &faction, ability, var))
+                }
+                ExpressionInt::If {
+                    condition,
+                    then,
+                    r#else,
+                } => match condition.calculate(context, world, resources)? {
+                    true => then.calculate(context, world, resources),
+                    false => r#else.calculate(context, world, resources),
+                },
+                ExpressionInt::Negate { value } => Ok(-value.calculate(context, world, resources)?),
+                ExpressionInt::FactionVar { var, faction } => resources
+                    .team_states
+                    .get_vars(&faction.calculate(context, world, resources)?)
+                    .try_get_int(var)
+                    .context("Failed to get faction var"),
+                ExpressionInt::StatusCharges { name } => Ok(resources
+                    .status_pool
+                    .active_statuses
+                    .get(&context.target)
+                    .and_then(|x| x.get(name).cloned())
+                    .unwrap_or_default()),
+            };
+
+        resources
+            .logger
+            .log(&format!("Result {result:?}",), &LogContext::Expression);
+        result
     }
 }
 
@@ -158,7 +164,14 @@ impl ExpressionEntity {
         world: &legion::World,
         resources: &Resources,
     ) -> Result<legion::Entity, Error> {
-        match self {
+        resources.logger.log(
+            &format!(
+                "Calculating entity expression {:?} o:{:?} t:{:?}",
+                self, context.owner, context.target
+            ),
+            &LogContext::Expression,
+        );
+        let result = match self {
             ExpressionEntity::World => Ok(<(&WorldComponent, &EntityComponent)>::query()
                 .iter(world)
                 .next()
@@ -193,7 +206,12 @@ impl ExpressionEntity {
                 SlotSystem::find_unit_by_slot(slot, &faction, world, resources)
                     .context(format!("No unit of {:?} found in slot {}", faction, slot))
             }
-        }
+        };
+
+        resources
+            .logger
+            .log(&format!("Result {result:?}",), &LogContext::Expression);
+        result
     }
 }
 
@@ -224,7 +242,14 @@ impl ExpressionFaction {
         world: &legion::World,
         resources: &Resources,
     ) -> Result<Faction, Error> {
-        match &self {
+        resources.logger.log(
+            &format!(
+                "Calculating faction expression {:?} o:{:?} t:{:?}",
+                self, context.owner, context.target
+            ),
+            &LogContext::Expression,
+        );
+        let result = match &self {
             ExpressionFaction::Owner => Ok(Faction::from_entity(context.owner, world)),
             ExpressionFaction::Target => Ok(Faction::from_entity(context.target, world)),
             ExpressionFaction::Parent => Ok(Faction::from_entity(context.parent.unwrap(), world)),
@@ -240,6 +265,11 @@ impl ExpressionFaction {
             ExpressionFaction::Shop => Ok(Faction::Shop),
             ExpressionFaction::Light => Ok(Faction::Light),
             ExpressionFaction::Dark => Ok(Faction::Dark),
-        }
+        };
+
+        resources
+            .logger
+            .log(&format!("Result {result:?}",), &LogContext::Expression);
+        result
     }
 }

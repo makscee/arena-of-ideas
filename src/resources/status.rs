@@ -260,7 +260,7 @@ impl StatusPool {
         {
             for _ in 0..charges_delta.abs() {
                 let show;
-                let (text, color) = if charges_delta > 0 {
+                let (text, color) = if charges_delta > 0 { 
                     show = true;
                     Self::add_status_charge(entity, &status_name, resources, world);
                     ("+", resources.options.colors.addition)

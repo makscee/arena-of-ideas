@@ -102,12 +102,43 @@
             "state": {
                 "name": "Big Bugs"
             },
-            "replications": 8,
+            "replications": 5,
             "units": [
                 {
                     "name": "Big Bug",
                     "attack": 4,
                     "health": 4,
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#895435",
+                                "u_color_1": "#000000",
+                                "u_radius": 0.9,
+                                "u_spin_part": 0.05,
+                                "u_move_speed": 5.3
+                            },
+                            "instances": 20,
+                            "vertices": 1
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "state": {
+                "name": "Angry Shielded Big Bugs"
+            },
+            "replications": 4,
+            "units": [
+                {
+                    "name": "Big Bug",
+                    "attack": 4,
+                    "health": 4,
+                    "active_statuses": {
+                        "Shield": 1,
+                        "Empower": 3
+                    },
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {

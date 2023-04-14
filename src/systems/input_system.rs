@@ -2,6 +2,7 @@ use super::*;
 
 pub struct InputSystem {}
 
+const DRAG_THRESHOLD: f32 = 0.1;
 impl InputSystem {
     pub fn new() -> Self {
         Self {}
@@ -31,7 +32,7 @@ impl InputSystem {
                 return;
             }
             if prev.state == InputState::Press {
-                cur.state = match prev.mouse == cur.mouse {
+                cur.state = match (prev.mouse - cur.mouse).len() < DRAG_THRESHOLD {
                     true => InputState::Press,
                     false => InputState::Drag,
                 };

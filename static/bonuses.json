@@ -100,8 +100,38 @@
                 "name": "Shield"
             }
         },
-        "rarity": "Rare",
+        "rarity": "Epic",
         "description": "Give Shield to everyone"
+    },
+    {
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "ChangeSlots",
+                    "faction": {
+                        "type": "Team"
+                    },
+                    "delta": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                },
+                {
+                    "type": "ChangeFactionVarInt",
+                    "var": "G",
+                    "faction": {
+                        "type": "Team"
+                    },
+                    "delta": {
+                        "type": "Const",
+                        "value": 10
+                    }
+                }
+            ]
+        },
+        "rarity": "Legendary",
+        "description": "+1 hero slot, +10 g"
     },
     {
         "effect": {
@@ -114,7 +144,7 @@
                 "value": 1
             }
         },
-        "rarity": "Legendary",
+        "rarity": "Epic",
         "description": "+1 hero slot"
     }
 ]

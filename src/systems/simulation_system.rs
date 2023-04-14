@@ -12,6 +12,12 @@ impl SimulationSystem {
     ) -> usize {
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
+        resources
+            .team_states
+            .set_slots(&Faction::Light, light.units.len());
+        resources
+            .team_states
+            .set_slots(&Faction::Dark, dark.units.len());
         BattleSystem::run_battle(world, resources, &mut None);
         let result = match assert {
             Some(condition) => {

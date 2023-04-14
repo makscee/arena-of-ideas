@@ -96,10 +96,7 @@ impl PackedUnit {
             UnitComponent::new(slot, faction, self.rank),
         ));
         resources.logger.log(
-            &format!(
-                "Unpacking unit {} new id: {:?} {:?}",
-                self.name, entity, faction
-            ),
+            &format!("Unpacking unit {} new id: {:?} {:?}", self, entity, faction),
             &LogContext::UnitCreation,
         );
         let world_entity = WorldSystem::get_context(world).owner;

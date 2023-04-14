@@ -236,6 +236,8 @@ impl GameStateSystem {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
                     resources.team_states.set_slots(&Faction::Sacrifice, 1);
+                } else if resources.current_state == GameState::Battle {
+                    BonusEffectPool::load_widget(resources.last_score, world, resources);
                 }
                 ShopSystem::init_floor(world, resources, true);
                 resources.camera.focus = Focus::Shop;

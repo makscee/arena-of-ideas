@@ -12,6 +12,7 @@ pub enum LogContext {
     ActionFail,
     Effect,
     Condition,
+    Expression,
     Trigger,
     Event,
     UnitCreation,

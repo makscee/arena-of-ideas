@@ -36,11 +36,12 @@
         "Effect": true,
         "Contexts": false,
         "Condition": true,
+        "Expression": true,
         "Trigger": false,
         "Event": true,
         "UnitCreation": true,
         "Measurement": false,
-        "Test": false
+        "Test": true
     },
     "colors": {
         "factions": {
@@ -532,6 +533,10 @@
                 "uniforms": {
                     "u_ui": 1.0,
                     "u_aa": 0.002,
+                    "u_position": [
+                        0.0,
+                        0.25
+                    ],
                     "u_sdf_border": -0.05,
                     "u_outline_color": "#1F3A4F"
                 }
@@ -622,7 +627,7 @@
     "floats": {
         "slots_shop_team_position": [
             6.0,
-            4.0
+            5.0
         ],
         "slots_striker_position": [
             7.0,
@@ -633,8 +638,8 @@
             -8.0
         ],
         "slots_sacrifice_position": [
-            10.0,
-            -4.0
+            6.0,
+            -0.0
         ],
         "slots_battle_team_spacing": [
             0.45,
@@ -645,8 +650,8 @@
             0.0
         ],
         "slots_sacrifice_spacing": [
-            0.0,
-            2.7
+            -2.5,
+            0.0
         ],
         "slots_battle_team_scale": 0.7,
         "slots_striker_scale": 1.5,

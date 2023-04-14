@@ -73,60 +73,63 @@ impl Condition {
             ),
             &LogContext::Condition,
         );
-        match self {
-            Condition::EqualsInt { a, b } => Ok(a.calculate(context, world, resources)?
-                == b.calculate(context, world, resources)?),
-            Condition::EqualsFaction { a, b } => Ok(a.calculate(context, world, resources)?
-                == b.calculate(context, world, resources)?),
-            Condition::LessInt { a, b } => {
-                Ok(a.calculate(context, world, resources)?
-                    < b.calculate(context, world, resources)?)
-            }
-            Condition::MoreInt { a, b } => {
-                Ok(a.calculate(context, world, resources)?
-                    > b.calculate(context, world, resources)?)
-            }
-            Condition::ModZero { value, r#mod } => Ok(value
-                .calculate(context, world, resources)?
-                % r#mod.calculate(context, world, resources)?
-                == 0),
-            Condition::SlotOccupied { slot, faction } => Ok(SlotSystem::find_unit_by_slot(
-                slot.calculate(context, world, resources)? as usize,
-                faction,
-                world,
-                resources,
-            )
-            .is_some()),
-            Condition::IsCorpse { entity } => Ok(UnitSystem::get_corpse(
-                entity.calculate(context, world, resources)?,
-                world,
-            )
-            .is_some()),
-            Condition::Not { condition } => Ok(!condition.calculate(context, world, resources)?),
-            Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
-                && b.calculate(context, world, resources)?),
-            Condition::Or { a, b } => Ok(a.calculate(context, world, resources)?
-                || b.calculate(context, world, resources)?),
-            Condition::Always => Ok(true),
-            Condition::Chance { part } => Ok(random::<f32>() < *part),
-            Condition::IsAlive { entity } => {
-                if let Ok(context) = ContextSystem::try_get_context(
+        let result =
+            match self {
+                Condition::EqualsInt { a, b } => Ok(a.calculate(context, world, resources)?
+                    == b.calculate(context, world, resources)?),
+                Condition::EqualsFaction { a, b } => Ok(a.calculate(context, world, resources)?
+                    == b.calculate(context, world, resources)?),
+                Condition::LessInt { a, b } => Ok(a.calculate(context, world, resources)?
+                    < b.calculate(context, world, resources)?),
+                Condition::MoreInt { a, b } => Ok(a.calculate(context, world, resources)?
+                    > b.calculate(context, world, resources)?),
+                Condition::ModZero { value, r#mod } => Ok(value
+                    .calculate(context, world, resources)?
+                    % r#mod.calculate(context, world, resources)?
+                    == 0),
+                Condition::SlotOccupied { slot, faction } => Ok(SlotSystem::find_unit_by_slot(
+                    slot.calculate(context, world, resources)? as usize,
+                    faction,
+                    world,
+                    resources,
+                )
+                .is_some()),
+                Condition::IsCorpse { entity } => Ok(UnitSystem::get_corpse(
                     entity.calculate(context, world, resources)?,
                     world,
-                ) {
-                    let vars = context.vars;
-                    Ok(vars.get_int(&VarName::HpValue) > vars.get_int(&VarName::HpDamage))
-                } else {
-                    Ok(false)
+                )
+                .is_some()),
+                Condition::Not { condition } => {
+                    Ok(!condition.calculate(context, world, resources)?)
                 }
-            }
-            Condition::Same { a, b } => Ok(a.calculate(context, world, resources)?
-                == b.calculate(context, world, resources)?),
-            Condition::HaveStatus { name } => Ok(ExpressionInt::StatusCharges {
-                name: name.to_string(),
-            }
-            .calculate(context, world, resources)?
-                > 0),
-        }
+                Condition::And { a, b } => Ok(a.calculate(context, world, resources)?
+                    && b.calculate(context, world, resources)?),
+                Condition::Or { a, b } => Ok(a.calculate(context, world, resources)?
+                    || b.calculate(context, world, resources)?),
+                Condition::Always => Ok(true),
+                Condition::Chance { part } => Ok(random::<f32>() < *part),
+                Condition::IsAlive { entity } => {
+                    if let Ok(context) = ContextSystem::try_get_context(
+                        entity.calculate(context, world, resources)?,
+                        world,
+                    ) {
+                        let vars = context.vars;
+                        Ok(vars.get_int(&VarName::HpValue) > vars.get_int(&VarName::HpDamage))
+                    } else {
+                        Ok(false)
+                    }
+                }
+                Condition::Same { a, b } => Ok(a.calculate(context, world, resources)?
+                    == b.calculate(context, world, resources)?),
+                Condition::HaveStatus { name } => Ok(ExpressionInt::StatusCharges {
+                    name: name.to_string(),
+                }
+                .calculate(context, world, resources)?
+                    > 0),
+            };
+        resources
+            .logger
+            .log(&format!("Result {result:?}",), &LogContext::Condition);
+        result
     }
 }

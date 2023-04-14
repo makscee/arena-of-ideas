@@ -2,7 +2,7 @@ use geng::prelude::itertools::Itertools;
 
 use super::*;
 
-pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
+pub const INITIAL_POOL_COUNT_PER_HERO: usize = 1;
 
 #[derive(Default)]
 pub struct ShopData {

@@ -1,8 +1,6 @@
 use geng::ui::*;
 use legion::EntityStore;
 
-use crate::resources::Widget;
-
 use super::*;
 
 #[derive(Default)]
@@ -24,15 +22,17 @@ impl System for ShopSystem {
             self.need_switch_battle = false;
         }
         Self::refresh_tape(world, resources);
-        let mut cluster = Some(NodeCluster::default());
-        ActionSystem::run_ticks(world, resources, &mut cluster);
-        BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut cluster);
-        ActionSystem::run_ticks(world, resources, &mut cluster);
+        if !resources.action_queue.is_empty() {
+            let mut cluster = Some(NodeCluster::default());
+            ActionSystem::run_ticks(world, resources, &mut cluster);
+            BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut cluster);
+            ActionSystem::run_ticks(world, resources, &mut cluster);
 
-        resources
-            .tape_player
-            .tape
-            .push_to_queue(cluster.unwrap(), resources.tape_player.head);
+            resources
+                .tape_player
+                .tape
+                .push_to_queue(cluster.unwrap(), resources.tape_player.head);
+        }
     }
 
     fn ui<'a>(
@@ -131,6 +131,7 @@ impl ShopSystem {
         let unit = entry.get_component_mut::<UnitComponent>().unwrap();
         unit.faction = Faction::Team;
         unit.slot = slot;
+        ContextSystem::refresh_entity(entity, world, resources);
 
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
