@@ -55,11 +55,14 @@ impl Team {
         resources
             .team_states
             .set_team_state(*faction, self.state.clone());
-        debug!(
-            "Unpack team {} {:?} {}",
-            self,
-            self.state,
-            entities.iter().map(|x| format!("{:?}", x)).join(", ")
+        resources.logger.log(
+            &format!(
+                "Unpack team {} {:?} {}",
+                self,
+                self.state,
+                entities.iter().map(|x| format!("{:?}", x)).join(", ")
+            ),
+            &LogContext::UnitCreation,
         );
         entities
     }

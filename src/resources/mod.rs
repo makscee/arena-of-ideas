@@ -1,4 +1,5 @@
 use geng::prelude::file::load_json;
+use regex::Regex;
 use std::{collections::VecDeque, rc::Rc};
 
 use super::*;
@@ -112,6 +113,8 @@ pub struct Resources {
     pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Option<Geng>,
+
+    pub definitions_regex: Regex,
 }
 
 //todo: async loading
@@ -148,6 +151,7 @@ impl Resources {
             team_states: default(),
             prepared_shaders: default(),
             bonus_pool: default(),
+            definitions_regex: Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap(),
         }
     }
 

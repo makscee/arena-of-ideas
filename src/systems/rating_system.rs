@@ -1,83 +1,45 @@
 use super::*;
 
-pub struct WalkthroughSystem {}
+pub struct RatingSystem {}
 
-impl WalkthroughSystem {
-    pub fn run_simulation(world: &mut legion::World, resources: &mut Resources) {
+impl RatingSystem {
+    pub fn run_walkthrough(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
-        let mut avg_score: HashMap<String, (usize, usize)> = default();
-        let mut floors: Vec<usize> = vec![0; resources.ladder.count() + 1];
         let mut i: usize = 0;
-        let mut total_pick_data: HashMap<String, (usize, usize)> = default();
+        let mut ratings: Ratings = default();
+        let mut levels: Vec<usize> = vec![0; resources.ladder.count() + 1];
         loop {
             i += 1;
             let run_timer = Instant::now();
-            let (floor, total_score, team, pick_data) = Self::run_single(world, resources);
-            *floors.get_mut(floor).unwrap() += 1;
-            for unit in team.units.iter() {
-                let mut result = avg_score.remove(&unit.name).unwrap_or_default();
-                result.0 += total_score;
-                result.1 += 1;
-                avg_score.insert(unit.name.clone(), result);
+            let (level_reached, total_score, team, pick_data, score_data) =
+                Self::run_single(world, resources);
+            *levels.get_mut(level_reached).unwrap() += 1;
+            for (name, data) in score_data {
+                ratings.add_rating(&name, RatingType::Score, data.0, data.1);
             }
             for (name, data) in pick_data {
-                let mut total_data = total_pick_data.remove(&name).unwrap_or_default();
-                total_data.0 += data.0;
-                total_data.1 += data.1;
-                total_pick_data.insert(name, total_data);
+                ratings.add_rating(&name, RatingType::PickRate, data.0, data.1);
             }
 
-            let pick_rates = total_pick_data
+            ratings.calculate();
+            let spaces = "                ";
+            for (name, (score, ratings)) in ratings
+                .data
                 .iter()
-                .map(|(name, (pick, show))| (name, *pick as f32 / *show as f32, *pick, *show))
-                .sorted_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-                .collect_vec();
-
-            println!("\nAvg score:");
-            let mut avg_score = avg_score
-                .iter()
-                .map(|(name, (floors, games))| (name, *floors as f32 / *games as f32))
-                .collect_vec();
-            avg_score.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
-            println!(
-                "{}",
-                avg_score
-                    .iter()
-                    .map(|(name, avg_flr)| format!("\"{}\": {:.3}", name, avg_flr))
-                    .join(",\n"),
-            );
-            println!("\nPick rates:");
-            println!(
-                "{}",
-                pick_rates
-                    .iter()
-                    .map(|(name, rate, pick, show)| format!(
-                        "\"{}\": {:.3} {}/{}",
-                        name, rate, pick, show
-                    ))
-                    .join(",\n"),
-            );
-            let mut sorting: HashMap<String, f32> = HashMap::from_iter(
-                pick_rates
-                    .iter()
-                    .enumerate()
-                    .map(|(ind, (name, _, _, _))| (name.deref().clone(), ind as f32)),
-            );
-            for (i, (name, _)) in avg_score.into_iter().enumerate() {
-                let mut data = sorting.remove(name).unwrap_or_default();
-                data = (data + i as f32) * 0.5;
-                sorting.insert(name.clone(), data);
+                .sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
+            {
+                let mut name = name.clone();
+                name.push_str(spaces);
+                let (name, _) = name.split_at(15);
+                println!(
+                    "{name} {score} [{}]",
+                    ratings
+                        .iter()
+                        .sorted_by_key(|x| x.0)
+                        .map(|(rating, (a, b))| format!("{rating:?}({a}/{b})"))
+                        .join(" ")
+                );
             }
-
-            println!("\nResult:");
-            println!(
-                "{}",
-                sorting
-                    .iter()
-                    .sorted_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-                    .map(|(name, score)| format!("\"{}\": {:.1}", name, score))
-                    .join(",\n"),
-            );
 
             for (i, name) in resources
                 .ladder
@@ -87,13 +49,13 @@ impl WalkthroughSystem {
                 .chain(Some("Game Over".to_string()))
                 .enumerate()
             {
-                println!("{} {} = {}", i, name, floors.get(i).unwrap());
+                println!("{} {} = {}", i, name, levels.get(i).unwrap());
             }
             println!(
                 "Run #{} took {:?} reached {} {}",
                 i,
                 run_timer.elapsed(),
-                floor,
+                level_reached,
                 team
             );
         }
@@ -102,7 +64,13 @@ impl WalkthroughSystem {
     fn run_single(
         world: &mut legion::World,
         resources: &mut Resources,
-    ) -> (usize, usize, Team, HashMap<String, (usize, usize)>) {
+    ) -> (
+        usize,
+        usize,
+        Team,
+        HashMap<String, (usize, usize)>,
+        HashMap<String, (usize, usize)>,
+    ) {
         let pool: HashMap<String, PackedUnit> = HashMap::from_iter(
             resources
                 .hero_pool
@@ -117,6 +85,7 @@ impl WalkthroughSystem {
         let sell_price = ShopSystem::sell_price(resources);
         const MAX_ARRANGE_TRIES: usize = 5;
         let mut pick_show_count = HashMap::default();
+        let mut score_games_count = HashMap::default();
         let mut total_result = 0;
         loop {
             let extra_units = {
@@ -125,7 +94,9 @@ impl WalkthroughSystem {
                 value
             } as usize;
             let dark = Ladder::generate_team(resources);
-            let max_slots = resources.team_states.get_slots(&Faction::Team);
+            let max_slots = (resources.ladder.current_ind() + resources.options.initial_team_slots)
+                .min(MAX_SLOTS);
+            team.state.slots = max_slots;
 
             let shop_case = pool
                 .values()
@@ -181,11 +152,82 @@ impl WalkthroughSystem {
                 picked
                     .iter()
                     .for_each(|name| pick_show_count.get_mut(name).unwrap().0 += 1);
+                for unit in team.units.iter() {
+                    let mut data: (usize, usize) =
+                        score_games_count.remove(&unit.name).unwrap_or_default();
+                    data.0 += battle_result;
+                    data.1 += 1;
+                    score_games_count.insert(unit.name.clone(), data);
+                }
                 total_result += battle_result;
             }
         }
         let level_reached = resources.ladder.current_ind();
         resources.ladder.reset();
-        (level_reached, total_result, team, pick_show_count)
+        (
+            level_reached,
+            total_result,
+            team,
+            pick_show_count,
+            score_games_count,
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Default)]
+pub struct Ratings {
+    pub data: HashMap<String, (f64, HashMap<RatingType, (usize, usize)>)>,
+}
+
+#[derive(
+    Serialize,
+    Deserialize,
+    Eq,
+    PartialEq,
+    Hash,
+    enum_iterator::Sequence,
+    Clone,
+    Copy,
+    Debug,
+    Ord,
+    PartialOrd,
+)]
+pub enum RatingType {
+    PickRate,
+    Score,
+    WinRate,
+}
+
+impl Ratings {
+    pub fn add_rating(&mut self, name: &str, rating: RatingType, score: usize, max: usize) {
+        let mut data = self.data.remove(name).unwrap_or_default();
+        let mut rating_data = data.1.remove(&rating).unwrap_or_default();
+        rating_data.0 += score;
+        rating_data.1 += max;
+        data.1.insert(rating, rating_data);
+        self.data.insert(name.to_string(), data);
+    }
+
+    pub fn calculate(&mut self) {
+        let mut sorted: HashMap<RatingType, Vec<(String, f64)>> = default();
+        for (name, (_, ratings)) in self.data.iter() {
+            for (rating_type, (score, max)) in ratings.iter() {
+                let mut v = sorted.remove(rating_type).unwrap_or_default();
+                v.push((name.clone(), *score as f64 / *max as f64));
+                sorted.insert(*rating_type, v);
+            }
+        }
+        let mut results: HashMap<String, f64> = default();
+        // assert!(sorted.iter().map(|x| x.1.len()).all_equal());
+        for (_rating_type, v) in sorted.iter_mut() {
+            for (ind, (name, _value)) in v.iter().sorted_by(|a, b| a.1.total_cmp(&b.1)).enumerate()
+            {
+                let data = results.remove(name).unwrap_or_default() + ind as f64;
+                results.insert(name.clone(), data);
+            }
+        }
+        for (name, result) in results {
+            self.data.get_mut(&name).unwrap().0 = result;
+        }
     }
 }

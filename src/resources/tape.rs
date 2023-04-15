@@ -392,7 +392,6 @@ impl Node {
                 resources,
                 factions,
             } => {
-                ContextSystem::refresh_factions(&factions, world, resources);
                 let units =
                     UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
                 SlotSystem::refresh_slots(&factions, &units, world, resources);

@@ -229,6 +229,7 @@ impl BattleSystem {
                     left_hit_pos,
                     &mut node,
                     world,
+                    resources,
                     EasingType::Linear,
                     0.03,
                 );
@@ -237,6 +238,7 @@ impl BattleSystem {
                     right_hit_pos,
                     &mut node,
                     world,
+                    resources,
                     EasingType::Linear,
                     0.03,
                 );
@@ -255,6 +257,7 @@ impl BattleSystem {
                     SlotSystem::get_position(1, &Faction::Light, resources),
                     &mut node,
                     world,
+                    resources,
                     EasingType::QuartOut,
                     duration,
                 );
@@ -263,6 +266,7 @@ impl BattleSystem {
                     SlotSystem::get_position(1, &Faction::Dark, resources),
                     &mut node,
                     world,
+                    resources,
                     EasingType::QuartOut,
                     duration,
                 );
@@ -308,7 +312,7 @@ impl BattleSystem {
         cluster: &mut Option<NodeCluster>,
     ) {
         ActionSystem::run_ticks(world, resources, cluster);
-        Self::death_check(&Faction::battle(), world, resources, cluster);
+        Self::death_check(world, resources, cluster);
     }
 
     pub fn hit(
@@ -366,12 +370,10 @@ impl BattleSystem {
     }
 
     pub fn death_check(
-        factions: &HashSet<Faction>,
         world: &mut legion::World,
         resources: &mut Resources,
         cluster: &mut Option<NodeCluster>,
     ) {
-        ContextSystem::refresh_factions(factions, world, resources);
         let mut corpses = Vec::default();
         while let Some(dead_unit) = <(&EntityComponent, &Context)>::query()
             .filter(component::<UnitComponent>())

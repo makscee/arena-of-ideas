@@ -88,6 +88,7 @@ impl SlotSystem {
                         need_pos,
                         &mut node,
                         world,
+                        resources,
                         EasingType::QuartInOut,
                         0.8,
                     )
@@ -403,16 +404,24 @@ impl SlotSystem {
     }
 }
 
+const DELTA_THRESHOLD: f32 = 0.01;
 impl System for SlotSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        let mut dirty_entities: HashSet<legion::Entity> = default();
         <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
             .iter_mut(world)
             .for_each(|(unit, area, entity)| {
                 if resources.input_data.frame_data.1.is_dragged(entity.entity) {
                     return;
                 }
-                let need_pos = Self::get_unit_position(unit, resources);
-                area.position += (need_pos - area.position) * PULL_FORCE * resources.delta_time;
-            })
+                let delta = Self::get_unit_position(unit, resources) - area.position;
+                if delta.len() > DELTA_THRESHOLD {
+                    area.position += delta * PULL_FORCE * resources.delta_time;
+                    dirty_entities.insert(entity.entity);
+                }
+            });
+        dirty_entities.into_iter().for_each(|x| {
+            ContextSystem::refresh_entity(x, world, resources);
+        });
     }
 }

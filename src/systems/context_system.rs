@@ -1,28 +1,21 @@
 use super::*;
 
-pub struct ContextSystem {}
-
-impl System for ContextSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        Self::refresh_all(world, resources);
-    }
-}
-
+pub struct ContextSystem;
 impl ContextSystem {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     /// Merge data from other entity components
     pub fn refresh_entity(
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &Resources,
     ) -> Context {
-        let entry = world.entry(entity).expect("Unit entity not found");
+        let entry = world.entry(entity).expect("Context entity not found");
+        let context = entry.get_component::<Context>().unwrap().clone();
+        if entry.get_component::<WorldComponent>().is_ok() {
+            return context;
+        }
         let mut context = Context {
             vars: default(),
-            ..entry.get_component::<Context>().unwrap().clone()
+            ..context
         };
 
         if let Some(component) = entry.get_component::<AreaComponent>().ok() {
@@ -69,27 +62,8 @@ impl ContextSystem {
         ))
     }
 
-    pub fn refresh_factions(
-        factions: &HashSet<Faction>,
-        world: &mut legion::World,
-        resources: &Resources,
-    ) {
-        UnitSystem::collect_factions(world, resources, factions, false)
-            .into_iter()
-            .for_each(|entity| {
-                Self::refresh_entity(entity, world, resources);
-            });
-    }
-
-    pub fn refresh_all(world: &mut legion::World, resources: &Resources) {
-        <&EntityComponent>::query()
-            .filter(!component::<WorldComponent>() & component::<Context>())
-            .iter(world)
-            .map(|entity| entity.entity)
-            .collect_vec()
-            .into_iter()
-            .for_each(|entity| {
-                Self::refresh_entity(entity, world, resources);
-            });
+    pub fn refresh_by_context(context: &Context, world: &mut legion::World, resources: &Resources) {
+        Self::refresh_entity(context.owner, world, resources);
+        Self::refresh_entity(context.target, world, resources);
     }
 }

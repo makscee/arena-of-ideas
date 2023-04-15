@@ -134,6 +134,12 @@ impl FileWatcherLoader for PackedUnit {
 
 impl fmt::Display for PackedUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}/{}", self.name.as_str(), self.attack, self.health)
+        write!(
+            f,
+            "[{} {}/{}]",
+            self.name.as_str(),
+            self.attack,
+            self.health
+        )
     }
 }

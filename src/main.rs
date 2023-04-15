@@ -40,6 +40,9 @@ fn static_path() -> PathBuf {
 fn save_path() -> PathBuf {
     run_dir().join("save")
 }
+fn ratings_path() -> PathBuf {
+    run_dir().join("ratings")
+}
 fn ts_nano() -> i64 {
     chrono::prelude::Utc::now().timestamp_nanos()
 }
@@ -71,7 +74,7 @@ fn main() {
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
     if resources.options.walkthrough {
-        WalkthroughSystem::run_simulation(&mut world, &mut resources);
+        RatingSystem::run_walkthrough(&mut world, &mut resources);
     } else {
         let game = Game::new(world, resources, watcher);
         debug!("Game load in: {:?}", timer.elapsed());

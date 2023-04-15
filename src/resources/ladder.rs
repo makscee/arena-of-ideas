@@ -93,6 +93,6 @@ impl FileWatcherLoader for Ladder {
         debug!("Load floors {path:?}");
         let prev_current = resources.ladder.current;
         resources.ladder = futures::executor::block_on(load_json(path)).unwrap();
-        resources.ladder.current = prev_current.max(resources.options.start_floor);
+        resources.ladder.current = prev_current;
     }
 }

@@ -25,7 +25,7 @@ impl System for ShopSystem {
         if !resources.action_queue.is_empty() {
             let mut cluster = Some(NodeCluster::default());
             ActionSystem::run_ticks(world, resources, &mut cluster);
-            BattleSystem::death_check(&hashset! {Faction::Team}, world, resources, &mut cluster);
+            BattleSystem::death_check(world, resources, &mut cluster);
             ActionSystem::run_ticks(world, resources, &mut cluster);
 
             resources
@@ -239,6 +239,9 @@ impl ShopSystem {
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         ShopData::load_pool(resources);
         resources.team_states.clear(Faction::Team);
+        resources
+            .team_states
+            .set_slots(&Faction::Team, resources.options.initial_team_slots);
         let vars = resources.team_states.get_vars_mut(&Faction::Team);
         vars.set_int(&VarName::G, 0);
         vars.set_int(&VarName::BuyPrice, 3);
@@ -282,16 +285,12 @@ impl ShopSystem {
         entry.add_component(EntityComponent::new(entity));
     }
 
-    fn set_slots(slots: usize, resources: &mut Resources) {
-        resources
-            .team_states
-            .get_team_state_mut(&Faction::Shop)
-            .slots = slots;
-    }
-
-    pub fn init_floor(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
+    pub fn init_level(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
         let current_floor = resources.ladder.current_ind();
-        Self::set_slots((current_floor + 3).min(6), resources);
+        resources.team_states.set_slots(
+            &Faction::Shop,
+            (current_floor + resources.options.initial_shop_slots).min(6),
+        );
         if give_g {
             Self::change_g(resources, Self::floor_money(current_floor));
         }
@@ -303,7 +302,6 @@ impl ShopSystem {
         ShopData::load_floor(resources, current_floor);
         Self::reroll(world, resources);
         WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
-        ContextSystem::refresh_all(world, resources);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {

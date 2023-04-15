@@ -34,7 +34,7 @@ impl SaveSystem {
                 for level in 0..save.floor {
                     ShopData::load_floor(resources, level);
                 }
-                ShopSystem::init_floor(world, resources, false);
+                ShopSystem::init_level(world, resources, false);
                 debug!("Loaded {}", save.team);
             }
             Err(error) => {

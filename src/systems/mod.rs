@@ -14,6 +14,7 @@ mod input_system;
 mod logger;
 mod name_system;
 mod pool_ui_system;
+mod rating_system;
 mod save_system;
 mod shader_system;
 mod shop_system;
@@ -25,7 +26,6 @@ mod tape_player_system;
 mod time_system;
 mod unit_system;
 mod vfx_system;
-mod walkthrough_system;
 mod widgets;
 mod world_system;
 
@@ -42,6 +42,7 @@ pub use input_system::*;
 pub use logger::*;
 pub use name_system::*;
 pub use pool_ui_system::*;
+pub use rating_system::*;
 pub use save_system::*;
 pub use shader_system::*;
 pub use shop_system::*;
@@ -53,7 +54,6 @@ pub use tape_player_system::*;
 pub use time_system::*;
 pub use unit_system::*;
 pub use vfx_system::*;
-pub use walkthrough_system::*;
 pub use widgets::*;
 pub use world_system::*;
 
@@ -102,7 +102,6 @@ impl Game {
 
         global_systems.push(Box::new(TimeSystem::new()));
         global_systems.push(Box::new(CameraSystem::new()));
-        global_systems.push(Box::new(ContextSystem::new()));
         global_systems.push(Box::new(TapePlayerSystem::new()));
         global_systems.push(Box::new(SlotSystem::new()));
         global_systems.push(Box::new(ShaderSystem::new()));

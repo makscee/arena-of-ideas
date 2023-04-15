@@ -748,6 +748,7 @@ impl EffectWrapped {
                 );
             }
         }
+        ContextSystem::refresh_by_context(&context, world, resources);
         Ok(match self.after.as_deref() {
             Some(after) => Self::process(after, context.trace("after"), world, resources, node)?,
             None => (),

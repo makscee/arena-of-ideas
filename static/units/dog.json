@@ -1,40 +1,25 @@
 {
     "name": "Dog",
-    "description": "Start of Battle:\nDevour\nrandom enemy,\nthen take 20 dmg",
+    "description": "After strike:\nDevour\nrandom enemy",
     "attack": 2,
     "health": 1,
     "houses": [
         "Demons"
     ],
     "trigger": {
-        "type": "BattleStart",
+        "type": "AfterStrike",
         "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "UseAbility",
-                    "ability": "Devour",
-                    "target": {
-                        "type": "RandomUnit",
-                        "faction": {
-                            "type": "Opposite",
-                            "faction": {
-                                "type": "Owner"
-                            }
-                        }
-                    }
-                },
-                {
-                    "type": "Damage",
-                    "value": {
-                        "type": "Const",
-                        "value": 20
-                    },
-                    "target": {
+            "type": "UseAbility",
+            "ability": "Devour",
+            "target": {
+                "type": "RandomUnit",
+                "faction": {
+                    "type": "Opposite",
+                    "faction": {
                         "type": "Owner"
                     }
                 }
-            ]
+            }
         }
     },
     "shader": {

@@ -239,7 +239,7 @@ impl GameStateSystem {
                 } else if resources.current_state == GameState::Battle {
                     BonusEffectPool::load_widget(resources.last_score, world, resources);
                 }
-                ShopSystem::init_floor(world, resources, true);
+                ShopSystem::init_level(world, resources, true);
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Gallery => {

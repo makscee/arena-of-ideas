@@ -38,11 +38,9 @@ impl ActionSystem {
         node: &mut Option<Node>,
     ) -> bool {
         let result = if !resources.status_pool.status_changes.is_empty() {
-            ContextSystem::refresh_all(world, resources);
             StatusPool::process_status_changes(world, resources, node);
             true
         } else if !resources.action_queue.is_empty() {
-            ContextSystem::refresh_all(world, resources);
             let action = resources.action_queue.pop_front().unwrap();
             resources.logger.log(
                 &format!(

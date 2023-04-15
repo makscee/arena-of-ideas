@@ -9,9 +9,11 @@ impl VfxSystem {
         position: vec2<f32>,
         node: &mut Node,
         world: &mut legion::World,
+        resources: &Resources,
         easing: EasingType,
         duration: Time,
     ) {
+        let mut dirty = false;
         world.entry(entity).and_then(|mut x| {
             x.get_component_mut::<AreaComponent>()
                 .and_then(|area| {
@@ -23,10 +25,12 @@ impl VfxSystem {
                         duration,
                     ));
                     area.position = position;
+                    dirty = true;
                     Ok(())
                 })
                 .ok()
         });
+        ContextSystem::refresh_entity(entity, world, resources);
     }
 }
 

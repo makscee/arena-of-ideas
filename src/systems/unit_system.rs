@@ -1,5 +1,4 @@
 use super::*;
-use regex::*;
 
 pub struct UnitSystem {}
 
@@ -366,6 +365,7 @@ impl UnitSystem {
                     if let Ok(area) = entry.get_component_mut::<AreaComponent>() {
                         area.position += delta;
                         SlotSystem::handle_unit_drag(entity, world, resources);
+                        ContextSystem::refresh_entity(entity, world, resources);
                     }
                 }
             }
@@ -383,9 +383,8 @@ impl UnitSystem {
                 .ok()
                 .and_then(|x| Some(x.text.clone()))
         }) {
-            let definitions_regex = Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap();
             let mut definitions: HashSet<String> = default();
-            for definition in definitions_regex.captures_iter(&description) {
+            for definition in resources.definitions_regex.captures_iter(&description) {
                 let definition = definition.index(0);
                 if resources.definitions.contains(definition) {
                     definitions.insert(definition.to_string());

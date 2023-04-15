@@ -66,7 +66,7 @@ impl FileWatcherLoader for HeroPool {
         paths.into_iter().for_each(|path| {
             PackedUnit::loader(resources, &static_path().join(path), watcher);
         });
-        path.set_file_name("_power.json");
+        path.set_file_name("_rating.json");
         watcher.watch_file(&path, Box::new(Self::loader));
         resources.hero_pool.power = futures::executor::block_on(load_json(path)).unwrap();
     }

@@ -3,27 +3,81 @@
     "walkthrough": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
-    "start_floor": 0,
+    "initial_shop_slots": 3,
+    "initial_team_slots": 4,
     "custom_game": {
         "enable": false,
         "light": {
-            "replications": 8,
+            "replications": 1,
             "units": [
                 {
-                    "attack": 10,
-                    "health": 15
+                    "attack": 2,
+                    "health": 1,
+                    "houses": [
+                        "Demons"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "List",
+                            "effects": [
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Devour",
+                                    "target": {
+                                        "type": "RandomUnit",
+                                        "faction": {
+                                            "type": "Opposite",
+                                            "faction": {
+                                                "type": "Owner"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "Damage",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 20
+                                    },
+                                    "target": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 }
             ]
         },
         "dark": {
             "state": {
-                "name": "Big Bugs"
+                "name": "Hounds"
             },
-            "replications": 8,
+            "replications": 2,
             "units": [
                 {
-                    "attack": 10,
-                    "health": 15
+                    "attack": 5,
+                    "health": 5,
+                    "houses": [
+                        "Demons"
+                    ],
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "ability": "Devour",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             ]
         }
@@ -35,13 +89,13 @@
         "ActionFail": true,
         "Effect": true,
         "Contexts": false,
-        "Condition": true,
-        "Expression": true,
+        "Condition": false,
+        "Expression": false,
         "Trigger": false,
         "Event": true,
         "UnitCreation": true,
         "Measurement": false,
-        "Test": true
+        "Test": false
     },
     "colors": {
         "factions": {

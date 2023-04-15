@@ -131,7 +131,37 @@
             ]
         },
         "rarity": "Legendary",
-        "description": "+1 hero slot, +10 g"
+        "description": "+2 hero slots, +10 g"
+    },
+    {
+        "effect": {
+            "type": "List",
+            "effects": [
+                {
+                    "type": "ChangeSlots",
+                    "faction": {
+                        "type": "Team"
+                    },
+                    "delta": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                },
+                {
+                    "type": "ChangeFactionVarInt",
+                    "var": "G",
+                    "faction": {
+                        "type": "Team"
+                    },
+                    "delta": {
+                        "type": "Const",
+                        "value": 5
+                    }
+                }
+            ]
+        },
+        "rarity": "Epic",
+        "description": "+1 hero slot, +5 g"
     },
     {
         "effect": {
@@ -144,7 +174,7 @@
                 "value": 1
             }
         },
-        "rarity": "Epic",
+        "rarity": "Rare",
         "description": "+1 hero slot"
     }
 ]

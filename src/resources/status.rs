@@ -242,7 +242,7 @@ impl StatusPool {
     }
 
     pub fn process_status_changes(
-        world: &legion::World,
+        world: &mut legion::World,
         resources: &mut Resources,
         node: &mut Option<Node>,
     ) {
@@ -255,12 +255,14 @@ impl StatusPool {
                 .map(|x| x.2)
                 .sum::<i32>() as f32;
         let mut cnt = 0;
+        let mut dirty_entities: HashSet<legion::Entity> = default();
         while let Some((entity, status_name, charges_delta)) =
             resources.status_pool.status_changes.pop_front()
         {
+            dirty_entities.insert(entity);
             for _ in 0..charges_delta.abs() {
                 let show;
-                let (text, color) = if charges_delta > 0 { 
+                let (text, color) = if charges_delta > 0 {
                     show = true;
                     Self::add_status_charge(entity, &status_name, resources, world);
                     ("+", resources.options.colors.addition)
@@ -291,6 +293,9 @@ impl StatusPool {
                 }
             }
         }
+        dirty_entities.into_iter().for_each(|x| {
+            ContextSystem::refresh_entity(x, world, resources);
+        })
     }
 
     pub fn define_status(name: String, status: Status, resources: &mut Resources) {

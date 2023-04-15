@@ -12,11 +12,12 @@ pub struct Options {
     pub rewind_speed: f32,
     pub rewind_add_speed: f32,
     pub initial_shop_fill: usize,
-    pub start_floor: usize,
     pub log: HashMap<LogContext, bool>,
     pub custom_game: CustomGameConfig,
     pub walkthrough: bool,
     pub player_team_name: String,
+    pub initial_shop_slots: usize,
+    pub initial_team_slots: usize,
 }
 
 impl FileWatcherLoader for Options {
