@@ -56,15 +56,19 @@ impl StatusPool {
             context.target = target;
         }
         for (name, trigger, charges) in resources.status_pool.collect_triggers(&entity, world) {
+            let mut context = context
+                .clone()
+                .trace(&event.to_string())
+                .add_var(VarName::StatusName, Var::String((0, name.clone())))
+                .add_var(VarName::Charges, Var::Int(charges))
+                .to_owned();
+            if let Some(status) = resources.status_pool.defined_statuses.get(&name) {
+                context.vars.set_color(&VarName::Color, status.color);
+            }
             trigger.catch_event(
                 event,
                 &mut resources.action_queue,
-                context
-                    .clone()
-                    .trace(&event.to_string())
-                    .add_var(VarName::StatusName, Var::String((0, name.clone())))
-                    .add_var(VarName::Charges, Var::Int(charges))
-                    .to_owned(),
+                context,
                 &resources.logger,
             );
         }

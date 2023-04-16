@@ -4,15 +4,18 @@ use super::*;
 pub struct Ladder {
     #[serde(default)]
     current: usize,
-    pub teams: Vec<ReplicatedTeam>,
+    pub teams: Vec<Team>,
     #[serde(default)]
     tracked_units: Vec<Vec<legion::Entity>>,
 }
 
 impl Ladder {
-    pub fn generate_team(resources: &Resources) -> Team {
+    pub fn load_team(resources: &Resources) -> Team {
         let ladder = &resources.ladder;
-        let mut team: Team = ladder.teams[ladder.current].clone().into();
+        Self::generate_team(ladder.teams[ladder.current].clone().into())
+    }
+
+    pub fn generate_team(mut team: Team) -> Team {
         let size = team.units.len();
         for rank in 1..=2 {
             for i in 0..size {
@@ -65,10 +68,6 @@ impl Ladder {
         self.current
     }
 
-    pub fn current_replications(&self) -> usize {
-        self.teams[self.current].replications
-    }
-
     pub fn reset(&mut self) {
         self.current = default();
     }
@@ -90,9 +89,9 @@ impl Ladder {
 impl FileWatcherLoader for Ladder {
     fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::loader));
-        debug!("Load floors {path:?}");
+        debug!("Load ladder {path:?}");
         let prev_current = resources.ladder.current;
-        resources.ladder = futures::executor::block_on(load_json(path)).unwrap();
+        resources.ladder.teams = futures::executor::block_on(load_json(path)).unwrap();
         resources.ladder.current = prev_current;
     }
 }

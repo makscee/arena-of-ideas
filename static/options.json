@@ -1,6 +1,7 @@
 {
     "player_team_name": "Dorks",
-    "walkthrough": false,
+    "walkthrough": true,
+    "team_ratings": true,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_slots": 3,

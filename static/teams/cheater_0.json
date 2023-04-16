@@ -1,0 +1,41 @@
+{
+    "state": {
+        "name": "Cheater"
+    },
+    "units": [
+        {
+            "name": "Cheater",
+            "attack": 20,
+            "health": 30,
+            "description": "After strike\ngain Shield",
+            "houses": [
+                "Robots"
+            ],
+            "trigger": {
+                "type": "AfterStrike",
+                "effect": {
+                    "type": "UseAbility",
+                    "ability": "Shield",
+                    "target": {
+                        "type": "Owner"
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/vfx/layered_triangles.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_color": "#f1f1f1",
+                        "u_color_1": "#10dfb6",
+                        "u_radius": 1.5,
+                        "u_alpha": 1.0,
+                        "u_spin_part": 0.02,
+                        "u_move_speed": 3.3
+                    },
+                    "instances": 20,
+                    "vertices": 1
+                }
+            }
+        }
+    ]
+}

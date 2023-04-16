@@ -1,9 +1,11 @@
+use geng::prelude::file::load_json;
+
 use super::*;
 
 pub struct RatingSystem {}
 
 impl RatingSystem {
-    pub fn run_walkthrough(world: &mut legion::World, resources: &mut Resources) {
+    pub fn simulate_walkthrough(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
         let mut i: usize = 0;
         let mut ratings: Ratings = default();
@@ -12,7 +14,7 @@ impl RatingSystem {
             i += 1;
             let run_timer = Instant::now();
             let (level_reached, total_score, team, pick_data, score_data) =
-                Self::run_single(world, resources);
+                Self::simulate_run(world, resources);
             *levels.get_mut(level_reached).unwrap() += 1;
             for (name, data) in score_data {
                 ratings.add_rating(&name, RatingType::Score, data.0, data.1);
@@ -22,30 +24,13 @@ impl RatingSystem {
             }
 
             ratings.calculate();
-            let spaces = "                ";
-            for (name, (score, ratings)) in ratings
-                .data
-                .iter()
-                .sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
-            {
-                let mut name = name.clone();
-                name.push_str(spaces);
-                let (name, _) = name.split_at(15);
-                println!(
-                    "{name} {score} [{}]",
-                    ratings
-                        .iter()
-                        .sorted_by_key(|x| x.0)
-                        .map(|(rating, (a, b))| format!("{rating:?}({a}/{b})"))
-                        .join(" ")
-                );
-            }
+            println!("{ratings}");
 
             for (i, name) in resources
                 .ladder
                 .teams
                 .iter()
-                .map(|x| x.team.state.name.clone())
+                .map(|x| x.state.name.clone())
                 .chain(Some("Game Over".to_string()))
                 .enumerate()
             {
@@ -61,7 +46,7 @@ impl RatingSystem {
         }
     }
 
-    fn run_single(
+    fn simulate_run(
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> (
@@ -93,7 +78,7 @@ impl RatingSystem {
                 value += value * sell_price / buy_price;
                 value
             } as usize;
-            let dark = Ladder::generate_team(resources);
+            let dark = Ladder::load_team(resources);
             let max_slots = (resources.ladder.current_ind() + resources.options.initial_team_slots)
                 .min(MAX_SLOTS);
             team.state.slots = max_slots;
@@ -172,6 +157,78 @@ impl RatingSystem {
             score_games_count,
         )
     }
+
+    pub fn simulate_enemy_ratings_calculation(
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        resources.logger.set_enabled(false);
+        let paths: Vec<PathBuf> =
+            futures::executor::block_on(load_json(&static_path().join("teams/_list.json")))
+                .unwrap();
+        let mut teams: Vec<Team> = paths
+            .into_iter()
+            .map(|path| {
+                let team: ReplicatedTeam =
+                    futures::executor::block_on(load_json(&static_path().join(path))).unwrap();
+                let team: Team = team.into();
+                team
+            })
+            .collect_vec();
+        for _ in 0..10 {
+            let mut team = teams.choose(&mut thread_rng()).unwrap().clone();
+            let status = resources
+                .status_pool
+                .defined_statuses
+                .keys()
+                .choose(&mut thread_rng())
+                .unwrap()
+                .clone();
+            for unit in team.units.iter_mut() {
+                let mut charges = unit.active_statuses.remove(&status).unwrap_or_default();
+                charges += 1;
+                unit.active_statuses.insert(status.clone(), charges);
+            }
+            team.state.name = format!("{status}ed {}", team.state.name);
+            teams.push(team);
+        }
+        let mut ratings = Ratings::default();
+        let mut cnt = 0;
+        let save_path = static_path().join("levels.json");
+        loop {
+            Self::rate_teams(&teams, &mut ratings, world, resources);
+            ratings.calculate();
+            cnt += 1;
+            teams.sort_by(|a, b| {
+                ratings
+                    .get_rating(&a.state.name)
+                    .total_cmp(&ratings.get_rating(&b.state.name))
+            });
+            let save = serde_json::to_string_pretty(&teams).unwrap();
+
+            match std::fs::write(&save_path, save) {
+                Ok(_) => debug!("Levels saved to {:?}", &save_path),
+                Err(error) => error!("Can't save: {}", error),
+            }
+            println!("\nRun#{cnt}{ratings}");
+        }
+    }
+
+    pub fn rate_teams(
+        teams: &Vec<Team>,
+        ratings: &mut Ratings,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        for light in teams.iter() {
+            for dark in teams.iter() {
+                let mut dark = dark.clone();
+                dark = Ladder::generate_team(dark);
+                let result = SimulationSystem::run_battle(light, &dark, world, resources, None);
+                ratings.add_rating(&light.state.name, RatingType::WinRate, result, 1);
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -208,6 +265,10 @@ impl Ratings {
         self.data.insert(name.to_string(), data);
     }
 
+    pub fn get_rating(&self, name: &str) -> f64 {
+        self.data.get(name).unwrap().0
+    }
+
     pub fn calculate(&mut self) {
         let mut sorted: HashMap<RatingType, Vec<(String, f64)>> = default();
         for (name, (_, ratings)) in self.data.iter() {
@@ -229,5 +290,27 @@ impl Ratings {
         for (name, result) in results {
             self.data.get_mut(&name).unwrap().0 = result;
         }
+    }
+}
+
+impl Display for Ratings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let spaces = "                                          ";
+        let mut result: String = default();
+        for (name, (score, ratings)) in self.data.iter().sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
+        {
+            let mut name = name.clone();
+            name.push_str(spaces);
+            let (name, _) = name.split_at(30);
+            result += &format!(
+                "\n{name} {score} [{}]",
+                ratings
+                    .iter()
+                    .sorted_by_key(|x| x.0)
+                    .map(|(rating, (a, b))| format!("{rating:?}({a}/{b})"))
+                    .join(" ")
+            );
+        }
+        write!(f, "{result}")
     }
 }

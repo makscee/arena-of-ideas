@@ -7,7 +7,6 @@ pub struct Options {
     pub images: Images,
     pub colors: Colors,
     pub floats: Floats,
-    // pub visual_effects: VisualEffects,
     pub fov: f32,
     pub rewind_speed: f32,
     pub rewind_add_speed: f32,
@@ -15,6 +14,7 @@ pub struct Options {
     pub log: HashMap<LogContext, bool>,
     pub custom_game: CustomGameConfig,
     pub walkthrough: bool,
+    pub team_ratings: bool,
     pub player_team_name: String,
     pub initial_shop_slots: usize,
     pub initial_team_slots: usize,
@@ -127,6 +127,3 @@ pub struct Floats {
     pub slots_striker_scale: f32,
     pub slot_info_offset: f32,
 }
-
-#[derive(Deserialize, Debug)]
-pub struct VisualEffects {}

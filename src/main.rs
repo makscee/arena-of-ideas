@@ -74,7 +74,9 @@ fn main() {
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
     if resources.options.walkthrough {
-        RatingSystem::run_walkthrough(&mut world, &mut resources);
+        RatingSystem::simulate_walkthrough(&mut world, &mut resources);
+    } else if resources.options.team_ratings {
+        RatingSystem::simulate_enemy_ratings_calculation(&mut world, &mut resources);
     } else {
         let game = Game::new(world, resources, watcher);
         debug!("Game load in: {:?}", timer.elapsed());
