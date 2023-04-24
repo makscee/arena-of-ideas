@@ -1,5 +1,5 @@
 use geng::prelude::itertools::Itertools;
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 
 use super::*;
 
@@ -14,6 +14,7 @@ use super::*;
     Hash,
     enum_iterator::Sequence,
     EnumString,
+    Display,
 )]
 pub enum Faction {
     Light,
@@ -41,16 +42,6 @@ impl Into<f32> for Faction {
 impl Faction {
     pub fn color(&self, options: &Options) -> Rgba<f32> {
         *options.colors.factions.get(self).unwrap()
-    }
-    pub fn from_entity(entity: legion::Entity, world: &legion::World) -> Faction {
-        if let Ok(entry) = world.entry_ref(entity) {
-            if let Ok(unit) = entry.get_component::<UnitComponent>() {
-                return unit.faction;
-            } else if let Ok(corpse) = entry.get_component::<CorpseComponent>() {
-                return corpse.faction;
-            }
-        }
-        panic!("Entity faction not found {:?}", entity)
     }
     pub fn opposite(&self) -> Faction {
         match self {

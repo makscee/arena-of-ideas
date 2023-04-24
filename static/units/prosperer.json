@@ -3,9 +3,7 @@
     "attack": 1,
     "health": 2,
     "description": "Any sell:\ngain +1/+1",
-    "houses": [
-        "Pirates"
-    ],
+    "house": "Pirates",
     "trigger": {
         "type": "AnySell",
         "effect": {

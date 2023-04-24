@@ -3,9 +3,7 @@
     "description": "Start of turn:\nShoot random enemy",
     "attack": 2,
     "health": 1,
-    "houses": [
-        "Archers"
-    ],
+    "house": "Archers",
     "trigger": {
         "type": "TurnStart",
         "effect": {

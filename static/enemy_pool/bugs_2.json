@@ -1,7 +1,5 @@
 {
-    "state": {
-        "name": "Huge Bugs"
-    },
+    "name": "Huge Bugs",
     "replications": 5,
     "units": [
         {

@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 6,
     "description": "Start of battle:\nEmpower (3) all allies",
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "BattleStart",
         "effect": {

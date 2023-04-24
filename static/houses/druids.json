@@ -11,10 +11,8 @@
                         "name": "Treant",
                         "attack": 5,
                         "health": 5,
-                        "houses": [
-                            "Warriors"
-                        ],
-                        "active_statuses": {
+                        "house": "Warriors",
+                        "statuses": {
                             "Defense": 5
                         },
                         "shader": {

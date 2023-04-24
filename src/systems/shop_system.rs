@@ -53,7 +53,7 @@ impl System for ShopSystem {
 
         Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
     }
-    fn draw(&self, _: &legion::World, resources: &mut Resources, _: &mut ugli::Framebuffer) {
+    fn draw(&self, world: &legion::World, resources: &mut Resources, _: &mut ugli::Framebuffer) {
         let position = SlotSystem::get_position(0, &Faction::Shop, resources);
         let text_color = *resources
             .options
@@ -61,7 +61,7 @@ impl System for ShopSystem {
             .factions
             .get(&Faction::Shop)
             .unwrap();
-        let text = format!("{} g", Self::get_g(resources).to_string());
+        let text = format!("{} g", Self::get_g(world).to_string());
         let money_indicator = &resources.options.shaders.money_indicator;
         resources.frame_shaders.push(
             money_indicator
@@ -70,7 +70,7 @@ impl System for ShopSystem {
                 .set_uniform("u_color", ShaderUniform::Color(text_color))
                 .set_uniform("u_text", ShaderUniform::String((0, text))),
         );
-        let text = format!("{} g", Self::reroll_price(resources).to_string());
+        let text = format!("{} g", Self::reroll_price(world, resources).to_string());
         let money_indicator = &resources.options.shaders.money_indicator;
         resources.frame_shaders.push(
             money_indicator
@@ -93,7 +93,7 @@ impl ShopSystem {
 
     pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
-        let light = Team::pack(&Faction::Team, world, resources);
+        let light = PackedTeam::pack(&Faction::Team, world, resources);
         let dark = Ladder::load_team(resources);
         BattleSystem::init_battle(&light, &dark, world, resources);
     }
@@ -103,8 +103,11 @@ impl ShopSystem {
     }
 
     fn team_full(world: &legion::World, resources: &Resources) -> bool {
-        UnitSystem::collect_faction(world, resources, Faction::Team, false).len()
-            >= resources.team_states.get_team_state(&Faction::Team).slots
+        let faction = Faction::Team;
+        UnitSystem::collect_faction(world, faction).len()
+            >= TeamSystem::get_state(&faction, world)
+                .vars
+                .get_int(&VarName::Slots) as usize
     }
 
     pub fn try_buy(
@@ -113,11 +116,9 @@ impl ShopSystem {
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
-        if !Self::team_full(world, resources)
-            && Self::get_g(resources) >= Self::buy_price(resources)
-        {
+        if !Self::team_full(world, resources) && Self::get_g(world) >= Self::buy_price(world) {
             Self::do_buy(entity, slot, resources, world);
-            Self::change_g(resources, -Self::buy_price(resources));
+            Self::change_g(-Self::buy_price(world), world);
         }
     }
 
@@ -127,18 +128,17 @@ impl ShopSystem {
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
-        let mut entry = world.entry_mut(entity).unwrap();
-        let unit = entry.get_component_mut::<UnitComponent>().unwrap();
-        unit.faction = Faction::Team;
-        unit.slot = slot;
-        ContextSystem::refresh_entity(entity, world, resources);
+        let team = TeamSystem::entity(&Faction::Team, world);
+        let state = ContextState::get_mut(entity, world);
+        state.parent = team;
+        state.vars.set_int(&VarName::Slot, slot as i32);
 
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
     }
 
     pub fn try_sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
-        ShopSystem::change_g(resources, ShopSystem::sell_price(resources));
+        Self::change_g(Self::sell_price(world), world);
         resources
             .shop_data
             .pool
@@ -163,46 +163,41 @@ impl ShopSystem {
         (3 + floor as i32).min(10)
     }
 
-    pub fn get_g(resources: &Resources) -> i32 {
-        resources
-            .team_states
-            .get_vars(&Faction::Team)
+    pub fn get_g(world: &legion::World) -> i32 {
+        TeamSystem::get_state(&Faction::Team, world)
+            .vars
             .get_int(&VarName::G)
     }
 
-    pub fn change_g(resources: &mut Resources, delta: i32) {
-        resources
-            .team_states
-            .get_vars_mut(&Faction::Team)
+    pub fn change_g(delta: i32, world: &mut legion::World) {
+        TeamSystem::get_state_mut(&Faction::Team, world)
+            .vars
             .change_int(&VarName::G, delta)
     }
 
-    pub fn reset_g(resources: &mut Resources) {
-        resources
-            .team_states
-            .set_var(&Faction::Team, VarName::G, Var::Int(0))
+    pub fn reset_g(world: &mut legion::World) {
+        TeamSystem::get_state_mut(&Faction::Team, world)
+            .vars
+            .set_int(&VarName::G, 0);
     }
 
-    pub fn sell_price(resources: &Resources) -> i32 {
-        resources
-            .team_states
-            .get_vars(&Faction::Team)
+    pub fn sell_price(world: &legion::World) -> i32 {
+        TeamSystem::get_state(&Faction::Team, world)
+            .vars
             .get_int(&VarName::SellPrice)
     }
 
-    pub fn buy_price(resources: &Resources) -> i32 {
-        resources
-            .team_states
-            .get_vars(&Faction::Team)
-            .try_get_int(&VarName::BuyPrice)
-            .unwrap_or_default()
+    pub fn buy_price(world: &legion::World) -> i32 {
+        TeamSystem::get_state(&Faction::Team, world)
+            .vars
+            .get_int(&VarName::BuyPrice)
     }
 
-    pub fn reroll_price(resources: &Resources) -> i32 {
+    pub fn reroll_price(world: &legion::World, resources: &Resources) -> i32 {
         if resources.ladder.current_ind() == 0 {
             return 0;
         }
-        let vars = resources.team_states.get_vars(&Faction::Team);
+        let vars = &TeamSystem::get_state(&Faction::Team, world).vars;
         if vars.get_int(&VarName::FreeRerolls) > 0 {
             0
         } else {
@@ -211,23 +206,23 @@ impl ShopSystem {
     }
 
     fn try_reroll(world: &mut legion::World, resources: &mut Resources) {
-        if Self::is_reroll_affordable(resources) {
+        if Self::is_reroll_affordable(world) {
             Self::reroll(world, resources);
-            Self::deduct_reroll_cost(resources);
+            Self::deduct_reroll_cost(world, resources);
         }
     }
 
-    fn is_reroll_affordable(resources: &Resources) -> bool {
-        let vars = resources.team_states.get_vars(&Faction::Team);
+    fn is_reroll_affordable(world: &legion::World) -> bool {
+        let vars = &TeamSystem::get_state(&Faction::Team, world).vars;
         vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
             || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
     }
 
-    fn deduct_reroll_cost(resources: &mut Resources) {
+    fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
         if resources.ladder.current_ind() == 0 {
             return;
         }
-        let vars = resources.team_states.get_vars_mut(&Faction::Team);
+        let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
             vars.insert(VarName::FreeRerolls, Var::Int(free_rerolls - 1));
@@ -238,16 +233,25 @@ impl ShopSystem {
 
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         ShopData::load_pool(resources);
-        resources.team_states.clear(Faction::Team);
-        resources
-            .team_states
-            .set_slots(&Faction::Team, resources.options.initial_team_slots);
-        let vars = resources.team_states.get_vars_mut(&Faction::Team);
+        let mut team = PackedTeam::new("Sacrifice".to_owned(), default());
+        team.slots = 1;
+        team.unpack(&Faction::Sacrifice, world, resources);
+        PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
+        PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
+
+        let mut team = PackedTeam::new("Shop".to_owned(), default());
+        team.slots = 1;
+        team.unpack(&Faction::Shop, world, resources);
+
+        let team =
+            PackedTeam::new("Team".to_owned(), default()).unpack(&Faction::Team, world, resources);
+        let vars = &mut ContextState::get_mut(team, world).vars;
         vars.set_int(&VarName::G, 0);
         vars.set_int(&VarName::BuyPrice, 3);
         vars.set_int(&VarName::SellPrice, 1);
         vars.set_int(&VarName::RerollPrice, 1);
         vars.set_int(&VarName::FreeRerolls, 0);
+        vars.set_int(&VarName::Slots, resources.options.initial_team_slots as i32);
         Self::create_reroll_button(world, resources);
     }
 
@@ -287,39 +291,44 @@ impl ShopSystem {
 
     pub fn init_level(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
         let current_floor = resources.ladder.current_ind();
-        resources.team_states.set_slots(
-            &Faction::Shop,
-            (current_floor + resources.options.initial_shop_slots).min(6),
-        );
+        TeamSystem::get_state_mut(&Faction::Shop, world)
+            .vars
+            .set_int(
+                &VarName::Slots,
+                (current_floor + resources.options.initial_shop_slots).min(6) as i32,
+            );
         if give_g {
-            Self::change_g(resources, Self::floor_money(current_floor));
+            Self::change_g(Self::floor_money(current_floor), world);
         }
-        resources
-            .team_states
-            .get_team_state_mut(&Faction::Team)
+        TeamSystem::get_state_mut(&Faction::Shop, world)
             .vars
             .set_int(&VarName::FreeRerolls, resources.last_score as i32);
+
         ShopData::load_floor(resources, current_floor);
         Self::reroll(world, resources);
-        WorldSystem::set_var(world, VarName::Floor, Var::Int(current_floor as i32));
+        WorldSystem::get_state_mut(world)
+            .vars
+            .set_int(&VarName::Floor, current_floor as i32);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
         let level = resources.ladder.current_ind();
 
-        UnitSystem::collect_faction(world, resources, Faction::Shop, false)
+        UnitSystem::collect_faction(world, Faction::Shop)
             .into_iter()
             .for_each(|entity| {
                 if level != 0 {
                     ShopData::pack_unit_into_pool(entity, world, resources)
                 } else {
-                    UnitSystem::delete_unit(entity, world, resources)
+                    world.remove(entity);
                 }
             })
     }
 
     pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
-        let slots = resources.team_states.get_slots(&Faction::Shop);
+        let slots = TeamSystem::get_state(&Faction::Shop, world)
+            .vars
+            .get_int(&VarName::Slots) as usize;
         let level = resources.ladder.current_ind();
         if level == 0 {
             let top_units = resources
@@ -330,10 +339,11 @@ impl ShopSystem {
                 .into_iter()
                 .cloned()
                 .choose_multiple(&mut thread_rng(), slots);
+            let team = TeamSystem::entity(&Faction::Shop, world).unwrap();
             for (slot, name) in top_units.into_iter().enumerate() {
                 let slot = slot + 1;
                 let unit = resources.hero_pool.find_by_name(&name).unwrap().clone();
-                unit.unpack(world, resources, slot, Faction::Shop, None);
+                unit.unpack(world, resources, slot, None, team);
             }
         } else {
             for slot in 1..=slots {

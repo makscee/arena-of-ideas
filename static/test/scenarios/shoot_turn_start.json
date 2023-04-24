@@ -4,9 +4,7 @@
             {
                 "attack": 2,
                 "health": 4,
-                "houses": [
-                    "Archers"
-                ],
+                "house": "Archers",
                 "trigger": {
                     "type": "TurnStart",
                     "effect": {

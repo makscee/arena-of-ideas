@@ -4,9 +4,7 @@
             {
                 "health": 3,
                 "attack": 3,
-                "houses": [
-                    "Druids"
-                ],
+                "house": "Druids",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {

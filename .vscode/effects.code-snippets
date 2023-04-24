@@ -187,9 +187,7 @@
 			"    \"attack\": ${2:1},",
 			"    \"health\": ${2:1},",
 			"    \"description\": \"$3\",",
-			"    \"houses\": [",
-			"        \"${4:Demons}\"",
-			"    ],",
+			"    \"house\": ${4:\"Demons\"},",
 			"    \"trigger\": $5",
 			"}"
 		],
@@ -227,7 +225,7 @@
 		"prefix": "change_faction_var_int",
 		"body": [
 			"{",
-			"    \"type\": \"ChangeFactionVarInt\",",
+			"    \"type\": \"ChangeTeamVarInt\",",
 			"    \"var\": \"${1:Var}\",",
 			"    \"delta\": $TM_SELECTED_TEXT$2",
 			"}"
@@ -238,7 +236,7 @@
 		"prefix": "set_faction_var_int",
 		"body": [
 			"{",
-			"    \"type\": \"SetFactionVarInt\",",
+			"    \"type\": \"SetTeamVarInt\",",
 			"    \"var\": \"${1:G}\",",
 			"    \"value\": $2$TM_SELECTED_TEXT",
 			"}"

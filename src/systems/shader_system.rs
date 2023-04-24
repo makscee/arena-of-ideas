@@ -26,11 +26,7 @@ impl ShaderSystem {
     }
 
     /// Get Shader component and merge Context into it's vars if any
-    pub fn get_entity_shader(
-        world: &legion::World,
-        entity: legion::Entity,
-        context: Option<&Context>,
-    ) -> Option<Shader> {
+    pub fn get_entity_shader(entity: legion::Entity, world: &legion::World) -> Option<Shader> {
         match world.entry_ref(entity).ok().and_then(|x| {
             x.get_component::<Shader>()
                 .ok()
@@ -38,13 +34,7 @@ impl ShaderSystem {
                 .and_then(|shader| Some((x.get_component::<EntityComponent>().unwrap().ts, shader)))
         }) {
             Some((ts, mut shader)) => Some({
-                if let Some(context) = context {
-                    shader
-                        .parameters
-                        .uniforms
-                        .merge_mut(&context.vars.clone().into(), true);
-                    shader.ts = ts;
-                }
+                shader.ts = ts;
                 shader
             }),
             None => None,
@@ -65,14 +55,18 @@ impl ShaderSystem {
                 .map(|entity| {
                     (
                         entity.entity,
-                        Self::get_entity_shader(
-                            world,
-                            entity.entity,
-                            ContextSystem::try_get_context(entity.entity, world)
-                                .ok()
-                                .as_ref(),
-                        )
-                        .unwrap(),
+                        Self::get_entity_shader(entity.entity, world)
+                            .unwrap()
+                            .add_context(
+                                &Context::new(
+                                    ContextLayer::Entity {
+                                        entity: entity.entity,
+                                    },
+                                    world,
+                                    resources,
+                                ),
+                                world,
+                            ),
                     )
                 }),
         );

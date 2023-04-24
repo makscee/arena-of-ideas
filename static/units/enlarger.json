@@ -3,9 +3,7 @@
     "attack": 2,
     "health": 2,
     "description": "On buy:\nally to the right\nGrow (4)",
-    "houses": [
-        "Dragons"
-    ],
+    "house": "Dragons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

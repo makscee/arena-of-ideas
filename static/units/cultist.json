@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 3,
     "description": "On buy:\ndouble Empower\nof ally to the right",
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

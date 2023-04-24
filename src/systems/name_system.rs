@@ -8,13 +8,7 @@ impl NameSystem {
         world: &legion::World,
         options: &Options,
     ) -> Shader {
-        let name = world
-            .entry_ref(entity)
-            .unwrap()
-            .get_component::<NameComponent>()
-            .unwrap()
-            .0
-            .clone();
+        let name = ContextState::get(entity, world).name.clone();
         options
             .shaders
             .name

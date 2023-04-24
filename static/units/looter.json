@@ -3,9 +3,7 @@
     "attack": 2,
     "health": 2,
     "description": "Shop start:\nuse Bounty (1)",
-    "houses": [
-        "Pirates"
-    ],
+    "house": "Pirates",
     "trigger": {
         "type": "ShopStart",
         "effect": {

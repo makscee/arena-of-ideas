@@ -3,9 +3,7 @@
     "description": "On buy:\nShield\nreflects damage",
     "health": 2,
     "attack": 2,
-    "houses": [
-        "Robots"
-    ],
+    "house": "Robots",
     "trigger": {
         "type": "OnBuy",
         "effect": {

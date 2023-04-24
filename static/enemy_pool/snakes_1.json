@@ -1,7 +1,5 @@
 {
-    "state": {
-        "name": "Big Snakes"
-    },
+    "name": "Big Snakes",
     "replications": 3,
     "units": [
         {
@@ -9,10 +7,8 @@
             "description": "On damage dealt:\nKill",
             "attack": 4,
             "health": 4,
-            "houses": [
-                "Snakes"
-            ],
-            "active_statuses": {
+            "house": "Snakes",
+            "statuses": {
                 "Poison": 1
             },
             "shader": {

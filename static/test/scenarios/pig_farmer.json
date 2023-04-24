@@ -8,9 +8,7 @@
             {
                 "attack": 2,
                 "health": 2,
-                "houses": [
-                    "Demons"
-                ],
+                "house": "Demons",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {

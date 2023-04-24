@@ -13,8 +13,10 @@ mod bonus_effect;
 mod bonus_effect_pool;
 mod camera;
 mod condition;
+mod context;
 mod definitions;
 mod effect;
+mod enemy_pool;
 mod event;
 mod expression;
 mod faction;
@@ -27,15 +29,15 @@ mod image_textures;
 mod input_data;
 mod ladder;
 mod options;
+mod packed_team;
 mod packed_unit;
 mod shader_programs;
 mod shader_uniforms;
 mod shop_data;
 mod status;
+mod status_library;
 mod tape;
 mod tape_player;
-mod team;
-mod team_states;
 mod timed_effect;
 mod trigger;
 mod widget;
@@ -49,8 +51,10 @@ pub use bonus_effect::*;
 pub use bonus_effect_pool::*;
 pub use camera::*;
 pub use condition::*;
+pub use context::*;
 pub use definitions::*;
 pub use effect::*;
+pub use enemy_pool::*;
 pub use event::*;
 pub use expression::*;
 pub use faction::*;
@@ -63,15 +67,15 @@ pub use image_textures::*;
 pub use input_data::*;
 pub use ladder::*;
 pub use options::*;
+pub use packed_team::*;
 pub use packed_unit::*;
 pub use shader_programs::*;
 pub use shader_uniforms::*;
 pub use shop_data::*;
 pub use status::*;
+pub use status_library::*;
 pub use tape::*;
 pub use tape_player::*;
-pub use team::*;
-pub use team_states::*;
 pub use timed_effect::*;
 pub use trigger::*;
 pub use widget::*;
@@ -86,9 +90,8 @@ pub struct Resources {
 
     pub global_time: Time,
     pub delta_time: Time,
-    pub status_pool: StatusPool,
+    pub status_library: StatusLibrary,
     pub ability_pool: AbilityPool,
-    pub team_states: TeamStates,
     pub action_queue: VecDeque<Action>,
     pub tape_player: TapePlayer,
     pub frame_shaders: Vec<Shader>,
@@ -130,7 +133,6 @@ impl Resources {
             global_time: default(),
             delta_time: default(),
             action_queue: default(),
-            status_pool: default(),
             tape_player: default(),
             shop_data: default(),
             battle_data: default(),
@@ -148,10 +150,10 @@ impl Resources {
             current_state: GameState::MainMenu,
             options,
             ability_pool: default(),
-            team_states: default(),
             prepared_shaders: default(),
             bonus_pool: default(),
             definitions_regex: Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap(),
+            status_library: default(),
         }
     }
 

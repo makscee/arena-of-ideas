@@ -46,10 +46,8 @@ pub enum ExpressionInt {
         ability: AbilityName,
         var: VarName,
     },
-    FactionVar {
+    TeamVar {
         var: VarName,
-        #[serde(default)]
-        faction: ExpressionFaction,
     },
     Negate {
         value: Box<ExpressionInt>,
@@ -67,10 +65,14 @@ impl ExpressionInt {
         resources: &Resources,
     ) -> Result<i32, Error> {
         resources.logger.log(
-            &format!(
-                "Calculating int expression {:?} o:{:?} t:{:?}",
-                self, context.owner, context.target
-            ),
+            || {
+                format!(
+                    "Calculating int expression {:?} o:{:?} t:{:?}",
+                    self,
+                    context.owner(),
+                    context.target()
+                )
+            },
             &LogContext::Expression,
         );
         let result =
@@ -87,19 +89,34 @@ impl ExpressionInt {
                     .calculate(context, world, resources)?
                     .max(b.calculate(context, world, resources)?)),
                 ExpressionInt::Const { value } => Ok(*value),
-                ExpressionInt::Var { var } => {
-                    context.vars.try_get_int(var).context("Failed to find var")
+                ExpressionInt::Var { var } => context
+                    .get_int(var, world)
+                    .context(format!("Failed to find var {var}")),
+                ExpressionInt::EntityVar { var, entity } => {
+                    let context = Context::new(
+                        ContextLayer::Unit {
+                            entity: entity.calculate(context, world, resources)?,
+                        },
+                        world,
+                        resources,
+                    );
+                    let value = context.get_int(var, world);
+                    dbg!(&value);
+                    value.context(format!("Var not found {var}"))
                 }
-                ExpressionInt::EntityVar { var, entity } => ContextSystem::try_get_context(
-                    entity.calculate(context, world, resources)?,
-                    world,
-                )?
-                .vars
-                .try_get_int(var)
-                .context(format!("Var not found {}", var)),
                 ExpressionInt::AbilityVar { ability, var } => {
-                    let faction = Faction::from_entity(context.owner, world);
-                    Ok(AbilityPool::get_var_int(resources, &faction, ability, var))
+                    let ability = *ability;
+                    context
+                        .clone_stack(ContextLayer::Ability { ability }, world, resources)
+                        .get_int(var, world)
+                        .context("Failed to get ability var")
+                }
+                ExpressionInt::TeamVar { var } => {
+                    let faction = context.get_faction(&VarName::Faction, world).unwrap();
+                    TeamSystem::get_state(&faction, world)
+                        .vars
+                        .try_get_int(var)
+                        .context("Failed to get team var")
                 }
                 ExpressionInt::If {
                     condition,
@@ -110,22 +127,14 @@ impl ExpressionInt {
                     false => r#else.calculate(context, world, resources),
                 },
                 ExpressionInt::Negate { value } => Ok(-value.calculate(context, world, resources)?),
-                ExpressionInt::FactionVar { var, faction } => resources
-                    .team_states
-                    .get_vars(&faction.calculate(context, world, resources)?)
-                    .try_get_int(var)
-                    .context("Failed to get faction var"),
-                ExpressionInt::StatusCharges { name } => Ok(resources
-                    .status_pool
-                    .active_statuses
-                    .get(&context.target)
-                    .and_then(|x| x.get(name).cloned())
-                    .unwrap_or_default()),
+                ExpressionInt::StatusCharges { name } => {
+                    Ok(context.get_status_charges(name, world))
+                }
             };
 
         resources
             .logger
-            .log(&format!("Result {result:?}",), &LogContext::Expression);
+            .log(|| format!("Result {result:?}",), &LogContext::Expression);
         result
     }
 }
@@ -135,7 +144,7 @@ impl ExpressionInt {
 pub enum ExpressionEntity {
     World,
     Target,
-    Parent,
+    Attacker,
     Owner,
     FindUnit {
         slot: Box<ExpressionInt>,
@@ -165,10 +174,14 @@ impl ExpressionEntity {
         resources: &Resources,
     ) -> Result<legion::Entity, Error> {
         resources.logger.log(
-            &format!(
-                "Calculating entity expression {:?} o:{:?} t:{:?}",
-                self, context.owner, context.target
-            ),
+            || {
+                format!(
+                    "Calculating entity expression {:?} o:{:?} t:{:?}",
+                    self,
+                    context.owner(),
+                    context.target()
+                )
+            },
             &LogContext::Expression,
         );
         let result = match self {
@@ -178,13 +191,13 @@ impl ExpressionEntity {
                 .unwrap()
                 .1
                 .entity),
-            ExpressionEntity::Target => Ok(context.target),
-            ExpressionEntity::Parent => context.parent.context("Failed to get parent"),
-            ExpressionEntity::Owner => Ok(context.owner),
+            ExpressionEntity::Target => context.target().context("No target"),
+            ExpressionEntity::Attacker => context.attacker().context("No target"),
+            ExpressionEntity::Owner => context.owner().context("No owner"),
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
                 let faction = faction.calculate(context, world, resources)?;
-                SlotSystem::find_unit_by_slot(slot, &faction, world, resources)
+                SlotSystem::find_unit_by_slot(slot, &faction, world)
                     .context(format!("No unit of {:?} found in {} slot", faction, slot))
             }
             ExpressionEntity::RandomUnit {
@@ -192,25 +205,25 @@ impl ExpressionEntity {
                 exclude_self,
             } => {
                 let faction = faction.calculate(context, world, resources)?;
-                UnitSystem::collect_faction(world, resources, faction, false)
+                UnitSystem::collect_faction(world, faction)
                     .into_iter()
-                    .filter(|x| !exclude_self || *x != context.owner)
+                    .filter(|x| !exclude_self || Some(*x) != context.owner())
                     .choose(&mut thread_rng())
                     .context(format!("No units of {:?} found", faction))
             }
             ExpressionEntity::SlotRelative { relation } => {
-                let unit = UnitSystem::get_unit(context.owner, world);
-                let relation = relation.calculate(context, world, resources)?;
-                let slot = (unit.slot as i32 + relation) as usize;
-                let faction = unit.faction;
-                SlotSystem::find_unit_by_slot(slot, &faction, world, resources)
+                let faction = context.get_faction(&VarName::Faction, world).unwrap();
+                let slot = (context.get_int(&VarName::Slot, world).unwrap()
+                    + relation.calculate(context, world, resources)?)
+                    as usize;
+                SlotSystem::find_unit_by_slot(slot, &faction, world)
                     .context(format!("No unit of {:?} found in slot {}", faction, slot))
             }
         };
 
         resources
             .logger
-            .log(&format!("Result {result:?}",), &LogContext::Expression);
+            .log(|| format!("Result {result:?}",), &LogContext::Expression);
         result
     }
 }
@@ -220,7 +233,7 @@ impl ExpressionEntity {
 pub enum ExpressionFaction {
     Owner,
     Target,
-    Parent,
+    Attacker,
     Opposite { faction: Box<ExpressionFaction> },
     Var { var: VarName },
     Team,
@@ -243,23 +256,45 @@ impl ExpressionFaction {
         resources: &Resources,
     ) -> Result<Faction, Error> {
         resources.logger.log(
-            &format!(
-                "Calculating faction expression {:?} o:{:?} t:{:?}",
-                self, context.owner, context.target
-            ),
+            || {
+                format!(
+                    "Calculating faction expression {:?} o:{:?} t:{:?}",
+                    self,
+                    context.owner(),
+                    context.target()
+                )
+            },
             &LogContext::Expression,
         );
         let result = match &self {
-            ExpressionFaction::Owner => Ok(Faction::from_entity(context.owner, world)),
-            ExpressionFaction::Target => Ok(Faction::from_entity(context.target, world)),
-            ExpressionFaction::Parent => Ok(Faction::from_entity(context.parent.unwrap(), world)),
-
+            ExpressionFaction::Owner => context
+                .get_faction(&VarName::Faction, world)
+                .context("Failed to get faction"),
+            ExpressionFaction::Target => context
+                .clone_stack(
+                    ContextLayer::Unit {
+                        entity: context.target().unwrap(),
+                    },
+                    world,
+                    resources,
+                )
+                .get_faction(&VarName::Faction, world)
+                .context("Failed to get faction"),
+            ExpressionFaction::Attacker => context
+                .clone_stack(
+                    ContextLayer::Unit {
+                        entity: context.attacker().unwrap(),
+                    },
+                    world,
+                    resources,
+                )
+                .get_faction(&VarName::Faction, world)
+                .context("Failed to get faction"),
             ExpressionFaction::Opposite { faction } => {
                 Ok(faction.calculate(context, world, resources)?.opposite())
             }
             ExpressionFaction::Var { var } => context
-                .vars
-                .try_get_faction(var)
+                .get_faction(var, world)
                 .context("Failed to get faction var"),
             ExpressionFaction::Team => Ok(Faction::Team),
             ExpressionFaction::Shop => Ok(Faction::Shop),
@@ -269,7 +304,7 @@ impl ExpressionFaction {
 
         resources
             .logger
-            .log(&format!("Result {result:?}",), &LogContext::Expression);
+            .log(|| format!("Result {result:?}",), &LogContext::Expression);
         result
     }
 }

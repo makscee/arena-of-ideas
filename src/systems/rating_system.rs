@@ -30,7 +30,7 @@ impl RatingSystem {
                 .ladder
                 .teams
                 .iter()
-                .map(|x| x.state.name.clone())
+                .map(|x| x.name.clone())
                 .chain(Some("Game Over".to_string()))
                 .enumerate()
             {
@@ -52,7 +52,7 @@ impl RatingSystem {
     ) -> (
         usize,
         usize,
-        Team,
+        PackedTeam,
         HashMap<String, (usize, usize)>,
         HashMap<String, (usize, usize)>,
     ) {
@@ -64,10 +64,10 @@ impl RatingSystem {
                 .map(|x| (x.name.clone(), x)),
         );
 
-        let mut team = Team::new("light".to_string(), vec![]);
+        let mut team = PackedTeam::new("light".to_string(), vec![]);
         ShopSystem::init_game(world, resources);
-        let buy_price = ShopSystem::buy_price(resources);
-        let sell_price = ShopSystem::sell_price(resources);
+        let buy_price = ShopSystem::buy_price(world);
+        let sell_price = ShopSystem::sell_price(world);
         const MAX_ARRANGE_TRIES: usize = 5;
         let mut pick_show_count = HashMap::default();
         let mut score_games_count = HashMap::default();
@@ -81,7 +81,7 @@ impl RatingSystem {
             let dark = Ladder::load_team(resources);
             let max_slots = (resources.ladder.current_ind() + resources.options.initial_team_slots)
                 .min(MAX_SLOTS);
-            team.state.slots = max_slots;
+            team.slots = max_slots;
 
             let shop_case = pool
                 .values()
@@ -98,18 +98,18 @@ impl RatingSystem {
                 for _ in 0..extra_units {
                     new_units.push(*shop_case.choose(&mut thread_rng()).unwrap());
                 }
-                team.unpack(&Faction::Team, world, resources);
+                let team_entity = team.unpack(&Faction::Team, world, resources);
                 Event::ShopEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
                 let slots = (1..=max_slots).choose_multiple(&mut thread_rng(), extra_units);
                 for (i, unit) in new_units.iter().enumerate() {
                     let slot = *slots.get(i).unwrap();
-                    let entity = unit.unpack(world, resources, slot, Faction::Shop, None);
+                    let entity = unit.unpack(world, resources, slot, None, team_entity);
                     if team.units.len() + i < max_slots {
                         SlotSystem::make_gap(Faction::Team, slot, world, resources, None);
                     } else {
                         if let Some(entity) =
-                            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world, resources)
+                            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
                         {
                             ShopSystem::do_sell(entity, resources, world);
                         }
@@ -117,7 +117,7 @@ impl RatingSystem {
                     ShopSystem::do_buy(entity, slot, resources, world);
                     ActionSystem::run_ticks(world, resources, &mut None);
                 }
-                let new_team = Team::pack(&Faction::Team, world, resources);
+                let new_team = PackedTeam::pack(&Faction::Team, world, resources);
                 UnitSystem::clear_faction(world, resources, Faction::Team);
                 let result = SimulationSystem::run_battle(&new_team, &dark, world, resources, None);
                 resources.action_queue.clear();
@@ -163,35 +163,8 @@ impl RatingSystem {
         resources: &mut Resources,
     ) {
         resources.logger.set_enabled(false);
-        let paths: Vec<PathBuf> =
-            futures::executor::block_on(load_json(&static_path().join("teams/_list.json")))
-                .unwrap();
-        let mut teams: Vec<Team> = paths
-            .into_iter()
-            .map(|path| {
-                let team: ReplicatedTeam =
-                    futures::executor::block_on(load_json(&static_path().join(path))).unwrap();
-                let team: Team = team.into();
-                team
-            })
-            .collect_vec();
-        for _ in 0..10 {
-            let mut team = teams.choose(&mut thread_rng()).unwrap().clone();
-            let status = resources
-                .status_pool
-                .defined_statuses
-                .keys()
-                .choose(&mut thread_rng())
-                .unwrap()
-                .clone();
-            for unit in team.units.iter_mut() {
-                let mut charges = unit.active_statuses.remove(&status).unwrap_or_default();
-                charges += 1;
-                unit.active_statuses.insert(status.clone(), charges);
-            }
-            team.state.name = format!("{status}ed {}", team.state.name);
-            teams.push(team);
-        }
+
+        let mut teams = EnemyPool::generate_teams();
         let mut ratings = Ratings::default();
         let mut cnt = 0;
         let save_path = static_path().join("levels.json");
@@ -201,8 +174,8 @@ impl RatingSystem {
             cnt += 1;
             teams.sort_by(|a, b| {
                 ratings
-                    .get_rating(&a.state.name)
-                    .total_cmp(&ratings.get_rating(&b.state.name))
+                    .get_rating(&a.name)
+                    .total_cmp(&ratings.get_rating(&b.name))
             });
             let save = serde_json::to_string_pretty(&teams).unwrap();
 
@@ -215,7 +188,7 @@ impl RatingSystem {
     }
 
     pub fn rate_teams(
-        teams: &Vec<Team>,
+        teams: &Vec<PackedTeam>,
         ratings: &mut Ratings,
         world: &mut legion::World,
         resources: &mut Resources,
@@ -225,7 +198,7 @@ impl RatingSystem {
                 let mut dark = dark.clone();
                 dark = Ladder::generate_team(dark);
                 let result = SimulationSystem::run_battle(light, &dark, world, resources, None);
-                ratings.add_rating(&light.state.name, RatingType::WinRate, result, 1);
+                ratings.add_rating(&light.name, RatingType::WinRate, result, 1);
             }
         }
     }
@@ -295,19 +268,22 @@ impl Ratings {
 
 impl Display for Ratings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let spaces = "                                          ";
+        let spaces = "                                                                 ";
         let mut result: String = default();
         for (name, (score, ratings)) in self.data.iter().sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
         {
             let mut name = name.clone();
             name.push_str(spaces);
-            let (name, _) = name.split_at(30);
+            let (name, _) = name.split_at(50);
             result += &format!(
                 "\n{name} {score} [{}]",
                 ratings
                     .iter()
                     .sorted_by_key(|x| x.0)
-                    .map(|(rating, (a, b))| format!("{rating:?}({a}/{b})"))
+                    .map(|(rating, (a, b))| format!(
+                        "{rating:?}({a}/{b}) = {:.2}%",
+                        *a as f32 / *b as f32 * 100.0
+                    ))
                     .join(" ")
             );
         }

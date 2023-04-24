@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 10,
     "description": "End of turn\nMend (3)\nall allies",
-    "houses": [
-        "Clerics"
-    ],
+    "house": "Clerics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {
@@ -18,8 +16,9 @@
             "effect": {
                 "type": "UseAbility",
                 "ability": "Mend",
-                "vars": {
-                    "Charges": 3
+                "charges": {
+                    "type": "Const",
+                    "value": 3
                 }
             }
         }

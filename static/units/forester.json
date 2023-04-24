@@ -3,9 +3,7 @@
     "health": 3,
     "attack": 3,
     "description": "Start of battle:\nuse SummonTreant\ntwice",
-    "houses": [
-        "Druids"
-    ],
+    "house": "Druids",
     "trigger": {
         "type": "BattleStart",
         "effect": {

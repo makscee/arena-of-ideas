@@ -2,6 +2,7 @@
     "light": {
         "units": [
             {
+                "name": "Empowered",
                 "attack": 0,
                 "health": 5,
                 "trigger": {
@@ -16,7 +17,7 @@
                         }
                     }
                 },
-                "active_statuses": {
+                "statuses": {
                     "Empower": 5
                 }
             }
@@ -25,6 +26,7 @@
     "dark": {
         "units": [
             {
+                "name": "Basic",
                 "attack": 1,
                 "health": 20
             }

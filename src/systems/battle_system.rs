@@ -15,7 +15,7 @@ impl BattleSystem {
         resources: &mut Resources,
         tape: &mut Option<Tape>,
     ) -> usize {
-        Ladder::track_team(world, resources);
+        // Ladder::track_team(world, resources);
         Self::create_tape_entities(world, resources, tape);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
@@ -28,9 +28,12 @@ impl BattleSystem {
             tape.push(cluster.unwrap());
         }
         let mut ticks = 0;
-        while Self::tick(world, resources, tape) && ticks < 1000 {
+        while Self::tick(world, resources, tape) && ticks < 100 {
             Self::update_score(world, resources, tape);
             ticks += 1;
+        }
+        if ticks == 1000 {
+            panic!("Exceeded ticks limit");
         }
         Self::clear_tape_entities(world, resources, tape);
         let score = Ladder::get_score(world, resources);
@@ -54,7 +57,7 @@ impl BattleSystem {
         resources.battle_data.score_entity = Some(entity);
         Self::update_score(world, resources, tape);
 
-        let (left, right) = VfxSystem::vfx_battle_team_names(resources);
+        let (left, right) = VfxSystem::vfx_battle_team_names(world, resources);
         let names = (
             Self::push_tape_shader_entity(left, world),
             Self::push_tape_shader_entity(right, world),
@@ -92,7 +95,8 @@ impl BattleSystem {
         if tape.is_none() {
             return;
         }
-        let score = Ladder::get_score_units(world, resources);
+        // let score = Ladder::get_score_units(world, resources);
+        let score = (0, 1);
         if let Some(mut entry) = resources
             .battle_data
             .score_entity
@@ -122,8 +126,8 @@ impl BattleSystem {
     }
 
     pub fn init_battle(
-        light: &Team,
-        dark: &Team,
+        light: &PackedTeam,
+        dark: &PackedTeam,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
@@ -149,7 +153,7 @@ impl BattleSystem {
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {
-        UnitSystem::clear_factions(world, resources, &Faction::battle());
+        UnitSystem::clear_factions(world, &Faction::battle());
     }
 
     fn strickers_death_check(
@@ -288,22 +292,26 @@ impl BattleSystem {
     }
 
     pub fn find_hitters(world: &legion::World) -> Option<(legion::Entity, legion::Entity)> {
-        let units = <(&UnitComponent, &EntityComponent)>::query()
+        let mut light = None;
+        let mut dark = None;
+        for (entity, state) in <(&EntityComponent, &ContextState)>::query()
+            .filter(component::<UnitComponent>())
             .iter(world)
-            .collect_vec();
-
-        units
-            .iter()
-            .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Light)
-            .and_then(|(_, left)| {
-                match units
-                    .iter()
-                    .find(|(unit, _)| unit.slot == 1 && unit.faction == Faction::Dark)
-                {
-                    Some((_, right)) => Some((left.entity, right.entity)),
-                    None => None,
+        {
+            if state.get_int(&VarName::Slot, world) == 1 {
+                if state.get_faction(&VarName::Faction, world) == Faction::Light {
+                    light = Some(entity.entity)
+                } else if state.get_faction(&VarName::Faction, world) == Faction::Dark {
+                    dark = Some(entity.entity)
                 }
-            })
+            }
+        }
+
+        if light.is_some() && dark.is_some() {
+            Some((light.unwrap(), dark.unwrap()))
+        } else {
+            None
+        }
     }
 
     pub fn spin(
@@ -323,34 +331,30 @@ impl BattleSystem {
         resources: &mut Resources,
     ) {
         Self::spin(world, resources, cluster);
-        if let Ok(mut context_left) = ContextSystem::try_get_context(left, world) {
-            if let Ok(mut context_right) = ContextSystem::try_get_context(right, world) {
-                context_left.owner = left;
-                context_left.target = right;
-                resources.action_queue.push_back(Action::new(
-                    context_left,
-                    Effect::Damage {
-                        value: None,
-                        on_hit: None,
-                    }
-                    .wrap(),
-                ));
-                context_right.owner = right;
-                context_right.target = left;
-                resources.action_queue.push_back(Action::new(
-                    context_right,
-                    Effect::Damage {
-                        value: None,
-                        on_hit: None,
-                    }
-                    .wrap(),
-                ));
-            }
+
+        if UnitSystem::is_alive(left, world) && UnitSystem::is_alive(right, world) {
+            resources.action_queue.push_back(Action::new(
+                Context::new(ContextLayer::Unit { entity: left }, world, resources)
+                    .set_target(right),
+                Effect::Damage {
+                    value: None,
+                    on_hit: None,
+                }
+                .wrap(),
+            ));
+            resources.action_queue.push_back(Action::new(
+                Context::new(ContextLayer::Unit { entity: right }, world, resources)
+                    .set_target(left),
+                Effect::Damage {
+                    value: None,
+                    on_hit: None,
+                }
+                .wrap(),
+            ));
+            Self::spin(world, resources, cluster);
         }
 
-        Self::spin(world, resources, cluster);
-
-        if UnitSystem::get_corpse(left, world).is_none() {
+        if UnitSystem::is_alive(left, world) {
             Event::AfterStrike {
                 owner: left,
                 target: right,
@@ -359,7 +363,7 @@ impl BattleSystem {
             Self::spin(world, resources, cluster);
         }
 
-        if UnitSystem::get_corpse(right, world).is_none() {
+        if UnitSystem::is_alive(right, world) {
             Event::AfterStrike {
                 owner: right,
                 target: left,
@@ -375,12 +379,19 @@ impl BattleSystem {
         cluster: &mut Option<NodeCluster>,
     ) {
         let mut corpses = Vec::default();
-        while let Some(dead_unit) = <(&EntityComponent, &Context)>::query()
+        while let Some(dead_unit) = <&EntityComponent>::query()
             .filter(component::<UnitComponent>())
             .iter(world)
-            .filter_map(|(entity, context)| {
-                match context.vars.get_int(&VarName::HpValue)
-                    <= context.vars.get_int(&VarName::HpDamage)
+            .filter_map(|entity| {
+                let context = Context::new(
+                    ContextLayer::Unit {
+                        entity: entity.entity,
+                    },
+                    world,
+                    resources,
+                );
+                match context.get_int(&VarName::HpValue, world)
+                    <= context.get_int(&VarName::HpDamage, world)
                 {
                     true => Some(entity.entity),
                     false => None,
@@ -388,12 +399,13 @@ impl BattleSystem {
             })
             .choose(&mut thread_rng())
         {
-            resources
-                .logger
-                .log(&format!("{:?} dead", dead_unit), &LogContext::UnitCreation);
+            resources.logger.log(
+                || format!("{:?} dead", dead_unit),
+                &LogContext::UnitCreation,
+            );
             if UnitSystem::process_death(dead_unit, world, resources, cluster) {
                 resources.logger.log(
-                    &format!("{:?} removed", dead_unit),
+                    || format!("{:?} removed", dead_unit),
                     &LogContext::UnitCreation,
                 );
                 corpses.push(dead_unit);

@@ -52,7 +52,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::MainMenu;
                 }
                 if resources.input_data.down_keys.contains(&C) {
-                    ShopSystem::change_g(resources, 100);
+                    ShopSystem::change_g(100, world);
                 }
                 if resources.input_data.down_keys.contains(&L) {
                     SaveSystem::load(world, resources);
@@ -64,17 +64,15 @@ impl System for GameStateSystem {
                     BonusEffectPool::load_widget(5, world, resources);
                 }
                 if resources.input_data.down_keys.contains(&P) {
-                    if let Some(entity) =
-                        SlotSystem::find_unit_by_slot(1, &Faction::Shop, world, resources)
-                    {
-                        UnitSystem::delete_unit(entity, world, resources);
+                    if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
+                        world.remove(entity);
                     }
                     resources.hero_pool.list_top().clone().unpack(
                         world,
                         resources,
                         1,
-                        Faction::Shop,
                         Some(SlotSystem::get_position(1, &Faction::Shop, resources)),
+                        TeamSystem::entity(&Faction::Shop, world).unwrap(),
                     );
                 }
             }
@@ -198,20 +196,14 @@ impl GameStateSystem {
                 Event::ShopEnd.send(world, resources);
                 resources.tape_player.clear();
                 ShopSystem::clear_case(world, resources);
-                ShopSystem::reset_g(resources);
+                ShopSystem::reset_g(world);
             }
             GameState::Battle => {
                 resources.tape_player.clear();
                 Event::BattleEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
             }
-            GameState::Gallery => {
-                resources.tape_player.clear();
-                resources.action_queue.clear();
-                resources.status_pool.status_changes.clear();
-                resources.camera.camera.fov = resources.options.fov;
-                WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
-            }
+            GameState::Gallery => {}
             GameState::GameOver => {
                 resources.camera.camera.fov = resources.options.fov;
                 resources.camera.focus = Focus::Battle;
@@ -235,16 +227,27 @@ impl GameStateSystem {
                 if resources.current_state == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
-                    resources.team_states.set_slots(&Faction::Sacrifice, 1);
+                    TeamSystem::get_state_mut(&Faction::Sacrifice, world)
+                        .vars
+                        .set_int(&VarName::Slots, 1);
                 } else if resources.current_state == GameState::Battle {
                     BonusEffectPool::load_widget(resources.last_score, world, resources);
+                    PackedTeam::new("Dark".to_owned(), default()).unpack(
+                        &Faction::Dark,
+                        world,
+                        resources,
+                    );
+                    PackedTeam::new("Light".to_owned(), default()).unpack(
+                        &Faction::Light,
+                        world,
+                        resources,
+                    );
                 }
                 ShopSystem::init_level(world, resources, true);
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Gallery => {
                 resources.camera.focus = Focus::Battle;
-                WorldSystem::set_var(world, VarName::FieldPosition, Var::Vec2(vec2(0.0, 20.0)));
             }
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;

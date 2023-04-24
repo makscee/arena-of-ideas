@@ -3,9 +3,7 @@
     "attack": 9,
     "health": 9,
     "description": "Empower doesn't\nget removed\nafter attack",
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "List",
         "triggers": [

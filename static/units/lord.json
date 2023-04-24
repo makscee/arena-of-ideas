@@ -3,10 +3,8 @@
     "description": "On Buy: Empower\n+2 extra attack",
     "health": 6,
     "attack": 2,
-    "houses": [
-        "Demons"
-    ],
-    "active_statuses": {
+    "house": "Demons",
+    "statuses": {
         "Empower": 1
     },
     "trigger": {

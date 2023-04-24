@@ -20,9 +20,7 @@
             {
                 "attack": 3,
                 "health": 3,
-                "houses": [
-                    "Demons"
-                ],
+                "house": "Demons",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {

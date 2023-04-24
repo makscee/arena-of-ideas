@@ -4,29 +4,34 @@ pub struct SimulationSystem {}
 
 impl SimulationSystem {
     pub fn run_battle(
-        light: &Team,
-        dark: &Team,
+        light: &PackedTeam,
+        dark: &PackedTeam,
         world: &mut legion::World,
         resources: &mut Resources,
         assert: Option<&Condition>,
     ) -> usize {
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
-        resources
-            .team_states
-            .set_slots(&Faction::Light, light.units.len());
-        resources
-            .team_states
-            .set_slots(&Faction::Dark, dark.units.len());
+        TeamSystem::get_state_mut(&Faction::Light, world)
+            .vars
+            .set_int(&VarName::Slots, light.units.len() as i32);
+        TeamSystem::get_state_mut(&Faction::Dark, world)
+            .vars
+            .set_int(&VarName::Slots, dark.units.len() as i32);
         BattleSystem::run_battle(world, resources, &mut None);
         let result = match assert {
             Some(condition) => {
-                let result = condition
-                    .calculate(&WorldSystem::get_context(world), world, resources)
-                    .unwrap();
+                let context = &Context::new(
+                    ContextLayer::Entity {
+                        entity: WorldSystem::entity(world),
+                    },
+                    world,
+                    resources,
+                );
+                let result = condition.calculate(context, world, resources).unwrap();
                 if !result {
-                    let light = Team::pack(&Faction::Light, world, resources);
-                    let dark = Team::pack(&Faction::Dark, world, resources);
+                    let light = PackedTeam::pack(&Faction::Light, world, resources);
+                    let dark = PackedTeam::pack(&Faction::Dark, world, resources);
                     dbg!((light, dark));
                     0
                 } else {
@@ -43,14 +48,15 @@ impl SimulationSystem {
 
 #[cfg(test)]
 mod tests {
+    use colored::Colorize;
     use geng::prelude::file::load_json;
 
     use super::*;
 
     #[derive(Deserialize)]
     struct TestScenario {
-        light: Team,
-        dark: Team,
+        light: PackedTeam,
+        dark: PackedTeam,
         assert: Condition,
     }
 
@@ -76,18 +82,21 @@ mod tests {
             health: 1,
             damage: 0,
             attack: 1,
-            houses: default(),
+            house: default(),
             trigger: default(),
-            active_statuses: default(),
+            statuses: default(),
             shader: default(),
             rank: default(),
         };
-        let light = Team::new(String::from("light"), vec![unit.clone()]);
-        assert!(SimulationSystem::run_battle(&light, &light, &mut world, &mut resources, None) > 0)
+        let light = PackedTeam::new(String::from("light"), vec![unit.clone()]);
+        let battle_result =
+            SimulationSystem::run_battle(&light, &light, &mut world, &mut resources, None);
+        assert!(battle_result > 0)
     }
 
     #[test]
     fn test_scenarios() {
+        println!("Start scenarios");
         let (mut world, mut resources) = setup();
         let paths: Vec<PathBuf> =
             futures::executor::block_on(load_json(static_path().join("test/scenarios/_list.json")))
@@ -105,7 +114,8 @@ mod tests {
             .collect_vec();
         assert!(!scenarios.is_empty());
         for (path, scenario) in scenarios.iter() {
-            println!("Run scenario: {:?}...", path.file_name().unwrap());
+            let text = format!("Run scenario: {:?}...", path.file_name().unwrap()).on_blue();
+            println!("\n{text}\n");
             assert!(
                 SimulationSystem::run_battle(
                     &scenario.light,

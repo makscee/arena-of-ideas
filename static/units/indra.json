@@ -3,9 +3,7 @@
     "attack": 8,
     "health": 8,
     "description": "On buy:\nDevour\nALL allies",
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

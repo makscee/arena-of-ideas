@@ -3,9 +3,7 @@
     "description": "Grow (4) after\nevery Battle",
     "attack": 1,
     "health": 1,
-    "houses": [
-        "Dragons"
-    ],
+    "house": "Dragons",
     "trigger": {
         "type": "ShopStart",
         "effect": {

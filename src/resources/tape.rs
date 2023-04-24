@@ -308,10 +308,14 @@ impl Node {
         }
     }
 
-    pub fn save_entity_statuses(&mut self, entity: legion::Entity, pool: &StatusPool) {
-        if let Some(statuses) = pool.active_statuses.get(&entity) {
-            self.entities.get_mut(&entity).unwrap().statuses = statuses.clone();
-        }
+    pub fn save_entity_statuses(
+        &mut self,
+        entity: &legion::Entity,
+        context: &Context,
+        world: &legion::World,
+    ) {
+        let statuses = context.collect_statuses(world);
+        self.entities.get_mut(&entity).unwrap().statuses = statuses;
     }
 
     pub fn save_entity_definitions(
@@ -392,9 +396,8 @@ impl Node {
                 resources,
                 factions,
             } => {
-                let units =
-                    UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
-                SlotSystem::refresh_slots(&factions, &units, world, resources);
+                UnitSystem::draw_all_units_to_node(&factions, &mut self, world, resources);
+                SlotSystem::refresh_slots(factions, world, resources);
                 Self::draw_all_tape_entities_to_node(&mut self, world);
             }
             NodeLockType::Empty => {}

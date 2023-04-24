@@ -3,9 +3,7 @@
     "attack": 9,
     "health": 9,
     "description": "Start of battle:\nDispel everyone",
-    "houses": [
-        "Exorcists"
-    ],
+    "house": "Exorcists",
     "trigger": {
         "type": "BattleStart",
         "effect": {

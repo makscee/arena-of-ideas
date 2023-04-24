@@ -4,9 +4,7 @@
             {
                 "health": 10,
                 "attack": 1,
-                "houses": [
-                    "Demons"
-                ],
+                "house": "Demons",
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {
@@ -19,8 +17,9 @@
                                 "value": 1
                             }
                         },
-                        "vars": {
-                            "Charges": 5
+                        "charges": {
+                            "type": "Const",
+                            "value": 5
                         }
                     }
                 }

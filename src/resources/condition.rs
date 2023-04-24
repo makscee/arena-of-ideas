@@ -67,10 +67,14 @@ impl Condition {
         resources: &Resources,
     ) -> Result<bool, Error> {
         resources.logger.log(
-            &format!(
-                "Calculating condition {:?} o:{:?} t:{:?}",
-                self, context.owner, context.target
-            ),
+            || {
+                format!(
+                    "Calculating condition {:?} o:{:?} t:{:?}",
+                    self,
+                    context.owner(),
+                    context.target()
+                )
+            },
             &LogContext::Condition,
         );
         let result =
@@ -91,7 +95,6 @@ impl Condition {
                     slot.calculate(context, world, resources)? as usize,
                     faction,
                     world,
-                    resources,
                 )
                 .is_some()),
                 Condition::IsCorpse { entity } => Ok(UnitSystem::get_corpse(
@@ -109,12 +112,11 @@ impl Condition {
                 Condition::Always => Ok(true),
                 Condition::Chance { part } => Ok(random::<f32>() < *part),
                 Condition::IsAlive { entity } => {
-                    if let Ok(context) = ContextSystem::try_get_context(
-                        entity.calculate(context, world, resources)?,
-                        world,
-                    ) {
-                        let vars = context.vars;
-                        Ok(vars.get_int(&VarName::HpValue) > vars.get_int(&VarName::HpDamage))
+                    let entity = entity.calculate(context, world, resources)?;
+                    let context = Context::new(ContextLayer::Unit { entity }, world, resources);
+                    if let Some(hp) = context.get_int(&VarName::HpValue, world) {
+                        let damage = context.get_int(&VarName::Damage, world).unwrap_or_default();
+                        Ok(hp > damage)
                     } else {
                         Ok(false)
                     }
@@ -129,7 +131,7 @@ impl Condition {
             };
         resources
             .logger
-            .log(&format!("Result {result:?}",), &LogContext::Condition);
+            .log(|| format!("Result {result:?}",), &LogContext::Condition);
         result
     }
 }

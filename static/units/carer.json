@@ -3,9 +3,7 @@
     "attack": 1,
     "health": 1,
     "description": "Shop start:\ngive Shield to\nall Shieldless",
-    "houses": [
-        "Robots"
-    ],
+    "house": "Robots",
     "trigger": {
         "type": "ShopStart",
         "effect": {

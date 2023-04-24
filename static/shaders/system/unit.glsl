@@ -31,7 +31,7 @@ uniform float u_hovered;
 uniform float u_damage_taken;
 uniform sampler2D u_description;
 uniform vec2 u_description_size;
-uniform vec4 u_house_color1;
+uniform vec4 u_house_color;
 uniform vec4 u_faction_color;
 uniform int u_rank;
 
@@ -42,7 +42,7 @@ vec4 draw_card(vec4 unit_color, vec2 unit_uv) {
         return vec4(0);
     }
     float border_dist = min(abs(card_sdf) - CARD_BORDER, ((abs(uv.y) - CARD_BORDER) * float(card_sdf < 0)));
-    vec4 mixed_color = mix(u_house_color1, u_faction_color, smoothstep(0.7, .1, -border_dist / CARD_BORDER));
+    vec4 mixed_color = mix(u_house_color, u_faction_color, smoothstep(0.7, .1, -border_dist / CARD_BORDER));
     vec4 border_color = vec4(mixed_color.rgb, border_dist < 0);
 
     vec2 text_uv = uv * 2 + vec2(0, 1.0);

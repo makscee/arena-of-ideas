@@ -54,10 +54,7 @@
                                     {
                                         "type": "If",
                                         "target": {
-                                            "type": "Owner"
-                                        },
-                                        "owner": {
-                                            "type": "Target"
+                                            "type": "Attacker"
                                         },
                                         "condition": {
                                             "type": "MoreInt",

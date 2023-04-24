@@ -3,9 +3,7 @@
         "description": "On Buy:\ngive Defense (3)\nto adjacent allies",
         "health": 1,
         "attack": 1,
-        "houses": [
-            "Warriors"
-        ],
+        "house": "Warriors",
         "trigger": {
             "type": "OnBuy",
             "effect": {

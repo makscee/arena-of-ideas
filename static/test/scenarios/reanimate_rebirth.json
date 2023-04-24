@@ -4,10 +4,8 @@
             {
                 "attack": 3,
                 "health": 4,
-                "houses": [
-                    "Dragons"
-                ],
-                "active_statuses": {
+                "house": "Dragons",
+                "statuses": {
                     "Rebirth": 1
                 }
             },
@@ -22,9 +20,7 @@
             {
                 "attack": 4,
                 "health": 6,
-                "houses": [
-                    "Necromancers"
-                ],
+                "house": "Necromancers",
                 "trigger": {
                     "type": "AfterDamageDealt",
                     "effect": {

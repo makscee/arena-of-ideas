@@ -3,9 +3,7 @@
     "attack": 1,
     "health": 3,
     "description": "On buy:\nGrow (1)\neveryone",
-    "houses": [
-        "Dragons"
-    ],
+    "house": "Dragons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

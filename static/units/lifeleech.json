@@ -3,9 +3,7 @@
     "attack": 2,
     "health": 2,
     "description": "Before strike:\nLifeSteal\nhalf HP",
-    "houses": [
-        "Vampires"
-    ],
+    "house": "Vampires",
     "trigger": {
         "type": "BeforeStrike",
         "effect": {

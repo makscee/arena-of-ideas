@@ -1,87 +1,13 @@
 {
     "player_team_name": "Dorks",
-    "walkthrough": true,
-    "team_ratings": true,
+    "walkthrough": false,
+    "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": false,
-        "light": {
-            "replications": 1,
-            "units": [
-                {
-                    "attack": 2,
-                    "health": 1,
-                    "houses": [
-                        "Demons"
-                    ],
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "List",
-                            "effects": [
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Devour",
-                                    "target": {
-                                        "type": "RandomUnit",
-                                        "faction": {
-                                            "type": "Opposite",
-                                            "faction": {
-                                                "type": "Owner"
-                                            }
-                                        }
-                                    }
-                                },
-                                {
-                                    "type": "Damage",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 20
-                                    },
-                                    "target": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        "dark": {
-            "state": {
-                "name": "Hounds"
-            },
-            "replications": 2,
-            "units": [
-                {
-                    "attack": 5,
-                    "health": 5,
-                    "houses": [
-                        "Demons"
-                    ],
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Devour",
-                            "target": {
-                                "type": "RandomUnit",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            ]
-        }
+        "enable": false
     },
     "fov": 16.0,
     "initial_shop_fill": 2,
@@ -90,13 +16,13 @@
         "ActionFail": true,
         "Effect": true,
         "Contexts": false,
-        "Condition": false,
-        "Expression": false,
-        "Trigger": false,
+        "Condition": true,
+        "Expression": true,
+        "Trigger": true,
         "Event": true,
         "UnitCreation": true,
         "Measurement": false,
-        "Test": false
+        "Test": true
     },
     "colors": {
         "factions": {
@@ -126,6 +52,7 @@
         "stats_attack": "#FFA500",
         "stats_health": "#FF4D4D",
         "damage": "#FF4D4D",
+        "healing": "#08d932",
         "addition": "#cdeeff",
         "deletion": "#C0392B",
         "victory": "#FFFFFF",
@@ -142,6 +69,11 @@
                     "u_padding": 1.0
                 }
             },
+            "request_vars": [
+                "Description",
+                "FactionColor",
+                "HouseColor"
+            ],
             "layer": "Unit"
         },
         "field": {

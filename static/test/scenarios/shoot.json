@@ -16,9 +16,7 @@
             {
                 "health": 1,
                 "attack": 1,
-                "houses": [
-                    "Archers"
-                ],
+                "house": "Archers",
                 "trigger": {
                     "type": "TurnEnd",
                     "effect": {

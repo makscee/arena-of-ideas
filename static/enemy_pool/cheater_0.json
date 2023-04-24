@@ -1,16 +1,12 @@
 {
-    "state": {
-        "name": "Cheater"
-    },
+    "name": "Cheater",
     "units": [
         {
             "name": "Cheater",
             "attack": 20,
             "health": 30,
             "description": "After strike\ngain Shield",
-            "houses": [
-                "Robots"
-            ],
+            "house": "Robots",
             "trigger": {
                 "type": "AfterStrike",
                 "effect": {

@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, strum_macros::AsRefStr)]
 #[serde(tag = "type")]
 #[serde(deny_unknown_fields)]
 pub enum Trigger {
@@ -80,13 +80,18 @@ impl Trigger {
                 _ => {}
             },
             Trigger::List { triggers } => {
-                triggers.iter().for_each(|trigger| {
-                    trigger.catch_event(event, action_queue, context.clone(), logger)
+                triggers.iter().enumerate().for_each(|(i, trigger)| {
+                    trigger.catch_event(
+                        event,
+                        action_queue,
+                        context.clone_stack_string(&format!("list {i}")),
+                        logger,
+                    )
                 });
             }
             Trigger::OnBuy { .. } => match event {
                 Event::Buy { owner } => {
-                    if context.owner == *owner {
+                    if context.owner() == Some(*owner) {
                         self.fire(action_queue, context, logger);
                     }
                 }
@@ -94,7 +99,7 @@ impl Trigger {
             },
             Trigger::OnSell { .. } => match event {
                 Event::Sell { owner } => {
-                    if context.owner == *owner {
+                    if context.owner() == Some(*owner) {
                         self.fire(action_queue, context, logger);
                     }
                 }
@@ -102,7 +107,7 @@ impl Trigger {
             },
             Trigger::AnyBuy { .. } => match event {
                 Event::Buy { owner } => {
-                    if context.owner != *owner {
+                    if context.owner() != Some(*owner) {
                         self.fire(action_queue, context, logger);
                     }
                 }
@@ -110,7 +115,7 @@ impl Trigger {
             },
             Trigger::AnySell { .. } => match event {
                 Event::Sell { owner } => {
-                    if context.owner != *owner {
+                    if context.owner() != Some(*owner) {
                         self.fire(action_queue, context, logger);
                     }
                 }
@@ -118,7 +123,7 @@ impl Trigger {
             },
             Trigger::AnyDeath { .. } => match event {
                 Event::UnitDeath { target } => {
-                    if context.owner != *target {
+                    if context.owner() != Some(*target) {
                         self.fire(action_queue, context, logger);
                     }
                 }
@@ -199,7 +204,7 @@ impl Trigger {
         }
     }
 
-    fn fire(&self, action_queue: &mut VecDeque<Action>, context: Context, logger: &Logger) {
+    fn fire(&self, action_queue: &mut VecDeque<Action>, mut context: Context, logger: &Logger) {
         match self {
             Trigger::BeforeIncomingDamage { effect }
             | Trigger::AfterIncomingDamage { effect }
@@ -230,9 +235,10 @@ impl Trigger {
             | Trigger::OnStatusChargeAdd { effect }
             | Trigger::OnStatusChargeRemove { effect } => {
                 logger.log(
-                    &format!("Caught trigger {:?}, {:?}", self, context),
+                    || format!("Caught trigger {:?}, {}", self.as_ref(), context),
                     &LogContext::Trigger,
                 );
+                context.stack_string(&format!("Trigger {}", self.as_ref()));
                 action_queue.push_back(Action::new(context, effect.clone()))
             }
             Trigger::ModifyIncomingDamage { .. }
@@ -245,54 +251,56 @@ impl Trigger {
         }
     }
 
-    /// Change vars and return updated context
     pub fn calculate_event(
         &self,
         event: &Event,
-        context: Context,
+        context: &Context,
+        extra_layers: &mut Vec<ContextLayer>,
         world: &legion::World,
         resources: &Resources,
-    ) -> Context {
-        let mut context = context.clone();
+    ) -> Result<(), Error> {
         match self {
             Trigger::List { triggers } => {
                 for trigger in triggers {
-                    context = trigger.calculate_event(event, context, world, resources);
+                    trigger.calculate_event(event, context, extra_layers, world, resources)?;
                 }
             }
             Trigger::ModifyIncomingDamage { value } => match event {
                 Event::ModifyIncomingDamage { .. } => {
-                    let mut damage = context.vars.get_int(&VarName::Damage);
-                    damage = match value.calculate(&context, world, resources) {
-                        Ok(value) => value,
-                        Err(_) => damage,
-                    };
-                    context.vars.insert(VarName::Damage, Var::Int(damage));
+                    let value = value.calculate(&context, world, resources)?;
+
+                    extra_layers.push(ContextLayer::Var {
+                        var: VarName::Damage,
+                        value: Var::Int(value),
+                    });
                 }
                 _ => {}
             },
             Trigger::ModifyOutgoingDamage { value } => match event {
                 Event::ModifyOutgoingDamage { .. } => {
-                    let mut damage = context.vars.get_int(&VarName::Damage);
-                    damage = match value.calculate(&context, world, resources) {
-                        Ok(value) => value,
-                        Err(_) => damage,
-                    };
-                    context.vars.insert(VarName::Damage, Var::Int(damage));
+                    let value = value.calculate(&context, world, resources)?;
+                    extra_layers.push(ContextLayer::Var {
+                        var: VarName::Damage,
+                        value: Var::Int(value),
+                    });
                 }
                 _ => {}
             },
             Trigger::ChangeVarInt { var, delta } => match event {
-                Event::ModifyContext { .. } => match delta.calculate(&context, world, resources) {
-                    Ok(delta) => context
-                        .vars
-                        .insert(*var, Var::Int(delta + context.vars.get_int(var))),
-                    Err(_) => {}
-                },
+                Event::ModifyContext { .. } => {
+                    let value = context
+                        .get_int(var, world)
+                        .context(format!("Failed to find original var {var}"))?;
+                    let delta = delta.calculate(context, world, resources)?;
+                    extra_layers.push(ContextLayer::Var {
+                        var: *var,
+                        value: Var::Int(value + delta),
+                    });
+                }
                 _ => {}
             },
             _ => {}
-        }
-        context
+        };
+        Ok(())
     }
 }

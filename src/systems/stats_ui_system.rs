@@ -9,10 +9,14 @@ pub enum StatType {
 }
 
 impl StatsUiSystem {
-    pub fn get_entity_shaders(vars: &Vars, options: &Options) -> Vec<Shader> {
-        let damage = vars.get_int(&VarName::HpDamage);
-        let hp_value = vars.get_int(&VarName::HpValue) - damage;
-        let hp_original_value = vars.get_int(&VarName::HpOriginalValue);
+    pub fn get_entity_shaders(
+        context: &Context,
+        world: &legion::World,
+        options: &Options,
+    ) -> Vec<Shader> {
+        let damage = context.get_int(&VarName::HpDamage, world).unwrap();
+        let hp_value = context.get_int(&VarName::HpValue, world).unwrap() - damage;
+        let hp_original_value = context.get_int(&VarName::HpOriginalValue, world).unwrap();
         let hp_modified = if damage > 0 {
             -1
         } else {
@@ -22,8 +26,10 @@ impl StatsUiSystem {
                 0
             }
         };
-        let attack_value = vars.get_int(&VarName::AttackValue);
-        let attack_original_value = vars.get_int(&VarName::AttackOriginalValue);
+        let attack_value = context.get_int(&VarName::AttackValue, world).unwrap();
+        let attack_original_value = context
+            .get_int(&VarName::AttackOriginalValue, world)
+            .unwrap();
         let attack_modified = match attack_value > attack_original_value {
             true => 1,
             false => 0,

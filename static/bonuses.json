@@ -26,7 +26,7 @@
     },
     {
         "effect": {
-            "type": "ChangeFactionVarInt",
+            "type": "ChangeTeamVarInt",
             "var": "G",
             "faction": {
                 "type": "Team"
@@ -108,21 +108,19 @@
             "type": "List",
             "effects": [
                 {
-                    "type": "ChangeSlots",
+                    "type": "ChangeTeamVarInt",
+                    "var": "Slots",
                     "faction": {
                         "type": "Team"
                     },
                     "delta": {
                         "type": "Const",
-                        "value": 1
+                        "value": 2
                     }
                 },
                 {
-                    "type": "ChangeFactionVarInt",
+                    "type": "ChangeTeamVarInt",
                     "var": "G",
-                    "faction": {
-                        "type": "Team"
-                    },
                     "delta": {
                         "type": "Const",
                         "value": 10
@@ -138,7 +136,8 @@
             "type": "List",
             "effects": [
                 {
-                    "type": "ChangeSlots",
+                    "type": "ChangeTeamVarInt",
+                    "var": "Slots",
                     "faction": {
                         "type": "Team"
                     },
@@ -148,7 +147,7 @@
                     }
                 },
                 {
-                    "type": "ChangeFactionVarInt",
+                    "type": "ChangeTeamVarInt",
                     "var": "G",
                     "faction": {
                         "type": "Team"
@@ -165,10 +164,8 @@
     },
     {
         "effect": {
-            "type": "ChangeSlots",
-            "faction": {
-                "type": "Team"
-            },
+            "type": "ChangeTeamVarInt",
+            "var": "Slots",
             "delta": {
                 "type": "Const",
                 "value": 1

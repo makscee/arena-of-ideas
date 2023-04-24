@@ -3,9 +3,7 @@
     "attack": 2,
     "health": 2,
     "description": "On buy:\ndouble right ally HP\nthen Devour",
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

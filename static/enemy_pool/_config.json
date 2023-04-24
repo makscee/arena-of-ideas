@@ -1,0 +1,64 @@
+{
+    "teams": [
+        "enemy_pool/archers_0.json",
+        "enemy_pool/bugs_0.json",
+        "enemy_pool/bugs_1.json",
+        "enemy_pool/bugs_2.json",
+        "enemy_pool/cheater_0.json",
+        "enemy_pool/death_knights_0.json",
+        "enemy_pool/equalizer_0.json",
+        "enemy_pool/golems_0.json",
+        "enemy_pool/snakes_0.json",
+        "enemy_pool/snakes_1.json"
+    ],
+    "buffs": [
+        {
+            "prefix": "Shielded",
+            "statuses": {
+                "Shield": 1
+            }
+        },
+        {
+            "prefix": "Poisonous",
+            "statuses": {
+                "Poison": 1
+            }
+        },
+        {
+            "prefix": "Poisonous",
+            "statuses": {
+                "Poison": 1
+            }
+        },
+        {
+            "prefix": "Hard",
+            "statuses": {
+                "Defense": 3
+            }
+        },
+        {
+            "prefix": "Empowered",
+            "statuses": {
+                "Empower": 5
+            }
+        },
+        {
+            "prefix": "Healthy",
+            "statuses": {
+                "Vitality": 5
+            }
+        },
+        {
+            "prefix": "Dark",
+            "statuses": {
+                "DarkVitality": 1
+            }
+        },
+        {
+            "prefix": "Immortal",
+            "statuses": {
+                "Immortality": 1
+            }
+        }
+    ]
+}

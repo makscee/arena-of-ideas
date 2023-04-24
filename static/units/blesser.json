@@ -3,9 +3,7 @@
     "attack": 1,
     "health": 1,
     "description": "End of turn:\ngive Shield to\nally behind",
-    "houses": [
-        "Robots"
-    ],
+    "house": "Robots",
     "trigger": {
         "type": "TurnEnd",
         "effect": {

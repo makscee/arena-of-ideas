@@ -1,16 +1,12 @@
 {
-    "state": {
-        "name": "Titans"
-    },
+    "name": "Titans",
     "replications": 2,
     "units": [
         {
             "name": "Titan",
             "attack": 40,
             "health": 40,
-            "houses": [
-                "Titans"
-            ],
+            "house": "Titans",
             "trigger": {
                 "type": "AfterBirth",
                 "effect": {

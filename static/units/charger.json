@@ -3,9 +3,7 @@
     "description": "Shield: +1 charge\non apply",
     "health": 2,
     "attack": 1,
-    "houses": [
-        "Robots"
-    ],
+    "house": "Robots",
     "trigger": {
         "type": "List",
         "triggers": [

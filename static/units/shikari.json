@@ -3,9 +3,7 @@
     "description": "Battle Start:\nShoot (5)",
     "attack": 2,
     "health": 1,
-    "houses": [
-        "Archers"
-    ],
+    "house": "Archers",
     "trigger": {
         "type": "BattleStart",
         "effect": {

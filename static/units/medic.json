@@ -3,16 +3,15 @@
     "health": 5,
     "attack": 1,
     "description": "Turn end:\nMend (8)\nfront adjacent ally",
-    "houses": [
-        "Clerics"
-    ],
+    "house": "Clerics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {
             "type": "UseAbility",
             "ability": "Mend",
-            "vars": {
-                "Charges": 8
+            "charges": {
+                "type": "Const",
+                "value": 8
             },
             "target": {
                 "type": "SlotRelative",

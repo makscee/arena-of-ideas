@@ -8,9 +8,7 @@
             {
                 "health": 3,
                 "attack": 3,
-                "houses": [
-                    "Demons"
-                ],
+                "house": "Demons",
                 "trigger": {
                     "type": "TurnStart",
                     "effect": {
@@ -26,8 +24,9 @@
                                 "type": "Owner"
                             }
                         },
-                        "vars": {
-                            "Charges": 3
+                        "charges": {
+                            "type": "Const",
+                            "value": 3
                         }
                     }
                 }

@@ -3,16 +3,15 @@
     "description": "After strike:\ngain Defense (3)",
     "health": 8,
     "attack": 4,
-    "houses": [
-        "Warriors"
-    ],
+    "house": "Warriors",
     "trigger": {
         "type": "AfterStrike",
         "effect": {
             "type": "UseAbility",
             "ability": "Defense",
-            "vars": {
-                "Charges": 3
+            "charges": {
+                "type": "Const",
+                "value": 3
             },
             "target": {
                 "type": "Owner"

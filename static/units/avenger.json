@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 3,
     "description": "Ally died:\nShoot (3)",
-    "houses": [
-        "Archers"
-    ],
+    "house": "Archers",
     "trigger": {
         "type": "AnyDeath",
         "effect": {

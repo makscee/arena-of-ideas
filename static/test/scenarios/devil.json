@@ -6,9 +6,7 @@
                 "attack": 6,
                 "health": 6,
                 "description": "Start of battle:\nEmpower (6)\neveryone",
-                "houses": [
-                    "Demons"
-                ],
+                "house": "Demons",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
@@ -27,8 +25,9 @@
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Empower",
-                            "vars": {
-                                "Charges": 6
+                            "charges": {
+                                "type": "Const",
+                                "value": 6
                             }
                         }
                     }

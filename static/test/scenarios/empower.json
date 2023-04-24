@@ -12,13 +12,14 @@
             {
                 "attack": 1,
                 "health": 2,
-                "houses": [
-                    "Demons"
-                ],
+                "house": "Demons",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
+                        "target": {
+                            "type": "Owner"
+                        },
                         "ability": "Empower"
                     }
                 }

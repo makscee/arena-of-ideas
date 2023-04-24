@@ -27,34 +27,22 @@ impl Game {
 
     pub fn init_world(resources: &mut Resources, world: &mut legion::World) {
         let world_entity = WorldSystem::init_world_entity(world, &resources.options);
-        Self::init_field(resources, world, world_entity);
+        Self::init_field(world_entity, resources, world);
+        AbilityPool::init_world(world, resources);
     }
 
-    fn init_field(
-        resources: &mut Resources,
-        world: &mut legion::World,
-        world_entity: legion::Entity,
-    ) {
+    fn init_field(parent: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
         let shader = resources.options.shaders.field.clone();
         let entity = world.push((shader,));
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
-        let context = Context {
-            owner: entity,
-            target: entity,
-            parent: Some(world_entity),
-            vars: default(),
-            trace: "field".to_string(),
-        };
-        entry.add_component(context)
+        entry.add_component(ContextState::new("Field".to_owned(), Some(parent)));
     }
 
     pub fn reset(world: &mut legion::World, resources: &mut Resources) {
-        UnitSystem::clear_factions(world, resources, &Faction::all());
-        StatusPool::clear_all_active(resources);
+        UnitSystem::clear_factions(world, &Faction::all());
         resources.ladder.reset();
         resources.action_queue.clear();
-        resources.team_states = default();
         resources.total_score = default();
         ShopData::load_pool(resources);
         world.clear();

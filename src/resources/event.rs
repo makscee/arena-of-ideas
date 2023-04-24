@@ -7,45 +7,53 @@ pub enum Event {
     StatusAdd {
         status: String,
         owner: legion::Entity,
+        charges: i32,
     },
     StatusRemove {
         status: String,
         owner: legion::Entity,
+        charges: i32,
     },
     StatusChargeAdd {
         status: String,
         owner: legion::Entity,
+        charges: i32,
     },
     StatusChargeRemove {
         status: String,
         owner: legion::Entity,
+        charges: i32,
     },
-    ModifyIncomingDamage {
-        context: Context,
-    },
-    ModifyOutgoingDamage {
-        context: Context,
-    },
-    ModifyContext {
-        context: Context,
-    },
+    ModifyIncomingDamage,
+    ModifyOutgoingDamage,
+    ModifyContext,
     BeforeIncomingDamage {
-        context: Context,
+        owner: legion::Entity,
+        attacker: legion::Entity,
+        damage: usize,
     },
     AfterIncomingDamage {
-        context: Context,
+        owner: legion::Entity,
+        attacker: legion::Entity,
+        damage: usize,
     },
     BeforeOutgoingDamage {
-        context: Context,
+        owner: legion::Entity,
+        target: legion::Entity,
+        damage: usize,
     },
     AfterOutgoingDamage {
-        context: Context,
+        owner: legion::Entity,
+        target: legion::Entity,
+        damage: usize,
     },
     AfterDamageDealt {
-        context: Context,
+        owner: legion::Entity,
+        target: legion::Entity,
+        damage: usize,
     },
     AfterDeath {
-        context: Context,
+        owner: legion::Entity,
     },
     BeforeDeath {
         owner: legion::Entity,
@@ -91,30 +99,72 @@ pub enum Event {
 impl Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Event::StatusAdd { status, owner }
-            | Event::StatusRemove { status, owner }
-            | Event::StatusChargeAdd { status, owner }
-            | Event::StatusChargeRemove { status, owner } => {
-                write!(f, "{} {} o:{:?}", self.as_ref(), status, owner)
+            Event::StatusAdd {
+                status,
+                owner,
+                charges,
             }
-            Event::ModifyIncomingDamage { context }
-            | Event::ModifyOutgoingDamage { context }
-            | Event::ModifyContext { context }
-            | Event::BeforeIncomingDamage { context }
-            | Event::AfterIncomingDamage { context }
-            | Event::BeforeOutgoingDamage { context }
-            | Event::AfterOutgoingDamage { context }
-            | Event::AfterDamageDealt { context }
-            | Event::AfterDeath { context } => {
+            | Event::StatusRemove {
+                status,
+                owner,
+                charges,
+            }
+            | Event::StatusChargeAdd {
+                status,
+                owner,
+                charges,
+            }
+            | Event::StatusChargeRemove {
+                status,
+                owner,
+                charges,
+            } => {
                 write!(
                     f,
-                    "{} o:{:?} t:{:?}",
+                    "Event {} {status} c:{charges} o:{owner:?}",
                     self.as_ref(),
-                    context.owner,
-                    context.target
+                )
+            }
+            Event::BeforeIncomingDamage {
+                owner,
+                attacker,
+                damage,
+            }
+            | Event::AfterIncomingDamage {
+                owner,
+                attacker,
+                damage,
+            } => {
+                write!(
+                    f,
+                    "Event {} o:{owner:?} a:{attacker:?} dmg:{damage}",
+                    self.as_ref(),
+                )
+            }
+
+            Event::BeforeOutgoingDamage {
+                owner,
+                target,
+                damage,
+            }
+            | Event::AfterOutgoingDamage {
+                owner,
+                target,
+                damage,
+            }
+            | Event::AfterDamageDealt {
+                owner,
+                target,
+                damage,
+            } => {
+                write!(
+                    f,
+                    "Event {} o:{owner:?} t:{target:?} dmg:{damage}",
+                    self.as_ref(),
                 )
             }
             Event::BeforeDeath { owner }
+            | Event::AfterDeath { owner }
             | Event::AfterBirth { owner }
             | Event::Buy { owner }
             | Event::Sell { owner }
@@ -123,28 +173,35 @@ impl Display for Event {
             Event::BeforeStrike { owner, target }
             | Event::AfterStrike { owner, target }
             | Event::AfterKill { owner, target } => {
-                write!(f, "{} o:{:?} t:{:?}", self.as_ref(), owner, target)
+                write!(f, "Event {} o:{:?} t:{:?}", self.as_ref(), owner, target)
             }
-            Event::BattleStart
+            Event::ModifyIncomingDamage
+            | Event::ModifyOutgoingDamage
+            | Event::ModifyContext
+            | Event::BattleStart
             | Event::BattleEnd
             | Event::ShopStart
             | Event::ShopEnd
             | Event::TurnStart
-            | Event::TurnEnd => write!(f, "{}", self.as_ref()),
-            Event::UnitDeath { target } => write!(f, "{} t:{:?}", self.as_ref(), target),
+            | Event::TurnEnd => write!(f, "Event {}", self.as_ref()),
+            Event::UnitDeath { target } => write!(f, "Event {} t:{:?}", self.as_ref(), target),
         }
     }
 }
 
 impl Event {
     pub fn send(&self, world: &legion::World, resources: &mut Resources) {
-        resources.logger.log(&self.to_string(), &LogContext::Event);
+        let mut context = Context::new_empty(&self.to_string());
+        resources
+            .logger
+            .log(|| self.to_string(), &LogContext::Event);
         let mut caught = false;
         // Notify all Faction::Dark and Faction::Light
         caught = caught
             || match self {
                 Event::BattleEnd | Event::BattleStart | Event::TurnStart | Event::TurnEnd => {
-                    StatusPool::notify_all(self, &Faction::battle(), resources, world, None);
+                    let factions = Faction::battle();
+                    Status::notify_all(self, &factions, &context, world, resources);
                     true
                 }
                 _ => false,
@@ -154,13 +211,9 @@ impl Event {
         caught = caught
             || match self {
                 Event::UnitDeath { target } => {
-                    StatusPool::notify_all(
-                        self,
-                        &Faction::battle(),
-                        resources,
-                        world,
-                        Some(*target),
-                    );
+                    let factions = Faction::battle();
+                    context = context.set_target(*target);
+                    Status::notify_all(self, &factions, &context, world, resources);
                     true
                 }
                 _ => false,
@@ -171,7 +224,7 @@ impl Event {
             || match self {
                 Event::ShopStart | Event::ShopEnd | Event::Sell { .. } | Event::Buy { .. } => {
                     let factions = hashset! {Faction::Team};
-                    StatusPool::notify_all(self, &factions, resources, world, None);
+                    Status::notify_all(self, &factions, &context, world, resources);
                     true
                 }
                 _ => false,
@@ -180,25 +233,29 @@ impl Event {
         // Notify specified status of owner
         caught = caught
             || match self {
-                Event::StatusAdd { status, owner }
-                | Event::StatusRemove { status, owner }
-                | Event::StatusChargeAdd { status, owner }
-                | Event::StatusChargeRemove { status, owner } => {
-                    let context = ContextSystem::get_context(*owner, world)
-                        .add_var(VarName::StatusName, Var::String((1, status.clone())))
-                        .to_owned();
-                    resources
-                        .status_pool
-                        .defined_statuses
-                        .get(status)
-                        .unwrap()
-                        .trigger
-                        .catch_event(
-                            self,
-                            &mut resources.action_queue,
-                            context,
-                            &resources.logger,
-                        );
+                Event::StatusAdd {
+                    status,
+                    owner,
+                    charges,
+                }
+                | Event::StatusRemove {
+                    status,
+                    owner,
+                    charges,
+                }
+                | Event::StatusChargeAdd {
+                    status,
+                    owner,
+                    charges,
+                }
+                | Event::StatusChargeRemove {
+                    status,
+                    owner,
+                    charges,
+                } => {
+                    Status::notify_status(
+                        self, *owner, &context, status, *charges, world, resources,
+                    );
                     true
                 }
                 _ => false,
@@ -207,36 +264,61 @@ impl Event {
         // Notify context.target with provided context
         caught = caught
             || match self {
-                Event::BeforeIncomingDamage { context }
-                | Event::AfterIncomingDamage { context } => {
-                    StatusPool::notify_entity(
-                        self,
-                        context.target,
-                        resources,
-                        world,
-                        Some(context.clone()),
-                        None,
-                    );
+                Event::BeforeIncomingDamage {
+                    owner,
+                    attacker,
+                    damage,
+                }
+                | Event::AfterIncomingDamage {
+                    owner,
+                    attacker,
+                    damage,
+                } => {
+                    let context = context
+                        .clone_stack(
+                            ContextLayer::Var {
+                                var: VarName::Damage,
+                                value: Var::Int(*damage as i32),
+                            },
+                            world,
+                            resources,
+                        )
+                        .set_attacker(*attacker);
+                    Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }
                 _ => false,
             };
 
-        // Notify context.owner with provided context
+        // Notify owner, set target, add damage
         caught = caught
             || match self {
-                Event::AfterOutgoingDamage { context }
-                | Event::BeforeOutgoingDamage { context }
-                | Event::AfterDeath { context }
-                | Event::AfterDamageDealt { context } => {
-                    StatusPool::notify_entity(
-                        self,
-                        context.owner,
-                        resources,
-                        world,
-                        Some(context.clone()),
-                        None,
-                    );
+                Event::AfterOutgoingDamage {
+                    owner,
+                    target,
+                    damage,
+                }
+                | Event::BeforeOutgoingDamage {
+                    owner,
+                    target,
+                    damage,
+                }
+                | Event::AfterDamageDealt {
+                    owner,
+                    target,
+                    damage,
+                } => {
+                    let context = context
+                        .clone_stack(
+                            ContextLayer::Var {
+                                var: VarName::Damage,
+                                value: Var::Int(*damage as i32),
+                            },
+                            world,
+                            resources,
+                        )
+                        .set_target(*target);
+                    Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }
                 _ => false,
@@ -248,21 +330,12 @@ impl Event {
                 Event::BeforeStrike { owner, target }
                 | Event::AfterStrike { owner, target }
                 | Event::AfterKill { owner, target } => {
-                    if let Some(owner_context) = ContextSystem::try_get_context(*owner, world).ok()
-                    {
-                        let context = Context {
-                            target: *target,
-                            ..owner_context
-                        };
-                        StatusPool::notify_entity(
-                            self,
-                            *owner,
-                            resources,
-                            world,
-                            Some(context),
-                            None,
-                        );
-                    }
+                    let context = context.clone_stack(
+                        ContextLayer::Target { entity: *target },
+                        world,
+                        resources,
+                    );
+                    Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }
                 _ => false,
@@ -272,12 +345,13 @@ impl Event {
         caught = caught
             || match self {
                 Event::BeforeDeath { owner }
+                | Event::AfterDeath { owner }
                 | Event::AfterBirth { owner }
                 | Event::Buy { owner }
                 | Event::Sell { owner }
                 | Event::AddToTeam { owner }
                 | Event::RemoveFromTeam { owner } => {
-                    StatusPool::notify_entity(self, *owner, resources, world, None, None);
+                    Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }
                 _ => false,
@@ -287,27 +361,27 @@ impl Event {
         }
     }
 
-    pub fn calculate(&self, world: &legion::World, resources: &Resources) -> Context {
-        match self {
-            Event::ModifyContext { context } | Event::ModifyIncomingDamage { context } => {
-                StatusPool::calculate_entity(
-                    &self,
-                    context.target,
-                    context.clone(),
-                    world,
-                    resources,
-                )
+    pub fn calculate(self, context: &mut Context, world: &legion::World, resources: &Resources) {
+        let extra_layers = match self {
+            Event::ModifyContext | Event::ModifyOutgoingDamage => {
+                Status::calculate_one(self, context.owner().unwrap(), context, world, resources)
             }
-            Event::ModifyOutgoingDamage { context } => StatusPool::calculate_entity(
-                &self,
-                context.owner,
-                context.clone(),
-                world,
-                resources,
-            ),
+            Event::ModifyIncomingDamage => {
+                let damage = context.get_int(&VarName::Damage, world).unwrap();
+                let owner = context.target().unwrap();
+                let attacker = context.owner().unwrap();
+                let mut context =
+                    Context::new(ContextLayer::Unit { entity: owner }, world, resources)
+                        .set_attacker(attacker);
+                context.insert_int(VarName::Damage, damage);
+                Status::calculate_one(self, owner, &context, world, resources)
+            }
             _ => {
                 panic!("Can't calculate event {:?}", self)
             }
+        };
+        for layer in extra_layers {
+            context.stack(layer, world, resources);
         }
     }
 }

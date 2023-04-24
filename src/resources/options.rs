@@ -98,6 +98,7 @@ pub struct Colors {
     pub stats_attack: Rgba<f32>,
     pub stats_health: Rgba<f32>,
     pub damage: Rgba<f32>,
+    pub healing: Rgba<f32>,
     pub addition: Rgba<f32>,
     pub deletion: Rgba<f32>,
     pub victory: Rgba<f32>,

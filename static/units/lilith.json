@@ -3,9 +3,7 @@
     "description": "After every turn\nLifeSteal (1)\nevery enemy",
     "health": 8,
     "attack": 8,
-    "houses": [
-        "Vampires"
-    ],
+    "house": "Vampires",
     "trigger": {
         "type": "TurnEnd",
         "effect": {

@@ -3,9 +3,7 @@
     "attack": 2,
     "health": 2,
     "description": "On buy: give\n+1/+1 to all\nallies for\neach Empower",
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

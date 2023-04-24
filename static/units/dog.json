@@ -3,9 +3,7 @@
     "description": "After strike:\nDevour\nrandom enemy",
     "attack": 2,
     "health": 1,
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "AfterStrike",
         "effect": {

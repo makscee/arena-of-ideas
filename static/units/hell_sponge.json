@@ -3,9 +3,7 @@
     "description": "After Strike:\nEmpower (3)\nall allies",
     "health": 10,
     "attack": 1,
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "AfterStrike",
         "effect": {

@@ -60,10 +60,6 @@ impl SlotSystem {
         }
     }
 
-    pub fn get_unit_position(unit: &UnitComponent, resources: &Resources) -> vec2<f32> {
-        Self::get_position(unit.slot, &unit.faction, resources)
-    }
-
     pub fn move_to_slots_animated(
         world: &mut legion::World,
         resources: &mut Resources,
@@ -71,11 +67,15 @@ impl SlotSystem {
     ) {
         if let Some(cluster) = cluster {
             let mut node = Node::default();
-            <(&EntityComponent, &UnitComponent, &AreaComponent)>::query()
+            <(&EntityComponent, &ContextState)>::query()
+                .filter(component::<UnitComponent>())
                 .iter(world)
-                .filter_map(|(entity, unit, area)| {
-                    let need_pos = Self::get_unit_position(unit, resources);
-                    match need_pos == area.position {
+                .filter_map(|(entity, state)| {
+                    let slot = state.vars.get_int(&VarName::Slot) as usize;
+                    let faction = state.get_faction(&VarName::Faction, world);
+                    let need_pos = Self::get_position(slot, &faction, resources);
+                    let pos = state.vars.get_vec2(&VarName::Position);
+                    match (need_pos - pos).len() < 0.0001 {
                         true => None,
                         false => Some((need_pos, entity.entity)),
                     }
@@ -99,12 +99,16 @@ impl SlotSystem {
 
     pub fn get_hovered_slot(
         mouse_pos: vec2<f32>,
+        world: &legion::World,
         resources: &Resources,
     ) -> Option<(usize, Faction)> {
         let mut result = None;
         let mut min_distance = f32::MAX;
         for faction in Faction::all_iter() {
-            for slot in 1..=resources.team_states.get_slots(&faction) {
+            for slot in 1..=TeamSystem::get_state(&faction, world)
+                .vars
+                .get_int(&VarName::Slots) as usize
+            {
                 let slot_pos = Self::get_position(slot, &faction, resources);
                 let distance = (mouse_pos - slot_pos).len();
                 if distance < SLOT_HOVER_DISTANCE && distance < min_distance {
@@ -120,22 +124,39 @@ impl SlotSystem {
         slot: usize,
         faction: &Faction,
         world: &legion::World,
-        resources: &Resources,
     ) -> Option<legion::Entity> {
-        if slot > resources.team_states.get_team_state(faction).slots {
+        if slot
+            > TeamSystem::get_state(faction, world)
+                .vars
+                .get_int(&VarName::Slots) as usize
+        {
             return None;
         }
-        <(&EntityComponent, &UnitComponent)>::query()
+        <(&EntityComponent, &ContextState)>::query()
+            .filter(component::<UnitComponent>())
             .iter(world)
-            .find_map(|(entity, unit)| {
-                match unit.faction == *faction
-                    && unit.slot == slot
-                    && UnitSystem::unit_on_field(unit, resources)
+            .find_map(|(entity, state)| {
+                match state.get_faction(&VarName::Faction, world) == *faction
+                    && state.vars.get_int(&VarName::Slot) as usize == slot
                 {
                     true => Some(entity.entity),
                     false => None,
                 }
             })
+    }
+
+    pub fn get_factions_slots(
+        factions: HashSet<Faction>,
+        world: &legion::World,
+    ) -> HashMap<Faction, usize> {
+        HashMap::from_iter(factions.into_iter().map(|faction| {
+            (
+                faction,
+                TeamSystem::get_state(&faction, world)
+                    .vars
+                    .get_int(&VarName::Slots) as usize,
+            )
+        }))
     }
 
     pub fn create_entries(world: &mut legion::World, resources: &Resources) {
@@ -184,10 +205,7 @@ impl SlotSystem {
                     .chain_after
                     .push(resources.options.shaders.slot_price.clone().set_uniform(
                         "u_text",
-                        ShaderUniform::String((
-                            0,
-                            format!("{} g", ShopSystem::buy_price(resources)),
-                        )),
+                        ShaderUniform::String((0, format!("{} g", ShopSystem::buy_price(world)))),
                     ));
             }
         };
@@ -250,17 +268,19 @@ impl SlotSystem {
     ) {
         match faction {
             Faction::Team => {
-                if let Some(entity) = Self::find_unit_by_slot(slot, &faction, world, resources) {
+                if let Some(entity) = Self::find_unit_by_slot(slot, &faction, world) {
                     ShopSystem::try_sell(entity, resources, world);
                 }
             }
             Faction::Sacrifice => {
-                let units = UnitSystem::collect_faction(world, resources, faction, false);
+                let units = UnitSystem::collect_faction(world, faction);
                 BonusEffectPool::load_widget(units.len(), world, resources);
                 for unit in units {
-                    UnitSystem::delete_unit(unit, world, resources);
+                    world.remove(unit);
                 }
-                resources.team_states.set_slots(&Faction::Sacrifice, 1);
+                TeamSystem::get_state_mut(&faction, world)
+                    .vars
+                    .set_int(&VarName::Slots, 1);
             }
             _ => {}
         }
@@ -272,7 +292,7 @@ impl SlotSystem {
         resources: &mut Resources,
     ) {
         if let Some((slot, faction)) =
-            Self::get_hovered_slot(resources.input_data.mouse_world_pos, resources)
+            Self::get_hovered_slot(resources.input_data.mouse_world_pos, world, resources)
         {
             if faction == Faction::Team {
                 Self::make_gap(faction, slot, world, resources, Some(entity));
@@ -286,44 +306,49 @@ impl SlotSystem {
         resources: &mut Resources,
     ) {
         if let Some((slot, faction)) =
-            Self::get_hovered_slot(resources.input_data.mouse_world_pos, resources)
+            Self::get_hovered_slot(resources.input_data.mouse_world_pos, world, resources)
         {
-            let unit_faction = UnitSystem::get_unit(entity, world).faction;
+            let state = ContextState::get(entity, world);
+            let unit_faction = state.get_faction(&VarName::Faction, world);
             if faction == Faction::Team && unit_faction == Faction::Shop {
                 ShopSystem::try_buy(entity, slot, resources, world);
             } else if faction == Faction::Shop && unit_faction == Faction::Team {
                 ShopSystem::try_sell(entity, resources, world);
             } else if faction == unit_faction {
                 if Self::make_gap(faction, slot, world, resources, Some(entity)) {
-                    UnitSystem::set_slot(entity, slot, world);
+                    let state = ContextState::get_mut(entity, world);
+                    state.vars.set_int(&VarName::Slot, slot as i32);
                 }
             } else if faction == Faction::Sacrifice && unit_faction == Faction::Team
                 || faction == Faction::Team && unit_faction == Faction::Sacrifice
             {
-                if SlotSystem::find_unit_by_slot(slot, &faction, world, resources).is_none() {
-                    UnitSystem::set_faction(entity, faction, world);
-                    UnitSystem::set_slot(entity, slot, world);
-                    let units =
-                        UnitSystem::collect_faction(world, resources, Faction::Sacrifice, false)
-                            .len();
-                    resources
-                        .team_states
-                        .set_slots(&Faction::Sacrifice, units + 1);
+                if SlotSystem::find_unit_by_slot(slot, &faction, world).is_none() {
+                    let state = ContextState::get_mut(entity, world);
+                    state.vars.set_faction(&VarName::Faction, faction);
+                    state.vars.set_int(&VarName::Slot, slot as i32);
+
+                    let units = UnitSystem::collect_faction(world, Faction::Sacrifice).len() as i32;
+                    TeamSystem::get_state_mut(&Faction::Sacrifice, world)
+                        .vars
+                        .set_int(&VarName::Slots, units + 1);
                 }
             }
         }
     }
 
     pub fn fill_gaps(faction: Faction, world: &mut legion::World) {
-        let mut slot = 1;
-        <&mut UnitComponent>::query()
-            .iter_mut(world)
-            .filter(|x| x.faction == faction)
-            .sorted_by_key(|x| x.slot)
-            .for_each(|x| {
-                x.slot = slot;
-                slot += 1;
-            })
+        UnitSystem::collect_faction_states(world, faction)
+            .into_iter()
+            .sorted_by_key(|(_, state)| state.vars.get_int(&VarName::Slot))
+            .map(|(entity, _)| entity)
+            .collect_vec()
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, entity)| {
+                ContextState::get_mut(entity, world)
+                    .vars
+                    .set_int(&VarName::Slot, i as i32 + 1);
+            });
     }
 
     pub fn make_gap(
@@ -333,25 +358,32 @@ impl SlotSystem {
         resources: &mut Resources,
         ignore: Option<legion::Entity>,
     ) -> bool {
-        let slots = resources.team_states.get_slots(&faction);
-        let mut units = UnitSystem::collect_faction_units(world, resources, faction, false);
-        if let Some(ignore) = ignore {
-            units.remove(&ignore);
-        }
+        let slots = TeamSystem::get_state(&faction, world)
+            .vars
+            .get_int(&VarName::Slots) as usize;
+        let units = UnitSystem::collect_faction(world, faction);
         if units.len() >= slots {
             return false;
         }
         let mut units_slots: Vec<Option<legion::Entity>> = vec![None; slots + 1];
-        units
-            .into_iter()
-            .for_each(|(entity, unit)| units_slots[unit.slot] = Some(entity));
+        units.into_iter().for_each(|entity| {
+            if ignore == Some(entity) {
+                return;
+            }
+            let slot = ContextState::get(entity, world)
+                .vars
+                .get_int(&VarName::Slot) as usize;
+            units_slots[slot] = Some(entity);
+        });
         if units_slots[slot].is_none() {
             return true;
         }
         for empty in (1..slot).rev() {
             if units_slots[empty].is_none() {
                 for i in empty..slot {
-                    UnitSystem::set_slot(units_slots[i + 1].unwrap(), i, world);
+                    ContextState::get_mut(units_slots[i + 1].unwrap(), world)
+                        .vars
+                        .set_int(&VarName::Slot, i as i32);
                 }
                 return true;
             }
@@ -359,7 +391,9 @@ impl SlotSystem {
         for empty in (slot + 1)..=slots {
             if units_slots[empty].is_none() {
                 for i in slot..empty {
-                    UnitSystem::set_slot(units_slots[i].unwrap(), i + 1, world);
+                    ContextState::get_mut(units_slots[i].unwrap(), world)
+                        .vars
+                        .set_int(&VarName::Slot, i as i32 + 1);
                 }
                 return true;
             }
@@ -368,26 +402,34 @@ impl SlotSystem {
     }
 
     pub fn refresh_slots(
-        factions: &HashSet<Faction>,
-        units: &HashMap<legion::Entity, UnitComponent>,
+        factions: HashSet<Faction>,
         world: &mut legion::World,
         resources: &Resources,
     ) {
-        let filled: HashSet<(Faction, usize)> =
-            HashSet::from_iter(units.iter().map(|(_, unit)| (unit.faction, unit.slot)));
+        let filled: HashSet<(Faction, usize)> = HashSet::from_iter(
+            UnitSystem::collect_factions(world, &factions)
+                .into_iter()
+                .map(|entity| {
+                    let state = ContextState::get(entity, world);
+                    (
+                        state.get_faction(&VarName::Faction, world),
+                        state.get_int(&VarName::Slot, world) as usize,
+                    )
+                }),
+        );
         let mut hovered = None;
         if let Some(dragged) = resources.input_data.dragged_entity {
-            if units.contains_key(&dragged) {
-                hovered = Self::get_hovered_slot(resources.input_data.mouse_world_pos, resources);
-            }
+            hovered =
+                Self::get_hovered_slot(resources.input_data.mouse_world_pos, world, resources);
         }
+        let factions = Self::get_factions_slots(factions, world);
         for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
-            if !factions.contains(&slot.faction) {
+            if !factions.contains_key(&slot.faction) {
                 continue;
             }
+            let slots = *factions.get(&slot.faction).unwrap();
             let filled = filled.contains(&(slot.faction, slot.slot)) as i32 as f32;
-            let enabled =
-                (slot.slot <= resources.team_states.get_slots(&slot.faction)) as i32 as f32;
+            let enabled = (slot.slot <= slots) as i32 as f32;
             let hovered = if let Some(hovered) = hovered {
                 ((slot.slot, slot.faction) == hovered) as i32 as f32
             } else {
@@ -407,21 +449,25 @@ impl SlotSystem {
 const DELTA_THRESHOLD: f32 = 0.01;
 impl System for SlotSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        let mut dirty_entities: HashSet<legion::Entity> = default();
-        <(&UnitComponent, &mut AreaComponent, &EntityComponent)>::query()
-            .iter_mut(world)
-            .for_each(|(unit, area, entity)| {
-                if resources.input_data.frame_data.1.is_dragged(entity.entity) {
-                    return;
-                }
-                let delta = Self::get_unit_position(unit, resources) - area.position;
-                if delta.len() > DELTA_THRESHOLD {
-                    area.position += delta * PULL_FORCE * resources.delta_time;
-                    dirty_entities.insert(entity.entity);
-                }
-            });
-        dirty_entities.into_iter().for_each(|x| {
-            ContextSystem::refresh_entity(x, world, resources);
-        });
+        for entity in UnitSystem::all(world) {
+            if resources.input_data.frame_data.1.is_dragged(entity) {
+                return;
+            }
+            let (position, slot, faction) = {
+                let context = Context::new(ContextLayer::Unit { entity }, world, resources);
+                (
+                    context.get_vec2(&VarName::Position, world).unwrap(),
+                    context.get_int(&VarName::Slot, world).unwrap() as usize,
+                    context.get_faction(&VarName::Faction, world).unwrap(),
+                )
+            };
+            let delta = Self::get_position(slot, &faction, &resources) - position;
+            if delta.len() > DELTA_THRESHOLD {
+                ContextState::get_mut(entity, world).vars.change_vec2(
+                    &VarName::Position,
+                    delta * PULL_FORCE * resources.delta_time,
+                );
+            }
+        }
     }
 }

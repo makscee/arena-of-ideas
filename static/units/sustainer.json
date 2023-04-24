@@ -3,9 +3,7 @@
     "attack": 6,
     "health": 6,
     "description": "After strike:\nMend (6) self",
-    "houses": [
-        "Clerics"
-    ],
+    "house": "Clerics",
     "trigger": {
         "type": "AfterStrike",
         "effect": {

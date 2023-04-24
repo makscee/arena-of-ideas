@@ -16,6 +16,9 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "ChangeStatus",
+                        "target": {
+                            "type": "Owner"
+                        },
                         "name": "Shield",
                         "charges": {
                             "type": "Const",

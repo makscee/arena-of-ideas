@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -12,11 +14,11 @@ pub struct PackedUnit {
     pub damage: usize, // damage taken
     pub attack: usize,
     #[serde(default)]
-    pub houses: HashSet<HouseName>,
+    pub house: Option<HouseName>,
     #[serde(default)]
     pub trigger: Trigger,
     #[serde(default)]
-    pub active_statuses: HashMap<String, i32>,
+    pub statuses: HashMap<String, i32>,
     pub shader: Option<Shader>,
     #[serde(default)]
     pub rank: u8,
@@ -31,34 +33,20 @@ fn default_description() -> String {
 impl PackedUnit {
     pub fn pack(entity: legion::Entity, world: &legion::World, resources: &Resources) -> Self {
         let entry = world.entry_ref(entity).unwrap();
-        let name = entry.get_component::<NameComponent>().unwrap().0.clone();
-        let description = entry
-            .get_component::<DescriptionComponent>()
-            .unwrap()
-            .text
-            .clone();
-        let (health, damage) = entry.get_component::<HealthComponent>().unwrap().stats();
-        let attack = entry.get_component::<AttackComponent>().unwrap().value;
-        let houses = HashSet::from_iter(
-            entry
-                .get_component::<HouseComponent>()
-                .unwrap()
-                .houses
-                .iter()
-                .cloned(),
-        );
+        let state = entry.get_component::<ContextState>().unwrap();
+        let name = state.name.clone();
+        let description = state.vars.get_string(&VarName::Description);
+        let health = state.vars.get_int(&VarName::HpValue);
+        let damage = state.vars.get_int(&VarName::HpDamage) as usize;
+        let attack = state.vars.get_int(&VarName::AttackValue) as usize;
+        let house = state.vars.try_get_house();
         let trigger = entry
             .get_component::<Trigger>()
             .cloned()
             .unwrap_or(Trigger::Noop);
-        let active_statuses = resources
-            .status_pool
-            .active_statuses
-            .get(&entity)
-            .cloned()
-            .unwrap_or_default();
+        let statuses = state.statuses.clone();
         let shader = entry.get_component::<Shader>().ok().cloned();
-        let rank = entry.get_component::<UnitComponent>().unwrap().rank;
+        let rank = state.vars.try_get_int(&VarName::Rank).unwrap_or_default() as u8;
 
         Self {
             name,
@@ -66,9 +54,9 @@ impl PackedUnit {
             health,
             damage,
             attack,
-            houses,
+            house,
             trigger,
-            active_statuses,
+            statuses,
             shader,
             rank,
         }
@@ -79,45 +67,45 @@ impl PackedUnit {
         world: &mut legion::World,
         resources: &mut Resources,
         slot: usize,
-        faction: Faction,
         position: Option<vec2<f32>>,
+        parent: legion::Entity,
     ) -> legion::Entity {
-        let entity = world.push((
-            NameComponent::new(&self.name),
-            DescriptionComponent::new(&self.description),
-            AttackComponent::new(self.attack),
-            HealthComponent::new(self.health, self.damage),
-            HouseComponent::new(self.houses.clone()),
-            AreaComponent::new(
-                AreaType::Circle { radius: 1.0 },
-                position.unwrap_or(vec2::ZERO),
-            ),
-            self.trigger.clone(),
-            UnitComponent::new(slot, faction, self.rank),
-        ));
+        let entity = world.push((self.trigger.clone(), UnitComponent {}));
         resources.logger.log(
-            &format!("Unpacking unit {} new id: {:?} {:?}", self, entity, faction),
+            || format!("Unpacking unit {} new id: {:?} {:?}", self, entity, parent),
             &LogContext::UnitCreation,
         );
-        let world_entity = WorldSystem::get_context(world).owner;
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
-        entry.add_component(Context {
-            owner: entity,
-            target: entity,
-            parent: Some(world_entity),
-            vars: default(),
-            trace: self.name.clone(),
-        });
+        let mut state = ContextState::new(self.name.clone(), Some(parent));
+        state
+            .vars
+            .set_int(&VarName::AttackValue, self.attack as i32);
+        state.vars.set_int(&VarName::HpValue, self.health as i32);
+        state.vars.set_int(&VarName::HpDamage, self.damage as i32);
+        state.vars.set_int(&VarName::Slot, slot as i32);
+        state.vars.set_float(&VarName::Radius, 1.0);
+        state
+            .vars
+            .set_vec2(&VarName::Position, position.unwrap_or(vec2::ZERO));
+        if let Some(house) = self.house {
+            state
+                .vars
+                .set_string(&VarName::House, 0, format!("{house:?}"));
+            state
+                .vars
+                .set_color(&VarName::HouseColor, resources.house_pool.get_color(&house));
+        }
+        state
+            .vars
+            .set_string(&VarName::Description, 0, self.description.clone());
+        state.statuses = self.statuses.clone();
+        entry.add_component(state);
+
         if let Some(shader) = &self.shader {
             entry.add_component(shader.clone());
         }
 
-        resources
-            .status_pool
-            .active_statuses
-            .insert(entity, self.active_statuses.clone());
-        ContextSystem::refresh_entity(entity, world, resources);
         Event::AfterBirth { owner: entity }.send(world, resources);
         entity
     }

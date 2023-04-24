@@ -16,6 +16,9 @@
                     "type": "BattleStart",
                     "effect": {
                         "type": "AddStatus",
+                        "target": {
+                            "type": "Owner"
+                        },
                         "name": "Shield"
                     }
                 }

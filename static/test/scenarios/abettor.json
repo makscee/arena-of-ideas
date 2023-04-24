@@ -8,28 +8,23 @@
             {
                 "attack": 0,
                 "health": 3,
-                "houses": [
-                    "Archers"
-                ],
+                "house": "Archers",
                 "trigger": {
                     "type": "TurnStart",
                     "effect": {
-                        "type": "LoadOwner",
-                        "entity": {
+                        "type": "UseAbility",
+                        "owner": {
                             "type": "RandomUnit",
                             "faction": {
                                 "type": "Owner"
                             },
                             "exclude_self": true
                         },
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Shoot",
-                            "force": true,
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
-                            }
+                        "ability": "Shoot",
+                        "force": true,
+                        "charges": {
+                            "type": "Const",
+                            "value": 1
                         }
                     }
                 }

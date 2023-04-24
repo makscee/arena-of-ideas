@@ -5,9 +5,8 @@ mod action_system;
 mod battle_system;
 mod button_system;
 mod camera_system;
-mod context_system;
 mod file_watcher_system;
-mod gallery_system;
+// mod gallery_system;
 mod game_over_system;
 mod game_state_system;
 mod input_system;
@@ -23,6 +22,7 @@ mod slot_system;
 mod stats_ui_system;
 mod status_system;
 mod tape_player_system;
+mod team_system;
 mod time_system;
 mod unit_system;
 mod vfx_system;
@@ -33,9 +33,8 @@ pub use action_system::*;
 pub use battle_system::*;
 pub use button_system::*;
 pub use camera_system::*;
-pub use context_system::*;
 pub use file_watcher_system::*;
-pub use gallery_system::*;
+// pub use gallery_system::*;
 pub use game_over_system::*;
 pub use game_state_system::*;
 pub use input_system::*;
@@ -51,6 +50,7 @@ pub use slot_system::*;
 pub use stats_ui_system::*;
 pub use status_system::*;
 pub use tape_player_system::*;
+pub use team_system::*;
 pub use time_system::*;
 pub use unit_system::*;
 pub use vfx_system::*;
@@ -97,7 +97,7 @@ impl Game {
             GameState::Shop,
             vec![Box::new(ShopSystem::new()), Box::new(PoolUiSystem::new())],
         );
-        game_state.add_systems(GameState::Gallery, vec![Box::new(GallerySystem::new())]);
+        // game_state.add_systems(GameState::Gallery, vec![Box::new(GallerySystem::new())]);
         game_state.add_systems(GameState::GameOver, vec![Box::new(GameOverSystem::new())]);
 
         global_systems.push(Box::new(TimeSystem::new()));

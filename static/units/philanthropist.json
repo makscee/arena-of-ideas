@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 3,
     "description": "Unit sold: give\n+1/+1 to adjacent\nallies",
-    "houses": [
-        "Pirates"
-    ],
+    "house": "Pirates",
     "trigger": {
         "type": "AnySell",
         "effect": {

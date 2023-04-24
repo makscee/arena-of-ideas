@@ -12,13 +12,14 @@
             {
                 "attack": 1,
                 "health": 6,
-                "houses": [
-                    "Warriors"
-                ],
+                "house": "Warriors",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
                         "type": "UseAbility",
+                        "target": {
+                            "type": "Owner"
+                        },
                         "ability": "Defense"
                     }
                 }

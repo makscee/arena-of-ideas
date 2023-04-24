@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use geng::prelude::itertools::Itertools;
 use strum_macros::Display;
 
 use super::*;
@@ -21,12 +24,12 @@ pub enum VarName {
     Faction,
     FactionColor,
     Slot,
+    Slots,
     Card,
     Zoom,
     Description,
-    HouseColor1,
-    HouseColor2,
-    HouseColor3,
+    House,
+    HouseColor,
     Floor,
     FieldPosition,
     Charges,
@@ -47,6 +50,8 @@ pub enum VarName {
     BackgroundLight,
     BackgroundDark,
     OutlineColor,
+    LastAttacker,
+    LastHealer,
 }
 
 impl VarName {
@@ -76,6 +81,23 @@ pub enum Var {
     Vec4(vec4<f32>),
     Color(Rgba<f32>),
     Faction(Faction),
+    Entity(legion::Entity),
+}
+
+impl Display for Var {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Var::Int(v) => write!(f, "{v}"),
+            Var::Float(v) => write!(f, "{v}"),
+            Var::String(v) => write!(f, "{} ({})", v.1, v.0),
+            Var::Vec2(v) => write!(f, "{v}"),
+            Var::Vec3(v) => write!(f, "{v}"),
+            Var::Vec4(v) => write!(f, "{v}"),
+            Var::Color(v) => write!(f, "{v}"),
+            Var::Faction(v) => write!(f, "{v}"),
+            Var::Entity(v) => write!(f, "{v:?}"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -134,6 +156,15 @@ impl Vars {
         }
     }
 
+    pub fn change_vec2(&mut self, var: &VarName, delta: vec2<f32>) {
+        let value = self.try_get_vec2(var).unwrap_or(vec2::ZERO);
+        self.insert(*var, Var::Vec2(value + delta));
+    }
+
+    pub fn set_vec2(&mut self, var: &VarName, value: vec2<f32>) {
+        self.insert(*var, Var::Vec2(value));
+    }
+
     pub fn get_int(&self, var: &VarName) -> i32 {
         self.try_get_int(var)
             .expect(&format!("Failed to get var {}", var))
@@ -173,6 +204,19 @@ impl Vars {
         }
     }
 
+    pub fn change_float(&mut self, var: &VarName, delta: f32) {
+        let value = self.try_get_float(var).unwrap_or_default();
+        self.insert(*var, Var::Float(value + delta));
+    }
+
+    pub fn set_float(&mut self, var: &VarName, value: f32) {
+        self.insert(*var, Var::Float(value));
+    }
+
+    pub fn set_faction(&mut self, var: &VarName, value: Faction) {
+        self.insert(*var, Var::Faction(value));
+    }
+
     pub fn get_faction(&self, var: &VarName) -> Faction {
         self.try_get_faction(var)
             .expect(&format!("Failed to get var {}", var))
@@ -186,6 +230,29 @@ impl Vars {
             },
             None => None,
         }
+    }
+
+    pub fn set_entity(&mut self, var: &VarName, value: legion::Entity) {
+        self.insert(*var, Var::Entity(value));
+    }
+
+    pub fn get_entity(&self, var: &VarName) -> legion::Entity {
+        self.try_get_entity(var)
+            .expect(&format!("Failed to get var {}", var))
+    }
+
+    pub fn try_get_entity(&self, var: &VarName) -> Option<legion::Entity> {
+        match self.try_get(var) {
+            Some(value) => match value {
+                Var::Entity(value) => Some(*value),
+                _ => panic!("Wrong Var type {}", var),
+            },
+            None => None,
+        }
+    }
+
+    pub fn set_string(&mut self, var: &VarName, font: usize, value: String) {
+        self.insert(*var, Var::String((font, value)));
     }
 
     pub fn get_string(&self, var: &VarName) -> String {
@@ -203,12 +270,28 @@ impl Vars {
         }
     }
 
+    pub fn try_get_house(&self) -> Option<HouseName> {
+        self.try_get_string(&VarName::House)
+            .and_then(|x| HouseName::from_str(x.as_str()).ok())
+    }
+
     pub fn merge_mut(&mut self, other: &Vars, force: bool) {
         other.0.iter().for_each(|(key, value)| {
             if force || !self.0.contains_key(key) {
                 self.0.insert(*key, value.clone());
             }
         });
+    }
+}
+
+impl Display for Vars {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let text = self
+            .0
+            .iter()
+            .map(|(key, value)| format!("{key} -> {value}"))
+            .join(" ");
+        write!(f, "{text}")
     }
 }
 
@@ -239,13 +322,13 @@ impl From<Vars> for ShaderUniforms {
                 Var::Color(v) => {
                     map.insert(name, ShaderUniform::Color(*v));
                 }
-                Var::Faction(_) => {}
+                Var::Entity(_) | Var::Faction(_) => {}
             };
         });
         ShaderUniforms::from(map)
     }
 }
 
-pub trait VarsProvider {
-    fn extend_vars(&self, vars: &mut Vars, resources: &Resources);
+pub trait ContextExtender {
+    fn extend(&self, context: &mut Context, resources: &Resources);
 }

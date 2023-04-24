@@ -4,18 +4,17 @@ use super::*;
 pub struct Ladder {
     #[serde(default)]
     current: usize,
-    pub teams: Vec<Team>,
-    #[serde(default)]
-    tracked_units: Vec<Vec<legion::Entity>>,
+    pub teams: Vec<PackedTeam>,
 }
 
 impl Ladder {
-    pub fn load_team(resources: &Resources) -> Team {
+    pub fn load_team(resources: &Resources) -> PackedTeam {
         let ladder = &resources.ladder;
         Self::generate_team(ladder.teams[ladder.current].clone().into())
     }
 
-    pub fn generate_team(mut team: Team) -> Team {
+    pub fn generate_team(mut team: PackedTeam) -> PackedTeam {
+        return team;
         let size = team.units.len();
         for rank in 1..=2 {
             for i in 0..size {
@@ -27,41 +26,11 @@ impl Ladder {
         team
     }
 
-    pub fn track_team(world: &legion::World, resources: &mut Resources) {
-        resources.ladder.tracked_units = vec![default(); 3];
-        for (entity, unit) in
-            UnitSystem::collect_faction_units(world, resources, Faction::Dark, true)
-        {
-            resources.ladder.tracked_units[unit.rank as usize].push(entity);
-        }
-    }
-
     pub fn get_score(world: &legion::World, resources: &Resources) -> usize {
-        let mut score = 0;
-        for entities in resources.ladder.tracked_units.iter() {
-            if entities
-                .iter()
-                .all(|x| UnitSystem::get_corpse(*x, world).is_some())
-            {
-                score += 1;
-            }
+        match UnitSystem::collect_faction(world, Faction::Dark).len() > 0 {
+            true => 0,
+            false => 1,
         }
-
-        score
-    }
-
-    pub fn get_score_units(world: &legion::World, resources: &Resources) -> (usize, usize) {
-        let units = &resources.ladder.tracked_units;
-        let total = units[0].len();
-        let killed = units
-            .iter()
-            .flatten()
-            .map(|entity| match UnitSystem::get_corpse(*entity, world) {
-                Some(_) => 1,
-                None => 0,
-            })
-            .sum::<usize>();
-        (killed, total)
     }
 
     pub fn current_ind(&self) -> usize {

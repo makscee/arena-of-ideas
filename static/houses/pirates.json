@@ -4,7 +4,7 @@
     "abilities": {
         "Bounty": {
             "effect": {
-                "type": "ChangeFactionVarInt",
+                "type": "ChangeTeamVarInt",
                 "var": "G",
                 "delta": {
                     "type": "Var",
@@ -18,7 +18,7 @@
         },
         "Bargain": {
             "effect": {
-                "type": "SetFactionVarInt",
+                "type": "SetTeamVarInt",
                 "var": "SellPrice",
                 "value": {
                     "type": "Const",
@@ -29,7 +29,7 @@
         },
         "Discount": {
             "effect": {
-                "type": "SetFactionVarInt",
+                "type": "SetTeamVarInt",
                 "var": "BuyPrice",
                 "value": {
                     "type": "Max",
@@ -40,7 +40,7 @@
                     "b": {
                         "type": "Sub",
                         "a": {
-                            "type": "FactionVar",
+                            "type": "TeamVar",
                             "var": "BuyPrice"
                         },
                         "b": {
@@ -68,7 +68,7 @@
         "Favor": {
             "description": "Give 1 free reroll",
             "effect": {
-                "type": "ChangeFactionVarInt",
+                "type": "ChangeTeamVarInt",
                 "var": "FreeRerolls",
                 "delta": {
                     "type": "Var",

@@ -3,9 +3,7 @@
     "attack": 4,
     "health": 1,
     "description": "Before strike:\ngain Vitality (5)",
-    "houses": [
-        "Clerics"
-    ],
+    "house": "Clerics",
     "trigger": {
         "type": "BeforeStrike",
         "effect": {
@@ -14,8 +12,9 @@
                 "type": "Owner"
             },
             "ability": "Vitality",
-            "vars": {
-                "Charges": 5
+            "charges": {
+                "type": "Const",
+                "value": 5
             }
         }
     }

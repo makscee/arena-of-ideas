@@ -4,9 +4,7 @@
             {
                 "attack": 1,
                 "health": 1,
-                "houses": [
-                    "Exorcists"
-                ],
+                "house": "Exorcists",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
@@ -33,7 +31,7 @@
                 "attack": 0,
                 "health": 3,
                 "damage": 5,
-                "active_statuses": {
+                "statuses": {
                     "LifeStealGain": 3
                 }
             }
@@ -44,14 +42,14 @@
             {
                 "attack": 0,
                 "health": 10,
-                "active_statuses": {
+                "statuses": {
                     "Empower": 3
                 }
             },
             {
                 "attack": 0,
                 "health": 10,
-                "active_statuses": {
+                "statuses": {
                     "Shield": 3
                 }
             }

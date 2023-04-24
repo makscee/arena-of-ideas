@@ -1,7 +1,5 @@
 {
-    "state": {
-        "name": "Knights of Death"
-    },
+    "name": "Knights of Death",
     "replications": 4,
     "units": [
         {
@@ -9,9 +7,7 @@
             "attack": 8,
             "health": 8,
             "description": "On hit:\n70% chance to\napply Reanimate",
-            "houses": [
-                "Necromancers"
-            ],
+            "house": "Necromancers",
             "trigger": {
                 "type": "AfterDamageDealt",
                 "effect": {

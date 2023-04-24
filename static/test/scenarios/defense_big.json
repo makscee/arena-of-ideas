@@ -12,10 +12,8 @@
             {
                 "attack": 1,
                 "health": 4,
-                "houses": [
-                    "Warriors"
-                ],
-                "active_statuses": {
+                "house": "Warriors",
+                "statuses": {
                     "Defense": 1000
                 }
             }

@@ -3,10 +3,8 @@
     "description": "Has Empower (5)",
     "health": 2,
     "attack": 2,
-    "houses": [
-        "Demons"
-    ],
-    "active_statuses": {
+    "house": "Demons",
+    "statuses": {
         "Empower": 5
     },
     "shader": {

@@ -5,16 +5,14 @@
                 "name": "name",
                 "attack": 1,
                 "health": 10,
-                "active_statuses": {
+                "statuses": {
                     "Shield": 10
                 }
             }
         ],
-        "state": {
-            "ability_overrides": {
-                "Shield": {
-                    "Reflection": 1
-                }
+        "ability_vars": {
+            "Shield": {
+                "Reflection": 1
             }
         }
     },
@@ -23,7 +21,7 @@
             {
                 "attack": 1,
                 "health": 15,
-                "active_statuses": {
+                "statuses": {
                     "Shield": 10
                 }
             }

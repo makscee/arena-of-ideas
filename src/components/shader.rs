@@ -15,6 +15,8 @@ pub struct Shader {
     pub chain_before: Box<Vec<Shader>>,
     #[serde(default)]
     pub chain_after: Box<Vec<Shader>>,
+    #[serde(default)]
+    request_vars: Vec<VarName>,
     #[serde(skip)]
     pub ts: i64,
     #[serde(skip)]
@@ -24,6 +26,23 @@ pub struct Shader {
     #[serde(skip)]
     pub input_handlers: Vec<Handler>,
 }
+
+const DEFAULT_REQUEST_VARS: [VarName; 14] = [
+    VarName::Position,
+    VarName::Radius,
+    VarName::Box,
+    VarName::Size,
+    VarName::Scale,
+    VarName::Card,
+    VarName::Zoom,
+    VarName::Charges,
+    VarName::Color,
+    VarName::GlobalTime,
+    VarName::Rank,
+    VarName::BackgroundLight,
+    VarName::BackgroundDark,
+    VarName::OutlineColor,
+];
 
 impl Debug for Shader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,6 +85,63 @@ impl Shader {
         } else {
             true
         }
+    }
+
+    pub fn add_context_ref(&mut self, context: &Context, world: &legion::World) -> &mut Self {
+        let mut vars: Vars = default();
+        for var in self.request_vars() {
+            if let Some(value) = context.get_var(var, world) {
+                vars.insert(*var, value);
+            }
+        }
+        self.parameters.uniforms.merge_mut(&vars.into(), true);
+        self
+    }
+
+    pub fn add_context(mut self, context: &Context, world: &legion::World) -> Self {
+        self.add_context_ref(context, world);
+        self
+    }
+
+    pub fn is_hovered(&self, mouse_screen: vec2<f32>, mouse_world: vec2<f32>) -> bool {
+        if !self.is_enabled() {
+            return false;
+        }
+        let uniforms = &self.parameters.uniforms;
+        let scale = uniforms
+            .try_get_float(&VarName::Scale.uniform())
+            .unwrap_or(1.0);
+
+        let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
+        let position = uniforms
+            .try_get_vec2(&VarName::Position.uniform())
+            .unwrap_or(vec2::ZERO)
+            + offset;
+        let mouse_pos = if uniforms.try_get_float("u_ui").unwrap_or_default() == 1.0 {
+            mouse_screen
+        } else {
+            mouse_world
+        };
+        let position = mouse_pos - position;
+        if let Some(radius) = self
+            .parameters
+            .uniforms
+            .try_get_float(&VarName::Radius.uniform())
+        {
+            position.len() < radius * scale
+        } else if let Some(r#box) = self
+            .parameters
+            .uniforms
+            .try_get_vec2(&VarName::Box.uniform())
+        {
+            position.x.abs() < r#box.x && position.y.abs() < r#box.y
+        } else {
+            false
+        }
+    }
+
+    pub fn request_vars(&self) -> impl Iterator<Item = &VarName> {
+        DEFAULT_REQUEST_VARS.iter().chain(self.request_vars.iter())
     }
 }
 

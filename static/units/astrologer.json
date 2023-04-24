@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 3,
     "description": "On buy:\nallies with even\nHP Grow (2)",
-    "houses": [
-        "Dragons"
-    ],
+    "house": "Dragons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

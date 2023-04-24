@@ -74,7 +74,8 @@
                                     "var": "Slot"
                                 },
                                 "after": {
-                                    "type": "SetHealth",
+                                    "type": "SetOwnerVarInt",
+                                    "var": "HpValue",
                                     "value": {
                                         "type": "Const",
                                         "value": 1

@@ -12,10 +12,8 @@
             {
                 "attack": 1,
                 "health": 2,
-                "houses": [
-                    "Demons"
-                ],
-                "active_statuses": {
+                "house": "Demons",
+                "statuses": {
                     "Empower": 500
                 }
             }

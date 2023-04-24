@@ -25,9 +25,15 @@ impl BonusEffectPool {
         let pool = &mut resources.bonus_pool;
         let bonus = pool.current[ind].to_owned();
         pool.current.clear();
-        let mut context = WorldSystem::get_context(world);
+        let mut context = Context::new(
+            ContextLayer::Entity {
+                entity: WorldSystem::entity(world),
+            },
+            world,
+            resources,
+        );
         if let Some((target, _)) = bonus.target {
-            context.target = target;
+            context.stack(ContextLayer::Target { entity: target }, world, resources);
         }
         resources
             .action_queue
@@ -35,7 +41,7 @@ impl BonusEffectPool {
     }
 
     fn load_bonuses(value: usize, world: &legion::World, resources: &mut Resources) {
-        let units = UnitSystem::collect_faction(world, resources, Faction::Team, false);
+        let units = UnitSystem::collect_faction(world, Faction::Team);
         resources.bonus_pool.current.clear();
 
         let all_rarities = enum_iterator::all::<Rarity>().collect_vec();

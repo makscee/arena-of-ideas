@@ -3,9 +3,7 @@
     "description": "On Buy:\nDevour\nadjacent allies",
     "health": 2,
     "attack": 2,
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

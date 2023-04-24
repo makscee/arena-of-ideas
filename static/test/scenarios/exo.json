@@ -4,7 +4,7 @@
             {
                 "attack": 0,
                 "health": 10,
-                "active_statuses": {
+                "statuses": {
                     "Empower": 10
                 }
             }
@@ -17,9 +17,7 @@
                 "attack": 1,
                 "health": 1,
                 "description": "Start of battle:\nDispel random enemy",
-                "houses": [
-                    "Exorcists"
-                ],
+                "house": "Exorcists",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {

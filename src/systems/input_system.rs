@@ -75,8 +75,7 @@ impl InputSystem {
         let mut hovered = None;
         for shader in shaders.iter().rev() {
             if shader.entity.is_some() {
-                if AreaComponent::shader_hovered(
-                    shader,
+                if shader.is_hovered(
                     resources.input_data.mouse_screen_pos,
                     resources.input_data.mouse_world_pos,
                 ) {

@@ -1,7 +1,5 @@
 {
-    "state": {
-        "name": "Hounds"
-    },
+    "name": "Hounds",
     "replications": 1,
     "units": [
         {
@@ -9,9 +7,7 @@
             "description": "Start of Battle:\nDevour\nrandom enemy",
             "attack": 20,
             "health": 20,
-            "houses": [
-                "Demons"
-            ],
+            "house": "Demons",
             "trigger": {
                 "type": "BattleStart",
                 "effect": {

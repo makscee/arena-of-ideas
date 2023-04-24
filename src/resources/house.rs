@@ -1,3 +1,5 @@
+use strum_macros::EnumString;
+
 use super::*;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -11,7 +13,16 @@ pub struct House {
 }
 
 #[derive(
-    Deserialize, Serialize, Debug, PartialEq, Eq, Hash, Clone, Copy, enum_iterator::Sequence,
+    Deserialize,
+    Serialize,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    enum_iterator::Sequence,
+    EnumString,
 )]
 pub enum HouseName {
     Vampires,
@@ -38,10 +49,10 @@ impl FileWatcherLoader for House {
         house.statuses.iter().for_each(|(name, status)| {
             let mut status = status.clone();
             status.color = house.color;
-            StatusPool::define_status(name.to_string(), status, resources)
+            StatusLibrary::register(name, status, resources);
         });
         house.abilities.iter().for_each(|(name, ability)| {
-            AbilityPool::define_ability(resources, name, ability, house.color, house.name);
+            AbilityPool::define_ability(name, ability, house.color, house.name, resources);
         });
         resources.house_pool.insert_house(house.name, house);
     }

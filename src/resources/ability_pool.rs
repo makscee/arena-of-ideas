@@ -9,11 +9,11 @@ pub struct AbilityPool {
 
 impl AbilityPool {
     pub fn define_ability(
-        resources: &mut Resources,
         name: &AbilityName,
         ability: &Ability,
         color: Rgba<f32>,
         origin: HouseName,
+        resources: &mut Resources,
     ) {
         resources
             .definitions
@@ -27,79 +27,19 @@ impl AbilityPool {
         pool.default_vars.insert(*name, vars);
     }
 
+    pub fn init_world(world: &mut legion::World, resources: &Resources) {
+        for (name, vars) in resources.ability_pool.default_vars.iter() {
+            WorldSystem::get_state_mut(world)
+                .ability_vars
+                .insert(*name, vars.clone());
+        }
+    }
+
     pub fn get_effect(resources: &Resources, name: &AbilityName) -> EffectWrapped {
         resources.ability_pool.effects.get(name).unwrap().clone()
     }
 
     pub fn get_house_origin(resources: &Resources, name: &AbilityName) -> HouseName {
         *resources.ability_pool.house_origin.get(name).unwrap()
-    }
-
-    pub fn get_default_vars(resources: &Resources, name: &AbilityName) -> Vars {
-        resources
-            .ability_pool
-            .default_vars
-            .get(name)
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    pub fn set_var(
-        resources: &mut Resources,
-        faction: &Faction,
-        ability: &AbilityName,
-        var: VarName,
-        value: Var,
-    ) {
-        resources
-            .team_states
-            .get_ability_vars_mut(faction, ability)
-            .insert(var, value);
-    }
-
-    pub fn get_var(
-        resources: &Resources,
-        faction: &Faction,
-        ability: &AbilityName,
-        var: &VarName,
-    ) -> Var {
-        match resources
-            .team_states
-            .try_get_ability_overrides(faction, ability)
-            .and_then(|vars| vars.try_get(var))
-        {
-            Some(var) => var.clone(),
-            None => match resources
-                .ability_pool
-                .default_vars
-                .get(ability)
-                .and_then(|x| Some(x.get(var).clone()))
-            {
-                Some(var) => var,
-                None => panic!("Var {} not set default for {:?}", var, ability),
-            },
-        }
-    }
-
-    pub fn set_var_int(
-        resources: &mut Resources,
-        faction: &Faction,
-        ability: &AbilityName,
-        var: VarName,
-        value: i32,
-    ) {
-        Self::set_var(resources, faction, ability, var, Var::Int(value))
-    }
-
-    pub fn get_var_int(
-        resources: &Resources,
-        faction: &Faction,
-        ability: &AbilityName,
-        var: &VarName,
-    ) -> i32 {
-        match Self::get_var(resources, faction, ability, var) {
-            Var::Int(value) => value,
-            _ => panic!("Wrong var type"),
-        }
     }
 }

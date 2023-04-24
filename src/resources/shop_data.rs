@@ -73,7 +73,8 @@ impl ShopData {
         world: &mut legion::World,
     ) -> legion::Entity {
         let unit = resources.shop_data.pool.remove(ind);
-        unit.unpack(world, resources, slot, Faction::Shop, None)
+        let team = TeamSystem::entity(&Faction::Shop, world);
+        unit.unpack(world, resources, slot, None, team.unwrap())
     }
 
     pub fn pack_unit_into_pool(
@@ -82,7 +83,7 @@ impl ShopData {
         resources: &mut Resources,
     ) {
         let unit = PackedUnit::pack(entity, world, resources);
-        UnitSystem::delete_unit(entity, world, resources);
+        world.remove(entity);
         resources.shop_data.pool.push(unit);
     }
 }

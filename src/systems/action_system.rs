@@ -37,30 +37,31 @@ impl ActionSystem {
         resources: &mut Resources,
         node: &mut Option<Node>,
     ) -> bool {
-        let result = if !resources.status_pool.status_changes.is_empty() {
-            StatusPool::process_status_changes(world, resources, node);
-            true
-        } else if !resources.action_queue.is_empty() {
+        let result = if !resources.action_queue.is_empty() {
             let action = resources.action_queue.pop_front().unwrap();
+            let context = action.context;
+            let effect = action.effect;
+
             resources.logger.log(
-                &format!(
-                    "Process t:{:?} o:{:?}: {:?}",
-                    action.context.target, action.context.owner, action.effect
-                ),
+                || {
+                    format!(
+                        "Process t:{:?} o:{:?}: {:?}",
+                        context.target(),
+                        context.owner(),
+                        effect
+                    )
+                },
                 &LogContext::Action,
             );
             resources
                 .logger
-                .log(&format!("{:?}", action.context), &LogContext::Contexts);
-            match action
-                .effect
-                .process(action.context.clone(), world, resources, node)
-            {
+                .log(|| format!("{:?}", context), &LogContext::Contexts);
+            match effect.process(context, world, resources, node) {
                 Ok(_) => {}
                 Err(error) => {
                     resources
                         .logger
-                        .log(&error.to_string(), &LogContext::ActionFail);
+                        .log(|| error.to_string(), &LogContext::ActionFail);
                 }
             };
             true

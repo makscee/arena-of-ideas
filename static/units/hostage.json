@@ -3,9 +3,7 @@
     "description": "Battle start:\nSwap with random enemy",
     "health": 12,
     "attack": 12,
-    "houses": [
-        "Thieves"
-    ],
+    "house": "Thieves",
     "trigger": {
         "type": "BattleStart",
         "effect": {

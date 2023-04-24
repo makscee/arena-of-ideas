@@ -13,24 +13,12 @@ impl VfxSystem {
         easing: EasingType,
         duration: Time,
     ) {
-        let mut dirty = false;
-        world.entry(entity).and_then(|mut x| {
-            x.get_component_mut::<AreaComponent>()
-                .and_then(|area| {
-                    node.add_effect(Self::vfx_move_unit(
-                        entity,
-                        area.position,
-                        position,
-                        easing,
-                        duration,
-                    ));
-                    area.position = position;
-                    dirty = true;
-                    Ok(())
-                })
-                .ok()
-        });
-        ContextSystem::refresh_entity(entity, world, resources);
+        let state = ContextState::get_mut(entity, world);
+        let cur_pos = state.vars.get_vec2(&VarName::Position);
+        node.add_effect(Self::vfx_move_unit(
+            entity, cur_pos, position, easing, duration,
+        ));
+        state.vars.set_vec2(&VarName::Position, position);
     }
 }
 
@@ -162,17 +150,9 @@ impl VfxSystem {
         )
     }
 
-    pub fn vfx_battle_team_names(resources: &Resources) -> (Shader, Shader) {
-        let light = resources
-            .team_states
-            .get_team_state(&Faction::Light)
-            .name
-            .clone();
-        let dark = resources
-            .team_states
-            .get_team_state(&Faction::Dark)
-            .name
-            .clone();
+    pub fn vfx_battle_team_names(world: &legion::World, resources: &Resources) -> (Shader, Shader) {
+        let light = TeamSystem::get_state(&Faction::Light, world).name.clone();
+        let dark = TeamSystem::get_state(&Faction::Dark, world).name.clone();
         let shader = &resources.options.shaders.team_name;
         let dark_shader = shader
             .clone()

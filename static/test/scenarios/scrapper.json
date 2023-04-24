@@ -4,16 +4,15 @@
             {
                 "health": 10,
                 "attack": 1,
-                "houses": [
-                    "Warriors"
-                ],
+                "house": "Warriors",
                 "trigger": {
                     "type": "AfterKill",
                     "effect": {
                         "type": "UseAbility",
                         "ability": "Defense",
-                        "vars": {
-                            "Charges": 3
+                        "charges": {
+                            "type": "Const",
+                            "value": 3
                         },
                         "target": {
                             "type": "Owner"

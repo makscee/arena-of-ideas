@@ -3,9 +3,7 @@
     "attack": 1,
     "health": 2,
     "description": "On buy:\nDefense (1)\neveryone",
-    "houses": [
-        "Warriors"
-    ],
+    "house": "Warriors",
     "trigger": {
         "type": "OnBuy",
         "effect": {

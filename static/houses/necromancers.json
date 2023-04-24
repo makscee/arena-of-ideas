@@ -19,21 +19,26 @@
                     "condition": {
                         "type": "IsCorpse",
                         "entity": {
-                            "type": "Target"
+                            "type": "Owner"
                         }
                     },
                     "then": {
                         "type": "Revive",
+                        "target": {
+                            "type": "Owner"
+                        },
                         "after": {
-                            "type": "SetFaction",
-                            "faction": {
+                            "type": "SetOwnerVarFaction",
+                            "var": "Faction",
+                            "value": {
                                 "type": "Opposite",
                                 "faction": {
                                     "type": "Target"
                                 }
                             },
                             "after": {
-                                "type": "SetHealth",
+                                "type": "SetOwnerVarInt",
+                                "var": "HpValue",
                                 "value": {
                                     "type": "Const",
                                     "value": 1

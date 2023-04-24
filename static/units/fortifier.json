@@ -3,9 +3,7 @@
     "attack": 3,
     "health": 3,
     "description": "On buy:\ngive Shield to allies\nwith >15 HP",
-    "houses": [
-        "Robots"
-    ],
+    "house": "Robots",
     "trigger": {
         "type": "OnBuy",
         "effect": {

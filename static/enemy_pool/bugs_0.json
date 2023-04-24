@@ -1,20 +1,18 @@
 {
-    "state": {
-        "name": "Big Bugs"
-    },
-    "replications": 3,
+    "name": "Bugs",
+    "replications": 1,
     "units": [
         {
-            "name": "Big Bug",
-            "attack": 4,
-            "health": 4,
+            "name": "Bug",
+            "attack": 1,
+            "health": 1,
             "shader": {
                 "path": "shaders/vfx/layered_triangles.glsl",
                 "parameters": {
                     "uniforms": {
                         "u_color": "#895435",
                         "u_color_1": "#000000",
-                        "u_radius": 0.9,
+                        "u_radius": 0.5,
                         "u_spin_part": 0.05,
                         "u_move_speed": 5.3
                     },

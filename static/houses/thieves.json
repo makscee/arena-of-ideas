@@ -8,21 +8,23 @@
                 "type": "SetVarFaction",
                 "var": "Store",
                 "value": {
-                    "type": "Target"
+                    "type": "Owner"
                 },
                 "after": {
-                    "type": "SetFaction",
-                    "faction": {
-                        "type": "Owner"
+                    "type": "SetOwnerVarFaction",
+                    "var": "Faction",
+                    "value": {
+                        "type": "Target"
                     },
                     "after": {
-                        "type": "SetFaction",
-                        "faction": {
+                        "type": "SetOwnerVarFaction",
+                        "var": "Faction",
+                        "value": {
                             "type": "Var",
                             "var": "Store"
                         },
-                        "target": {
-                            "type": "Owner"
+                        "owner": {
+                            "type": "Target"
                         }
                     }
                 }

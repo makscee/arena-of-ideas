@@ -4,9 +4,7 @@
             {
                 "attack": 1,
                 "health": 2,
-                "houses": [
-                    "Vampires"
-                ],
+                "house": "Vampires",
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {

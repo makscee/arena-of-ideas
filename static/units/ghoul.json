@@ -3,9 +3,7 @@
     "description": "On Buy: Devour\nally to the right",
     "health": 2,
     "attack": 3,
-    "houses": [
-        "Demons"
-    ],
+    "house": "Demons",
     "trigger": {
         "type": "OnBuy",
         "effect": {

@@ -4,10 +4,8 @@
             {
                 "health": 3,
                 "attack": 2,
-                "houses": [
-                    "Demons"
-                ],
-                "active_statuses": {
+                "house": "Demons",
+                "statuses": {
                     "Empower": 4
                 },
                 "trigger": {

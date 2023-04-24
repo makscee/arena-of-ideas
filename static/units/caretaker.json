@@ -3,9 +3,7 @@
     "description": "Shop start:\nall allies gain\nGrow (2)",
     "attack": 1,
     "health": 1,
-    "houses": [
-        "Dragons"
-    ],
+    "house": "Dragons",
     "trigger": {
         "type": "ShopStart",
         "effect": {

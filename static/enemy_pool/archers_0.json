@@ -1,7 +1,5 @@
 {
-    "state": {
-        "name": "Archers"
-    },
+    "name": "Archers",
     "replications": 4,
     "units": [
         {
@@ -9,9 +7,7 @@
             "health": 3,
             "attack": 3,
             "description": "Turn end:\nShoot random\nenemy 2 times",
-            "houses": [
-                "Archers"
-            ],
+            "house": "Archers",
             "trigger": {
                 "type": "TurnEnd",
                 "effect": {

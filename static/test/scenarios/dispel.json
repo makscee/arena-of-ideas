@@ -4,9 +4,7 @@
             {
                 "attack": 1,
                 "health": 3,
-                "houses": [
-                    "Exorcists"
-                ],
+                "house": "Exorcists",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
@@ -31,7 +29,7 @@
             {
                 "attack": 1,
                 "health": 1,
-                "active_statuses": {
+                "statuses": {
                     "Shield": 100
                 }
             }

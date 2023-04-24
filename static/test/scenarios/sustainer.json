@@ -4,9 +4,7 @@
             {
                 "attack": 6,
                 "health": 6,
-                "houses": [
-                    "Clerics"
-                ],
+                "house": "Clerics",
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {

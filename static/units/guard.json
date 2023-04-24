@@ -3,9 +3,7 @@
     "description": "On Buy:\ngain Shield\ntwice",
     "health": 1,
     "attack": 3,
-    "houses": [
-        "Robots"
-    ],
+    "house": "Robots",
     "trigger": {
         "type": "OnBuy",
         "effect": {
