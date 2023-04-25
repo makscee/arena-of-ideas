@@ -74,25 +74,22 @@ impl PackedTeam {
         state.statuses = self.statuses.clone();
         state.vars.set_int(&VarName::Slots, self.slots as i32);
         state.vars.set_faction(&VarName::Faction, *faction);
+        let team = world.push((TeamComponent {},));
+        for (slot, unit) in self.units.iter().enumerate() {
+            entities.push(unit.unpack(world, resources, slot + 1, None, team));
+        }
         resources.logger.log(
             || {
                 format!(
-                    "Unpack team {} {:?} {}",
-                    self,
-                    &state,
+                    "Unpack team {self} ({team:?}); units: {} state: {state:?}",
                     entities.iter().map(|x| format!("{:?}", x)).join(", ")
                 )
             },
             &LogContext::UnitCreation,
         );
-        let team = world.push((TeamComponent {}, state));
-        world
-            .entry(team)
-            .unwrap()
-            .add_component(EntityComponent::new(team));
-        for (slot, unit) in self.units.iter().enumerate() {
-            entities.push(unit.unpack(world, resources, slot + 1, None, team));
-        }
+        let mut entry = world.entry(team).unwrap();
+        entry.add_component(EntityComponent::new(team));
+        entry.add_component(state);
         team
     }
 

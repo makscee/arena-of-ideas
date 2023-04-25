@@ -7,7 +7,80 @@
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": false
+        "enable": true,
+        "light": {
+            "name": "Golems",
+            "replications": 2,
+            "units": [
+                {
+                    "name": "Golem",
+                    "attack": 9,
+                    "health": 9,
+                    "house": "Warriors",
+                    "statuses": {
+                        "Defense": 99
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#737373",
+                                "u_radius": 0.8,
+                                "u_border": 0.8,
+                                "u_circle_fbm": 0.7,
+                                "u_circle_fbm_speed": 0.3,
+                                "u_padding": 1.0
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "dark": {
+            "name": "Knights of Death",
+            "replications": 4,
+            "units": [
+                {
+                    "name": "Death Knight",
+                    "attack": 8,
+                    "health": 8,
+                    "description": "On hit:\n70% chance to\napply Reanimate",
+                    "house": "Necromancers",
+                    "trigger": {
+                        "type": "AfterDamageDealt",
+                        "effect": {
+                            "type": "If",
+                            "condition": {
+                                "type": "Chance",
+                                "part": 0.7
+                            },
+                            "then": {
+                                "type": "UseAbility",
+                                "ability": "Reanimate"
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#4B0082",
+                                "u_color_1": "#7183e6",
+                                "u_radius": 0.8,
+                                "u_alpha": 0.3,
+                                "u_spin_part": 0.01,
+                                "u_move_speed": 1.0
+                            },
+                            "instances": 20,
+                            "vertices": 1
+                        }
+                    }
+                }
+            ]
+        }
     },
     "fov": 16.0,
     "initial_shop_fill": 2,

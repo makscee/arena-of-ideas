@@ -3,15 +3,31 @@ use super::*;
 pub struct TeamSystem;
 
 impl TeamSystem {
+    pub fn try_get_state<'a>(
+        faction: &Faction,
+        world: &'a legion::World,
+    ) -> Option<&'a ContextState> {
+        if let Some(entity) = Self::entity(faction, world) {
+            ContextState::try_get(entity, world)
+        } else {
+            None
+        }
+    }
+
     pub fn get_state<'a>(faction: &Faction, world: &'a legion::World) -> &'a ContextState {
-        ContextState::get(Self::entity(faction, world).unwrap(), world)
+        Self::try_get_state(faction, world)
+            .expect(&format!("Failed to find team entity for {faction}"))
     }
 
     pub fn get_state_mut<'a>(
         faction: &Faction,
         world: &'a mut legion::World,
     ) -> &'a mut ContextState {
-        ContextState::get_mut(Self::entity(faction, world).unwrap(), world)
+        ContextState::get_mut(
+            Self::entity(faction, world)
+                .expect(&format!("Failed to find team entity for {faction}")),
+            world,
+        )
     }
 
     pub fn entity(faction: &Faction, world: &legion::World) -> Option<legion::Entity> {

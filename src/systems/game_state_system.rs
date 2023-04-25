@@ -269,7 +269,6 @@ impl GameStateSystem {
                     .clone()
                     .expect("Light team not set for custom game in options.json")
                     .into();
-                BattleSystem::clear_world(world, resources);
                 BattleSystem::init_battle(&light, &dark, world, resources);
                 let mut tape = Some(Tape::default());
                 BattleSystem::run_battle(world, resources, &mut tape);

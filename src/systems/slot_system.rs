@@ -149,13 +149,12 @@ impl SlotSystem {
         factions: HashSet<Faction>,
         world: &legion::World,
     ) -> HashMap<Faction, usize> {
-        HashMap::from_iter(factions.into_iter().map(|faction| {
-            (
-                faction,
-                TeamSystem::get_state(&faction, world)
-                    .vars
-                    .get_int(&VarName::Slots) as usize,
-            )
+        HashMap::from_iter(factions.into_iter().filter_map(|faction| {
+            if let Some(state) = TeamSystem::try_get_state(&faction, world) {
+                Some((faction, state.vars.get_int(&VarName::Slots) as usize))
+            } else {
+                None
+            }
         }))
     }
 
