@@ -50,12 +50,12 @@ impl BattleSystem {
             return;
         }
 
-        let entity = Self::push_tape_shader_entity(
-            resources.options.shaders.battle_score_indicator.clone(),
-            world,
-        );
-        resources.battle_data.score_entity = Some(entity);
-        Self::update_score(world, resources, tape);
+        // let entity = Self::push_tape_shader_entity(
+        //     resources.options.shaders.battle_score_indicator.clone(),
+        //     world,
+        // );
+        // resources.battle_data.score_entity = Some(entity);
+        // Self::update_score(world, resources, tape);
 
         let (left, right) = VfxSystem::vfx_battle_team_names(world, resources);
         let names = (
@@ -92,6 +92,7 @@ impl BattleSystem {
     }
 
     fn update_score(world: &mut legion::World, resources: &Resources, tape: &mut Option<Tape>) {
+        return;
         if tape.is_none() {
             return;
         }

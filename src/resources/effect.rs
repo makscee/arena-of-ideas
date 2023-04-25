@@ -349,12 +349,26 @@ impl EffectWrapped {
                     }
                     _ => 0,
                 };
-                Status::change_charges(context.target().unwrap(), charges, name, world, resources);
+                Status::change_charges(
+                    context.target().unwrap(),
+                    charges,
+                    name,
+                    node,
+                    world,
+                    resources,
+                );
             }
             Effect::RemoveThisStatus => {
                 let name = context.get_string(&VarName::StatusName, world).unwrap();
                 let charges = context.get_int(&VarName::Charges, world).unwrap();
-                Status::change_charges(context.owner().unwrap(), -charges, &name, world, resources);
+                Status::change_charges(
+                    context.owner().unwrap(),
+                    -charges,
+                    &name,
+                    node,
+                    world,
+                    resources,
+                );
             }
             Effect::ClearStatuses => {
                 Status::clear_entity(context.target().unwrap(), world);

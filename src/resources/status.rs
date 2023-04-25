@@ -133,6 +133,7 @@ impl Status {
         entity: legion::Entity,
         delta: i32,
         name: &str,
+        node: &mut Option<Node>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
@@ -157,6 +158,31 @@ impl Status {
             }
             .send(world, resources),
             _ => {}
+        }
+        let max_delay = 0.5;
+        let delay_per_charge = max_delay / (delta as f32).abs();
+        let mut cnt = 0;
+        for _ in 0..delta.abs() {
+            let (text, color) = if delta > 0 {
+                ("+", resources.options.colors.addition)
+            } else {
+                ("-", resources.options.colors.deletion)
+            };
+
+            if let Some(node) = node.as_mut() {
+                let text = format!("{}{}", text, &name);
+                let outline_color = StatusLibrary::get(name, resources).color;
+                node.add_effect(VfxSystem::vfx_show_parent_text(
+                    resources,
+                    &text,
+                    color,
+                    outline_color,
+                    entity,
+                    0,
+                    delay_per_charge * cnt as f32,
+                ));
+                cnt += 1;
+            }
         }
         if before <= 0 && after > 0 {
             Event::StatusAdd {
