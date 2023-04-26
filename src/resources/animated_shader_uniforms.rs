@@ -4,13 +4,16 @@ use super::*;
 pub struct AnimatedShaderUniforms {
     key_frames: Vec<KeyFrame>,
     #[serde(default)]
-    pub easing: EasingType,
+    uniforms: ShaderUniforms,
+    #[serde(default)]
+    easing: EasingType,
 }
 
 impl AnimatedShaderUniforms {
     pub fn empty() -> Self {
         Self {
             key_frames: default(),
+            uniforms: default(),
             easing: EasingType::Linear,
         }
     }
@@ -20,7 +23,11 @@ impl AnimatedShaderUniforms {
             KeyFrame::new(0.0, from, default()),
             KeyFrame::new(1.0, to, default()),
         ];
-        Self { key_frames, easing }
+        Self {
+            key_frames,
+            easing,
+            uniforms: default(),
+        }
     }
 
     pub fn add_key_frame(mut self, t: Time, uniforms: ShaderUniforms, easing: EasingType) -> Self {
@@ -31,36 +38,44 @@ impl AnimatedShaderUniforms {
     }
 
     pub fn get_mixed(&self, t: Time) -> ShaderUniforms {
-        let mut result = default();
+        let mut uniforms = self.uniforms.clone();
         if t < 0.0 {
-            return result;
+            return uniforms;
         }
         let mut t = self.easing.f(t);
+        let mut prev_t = 0.0;
 
-        for (i, left) in self.key_frames.iter().enumerate().rev() {
-            if left.t < t {
-                if let Some(right) = self.key_frames.get(i + 1) {
-                    t = (t - left.t) / (right.t - left.t);
-                    t = right.easing.f(t);
-                    result = ShaderUniforms::mix(&left.uniforms, &right.uniforms, t);
-                } else {
-                    result = left.uniforms.clone();
-                    t = (t - left.t) / (1.0 - left.t);
+        for frame in self.key_frames.iter() {
+            if frame.t < t {
+                for (key, value) in frame.uniforms.iter_data() {
+                    uniforms.insert_ref(key, value.clone());
                 }
+                for (key, mapping) in frame.uniforms.iter_mappings() {
+                    uniforms.insert_ref(key, uniforms.get(mapping).unwrap().clone());
+                }
+            } else {
+                t = (t - prev_t) / (frame.t - prev_t);
+                t = frame.easing.f(t);
+                let mixed = ShaderUniforms::mix(&uniforms, &frame.uniforms, t, &uniforms);
+                uniforms.merge_mut(&mixed, true);
                 break;
             }
-            if i == 0 {
-                result = left.uniforms.clone();
-            }
+            prev_t = frame.t;
         }
-        result.insert_ref("u_t", ShaderUniform::Float(t));
-        result
+
+        uniforms.insert_ref("u_t", ShaderUniform::Float(t));
+        uniforms
+    }
+
+    pub fn get_uniforms_mut<'a>(&'a mut self) -> &'a mut ShaderUniforms {
+        &mut self.uniforms
     }
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct KeyFrame {
     pub t: Time,
+    #[serde(default)]
     pub uniforms: ShaderUniforms,
     #[serde(default)]
     pub easing: EasingType,

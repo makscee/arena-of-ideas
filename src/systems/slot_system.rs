@@ -181,7 +181,7 @@ impl SlotSystem {
             .parameters
             .uniforms
             .insert_color_ref("u_color", color)
-            .insert_vec_ref("u_position", position)
+            .insert_vec2_ref("u_position", position)
             .insert_float_ref("u_scale", scale);
         match faction {
             Faction::Light | Faction::Dark => {}

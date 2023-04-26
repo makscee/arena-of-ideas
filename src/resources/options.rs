@@ -7,6 +7,8 @@ pub struct Options {
     pub images: Images,
     pub colors: Colors,
     pub floats: Floats,
+    pub widgets: Widgets,
+
     pub fov: f32,
     pub rewind_speed: f32,
     pub rewind_add_speed: f32,
@@ -34,6 +36,7 @@ impl Options {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Shaders {
     pub unit: Shader,
     pub field: Shader,
@@ -61,11 +64,31 @@ pub struct Shaders {
     pub tape_indicator: Shader,
     pub shop_sell_field: Shader,
     pub battle_score_indicator: Shader,
-    pub battle_over_panel_bg: Shader,
-    pub battle_over_panel_title: Shader,
-    pub battle_over_panel_star: Shader,
     pub choice_panel: Shader,
     pub choice_panel_option: Shader,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct Widgets {
+    pub battle_over_panel: BattleOverPanel,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BattleOverPanel {
+    pub bg_1: AnimatedShader,
+    pub bg_2: AnimatedShader,
+    pub title: AnimatedShader,
+    pub star: AnimatedShader,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct AnimatedShader {
+    pub shader: Shader,
+    pub animation: AnimatedShaderUniforms,
+    pub duration: Time,
 }
 
 #[derive(Deserialize, Debug)]

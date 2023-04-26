@@ -69,6 +69,27 @@ impl Shader {
         self
     }
 
+    pub fn set_color(self, key: &str, value: Rgba<f32>) -> Self {
+        self.set_uniform(key, ShaderUniform::Color(value))
+    }
+    pub fn set_color_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+        self.set_uniform_ref(key, ShaderUniform::Color(value))
+    }
+
+    pub fn set_vec2(self, key: &str, value: vec2<f32>) -> Self {
+        self.set_uniform(key, ShaderUniform::Vec2(value))
+    }
+    pub fn set_vec2_ref(&mut self, key: &str, value: vec2<f32>) -> &mut Self {
+        self.set_uniform_ref(key, ShaderUniform::Vec2(value))
+    }
+
+    pub fn set_string(self, key: &str, value: String, font: usize) -> Self {
+        self.set_uniform(key, ShaderUniform::String((font, value)))
+    }
+    pub fn set_string_ref(&mut self, key: &str, value: String, font: usize) -> &mut Self {
+        self.set_uniform_ref(key, ShaderUniform::String((font, value)))
+    }
+
     pub fn merge_uniforms(mut self, uniforms: &ShaderUniforms, force: bool) -> Self {
         self.merge_uniforms_ref(uniforms, force);
         self

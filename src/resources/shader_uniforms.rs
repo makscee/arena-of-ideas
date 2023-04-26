@@ -26,11 +26,16 @@ impl ShaderUniforms {
         self
     }
 
-    pub fn mix(a: &Self, b: &Self, t: f32) -> Self {
+    pub fn mix(a: &Self, b: &Self, t: f32, defaults: &Self) -> Self {
         let mut result: ShaderUniforms = default();
-        for (key, value) in a.data.iter() {
-            let a = value;
-            let b = b.get(key).unwrap_or(a);
+        let keys: HashSet<&String> = HashSet::from_iter(a.data.keys().chain(a.mapping.keys()));
+        for key in keys {
+            let a = a
+                .get(key)
+                .unwrap_or_else(|| defaults.get(a.map(key)).unwrap());
+            let b = b
+                .get(key)
+                .unwrap_or_else(|| defaults.get(b.map(key)).unwrap());
             match (a, b) {
                 (ShaderUniform::Int(a), ShaderUniform::Int(b)) => {
                     result.insert_ref(key, ShaderUniform::Int(a + (b - a) * t as i32));
@@ -81,7 +86,7 @@ impl ShaderUniforms {
         self.data.insert(key.to_string(), value);
     }
 
-    pub fn insert_vec_ref(&mut self, key: &str, value: vec2<f32>) -> &mut Self {
+    pub fn insert_vec2_ref(&mut self, key: &str, value: vec2<f32>) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Vec2(value));
         self
     }
@@ -106,8 +111,8 @@ impl ShaderUniforms {
         self
     }
 
-    pub fn insert_vec(mut self, key: &str, value: vec2<f32>) -> Self {
-        self.insert_vec_ref(key, value);
+    pub fn insert_vec2(mut self, key: &str, value: vec2<f32>) -> Self {
+        self.insert_vec2_ref(key, value);
         self
     }
 
@@ -127,8 +132,15 @@ impl ShaderUniforms {
     }
 
     pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
-        self.data
-            .get(self.mapping.get(key).unwrap_or(&key.to_string()))
+        self.data.get(self.map(key))
+    }
+
+    pub fn map<'a>(&'a self, key: &'a str) -> &'a str {
+        if let Some(key) = self.mapping.get(key) {
+            key.as_str()
+        } else {
+            key
+        }
     }
 
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {
@@ -153,7 +165,17 @@ impl ShaderUniforms {
     }
 
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
-        self.data.keys().map(|key| (key, self.get(key).unwrap()))
+        self.data
+            .keys()
+            .map(|key| (key, self.get(key).expect(&format!("Key not found {key}"))))
+    }
+
+    pub fn iter_mappings<'a>(&'a self) -> impl Iterator<Item = (&String, &String)> + 'a {
+        self.mapping.iter()
+    }
+
+    pub fn iter_data<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
+        self.data.iter()
     }
 
     pub fn add_mapping(&mut self, from: &str, to: &str) {

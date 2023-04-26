@@ -7,7 +7,7 @@
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Golems",
             "replications": 2,
@@ -549,44 +549,6 @@
             "layer": "Background",
             "order": 10
         },
-        "battle_over_panel_bg": {
-            "path": "shaders/vfx/rectangle.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_ui": 1.0
-                }
-            },
-            "layer": "UI",
-            "order": 1000
-        },
-        "battle_over_panel_title": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_size": 0.1,
-                    "u_offset": [
-                        0.0,
-                        0.25
-                    ],
-                    "u_outline_color": "#000000",
-                    "u_ui": 1.0
-                }
-            },
-            "layer": "UI",
-            "order": 1001
-        },
-        "battle_over_panel_star": {
-            "path": "shaders/vfx/star.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_size": 0.25,
-                    "u_outline": 0.1,
-                    "u_ui": 1.0
-                }
-            },
-            "layer": "UI",
-            "order": 1002
-        },
         "choice_panel": {
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
@@ -716,5 +678,243 @@
         "slots_battle_team_scale": 0.7,
         "slots_striker_scale": 1.5,
         "slot_info_offset": 2.0
+    },
+    "widgets": {
+        "battle_over_panel": {
+            "bg_1": {
+                "duration": 4.0,
+                "shader": {
+                    "path": "shaders/vfx/rectangle.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_ui": 1.0
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1000
+                },
+                "animation": {
+                    "key_frames": [
+                        {
+                            "t": 0.0,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        {
+                            "t": 0.2,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.5
+                                ]
+                            },
+                            "easing": "CubicOut"
+                        },
+                        {
+                            "t": 0.8
+                        },
+                        {
+                            "t": 1.0,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.0
+                                ]
+                            },
+                            "easing": "CubicIn"
+                        }
+                    ]
+                }
+            },
+            "bg_2": {
+                "duration": 4.0,
+                "shader": {
+                    "path": "shaders/vfx/rectangle.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_ui": 1.0
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1000
+                },
+                "animation": {
+                    "key_frames": [
+                        {
+                            "t": 0.05,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        {
+                            "t": 0.15,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.45
+                                ]
+                            },
+                            "easing": "CubicOut"
+                        },
+                        {
+                            "t": 0.65
+                        },
+                        {
+                            "t": 0.85,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.0
+                                ]
+                            },
+                            "easing": "CubicIn"
+                        }
+                    ]
+                }
+            },
+            "title": {
+                "duration": 4.0,
+                "shader": {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_size": 0.1,
+                            "u_offset": [
+                                0.0,
+                                0.25
+                            ],
+                            "u_outline_color": "#000000",
+                            "u_ui": 1.0
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1001
+                },
+                "animation": {
+                    "key_frames": [
+                        {
+                            "t": 0.0,
+                            "uniforms": {
+                                "u_position": [
+                                    3.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        {
+                            "t": 0.1
+                        },
+                        {
+                            "t": 0.2,
+                            "uniforms": {
+                                "u_position": [
+                                    0.0,
+                                    0.0
+                                ]
+                            },
+                            "easing": "CubicOut"
+                        },
+                        {
+                            "t": 0.6
+                        },
+                        {
+                            "t": 0.8,
+                            "uniforms": {
+                                "u_position": [
+                                    -2.0,
+                                    0.0
+                                ]
+                            },
+                            "easing": "CubicIn"
+                        }
+                    ]
+                }
+            },
+            "star": {
+                "duration": 4.0,
+                "shader": {
+                    "path": "shaders/vfx/star.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_size": 0.25,
+                            "u_outline": 0.1,
+                            "u_ui": 1.0
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1002
+                },
+                "animation": {
+                    "uniforms": {
+                        "u_scale": 0.0
+                    },
+                    "key_frames": [
+                        {
+                            "t": 0.0,
+                            "uniforms": {
+                                "u_position": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_offset": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        {
+                            "t": 0.2
+                        },
+                        {
+                            "t": 0.3,
+                            "uniforms": {
+                                "u_scale": 1.0,
+                                "mapping": {
+                                    "u_offset": "u_index_offset"
+                                }
+                            }
+                        },
+                        {
+                            "t": 0.45
+                        },
+                        {
+                            "t": 0.47,
+                            "uniforms": {
+                                "mapping": {
+                                    "u_scale": "u_active_scale",
+                                    "u_color": "u_active_color"
+                                }
+                            }
+                        },
+                        {
+                            "t": 0.6,
+                            "uniforms": {
+                                "u_scale": 1.0
+                            }
+                        },
+                        {
+                            "t": 0.75
+                        },
+                        {
+                            "t": 0.9,
+                            "uniforms": {
+                                "u_scale": 0.0,
+                                "u_offset": [
+                                    0.0,
+                                    1.0
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        }
     }
 }

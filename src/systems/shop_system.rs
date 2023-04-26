@@ -280,7 +280,7 @@ impl ShopSystem {
             entity,
             &resources.options,
         );
-        button.parameters.uniforms.insert_vec_ref(
+        button.parameters.uniforms.insert_vec2_ref(
             &VarName::Position.uniform(),
             Self::reroll_btn_position(resources),
         );
