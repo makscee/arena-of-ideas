@@ -72,7 +72,7 @@
                                 "u_radius": 0.8,
                                 "u_alpha": 0.3,
                                 "u_spin_part": 0.01,
-                                "u_move_speed": 1.0
+                                "u_move_speed": 1.0 
                             },
                             "instances": 20,
                             "vertices": 1
@@ -90,7 +90,7 @@
         "Effect": true,
         "Contexts": false,
         "Condition": true,
-        "Expression": true,
+        "Expression": false,
         "Trigger": true,
         "Event": true,
         "UnitCreation": true,
