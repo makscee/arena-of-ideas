@@ -4,8 +4,6 @@ use super::*;
 pub struct AnimatedShaderUniforms {
     key_frames: Vec<KeyFrame>,
     #[serde(default)]
-    uniforms: ShaderUniforms,
-    #[serde(default)]
     easing: EasingType,
 }
 
@@ -13,7 +11,6 @@ impl AnimatedShaderUniforms {
     pub fn empty() -> Self {
         Self {
             key_frames: default(),
-            uniforms: default(),
             easing: EasingType::Linear,
         }
     }
@@ -23,11 +20,7 @@ impl AnimatedShaderUniforms {
             KeyFrame::new(0.0, from, default()),
             KeyFrame::new(1.0, to, default()),
         ];
-        Self {
-            key_frames,
-            easing,
-            uniforms: default(),
-        }
+        Self { key_frames, easing }
     }
 
     pub fn add_key_frame(mut self, t: Time, uniforms: ShaderUniforms, easing: EasingType) -> Self {
@@ -38,7 +31,7 @@ impl AnimatedShaderUniforms {
     }
 
     pub fn get_mixed(&self, t: Time) -> ShaderUniforms {
-        let mut uniforms = self.uniforms.clone();
+        let mut uniforms = ShaderUniforms::default();
         if t < 0.0 {
             return uniforms;
         }
@@ -68,7 +61,7 @@ impl AnimatedShaderUniforms {
     }
 
     pub fn get_uniforms_mut<'a>(&'a mut self) -> &'a mut ShaderUniforms {
-        &mut self.uniforms
+        &mut self.key_frames.get_mut(0).unwrap().uniforms
     }
 }
 

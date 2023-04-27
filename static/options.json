@@ -548,76 +548,6 @@
             },
             "layer": "Background",
             "order": 10
-        },
-        "choice_panel": {
-            "path": "shaders/vfx/rectangle.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_ui": 1.0,
-                    "u_aa": 0.002,
-                    "u_position": [
-                        0.0,
-                        0.25
-                    ],
-                    "u_sdf_border": -0.05,
-                    "u_outline_color": "#1F3A4F"
-                }
-            },
-            "layer": "UI",
-            "order": 1000
-        },
-        "choice_panel_option": {
-            "path": "shaders/vfx/rectangle.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_ui": 1.0,
-                    "u_sdf_border": -0.015,
-                    "u_aa": 0.002,
-                    "u_outline_color": "#1F3A4F",
-                    "u_scale": 1.0,
-                    "u_open": 0.0
-                }
-            },
-            "layer": "UI",
-            "order": 1001,
-            "chain_after": [
-                {
-                    "path": "shaders/vfx/text.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_size": 0.05,
-                            "u_color": "#ffffff",
-                            "u_align": -1.0,
-                            "u_offset": [
-                                -0.8,
-                                0.0
-                            ],
-                            "mapping": {
-                                "u_scale": "u_open",
-                                "u_color": "u_text_color"
-                            }
-                        }
-                    }
-                },
-                {
-                    "path": "shaders/vfx/text.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_size": 0.04,
-                            "u_align": 1.0,
-                            "u_offset": [
-                                -0.83,
-                                0.0
-                            ],
-                            "u_outline_color": "#ffffff",
-                            "mapping": {
-                                "u_scale": "u_open",
-                                "u_text": "u_rarity_text"
-                            }
-                        }
-                    }
-                }
-            ]
         }
     },
     "images": {
@@ -680,6 +610,153 @@
         "slot_info_offset": 2.0
     },
     "widgets": {
+        "bonus_choice_panel": {
+            "bg": {
+                "duration": 1.0,
+                "shader": {
+                    "path": "shaders/vfx/rectangle.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_ui": 1.0,
+                            "u_aa": 0.002,
+                            "u_position": [
+                                0.0,
+                                0.25
+                            ],
+                            "u_sdf_border": -0.05,
+                            "u_outline_color": "#1F3A4F"
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1000
+                },
+                "animation": {
+                    "key_frames": [
+                        {
+                            "t": 0.0,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        {
+                            "t": 0.5,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.55
+                                ]
+                            },
+                            "easing": "QuadOut"
+                        },
+                        {
+                            "t": 1.0,
+                            "uniforms": {
+                                "u_box": [
+                                    1.0,
+                                    0.0
+                                ]
+                            },
+                            "easing": "BackIn"
+                        }
+                    ]
+                }
+            },
+            "option": {
+                "duration": 1.0,
+                "shader": {
+                    "path": "shaders/vfx/rectangle.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_ui": 1.0,
+                            "u_sdf_border": -0.015,
+                            "u_aa": 0.002,
+                            "u_outline_color": "#1F3A4F",
+                            "u_scale": 1.0,
+                            "u_open": 0.0
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1001,
+                    "chain_after": [
+                        {
+                            "path": "shaders/vfx/text.glsl",
+                            "parameters": {
+                                "uniforms": {
+                                    "u_size": 0.05,
+                                    "u_color": "#ffffff",
+                                    "u_align": -1.0,
+                                    "u_offset": [
+                                        -0.8,
+                                        0.0
+                                    ],
+                                    "mapping": {
+                                        "u_scale": "u_open",
+                                        "u_color": "u_text_color"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "path": "shaders/vfx/text.glsl",
+                            "parameters": {
+                                "uniforms": {
+                                    "u_size": 0.04,
+                                    "u_align": 1.0,
+                                    "u_offset": [
+                                        -0.83,
+                                        0.0
+                                    ],
+                                    "u_outline_color": "#ffffff",
+                                    "mapping": {
+                                        "u_scale": "u_open",
+                                        "u_text": "u_rarity_text"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                "animation": {
+                    "key_frames": [
+                        {
+                            "t": 0.0,
+                            "uniforms": {
+                                "u_box": [
+                                    2.0,
+                                    0.0
+                                ],
+                                "u_open": 0.0
+                            }
+                        },
+                        {
+                            "t": 0.5,
+                            "uniforms": {
+                                "u_box": [
+                                    2.0,
+                                    0.1
+                                ],
+                                "u_open": 1.0
+                            },
+                            "easing": "QuadOut"
+                        },
+                        {
+                            "t": 1.0,
+                            "uniforms": {
+                                "u_open": 0.0,
+                                "u_box": [
+                                    2.0,
+                                    0.0
+                                ]
+                            },
+                            "easing": "QuadIn"
+                        }
+                    ]
+                }
+            }
+        },
         "battle_over_panel": {
             "bg_1": {
                 "duration": 4.0,
@@ -845,16 +922,14 @@
                         "uniforms": {
                             "u_size": 0.25,
                             "u_outline": 0.1,
-                            "u_ui": 1.0
+                            "u_ui": 1.0,
+                            "u_scale": 0.0
                         }
                     },
                     "layer": "UI",
                     "order": 1002
                 },
                 "animation": {
-                    "uniforms": {
-                        "u_scale": 0.0
-                    },
                     "key_frames": [
                         {
                             "t": 0.0,
@@ -866,7 +941,8 @@
                                 "u_offset": [
                                     0.0,
                                     0.0
-                                ]
+                                ],
+                                "u_scale": 0.0
                             }
                         },
                         {

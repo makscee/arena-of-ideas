@@ -64,14 +64,13 @@ pub struct Shaders {
     pub tape_indicator: Shader,
     pub shop_sell_field: Shader,
     pub battle_score_indicator: Shader,
-    pub choice_panel: Shader,
-    pub choice_panel_option: Shader,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Widgets {
     pub battle_over_panel: BattleOverPanel,
+    pub bonus_choice_panel: BonusChoicePanel,
 }
 
 #[derive(Deserialize, Debug)]
@@ -81,6 +80,13 @@ pub struct BattleOverPanel {
     pub bg_2: AnimatedShader,
     pub title: AnimatedShader,
     pub star: AnimatedShader,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BonusChoicePanel {
+    pub bg: AnimatedShader,
+    pub option: AnimatedShader,
 }
 
 #[derive(Deserialize, Debug)]

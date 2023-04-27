@@ -121,6 +121,9 @@
                 {
                     "type": "ChangeTeamVarInt",
                     "var": "G",
+                    "faction": {
+                        "type": "Team"
+                    },
                     "delta": {
                         "type": "Const",
                         "value": 10
@@ -166,6 +169,9 @@
         "effect": {
             "type": "ChangeTeamVarInt",
             "var": "Slots",
+            "faction": {
+                "type": "Team"
+            },
             "delta": {
                 "type": "Const",
                 "value": 1
