@@ -71,6 +71,7 @@ impl ShaderSystem {
                 }),
         );
 
+        let hovered = resources.input_data.hovered_entity;
         let dragged = resources.input_data.dragged_entity;
         let shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
             .into_iter()
@@ -79,7 +80,7 @@ impl ShaderSystem {
                 (
                     dragged.is_some() && x.entity == dragged,
                     x.layer.index(),
-                    x.order,
+                    x.order + (hovered.is_some() && x.entity == hovered) as i32 * 1000,
                     x.ts,
                 )
             })

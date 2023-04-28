@@ -304,13 +304,15 @@ impl UnitSystem {
                     .get(entity)
                     .and_then(|x| match x.0 {
                         InputEvent::HoverStart => Some((true, x.1)),
-                        InputEvent::HoverStop => Some((false, x.1)),
+                        InputEvent::HoverStop => Some((false, x.1 + 1.0)),
                         _ => None,
                     })
                     .unwrap_or((false, -1000.0));
                 let hover_value = (1.0
                     - hover_value.0 as u8 as f32
-                    - ((resources.global_time - hover_value.1) / CARD_ANIMATION_TIME).min(1.0))
+                    - ((resources.global_time - hover_value.1) / CARD_ANIMATION_TIME)
+                        .min(1.0)
+                        .max(0.0))
                 .abs();
                 card_value = card_value.max(hover_value);
 

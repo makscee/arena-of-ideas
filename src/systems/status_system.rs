@@ -9,6 +9,7 @@ impl StatusSystem {
     ) -> Vec<Shader> {
         statuses
             .iter()
+            .sorted_by(|a, b| a.0.cmp(&b.0))
             .filter_map(|(name, charges)| match resources.definitions.get(name) {
                 Some(def) => Some(
                     resources

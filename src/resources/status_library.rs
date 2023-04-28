@@ -47,7 +47,6 @@ impl StatusLibrary {
         let statuses = context.collect_statuses(world);
         statuses
             .into_iter()
-            .sorted_by(|a, b| a.0.cmp(&b.0))
             .map(|(name, _)| Self::get(&name, resources))
             .filter_map(|status| match status.shader.as_ref() {
                 Some(shader) => {
