@@ -74,7 +74,7 @@ impl ShopData {
     ) -> legion::Entity {
         let unit = resources.shop_data.pool.remove(ind);
         let team = TeamSystem::entity(&Faction::Shop, world);
-        unit.unpack(world, resources, slot, None, team.unwrap())
+        unit.unpack(world, resources, slot, None, team)
     }
 
     pub fn pack_unit_into_pool(

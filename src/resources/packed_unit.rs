@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -47,8 +45,7 @@ impl PackedUnit {
         let statuses = state.statuses.clone();
         let shader = entry.get_component::<Shader>().ok().cloned();
         let rank = state.vars.try_get_int(&VarName::Rank).unwrap_or_default() as u8;
-
-        Self {
+        let result = Self {
             name,
             description,
             health,
@@ -59,7 +56,12 @@ impl PackedUnit {
             statuses,
             shader,
             rank,
-        }
+        };
+        resources.logger.log(
+            || format!("Packing unit {} new id: {:?}", result, entity),
+            &LogContext::UnitCreation,
+        );
+        result
     }
 
     pub fn unpack(
@@ -68,7 +70,7 @@ impl PackedUnit {
         resources: &mut Resources,
         slot: usize,
         position: Option<vec2<f32>>,
-        parent: legion::Entity,
+        parent: Option<legion::Entity>,
     ) -> legion::Entity {
         let entity = world.push((self.trigger.clone(), UnitComponent {}));
         resources.logger.log(
@@ -77,7 +79,7 @@ impl PackedUnit {
         );
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
-        let mut state = ContextState::new(self.name.clone(), Some(parent));
+        let mut state = ContextState::new(self.name.clone(), parent);
         state
             .vars
             .set_int(&VarName::AttackValue, self.attack as i32);
@@ -102,12 +104,75 @@ impl PackedUnit {
         state.statuses = self.statuses.clone();
         entry.add_component(state);
 
-        if let Some(shader) = &self.shader {
-            entry.add_component(shader.clone());
-        }
+        entry.add_component(self.generate_shader(&resources.options));
 
         Event::AfterBirth { owner: entity }.send(world, resources);
         entity
+    }
+
+    pub fn generate_shader(&self, options: &Options) -> Shader {
+        let mut shader = {
+            if let Some(shader) = self.shader.as_ref() {
+                let mut shader = shader.clone();
+                shader.chain_after.push(options.shaders.unit.clone());
+                shader
+            } else {
+                options.shaders.unit.clone()
+            }
+        };
+        shader.chain_after.push(options.shaders.unit_card.clone());
+
+        shader.set_string_ref(&VarName::Description.uniform(), self.description.clone(), 0);
+        shader.chain_after.push(
+            options
+                .shaders
+                .name
+                .clone()
+                .set_uniform("u_text", ShaderUniform::String((0, self.name.clone()))),
+        );
+
+        let hp_offset = options
+            .shaders
+            .stats
+            .parameters
+            .uniforms
+            .try_get_vec2("u_offset")
+            .unwrap()
+            * vec2(-1.0, 1.0);
+        let hp_card_offset = options
+            .shaders
+            .stats
+            .parameters
+            .uniforms
+            .try_get_vec2("u_card_offset")
+            .unwrap()
+            * vec2(-1.0, 1.0);
+        let hp_shader = options
+            .shaders
+            .stats
+            .clone()
+            .set_uniform("u_offset", ShaderUniform::Vec2(hp_offset))
+            .set_uniform("u_card_offset", ShaderUniform::Vec2(hp_card_offset))
+            .set_uniform("u_animate_on_damage", ShaderUniform::Float(1.0))
+            .set_uniform("u_color", ShaderUniform::Color(options.colors.stats_health))
+            .set_string("u_text", self.health.to_string(), 1)
+            .set_int("u_value_modified", 0)
+            .set_mapping("u_text", "u_hp_str")
+            .set_mapping("u_value_modified", "u_hp_modified");
+        shader.chain_after.push(hp_shader);
+
+        let attack_shader = options
+            .shaders
+            .stats
+            .clone()
+            .set_uniform("u_color", ShaderUniform::Color(options.colors.stats_attack))
+            .set_string("u_text", self.attack.to_string(), 1)
+            .set_int("u_value_modified", 0)
+            .set_mapping("u_text", "u_attack_str")
+            .set_mapping("u_value_modified", "u_attack_modified");
+        shader.chain_after.push(attack_shader);
+
+        shader
     }
 }
 

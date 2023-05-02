@@ -16,7 +16,13 @@ impl BonusEffectPool {
         let ts = resources.tape_player.head;
         Self::load_bonuses(value, world, resources);
         let bonuses = resources.bonus_pool.current.clone();
-        let panel = Widget::BonusChoicePanel { bonuses, entity }.generate_node(&resources.options);
+        let panel = Widget::BonusChoicePanel {
+            bonuses,
+            entity,
+            options: &resources.options,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty);
         let panel = NodePanel::new(panel, ts);
         resources.tape_player.tape.panels.insert(entity, panel);
     }

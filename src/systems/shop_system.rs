@@ -343,7 +343,7 @@ impl ShopSystem {
             for (slot, name) in top_units.into_iter().enumerate() {
                 let slot = slot + 1;
                 let unit = resources.hero_pool.find_by_name(&name).unwrap().clone();
-                unit.unpack(world, resources, slot, None, team);
+                unit.unpack(world, resources, slot, None, Some(team));
             }
         } else {
             for slot in 1..=slots {

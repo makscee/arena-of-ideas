@@ -18,6 +18,10 @@ enum-iterator = "1.4.0"
 strum = "0.24.1"
 strum_macros = "0.24.1"
 colored = "2.0.0"
+rand_core = "0.6.4"
+rand_chacha = "0.3.1"
+rand_seeder = "0.2.3"
+rand_pcg = "0.3.1"
 
 [patch.crates-io]
 # Temp workaround until update in geng, as this issue is already fixed upstream

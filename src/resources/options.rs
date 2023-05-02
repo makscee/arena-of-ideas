@@ -39,6 +39,7 @@ impl Options {
 #[serde(deny_unknown_fields)]
 pub struct Shaders {
     pub unit: Shader,
+    pub unit_card: Shader,
     pub field: Shader,
     pub stats: Shader,
     pub strike: Shader,
@@ -69,8 +70,16 @@ pub struct Shaders {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Widgets {
+    pub battle_choice_panel: BattleChoicePanel,
     pub battle_over_panel: BattleOverPanel,
     pub bonus_choice_panel: BonusChoicePanel,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BattleChoicePanel {
+    pub bg: AnimatedShader,
+    pub star: Shader,
 }
 
 #[derive(Deserialize, Debug)]

@@ -30,12 +30,16 @@ impl ShaderUniforms {
         let mut result: ShaderUniforms = default();
         let keys: HashSet<&String> = HashSet::from_iter(a.data.keys().chain(a.mapping.keys()));
         for key in keys {
-            let a = a
-                .get(key)
-                .unwrap_or_else(|| defaults.get(a.map(key)).unwrap());
-            let b = b
-                .get(key)
-                .unwrap_or_else(|| defaults.get(b.map(key)).unwrap());
+            let a = a.get(key).unwrap_or_else(|| {
+                defaults.get(a.map(key)).expect(&format!(
+                    "Failed to mix key {key} a: {a:?} defaults: {defaults:?}"
+                ))
+            });
+            let b = b.get(key).unwrap_or_else(|| {
+                defaults.get(b.map(key)).expect(&format!(
+                    "Failed to mix key {key} b: {b:?} defaults: {defaults:?}"
+                ))
+            });
             match (a, b) {
                 (ShaderUniform::Int(a), ShaderUniform::Int(b)) => {
                     result.insert_ref(key, ShaderUniform::Int(a + (b - a) * t as i32));
@@ -106,6 +110,11 @@ impl ShaderUniforms {
         self
     }
 
+    pub fn insert_string_ref(&mut self, key: &str, value: String, font: usize) -> &mut Self {
+        self.insert_ref(key, ShaderUniform::String((font, value)));
+        self
+    }
+
     pub fn insert(mut self, key: &str, value: ShaderUniform) -> Self {
         self.insert_ref(key, value);
         self
@@ -165,9 +174,13 @@ impl ShaderUniforms {
     }
 
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
-        self.data
-            .keys()
-            .map(|key| (key, self.get(key).expect(&format!("Key not found {key}"))))
+        self.data.keys().map(|key| {
+            (
+                key,
+                self.get(key)
+                    .unwrap_or_else(|| self.data.get(key).expect(&format!("Key not found {key}"))),
+            )
+        })
     }
 
     pub fn iter_mappings<'a>(&'a self) -> impl Iterator<Item = (&String, &String)> + 'a {

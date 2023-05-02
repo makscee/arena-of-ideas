@@ -80,12 +80,13 @@ impl ShaderSystem {
                 (
                     dragged.is_some() && x.entity == dragged,
                     x.layer.index(),
-                    x.order + (hovered.is_some() && x.entity == hovered) as i32 * 1000,
+                    x.order + (hovered.is_some() && x.entity == hovered) as i32,
                     x.ts,
                 )
             })
             .map(|x| Self::flatten_shader_chain(x))
             .flatten()
+            .map(|x| x.inject_bounding_box(resources))
             .collect_vec();
 
         resources.prepared_shaders = shaders;
@@ -96,18 +97,12 @@ impl ShaderSystem {
             TapePlayMode::Play => resources.tape_player.head,
             TapePlayMode::Stop { .. } => resources.global_time,
         };
-        let aspect_ratio = {
-            let size = resources.camera.framebuffer_size;
-            size.x / size.y
-        };
         let uniforms = ugli::uniforms!(
             u_game_time: game_time,
             u_global_time: resources.global_time,
-            u_aspect_ratio: aspect_ratio,
         );
-        let shaders = mem::take(&mut resources.prepared_shaders);
-        for shader in shaders.iter() {
-            Self::draw_shader(shader, framebuffer, resources, uniforms.clone());
+        for shader in mem::take(&mut resources.prepared_shaders) {
+            Self::draw_shader(&shader, framebuffer, resources, uniforms.clone());
         }
     }
 
@@ -215,6 +210,12 @@ impl ShaderSystem {
     }
 
     pub fn flatten_shader_chain(mut shader: Shader) -> Vec<Shader> {
+        let mut rng: rand_pcg::Pcg64 =
+            rand_seeder::Seeder::from(format!("{:?}", shader.entity)).make_rng();
+        shader
+            .parameters
+            .uniforms
+            .insert_float_ref("u_rand", rng.gen_range(0.0..1.0));
         let mut before = shader.chain_before.drain(..).collect_vec();
         before.iter_mut().for_each(|x| {
             x.parameters

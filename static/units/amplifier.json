@@ -30,10 +30,11 @@
         "parameters": {
             "uniforms": {
                 "u_color": "#00aacc",
-                "u_circle_radius": 0.7,
-                "u_border": 0.1,
+                "u_size": 0.7,
+                "u_thickness": 0.1,
                 "u_circle_fbm": -1.0,
-                "u_circle_fbm_speed": 6.0
+                "u_circle_fbm_speed": 6.0,
+                "u_padding": 1.0
             }
         }
     }

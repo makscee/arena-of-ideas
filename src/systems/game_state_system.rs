@@ -61,7 +61,66 @@ impl System for GameStateSystem {
                     SaveSystem::save(world, resources);
                 }
                 if resources.input_data.down_keys.contains(&B) {
-                    BonusEffectPool::load_widget(5, world, resources);
+                    // BonusEffectPool::load_widget(5, world, resources);
+
+                    // resources.tape_player.tape.push_to_queue(
+                    //     NodeCluster::new(
+                    //         Widget::BattleOverPanel {
+                    //             score: 3,
+                    //             options: &resources.options,
+                    //         }
+                    //         .generate_node()
+                    //         .lock(NodeLockType::Empty),
+                    //     ),
+                    //     resources.tape_player.head,
+                    // );
+
+                    let unit = resources
+                        .hero_pool
+                        .find_by_name("Amplifier")
+                        .unwrap()
+                        .clone();
+                    let node = Widget::BattleChoicePanel {
+                        unit: &unit,
+                        difficulty: 0,
+                        resources: &resources,
+                    }
+                    .generate_node()
+                    .lock(NodeLockType::Empty);
+                    let panel = NodePanel::new(node, resources.tape_player.head + 0.0);
+                    resources
+                        .tape_player
+                        .tape
+                        .panels
+                        .insert(new_entity(), panel);
+
+                    let node = Widget::BattleChoicePanel {
+                        unit: &unit,
+                        difficulty: 1,
+                        resources: &resources,
+                    }
+                    .generate_node()
+                    .lock(NodeLockType::Empty);
+                    let panel = NodePanel::new(node, resources.tape_player.head + 0.25);
+                    resources
+                        .tape_player
+                        .tape
+                        .panels
+                        .insert(new_entity(), panel);
+
+                    let node = Widget::BattleChoicePanel {
+                        unit: &unit,
+                        difficulty: 2,
+                        resources: &resources,
+                    }
+                    .generate_node()
+                    .lock(NodeLockType::Empty);
+                    let panel = NodePanel::new(node, resources.tape_player.head + 0.5);
+                    resources
+                        .tape_player
+                        .tape
+                        .panels
+                        .insert(new_entity(), panel);
                 }
                 if resources.input_data.down_keys.contains(&P) {
                     if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
@@ -72,7 +131,7 @@ impl System for GameStateSystem {
                         resources,
                         1,
                         Some(SlotSystem::get_position(1, &Faction::Shop, resources)),
-                        TeamSystem::entity(&Faction::Shop, world).unwrap(),
+                        TeamSystem::entity(&Faction::Shop, world),
                     );
                 }
             }

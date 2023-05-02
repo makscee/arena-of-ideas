@@ -7,7 +7,7 @@
                 "type": "AddStatus",
                 "name": "Rebirth"
             },
-            "description": "Revive\nafter death"
+            "description": "Revive after death"
         },
         "Grow": {
             "effect": {

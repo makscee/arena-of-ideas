@@ -7,9 +7,11 @@ attribute vec2 a_pos;
 uniform int u_trail_count = 1;
 uniform float u_lifetime = 1;
 uniform float u_trail_shift = 0.01;
-uniform float u_velicity_mul = 5;
+uniform float u_velicity_mul = 25;
 uniform float u_velocity_over_t = 1;
 uniform float u_vel_fbm = 0;
+uniform float u_p_size;
+uniform float u_p_size_over_t;
 
 flat out int p_index;
 flat out float p_t;
@@ -27,6 +29,7 @@ void main() {
     vel = vec2(sign(vel.x) * vel.x * vel.x, sign(vel.y) * vel.y * vel.y);
     vel *= u_velicity_mul;
     vel *= 1. + fbm(vec2(u_game_time * 3) + rand_vec(p_index)) * u_vel_fbm;
+    box *= u_p_size + u_p_size_over_t * p_t;
     gl_Position = get_gl_position(uv + vel * p_t);
 }
 #endif
@@ -44,7 +47,7 @@ uniform float u_p_scale = 1;
 
 void main() {
     float dist = length(uv);
-    if(dist > u_p_scale * (1. + u_size_over_t * p_t) || p_t < 0 || p_t > 1)
+    if(dist > u_p_scale || p_t < 0 || p_t > 1)
         discard;
     gl_FragColor = vec4(mix(u_start_color, u_end_color, p_t).rgb, u_alpha);
 }

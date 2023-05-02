@@ -80,14 +80,9 @@ impl UnitSystem {
     ) {
         let options = &resources.options;
         let context = Context::new(ContextLayer::Unit { entity }, world, resources);
-        let mut shader = match ShaderSystem::get_entity_shader(entity, world) {
-            Some(mut shader) => {
-                Self::pack_shader(&mut shader, options);
-                shader
-            }
-            None => options.shaders.unit.clone(),
-        }
-        .add_context(&context, world);
+        let mut shader = ShaderSystem::get_entity_shader(entity, world)
+            .unwrap()
+            .add_context(&context, world);
         let faction = context.get_faction(&VarName::Faction, world).unwrap();
         let slot = context.get_int(&VarName::Slot, world).unwrap() as usize;
         if faction == Faction::Shop || faction == Faction::Team || faction == Faction::Sacrifice {
@@ -111,17 +106,45 @@ impl UnitSystem {
                 &VarName::Scale.uniform(),
                 SlotSystem::get_scale(slot, faction, resources),
             );
+        let original_hp = context.get_int(&VarName::HpOriginalValue, world).unwrap();
+        let original_atk = context
+            .get_int(&VarName::AttackOriginalValue, world)
+            .unwrap();
+        let hp = context.get_int(&VarName::HpValue, world).unwrap();
+        let damage = context
+            .get_int(&VarName::HpDamage, world)
+            .unwrap_or_default();
+        let atk = context.get_int(&VarName::AttackValue, world).unwrap();
+        shader
+            .parameters
+            .uniforms
+            .insert_string_ref(&VarName::HpStr.uniform(), (hp - damage).to_string(), 1)
+            .insert_string_ref(&VarName::AttackStr.uniform(), atk.to_string(), 1);
+
+        shader.parameters.uniforms.insert_int_ref(
+            "u_hp_modified",
+            if damage > 0 {
+                -1
+            } else if original_hp < hp {
+                1
+            } else {
+                0
+            },
+        );
+
+        if original_atk < atk {
+            shader
+                .parameters
+                .uniforms
+                .insert_int_ref("u_attack_modified", 1);
+        }
 
         shader.entity = Some(entity);
 
         let status_shaders = StatusLibrary::get_context_shaders(&context, world, resources);
-        shader.chain_before.extend(status_shaders);
-        shader
-            .chain_after
-            .extend(StatsUiSystem::get_entity_shaders(&context, world, options));
-        shader
-            .chain_after
-            .push(NameSystem::get_entity_shader(entity, world, options));
+        status_shaders
+            .into_iter()
+            .for_each(|x| shader.chain_after.insert(0, x));
         node.add_entity_shader(entity, shader);
         node.save_entity_statuses(&entity, &context, world);
         let definitions = UnitSystem::extract_definition_names(entity, world, resources);
@@ -311,8 +334,7 @@ impl UnitSystem {
                 let hover_value = (1.0
                     - hover_value.0 as u8 as f32
                     - ((resources.global_time - hover_value.1) / CARD_ANIMATION_TIME)
-                        .min(1.0)
-                        .max(0.0))
+                        .clamp(0.0, 1.0))
                 .abs();
                 card_value = card_value.max(hover_value);
 

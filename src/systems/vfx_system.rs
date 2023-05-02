@@ -165,7 +165,7 @@ impl VfxSystem {
             * vec2(-1.0, 1.0);
         let light_shader = shader
             .clone()
-            .set_uniform("u_align", ShaderUniform::Float(-1.0))
+            .set_uniform("u_align", ShaderUniform::Vec2(vec2(-1.0, 0.0)))
             .set_uniform(&VarName::Position.uniform(), ShaderUniform::Vec2(light_pos))
             .set_uniform("u_text", ShaderUniform::String((2, light)));
         (light_shader, dark_shader)

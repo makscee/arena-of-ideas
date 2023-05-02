@@ -17,8 +17,6 @@ in vec2 uv;
 const float THICKNESS = 0.01;
 const float SPREAD = 0.04;
 
-uniform int u_index;
-
 void main() {
     vec2 uv = uv / 1.2;
     float len = length(uv) - 1. - u_index * .1;

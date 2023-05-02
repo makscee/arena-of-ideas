@@ -28,7 +28,7 @@ pub struct NodeCluster {
     delay_per_node: Option<f32>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Node {
     entities: HashMap<legion::Entity, EntityData>,
     key_effects: HashMap<String, Vec<TimedEffect>>,
@@ -36,7 +36,7 @@ pub struct Node {
     duration: Option<Time>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct EntityData {
     pub shader: Shader,
     pub statuses: HashMap<String, i32>,
@@ -132,19 +132,20 @@ impl NodePanel {
     }
 
     pub fn join_node(&self, node: &mut Node, ts: Time) -> bool {
+        let half = self.node.duration() * 0.5;
         let t = match self.open {
             true => {
                 if ts > self.ts {
-                    (ts - self.ts).min(0.5)
+                    (ts - self.ts).min(half)
                 } else {
                     return true;
                 }
             }
             false => {
-                if ts > self.ts + 0.5 {
+                if ts > self.ts + half {
                     return false;
                 } else {
-                    0.5 + ts - self.ts
+                    half + ts - self.ts
                 }
             }
         };

@@ -654,7 +654,7 @@ impl EffectWrapped {
                     .as_ref()
                     .and_then(|x| x.calculate(&context, world, resources).ok())
                     .unwrap_or_default() as usize;
-                unit.unpack(world, resources, slot, None, context.owner().unwrap());
+                unit.unpack(world, resources, slot, None, context.owner());
                 SlotSystem::fill_gaps(
                     context.get_faction(&VarName::Faction, world).unwrap(),
                     world,

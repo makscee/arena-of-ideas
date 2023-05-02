@@ -21,7 +21,6 @@ float zoom;
 uniform vec2 u_position = vec2(0);
 vec2 position;
 uniform vec2 u_offset = vec2(0, 0);
-vec2 offset;
 uniform vec2 u_box = vec2(0);
 vec2 box;
 uniform float u_radius = 0;
@@ -29,14 +28,15 @@ float radius;
 uniform float u_padding = 0;
 float padding;
 uniform float u_scale = 1;
-float scale;
 uniform float u_size = 1;
-float size;
-
-uniform float u_ui = 0;
+uniform float u_rotation = 0;
+float rotation;
+uniform int u_index;
+uniform float u_rand;
 uniform float u_aspect_ratio;
 
-/// Setup
+uniform int u_ui = 0;
+
 vec2 get_card_uv(vec2 uv) {
     return mix(uv, uv * 2 + vec2(0, -.7), card);
 }
@@ -45,7 +45,6 @@ vec2 get_card_pos(vec2 pos) {
     return mix(pos, (pos + vec2(0, .7)) / 2, card);
 }
 
-/// Noise
 float hash(float n) {
     return fract(sin(n) * 75728.5453123);
 }
@@ -73,6 +72,11 @@ float fbm(vec2 p) {
     return f;
 }
 
+vec2 rotate_cw(vec2 p, float a) {
+    mat2 m = mat2(cos(a), sin(a), -sin(a), cos(a));
+    return p * m;
+}
+
 float get_field_value(vec2 uv) {
     vec2 position = position + uv + u_field_position;
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
@@ -80,16 +84,10 @@ float get_field_value(vec2 uv) {
 
 void init_fields() {
     card = u_card;
-    zoom = u_zoom;
     position = u_position;
-    offset = u_offset;
     box = u_box;
-    radius = u_radius;
-    box = vec2(max(box.x, u_radius), max(box.y, u_radius));
-    box = mix(vec2(1), box, float(length(box) > 0));
+    rotation = u_rotation;
     padding = u_padding;
-    scale = u_scale;
-    size = u_size;
     float field = get_field_value(position);
     base_color = mix(u_background_light.rgb, u_background_dark.rgb, field);
     field_color = mix(u_background_light.rgb, u_background_dark.rgb, 1 - field);
@@ -100,14 +98,12 @@ vec2 get_uv(vec2 a_pos) {
 }
 
 vec4 get_gl_position(vec2 uv) {
-    vec2 pos = uv * box * size + offset;
-    pos = get_card_pos(pos);
-    pos *= zoom * scale;
-    pos += position;
+    uv = rotate_cw(uv, rotation);
+    vec2 pos = uv * box + position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     vec4 cam_pos = vec4(p_pos.xy, 0.0, p_pos.z);
     vec4 ui_pos = vec4(pos, 0.0, 1.0);
-    return mix(cam_pos, ui_pos, u_ui);
+    return mix(cam_pos, ui_pos, float(u_ui));
 }
 
 const float TEXT_AA = 0.01;
@@ -149,11 +145,6 @@ vec2 rand_circle(int i) {
 
 float inv_square(float t) {
     return 1. - (t - 1.) * (t - 1.);
-}
-
-vec2 rotate_cw(vec2 p, float a) {
-    mat2 m = mat2(cos(a), -sin(a), sin(a), cos(a));
-    return p * m;
 }
 
 float vec_angle(vec2 v) {
@@ -302,6 +293,13 @@ float rectangle_sdf(vec2 uv, vec2 box, float rotation) {
         d = max(d, corner_distance);
     }
     return d;
+}
+
+float rectangle_rounded_sdf(vec2 uv, vec2 box, vec4 r) {
+    r.xy = (uv.x > 0.0) ? r.xy : r.zw;
+    r.x = (uv.y > 0.0) ? r.x : r.y;
+    vec2 q = abs(uv) - box + r.x;
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
 }
 
 float square_sdf(vec2 uv, float box, float rotation) {

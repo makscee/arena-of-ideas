@@ -1,6 +1,6 @@
 {
     "name": "Hostage",
-    "description": "Battle start:\nSwap with random enemy",
+    "description": "Battle start:\nSwap with\nrandom enemy",
     "health": 12,
     "attack": 12,
     "house": "Thieves",
@@ -25,8 +25,8 @@
         "parameters": {
             "uniforms": {
                 "u_color": "#4b819c",
-                "u_radius": 0.7,
-                "u_border": 0.1,
+                "u_size": 0.7,
+                "u_thickness": 0.1,
                 "u_circle_fbm": 0.05,
                 "u_circle_fbm_speed": 3.3,
                 "u_padding": 0.2,

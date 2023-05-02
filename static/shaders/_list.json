@@ -3,6 +3,7 @@
     "shaders/vfx/rectangle.glsl",
     "shaders/system/tape_indicator.glsl",
     "shaders/system/unit.glsl",
+    "shaders/system/unit_card.glsl",
     "shaders/system/field.glsl",
     "shaders/system/stats.glsl",
     "shaders/system/strike.glsl",
