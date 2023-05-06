@@ -57,17 +57,17 @@ impl HeroPool {
 }
 
 impl FileWatcherLoader for HeroPool {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         let mut path = path.clone();
         path.set_file_name("_list.json");
-        watcher.watch_file(&path, Box::new(Self::loader));
+        watcher.watch_file(&path, Box::new(Self::load));
         let paths: Vec<PathBuf> = futures::executor::block_on(load_json(&path)).unwrap();
         resources.hero_pool.list_top = static_path().join(paths.get(0).unwrap());
         paths.into_iter().for_each(|path| {
-            PackedUnit::loader(resources, &static_path().join(path), watcher);
+            PackedUnit::load(resources, &static_path().join(path), watcher);
         });
         path.set_file_name("_rating.json");
-        watcher.watch_file(&path, Box::new(Self::loader));
+        watcher.watch_file(&path, Box::new(Self::load));
         resources.hero_pool.power = futures::executor::block_on(load_json(path)).unwrap();
     }
 }

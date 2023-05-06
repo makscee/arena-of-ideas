@@ -30,7 +30,7 @@ impl Display for LogContext {
             let text = self.as_ref();
             match self {
                 LogContext::Action => text.bright_red(),
-                LogContext::ActionFail => text.red(),
+                LogContext::ActionFail => text.on_red(),
                 LogContext::Effect => text.cyan(),
                 LogContext::Condition => text.blue(),
                 LogContext::Expression => text.blue(),

@@ -32,7 +32,7 @@ impl SimulationSystem {
                 if !result {
                     let light = PackedTeam::pack(&Faction::Light, world, resources);
                     let dark = PackedTeam::pack(&Faction::Dark, world, resources);
-                    dbg!((light, dark));
+                    println!("Light: {light}\nDark : {dark}");
                     0
                 } else {
                     1
@@ -62,7 +62,7 @@ mod tests {
 
     fn setup() -> (legion::World, Resources) {
         let mut world = legion::World::default();
-        let mut resources = Resources::new(Options::load());
+        let mut resources = Resources::new(Options::do_load());
         let watcher = &mut FileWatcherSystem::new();
         resources.load(watcher);
         resources

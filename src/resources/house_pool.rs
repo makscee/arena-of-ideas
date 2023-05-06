@@ -16,14 +16,14 @@ impl HousePool {
 }
 
 impl FileWatcherLoader for HousePool {
-    fn loader(resources: &mut Resources, _: &PathBuf, watcher: &mut FileWatcherSystem) {
+    fn load(resources: &mut Resources, _: &PathBuf, watcher: &mut FileWatcherSystem) {
         enum_iterator::all::<HouseName>()
             .map(|x| {
                 let name = format!("houses/{:?}.json", x).to_lowercase();
                 static_path().join(name)
             })
             .for_each(|path| {
-                House::loader(resources, &path, watcher);
+                House::load(resources, &path, watcher);
             });
     }
 }

@@ -59,7 +59,7 @@ fn main() {
     let timer = Instant::now();
     logger::init();
 
-    let options = Options::load();
+    let options = Options::do_load();
     let mut world = legion::World::default();
     let mut resources = Resources::new(options);
 

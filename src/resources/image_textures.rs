@@ -34,8 +34,8 @@ impl ImageTextures {
 }
 
 impl FileWatcherLoader for ImageTextures {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::load));
         let paths: Vec<PathBuf> = futures::executor::block_on(load_json(path)).unwrap();
         paths.into_iter().for_each(|path| {
             Self::texture_loader(resources, &static_path().join(path), watcher);

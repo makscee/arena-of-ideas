@@ -75,9 +75,6 @@ impl PackedTeam {
         state.vars.set_int(&VarName::Slots, self.slots as i32);
         state.vars.set_faction(&VarName::Faction, *faction);
         let team = world.push((TeamComponent {},));
-        for (slot, unit) in self.units.iter().enumerate() {
-            entities.push(unit.unpack(world, resources, slot + 1, None, Some(team)));
-        }
         resources.logger.log(
             || {
                 format!(
@@ -90,6 +87,9 @@ impl PackedTeam {
         let mut entry = world.entry(team).unwrap();
         entry.add_component(EntityComponent::new(team));
         entry.add_component(state);
+        for (slot, unit) in self.units.iter().enumerate() {
+            entities.push(unit.unpack(world, resources, slot + 1, None, Some(team)));
+        }
         team
     }
 

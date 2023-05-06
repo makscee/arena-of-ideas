@@ -9,17 +9,14 @@ impl UnitSystem {
         format!(
             "{} {}/{}",
             state.name,
-            state.vars.get_int(&VarName::HpValue),
-            state.vars.get_int(&VarName::AttackValue)
+            state.get_int(&VarName::HpValue, world),
+            state.get_int(&VarName::AttackValue, world)
         )
     }
 
-    pub fn is_alive(entity: legion::Entity, world: &legion::World) -> bool {
-        if let Some(state) = ContextState::try_get(entity, world) {
-            state.vars.get_int(&VarName::HpValue) > state.vars.get_int(&VarName::HpDamage)
-        } else {
-            false
-        }
+    pub fn is_alive(entity: legion::Entity, world: &legion::World, resources: &Resources) -> bool {
+        let context = Context::new(ContextLayer::Unit { entity }, world, resources);
+        context.get_int(&VarName::HpValue, world) > context.get_int(&VarName::HpDamage, world)
     }
 
     pub fn all(world: &legion::World) -> Vec<legion::Entity> {

@@ -1,0 +1,21 @@
+{
+    "name": "Bear",
+    "attack": 10,
+    "health": 10,
+    "shader": {
+        "path": "shaders/vfx/layered_triangles.glsl",
+        "parameters": {
+            "uniforms": {
+                "local": {
+                    "u_color": "#895435",
+                    "u_color_1": "#000000",
+                    "u_radius": 0.5,
+                    "u_spin_part": 0.05,
+                    "u_move_speed": 5.3
+                }
+            },
+            "instances": 20,
+            "vertices": 1
+        }
+    }
+}

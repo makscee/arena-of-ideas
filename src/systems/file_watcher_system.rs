@@ -12,7 +12,7 @@ pub struct FileWatcherSystem {
 }
 
 pub trait FileWatcherLoader {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem);
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem);
 }
 
 impl FileWatcherSystem {

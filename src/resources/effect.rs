@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use geng::prelude::itertools::Itertools;
 use strum_macros::AsRefStr;
 
@@ -199,8 +197,12 @@ impl EffectWrapped {
                 value,
                 on_hit: then,
             } => {
-                let owner = context.owner().unwrap();
-                let target = context.target().unwrap();
+                let owner = context
+                    .owner()
+                    .expect(&format!("Owner not found {context}"));
+                let target = context
+                    .target()
+                    .expect(&format!("Target not found {context}"));
                 let mut value = match value {
                     Some(v) => v.calculate(&context, world, resources)?,
                     None => context
@@ -216,13 +218,13 @@ impl EffectWrapped {
                 Event::BeforeOutgoingDamage {
                     owner,
                     target,
-                    damage: value as usize,
+                    damage: initial_damage as usize,
                 }
                 .send(world, resources);
                 Event::BeforeIncomingDamage {
                     owner: target,
                     attacker: owner,
-                    damage: value as usize,
+                    damage: initial_damage as usize,
                 }
                 .send(world, resources);
                 Event::ModifyIncomingDamage.calculate(&mut context, world, resources);
@@ -282,23 +284,34 @@ impl EffectWrapped {
                 Event::AfterOutgoingDamage {
                     owner,
                     target,
-                    damage: value as usize,
+                    damage: initial_damage as usize,
                 }
                 .send(world, resources);
                 Event::AfterIncomingDamage {
                     owner: target,
                     attacker: owner,
-                    damage: value as usize,
+                    damage: initial_damage as usize,
                 }
                 .send(world, resources);
             }
             Effect::Heal { value } => {
                 let value = value.calculate(&context, world, resources)? as usize;
                 let text = format!("+{}", value);
-                let target = context.target().unwrap();
-                UnitSystem::heal_damage(context.owner().unwrap(), target, value, world);
+                let target = context
+                    .target()
+                    .expect(&format!("Target not found {context}"));
+                UnitSystem::heal_damage(
+                    context
+                        .owner()
+                        .expect(&format!("Owner not found {context}")),
+                    target,
+                    value,
+                    world,
+                );
                 if let Some(node) = node.as_mut() {
-                    let color = context.get_color(&VarName::Color, world).unwrap();
+                    let color = context
+                        .get_color(&VarName::Color, world)
+                        .expect(&format!("Color not found {context}"));
                     node.add_effect(VfxSystem::vfx_show_parent_text(
                         resources,
                         &text,
@@ -323,7 +336,7 @@ impl EffectWrapped {
             Effect::Debug { message } => debug!("Debug effect: {}", message),
             Effect::Noop => {}
             Effect::List { effects } => {
-                for (i, effect) in effects.iter().rev().enumerate() {
+                for (i, effect) in effects.iter().enumerate().rev() {
                     resources.action_queue.push_front(Action::new(
                         context.clone_stack_string(&format!("list {i}")),
                         effect.deref().clone(),
@@ -350,7 +363,10 @@ impl EffectWrapped {
                     _ => 0,
                 };
                 Status::change_charges(
-                    context.target().unwrap(),
+                    context
+                        .target()
+                        .or_else(|| context.owner())
+                        .expect(&format!("Target not found {context}")),
                     charges,
                     name,
                     node,
@@ -359,10 +375,16 @@ impl EffectWrapped {
                 );
             }
             Effect::RemoveThisStatus => {
-                let name = context.get_string(&VarName::StatusName, world).unwrap();
-                let charges = context.get_int(&VarName::Charges, world).unwrap();
+                let name = context
+                    .get_string(&VarName::StatusName, world)
+                    .expect(&format!("StatusName not found {context}"));
+                let charges = context
+                    .get_int(&VarName::Charges, world)
+                    .expect(&format!("Charges not found {context}"));
                 Status::change_charges(
-                    context.owner().unwrap(),
+                    context
+                        .owner()
+                        .expect(&format!("Owner not found {context}")),
                     -charges,
                     &name,
                     node,
@@ -371,14 +393,21 @@ impl EffectWrapped {
                 );
             }
             Effect::ClearStatuses => {
-                Status::clear_entity(context.target().unwrap(), world);
+                Status::clear_entity(
+                    context
+                        .target()
+                        .expect(&format!("Target not found {context}")),
+                    world,
+                );
             }
             Effect::UseAbility {
                 ability,
                 force,
                 charges,
             } => {
-                let owner = context.owner().unwrap();
+                let owner = context
+                    .owner()
+                    .expect(&format!("Owner not found {context}"));
                 let house = &AbilityPool::get_house_origin(resources, ability);
                 if !force
                     && ContextState::get(owner, world)
@@ -434,7 +463,9 @@ impl EffectWrapped {
                     .get_int(var, world)
                     .unwrap_or_default();
                 TeamSystem::get_state_mut(
-                    &context.get_faction(&VarName::Faction, world).unwrap(),
+                    &context
+                        .get_faction(&VarName::Faction, world)
+                        .expect(&format!("Faction not found {context}")),
                     world,
                 )
                 .ability_vars
@@ -505,16 +536,24 @@ impl EffectWrapped {
                 if let Some(node) = node.as_mut() {
                     node.add_effect(VfxSystem::vfx_show_curve(
                         resources,
-                        context.owner().unwrap(),
-                        context.target().unwrap(),
+                        context
+                            .owner()
+                            .expect(&format!("Owner not found {context}")),
+                        context
+                            .target()
+                            .expect(&format!("Target not found {context}")),
                         color,
                     ));
                 }
             }
             Effect::Kill => {
                 UnitSystem::deal_damage(
-                    context.owner().unwrap(),
-                    context.target().unwrap(),
+                    context
+                        .owner()
+                        .expect(&format!("Owner not found {context}")),
+                    context
+                        .target()
+                        .expect(&format!("Target not found {context}")),
                     i32::MAX as usize,
                     world,
                 );
@@ -525,7 +564,9 @@ impl EffectWrapped {
                     .and_then(|x| Some(x.calculate(&context, world, resources).ok()?))
                     .unwrap_or_default() as usize;
                 UnitSystem::revive_corpse(
-                    context.target().unwrap(),
+                    context
+                        .target()
+                        .expect(&format!("Target not found {context}")),
                     Some(slot),
                     world,
                     &resources.logger,
@@ -565,7 +606,7 @@ impl EffectWrapped {
                 let entity = entity.calculate(&context, world, resources)?;
                 let value = Context::new(ContextLayer::Unit { entity }, world, resources)
                     .get_var(var, world)
-                    .unwrap();
+                    .expect(&format!("Var {var} not found {context}"));
                 let mut context = context.clone_stack_string(&format!("take var {var}"));
                 let new_name = new_name.unwrap_or(*var);
                 context.stack(
@@ -583,7 +624,11 @@ impl EffectWrapped {
                 ));
             }
             Effect::RemoveTrigger => {
-                if let Some(mut entry) = world.entry(context.target().unwrap()) {
+                if let Some(mut entry) = world.entry(
+                    context
+                        .target()
+                        .expect(&format!("Target not found {context}")),
+                ) {
                     entry.remove_component::<Trigger>();
                 }
             }
@@ -656,7 +701,9 @@ impl EffectWrapped {
                     .unwrap_or_default() as usize;
                 unit.unpack(world, resources, slot, None, context.owner());
                 SlotSystem::fill_gaps(
-                    context.get_faction(&VarName::Faction, world).unwrap(),
+                    context
+                        .get_faction(&VarName::Faction, world)
+                        .expect(&format!("Faction not found {context}")),
                     world,
                 );
             }
@@ -669,7 +716,9 @@ impl EffectWrapped {
                 let faction = if let Some(faction) = faction {
                     faction.calculate(&context, world, resources)?
                 } else {
-                    context.get_faction(&VarName::Faction, world).unwrap()
+                    context
+                        .get_faction(&VarName::Faction, world)
+                        .expect(&format!("Faction not found {context}"))
                 };
                 let state = TeamSystem::get_state_mut(&faction, world);
                 state.vars.change_int(var, delta);
@@ -683,19 +732,28 @@ impl EffectWrapped {
                 let faction = if let Some(faction) = faction {
                     faction.calculate(&context, world, resources)?
                 } else {
-                    context.get_faction(&VarName::Faction, world).unwrap()
+                    context
+                        .get_faction(&VarName::Faction, world)
+                        .expect(&format!("Faction not found {context}"))
                 };
                 let state = TeamSystem::get_state_mut(&faction, world);
                 state.vars.set_int(var, value);
             }
             Effect::ChangeOwnerVarInt { var, delta } => {
                 let delta = delta.calculate(&context, world, resources)?;
-                let state = ContextState::get_mut(context.owner().unwrap(), world);
+                let state = ContextState::get_mut(
+                    context
+                        .owner()
+                        .expect(&format!("Owner not found {context}")),
+                    world,
+                );
                 state.vars.change_int(var, delta);
             }
             Effect::SetOwnerVarInt { var, value } => {
                 let value = value.calculate(&context, world, resources)?;
-                let owner = context.owner().unwrap();
+                let owner = context
+                    .owner()
+                    .expect(&format!("Owner not found {context}"));
                 let state = ContextState::get_mut(owner, world);
                 state.vars.set_int(var, value);
                 resources.logger.log(
@@ -705,7 +763,9 @@ impl EffectWrapped {
             }
             Effect::SetOwnerVarFaction { var, value } => {
                 let value = value.calculate(&context, world, resources)?;
-                let owner = context.owner().unwrap();
+                let owner = context
+                    .owner()
+                    .expect(&format!("Owner not found {context}"));
                 let state = ContextState::get_mut(owner, world);
                 state.vars.set_faction(var, value);
                 resources.logger.log(

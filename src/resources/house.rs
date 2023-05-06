@@ -42,8 +42,8 @@ pub enum HouseName {
 }
 
 impl FileWatcherLoader for House {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::load));
         debug!("Load house {:?}", path);
         let house: House = futures::executor::block_on(load_json(path)).unwrap();
         house.statuses.iter().for_each(|(name, status)| {

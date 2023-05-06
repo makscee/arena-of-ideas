@@ -98,9 +98,6 @@ impl ContextLayer {
                         for (name, charges) in state.statuses.iter() {
                             *statuses.entry(name.to_owned()).or_default() += *charges;
                         }
-                        if let Some(parent) = state.parent {
-                            Self::Entity { entity: parent }.extend_statuses(statuses, world);
-                        }
                     }
                 }
             }
@@ -398,6 +395,7 @@ impl Context {
         for layer in self.layers.iter() {
             layer.extend_statuses(&mut result, world);
         }
+        result.retain(|_, v| *v > 0);
         result
     }
 

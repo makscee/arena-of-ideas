@@ -23,14 +23,14 @@ pub struct Options {
 }
 
 impl FileWatcherLoader for Options {
-    fn loader(resources: &mut Resources, _: &PathBuf, _: &mut FileWatcherSystem) {
-        resources.options = Self::load();
+    fn load(resources: &mut Resources, _: &PathBuf, _: &mut FileWatcherSystem) {
+        resources.options = Self::do_load();
         resources.transition_state = GameState::MainMenu;
     }
 }
 
 impl Options {
-    pub fn load() -> Options {
+    pub fn do_load() -> Options {
         futures::executor::block_on(load_json(static_path().join("options.json"))).unwrap()
     }
 }

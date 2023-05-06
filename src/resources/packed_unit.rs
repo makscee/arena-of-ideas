@@ -177,8 +177,8 @@ impl PackedUnit {
 }
 
 impl FileWatcherLoader for PackedUnit {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::load));
         debug!("Load unit {:?}", path);
         let unit = futures::executor::block_on(load_json(path)).unwrap();
         resources.hero_pool.insert(path.clone(), unit);
@@ -189,10 +189,11 @@ impl fmt::Display for PackedUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "[{} {}/{}]",
+            "[{} {}/{}-{}]",
             self.name.as_str(),
             self.attack,
-            self.health
+            self.health,
+            self.damage
         )
     }
 }

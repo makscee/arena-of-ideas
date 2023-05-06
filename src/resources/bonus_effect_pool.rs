@@ -88,8 +88,8 @@ impl BonusEffectPool {
 }
 
 impl FileWatcherLoader for BonusEffectPool {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::load));
         debug!("Load bonus effects pool {path:?}");
         resources.bonus_pool.effects =
             HashMap::from_iter(enum_iterator::all::<Rarity>().map(|x| (x, default())));

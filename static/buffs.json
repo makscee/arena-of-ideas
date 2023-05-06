@@ -1,0 +1,60 @@
+{
+    "unit": [
+        [
+            "Empower",
+            1
+        ],
+        [
+            "Vitality",
+            1
+        ],
+        [
+            "Defense",
+            1
+        ]
+    ],
+    "team": [
+        {
+            "prefix": "Shielded",
+            "statuses": {
+                "Shield": 1
+            }
+        },
+        {
+            "prefix": "Grown",
+            "statuses": {
+                "Growth": 1
+            }
+        },
+        {
+            "prefix": "Big",
+            "statuses": {
+                "Growth": 3
+            }
+        },
+        {
+            "prefix": "Hard",
+            "statuses": {
+                "Defense": 2
+            }
+        },
+        {
+            "prefix": "Healthy",
+            "statuses": {
+                "Vitality": 4
+            }
+        },
+        {
+            "prefix": "Dark",
+            "statuses": {
+                "DarkVitality": 1
+            }
+        },
+        {
+            "prefix": "Empowered",
+            "statuses": {
+                "Empower": 5
+            }
+        }
+    ]
+}

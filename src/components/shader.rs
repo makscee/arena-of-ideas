@@ -281,7 +281,7 @@ impl ugli::Uniforms for ShaderParameters {
     where
         C: ugli::UniformVisitor,
     {
-        for (name, value) in self.uniforms.iter() {
+        for (name, value) in self.uniforms.iter().chain(self.uniforms.iter_local()) {
             visitor.visit(name, value);
         }
     }

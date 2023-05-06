@@ -56,8 +56,8 @@ impl Ladder {
 }
 
 impl FileWatcherLoader for Ladder {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::load));
         debug!("Load ladder {path:?}");
         let prev_current = resources.ladder.current;
         resources.ladder.teams = futures::executor::block_on(load_json(path)).unwrap();

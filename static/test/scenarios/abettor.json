@@ -6,7 +6,7 @@
                 "health": 1
             },
             {
-                "attack": 0,
+                "attack": 1,
                 "health": 3,
                 "house": "Archers",
                 "trigger": {

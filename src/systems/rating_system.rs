@@ -164,7 +164,9 @@ impl RatingSystem {
     ) {
         resources.logger.set_enabled(false);
 
-        let mut teams = EnemyPool::generate_teams();
+        const MAX_LEVELS: usize = 30;
+
+        let mut teams = EnemyPool::generate_teams(MAX_LEVELS, resources);
         let mut ratings = Ratings::default();
         let mut cnt = 0;
         let save_path = static_path().join("levels.json");
@@ -180,8 +182,8 @@ impl RatingSystem {
             let save = serde_json::to_string_pretty(&teams).unwrap();
 
             match std::fs::write(&save_path, save) {
-                Ok(_) => debug!("Levels saved to {:?}", &save_path),
-                Err(error) => error!("Can't save: {}", error),
+                Ok(_) => debug!("Save levels to {:?}", &save_path),
+                Err(error) => error!("Can't save levels: {}", error),
             }
             println!("\nRun#{cnt}{ratings}");
         }
@@ -268,7 +270,7 @@ impl Ratings {
 
 impl Display for Ratings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let spaces = "                                                                 ";
+        let spaces = ".............................................";
         let mut result: String = default();
         for (name, (score, ratings)) in self.data.iter().sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
         {

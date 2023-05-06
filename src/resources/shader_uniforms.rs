@@ -5,6 +5,8 @@ pub struct ShaderUniforms {
     #[serde(flatten)]
     data: HashMap<String, ShaderUniform>,
     #[serde(default)]
+    local: HashMap<String, ShaderUniform>,
+    #[serde(default)]
     mapping: HashMap<String, String>,
 }
 
@@ -191,6 +193,10 @@ impl ShaderUniforms {
         self.data.iter()
     }
 
+    pub fn iter_local<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
+        self.local.iter()
+    }
+
     pub fn add_mapping(&mut self, from: &str, to: &str) {
         self.mapping.insert(from.to_string(), to.to_string());
     }
@@ -204,6 +210,7 @@ impl From<HashMap<&str, ShaderUniform>> for ShaderUniforms {
                     .into_iter()
                     .map(|(key, value)| (key.to_string(), value)),
             ),
+            local: default(),
             mapping: default(),
         }
     }
@@ -213,6 +220,7 @@ impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
     fn from(value: HashMap<String, ShaderUniform>) -> Self {
         Self {
             data: value,
+            local: default(),
             mapping: default(),
         }
     }

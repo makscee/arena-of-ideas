@@ -1,85 +1,112 @@
 {
     "player_team_name": "Dorks",
     "walkthrough": false,
-    "team_ratings": false,
+    "team_ratings": true,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
-            "name": "Golems",
-            "replications": 2,
+            "name": "Player",
+            "replications": 5,
             "units": [
                 {
-                    "name": "Golem",
-                    "attack": 9,
-                    "health": 9,
-                    "house": "Warriors",
-                    "statuses": {
-                        "Defense": 99
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#737373",
-                                "u_radius": 0.8,
-                                "u_border": 0.8,
-                                "u_circle_fbm": 0.7,
-                                "u_circle_fbm_speed": 0.3,
-                                "u_padding": 1.0
-                            }
-                        }
-                    }
+                    "name": "name",
+                    "attack": 6,
+                    "health": 6,
+                    "description": "",
+                    "house": "Demons"
                 }
             ]
         },
         "dark": {
-            "name": "Knights of Death",
-            "replications": 4,
             "units": [
                 {
-                    "name": "Death Knight",
-                    "attack": 8,
-                    "health": 8,
-                    "description": "On hit:\n70% chance to\napply Reanimate",
-                    "house": "Necromancers",
+                    "name": "Snake",
+                    "description": "On damage dealt:\nKill",
+                    "health": 1,
+                    "damage": 0,
+                    "attack": 1,
+                    "house": "Snakes",
                     "trigger": {
-                        "type": "AfterDamageDealt",
-                        "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "Chance",
-                                "part": 0.7
-                            },
-                            "then": {
-                                "type": "UseAbility",
-                                "ability": "Reanimate"
-                            },
-                            "else": {
-                                "type": "Noop"
-                            }
-                        }
+                        "type": "Noop"
+                    },
+                    "statuses": {
+                        "Poison": 1
                     },
                     "shader": {
                         "path": "shaders/vfx/layered_triangles.glsl",
                         "parameters": {
-                            "uniforms": {
-                                "u_color": "#4B0082",
-                                "u_color_1": "#7183e6",
-                                "u_radius": 0.8,
-                                "u_alpha": 0.3,
-                                "u_spin_part": 0.01,
-                                "u_move_speed": 1.0
-                            },
+                            "vertices": 1,
                             "instances": 20,
-                            "vertices": 1
-                        }
-                    }
+                            "uniforms": {
+                                "local": {
+                                    "u_alpha": 0.3,
+                                    "u_color": "#00d836",
+                                    "u_spin_part": 0.01,
+                                    "u_color_1": "#00ff22",
+                                    "u_move_speed": 1.3,
+                                    "u_radius": 0.8
+                                },
+                                "mapping": {}
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "chain_before": [],
+                        "chain_after": [],
+                        "request_vars": []
+                    },
+                    "rank": 0
+                },
+                {
+                    "name": "Snake",
+                    "description": "On damage dealt:\nKill",
+                    "health": 1,
+                    "damage": 0,
+                    "attack": 1,
+                    "house": "Snakes",
+                    "trigger": {
+                        "type": "Noop"
+                    },
+                    "statuses": {
+                        "Poison": 1
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/layered_triangles.glsl",
+                        "parameters": {
+                            "vertices": 1,
+                            "instances": 20,
+                            "uniforms": {
+                                "local": {
+                                    "u_alpha": 0.3,
+                                    "u_color": "#00d836",
+                                    "u_spin_part": 0.01,
+                                    "u_color_1": "#00ff22",
+                                    "u_move_speed": 1.3,
+                                    "u_radius": 0.8
+                                },
+                                "mapping": {}
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "chain_before": [],
+                        "chain_after": [],
+                        "request_vars": []
+                    },
+                    "rank": 0
                 }
-            ]
+            ],
+            "name": "Shielded Snakes (2)",
+            "vars": {},
+            "ability_vars": {},
+            "statuses": {
+                "Shield": 1
+            },
+            "slots": 2
         }
     },
     "fov": 16.0,
@@ -90,7 +117,7 @@
         "Effect": true,
         "Contexts": false,
         "Condition": true,
-        "Expression": false,
+        "Expression": true,
         "Trigger": true,
         "Event": true,
         "UnitCreation": true,

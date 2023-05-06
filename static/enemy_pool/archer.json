@@ -1,0 +1,34 @@
+{
+    "name": "Archer",
+    "health": 3,
+    "attack": 3,
+    "description": "Turn start:\nShoot",
+    "house": "Archers",
+    "trigger": {
+        "type": "TurnStart",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Shoot",
+            "charges": {
+                "type": "Const",
+                "value": 1
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "local": {
+                    "u_color": "#00690e",
+                    "u_radius": 0.9,
+                    "u_border": 0.5,
+                    "u_circle_fbm": 0.3,
+                    "u_aa": 1.5,
+                    "u_circle_fbm_speed": 1.0,
+                    "u_padding": 3.0
+                }
+            }
+        }
+    }
+}

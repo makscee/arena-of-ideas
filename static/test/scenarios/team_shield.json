@@ -1,0 +1,54 @@
+{
+    "light": {
+        "units": [
+            {
+                "attack": 20,
+                "health": 20
+            },
+            {
+                "attack": 20,
+                "health": 20
+            },
+            {
+                "attack": 20,
+                "health": 20
+            }
+        ]
+    },
+    "dark": {
+        "units": [
+            {
+                "health": 1,
+                "attack": 1,
+                "statuses": {
+                    "Poison": 1
+                }
+            }
+        ],
+        "statuses": {
+            "Shield": 1
+        }
+    },
+    "assert": {
+        "type": "And",
+        "a": {
+            "type": "SlotOccupied",
+            "slot": {
+                "type": "Const",
+                "value": 1
+            },
+            "faction": "Light"
+        },
+        "b": {
+            "type": "Not",
+            "condition": {
+                "type": "SlotOccupied",
+                "slot": {
+                    "type": "Const",
+                    "value": 2
+                },
+                "faction": "Light"
+            }
+        }
+    }
+}

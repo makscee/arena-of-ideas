@@ -311,7 +311,6 @@ impl BattleSystem {
                 }
             }
         }
-
         if light.is_some() && dark.is_some() {
             Some((light.unwrap(), dark.unwrap()))
         } else {
@@ -337,7 +336,9 @@ impl BattleSystem {
     ) {
         Self::spin(world, resources, cluster);
 
-        if UnitSystem::is_alive(left, world) && UnitSystem::is_alive(right, world) {
+        if UnitSystem::is_alive(left, world, resources)
+            && UnitSystem::is_alive(right, world, resources)
+        {
             resources.action_queue.push_back(Action::new(
                 Context::new(ContextLayer::Unit { entity: left }, world, resources)
                     .set_target(right),
@@ -359,7 +360,7 @@ impl BattleSystem {
             Self::spin(world, resources, cluster);
         }
 
-        if UnitSystem::is_alive(left, world) {
+        if UnitSystem::is_alive(left, world, resources) {
             Event::AfterStrike {
                 owner: left,
                 target: right,
@@ -368,7 +369,7 @@ impl BattleSystem {
             Self::spin(world, resources, cluster);
         }
 
-        if UnitSystem::is_alive(right, world) {
+        if UnitSystem::is_alive(right, world, resources) {
             Event::AfterStrike {
                 owner: right,
                 target: left,

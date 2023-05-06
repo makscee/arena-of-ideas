@@ -11,6 +11,7 @@ mod animated_shader_uniforms;
 mod battle_data;
 mod bonus_effect;
 mod bonus_effect_pool;
+mod buff_pool;
 mod camera;
 mod condition;
 mod context;
@@ -49,6 +50,7 @@ pub use animated_shader_uniforms::*;
 pub use battle_data::*;
 pub use bonus_effect::*;
 pub use bonus_effect_pool::*;
+pub use buff_pool::*;
 pub use camera::*;
 pub use condition::*;
 pub use context::*;
@@ -92,6 +94,7 @@ pub struct Resources {
     pub delta_time: Time,
     pub status_library: StatusLibrary,
     pub ability_pool: AbilityPool,
+    pub buff_pool: BuffPool,
     pub action_queue: VecDeque<Action>,
     pub tape_player: TapePlayer,
     pub frame_shaders: Vec<Shader>,
@@ -154,18 +157,16 @@ impl Resources {
             bonus_pool: default(),
             definitions_regex: Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap(),
             status_library: default(),
+            buff_pool: default(),
         }
     }
 
     pub fn load(&mut self, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(
-            &static_path().join("options.json"),
-            Box::new(Options::loader),
-        );
-        HousePool::loader(self, &static_path(), watcher);
-        HeroPool::loader(self, &static_path().join("units/_list.json"), watcher);
-        Ladder::loader(self, &static_path().join("levels.json"), watcher);
-        BonusEffectPool::loader(self, &static_path().join("bonuses.json"), watcher);
+        watcher.watch_file(&static_path().join("options.json"), Box::new(Options::load));
+        HousePool::load(self, &static_path(), watcher);
+        HeroPool::load(self, &static_path().join("units/_list.json"), watcher);
+        Ladder::load(self, &static_path().join("levels.json"), watcher);
+        BuffPool::load(self, &static_path().join("buffs.json"), watcher);
 
         self.logger.load(&self.options);
     }
@@ -178,6 +179,6 @@ impl Resources {
             watcher,
         );
         self.fonts = Fonts::new(geng);
-        ImageTextures::loader(self, &static_path().join("images/_list.json"), watcher);
+        ImageTextures::load(self, &static_path().join("images/_list.json"), watcher);
     }
 }

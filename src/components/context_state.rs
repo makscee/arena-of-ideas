@@ -39,7 +39,7 @@ impl ContextState {
                 return state;
             }
         }
-        panic!("No state")
+        panic!("No state for {entity:?}")
     }
 
     pub fn get_mut<'a>(

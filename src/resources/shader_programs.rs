@@ -44,7 +44,7 @@ impl ShaderPrograms {
         paths.into_iter().for_each(|path| {
             Self::shader_library_program_loader(resources, &static_path().join(path), watcher);
         });
-        ShaderPrograms::loader(
+        ShaderPrograms::load(
             resources,
             &static_path().join("shaders/_list.json"),
             watcher,
@@ -75,8 +75,8 @@ impl ShaderPrograms {
 }
 
 impl FileWatcherLoader for ShaderPrograms {
-    fn loader(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
-        watcher.watch_file(path, Box::new(Self::loader));
+    fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
+        watcher.watch_file(path, Box::new(Self::load));
         let paths: Vec<PathBuf> = futures::executor::block_on(load_json(path)).unwrap();
         paths.into_iter().for_each(|path| {
             Self::program_loader(resources, &static_path().join(path), watcher);
