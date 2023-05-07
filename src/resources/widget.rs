@@ -9,12 +9,14 @@ pub enum Widget<'a> {
     },
     BonusChoicePanel {
         bonuses: Vec<BonusEffect>,
-        entity: legion::Entity,
+        panel_entity: legion::Entity,
         options: &'a Options,
     },
     BattleChoicePanel {
         unit: &'a PackedUnit,
         difficulty: usize,
+        name: String,
+        panel_entity: legion::Entity,
         resources: &'a Resources,
     },
 }
@@ -26,19 +28,52 @@ impl<'a> Widget<'_> {
                 unit,
                 difficulty,
                 resources,
+                name,
+                panel_entity,
             } => {
                 let mut node = Node::default();
-
+                let rarity_color = *resources
+                    .options
+                    .colors
+                    .rarities
+                    .get(&enum_iterator::all::<Rarity>().collect_vec()[difficulty])
+                    .unwrap();
                 let (mut shader, animation, duration) = {
                     let anim = &resources.options.widgets.battle_choice_panel.bg;
-                    let color = enum_iterator::all::<Rarity>().collect_vec()[difficulty];
-                    let color = *resources.options.colors.rarities.get(&color).unwrap();
+
                     let mut shader = anim
                         .shader
                         .clone()
-                        .set_color("u_color", color)
-                        .set_color("u_outline_color", color);
+                        .set_color("u_color", rarity_color)
+                        .set_color("u_outline_color", rarity_color)
+                        .set_int("u_difficulty", difficulty as i32);
                     shader.input_handlers.push(ButtonSystem::button_handler);
+                    shader
+                        .input_handlers
+                        .push(|event, _, shader, world, resources| match event {
+                            InputEvent::Click => {
+                                debug!("Click");
+                                if resources.tape_player.tape.close_panels(
+                                    shader.parent.unwrap(),
+                                    resources.tape_player.head,
+                                ) {
+                                    let difficulty = shader
+                                        .parameters
+                                        .uniforms
+                                        .try_get_int("u_difficulty")
+                                        .unwrap()
+                                        as usize;
+                                    debug!("Battle choice make selection: {difficulty}");
+                                    resources.camera.focus = Focus::Battle;
+                                    let dark =
+                                        Ladder::get_current_teams(resources)[difficulty].clone();
+                                    let light = PackedTeam::pack(&Faction::Team, world, resources);
+                                    BattleSystem::init_battle(&light, &dark, world, resources);
+                                }
+                            }
+                            _ => {}
+                        });
+                    shader.parent = Some(panel_entity);
                     shader.entity = Some(new_entity());
                     let position = shader
                         .parameters
@@ -88,6 +123,16 @@ impl<'a> Widget<'_> {
                     shader.order += difficulty as i32 * 3;
                     (shader, animation, anim.duration)
                 };
+
+                let name_shader = resources
+                    .options
+                    .widgets
+                    .battle_choice_panel
+                    .name
+                    .clone()
+                    .set_string("u_text", name, 1)
+                    .set_color("u_mid_border_color", rarity_color);
+                shader.chain_after.push(name_shader);
 
                 let star_shader = &resources.options.widgets.battle_choice_panel.star;
                 for i in 0..3 {
@@ -261,7 +306,7 @@ impl<'a> Widget<'_> {
             }
             Widget::BonusChoicePanel {
                 bonuses,
-                entity,
+                panel_entity: entity,
                 options,
             } => {
                 let mut node = Node::default();
@@ -300,22 +345,15 @@ impl<'a> Widget<'_> {
                         .input_handlers
                         .push(|event, _, shader, world, resources| match event {
                             InputEvent::Click => {
-                                if let Some(panel) = resources
-                                    .tape_player
-                                    .tape
-                                    .panels
-                                    .get_mut(&shader.parent.unwrap())
-                                {
-                                    if panel.set_open(false, resources.tape_player.head) {
-                                        let ind = shader
-                                            .parameters
-                                            .uniforms
-                                            .try_get_int("u_index")
-                                            .unwrap()
+                                if resources.tape_player.tape.close_panels(
+                                    shader.parent.unwrap(),
+                                    resources.tape_player.head,
+                                ) {
+                                    let ind =
+                                        shader.parameters.uniforms.try_get_int("u_index").unwrap()
                                             as usize;
-                                        debug!("Panel make selection: {ind}");
-                                        BonusEffectPool::make_selection(ind, world, resources);
-                                    }
+                                    debug!("Panel make selection: {ind}");
+                                    BonusEffectPool::make_selection(ind, world, resources);
                                 }
                             }
                             _ => {}

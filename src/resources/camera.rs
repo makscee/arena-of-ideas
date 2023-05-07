@@ -7,6 +7,7 @@ pub struct Camera {
     pub focus: Focus,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum Focus {
     Shop,
     Battle,

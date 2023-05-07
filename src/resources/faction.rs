@@ -21,7 +21,6 @@ pub enum Faction {
     Dark,
     Team,
     Shop,
-    Sacrifice,
 }
 
 impl From<f32> for Faction {
@@ -49,7 +48,6 @@ impl Faction {
             Faction::Dark => Faction::Light,
             Faction::Team => Faction::Shop,
             Faction::Shop => Faction::Team,
-            Faction::Sacrifice => *self,
         }
     }
     pub fn all_iter() -> impl Iterator<Item = Faction> {

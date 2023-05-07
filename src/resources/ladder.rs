@@ -13,6 +13,16 @@ impl Ladder {
         Self::generate_team(ladder.teams[ladder.current].clone().into())
     }
 
+    pub fn get_current_teams(resources: &Resources) -> Vec<&PackedTeam> {
+        let ladder = &resources.ladder;
+        let current = ladder.current;
+        vec![
+            &ladder.teams[current],
+            &ladder.teams[current + 1],
+            &ladder.teams[current + 2],
+        ]
+    }
+
     pub fn generate_team(mut team: PackedTeam) -> PackedTeam {
         return team;
         let size = team.units.len();
@@ -62,5 +72,9 @@ impl FileWatcherLoader for Ladder {
         let prev_current = resources.ladder.current;
         resources.ladder.teams = futures::executor::block_on(load_json(path)).unwrap();
         resources.ladder.current = prev_current;
+        debug!(
+            "Loaded {} teams, current level {prev_current}",
+            resources.ladder.teams.len()
+        );
     }
 }

@@ -18,14 +18,13 @@ impl SlotSystem {
         let faction_mul: vec2<f32> = vec2(
             match faction {
                 Faction::Light => -1.0,
-                Faction::Dark | Faction::Team | Faction::Shop | Faction::Sacrifice => 1.0,
+                Faction::Dark | Faction::Team | Faction::Shop => 1.0,
             },
             1.0,
         );
         let spacing: vec2<f32> = match faction {
             Faction::Dark | Faction::Light => floats.slots_battle_team_spacing,
             Faction::Team | Faction::Shop => floats.slots_shop_spacing,
-            Faction::Sacrifice => floats.slots_sacrifice_spacing,
         };
         let slot = slot as i32 - 1;
         match faction {
@@ -43,9 +42,6 @@ impl SlotSystem {
             }
             Faction::Shop => {
                 SHOP_POSITION + floats.slots_shop_team_position + spacing * (slot + 1) as f32
-            }
-            Faction::Sacrifice => {
-                SHOP_POSITION + floats.slots_sacrifice_position + spacing * slot as f32
             }
         }
     }
@@ -188,17 +184,6 @@ impl SlotSystem {
             Faction::Team => {
                 Self::add_slot_activation_btn(&mut shader, "Sell", None, entity, resources);
             }
-            Faction::Sacrifice => {
-                if slot == 1 {
-                    Self::add_slot_activation_btn(
-                        &mut shader,
-                        "Sacrifice",
-                        None,
-                        entity,
-                        resources,
-                    );
-                }
-            }
             Faction::Shop => {
                 shader
                     .chain_after
@@ -271,16 +256,6 @@ impl SlotSystem {
                     ShopSystem::try_sell(entity, resources, world);
                 }
             }
-            Faction::Sacrifice => {
-                let units = UnitSystem::collect_faction(world, faction);
-                BonusEffectPool::load_widget(units.len(), world, resources);
-                for unit in units {
-                    world.remove(unit);
-                }
-                TeamSystem::get_state_mut(&faction, world)
-                    .vars
-                    .set_int(&VarName::Slots, 1);
-            }
             _ => {}
         }
     }
@@ -317,19 +292,6 @@ impl SlotSystem {
                 if Self::make_gap(faction, slot, world, resources, Some(entity)) {
                     let state = ContextState::get_mut(entity, world);
                     state.vars.set_int(&VarName::Slot, slot as i32);
-                }
-            } else if faction == Faction::Sacrifice && unit_faction == Faction::Team
-                || faction == Faction::Team && unit_faction == Faction::Sacrifice
-            {
-                if SlotSystem::find_unit_by_slot(slot, &faction, world).is_none() {
-                    let state = ContextState::get_mut(entity, world);
-                    state.vars.set_faction(&VarName::Faction, faction);
-                    state.vars.set_int(&VarName::Slot, slot as i32);
-
-                    let units = UnitSystem::collect_faction(world, Faction::Sacrifice).len() as i32;
-                    TeamSystem::get_state_mut(&Faction::Sacrifice, world)
-                        .vars
-                        .set_int(&VarName::Slots, units + 1);
                 }
             }
         }

@@ -4,10 +4,10 @@ use geng::prelude::itertools::Itertools;
 
 #[derive(Default)]
 pub struct Tape {
-    pub persistent_node: Node,                      // always rendered
-    pub panels: HashMap<legion::Entity, NodePanel>, // rendered on top until removed
-    cluster_chain: Vec<NodeCluster>,                // for recording
-    cluster_queue: ClusterQueue,                    // for one time play
+    pub persistent_node: Node,                // always rendered
+    panels: Vec<(legion::Entity, NodePanel)>, // rendered on top until removed
+    cluster_chain: Vec<NodeCluster>,          // for recording
+    cluster_queue: ClusterQueue,              // for one time play
 }
 
 pub struct NodePanel {
@@ -70,7 +70,7 @@ impl Tape {
             node.merge_entities(&queue_node, false);
         }
         self.panels
-            .retain(|_, panel| panel.join_node(&mut node, ts));
+            .retain(|(_, panel)| panel.join_node(&mut node, ts));
         entity_shaders.extend(node.get_entity_shaders());
         node.add_effects(StatusSystem::get_active_statuses_panel_effects(
             &node, resources,
@@ -119,6 +119,21 @@ impl Tape {
             start_ts += duration;
         }
         None
+    }
+
+    pub fn close_panels(&mut self, panel_entity: legion::Entity, ts: Time) -> bool {
+        let mut result = false;
+        for (entity, panel) in self.panels.iter_mut() {
+            if *entity == panel_entity {
+                result = true;
+                panel.set_open(false, ts);
+            }
+        }
+        result
+    }
+
+    pub fn push_panel(&mut self, entity: legion::Entity, panel: NodePanel) {
+        self.panels.push((entity, panel));
     }
 }
 

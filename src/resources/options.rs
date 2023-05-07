@@ -80,6 +80,7 @@ pub struct Widgets {
 pub struct BattleChoicePanel {
     pub bg: AnimatedShader,
     pub star: Shader,
+    pub name: Shader,
 }
 
 #[derive(Deserialize, Debug)]
@@ -157,11 +158,9 @@ pub struct CustomGameConfig {
 pub struct Floats {
     pub slots_battle_team_position: vec2<f32>,
     pub slots_shop_team_position: vec2<f32>,
-    pub slots_sacrifice_position: vec2<f32>,
     pub slots_striker_position: vec2<f32>,
     pub slots_battle_team_spacing: vec2<f32>,
     pub slots_shop_spacing: vec2<f32>,
-    pub slots_sacrifice_spacing: vec2<f32>,
     pub slots_battle_team_scale: f32,
     pub slots_striker_scale: f32,
     pub slot_info_offset: f32,

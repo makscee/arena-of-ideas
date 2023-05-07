@@ -1,13 +1,13 @@
 {
     "player_team_name": "Dorks",
     "walkthrough": false,
-    "team_ratings": true,
+    "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 5,
@@ -129,8 +129,7 @@
             "Dark": "#E6E6E6",
             "Light": "#1D1D1D",
             "Shop": "#FFD700",
-            "Team": "#86C4E4",
-            "Sacrifice": "#C0392B"
+            "Team": "#86C4E4"
         },
         "rarities": {
             "Common": "#B2B2B2",
@@ -709,19 +708,11 @@
             9.0,
             -8.0
         ],
-        "slots_sacrifice_position": [
-            6.0,
-            -0.0
-        ],
         "slots_battle_team_spacing": [
             0.45,
             2.0
         ],
         "slots_shop_spacing": [
-            -2.5,
-            0.0
-        ],
-        "slots_sacrifice_spacing": [
             -2.5,
             0.0
         ],
@@ -787,7 +778,8 @@
                                     1.5,
                                     0.0
                                 ]
-                            }
+                            },
+                            "easing": "QuartInOut"
                         }
                     ]
                 }
@@ -817,6 +809,33 @@
                 },
                 "layer": "UI",
                 "order": 1001
+            },
+            "name": {
+                "path": "shaders/vfx/text.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_ui": 1,
+                        "u_aspect_adjust": 1,
+                        "u_aspect_offset_adjust": 1,
+                        "u_color": "#000000",
+                        "u_rotation": 0.0,
+                        "u_offset": [
+                            -0.4,
+                            1.1
+                        ],
+                        "u_box": [
+                            3.0,
+                            0.5
+                        ],
+                        "u_outline_color": "#ffffff",
+                        "u_mid_border_color": "#ffffff",
+                        "u_outline_fade": 0.5,
+                        "u_mid_border": 0.04,
+                        "u_size": 0.2,
+                        "u_padding": 0.0
+                    }
+                },
+                "layer": "UI"
             }
         },
         "bonus_choice_panel": {

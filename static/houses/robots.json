@@ -91,6 +91,11 @@
             },
             "shader": {
                 "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
                 "layer": "Unit"
             }
         }

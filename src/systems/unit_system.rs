@@ -82,7 +82,7 @@ impl UnitSystem {
             .add_context(&context, world);
         let faction = context.get_faction(&VarName::Faction, world).unwrap();
         let slot = context.get_int(&VarName::Slot, world).unwrap() as usize;
-        if faction == Faction::Shop || faction == Faction::Team || faction == Faction::Sacrifice {
+        if faction == Faction::Shop || faction == Faction::Team {
             shader.input_handlers.push(Self::unit_input_handler);
         }
         shader

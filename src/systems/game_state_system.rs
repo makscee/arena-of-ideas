@@ -37,8 +37,12 @@ impl System for GameStateSystem {
             }
             GameState::Shop => {
                 if resources.input_data.down_keys.contains(&Space) {
-                    ShopSystem::switch_to_battle(world, resources);
-                    resources.transition_state = GameState::Battle;
+                    // ShopSystem::switch_to_battle(world, resources);
+                    // resources.transition_state = GameState::Battle;
+                    match resources.camera.focus == Focus::Shop {
+                        true => ShopSystem::show_battle_choice_widget(resources),
+                        false => resources.transition_state = GameState::Battle,
+                    }
                 }
 
                 if resources.input_data.down_keys.contains(&G) {
@@ -61,7 +65,7 @@ impl System for GameStateSystem {
                     SaveSystem::save(world, resources);
                 }
                 if resources.input_data.down_keys.contains(&B) {
-                    // BonusEffectPool::load_widget(5, world, resources);
+                    BonusEffectPool::load_widget(5, world, resources);
 
                     // resources.tape_player.tape.push_to_queue(
                     //     NodeCluster::new(
@@ -74,53 +78,6 @@ impl System for GameStateSystem {
                     //     ),
                     //     resources.tape_player.head,
                     // );
-
-                    let unit = resources
-                        .hero_pool
-                        .find_by_name("Amplifier")
-                        .unwrap()
-                        .clone();
-                    let node = Widget::BattleChoicePanel {
-                        unit: &unit,
-                        difficulty: 0,
-                        resources: &resources,
-                    }
-                    .generate_node()
-                    .lock(NodeLockType::Empty);
-                    let panel = NodePanel::new(node, resources.tape_player.head + 0.0);
-                    resources
-                        .tape_player
-                        .tape
-                        .panels
-                        .insert(new_entity(), panel);
-
-                    let node = Widget::BattleChoicePanel {
-                        unit: &unit,
-                        difficulty: 1,
-                        resources: &resources,
-                    }
-                    .generate_node()
-                    .lock(NodeLockType::Empty);
-                    let panel = NodePanel::new(node, resources.tape_player.head + 0.25);
-                    resources
-                        .tape_player
-                        .tape
-                        .panels
-                        .insert(new_entity(), panel);
-
-                    let node = Widget::BattleChoicePanel {
-                        unit: &unit,
-                        difficulty: 2,
-                        resources: &resources,
-                    }
-                    .generate_node()
-                    .lock(NodeLockType::Empty);
-                    let panel = NodePanel::new(node, resources.tape_player.head + 0.5);
-                    resources
-                        .tape_player
-                        .tape
-                        .panels
-                        .insert(new_entity(), panel);
                 }
                 if resources.input_data.down_keys.contains(&P) {
                     if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
@@ -286,9 +243,6 @@ impl GameStateSystem {
                 if resources.current_state == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
-                    TeamSystem::get_state_mut(&Faction::Sacrifice, world)
-                        .vars
-                        .set_int(&VarName::Slots, 1);
                 } else if resources.current_state == GameState::Battle {
                     BonusEffectPool::load_widget(resources.last_score, world, resources);
                     PackedTeam::new("Dark".to_owned(), default()).unpack(

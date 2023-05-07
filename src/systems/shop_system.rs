@@ -1,5 +1,6 @@
 use geng::ui::*;
-use legion::EntityStore;
+
+use crate::resources::Widget;
 
 use super::*;
 
@@ -11,14 +12,7 @@ pub struct ShopSystem {
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if self.need_switch_battle {
-            match resources.camera.focus {
-                Focus::Shop => {
-                    Self::switch_to_battle(world, resources);
-                }
-                Focus::Battle => {
-                    Self::switch_to_shop(world, resources);
-                }
-            }
+            Self::show_battle_choice_widget(resources);
             self.need_switch_battle = false;
         }
         Self::refresh_tape(world, resources);
@@ -89,6 +83,40 @@ impl System for ShopSystem {
 impl ShopSystem {
     pub fn new() -> Self {
         default()
+    }
+
+    pub fn show_battle_choice_widget(resources: &mut Resources) {
+        debug!("Show widget");
+        let teams = Ladder::get_current_teams(resources);
+        let data = teams
+            .into_iter()
+            .map(|team| (team.units[0].clone(), team.name.clone()))
+            .collect_vec();
+        let panel_entity = new_entity();
+        for (difficulty, (unit, name)) in data.into_iter().enumerate() {
+            Self::show_battle_choice_widget_part(&unit, difficulty, name, panel_entity, resources);
+        }
+    }
+
+    fn show_battle_choice_widget_part(
+        unit: &PackedUnit,
+        difficulty: usize,
+        name: String,
+        panel_entity: legion::Entity,
+        resources: &mut Resources,
+    ) {
+        let node = Widget::BattleChoicePanel {
+            unit: &unit,
+            difficulty,
+            resources: &resources,
+            name,
+            panel_entity,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty);
+        let panel = NodePanel::new(node, resources.tape_player.head + 0.0);
+
+        resources.tape_player.tape.push_panel(panel_entity, panel);
     }
 
     pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
@@ -233,9 +261,6 @@ impl ShopSystem {
 
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         ShopData::load_pool(resources);
-        let mut team = PackedTeam::new("Sacrifice".to_owned(), default());
-        team.slots = 1;
-        team.unpack(&Faction::Sacrifice, world, resources);
         PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
         PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
 
