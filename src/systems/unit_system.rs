@@ -117,23 +117,14 @@ impl UnitSystem {
             .uniforms
             .insert_string_ref(&VarName::HpStr.uniform(), (hp - damage).to_string(), 1)
             .insert_string_ref(&VarName::AttackStr.uniform(), atk.to_string(), 1);
-
-        shader.parameters.uniforms.insert_int_ref(
-            "u_hp_modified",
-            if damage > 0 {
-                -1
-            } else if original_hp < hp {
-                1
-            } else {
-                0
-            },
-        );
+        if damage > 0 {
+            shader.set_color_ref("u_hp_color", resources.options.colors.damage);
+        } else if hp > original_hp {
+            shader.set_color_ref("u_hp_color", resources.options.colors.addition);
+        }
 
         if original_atk < atk {
-            shader
-                .parameters
-                .uniforms
-                .insert_int_ref("u_attack_modified", 1);
+            shader.set_color_ref("u_attack_color", resources.options.colors.addition);
         }
 
         shader.entity = Some(entity);

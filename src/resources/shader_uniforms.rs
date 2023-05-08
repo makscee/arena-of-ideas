@@ -146,12 +146,11 @@ impl ShaderUniforms {
         self.data.get(self.map(key))
     }
 
-    pub fn map<'a>(&'a self, key: &'a str) -> &'a str {
-        if let Some(key) = self.mapping.get(key) {
-            key.as_str()
-        } else {
-            key
+    pub fn map<'a>(&'a self, mut key: &'a str) -> &'a str {
+        while let Some(map) = self.mapping.get(key) {
+            key = map.as_str()
         }
+        key
     }
 
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {

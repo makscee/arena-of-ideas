@@ -153,12 +153,11 @@ impl PackedUnit {
             .clone()
             .set_uniform("u_offset", ShaderUniform::Vec2(hp_offset))
             .set_uniform("u_card_offset", ShaderUniform::Vec2(hp_card_offset))
-            .set_uniform("u_animate_on_damage", ShaderUniform::Float(1.0))
             .set_uniform("u_color", ShaderUniform::Color(options.colors.stats_health))
             .set_string("u_text", self.health.to_string(), 1)
-            .set_int("u_value_modified", 0)
             .set_mapping("u_text", "u_hp_str")
-            .set_mapping("u_value_modified", "u_hp_modified");
+            .set_mapping("u_text_extra_size", "u_damage_taken")
+            .set_mapping("u_text_color", "u_hp_color");
         shader.chain_after.push(hp_shader);
 
         let attack_shader = options
@@ -167,9 +166,8 @@ impl PackedUnit {
             .clone()
             .set_uniform("u_color", ShaderUniform::Color(options.colors.stats_attack))
             .set_string("u_text", self.attack.to_string(), 1)
-            .set_int("u_value_modified", 0)
             .set_mapping("u_text", "u_attack_str")
-            .set_mapping("u_value_modified", "u_attack_modified");
+            .set_mapping("u_text_color", "u_attack_color");
         shader.chain_after.push(attack_shader);
 
         shader

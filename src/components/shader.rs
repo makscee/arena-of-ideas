@@ -186,7 +186,12 @@ impl Shader {
         let card = uniforms.try_get_float("u_card").unwrap_or_default();
         let mut scale = uniforms.try_get_float("u_scale").unwrap_or(1.0);
         let card_size = uniforms.try_get_float("u_card_size").unwrap_or_default();
-        let size = uniforms.try_get_float("u_size").unwrap_or(1.0) + card_size * card;
+        let size = uniforms.try_get_float("u_size").unwrap_or(1.0)
+            + card_size * card
+            + uniforms.try_get_float("u_extra_size").unwrap_or_default()
+                * uniforms
+                    .try_get_float("u_extra_size_multiplier")
+                    .unwrap_or(1.0);
         let zoom = uniforms.try_get_float("u_zoom").unwrap_or(1.0);
         let mut offset = offset + card_offset * card + index_offset * index as f32;
         position += card * vec2(0.0, 0.7);

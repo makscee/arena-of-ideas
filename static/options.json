@@ -7,33 +7,15 @@
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
             "units": [
                 {
-                    "health": 2,
-                    "attack": 2,
-                    "house": "Vampires",
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "LifeSteal"
-                            }
-                        }
-                    }
+                    "health": 10,
+                    "attack": 1,
+                    "house": "Vampires"
                 }
             ]
         },
@@ -43,7 +25,7 @@
                 {
                     "name": "enemy",
                     "attack": 1,
-                    "health": 1
+                    "health": 10
                 }
             ],
             "name": "Enemies",
@@ -93,7 +75,7 @@
         "stats_health": "#FF4D4D",
         "damage": "#FF4D4D",
         "healing": "#08d932",
-        "addition": "#cdeeff",
+        "addition": "#0ae227",
         "deletion": "#C0392B",
         "victory": "#0bc1d1",
         "defeat": "#FF6666",
@@ -157,6 +139,8 @@
                     "u_card_size": 0.2,
                     "u_alpha": 1.0,
                     "u_aspect_offset_adjust": 1,
+                    "u_text_color": "#ffffff",
+                    "u_text_extra_size": 0.0,
                     "u_card_offset": [
                         -0.6,
                         -2.2
@@ -176,11 +160,14 @@
                             "u_text_inside": 0.47,
                             "u_text_border": 0.3,
                             "u_size": 0.5,
-                            "u_color": "#ffffff",
-                            "u_outline_color": "#404040"
+                            "u_outline_color": "#404040",
+                            "u_extra_size_multiplier": 0.3,
+                            "mapping": {
+                                "u_color": "u_text_color",
+                                "u_extra_size": "u_text_extra_size"
+                            }
                         }
-                    },
-                    "layer": "UI"
+                    }
                 }
             ],
             "layer": "Unit"
