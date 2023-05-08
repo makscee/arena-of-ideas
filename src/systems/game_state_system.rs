@@ -4,12 +4,13 @@ pub struct GameStateSystem {
     pub systems: HashMap<GameState, Vec<Box<dyn System>>>,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum GameState {
     MainMenu,
     Shop,
     Battle,
     Gallery,
+    Sacrifice,
     GameOver,
     CustomGame,
 }
@@ -108,6 +109,7 @@ impl System for GameStateSystem {
                     resources.tape_player.head = 0.0;
                 }
             }
+            GameState::Sacrifice => {}
         }
         self.systems
             .get_mut(&resources.current_state)
@@ -201,16 +203,31 @@ impl GameStateSystem {
         self.systems.insert(state, systems);
     }
 
-    fn transition(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if resources.current_state == resources.transition_state {
-            return;
-        }
-        // transition from
-        match resources.current_state {
-            GameState::MainMenu => {}
+    pub fn set_transition(to: GameState, resources: &mut Resources) {
+        resources.transition_state = to;
+    }
+
+    pub fn change_state(to: GameState, world: &mut legion::World, resources: &mut Resources) {
+        resources
+            .tape_player
+            .tape
+            .close_all_panels(resources.tape_player.head);
+        let from = resources.current_state;
+        Self::leave_state(from, to, world, resources);
+        Self::enter_state(from, to, world, resources);
+        resources.current_state = to;
+    }
+
+    fn leave_state(
+        from: GameState,
+        to: GameState,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        match from {
             GameState::Shop => {
-                Event::ShopEnd.send(world, resources);
                 resources.tape_player.clear();
+                Event::ShopEnd.send(world, resources);
                 ShopSystem::clear_case(world, resources);
                 ShopSystem::reset_g(world);
             }
@@ -219,31 +236,32 @@ impl GameStateSystem {
                 Event::BattleEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
             }
-            GameState::Gallery => {}
             GameState::GameOver => {
                 resources.camera.camera.fov = resources.options.fov;
                 resources.camera.focus = Focus::Battle;
             }
-            GameState::CustomGame => {}
+            GameState::Sacrifice
+            | GameState::Gallery
+            | GameState::MainMenu
+            | GameState::CustomGame => {}
         }
+    }
 
-        //transition to
-        match resources.transition_state {
+    fn enter_state(
+        from: GameState,
+        to: GameState,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        match to {
             GameState::MainMenu => {
                 Game::restart(world, resources);
             }
-            GameState::Battle => {
-                resources.camera.focus = Focus::Battle;
-                let mut tape = Some(Tape::default());
-                BattleSystem::run_battle(world, resources, &mut tape);
-                resources.tape_player.clear();
-                resources.tape_player.tape = tape.unwrap();
-            }
             GameState::Shop => {
-                if resources.current_state == GameState::MainMenu {
+                if from == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
-                } else if resources.current_state == GameState::Battle {
+                } else if from == GameState::Battle {
                     BonusEffectPool::load_widget(resources.last_score, world, resources);
                     PackedTeam::new("Dark".to_owned(), default()).unpack(
                         &Faction::Dark,
@@ -259,9 +277,15 @@ impl GameStateSystem {
                 ShopSystem::init_level(world, resources, true);
                 resources.camera.focus = Focus::Shop;
             }
-            GameState::Gallery => {
+            GameState::Battle => {
                 resources.camera.focus = Focus::Battle;
+                let mut tape = Some(Tape::default());
+                BattleSystem::run_battle(world, resources, &mut tape);
+                resources.tape_player.clear();
+                resources.tape_player.tape = tape.unwrap();
             }
+            GameState::Gallery => {}
+            GameState::Sacrifice => {}
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
@@ -290,6 +314,12 @@ impl GameStateSystem {
                 resources.tape_player.tape = tape;
             }
         }
-        resources.current_state = resources.transition_state.clone();
+    }
+
+    fn transition(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        if resources.current_state == resources.transition_state {
+            return;
+        }
+        Self::change_state(resources.transition_state, world, resources);
     }
 }

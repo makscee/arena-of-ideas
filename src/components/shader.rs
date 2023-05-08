@@ -27,6 +27,8 @@ pub struct Shader {
     pub parent: Option<legion::Entity>,
     #[serde(skip)]
     pub input_handlers: Vec<Handler>,
+    #[serde(skip)]
+    pub update_handlers: Vec<Handler>,
 }
 
 const DEFAULT_REQUEST_VARS: [VarName; 14] = [

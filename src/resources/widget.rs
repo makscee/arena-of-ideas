@@ -47,12 +47,11 @@ impl<'a> Widget<'_> {
                         .set_color("u_color", rarity_color)
                         .set_color("u_outline_color", rarity_color)
                         .set_int("u_difficulty", difficulty as i32);
-                    shader.input_handlers.push(ButtonSystem::button_handler);
+                    ButtonSystem::add_button_handlers(&mut shader);
                     shader
                         .input_handlers
                         .push(|event, _, shader, world, resources| match event {
-                            InputEvent::Click => {
-                                debug!("Click");
+                            HandleEvent::Click => {
                                 if resources.tape_player.tape.close_panels(
                                     shader.parent.unwrap(),
                                     resources.tape_player.head,
@@ -64,11 +63,11 @@ impl<'a> Widget<'_> {
                                         .unwrap()
                                         as usize;
                                     debug!("Battle choice make selection: {difficulty}");
-                                    resources.camera.focus = Focus::Battle;
                                     let dark =
                                         Ladder::get_current_teams(resources)[difficulty].clone();
                                     let light = PackedTeam::pack(&Faction::Team, world, resources);
                                     BattleSystem::init_battle(&light, &dark, world, resources);
+                                    GameStateSystem::set_transition(GameState::Battle, resources);
                                 }
                             }
                             _ => {}
@@ -340,11 +339,11 @@ impl<'a> Widget<'_> {
                         .clone()
                         .set_color("u_color", options.colors.background);
                     shader.parent = Some(entity);
-                    shader.input_handlers.push(ButtonSystem::button_handler);
+                    ButtonSystem::add_button_handlers(&mut shader);
                     shader
                         .input_handlers
                         .push(|event, _, shader, world, resources| match event {
-                            InputEvent::Click => {
+                            HandleEvent::Click => {
                                 if resources.tape_player.tape.close_panels(
                                     shader.parent.unwrap(),
                                     resources.tape_player.head,

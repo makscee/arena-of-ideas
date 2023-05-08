@@ -115,22 +115,10 @@ impl ShopSystem {
         .generate_node()
         .lock(NodeLockType::Empty);
         let panel = NodePanel::new(node, resources.tape_player.head + 0.0);
-
         resources.tape_player.tape.push_panel(panel_entity, panel);
     }
 
-    pub fn switch_to_battle(world: &mut legion::World, resources: &mut Resources) {
-        resources.camera.focus = Focus::Battle;
-        let light = PackedTeam::pack(&Faction::Team, world, resources);
-        let dark = Ladder::load_team(resources);
-        BattleSystem::init_battle(&light, &dark, world, resources);
-    }
-
-    fn switch_to_shop(_: &mut legion::World, resources: &mut Resources) {
-        resources.camera.focus = Focus::Shop;
-    }
-
-    fn team_full(world: &legion::World, resources: &Resources) -> bool {
+    fn team_full(world: &legion::World) -> bool {
         let faction = Faction::Team;
         UnitSystem::collect_faction(world, faction).len()
             >= TeamSystem::get_state(&faction, world)
@@ -144,7 +132,7 @@ impl ShopSystem {
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
-        if !Self::team_full(world, resources) && Self::get_g(world) >= Self::buy_price(world) {
+        if !Self::team_full(world) && Self::get_g(world) >= Self::buy_price(world) {
             Self::do_buy(entity, slot, resources, world);
             Self::change_g(-Self::buy_price(world), world);
         }
@@ -286,22 +274,36 @@ impl ShopSystem {
 
     fn create_reroll_button(world: &mut legion::World, resources: &Resources) {
         fn reroll_handler(
-            event: InputEvent,
+            event: HandleEvent,
             _: legion::Entity,
             _: &mut Shader,
             world: &mut legion::World,
             resources: &mut Resources,
         ) {
             match event {
-                InputEvent::Click => ShopSystem::try_reroll(world, resources),
+                HandleEvent::Click => ShopSystem::try_reroll(world, resources),
                 _ => {}
             }
+        }
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            let active = match ShopSystem::is_reroll_affordable(world) {
+                true => 1.0,
+                false => 0.0,
+            };
+            shader.set_float_ref("u_active", active);
         }
         let entity = world.push((TapeEntityComponent {},));
         let mut button = ButtonSystem::create_button(
             Some("Reroll"),
             None,
             reroll_handler,
+            Some(update_handler),
             entity,
             &resources.options,
         );

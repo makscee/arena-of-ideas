@@ -210,6 +210,7 @@ impl SlotSystem {
             Some(text),
             icon,
             Self::activation_handler,
+            None,
             entity,
             &resources.options,
         );
@@ -224,14 +225,14 @@ impl SlotSystem {
     }
 
     fn activation_handler(
-        event: InputEvent,
+        event: HandleEvent,
         entity: legion::Entity,
         _: &mut Shader,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
         match event {
-            InputEvent::Click => {
+            HandleEvent::Click => {
                 let slot = world
                     .entry(entity)
                     .unwrap()

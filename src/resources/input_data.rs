@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct InputData {
-    pub input_events: HashMap<legion::Entity, (InputEvent, Time)>,
+    pub input_events: HashMap<legion::Entity, (HandleEvent, Time)>,
 
     pub frame_data: (InputFrameData, InputFrameData),
 
@@ -45,7 +45,7 @@ impl InputFrameData {
     }
 }
 
-pub type Handler = fn(InputEvent, legion::Entity, &mut Shader, &mut legion::World, &mut Resources);
+pub type Handler = fn(HandleEvent, legion::Entity, &mut Shader, &mut legion::World, &mut Resources);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum InputState {
@@ -91,7 +91,7 @@ impl Default for InputData {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum InputEvent {
+pub enum HandleEvent {
     HoverStart,
     Hover,
     HoverStop,
@@ -102,4 +102,5 @@ pub enum InputEvent {
     Press,
     PressStop,
     Click,
+    Update,
 }

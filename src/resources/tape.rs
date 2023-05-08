@@ -132,6 +132,12 @@ impl Tape {
         result
     }
 
+    pub fn close_all_panels(&mut self, ts: Time) {
+        for (_, panel) in self.panels.iter_mut() {
+            panel.set_open(false, ts);
+        }
+    }
+
     pub fn push_panel(&mut self, entity: legion::Entity, panel: NodePanel) {
         self.panels.push((entity, panel));
     }

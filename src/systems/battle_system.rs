@@ -32,6 +32,9 @@ impl BattleSystem {
             Self::update_score(world, resources, tape);
             ticks += 1;
         }
+        if ticks == 0 {
+            panic!("Battle not initialized");
+        }
         if ticks == 1000 {
             panic!("Exceeded ticks limit");
         }

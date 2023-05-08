@@ -18,6 +18,18 @@ impl System for ShaderSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         Self::prepare_shaders(world, resources);
     }
+
+    fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        let mut shaders = mem::take(&mut resources.prepared_shaders);
+        for shader in shaders.iter_mut() {
+            if let Some(entity) = shader.entity {
+                for handler in shader.update_handlers.drain(..).collect_vec() {
+                    handler(HandleEvent::Update, entity, shader, world, resources);
+                }
+            }
+        }
+        resources.prepared_shaders = shaders;
+    }
 }
 
 impl ShaderSystem {
@@ -25,7 +37,6 @@ impl ShaderSystem {
         Self {}
     }
 
-    /// Get Shader component and merge Context into it's vars if any
     pub fn get_entity_shader(entity: legion::Entity, world: &legion::World) -> Option<Shader> {
         match world.entry_ref(entity).ok().and_then(|x| {
             x.get_component::<Shader>()

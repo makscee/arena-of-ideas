@@ -323,8 +323,8 @@ impl UnitSystem {
                     .input_events
                     .get(entity)
                     .and_then(|x| match x.0 {
-                        InputEvent::HoverStart => Some((true, x.1)),
-                        InputEvent::HoverStop => Some((false, x.1 + 1.0)),
+                        HandleEvent::HoverStart => Some((true, x.1)),
+                        HandleEvent::HoverStop => Some((false, x.1 + 1.0)),
                         _ => None,
                     })
                     .unwrap_or((false, -1000.0));
@@ -348,17 +348,17 @@ impl UnitSystem {
     }
 
     fn unit_input_handler(
-        event: InputEvent,
+        event: HandleEvent,
         entity: legion::Entity,
         _: &mut Shader,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
         match event {
-            InputEvent::DragStop => {
+            HandleEvent::DragStop => {
                 SlotSystem::handle_unit_drop(entity, world, resources);
             }
-            InputEvent::Drag { delta } => {
+            HandleEvent::Drag { delta } => {
                 ContextState::get_mut(entity, world)
                     .vars
                     .change_vec2(&VarName::Position, delta);

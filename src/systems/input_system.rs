@@ -119,18 +119,18 @@ impl InputSystem {
         match cur.state {
             InputState::None => {}
             InputState::Hover => {
-                Self::send_event(InputEvent::Hover, cur_shader, shaders, resources, world)
+                Self::send_event(HandleEvent::Hover, cur_shader, shaders, resources, world)
             }
             InputState::Press => {
-                Self::send_event(InputEvent::Press, cur_shader, shaders, resources, world)
+                Self::send_event(HandleEvent::Press, cur_shader, shaders, resources, world)
             }
             InputState::Click => {
-                Self::send_event(InputEvent::Click, cur_shader, shaders, resources, world)
+                Self::send_event(HandleEvent::Click, cur_shader, shaders, resources, world)
             }
             InputState::Drag => {
                 if cur.mouse != prev.mouse {
                     Self::send_event(
-                        InputEvent::Drag {
+                        HandleEvent::Drag {
                             delta: cur.mouse - prev.mouse,
                         },
                         cur_shader,
@@ -147,7 +147,7 @@ impl InputSystem {
                 InputState::None | InputState::Click => {}
                 InputState::Hover => {
                     Self::send_event(
-                        InputEvent::HoverStop,
+                        HandleEvent::HoverStop,
                         prev_shader,
                         shaders,
                         resources,
@@ -155,42 +155,50 @@ impl InputSystem {
                     );
                 }
                 InputState::Press => Self::send_event(
-                    InputEvent::PressStop,
+                    HandleEvent::PressStop,
                     prev_shader,
                     shaders,
                     resources,
                     world,
                 ),
-                InputState::Drag => {
-                    Self::send_event(InputEvent::DragStop, prev_shader, shaders, resources, world)
-                }
+                InputState::Drag => Self::send_event(
+                    HandleEvent::DragStop,
+                    prev_shader,
+                    shaders,
+                    resources,
+                    world,
+                ),
             }
 
             match cur.state {
                 InputState::None | InputState::Click => {}
                 InputState::Hover => Self::send_event(
-                    InputEvent::HoverStart,
+                    HandleEvent::HoverStart,
                     cur_shader,
                     shaders,
                     resources,
                     world,
                 ),
                 InputState::Press => Self::send_event(
-                    InputEvent::PressStart,
+                    HandleEvent::PressStart,
                     cur_shader,
                     shaders,
                     resources,
                     world,
                 ),
-                InputState::Drag => {
-                    Self::send_event(InputEvent::DragStart, cur_shader, shaders, resources, world)
-                }
+                InputState::Drag => Self::send_event(
+                    HandleEvent::DragStart,
+                    cur_shader,
+                    shaders,
+                    resources,
+                    world,
+                ),
             };
         }
     }
 
     fn send_event(
-        event: InputEvent,
+        event: HandleEvent,
         ind: Option<usize>,
         shaders: &mut Vec<Shader>,
         resources: &mut Resources,
@@ -200,13 +208,13 @@ impl InputSystem {
             let mut shader = shaders.remove(ind);
             let entity = shader.entity.unwrap();
             match &event {
-                InputEvent::HoverStart
-                | InputEvent::HoverStop
-                | InputEvent::DragStart
-                | InputEvent::DragStop
-                | InputEvent::PressStart
-                | InputEvent::PressStop
-                | InputEvent::Click => {
+                HandleEvent::HoverStart
+                | HandleEvent::HoverStop
+                | HandleEvent::DragStart
+                | HandleEvent::DragStop
+                | HandleEvent::PressStart
+                | HandleEvent::PressStop
+                | HandleEvent::Click => {
                     resources
                         .input_data
                         .input_events
@@ -219,10 +227,10 @@ impl InputSystem {
             }
             shaders.insert(ind, shader);
             match &event {
-                InputEvent::HoverStart => resources.input_data.hovered_entity = Some(entity),
-                InputEvent::HoverStop => resources.input_data.hovered_entity = None,
-                InputEvent::DragStart => resources.input_data.dragged_entity = Some(entity),
-                InputEvent::DragStop => resources.input_data.dragged_entity = None,
+                HandleEvent::HoverStart => resources.input_data.hovered_entity = Some(entity),
+                HandleEvent::HoverStop => resources.input_data.hovered_entity = None,
+                HandleEvent::DragStart => resources.input_data.dragged_entity = Some(entity),
+                HandleEvent::DragStop => resources.input_data.dragged_entity = None,
                 _ => {}
             }
         }
