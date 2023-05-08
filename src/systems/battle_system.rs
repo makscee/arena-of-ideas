@@ -32,10 +32,7 @@ impl BattleSystem {
             Self::update_score(world, resources, tape);
             ticks += 1;
         }
-        if ticks == 0 {
-            panic!("Battle not initialized");
-        }
-        if ticks == 1000 {
+        if ticks == 100 {
             panic!("Exceeded ticks limit");
         }
         Self::clear_tape_entities(world, resources, tape);
@@ -391,21 +388,12 @@ impl BattleSystem {
         while let Some(dead_unit) = <&EntityComponent>::query()
             .filter(component::<UnitComponent>())
             .iter(world)
-            .filter_map(|entity| {
-                let context = Context::new(
-                    ContextLayer::Unit {
-                        entity: entity.entity,
-                    },
-                    world,
-                    resources,
-                );
-                match context.get_int(&VarName::HpValue, world)
-                    <= context.get_int(&VarName::HpDamage, world)
-                {
-                    true => Some(entity.entity),
-                    false => None,
-                }
-            })
+            .filter_map(
+                |entity| match UnitSystem::is_alive(entity.entity, world, resources) {
+                    false => Some(entity.entity),
+                    true => None,
+                },
+            )
             .choose(&mut thread_rng())
         {
             resources.logger.log(

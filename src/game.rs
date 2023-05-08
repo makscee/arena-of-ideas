@@ -43,6 +43,7 @@ impl Game {
         UnitSystem::clear_factions(world, &Faction::all());
         resources.ladder.reset();
         resources.action_queue.clear();
+        resources.prepared_shaders.clear();
         resources.total_score = default();
         ShopData::load_pool(resources);
         world.clear();

@@ -132,9 +132,19 @@ impl ShopSystem {
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
-        if !Self::team_full(world) && Self::get_g(world) >= Self::buy_price(world) {
+        let price = Self::buy_price(world);
+        if !Self::team_full(world) && Self::get_g(world) >= price {
             Self::do_buy(entity, slot, resources, world);
             Self::change_g(-Self::buy_price(world), world);
+            let color = Faction::Shop.color(&resources.options);
+            let position = SlotSystem::get_position(slot, &Faction::Team, resources);
+            VfxSystem::add_show_text_effect(
+                &format!("-{price} g"),
+                color,
+                position,
+                world,
+                resources,
+            )
         }
     }
 
@@ -154,7 +164,13 @@ impl ShopSystem {
     }
 
     pub fn try_sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
-        Self::change_g(Self::sell_price(world), world);
+        let price = Self::sell_price(world);
+        let color = Faction::Shop.color(&resources.options);
+        let position = Context::new(ContextLayer::Entity { entity }, world, resources)
+            .get_vec2(&VarName::Position, world)
+            .unwrap();
+        VfxSystem::add_show_text_effect(&format!("+{price} g"), color, position, world, resources);
+        Self::change_g(price, world);
         resources
             .shop_data
             .pool

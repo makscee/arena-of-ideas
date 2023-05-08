@@ -158,6 +158,9 @@ pub enum ExpressionEntity {
     SlotRelative {
         relation: Box<ExpressionInt>,
     },
+    Entity {
+        entity: legion::Entity,
+    },
 }
 
 impl Default for ExpressionEntity {
@@ -219,6 +222,7 @@ impl ExpressionEntity {
                 SlotSystem::find_unit_by_slot(slot, &faction, world)
                     .context(format!("No unit of {:?} found in slot {}", faction, slot))
             }
+            ExpressionEntity::Entity { entity } => Ok(*entity),
         };
 
         resources

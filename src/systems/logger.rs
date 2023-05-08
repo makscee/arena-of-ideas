@@ -39,7 +39,7 @@ impl Display for LogContext {
                 LogContext::UnitCreation => text.purple(),
                 LogContext::Measurement => text.bright_cyan(),
                 LogContext::Contexts => text.bright_blue(),
-                LogContext::Test => text.bright_purple(),
+                LogContext::Test => text.on_purple(),
             }
             .bold()
         };

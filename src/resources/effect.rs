@@ -95,7 +95,7 @@ pub enum Effect {
         text: String,
         color: Option<Rgba<f32>>,
         #[serde(default)]
-        entity: ExpressionEntity,
+        entity: Option<ExpressionEntity>,
         #[serde(default)]
         font: usize,
     },
@@ -152,6 +152,13 @@ pub struct EffectWrapped {
 }
 
 impl EffectWrapped {
+    pub fn push(self, context: Context, resources: &mut Resources) {
+        resources.action_queue.push_back(Action {
+            context,
+            effect: self,
+        });
+    }
+
     pub fn process(
         &self,
         mut context: Context,
@@ -438,7 +445,7 @@ impl EffectWrapped {
                     let mut effect = Effect::ShowText {
                         text: ability.to_string(),
                         color: None,
-                        entity: ExpressionEntity::Owner,
+                        entity: Some(ExpressionEntity::Owner),
                         font: 2,
                     }
                     .wrap();
@@ -504,9 +511,24 @@ impl EffectWrapped {
                                 context.get_color(&VarName::HouseColor, world).unwrap()
                             })
                     });
-                    let entity = entity.calculate(&context, world, resources)?;
-                    node.add_effect(if UnitSystem::get_corpse(entity, world).is_some() {
-                        VfxSystem::vfx_show_text(
+
+                    let mut effect = None;
+                    if let Some(entity) = entity {
+                        let entity = entity.calculate(&context, world, resources)?;
+                        if UnitSystem::get_corpse(entity, world).is_none() {
+                            effect = Some(VfxSystem::vfx_show_parent_text(
+                                resources,
+                                &text,
+                                Rgba::WHITE,
+                                color,
+                                entity,
+                                *font,
+                                0.0,
+                            ));
+                        }
+                    }
+                    if effect.is_none() {
+                        effect = Some(VfxSystem::vfx_show_text(
                             resources,
                             &text,
                             Rgba::WHITE,
@@ -514,18 +536,9 @@ impl EffectWrapped {
                             context.get_vec2(&VarName::Position, world).unwrap(),
                             *font,
                             0.0,
-                        )
-                    } else {
-                        VfxSystem::vfx_show_parent_text(
-                            resources,
-                            &text,
-                            Rgba::WHITE,
-                            color,
-                            entity,
-                            *font,
-                            0.0,
-                        )
-                    });
+                        ));
+                    }
+                    node.add_effect(effect.unwrap());
                 }
             }
             Effect::ShowCurve { color } => {

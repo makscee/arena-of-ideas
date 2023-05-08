@@ -168,8 +168,7 @@ impl UnitSystem {
     ) -> bool {
         Event::BeforeDeath { owner: entity }.send(world, resources);
         ActionSystem::run_ticks(world, resources, cluster);
-        let state = ContextState::get(entity, world);
-        if state.vars.get_int(&VarName::HpValue) <= state.vars.get_int(&VarName::HpDamage) {
+        if !UnitSystem::is_alive(entity, world, resources) {
             Self::turn_unit_into_corpse(entity, world, resources);
             return true;
         }
@@ -324,7 +323,7 @@ impl UnitSystem {
                     .get(entity)
                     .and_then(|x| match x.0 {
                         HandleEvent::HoverStart => Some((true, x.1)),
-                        HandleEvent::HoverStop => Some((false, x.1 + 1.0)),
+                        HandleEvent::HoverStop => Some((false, x.1 + 0.0)),
                         _ => None,
                     })
                     .unwrap_or((false, -1000.0));
@@ -333,7 +332,9 @@ impl UnitSystem {
                     - ((resources.global_time - hover_value.1) / CARD_ANIMATION_TIME)
                         .clamp(0.0, 1.0))
                 .abs();
-                card_value = card_value.max(hover_value);
+                let dragged_value =
+                    (resources.input_data.dragged_entity == Some(*entity)) as i32 as f32;
+                card_value = (card_value.max(hover_value) - dragged_value).max(0.0);
 
                 shader
                     .parameters

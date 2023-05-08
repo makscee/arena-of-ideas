@@ -162,6 +162,16 @@ impl SlotSystem {
         }
     }
 
+    pub fn get_slot_entity(slot: usize, faction: Faction, world: &legion::World) -> legion::Entity {
+        let result = <(&EntityComponent, &SlotComponent)>::query()
+            .iter(world)
+            .find_map(|(entity, s)| match s.slot == slot {
+                true => Some(entity.entity),
+                false => None,
+            });
+        result.expect(&format!("Failed to find slot {slot} {faction}"))
+    }
+
     fn create_slot(
         faction: Faction,
         slot: usize,
@@ -217,7 +227,7 @@ impl SlotSystem {
         button
             .parameters
             .uniforms
-            .add_mapping("u_enabled", "u_filled");
+            .add_mapping("u_active", "u_filled");
         shader.chain_after.push(button.set_uniform(
             "u_offset",
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),

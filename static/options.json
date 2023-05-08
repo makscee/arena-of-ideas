@@ -7,105 +7,46 @@
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
-            "replications": 5,
+            "replications": 1,
             "units": [
                 {
-                    "name": "name",
-                    "attack": 6,
-                    "health": 6,
-                    "description": "",
-                    "house": "Demons"
+                    "health": 2,
+                    "attack": 2,
+                    "house": "Vampires",
+                    "trigger": {
+                        "type": "TurnEnd",
+                        "effect": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "LifeSteal"
+                            }
+                        }
+                    }
                 }
             ]
         },
         "dark": {
+            "replications": 2,
             "units": [
                 {
-                    "name": "Snake",
-                    "description": "On damage dealt:\nKill",
-                    "health": 1,
-                    "damage": 0,
+                    "name": "enemy",
                     "attack": 1,
-                    "house": "Snakes",
-                    "trigger": {
-                        "type": "Noop"
-                    },
-                    "statuses": {
-                        "Poison": 1
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "vertices": 1,
-                            "instances": 20,
-                            "uniforms": {
-                                "local": {
-                                    "u_alpha": 0.3,
-                                    "u_color": "#00d836",
-                                    "u_spin_part": 0.01,
-                                    "u_color_1": "#00ff22",
-                                    "u_move_speed": 1.3,
-                                    "u_radius": 0.8
-                                },
-                                "mapping": {}
-                            }
-                        },
-                        "layer": "Unit",
-                        "order": 0,
-                        "chain_before": [],
-                        "chain_after": [],
-                        "request_vars": []
-                    },
-                    "rank": 0
-                },
-                {
-                    "name": "Snake",
-                    "description": "On damage dealt:\nKill",
-                    "health": 1,
-                    "damage": 0,
-                    "attack": 1,
-                    "house": "Snakes",
-                    "trigger": {
-                        "type": "Noop"
-                    },
-                    "statuses": {
-                        "Poison": 1
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/layered_triangles.glsl",
-                        "parameters": {
-                            "vertices": 1,
-                            "instances": 20,
-                            "uniforms": {
-                                "local": {
-                                    "u_alpha": 0.3,
-                                    "u_color": "#00d836",
-                                    "u_spin_part": 0.01,
-                                    "u_color_1": "#00ff22",
-                                    "u_move_speed": 1.3,
-                                    "u_radius": 0.8
-                                },
-                                "mapping": {}
-                            }
-                        },
-                        "layer": "Unit",
-                        "order": 0,
-                        "chain_before": [],
-                        "chain_after": [],
-                        "request_vars": []
-                    },
-                    "rank": 0
+                    "health": 1
                 }
             ],
-            "name": "Shielded Snakes (2)",
-            "vars": {},
-            "ability_vars": {},
-            "statuses": {
-                "Shield": 1
-            },
+            "name": "Enemies",
             "slots": 2
         }
     },
@@ -698,7 +639,7 @@
     "floats": {
         "slots_shop_team_position": [
             6.0,
-            5.0
+            4.0
         ],
         "slots_striker_position": [
             7.0,

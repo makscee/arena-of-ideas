@@ -24,6 +24,33 @@ impl VfxSystem {
 
 /// Effects Collection
 impl VfxSystem {
+    pub fn add_show_text_effect(
+        text: &str,
+        color: Rgba<f32>,
+        position: vec2<f32>,
+        world: &legion::World,
+        resources: &mut Resources,
+    ) {
+        Effect::ShowText {
+            text: text.to_owned(),
+            color: Some(color),
+            entity: None,
+            font: 0,
+        }
+        .wrap()
+        .push(
+            Context::new(
+                ContextLayer::Var {
+                    var: VarName::Position,
+                    value: Var::Vec2(position),
+                },
+                world,
+                resources,
+            ),
+            resources,
+        );
+    }
+
     pub fn vfx_show_text(
         resources: &Resources,
         text: &str,
@@ -79,7 +106,7 @@ impl VfxSystem {
             .text
             .clone()
             .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, 0.5)))
-            .set_uniform("u_offset_over_t", ShaderUniform::Vec2(vec2(0.0, 1.8)))
+            .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 1.8)))
             .set_uniform("u_text", ShaderUniform::String((font, text.to_string())))
             .set_uniform("u_color", ShaderUniform::Color(color))
             .set_uniform("u_outline_color", ShaderUniform::Color(outline_color))
@@ -87,7 +114,6 @@ impl VfxSystem {
             .set_uniform("u_text_border", ShaderUniform::Float(0.1))
             .set_uniform("u_alpha", ShaderUniform::Float(8.0))
             .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
-            .set_uniform("u_size", ShaderUniform::Float(0.6))
     }
 
     pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> TimedEffect {

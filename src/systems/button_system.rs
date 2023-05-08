@@ -50,7 +50,7 @@ impl ButtonSystem {
         _: legion::Entity,
         shader: &mut Shader,
         _: &mut legion::World,
-        resources: &mut Resources,
+        _: &mut Resources,
     ) {
         match event {
             HandleEvent::Hover => {
@@ -64,7 +64,7 @@ impl ButtonSystem {
     }
 
     fn button_update_handler(
-        event: HandleEvent,
+        _: HandleEvent,
         _: legion::Entity,
         shader: &mut Shader,
         _: &mut legion::World,
