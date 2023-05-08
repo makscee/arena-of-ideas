@@ -38,7 +38,7 @@ impl System for GameOverSystem {
                         "{}",
                         match resources.last_score > 0 {
                             true => "Victory!".to_string(),
-                            false => format!("Defeat! Floor #{}", resources.last_round),
+                            false => format!("Defeat! Level #{}", resources.last_round),
                         }
                     ),
                     resources.fonts.get_font(0),

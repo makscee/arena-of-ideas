@@ -9,6 +9,7 @@ pub struct ShopData {
     pub pool: Vec<PackedUnit>,
     pub floor_extensions: Vec<Vec<PackedUnit>>,
     pub load_new_hero: bool,
+    pub reroll_btn_entity: Option<legion::Entity>,
 }
 
 impl ShopData {

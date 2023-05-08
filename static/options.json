@@ -7,7 +7,7 @@
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -331,7 +331,7 @@
                     "u_text_inside": 0.45,
                     "u_text_border": 0.35,
                     "mapping": {
-                        "u_enabled": "u_filled"
+                        "u_alpha": "u_filled"
                     }
                 }
             },

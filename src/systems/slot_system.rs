@@ -84,7 +84,6 @@ impl SlotSystem {
                         need_pos,
                         &mut node,
                         world,
-                        resources,
                         EasingType::QuartInOut,
                         0.8,
                     )
@@ -121,13 +120,6 @@ impl SlotSystem {
         faction: &Faction,
         world: &legion::World,
     ) -> Option<legion::Entity> {
-        if slot
-            > TeamSystem::get_state(faction, world)
-                .vars
-                .get_int(&VarName::Slots) as usize
-        {
-            return None;
-        }
         <(&EntityComponent, &ContextState)>::query()
             .filter(component::<UnitComponent>())
             .iter(world)
@@ -190,10 +182,7 @@ impl SlotSystem {
             .insert_vec2_ref("u_position", position)
             .insert_float_ref("u_scale", scale);
         match faction {
-            Faction::Light | Faction::Dark => {}
-            Faction::Team => {
-                Self::add_slot_activation_btn(&mut shader, "Sell", None, entity, resources);
-            }
+            Faction::Light | Faction::Dark | Faction::Team => {}
             Faction::Shop => {
                 shader
                     .chain_after
@@ -228,6 +217,7 @@ impl SlotSystem {
             .parameters
             .uniforms
             .add_mapping("u_active", "u_filled");
+        shader.chain_after.clear();
         shader.chain_after.push(button.set_uniform(
             "u_offset",
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
@@ -255,19 +245,61 @@ impl SlotSystem {
         }
     }
 
+    pub fn handle_state_enter(state: GameState, world: &mut legion::World, resources: &Resources) {
+        for (slot, entity, shader) in
+            <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
+        {
+            let enabled = match state {
+                GameState::Shop => {
+                    if slot.faction == Faction::Team {
+                        Self::add_slot_activation_btn(
+                            shader,
+                            "Sell",
+                            None,
+                            entity.entity,
+                            resources,
+                        )
+                    }
+                    slot.faction == Faction::Shop || slot.faction == Faction::Team
+                }
+                GameState::Battle => {
+                    slot.faction == Faction::Dark || slot.faction == Faction::Light
+                }
+                GameState::Sacrifice => {
+                    if slot.faction == Faction::Team {
+                        Self::add_slot_activation_btn(
+                            shader,
+                            "Sacrifice",
+                            None,
+                            entity.entity,
+                            resources,
+                        )
+                    }
+                    slot.faction == Faction::Team
+                }
+                _ => true,
+            };
+            shader.set_float_ref("u_enabled", enabled as i32 as f32);
+        }
+    }
+
     fn handle_slot_activation(
         slot: usize,
         faction: Faction,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        match faction {
-            Faction::Team => {
-                if let Some(entity) = Self::find_unit_by_slot(slot, &faction, world) {
-                    ShopSystem::try_sell(entity, resources, world);
-                }
+        if let Some(entity) = Self::find_unit_by_slot(slot, &faction, world) {
+            match faction {
+                Faction::Team => match resources.current_state {
+                    GameState::Shop => {
+                        ShopSystem::try_sell(entity, resources, world);
+                    }
+                    GameState::Sacrifice => debug!("Mark for sac"),
+                    _ => {}
+                },
+                _ => {}
             }
-            _ => {}
         }
     }
 

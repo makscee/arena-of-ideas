@@ -32,7 +32,7 @@ pub enum VarName {
     Description,
     House,
     HouseColor,
-    Floor,
+    Level,
     FieldPosition,
     Charges,
     Hits,

@@ -147,7 +147,7 @@ impl BattleSystem {
         resources.total_score += resources.last_score;
         if resources.last_score > 0 {
             if resources.ladder.next() {
-                resources.transition_state = GameState::Shop;
+                resources.transition_state = GameState::Sacrifice;
             } else {
                 resources.transition_state = GameState::GameOver;
             }
@@ -238,7 +238,6 @@ impl BattleSystem {
                     left_hit_pos,
                     &mut node,
                     world,
-                    resources,
                     EasingType::Linear,
                     0.03,
                 );
@@ -247,7 +246,6 @@ impl BattleSystem {
                     right_hit_pos,
                     &mut node,
                     world,
-                    resources,
                     EasingType::Linear,
                     0.03,
                 );
@@ -266,7 +264,6 @@ impl BattleSystem {
                     SlotSystem::get_position(1, &Faction::Light, resources),
                     &mut node,
                     world,
-                    resources,
                     EasingType::QuartOut,
                     duration,
                 );
@@ -275,7 +272,6 @@ impl BattleSystem {
                     SlotSystem::get_position(1, &Faction::Dark, resources),
                     &mut node,
                     world,
-                    resources,
                     EasingType::QuartOut,
                     duration,
                 );

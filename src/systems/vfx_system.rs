@@ -9,7 +9,6 @@ impl VfxSystem {
         position: vec2<f32>,
         node: &mut Node,
         world: &mut legion::World,
-        resources: &Resources,
         easing: EasingType,
         duration: Time,
     ) {
@@ -113,6 +112,7 @@ impl VfxSystem {
             .set_uniform("u_outline_fade", ShaderUniform::Float(1.0))
             .set_uniform("u_text_border", ShaderUniform::Float(0.1))
             .set_uniform("u_alpha", ShaderUniform::Float(8.0))
+            .set_vec2("u_box", vec2(3.0, 1.0))
             .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
     }
 

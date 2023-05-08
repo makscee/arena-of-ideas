@@ -65,6 +65,9 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&S) {
                     SaveSystem::save(world, resources);
                 }
+                if resources.input_data.down_keys.contains(&X) {
+                    GameStateSystem::set_transition(GameState::Sacrifice, resources);
+                }
                 if resources.input_data.down_keys.contains(&B) {
                     BonusEffectPool::load_widget(5, world, resources);
 
@@ -109,7 +112,14 @@ impl System for GameStateSystem {
                     resources.tape_player.head = 0.0;
                 }
             }
-            GameState::Sacrifice => {}
+            GameState::Sacrifice => {
+                resources.tape_player.tape.persistent_node =
+                    Node::default().lock(NodeLockType::Factions {
+                        factions: hashset! {Faction::Team},
+                        world,
+                        resources,
+                    });
+            }
         }
         self.systems
             .get_mut(&resources.current_state)
@@ -226,10 +236,7 @@ impl GameStateSystem {
     ) {
         match from {
             GameState::Shop => {
-                resources.tape_player.clear();
-                Event::ShopEnd.send(world, resources);
-                ShopSystem::clear_case(world, resources);
-                ShopSystem::reset_g(world);
+                ShopSystem::leave(world, resources);
             }
             GameState::Battle => {
                 resources.tape_player.clear();
@@ -261,8 +268,7 @@ impl GameStateSystem {
                 if from == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
-                } else if from == GameState::Battle {
-                    BonusEffectPool::load_widget(resources.last_score, world, resources);
+                } else if from == GameState::Sacrifice {
                     PackedTeam::new("Dark".to_owned(), default()).unpack(
                         &Faction::Dark,
                         world,
@@ -274,7 +280,7 @@ impl GameStateSystem {
                         resources,
                     );
                 }
-                ShopSystem::init_level(world, resources, true);
+                ShopSystem::enter(world, resources, true);
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {
@@ -285,7 +291,9 @@ impl GameStateSystem {
                 resources.tape_player.tape = tape.unwrap();
             }
             GameState::Gallery => {}
-            GameState::Sacrifice => {}
+            GameState::Sacrifice => {
+                resources.camera.focus = Focus::Shop;
+            }
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
@@ -314,6 +322,7 @@ impl GameStateSystem {
                 resources.tape_player.tape = tape;
             }
         }
+        SlotSystem::handle_state_enter(to, world, resources);
     }
 
     fn transition(&mut self, world: &mut legion::World, resources: &mut Resources) {

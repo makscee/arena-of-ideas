@@ -281,14 +281,20 @@ impl ShopSystem {
         vars.set_int(&VarName::RerollPrice, 1);
         vars.set_int(&VarName::FreeRerolls, 0);
         vars.set_int(&VarName::Slots, resources.options.initial_team_slots as i32);
-        Self::create_reroll_button(world, resources);
     }
 
     fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
         SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
     }
 
-    fn create_reroll_button(world: &mut legion::World, resources: &Resources) {
+    fn remove_reroll_button(world: &mut legion::World, resources: &mut Resources) {
+        if let Some(entity) = resources.shop_data.reroll_btn_entity {
+            world.remove(entity);
+            resources.shop_data.reroll_btn_entity = None;
+        }
+    }
+
+    fn create_reroll_button(world: &mut legion::World, resources: &mut Resources) {
         fn reroll_handler(
             event: HandleEvent,
             _: legion::Entity,
@@ -306,7 +312,7 @@ impl ShopSystem {
             _: legion::Entity,
             shader: &mut Shader,
             world: &mut legion::World,
-            resources: &mut Resources,
+            _: &mut Resources,
         ) {
             let active = match ShopSystem::is_reroll_affordable(world) {
                 true => 1.0,
@@ -330,9 +336,10 @@ impl ShopSystem {
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(button);
         entry.add_component(EntityComponent::new(entity));
+        resources.shop_data.reroll_btn_entity = Some(entity);
     }
 
-    pub fn init_level(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
+    pub fn enter(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
         let current_floor = resources.ladder.current_ind();
         TeamSystem::get_state_mut(&Faction::Shop, world)
             .vars
@@ -351,7 +358,16 @@ impl ShopSystem {
         Self::reroll(world, resources);
         WorldSystem::get_state_mut(world)
             .vars
-            .set_int(&VarName::Floor, current_floor as i32);
+            .set_int(&VarName::Level, current_floor as i32);
+        Self::create_reroll_button(world, resources);
+    }
+
+    pub fn leave(world: &mut legion::World, resources: &mut Resources) {
+        Self::remove_reroll_button(world, resources);
+        resources.tape_player.clear();
+        Event::ShopEnd.send(world, resources);
+        ShopSystem::clear_case(world, resources);
+        ShopSystem::reset_g(world);
     }
 
     pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
