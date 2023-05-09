@@ -428,6 +428,11 @@ impl Node {
         self
     }
 
+    pub fn push_as_panel(self, entity: legion::Entity, resources: &mut Resources) {
+        let panel = NodePanel::new(self, resources.tape_player.head);
+        resources.tape_player.tape.push_panel(entity, panel);
+    }
+
     fn draw_all_tape_entities_to_node(node: &mut Node, world: &legion::World) {
         <(&EntityComponent, &Shader)>::query()
             .filter(component::<TapeEntityComponent>())

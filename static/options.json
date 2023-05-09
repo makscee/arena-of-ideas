@@ -7,7 +7,7 @@
     "initial_shop_slots": 3,
     "initial_team_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -495,18 +495,22 @@
                     "u_size": 1.0
                 }
             },
-            "layer": "UI"
-        },
-        "button_text": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_text_inside": 0.5,
-                    "u_text_border": 0.3,
-                    "u_size": 0.8,
-                    "u_outline_color": "#404040"
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_text_inside": 0.5,
+                            "u_text_border": 0.3,
+                            "u_size": 0.8,
+                            "u_outline_color": "#404040",
+                            "mapping": {
+                                "u_color": "u_text_color"
+                            }
+                        }
+                    }
                 }
-            },
+            ],
             "layer": "UI"
         },
         "button_icon": {

@@ -11,6 +11,14 @@ pub struct ShaderUniforms {
 }
 
 impl ShaderUniforms {
+    pub fn single(key: &str, value: ShaderUniform) -> Self {
+        Self {
+            data: hashmap! {key.to_owned() => value},
+            local: default(),
+            mapping: default(),
+        }
+    }
+
     pub fn merge(&self, other: &ShaderUniforms) -> Self {
         let mut result: ShaderUniforms = self.clone();
         other

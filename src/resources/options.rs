@@ -56,7 +56,6 @@ pub struct Shaders {
     pub definitions_panel_text: Shader,
     pub definitions_panel_title: Shader,
     pub button: Shader,
-    pub button_text: Shader,
     pub button_icon: Shader,
     pub icon: Shader,
     pub corner_button: Shader,

@@ -19,12 +19,61 @@ pub enum Widget<'a> {
         panel_entity: legion::Entity,
         resources: &'a Resources,
     },
+    Button {
+        text: String,
+        input_handler: Handler,
+        update_handler: Option<Handler>,
+        options: &'a Options,
+        uniforms: ShaderUniforms,
+    },
 }
 
 impl<'a> Widget<'_> {
     pub fn generate_node(self) -> Node {
         match self {
-            Widget::BattleChoicePanel {
+            Self::Button {
+                text,
+                input_handler,
+                update_handler,
+                options,
+                uniforms,
+            } => {
+                let mut node = Node::default();
+                let button = ButtonSystem::create_button(
+                    Some(&text),
+                    None,
+                    input_handler,
+                    update_handler,
+                    new_entity(),
+                    options,
+                )
+                .merge_uniforms(&uniforms, true);
+
+                let animation = AnimatedShaderUniforms::empty()
+                    .add_key_frame(
+                        0.0,
+                        hashmap! {"u_scale"=> ShaderUniform::Float(0.0)}.into(),
+                        EasingType::Linear,
+                    )
+                    .add_key_frame(
+                        0.5,
+                        hashmap! {"u_scale"=> ShaderUniform::Float(1.0)}.into(),
+                        EasingType::QuadOut,
+                    )
+                    .add_key_frame(
+                        1.0,
+                        hashmap! {"u_scale"=> ShaderUniform::Float(0.0)}.into(),
+                        EasingType::QuadIn,
+                    );
+                let animation = Animation::ShaderAnimation {
+                    shader: button,
+                    animation,
+                };
+                node.add_effect(TimedEffect::new(Some(1.0), animation, 0));
+
+                node
+            }
+            Self::BattleChoicePanel {
                 unit,
                 difficulty,
                 resources,
@@ -155,11 +204,9 @@ impl<'a> Widget<'_> {
                     0,
                 ));
 
-                let node = node.lock(NodeLockType::Empty);
-
-                node
+                node.lock(NodeLockType::Empty)
             }
-            Widget::BattleOverPanel { score, options } => {
+            Self::BattleOverPanel { score, options } => {
                 let mut node = Node::default();
                 let (text, color) = match score {
                     0 => (String::from("Defeat"), options.colors.defeat),
@@ -303,7 +350,7 @@ impl<'a> Widget<'_> {
 
                 node
             }
-            Widget::BonusChoicePanel {
+            Self::BonusChoicePanel {
                 bonuses,
                 panel_entity: entity,
                 options,

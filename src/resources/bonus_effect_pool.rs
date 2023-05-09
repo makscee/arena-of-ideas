@@ -13,18 +13,16 @@ impl BonusEffectPool {
     pub fn load_widget(value: usize, world: &legion::World, resources: &mut Resources) {
         debug!("Load bonus choice widget {value}");
         let entity = new_entity();
-        let ts = resources.tape_player.head;
         Self::load_bonuses(value, world, resources);
         let bonuses = resources.bonus_pool.current.clone();
-        let panel = Widget::BonusChoicePanel {
+        Widget::BonusChoicePanel {
             bonuses,
             panel_entity: entity,
             options: &resources.options,
         }
         .generate_node()
-        .lock(NodeLockType::Empty);
-        let panel = NodePanel::new(panel, ts);
-        resources.tape_player.tape.push_panel(entity, panel);
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
     }
 
     pub fn make_selection(ind: usize, world: &legion::World, resources: &mut Resources) {

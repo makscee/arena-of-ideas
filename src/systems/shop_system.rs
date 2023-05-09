@@ -105,7 +105,7 @@ impl ShopSystem {
         panel_entity: legion::Entity,
         resources: &mut Resources,
     ) {
-        let node = Widget::BattleChoicePanel {
+        Widget::BattleChoicePanel {
             unit: &unit,
             difficulty,
             resources: &resources,
@@ -113,9 +113,8 @@ impl ShopSystem {
             panel_entity,
         }
         .generate_node()
-        .lock(NodeLockType::Empty);
-        let panel = NodePanel::new(node, resources.tape_player.head + 0.0);
-        resources.tape_player.tape.push_panel(panel_entity, panel);
+        .lock(NodeLockType::Empty)
+        .push_as_panel(panel_entity, resources);
     }
 
     fn team_full(world: &legion::World) -> bool {
@@ -287,13 +286,6 @@ impl ShopSystem {
         SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
     }
 
-    fn remove_reroll_button(world: &mut legion::World, resources: &mut Resources) {
-        if let Some(entity) = resources.shop_data.reroll_btn_entity {
-            world.remove(entity);
-            resources.shop_data.reroll_btn_entity = None;
-        }
-    }
-
     fn create_reroll_button(world: &mut legion::World, resources: &mut Resources) {
         fn reroll_handler(
             event: HandleEvent,
@@ -320,23 +312,20 @@ impl ShopSystem {
             };
             shader.set_float_ref("u_active", active);
         }
-        let entity = world.push((TapeEntityComponent {},));
-        let mut button = ButtonSystem::create_button(
-            Some("Reroll"),
-            None,
-            reroll_handler,
-            Some(update_handler),
-            entity,
-            &resources.options,
-        );
-        button.parameters.uniforms.insert_vec2_ref(
-            &VarName::Position.uniform(),
-            Self::reroll_btn_position(resources),
-        );
-        let mut entry = world.entry(entity).unwrap();
-        entry.add_component(button);
-        entry.add_component(EntityComponent::new(entity));
-        resources.shop_data.reroll_btn_entity = Some(entity);
+
+        Widget::Button {
+            text: "Reroll".to_owned(),
+            input_handler: reroll_handler,
+            update_handler: Some(update_handler),
+            options: &resources.options,
+            uniforms: ShaderUniforms::single(
+                "u_position",
+                ShaderUniform::Vec2(Self::reroll_btn_position(resources)),
+            ),
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(new_entity(), resources);
     }
 
     pub fn enter(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
@@ -363,7 +352,6 @@ impl ShopSystem {
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
-        Self::remove_reroll_button(world, resources);
         resources.tape_player.clear();
         Event::ShopEnd.send(world, resources);
         ShopSystem::clear_case(world, resources);

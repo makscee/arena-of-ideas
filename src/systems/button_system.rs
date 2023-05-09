@@ -18,14 +18,9 @@ impl ButtonSystem {
             button.update_handlers.push(update_handler);
         }
         if let Some(text) = text {
-            button.chain_after.push(
-                options
-                    .shaders
-                    .button_text
-                    .clone()
-                    .set_uniform("u_color", ShaderUniform::Color(options.colors.text))
-                    .set_uniform("u_text", ShaderUniform::String((1, text.to_string()))),
-            );
+            button
+                .set_color_ref("u_text_color", options.colors.text)
+                .set_string_ref("u_text", text.to_owned(), 1);
         }
         if let Some(icon) = icon {
             button.chain_after.push(

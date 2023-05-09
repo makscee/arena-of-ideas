@@ -221,6 +221,9 @@ impl ShaderSystem {
     }
 
     pub fn flatten_shader_chain(mut shader: Shader) -> Vec<Shader> {
+        if !shader.is_enabled() {
+            return default();
+        }
         let mut rng: rand_pcg::Pcg64 =
             rand_seeder::Seeder::from(format!("{:?}", shader.entity)).make_rng();
         shader
