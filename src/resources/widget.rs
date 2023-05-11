@@ -8,6 +8,7 @@ pub enum Widget<'a> {
         options: &'a Options,
     },
     BonusChoicePanel {
+        value: usize,
         bonuses: Vec<BonusEffect>,
         panel_entity: legion::Entity,
         options: &'a Options,
@@ -91,9 +92,21 @@ impl<'a> Widget<'_> {
                                     debug!("Battle choice make selection: {difficulty}");
                                     let dark =
                                         Ladder::get_current_teams(resources)[difficulty].clone();
+                                    let mut dark = Ladder::generate_teams(dark);
                                     let light = PackedTeam::pack(&Faction::Team, world, resources);
                                     resources.battle_data.last_difficulty = difficulty;
-                                    BattleSystem::init_battle(&light, &dark, world, resources);
+                                    BattleSystem::init_battle(
+                                        &light,
+                                        &dark.remove(0),
+                                        world,
+                                        resources,
+                                    );
+                                    resources
+                                        .battle_data
+                                        .team_queue
+                                        .entry(Faction::Dark)
+                                        .or_default()
+                                        .extend(dark);
                                     GameStateSystem::set_transition(GameState::Battle, resources);
                                 }
                             }
@@ -332,6 +345,7 @@ impl<'a> Widget<'_> {
                 bonuses,
                 panel_entity: entity,
                 options,
+                value,
             } => {
                 let mut node = Node::default();
                 let mut position = vec2::ZERO;
@@ -346,7 +360,8 @@ impl<'a> Widget<'_> {
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", options.colors.background),
+                            .set_color("u_color", options.colors.background)
+                            .set_string("u_value_text", value.to_string(), 1),
                         anim.animation.clone(),
                         anim.duration,
                     )
@@ -391,7 +406,7 @@ impl<'a> Widget<'_> {
                     }
                     let initial_uniforms: ShaderUniforms = hashmap! {
                         "u_rarity_color" => ShaderUniform::Color(color),
-                        "u_position" => ShaderUniform::Vec2(position + vec2(0.0, ((bonuses.len() as f32 - 1.0) * 0.5 - ind as f32) * 0.25)),
+                        "u_position" => ShaderUniform::Vec2(position + vec2(0.0, ((bonuses.len() as f32 - 1.0) * 0.5 - ind as f32) * 0.2)),
                         "u_index" => ShaderUniform::Int(ind as i32),
                         "u_text" => ShaderUniform::String((0, text)),
                         "u_rarity_text" =>ShaderUniform::String((1, rarity.to_string())),

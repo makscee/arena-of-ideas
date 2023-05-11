@@ -10,7 +10,7 @@ pub struct Ladder {
 impl Ladder {
     pub fn load_team(resources: &Resources) -> PackedTeam {
         let ladder = &resources.ladder;
-        Self::generate_team(ladder.teams[ladder.current].clone().into())
+        ladder.teams[ladder.current].clone().into()
     }
 
     pub fn get_current_teams(resources: &Resources) -> Vec<&PackedTeam> {
@@ -23,24 +23,20 @@ impl Ladder {
         ]
     }
 
-    pub fn generate_team(mut team: PackedTeam) -> PackedTeam {
-        return team;
-        let size = team.units.len();
-        for rank in 1..=2 {
-            for i in 0..size {
-                let mut unit = team.units[i].clone();
-                unit.rank = rank;
-                team.units.push(unit);
-            }
-        }
-        team
+    pub fn generate_teams(team: PackedTeam) -> Vec<PackedTeam> {
+        let mut r1 = team.clone();
+        r1.vars.set_int(&VarName::Rank, 1);
+        let mut r2 = team.clone();
+        r2.vars.set_int(&VarName::Rank, 2);
+        vec![team, r1, r2]
     }
 
-    pub fn get_score(world: &legion::World, resources: &Resources) -> usize {
-        match UnitSystem::collect_faction(world, Faction::Dark).len() > 0 {
-            true => 0,
-            false => 1,
+    pub fn get_score(world: &legion::World) -> usize {
+        let mut min_rank = 2;
+        for (_, state) in UnitSystem::collect_faction_states(world, Faction::Dark) {
+            min_rank = min_rank.min(state.try_get_int(&VarName::Rank, world).unwrap_or_default());
         }
+        1 + min_rank as usize
     }
 
     pub fn current_ind(&self) -> usize {

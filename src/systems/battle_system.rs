@@ -15,7 +15,6 @@ impl BattleSystem {
         resources: &mut Resources,
         tape: &mut Option<Tape>,
     ) -> usize {
-        // Ladder::track_team(world, resources);
         Self::create_tape_entities(world, resources, tape);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
@@ -27,16 +26,32 @@ impl BattleSystem {
         if let Some(tape) = tape {
             tape.push(cluster.unwrap());
         }
-        let mut ticks = 0;
-        while Self::tick(world, resources, tape) && ticks < 100 {
-            Self::update_score(world, resources, tape);
-            ticks += 1;
-        }
-        if ticks == 100 {
-            panic!("Exceeded ticks limit");
+        loop {
+            let result = Self::tick(world, resources, tape);
+            if !result {
+                let faction = if UnitSystem::collect_faction(world, Faction::Dark).is_empty() {
+                    Some(Faction::Dark)
+                } else {
+                    if UnitSystem::collect_faction(world, Faction::Light).is_empty() {
+                        Some(Faction::Light)
+                    } else {
+                        None
+                    }
+                };
+                if let Some(faction) = faction {
+                    if let Some(queue) = resources.battle_data.team_queue.get_mut(&faction) {
+                        let team = queue.pop_front();
+                        if let Some(team) = team {
+                            team.unpack(&faction, world, resources);
+                            continue;
+                        }
+                    }
+                }
+                break;
+            }
         }
         Self::clear_tape_entities(world, resources, tape);
-        let score = Ladder::get_score(world, resources);
+        let score = Ladder::get_score(world);
         Self::add_outro(score, world, resources, tape);
         score
     }
@@ -84,27 +99,6 @@ impl BattleSystem {
         }
     }
 
-    fn update_score(world: &mut legion::World, resources: &Resources, tape: &mut Option<Tape>) {
-        return;
-        if tape.is_none() {
-            return;
-        }
-        // let score = Ladder::get_score_units(world, resources);
-        let score = (0, 1);
-        if let Some(mut entry) = resources
-            .battle_data
-            .score_entity
-            .and_then(|x| world.entry(x))
-        {
-            if let Ok(shader) = entry.get_component_mut::<Shader>() {
-                shader.set_uniform_ref(
-                    "u_text",
-                    ShaderUniform::String((1, format!("{}/{}", score.0, score.1))),
-                );
-            }
-        }
-    }
-
     fn add_outro(
         score: usize,
         world: &mut legion::World,
@@ -135,7 +129,7 @@ impl BattleSystem {
     }
 
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
-        resources.last_score = Ladder::get_score(world, resources);
+        resources.last_score = Ladder::get_score(world);
         resources.last_round = resources.ladder.current_ind();
         resources.total_score += resources.last_score;
         if resources.last_score > 0 {

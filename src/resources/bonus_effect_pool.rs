@@ -19,6 +19,7 @@ impl BonusEffectPool {
             bonuses,
             panel_entity: entity,
             options: &resources.options,
+            value,
         }
         .generate_node()
         .lock(NodeLockType::Empty)

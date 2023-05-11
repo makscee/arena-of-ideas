@@ -20,8 +20,9 @@ impl SacrificeSystem {
     }
 
     pub fn show_bonus_widget(world: &legion::World, resources: &mut Resources) {
-        let value =
-            resources.sacrifice_data.marked_units.len() + resources.battle_data.last_difficulty;
+        let value = resources.sacrifice_data.marked_units.len()
+            + resources.battle_data.last_difficulty
+            + resources.battle_data.last_score;
         resources.sacrifice_data.marked_units.clear();
         BonusEffectPool::load_widget(value, world, resources);
     }

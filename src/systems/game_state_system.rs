@@ -306,7 +306,8 @@ impl GameStateSystem {
             GameState::Battle => {
                 resources.camera.focus = Focus::Battle;
                 let mut tape = Some(Tape::default());
-                BattleSystem::run_battle(world, resources, &mut tape);
+                resources.battle_data.last_score =
+                    BattleSystem::run_battle(world, resources, &mut tape);
                 resources.tape_player.clear();
                 resources.tape_player.tape = tape.unwrap();
             }

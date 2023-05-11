@@ -198,7 +198,7 @@ impl RatingSystem {
         for light in teams.iter() {
             for dark in teams.iter() {
                 let mut dark = dark.clone();
-                dark = Ladder::generate_team(dark);
+                // dark = Ladder::generate_team(dark);
                 let result = SimulationSystem::run_battle(light, &dark, world, resources, None);
                 ratings.add_rating(&light.name, RatingType::WinRate, result, 1);
             }

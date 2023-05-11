@@ -872,6 +872,11 @@
                         "uniforms": {
                             "u_ui": 1,
                             "u_aa": 0.003,
+                            "u_gradient": 0.0,
+                            "u_box": [
+                                1.6,
+                                0.40
+                            ],
                             "u_position": [
                                 0.0,
                                 0.25
@@ -881,6 +886,50 @@
                             "u_outline_color": "#1F3A4F"
                         }
                     },
+                    "chain_after": [
+                        {
+                            "path": "shaders/vfx/text.glsl",
+                            "parameters": {
+                                "uniforms": {
+                                    "u_ui": 1,
+                                    "u_size": 0.5,
+                                    "u_position": [
+                                        -0.5,
+                                        -0.3
+                                    ],
+                                    "u_color": "#ffffff",
+                                    "u_aspect_adjust": 1,
+                                    "u_text": [
+                                        1,
+                                        "no_text"
+                                    ],
+                                    "mapping": {
+                                        "u_text": "u_value_text"
+                                    }
+                                }
+                            },
+                            "chain_after": [
+                                {
+                                    "path": "shaders/vfx/star.glsl",
+                                    "parameters": {
+                                        "uniforms": {
+                                            "u_size": 0.12,
+                                            "u_outline": 0.15,
+                                            "u_box": [
+                                                1.0,
+                                                1.0
+                                            ],
+                                            "u_offset": [
+                                                0.1,
+                                                0.0
+                                            ],
+                                            "u_color": "#FFD700"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "layer": "UI",
                     "order": 1000
                 },
@@ -889,29 +938,20 @@
                         {
                             "t": 0.0,
                             "uniforms": {
-                                "u_box": [
-                                    1.6,
-                                    0.0
-                                ]
+                                "u_scale": 0.0
                             }
                         },
                         {
                             "t": 0.5,
                             "uniforms": {
-                                "u_box": [
-                                    1.6,
-                                    0.55
-                                ]
+                                "u_scale": 1.0
                             },
                             "easing": "QuadOut"
                         },
                         {
                             "t": 1.0,
                             "uniforms": {
-                                "u_box": [
-                                    1.6,
-                                    0.0
-                                ]
+                                "u_scale": 0.0
                             },
                             "easing": "BackIn"
                         }
@@ -931,7 +971,7 @@
                             "u_gradient": 1.1,
                             "u_color": "#9007eb",
                             "u_index_offset": [
-                                0.1,
+                                0.05,
                                 0.0
                             ],
                             "u_open": 0.0,
@@ -1008,7 +1048,7 @@
                             "uniforms": {
                                 "u_box": [
                                     2.0,
-                                    0.1
+                                    0.08
                                 ],
                                 "u_open": 1.0
                             },
@@ -1038,6 +1078,7 @@
                         "uniforms": {
                             "u_ui": 1,
                             "u_sdf_border": -0.00,
+                            "u_gradient": 0.0,
                             "u_rounding": 0.2
                         }
                     },
