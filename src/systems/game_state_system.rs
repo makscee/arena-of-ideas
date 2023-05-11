@@ -268,6 +268,16 @@ impl GameStateSystem {
         resources: &mut Resources,
     ) {
         debug!("enter_state {from} -> {to}");
+        Node::new_panel_scaled(
+            resources
+                .options
+                .shaders
+                .state_indicator
+                .clone()
+                .set_string("u_text", to.to_string(), 1),
+        )
+        .lock(NodeLockType::Empty)
+        .push_as_panel(new_entity(), resources);
         match to {
             GameState::MainMenu => {
                 Game::restart(world, resources);

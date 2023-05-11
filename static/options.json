@@ -321,7 +321,7 @@
                     "u_text_inside": 0.45,
                     "u_text_border": 0.35,
                     "mapping": {
-                        "u_alpha": "u_filled"
+                        "u_enabled": "u_filled"
                     }
                 }
             },
@@ -671,6 +671,27 @@
             },
             "layer": "Background",
             "order": 10
+        },
+        "state_indicator": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_ui": 1,
+                    "u_aspect_adjust": 1,
+                    "u_size": 0.4,
+                    "u_outline_fbm": 0.2,
+                    "u_mid_border": 0.04,
+                    "u_outline_color": "#ffffff",
+                    "u_mid_border_color": "#000000",
+                    "u_color": "#b57651",
+                    "u_position": [
+                        0.0,
+                        0.8
+                    ]
+                }
+            },
+            "layer": "UI",
+            "order": 1000
         }
     },
     "images": {

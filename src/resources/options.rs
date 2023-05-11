@@ -68,6 +68,7 @@ pub struct Shaders {
     pub tape_indicator: Shader,
     pub shop_sell_field: Shader,
     pub battle_score_indicator: Shader,
+    pub state_indicator: Shader,
 }
 
 #[derive(Deserialize, Debug)]
