@@ -72,12 +72,19 @@ impl Shader {
         self.parameters.uniforms.insert_ref(key, value);
         self
     }
+    pub fn set_uniform_local_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Self {
+        self.parameters.uniforms.insert_local_ref(key, value);
+        self
+    }
 
     pub fn set_color(self, key: &str, value: Rgba<f32>) -> Self {
         self.set_uniform(key, ShaderUniform::Color(value))
     }
     pub fn set_color_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
         self.set_uniform_ref(key, ShaderUniform::Color(value))
+    }
+    pub fn set_color_local_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+        self.set_uniform_local_ref(key, ShaderUniform::Color(value))
     }
 
     pub fn set_int(self, key: &str, value: i32) -> Self {
@@ -123,9 +130,25 @@ impl Shader {
         self
     }
 
+    pub fn set_enabled(&mut self, value: bool) {
+        self.set_float_ref("u_enabled", value as i32 as f32);
+    }
+
     pub fn is_enabled(&self) -> bool {
         if let Some(enabled) = self.parameters.uniforms.try_get_float("u_enabled") {
             enabled > 0.0
+        } else {
+            true
+        }
+    }
+
+    pub fn set_active(&mut self, value: bool) {
+        self.set_float_ref("u_active", value as i32 as f32);
+    }
+
+    pub fn is_active(&self) -> bool {
+        if let Some(active) = self.parameters.uniforms.try_get_float("u_active") {
+            active > 0.0
         } else {
             true
         }
@@ -184,7 +207,8 @@ impl Shader {
         let mut bx = uniforms.try_get_vec2("u_box").unwrap_or(vec2(1.0, 1.0));
 
         let card = uniforms.try_get_float("u_card").unwrap_or_default();
-        let mut scale = uniforms.try_get_float("u_scale").unwrap_or(1.0);
+        let mut scale = uniforms.try_get_float("u_scale").unwrap_or(1.0)
+            * uniforms.try_get_float("u_open").unwrap_or(1.0);
         let card_size = uniforms.try_get_float("u_card_size").unwrap_or_default();
         let size = uniforms.try_get_float("u_size").unwrap_or(1.0)
             + card_size * card

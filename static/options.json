@@ -1,11 +1,13 @@
 {
     "player_team_name": "Dorks",
+    "initial_state": "Shop",
     "walkthrough": false,
     "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
+    "initial_shop_g": 6,
     "initial_shop_slots": 3,
-    "initial_team_slots": 4,
+    "initial_team_slots": 3,
     "custom_game": {
         "enable": false,
         "light": {
@@ -14,18 +16,19 @@
             "units": [
                 {
                     "health": 10,
-                    "attack": 1,
-                    "house": "Vampires"
+                    "attack": 3,
+                    "statuses": {
+                        "Defense": 2
+                    }
                 }
             ]
         },
         "dark": {
-            "replications": 2,
+            "replications": 1,
             "units": [
                 {
-                    "name": "enemy",
-                    "attack": 1,
-                    "health": 10
+                    "health": 10,
+                    "attack": 3
                 }
             ],
             "name": "Enemies",
@@ -40,7 +43,7 @@
         "Effect": true,
         "Contexts": false,
         "Condition": true,
-        "Expression": true,
+        "Expression": false,
         "Trigger": true,
         "Event": true,
         "UnitCreation": true,
@@ -324,6 +327,75 @@
             },
             "layer": "UI"
         },
+        "slot_sacrifice_marker": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_box": [
+                        1.8,
+                        0.25
+                    ],
+                    "u_rounding": 0.1,
+                    "u_gradient": 0.3,
+                    "u_sdf_cut": 0.2,
+                    "u_sdf_border": -0.1,
+                    "u_rotation": 1.0
+                }
+            },
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/rectangle.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_rotation": -1.0
+                        }
+                    }
+                },
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_color": "#ffffff",
+                            "u_outline_color": "#000000",
+                            "u_outline_fade": 1.0,
+                            "u_size": 2.3,
+                            "u_text_inside": 0.48,
+                            "u_text_border": 0.1,
+                            "u_rotation": 0.0,
+                            "u_outline_fbm": 0.2,
+                            "u_offset": [
+                                0.0,
+                                0.5
+                            ],
+                            "u_text": [
+                                0,
+                                "no_text"
+                            ],
+                            "mapping": {
+                                "u_text": "u_g_text"
+                            }
+                        }
+                    },
+                    "chain_after": [
+                        {
+                            "path": "shaders/vfx/text.glsl",
+                            "parameters": {
+                                "uniforms": {
+                                    "u_offset": [
+                                        0.0,
+                                        -0.5
+                                    ],
+                                    "mapping": {
+                                        "u_text": "u_star_text"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
+            "layer": "UI"
+        },
         "money_indicator": {
             "path": "shaders/vfx/text.glsl",
             "parameters": {
@@ -485,12 +557,12 @@
             "parameters": {
                 "uniforms": {
                     "u_sdf_cut": 0.0,
-                    "u_sdf_border": -0.1,
-                    "u_aa": 0.05,
+                    "u_sdf_border": -0.05,
+                    "u_aa": 0.03,
                     "u_gradient": 0.0,
                     "u_box": [
                         1.0,
-                        0.4
+                        0.2
                     ],
                     "u_size": 1.0
                 }
@@ -832,14 +904,20 @@
                     "parameters": {
                         "uniforms": {
                             "u_ui": 1,
-                            "u_sdf_border": -0.015,
-                            "u_aa": 0.002,
+                            "u_sdf_border": -0.03,
+                            "u_aa": 0.005,
                             "u_outline_color": "#1F3A4F",
+                            "u_gradient": 1.1,
+                            "u_color": "#9007eb",
                             "u_index_offset": [
                                 0.1,
                                 0.0
                             ],
-                            "u_open": 0.0
+                            "u_open": 0.0,
+                            "mapping": {
+                                "u_outline_color": "u_rarity_color",
+                                "u_color": "u_rarity_color"
+                            }
                         }
                     },
                     "layer": "UI",
@@ -849,7 +927,7 @@
                             "path": "shaders/vfx/text.glsl",
                             "parameters": {
                                 "uniforms": {
-                                    "u_size": 0.4,
+                                    "u_size": 0.6,
                                     "u_color": "#ffffff",
                                     "u_aspect_adjust": 1,
                                     "u_text_align": [
@@ -871,9 +949,9 @@
                             "path": "shaders/vfx/text.glsl",
                             "parameters": {
                                 "uniforms": {
-                                    "u_size": 0.3,
+                                    "u_size": 0.55,
                                     "u_text_align": [
-                                        -1.0,
+                                        1.0,
                                         0.0
                                     ],
                                     "u_offset": [
@@ -884,7 +962,8 @@
                                     "u_aspect_adjust": 1,
                                     "mapping": {
                                         "u_scale": "u_open",
-                                        "u_text": "u_rarity_text"
+                                        "u_text": "u_rarity_text",
+                                        "u_color": "u_rarity_color"
                                     }
                                 }
                             }
@@ -1171,6 +1250,23 @@
                     ]
                 }
             }
+        }
+    },
+    "uniforms": {
+        "ui_button": {
+            "u_scale": 0.35,
+            "u_aa": 0.01,
+            "u_index_offset": [
+                0.0,
+                -0.5
+            ],
+            "u_offset": [
+                3.0,
+                0.0
+            ],
+            "u_aspect_adjust": 1,
+            "u_aspect_offset_adjust": 1,
+            "u_ui": 1
         }
     }
 }

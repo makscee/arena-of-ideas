@@ -1,10 +1,12 @@
+use strum_macros::Display;
+
 use super::*;
 
 pub struct GameStateSystem {
     pub systems: HashMap<GameState, Vec<Box<dyn System>>>,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Deserialize, PartialEq, Eq, Hash, Clone, Copy, Debug, Display)]
 pub enum GameState {
     MainMenu,
     Shop,
@@ -22,7 +24,7 @@ impl System for GameStateSystem {
                 if resources.options.custom_game.enable {
                     resources.transition_state = GameState::CustomGame;
                 } else {
-                    resources.transition_state = GameState::Shop;
+                    resources.transition_state = resources.options.initial_state;
                 }
             }
             GameState::Battle => {
@@ -119,6 +121,10 @@ impl System for GameStateSystem {
                         world,
                         resources,
                     });
+                if resources.input_data.down_keys.contains(&R) {
+                    resources.transition_state = GameState::MainMenu;
+                    resources.tape_player.head = 0.0;
+                }
             }
         }
         self.systems
@@ -217,7 +223,7 @@ impl GameStateSystem {
         resources.transition_state = to;
     }
 
-    pub fn change_state(to: GameState, world: &mut legion::World, resources: &mut Resources) {
+    fn change_state(to: GameState, world: &mut legion::World, resources: &mut Resources) {
         resources
             .tape_player
             .tape
@@ -234,6 +240,7 @@ impl GameStateSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        debug!("leave_state {from} -> {to}");
         match from {
             GameState::Shop => {
                 ShopSystem::leave(world, resources);
@@ -260,6 +267,7 @@ impl GameStateSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        debug!("enter_state {from} -> {to}");
         match to {
             GameState::MainMenu => {
                 Game::restart(world, resources);
@@ -268,6 +276,7 @@ impl GameStateSystem {
                 if from == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
+                    // BonusEffectPool::load_widget(3, world, resources);
                 } else if from == GameState::Sacrifice {
                     PackedTeam::new("Dark".to_owned(), default()).unpack(
                         &Faction::Dark,
@@ -279,8 +288,9 @@ impl GameStateSystem {
                         world,
                         resources,
                     );
+                    SacrificeSystem::show_bonus_widget(world, resources);
                 }
-                ShopSystem::enter(world, resources, true);
+                ShopSystem::enter(world, resources);
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {
@@ -293,6 +303,41 @@ impl GameStateSystem {
             GameState::Gallery => {}
             GameState::Sacrifice => {
                 resources.camera.focus = Focus::Shop;
+
+                fn input_handler(
+                    event: HandleEvent,
+                    _: legion::Entity,
+                    _: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            SacrificeSystem::sacrifice_marked(world, resources);
+                        }
+                        _ => {}
+                    };
+                }
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    _: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    shader.set_active(!resources.sacrifice_data.marked_units.is_empty());
+                }
+
+                Widget::Button {
+                    text: "Accept".to_owned(),
+                    input_handler,
+                    update_handler: Some(update_handler),
+                    options: &resources.options,
+                    uniforms: resources.options.uniforms.ui_button.clone(),
+                }
+                .generate_node()
+                .lock(NodeLockType::Empty)
+                .push_as_panel(new_entity(), resources);
             }
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;

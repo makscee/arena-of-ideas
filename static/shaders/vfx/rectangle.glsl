@@ -1,21 +1,23 @@
 #include <common.glsl>
 uniform float u_sdf_cut = 0;
-uniform float u_rounding = 0.3;
+uniform float u_rounding = 0.2;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
+out vec2 o_box;
 attribute vec2 a_pos;
 
 void main() {
     init_fields();
     uv = get_uv(a_pos);
+    o_box = box;
     gl_Position = get_gl_position(uv);
-    uv *= box;
 }
 #endif
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
+in vec2 o_box;
 
 uniform float u_alpha = 1;
 uniform float u_sdf_border = 0.5;
@@ -24,7 +26,7 @@ uniform float u_gradient = 0.5;
 uniform vec4 u_color_end;
 
 void main() {
-    float sdf = rectangle_rounded_sdf(uv, u_box, vec4(u_rounding));
+    float sdf = rectangle_rounded_sdf(uv * o_box * vec2(u_aspect_ratio, 1), o_box, vec4(u_rounding * u_scale)) / u_scale;
     float alpha = mix(0, u_alpha, (u_sdf_cut - sdf) / u_aa);
     float border = aliase(u_sdf_border, u_sdf_cut, u_aa, sdf);
     vec4 color = u_color;

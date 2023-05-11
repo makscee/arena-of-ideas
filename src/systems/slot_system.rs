@@ -245,37 +245,30 @@ impl SlotSystem {
         }
     }
 
-    pub fn handle_state_enter(state: GameState, world: &mut legion::World, resources: &Resources) {
+    pub fn handle_state_enter(
+        state: GameState,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
         for (slot, entity, shader) in
             <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
         {
+            let entity = entity.entity;
+            let faction = slot.faction;
+            let slot = slot.slot;
             let enabled = match state {
                 GameState::Shop => {
-                    if slot.faction == Faction::Team {
-                        Self::add_slot_activation_btn(
-                            shader,
-                            "Sell",
-                            None,
-                            entity.entity,
-                            resources,
-                        )
+                    if faction == Faction::Team {
+                        Self::add_slot_activation_btn(shader, "Sell", None, entity, resources);
                     }
-                    slot.faction == Faction::Shop || slot.faction == Faction::Team
+                    faction == Faction::Shop || faction == Faction::Team
                 }
-                GameState::Battle => {
-                    slot.faction == Faction::Dark || slot.faction == Faction::Light
-                }
+                GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
                 GameState::Sacrifice => {
-                    if slot.faction == Faction::Team {
-                        Self::add_slot_activation_btn(
-                            shader,
-                            "Sacrifice",
-                            None,
-                            entity.entity,
-                            resources,
-                        )
+                    if faction == Faction::Team {
+                        Self::add_slot_activation_btn(shader, "Sacrifice", None, entity, resources)
                     }
-                    slot.faction == Faction::Team
+                    faction == Faction::Team
                 }
                 _ => true,
             };
@@ -295,7 +288,31 @@ impl SlotSystem {
                     GameState::Shop => {
                         ShopSystem::try_sell(entity, resources, world);
                     }
-                    GameState::Sacrifice => debug!("Mark for sac"),
+                    GameState::Sacrifice => {
+                        if !resources.sacrifice_data.marked_units.contains(&entity) {
+                            resources.sacrifice_data.marked_units.insert(entity);
+                            let position = Self::get_position(slot, &faction, resources);
+                            Node::new_panel_scaled(
+                                resources
+                                    .options
+                                    .shaders
+                                    .slot_sacrifice_marker
+                                    .clone()
+                                    .set_vec2("u_position", position)
+                                    .set_color("u_color", resources.options.colors.deletion)
+                                    .set_string("u_g_text", "+2-4 g".to_owned(), 1)
+                                    .set_string("u_star_text", "+1 star".to_owned(), 1),
+                            )
+                            .lock(NodeLockType::Empty)
+                            .push_as_panel(entity, resources);
+                        } else {
+                            resources
+                                .tape_player
+                                .tape
+                                .close_panels(entity, resources.tape_player.head);
+                            resources.sacrifice_data.marked_units.remove(&entity);
+                        }
+                    }
                     _ => {}
                 },
                 _ => {}

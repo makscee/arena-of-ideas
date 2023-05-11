@@ -70,6 +70,49 @@ impl ActionSystem {
         };
         result
     }
+
+    pub fn spin(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        cluster: &mut Option<NodeCluster>,
+    ) {
+        Self::run_ticks(world, resources, cluster);
+        Self::death_check(world, resources, cluster);
+    }
+
+    pub fn death_check(
+        world: &mut legion::World,
+        resources: &mut Resources,
+        cluster: &mut Option<NodeCluster>,
+    ) {
+        let mut corpses = Vec::default();
+        while let Some(dead_unit) = <&EntityComponent>::query()
+            .filter(component::<UnitComponent>())
+            .iter(world)
+            .filter_map(
+                |entity| match UnitSystem::is_alive(entity.entity, world, resources) {
+                    false => Some(entity.entity),
+                    true => None,
+                },
+            )
+            .choose(&mut thread_rng())
+        {
+            resources.logger.log(
+                || format!("{:?} dead", dead_unit),
+                &LogContext::UnitCreation,
+            );
+            if UnitSystem::process_death(dead_unit, world, resources, cluster) {
+                resources.logger.log(
+                    || format!("{:?} removed", dead_unit),
+                    &LogContext::UnitCreation,
+                );
+                corpses.push(dead_unit);
+            }
+        }
+        for entity in corpses {
+            Event::UnitDeath { target: entity }.send(world, resources);
+        }
+    }
 }
 
 #[derive(Debug)]

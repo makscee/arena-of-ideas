@@ -12,11 +12,11 @@ impl ButtonSystem {
         options: &Options,
     ) -> Shader {
         let mut button = options.shaders.button.clone();
-        Self::add_button_handlers(&mut button);
         button.input_handlers.push(input_handler);
         if let Some(update_handler) = update_handler {
             button.update_handlers.push(update_handler);
         }
+        Self::add_button_handlers(&mut button);
         if let Some(text) = text {
             button
                 .set_color_ref("u_text_color", options.colors.text)
@@ -47,15 +47,17 @@ impl ButtonSystem {
         _: &mut legion::World,
         _: &mut Resources,
     ) {
-        match event {
-            HandleEvent::Hover => {
-                shader.set_float_ref("u_hovered", 1.0);
-            }
-            HandleEvent::Press => {
-                shader.set_float_ref("u_pressed", 1.0);
-            }
-            _ => {}
-        };
+        if shader.is_active() {
+            match event {
+                HandleEvent::Hover => {
+                    shader.set_float_ref("u_hovered", 1.0);
+                }
+                HandleEvent::Press => {
+                    shader.set_float_ref("u_pressed", 1.0);
+                }
+                _ => {}
+            };
+        }
     }
 
     fn button_update_handler(
@@ -65,27 +67,23 @@ impl ButtonSystem {
         _: &mut legion::World,
         resources: &mut Resources,
     ) {
-        if let Some(active) = shader.parameters.uniforms.try_get_float("u_active") {
-            if active == 1.0 {
-                shader.set_color_ref("u_color", resources.options.colors.button);
-                if let Some(pressed) = shader.parameters.uniforms.try_get_float("u_pressed") {
-                    if pressed == 1.0 {
-                        shader.set_color_ref("u_color", resources.options.colors.pressed);
-                    }
-                } else if let Some(hovered) = shader.parameters.uniforms.try_get_float("u_hovered")
-                {
-                    if hovered == 1.0 {
-                        shader.set_color_ref("u_color", resources.options.colors.hovered);
-                    }
+        if shader.is_active() {
+            if let Some(pressed) = shader.parameters.uniforms.try_get_float("u_pressed") {
+                if pressed == 1.0 {
+                    shader.set_color_local_ref("u_color", resources.options.colors.pressed);
                 }
-            } else {
-                shader.set_color_ref("u_color", resources.options.colors.inactive);
+            } else if let Some(hovered) = shader.parameters.uniforms.try_get_float("u_hovered") {
+                if hovered == 1.0 {
+                    shader.set_color_local_ref("u_color", resources.options.colors.hovered);
+                }
             }
+        } else {
+            shader.set_color_local_ref("u_color", resources.options.colors.inactive);
         }
     }
 
     pub fn add_button_handlers(shader: &mut Shader) {
-        shader.set_float_ref("u_active", 1.0);
+        shader.set_active(true);
         shader.input_handlers.push(Self::button_input_handler);
         shader.update_handlers.push(Self::button_update_handler);
     }

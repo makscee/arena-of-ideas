@@ -23,7 +23,7 @@ impl BattleSystem {
         };
         SlotSystem::move_to_slots_animated(world, resources, &mut cluster);
         Event::BattleStart.send(world, resources);
-        Self::spin(world, resources, &mut cluster);
+        ActionSystem::spin(world, resources, &mut cluster);
         if let Some(tape) = tape {
             tape.push(cluster.unwrap());
         }
@@ -49,13 +49,6 @@ impl BattleSystem {
         if tape.is_none() {
             return;
         }
-
-        // let entity = Self::push_tape_shader_entity(
-        //     resources.options.shaders.battle_score_indicator.clone(),
-        //     world,
-        // );
-        // resources.battle_data.score_entity = Some(entity);
-        // Self::update_score(world, resources, tape);
 
         let (left, right) = VfxSystem::vfx_battle_team_names(world, resources);
         let names = (
@@ -182,11 +175,11 @@ impl BattleSystem {
             Some(_) => Some(NodeCluster::default()),
             None => None,
         };
-        Self::spin(world, resources, &mut cluster);
+        ActionSystem::spin(world, resources, &mut cluster);
         SlotSystem::move_to_slots_animated(world, resources, &mut cluster);
         if let Some((left, right)) = Self::find_hitters(world) {
             Event::TurnStart.send(world, resources);
-            Self::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
                 if let Some(tape) = tape {
                     tape.push(cluster.unwrap());
@@ -199,7 +192,7 @@ impl BattleSystem {
                 target: right,
             }
             .send(world, resources);
-            Self::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
                 if let Some(tape) = tape {
                     tape.push(cluster.unwrap());
@@ -212,7 +205,7 @@ impl BattleSystem {
                 target: left,
             }
             .send(world, resources);
-            Self::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, &mut cluster);
             if Self::strickers_death_check(left, right, world) {
                 if let Some(tape) = tape {
                     tape.push(cluster.unwrap());
@@ -279,9 +272,9 @@ impl BattleSystem {
                 cluster.push(node.lock(NodeLockType::Full { world, resources }));
             }
             Self::hit(left, right, &mut cluster, world, resources);
-            Self::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, &mut cluster);
             Event::TurnEnd.send(world, resources);
-            Self::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, &mut cluster);
             if let Some(tape) = tape {
                 let mut cluster = cluster.unwrap();
                 cluster.set_duration(duration);
@@ -314,15 +307,6 @@ impl BattleSystem {
         }
     }
 
-    pub fn spin(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
-    ) {
-        ActionSystem::run_ticks(world, resources, cluster);
-        Self::death_check(world, resources, cluster);
-    }
-
     pub fn hit(
         left: legion::Entity,
         right: legion::Entity,
@@ -330,7 +314,7 @@ impl BattleSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        Self::spin(world, resources, cluster);
+        ActionSystem::spin(world, resources, cluster);
 
         if UnitSystem::is_alive(left, world, resources)
             && UnitSystem::is_alive(right, world, resources)
@@ -353,7 +337,7 @@ impl BattleSystem {
                 }
                 .wrap(),
             ));
-            Self::spin(world, resources, cluster);
+            ActionSystem::spin(world, resources, cluster);
         }
 
         if UnitSystem::is_alive(left, world, resources) {
@@ -362,7 +346,7 @@ impl BattleSystem {
                 target: right,
             }
             .send(world, resources);
-            Self::spin(world, resources, cluster);
+            ActionSystem::spin(world, resources, cluster);
         }
 
         if UnitSystem::is_alive(right, world, resources) {
@@ -371,41 +355,7 @@ impl BattleSystem {
                 target: left,
             }
             .send(world, resources);
-            Self::spin(world, resources, cluster);
-        }
-    }
-
-    pub fn death_check(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
-    ) {
-        let mut corpses = Vec::default();
-        while let Some(dead_unit) = <&EntityComponent>::query()
-            .filter(component::<UnitComponent>())
-            .iter(world)
-            .filter_map(
-                |entity| match UnitSystem::is_alive(entity.entity, world, resources) {
-                    false => Some(entity.entity),
-                    true => None,
-                },
-            )
-            .choose(&mut thread_rng())
-        {
-            resources.logger.log(
-                || format!("{:?} dead", dead_unit),
-                &LogContext::UnitCreation,
-            );
-            if UnitSystem::process_death(dead_unit, world, resources, cluster) {
-                resources.logger.log(
-                    || format!("{:?} removed", dead_unit),
-                    &LogContext::UnitCreation,
-                );
-                corpses.push(dead_unit);
-            }
-        }
-        for entity in corpses {
-            Event::UnitDeath { target: entity }.send(world, resources);
+            ActionSystem::spin(world, resources, cluster);
         }
     }
 

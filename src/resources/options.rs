@@ -8,6 +8,7 @@ pub struct Options {
     pub colors: Colors,
     pub floats: Floats,
     pub widgets: Widgets,
+    pub uniforms: Uniforms,
 
     pub fov: f32,
     pub rewind_speed: f32,
@@ -18,8 +19,10 @@ pub struct Options {
     pub walkthrough: bool,
     pub team_ratings: bool,
     pub player_team_name: String,
+    pub initial_shop_g: i32,
     pub initial_shop_slots: usize,
     pub initial_team_slots: usize,
+    pub initial_state: GameState,
 }
 
 impl FileWatcherLoader for Options {
@@ -49,6 +52,7 @@ pub struct Shaders {
     pub name: Shader,
     pub slot: Shader,
     pub slot_price: Shader,
+    pub slot_sacrifice_marker: Shader,
     pub money_indicator: Shader,
     pub status_panel: Shader,
     pub definitions_panel: Shader,
@@ -163,4 +167,9 @@ pub struct Floats {
     pub slots_battle_team_scale: f32,
     pub slots_striker_scale: f32,
     pub slot_info_offset: f32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Uniforms {
+    pub ui_button: ShaderUniforms,
 }

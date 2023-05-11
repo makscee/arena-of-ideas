@@ -48,32 +48,19 @@ impl BonusEffectPool {
         let units = UnitSystem::collect_faction(world, Faction::Team);
         resources.bonus_pool.current.clear();
 
+        let option_count = (1 + value).min(4);
         let all_rarities = enum_iterator::all::<Rarity>().collect_vec();
-        let mut rarities: HashSet<Rarity> = default();
-        for (i, rarity) in enum_iterator::all::<Rarity>().enumerate() {
-            if i >= value {
-                break;
-            }
-            rarities.insert(rarity);
-        }
-
-        let option_count = 3 + (value as i32 - all_rarities.len() as i32).max(0) as usize;
-        let bonuses = resources
-            .bonus_pool
-            .effects
-            .iter()
-            .filter_map(|(rarity, bonuses)| match rarities.contains(rarity) {
-                true => Some(bonuses),
-                false => None,
-            })
-            .flatten()
-            .filter(|x| !units.is_empty() || !x.single_target)
-            .cloned()
+        let mut rarities = all_rarities
+            .choose_multiple_weighted(&mut thread_rng(), option_count, |item| item.weight())
+            .unwrap()
             .collect_vec();
+        let ind = (&mut thread_rng()).gen_range(0..rarities.len());
+        rarities[ind] = &all_rarities[(value).min(all_rarities.len()) - 1];
 
-        let mut current = bonuses
+        let mut current = rarities
             .into_iter()
-            .choose_multiple(&mut thread_rng(), option_count);
+            .map(|x| x.generate(value, units.len(), resources))
+            .collect_vec();
 
         current.iter_mut().for_each(|x| {
             if x.single_target {

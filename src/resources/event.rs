@@ -362,26 +362,13 @@ impl Event {
     }
 
     pub fn calculate(self, context: &mut Context, world: &legion::World, resources: &Resources) {
-        let extra_layers = match self {
-            Event::ModifyContext | Event::ModifyOutgoingDamage => {
+        match self {
+            Event::ModifyContext | Event::ModifyOutgoingDamage | Event::ModifyIncomingDamage => {
                 Status::calculate_one(self, context.owner().unwrap(), context, world, resources)
-            }
-            Event::ModifyIncomingDamage => {
-                let damage = context.get_int(&VarName::Damage, world).unwrap();
-                let owner = context.target().unwrap();
-                let attacker = context.owner().unwrap();
-                let mut context =
-                    Context::new(ContextLayer::Unit { entity: owner }, world, resources)
-                        .set_attacker(attacker);
-                context.insert_int(VarName::Damage, damage);
-                Status::calculate_one(self, owner, &context, world, resources)
             }
             _ => {
                 panic!("Can't calculate event {:?}", self)
             }
         };
-        for layer in extra_layers {
-            context.stack(layer, world, resources);
-        }
     }
 }

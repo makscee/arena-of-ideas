@@ -38,7 +38,6 @@ impl<'a> Widget<'_> {
                 options,
                 uniforms,
             } => {
-                let mut node = Node::default();
                 let button = ButtonSystem::create_button(
                     Some(&text),
                     None,
@@ -49,29 +48,7 @@ impl<'a> Widget<'_> {
                 )
                 .merge_uniforms(&uniforms, true);
 
-                let animation = AnimatedShaderUniforms::empty()
-                    .add_key_frame(
-                        0.0,
-                        hashmap! {"u_scale"=> ShaderUniform::Float(0.0)}.into(),
-                        EasingType::Linear,
-                    )
-                    .add_key_frame(
-                        0.5,
-                        hashmap! {"u_scale"=> ShaderUniform::Float(1.0)}.into(),
-                        EasingType::QuadOut,
-                    )
-                    .add_key_frame(
-                        1.0,
-                        hashmap! {"u_scale"=> ShaderUniform::Float(0.0)}.into(),
-                        EasingType::QuadIn,
-                    );
-                let animation = Animation::ShaderAnimation {
-                    shader: button,
-                    animation,
-                };
-                node.add_effect(TimedEffect::new(Some(1.0), animation, 0));
-
-                node
+                Node::new_panel_scaled(button)
             }
             Self::BattleChoicePanel {
                 unit,
@@ -115,6 +92,7 @@ impl<'a> Widget<'_> {
                                     let dark =
                                         Ladder::get_current_teams(resources)[difficulty].clone();
                                     let light = PackedTeam::pack(&Faction::Team, world, resources);
+                                    resources.battle_data.last_difficulty = difficulty;
                                     BattleSystem::init_battle(&light, &dark, world, resources);
                                     GameStateSystem::set_transition(GameState::Battle, resources);
                                 }
@@ -381,10 +359,7 @@ impl<'a> Widget<'_> {
 
                 let (shader, animation, duration) = {
                     let anim = &options.widgets.bonus_choice_panel.option;
-                    let mut shader = anim
-                        .shader
-                        .clone()
-                        .set_color("u_color", options.colors.background);
+                    let mut shader = anim.shader.clone();
                     shader.parent = Some(entity);
                     ButtonSystem::add_button_handlers(&mut shader);
                     shader
@@ -415,7 +390,7 @@ impl<'a> Widget<'_> {
                         text += format!(" to {target}").as_str();
                     }
                     let initial_uniforms: ShaderUniforms = hashmap! {
-                        "u_color" => ShaderUniform::Color(color),
+                        "u_rarity_color" => ShaderUniform::Color(color),
                         "u_position" => ShaderUniform::Vec2(position + vec2(0.0, ((bonuses.len() as f32 - 1.0) * 0.5 - ind as f32) * 0.25)),
                         "u_index" => ShaderUniform::Int(ind as i32),
                         "u_text" => ShaderUniform::String((0, text)),

@@ -275,6 +275,29 @@ impl ClusterQueue {
 }
 
 impl Node {
+    pub fn new_panel_scaled(shader: Shader) -> Node {
+        let animation = AnimatedShaderUniforms::empty()
+            .add_key_frame(
+                0.0,
+                hashmap! {"u_open"=> ShaderUniform::Float(0.0)}.into(),
+                EasingType::Linear,
+            )
+            .add_key_frame(
+                0.5,
+                hashmap! {"u_open"=> ShaderUniform::Float(1.0)}.into(),
+                EasingType::QuadOut,
+            )
+            .add_key_frame(
+                1.0,
+                hashmap! {"u_open"=> ShaderUniform::Float(0.0)}.into(),
+                EasingType::QuadIn,
+            );
+        let animation = Animation::ShaderAnimation { shader, animation };
+        let mut node = Node::default();
+        node.add_effect(TimedEffect::new(Some(1.0), animation, 0));
+        node
+    }
+
     pub fn add_effect_by_key(&mut self, key: String, effect: TimedEffect) {
         self.add_effects_by_key(key, vec![effect])
     }

@@ -19,7 +19,7 @@ impl System for ShopSystem {
         if !resources.action_queue.is_empty() {
             let mut cluster = Some(NodeCluster::default());
             ActionSystem::run_ticks(world, resources, &mut cluster);
-            BattleSystem::death_check(world, resources, &mut cluster);
+            ActionSystem::death_check(world, resources, &mut cluster);
             ActionSystem::run_ticks(world, resources, &mut cluster);
 
             resources
@@ -190,10 +190,6 @@ impl ShopSystem {
         });
     }
 
-    pub fn floor_money(floor: usize) -> i32 {
-        (3 + floor as i32).min(10)
-    }
-
     pub fn get_g(world: &legion::World) -> i32 {
         TeamSystem::get_state(&Faction::Team, world)
             .vars
@@ -267,8 +263,7 @@ impl ShopSystem {
         PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
         PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
 
-        let mut team = PackedTeam::new("Shop".to_owned(), default());
-        team.slots = 1;
+        let team = PackedTeam::new("Shop".to_owned(), default());
         team.unpack(&Faction::Shop, world, resources);
 
         let team =
@@ -328,17 +323,17 @@ impl ShopSystem {
         .push_as_panel(new_entity(), resources);
     }
 
-    pub fn enter(world: &mut legion::World, resources: &mut Resources, give_g: bool) {
+    pub fn enter(world: &mut legion::World, resources: &mut Resources) {
         let current_floor = resources.ladder.current_ind();
+        if current_floor == 0 {
+            Self::change_g(resources.options.initial_shop_g, world);
+        }
         TeamSystem::get_state_mut(&Faction::Shop, world)
             .vars
             .set_int(
                 &VarName::Slots,
                 (current_floor + resources.options.initial_shop_slots).min(6) as i32,
             );
-        if give_g {
-            Self::change_g(Self::floor_money(current_floor), world);
-        }
         TeamSystem::get_state_mut(&Faction::Shop, world)
             .vars
             .set_int(&VarName::FreeRerolls, resources.last_score as i32);
@@ -364,7 +359,7 @@ impl ShopSystem {
         UnitSystem::collect_faction(world, Faction::Shop)
             .into_iter()
             .for_each(|entity| {
-                if level != 0 {
+                if level != 0 || true {
                     ShopData::pack_unit_into_pool(entity, world, resources)
                 } else {
                     world.remove(entity);
@@ -377,7 +372,7 @@ impl ShopSystem {
             .vars
             .get_int(&VarName::Slots) as usize;
         let level = resources.ladder.current_ind();
-        if level == 0 {
+        if level == 0 && false {
             let top_units = resources
                 .hero_pool
                 .names_sorted()

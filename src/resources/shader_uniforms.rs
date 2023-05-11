@@ -150,6 +150,15 @@ impl ShaderUniforms {
         self
     }
 
+    pub fn insert_local_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Self {
+        self.local.insert(key.to_owned(), value);
+        self
+    }
+
+    pub fn insert_color_local_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+        self.insert_local_ref(key, ShaderUniform::Color(value))
+    }
+
     pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
         self.data.get(self.map(key))
     }

@@ -32,6 +32,7 @@ mod ladder;
 mod options;
 mod packed_team;
 mod packed_unit;
+mod sacrifice_data;
 mod shader_programs;
 mod shader_uniforms;
 mod shop_data;
@@ -71,6 +72,7 @@ pub use ladder::*;
 pub use options::*;
 pub use packed_team::*;
 pub use packed_unit::*;
+pub use sacrifice_data::*;
 pub use shader_programs::*;
 pub use shader_uniforms::*;
 pub use shop_data::*;
@@ -102,6 +104,7 @@ pub struct Resources {
 
     pub shop_data: ShopData,
     pub battle_data: BattleData,
+    pub sacrifice_data: SacrificeData,
     pub last_score: usize,
     pub total_score: usize,
     pub last_round: usize,
@@ -158,6 +161,7 @@ impl Resources {
             definitions_regex: Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap(),
             status_library: default(),
             buff_pool: default(),
+            sacrifice_data: default(),
         }
     }
 

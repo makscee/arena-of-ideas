@@ -68,7 +68,7 @@ impl Status {
         world: &legion::World,
         resources: &mut Resources,
     ) {
-        let mut context = context.clone_stack(ContextLayer::Unit { entity }, world, resources);
+        let mut context = context.clone_stack(ContextLayer::Entity { entity }, world, resources);
         context.stack(
             ContextLayer::Status {
                 entity,
@@ -90,16 +90,15 @@ impl Status {
     pub fn calculate_one(
         event: Event,
         entity: legion::Entity,
-        context: &Context,
+        context: &mut Context,
         world: &legion::World,
         resources: &Resources,
-    ) -> Vec<ContextLayer> {
+    ) {
         let statuses = context.collect_statuses(world);
         let mut triggers = StatusLibrary::add_triggers(statuses, resources);
         if let Ok(trigger) = world.entry_ref(entity).unwrap().get_component::<Trigger>() {
             triggers.insert("_local".to_owned(), (trigger.clone(), 1));
         }
-        let mut extra_layers = default();
         for (name, (trigger, charges)) in triggers {
             let status_context = context.clone_stack(
                 ContextLayer::Status {
@@ -110,14 +109,12 @@ impl Status {
                 world,
                 resources,
             );
-            match trigger.calculate_event(
-                &event,
-                &status_context,
-                &mut extra_layers,
-                world,
-                resources,
-            ) {
-                Ok(_) => {}
+            match trigger.calculate_event(&event, &status_context, world, resources) {
+                Ok(extra_layers) => {
+                    for layer in extra_layers {
+                        context.stack(layer, world, resources);
+                    }
+                }
                 Err(error) => {
                     resources.logger.log(
                         || format!("Failed to calculate trigger {error}\n{trigger:?}"),
@@ -126,7 +123,6 @@ impl Status {
                 }
             }
         }
-        extra_layers
     }
 
     pub fn change_charges(
@@ -137,7 +133,7 @@ impl Status {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let before = Context::new(ContextLayer::Unit { entity }, world, resources)
+        let before = Context::new(ContextLayer::Entity { entity }, world, resources)
             .get_status_charges(name, world);
         let after = before + delta;
         *ContextState::get_mut(entity, world)

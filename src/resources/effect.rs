@@ -65,6 +65,9 @@ pub enum Effect {
     AddStatus {
         name: String,
     },
+    AddTeamStatus {
+        name: String,
+    },
     RemoveStatus {
         name: String,
     },
@@ -234,8 +237,20 @@ impl EffectWrapped {
                     damage: initial_damage as usize,
                 }
                 .send(world, resources);
-                Event::ModifyIncomingDamage.calculate(&mut context, world, resources);
-                value = context.get_int(&VarName::Damage, world).unwrap().max(0);
+                let mut target_context = Context::new(
+                    ContextLayer::Unit {
+                        entity: context.target().unwrap(),
+                    },
+                    world,
+                    resources,
+                )
+                .set_attacker(context.owner().unwrap());
+                target_context.insert_int(VarName::Damage, value);
+                Event::ModifyIncomingDamage.calculate(&mut target_context, world, resources);
+                value = target_context
+                    .get_int(&VarName::Damage, world)
+                    .unwrap()
+                    .max(0);
                 let text = format!("-{}", value);
                 if let Some(node) = node.as_mut() {
                     node.add_effect(VfxSystem::vfx_show_parent_text(
@@ -287,7 +302,6 @@ impl EffectWrapped {
                     }
                     .send(world, resources);
                 }
-                context.insert_var(VarName::Damage, Var::Int(initial_damage as i32));
                 Event::AfterOutgoingDamage {
                     owner,
                     target,
@@ -360,26 +374,29 @@ impl EffectWrapped {
             }
             Effect::ChangeStatus { name, .. }
             | Effect::AddStatus { name, .. }
+            | Effect::AddTeamStatus { name, .. }
             | Effect::RemoveStatus { name, .. } => {
                 let charges = match &self.effect {
                     Effect::AddStatus { name: _ } => 1,
+                    Effect::AddTeamStatus { name: _ } => 1,
                     Effect::RemoveStatus { name: _ } => -1,
                     Effect::ChangeStatus { name: _, charges } => {
                         charges.calculate(&context, world, resources)?
                     }
                     _ => 0,
                 };
-                Status::change_charges(
-                    context
+                let target = match &self.effect {
+                    Effect::AddTeamStatus { .. } => TeamSystem::entity(&Faction::Team, world)
+                        .expect(&format!("Team entity not found {context}")),
+                    Effect::AddStatus { .. }
+                    | Effect::RemoveStatus { .. }
+                    | Effect::ChangeStatus { .. } => context
                         .target()
                         .or_else(|| context.owner())
                         .expect(&format!("Target not found {context}")),
-                    charges,
-                    name,
-                    node,
-                    world,
-                    resources,
-                );
+                    _ => panic!("{context}"),
+                };
+                Status::change_charges(target, charges, name, node, world, resources);
             }
             Effect::RemoveThisStatus => {
                 let name = context

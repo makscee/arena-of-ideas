@@ -255,20 +255,19 @@ impl Trigger {
         &self,
         event: &Event,
         context: &Context,
-        extra_layers: &mut Vec<ContextLayer>,
         world: &legion::World,
         resources: &Resources,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<ContextLayer>, Error> {
+        let mut extra_layers = Vec::default();
         match self {
             Trigger::List { triggers } => {
                 for trigger in triggers {
-                    trigger.calculate_event(event, context, extra_layers, world, resources)?;
+                    extra_layers.extend(trigger.calculate_event(event, context, world, resources)?);
                 }
             }
             Trigger::ModifyIncomingDamage { value } => match event {
                 Event::ModifyIncomingDamage { .. } => {
                     let value = value.calculate(&context, world, resources)?;
-
                     extra_layers.push(ContextLayer::Var {
                         var: VarName::Damage,
                         value: Var::Int(value),
@@ -301,6 +300,6 @@ impl Trigger {
             },
             _ => {}
         };
-        Ok(())
+        Ok(extra_layers)
     }
 }

@@ -98,8 +98,7 @@ vec2 get_uv(vec2 a_pos) {
 }
 
 vec4 get_gl_position(vec2 uv) {
-    uv = rotate_cw(uv, rotation);
-    vec2 pos = uv * box + position;
+    vec2 pos = rotate_cw(uv * box, rotation) + position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     vec4 cam_pos = vec4(p_pos.xy, 0.0, p_pos.z);
     vec4 ui_pos = vec4(pos, 0.0, 1.0);

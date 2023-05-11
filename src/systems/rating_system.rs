@@ -74,7 +74,7 @@ impl RatingSystem {
         let mut total_result = 0;
         loop {
             let extra_units = {
-                let mut value = ShopSystem::floor_money(resources.ladder.current_ind()) / buy_price;
+                let mut value = 10;
                 value += value * sell_price / buy_price;
                 value
             } as usize;

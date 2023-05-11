@@ -26,7 +26,8 @@ impl System for TapePlayerSystem {
             need_velocity = REWIND_SPEED;
         }
         if resources.input_data.down_keys.contains(&Space)
-            && resources.current_state == GameState::Battle
+            && (resources.current_state == GameState::Battle
+                || resources.current_state == GameState::CustomGame)
         {
             player.mode = match player.mode {
                 TapePlayMode::Play => TapePlayMode::Stop,
