@@ -28,6 +28,9 @@ impl BonusEffectPool {
 
     pub fn make_selection(ind: usize, world: &legion::World, resources: &mut Resources) {
         let pool = &mut resources.bonus_pool;
+        if pool.current.is_empty() {
+            return;
+        }
         let bonus = pool.current[ind].to_owned();
         pool.current.clear();
         let mut context = Context::new(

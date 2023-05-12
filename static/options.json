@@ -8,8 +8,9 @@
     "initial_shop_g": 6,
     "initial_shop_slots": 3,
     "initial_team_slots": 3,
+    "initial_shop_fill": 6,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -18,7 +19,9 @@
                     "health": 10,
                     "attack": 3,
                     "statuses": {
-                        "Defense": 2
+                        "Vitality": 10,
+                        "DarkVitality": 1,
+                        "Devour": 5
                     }
                 }
             ]
@@ -36,7 +39,6 @@
         }
     },
     "fov": 16.0,
-    "initial_shop_fill": 2,
     "log": {
         "Action": true,
         "ActionFail": true,
@@ -683,10 +685,14 @@
                     "u_mid_border": 0.04,
                     "u_outline_color": "#ffffff",
                     "u_mid_border_color": "#000000",
-                    "u_color": "#b57651",
+                    "u_color": "#51b5b5",
                     "u_position": [
-                        0.0,
-                        0.8
+                        -0.8,
+                        0.0
+                    ],
+                    "u_align": [
+                        1.0,
+                        0.0
                     ]
                 }
             },

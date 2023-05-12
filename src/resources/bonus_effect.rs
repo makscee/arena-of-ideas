@@ -160,7 +160,7 @@ impl Rarity {
 
     pub fn generate(&self, value: usize, units: usize, resources: &Resources) -> BonusEffect {
         let rng = &mut thread_rng();
-        let mut g = rng.gen_range((value * 3)..=(value * 4));
+        let mut g = value;
         match self {
             Rarity::Common => g += rng.gen_range(3..=4),
             Rarity::Rare => g += rng.gen_range(3..=7),
