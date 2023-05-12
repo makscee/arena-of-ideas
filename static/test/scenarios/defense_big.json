@@ -13,9 +13,12 @@
                 "attack": 1,
                 "health": 4,
                 "house": "Warriors",
-                "statuses": {
-                    "Defense": 1000
-                }
+                "statuses": [
+                    [
+                        "Defense",
+                        1000
+                    ]
+                ]
             }
         ]
     },

@@ -18,6 +18,8 @@ impl WorldSystem {
             vars,
             parent: None,
             name: "World".to_owned(),
+            status_change_t: default(),
+            t: default(),
         });
         world_entity
     }

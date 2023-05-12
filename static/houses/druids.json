@@ -12,9 +12,12 @@
                         "attack": 5,
                         "health": 5,
                         "house": "Warriors",
-                        "statuses": {
-                            "Defense": 5
-                        },
+                        "statuses": [
+                            [
+                                "Defense",
+                                5
+                            ]
+                        ],
                         "shader": {
                             "path": "shaders/vfx/layered_triangles.glsl",
                             "parameters": {

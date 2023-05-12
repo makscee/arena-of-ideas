@@ -5,9 +5,12 @@
                 "name": "name",
                 "attack": 1,
                 "health": 10,
-                "statuses": {
-                    "Shield": 10
-                }
+                "statuses": [
+                    [
+                        "Shield",
+                        10
+                    ]
+                ]
             }
         ],
         "ability_vars": {
@@ -21,9 +24,12 @@
             {
                 "attack": 1,
                 "health": 15,
-                "statuses": {
-                    "Shield": 10
-                }
+                "statuses": [
+                    [
+                        "Shield",
+                        10
+                    ]
+                ]
             }
         ]
     },

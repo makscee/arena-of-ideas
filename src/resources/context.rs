@@ -149,6 +149,21 @@ impl ContextLayer {
             _ => None,
         }
     }
+
+    pub fn get_name(&self, world: &legion::World) -> Option<String> {
+        let mut result = None;
+        match self {
+            ContextLayer::Entity { entity } => {
+                if let Ok(entry) = world.entry_ref(*entity) {
+                    if let Ok(state) = entry.get_component::<ContextState>() {
+                        result = Some(state.name.to_owned());
+                    }
+                }
+            }
+            _ => {}
+        }
+        result
+    }
 }
 
 impl Context {
@@ -296,6 +311,17 @@ impl Context {
         owner
     }
 
+    pub fn name(&self, world: &legion::World) -> Option<String> {
+        let mut result = None;
+        for layer in self.layers.iter().rev() {
+            result = layer.get_name(world);
+            if result.is_some() {
+                break;
+            }
+        }
+        result
+    }
+
     pub fn insert_var(&mut self, var: VarName, value: Var) -> &mut Self {
         self.layers.push(ContextLayer::Var { var, value });
         self
@@ -390,12 +416,25 @@ impl Context {
         result
     }
 
-    pub fn collect_statuses(&self, world: &legion::World) -> HashMap<String, i32> {
+    pub fn collect_statuses(&self, world: &legion::World) -> Vec<(String, i32)> {
+        let entity = self.owner().unwrap();
         let mut result = default();
         for layer in self.layers.iter() {
             layer.extend_statuses(&mut result, world);
         }
         result.retain(|_, v| *v > 0);
+        let state = ContextState::get(entity, world);
+        let result = Vec::from_iter(
+            result
+                .into_iter()
+                .sorted_by_key(|(name, _)| {
+                    (
+                        state.status_change_t.get(name).unwrap_or(&0),
+                        name.to_owned(),
+                    )
+                })
+                .rev(),
+        );
         result
     }
 

@@ -8,9 +8,9 @@
     "initial_shop_g": 6,
     "initial_shop_slots": 3,
     "initial_team_slots": 3,
-    "initial_shop_fill": 6,
+    "initial_shop_fill": 0,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -18,11 +18,20 @@
                 {
                     "health": 10,
                     "attack": 3,
-                    "statuses": {
-                        "Vitality": 10,
-                        "DarkVitality": 1,
-                        "Devour": 5
-                    }
+                    "statuses": [
+                        [
+                            "Vitality",
+                            10
+                        ],
+                        [
+                            "DarkVitality",
+                            1
+                        ],
+                        [
+                            "Devour",
+                            5
+                        ]
+                    ]
                 }
             ]
         },

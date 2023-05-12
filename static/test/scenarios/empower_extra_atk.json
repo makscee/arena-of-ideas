@@ -5,9 +5,12 @@
                 "health": 3,
                 "attack": 2,
                 "house": "Demons",
-                "statuses": {
-                    "Empower": 4
-                },
+                "statuses": [
+                    [
+                        "Empower",
+                        4
+                    ]
+                ],
                 "trigger": {
                     "type": "BeforeStrike",
                     "effect": {

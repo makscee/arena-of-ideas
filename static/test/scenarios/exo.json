@@ -4,9 +4,12 @@
             {
                 "attack": 0,
                 "health": 10,
-                "statuses": {
-                    "Empower": 10
-                }
+                "statuses": [
+                    [
+                        "Empower",
+                        10
+                    ]
+                ]
             }
         ]
     },

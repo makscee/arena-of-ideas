@@ -32,11 +32,11 @@ impl Ladder {
     }
 
     pub fn get_score(world: &legion::World) -> usize {
-        let mut min_rank = 2;
+        let mut min_rank = 3;
         for (_, state) in UnitSystem::collect_faction_states(world, Faction::Dark) {
             min_rank = min_rank.min(state.try_get_int(&VarName::Rank, world).unwrap_or_default());
         }
-        1 + min_rank as usize
+        min_rank as usize
     }
 
     pub fn current_ind(&self) -> usize {

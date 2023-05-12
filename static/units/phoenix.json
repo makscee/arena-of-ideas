@@ -4,9 +4,12 @@
     "attack": 3,
     "health": 4,
     "house": "Dragons",
-    "statuses": {
-        "Rebirth": 1
-    },
+    "statuses": [
+        [
+            "Rebirth",
+            1
+        ]
+    ],
     "shader": {
         "path": "shaders/vfx/particle_emitter.glsl",
         "parameters": {

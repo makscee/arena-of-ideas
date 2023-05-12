@@ -29,9 +29,12 @@
             {
                 "attack": 1,
                 "health": 1,
-                "statuses": {
-                    "Shield": 100
-                }
+                "statuses": [
+                    [
+                        "Shield",
+                        100
+                    ]
+                ]
             }
         ]
     },

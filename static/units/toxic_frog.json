@@ -4,7 +4,10 @@
     "health": 1,
     "description": "On deal damage:\nkill",
     "house": "Snakes",
-    "statuses": {
-        "Poison": 1
-    }
+    "statuses": [
+        [
+            "Poison",
+            1
+        ]
+    ]
 }

@@ -4,9 +4,12 @@
     "health": 2,
     "attack": 2,
     "house": "Demons",
-    "statuses": {
-        "Empower": 5
-    },
+    "statuses": [
+        [
+            "Empower",
+            5
+        ]
+    ],
     "shader": {
         "path": "shaders/vfx/circle.glsl",
         "parameters": {

@@ -31,9 +31,12 @@
                 "attack": 0,
                 "health": 3,
                 "damage": 5,
-                "statuses": {
-                    "LifeStealGain": 3
-                }
+                "statuses": [
+                    [
+                        "LifeStealGain",
+                        3
+                    ]
+                ]
             }
         ]
     },
@@ -42,16 +45,22 @@
             {
                 "attack": 0,
                 "health": 10,
-                "statuses": {
-                    "Empower": 3
-                }
+                "statuses": [
+                    [
+                        "Empower",
+                        3
+                    ]
+                ]
             },
             {
                 "attack": 0,
                 "health": 10,
-                "statuses": {
-                    "Shield": 3
-                }
+                "statuses": [
+                    [
+                        "Shield",
+                        3
+                    ]
+                ]
             }
         ]
     },

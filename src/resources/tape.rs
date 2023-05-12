@@ -39,7 +39,7 @@ pub struct Node {
 #[derive(Clone, Debug)]
 struct EntityData {
     pub shader: Shader,
-    pub statuses: HashMap<String, i32>,
+    pub statuses: Vec<(String, i32)>,
     pub definitions: HashSet<String>,
 }
 
@@ -385,7 +385,7 @@ impl Node {
             .chain(self.key_effects.values().flatten())
     }
 
-    pub fn get_entity_statuses(&self, entity: &legion::Entity) -> Option<&HashMap<String, i32>> {
+    pub fn get_entity_statuses(&self, entity: &legion::Entity) -> Option<&Vec<(String, i32)>> {
         self.entities
             .get(entity)
             .and_then(|data| Some(&data.statuses))

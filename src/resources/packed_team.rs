@@ -13,7 +13,7 @@ pub struct PackedTeam {
     #[serde(default)]
     pub ability_vars: HashMap<AbilityName, Vars>,
     #[serde(default)]
-    pub statuses: HashMap<String, i32>,
+    pub statuses: Vec<(String, i32)>,
     #[serde(default = "default_team_slots")]
     pub slots: usize,
 }
@@ -71,7 +71,7 @@ impl PackedTeam {
         let mut state = ContextState::new(self.name.clone(), Some(WorldSystem::entity(world)));
         state.ability_vars = self.ability_vars.clone();
         state.vars = self.vars.clone();
-        state.statuses = self.statuses.clone();
+        StatusSystem::unpack_into_state(&mut state, &self.statuses);
         state.vars.set_int(&VarName::Slots, self.slots as i32);
         state.vars.set_faction(&VarName::Faction, *faction);
         let team = world.push((TeamComponent {},));
@@ -103,7 +103,7 @@ impl PackedTeam {
         let name = state.name.clone();
         let vars = state.vars.clone();
         let ability_vars = state.ability_vars.clone();
-        let statuses = state.statuses.clone();
+        let statuses = StatusSystem::pack_state_into_vec(state);
         let slots = state.vars.get_int(&VarName::Slots) as usize;
         PackedTeam {
             units,

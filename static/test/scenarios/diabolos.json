@@ -17,9 +17,12 @@
                         }
                     }
                 },
-                "statuses": {
-                    "Empower": 5
-                }
+                "statuses": [
+                    [
+                        "Empower",
+                        5
+                    ]
+                ]
             }
         ]
     },

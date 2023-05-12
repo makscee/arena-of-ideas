@@ -29,10 +29,10 @@ impl StatusLibrary {
     }
 
     pub fn add_triggers(
-        statuses: HashMap<String, i32>,
+        statuses: Vec<(String, i32)>,
         resources: &Resources,
-    ) -> HashMap<String, (Trigger, i32)> {
-        HashMap::from_iter(statuses.into_iter().map(|(name, charges)| {
+    ) -> Vec<(String, (Trigger, i32))> {
+        Vec::from_iter(statuses.into_iter().map(|(name, charges)| {
             let trigger = Self::get_trigger(&name, resources);
             (name, (trigger, charges))
         }))

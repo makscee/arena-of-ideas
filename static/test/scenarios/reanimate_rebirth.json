@@ -5,9 +5,12 @@
                 "attack": 3,
                 "health": 4,
                 "house": "Dragons",
-                "statuses": {
-                    "Rebirth": 1
-                }
+                "statuses": [
+                    [
+                        "Rebirth",
+                        1
+                    ]
+                ]
             },
             {
                 "attack": 1,

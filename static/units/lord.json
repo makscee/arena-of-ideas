@@ -4,9 +4,12 @@
     "health": 6,
     "attack": 2,
     "house": "Demons",
-    "statuses": {
-        "Empower": 1
-    },
+    "statuses": [
+        [
+            "Empower",
+            1
+        ]
+    ],
     "trigger": {
         "type": "OnBuy",
         "effect": {

@@ -4,13 +4,17 @@ pub struct UnitSystem {}
 
 const CARD_ANIMATION_TIME: Time = 0.2;
 impl UnitSystem {
-    pub fn unit_string(entity: legion::Entity, world: &legion::World) -> String {
-        let state = ContextState::get(entity, world);
+    pub fn unit_string(
+        entity: legion::Entity,
+        world: &legion::World,
+        resources: &Resources,
+    ) -> String {
+        let state = Context::new(ContextLayer::Unit { entity }, world, resources);
         format!(
             "{} {}/{}",
-            state.name,
-            state.get_int(&VarName::HpValue, world),
-            state.get_int(&VarName::AttackValue, world)
+            state.name(world).unwrap(),
+            state.get_int(&VarName::AttackValue, world).unwrap(),
+            state.get_int(&VarName::HpValue, world).unwrap(),
         )
     }
 

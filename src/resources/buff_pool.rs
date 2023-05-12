@@ -15,7 +15,7 @@ pub struct TeamBuff {
 impl TeamBuff {
     pub fn apply(&self, team: &mut PackedTeam) {
         for (status, charges) in self.statuses.iter() {
-            *team.statuses.entry(status.to_owned()).or_default() += *charges;
+            team.statuses.push((status.to_owned(), *charges));
         }
         team.name = format!("{} {}", self.prefix, team.name);
     }

@@ -38,7 +38,7 @@ impl Status {
         let statuses = context.collect_statuses(world);
         let mut triggers = StatusLibrary::add_triggers(statuses, resources);
         if let Ok(trigger) = world.entry_ref(entity).unwrap().get_component::<Trigger>() {
-            triggers.insert("_local".to_owned(), (trigger.clone(), 1));
+            triggers.push(("_local".to_owned(), (trigger.clone(), 1)));
         }
         for (name, (trigger, charges)) in triggers {
             let context = context.clone_stack(
@@ -97,8 +97,9 @@ impl Status {
         let statuses = context.collect_statuses(world);
         let mut triggers = StatusLibrary::add_triggers(statuses, resources);
         if let Ok(trigger) = world.entry_ref(entity).unwrap().get_component::<Trigger>() {
-            triggers.insert("_local".to_owned(), (trigger.clone(), 1));
+            triggers.push(("_local".to_owned(), (trigger.clone(), 1)));
         }
+        let state = ContextState::get(entity, world);
         for (name, (trigger, charges)) in triggers {
             let status_context = context.clone_stack(
                 ContextLayer::Status {
@@ -136,10 +137,11 @@ impl Status {
         let before = Context::new(ContextLayer::Entity { entity }, world, resources)
             .get_status_charges(name, world);
         let after = before + delta;
-        *ContextState::get_mut(entity, world)
-            .statuses
-            .entry(name.to_owned())
-            .or_default() += delta;
+        let state = ContextState::get_mut(entity, world);
+        *state.statuses.entry(name.to_owned()).or_default() += delta;
+        state.t += 1;
+        *state.status_change_t.entry(name.to_owned()).or_default() = state.t;
+
         match delta.signum() {
             1 => Event::StatusChargeAdd {
                 status: name.to_owned(),

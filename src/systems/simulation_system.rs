@@ -16,7 +16,6 @@ impl SimulationSystem {
             || format!("Run simulation: {light} {dark}"),
             &LogContext::Test,
         );
-        println!("run {light} {dark}");
         TeamSystem::get_state_mut(&Faction::Light, world)
             .vars
             .set_int(&VarName::Slots, light.units.len() as i32);

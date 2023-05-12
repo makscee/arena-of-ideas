@@ -200,7 +200,7 @@ impl RatingSystem {
                 let mut dark = dark.clone();
                 // dark = Ladder::generate_team(dark);
                 let result = SimulationSystem::run_battle(light, &dark, world, resources, None);
-                ratings.add_rating(&light.name, RatingType::WinRate, result, 1);
+                ratings.add_rating(&light.name, RatingType::WinRate, result, 3);
             }
         }
     }

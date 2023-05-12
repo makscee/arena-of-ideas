@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -16,7 +18,7 @@ pub struct PackedUnit {
     #[serde(default)]
     pub trigger: Trigger,
     #[serde(default)]
-    pub statuses: HashMap<String, i32>,
+    pub statuses: Vec<(String, i32)>,
     pub shader: Option<Shader>,
     #[serde(default)]
     pub rank: u8,
@@ -42,7 +44,7 @@ impl PackedUnit {
             .get_component::<Trigger>()
             .cloned()
             .unwrap_or(Trigger::Noop);
-        let statuses = state.statuses.clone();
+        let statuses = StatusSystem::pack_state_into_vec(state);
         let shader = entry.get_component::<Shader>().ok().cloned();
         let rank = state.vars.try_get_int(&VarName::Rank).unwrap_or_default() as u8;
         let result = Self {
@@ -101,7 +103,7 @@ impl PackedUnit {
         state
             .vars
             .set_string(&VarName::Description, 0, self.description.clone());
-        state.statuses = self.statuses.clone();
+        StatusSystem::unpack_into_state(&mut state, &self.statuses);
         entry.add_component(state);
 
         entry.add_component(self.generate_shader(&resources.options));

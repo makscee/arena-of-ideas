@@ -4,6 +4,8 @@ use super::*;
 pub struct ContextState {
     pub name: String,
     pub statuses: HashMap<String, i32>,
+    pub status_change_t: HashMap<String, usize>,
+    pub t: usize,
     pub ability_vars: HashMap<AbilityName, Vars>,
     pub vars: Vars,
     #[serde(skip)]
@@ -18,6 +20,8 @@ impl ContextState {
             ability_vars: default(),
             vars: default(),
             parent,
+            status_change_t: default(),
+            t: default(),
         }
     }
 

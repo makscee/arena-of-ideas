@@ -69,7 +69,7 @@ impl BonusEffectPool {
         current.iter_mut().for_each(|x| {
             if x.single_target {
                 let entity = *units.choose(&mut thread_rng()).unwrap();
-                x.target = Some((entity, UnitSystem::unit_string(entity, world)));
+                x.target = Some((entity, UnitSystem::unit_string(entity, world, resources)));
             }
         });
         resources.bonus_pool.current = current;

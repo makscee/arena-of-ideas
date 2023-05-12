@@ -20,14 +20,20 @@
             {
                 "health": 1,
                 "attack": 1,
-                "statuses": {
-                    "Poison": 1
-                }
+                "statuses": [
+                    [
+                        "Poison",
+                        1
+                    ]
+                ]
             }
         ],
-        "statuses": {
-            "Shield": 1
-        }
+        "statuses": [
+            [
+                "Shield",
+                1
+            ]
+        ]
     },
     "assert": {
         "type": "And",
