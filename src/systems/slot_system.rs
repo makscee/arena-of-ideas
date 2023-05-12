@@ -329,7 +329,7 @@ impl SlotSystem {
             Self::get_hovered_slot(resources.input_data.mouse_world_pos, world, resources)
         {
             if faction == Faction::Team {
-                Self::make_gap(faction, slot, world, resources, Some(entity));
+                Self::make_gap(faction, slot, world, Some(entity));
             }
         }
     }
@@ -349,7 +349,7 @@ impl SlotSystem {
             } else if faction == Faction::Shop && unit_faction == Faction::Team {
                 ShopSystem::try_sell(entity, resources, world);
             } else if faction == unit_faction {
-                if Self::make_gap(faction, slot, world, resources, Some(entity)) {
+                if Self::make_gap(faction, slot, world, Some(entity)) {
                     let state = ContextState::get_mut(entity, world);
                     state.vars.set_int(&VarName::Slot, slot as i32);
                 }
@@ -376,21 +376,20 @@ impl SlotSystem {
         faction: Faction,
         slot: usize,
         world: &mut legion::World,
-        resources: &mut Resources,
         ignore: Option<legion::Entity>,
     ) -> bool {
         let slots = TeamSystem::get_state(&faction, world)
             .vars
             .get_int(&VarName::Slots) as usize;
-        let units = UnitSystem::collect_faction(world, faction);
+        let units = UnitSystem::collect_faction(world, faction)
+            .into_iter()
+            .filter(|entity| Some(*entity) != ignore)
+            .collect_vec();
         if units.len() >= slots {
             return false;
         }
         let mut units_slots: Vec<Option<legion::Entity>> = vec![None; slots + 1];
         units.into_iter().for_each(|entity| {
-            if ignore == Some(entity) {
-                return;
-            }
             let slot = ContextState::get(entity, world)
                 .vars
                 .get_int(&VarName::Slot) as usize;
@@ -472,7 +471,7 @@ impl System for SlotSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         for entity in UnitSystem::all(world) {
             if resources.input_data.frame_data.1.is_dragged(entity) {
-                return;
+                continue;
             }
             let (position, slot, faction) = {
                 let context = Context::new(ContextLayer::Unit { entity }, world, resources);

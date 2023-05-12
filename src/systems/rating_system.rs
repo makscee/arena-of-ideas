@@ -106,7 +106,7 @@ impl RatingSystem {
                     let slot = *slots.get(i).unwrap();
                     let entity = unit.unpack(world, resources, slot, None, Some(team_entity));
                     if team.units.len() + i < max_slots {
-                        SlotSystem::make_gap(Faction::Team, slot, world, resources, None);
+                        SlotSystem::make_gap(Faction::Team, slot, world, None);
                     } else {
                         if let Some(entity) =
                             SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
