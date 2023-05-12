@@ -15,9 +15,7 @@ impl ShopData {
     pub fn load_pool(resources: &mut Resources) {
         resources.shop_data.pool.clear();
         let mut sorted_by_rating = VecDeque::from_iter(resources.hero_pool.all_sorted());
-        let heroes_per_extension = (sorted_by_rating.len() as f32
-            / (resources.ladder.count() as f32 - 3.0))
-            .ceil() as usize;
+        let heroes_per_extension = (sorted_by_rating.len() as f32 / (6.0)).ceil() as usize;
         let mut cur_level = 0;
         resources.shop_data.floor_extensions = vec![default()];
         while let Some(unit) = sorted_by_rating.pop_front() {
@@ -44,7 +42,7 @@ impl ShopData {
             .shop_data
             .floor_extensions
             .iter()
-            .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join(", ")));
+            .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join("\n")));
     }
 
     pub fn load_floor(resources: &mut Resources, floor: usize) {

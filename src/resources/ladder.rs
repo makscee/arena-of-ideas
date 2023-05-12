@@ -25,9 +25,13 @@ impl Ladder {
 
     pub fn generate_teams(team: PackedTeam) -> Vec<PackedTeam> {
         let mut r1 = team.clone();
-        r1.vars.set_int(&VarName::Rank, 1);
+        for unit in r1.units.iter_mut() {
+            unit.rank = 1;
+        }
         let mut r2 = team.clone();
-        r2.vars.set_int(&VarName::Rank, 2);
+        for unit in r2.units.iter_mut() {
+            unit.rank = 2;
+        }
         vec![team, r1, r2]
     }
 

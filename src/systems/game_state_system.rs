@@ -219,6 +219,10 @@ impl GameStateSystem {
         self.systems.insert(state, systems);
     }
 
+    pub fn current_is(value: GameState, resources: &Resources) -> bool {
+        resources.current_state == value
+    }
+
     pub fn set_transition(to: GameState, resources: &mut Resources) {
         resources.transition_state = to;
     }
@@ -230,8 +234,8 @@ impl GameStateSystem {
             .close_all_panels(resources.tape_player.head);
         let from = resources.current_state;
         Self::leave_state(from, to, world, resources);
-        Self::enter_state(from, to, world, resources);
         resources.current_state = to;
+        Self::enter_state(from, to, world, resources);
     }
 
     fn leave_state(
@@ -313,6 +317,12 @@ impl GameStateSystem {
             }
             GameState::Gallery => {}
             GameState::Sacrifice => {
+                for entity in UnitSystem::collect_faction(world, Faction::Team) {
+                    ContextState::get_mut(entity, world)
+                        .vars
+                        .change_int(&VarName::Rank, 1);
+                }
+
                 resources.camera.focus = Focus::Shop;
 
                 fn input_handler(

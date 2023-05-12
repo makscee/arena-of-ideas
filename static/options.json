@@ -7,8 +7,9 @@
     "rewind_add_speed": 10.0,
     "initial_shop_g": 6,
     "initial_shop_slots": 3,
-    "initial_team_slots": 3,
+    "initial_team_slots": 4,
     "initial_shop_fill": 0,
+    "shop_max_slots": 4,
     "custom_game": {
         "enable": false,
         "light": {
@@ -109,7 +110,50 @@
             "request_vars": [
                 "Description",
                 "FactionColor",
-                "HouseColor"
+                "HouseColor",
+                "Rank2",
+                "Rank1"
+            ],
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/star.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_size": 0.3,
+                            "u_outline": 0.15,
+                            "u_aspect_offset_adjust": 1,
+                            "u_outline_color": "#404040",
+                            "u_box": [
+                                1.0,
+                                1.0
+                            ],
+                            "u_offset": [
+                                0.9,
+                                -0.2
+                            ],
+                            "u_color": "#FFD700",
+                            "mapping": {
+                                "u_enabled": "u_rank_1"
+                            }
+                        }
+                    },
+                    "chain_after": [
+                        {
+                            "path": "shaders/vfx/star.glsl",
+                            "parameters": {
+                                "uniforms": {
+                                    "u_offset": [
+                                        0.9,
+                                        0.2
+                                    ],
+                                    "mapping": {
+                                        "u_enabled": "u_rank_2"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
             ],
             "layer": "Unit"
         },
@@ -369,36 +413,41 @@
                             "u_color": "#ffffff",
                             "u_outline_color": "#000000",
                             "u_outline_fade": 1.0,
-                            "u_size": 2.3,
+                            "u_size": 3.3,
                             "u_text_inside": 0.48,
                             "u_text_border": 0.1,
                             "u_rotation": 0.0,
                             "u_outline_fbm": 0.2,
                             "u_offset": [
-                                0.0,
-                                0.5
+                                -0.3,
+                                0.0
                             ],
                             "u_text": [
                                 0,
                                 "no_text"
                             ],
                             "mapping": {
-                                "u_text": "u_g_text"
+                                "u_text": "u_star_text"
                             }
                         }
                     },
-                    "chain_after": [
+                    "chain_before": [
                         {
-                            "path": "shaders/vfx/text.glsl",
+                            "path": "shaders/vfx/star.glsl",
                             "parameters": {
                                 "uniforms": {
-                                    "u_offset": [
-                                        0.0,
-                                        -0.5
+                                    "u_size": 0.8,
+                                    "u_outline": 0.15,
+                                    "u_outline_color": "#404040",
+                                    "u_box": [
+                                        1.0,
+                                        1.0
                                     ],
-                                    "mapping": {
-                                        "u_text": "u_star_text"
-                                    }
+                                    "u_offset": [
+                                        0.7,
+                                        0.0
+                                    ],
+                                    "u_color": "#FFD700"
                                 }
                             }
                         }

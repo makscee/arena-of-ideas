@@ -228,6 +228,15 @@ impl Context {
                     value: self.get_var(&VarName::AttackValue, world).unwrap(),
                 });
                 Event::ModifyContext.calculate(self, world, resources);
+                let rank = self.get_int(&VarName::Rank, world).unwrap_or_default();
+                if rank > 0 {
+                    let new_hp = self.get_int(&VarName::HpValue, world).unwrap() + rank;
+                    let new_attack = self.get_int(&VarName::AttackValue, world).unwrap() + rank;
+                    let mut vars: Vars = default();
+                    vars.set_int(&VarName::HpValue, new_hp);
+                    vars.set_int(&VarName::AttackValue, new_attack);
+                    self.stack(ContextLayer::Vars { vars }, world, resources);
+                }
             }
             ContextLayer::Entity { entity } => {
                 if let Ok(entry) = world.entry_ref(*entity) {

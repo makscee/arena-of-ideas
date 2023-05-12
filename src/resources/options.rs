@@ -23,6 +23,7 @@ pub struct Options {
     pub initial_shop_slots: usize,
     pub initial_team_slots: usize,
     pub initial_state: GameState,
+    pub shop_max_slots: usize,
 }
 
 impl FileWatcherLoader for Options {

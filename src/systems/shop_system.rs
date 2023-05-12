@@ -332,7 +332,8 @@ impl ShopSystem {
             .vars
             .set_int(
                 &VarName::Slots,
-                (current_floor + resources.options.initial_shop_slots).min(6) as i32,
+                (current_floor + resources.options.initial_shop_slots)
+                    .min(resources.options.shop_max_slots) as i32,
             );
         TeamSystem::get_state_mut(&Faction::Shop, world)
             .vars

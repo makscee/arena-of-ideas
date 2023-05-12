@@ -121,6 +121,11 @@ impl UnitSystem {
             .uniforms
             .insert_string_ref(&VarName::HpStr.uniform(), (hp - damage).to_string(), 1)
             .insert_string_ref(&VarName::AttackStr.uniform(), atk.to_string(), 1);
+        let rank = context.get_int(&VarName::Rank, world).unwrap();
+        shader.set_float_ref("u_rank_1", (rank > 0) as i32 as f32);
+        shader.set_float_ref("u_rank_2", (rank > 1) as i32 as f32);
+        shader.set_float_ref("u_rank_3", (rank > 2) as i32 as f32);
+
         if damage > 0 {
             shader.set_color_ref("u_hp_color", resources.options.colors.damage);
         } else if hp > original_hp {
@@ -350,18 +355,21 @@ impl UnitSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        match event {
-            HandleEvent::DragStop => {
-                SlotSystem::handle_unit_drop(entity, world, resources);
-            }
-            HandleEvent::Drag { delta } => {
-                ContextState::get_mut(entity, world)
-                    .vars
-                    .change_vec2(&VarName::Position, delta);
-                SlotSystem::handle_unit_drag(entity, world, resources);
-            }
-            _ => {}
-        };
+        if GameStateSystem::current_is(GameState::Shop, resources) {
+            match event {
+                HandleEvent::DragStop => {
+                    SlotSystem::handle_unit_drop(entity, world, resources);
+                }
+                HandleEvent::Drag { delta } => {
+                    ContextState::get_mut(entity, world)
+                        .vars
+                        .change_vec2(&VarName::Position, delta);
+                    SlotSystem::handle_unit_drag(entity, world, resources);
+                }
+
+                _ => {}
+            };
+        }
     }
 
     pub fn extract_definition_names(

@@ -114,8 +114,8 @@ impl BonusEffect {
 
     pub fn new_slot_effect(g: usize, rarity: Rarity) -> Self {
         let value: i32 = match rarity {
-            Rarity::Common | Rarity::Rare => 1,
-            Rarity::Epic | Rarity::Legendary => 2,
+            Rarity::Common | Rarity::Rare | Rarity::Epic => 1,
+            Rarity::Legendary => 2,
         };
         let effect = Effect::ChangeTeamVarInt {
             var: VarName::Slots,
@@ -182,12 +182,13 @@ impl Rarity {
         let rng = &mut thread_rng();
         let mut g = value;
         match self {
-            Rarity::Common => g += rng.gen_range(3..=4),
-            Rarity::Rare => g += rng.gen_range(3..=7),
-            Rarity::Epic => g += rng.gen_range(3..=10),
-            Rarity::Legendary => g += rng.gen_range(3..=13),
+            Rarity::Common => g += rng.gen_range(0..3),
+            Rarity::Rare => g += rng.gen_range(0..5),
+            Rarity::Epic => g += rng.gen_range(0..7),
+            Rarity::Legendary => g += rng.gen_range(0..9),
         };
-        match units > 0 && rng.gen_bool(0.7) {
+        match units > 0 && (rng.gen_bool(0.4) && (*self == Rarity::Common || *self == Rarity::Rare))
+        {
             true => BonusEffect::new_buff_effect(g, *self, resources),
             false => BonusEffect::new_slot_effect(g, *self),
         }

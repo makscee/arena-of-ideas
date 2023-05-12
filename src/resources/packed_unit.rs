@@ -76,7 +76,12 @@ impl PackedUnit {
     ) -> legion::Entity {
         let entity = world.push((self.trigger.clone(), UnitComponent {}));
         resources.logger.log(
-            || format!("Unpacking unit {} new id: {:?} {:?}", self, entity, parent),
+            || {
+                format!(
+                    "Unpacking unit {} new id: {:?} p:{:?}",
+                    self, entity, parent
+                )
+            },
             &LogContext::UnitCreation,
         );
         let mut entry = world.entry(entity).unwrap();
@@ -88,6 +93,7 @@ impl PackedUnit {
         state.vars.set_int(&VarName::HpValue, self.health as i32);
         state.vars.set_int(&VarName::HpDamage, self.damage as i32);
         state.vars.set_int(&VarName::Slot, slot as i32);
+        state.vars.set_int(&VarName::Rank, self.rank as i32);
         state.vars.set_float(&VarName::Radius, 1.0);
         state
             .vars
@@ -125,6 +131,8 @@ impl PackedUnit {
         shader.chain_after.push(options.shaders.unit_card.clone());
 
         shader.set_string_ref(&VarName::Description.uniform(), self.description.clone(), 0);
+        shader.set_float_ref("u_rank_1", (self.rank > 0) as i32 as f32);
+        shader.set_float_ref("u_rank_2", (self.rank > 0) as i32 as f32);
         shader.chain_after.push(
             options
                 .shaders
@@ -189,11 +197,12 @@ impl fmt::Display for PackedUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "[{} {}/{}-{}]",
+            "[{} {}/{}-{} r:{}]",
             self.name.as_str(),
             self.attack,
             self.health,
-            self.damage
+            self.damage,
+            self.rank
         )
     }
 }

@@ -49,6 +49,9 @@ pub enum VarName {
     FreeRerolls,
     Persistent,
     Rank,
+    Rank1,
+    Rank2,
+    Rank3,
     BackgroundLight,
     BackgroundDark,
     OutlineColor,
@@ -283,6 +286,12 @@ impl Vars {
                 self.0.insert(*key, value.clone());
             }
         });
+    }
+}
+
+impl From<HashMap<VarName, Var>> for Vars {
+    fn from(value: HashMap<VarName, Var>) -> Self {
+        Self(value)
     }
 }
 

@@ -100,15 +100,14 @@ impl SlotSystem {
         let mut result = None;
         let mut min_distance = f32::MAX;
         for faction in Faction::all_iter() {
-            for slot in 1..=TeamSystem::get_state(&faction, world)
-                .vars
-                .get_int(&VarName::Slots) as usize
-            {
-                let slot_pos = Self::get_position(slot, &faction, resources);
-                let distance = (mouse_pos - slot_pos).len();
-                if distance < SLOT_HOVER_DISTANCE && distance < min_distance {
-                    result = Some((slot, faction));
-                    min_distance = distance;
+            if let Some(state) = TeamSystem::try_get_state(&faction, world) {
+                for slot in 1..=state.vars.get_int(&VarName::Slots) as usize {
+                    let slot_pos = Self::get_position(slot, &faction, resources);
+                    let distance = (mouse_pos - slot_pos).len();
+                    if distance < SLOT_HOVER_DISTANCE && distance < min_distance {
+                        result = Some((slot, faction));
+                        min_distance = distance;
+                    }
                 }
             }
         }
@@ -217,7 +216,6 @@ impl SlotSystem {
             .parameters
             .uniforms
             .add_mapping("u_active", "u_filled");
-        shader.chain_after.clear();
         shader.chain_after.push(button.set_uniform(
             "u_offset",
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
@@ -250,9 +248,22 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        let mut ranked_units: HashMap<usize, legion::Entity> = default();
+        if state == GameState::Sacrifice {
+            for (entity, state) in UnitSystem::collect_faction_states(world, Faction::Team) {
+                if state.vars.get_int(&VarName::Rank) > 2 {
+                    let slot = state.vars.get_int(&VarName::Slot) as usize;
+                    ranked_units.insert(slot, entity);
+                }
+            }
+            for (slot, _) in ranked_units.iter() {
+                Self::handle_slot_activation(*slot, Faction::Team, world, resources);
+            }
+        }
         for (slot, entity, shader) in
             <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
         {
+            shader.chain_after.clear();
             let entity = entity.entity;
             let faction = slot.faction;
             let slot = slot.slot;
@@ -266,8 +277,17 @@ impl SlotSystem {
                 GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
                 GameState::Sacrifice => {
                     if faction == Faction::Team {
-                        Self::add_slot_activation_btn(shader, "Sacrifice", None, entity, resources)
+                        if ranked_units.get(&slot).is_none() {
+                            Self::add_slot_activation_btn(
+                                shader,
+                                "Sacrifice",
+                                None,
+                                entity,
+                                resources,
+                            )
+                        }
                     }
+
                     faction == Faction::Team
                 }
                 _ => true,
@@ -291,7 +311,12 @@ impl SlotSystem {
                     GameState::Sacrifice => {
                         if !resources.sacrifice_data.marked_units.contains(&entity) {
                             resources.sacrifice_data.marked_units.insert(entity);
+                            debug!("Mark {entity:?}");
                             let position = Self::get_position(slot, &faction, resources);
+                            let text = format!(
+                                "+{}",
+                                ContextState::get(entity, world).get_int(&VarName::Rank, world)
+                            );
                             Node::new_panel_scaled(
                                 resources
                                     .options
@@ -300,8 +325,7 @@ impl SlotSystem {
                                     .clone()
                                     .set_vec2("u_position", position)
                                     .set_color("u_color", resources.options.colors.deletion)
-                                    .set_string("u_g_text", "+2-4 g".to_owned(), 1)
-                                    .set_string("u_star_text", "+1 star".to_owned(), 1),
+                                    .set_string("u_star_text", text, 1),
                             )
                             .lock(NodeLockType::Empty)
                             .push_as_panel(entity, resources);

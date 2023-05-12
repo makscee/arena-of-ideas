@@ -12,6 +12,9 @@ impl WorldSystem {
         vars.set_color(&VarName::BackgroundLight, options.colors.background_light);
         vars.set_color(&VarName::BackgroundDark, options.colors.background_dark);
         vars.set_color(&VarName::OutlineColor, options.colors.outline);
+        vars.set_float(&VarName::Rank1, 0.0);
+        vars.set_float(&VarName::Rank2, 0.0);
+        vars.set_float(&VarName::Rank3, 0.0);
         world_entry.add_component(ContextState {
             statuses: default(),
             ability_vars: default(),
