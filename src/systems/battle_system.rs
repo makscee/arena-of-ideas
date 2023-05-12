@@ -51,6 +51,7 @@ impl BattleSystem {
             }
         }
         Self::clear_tape_entities(world, resources, tape);
+        resources.battle_data.team_queue.clear();
         let score = Ladder::get_score(world);
         Self::add_outro(score, world, resources, tape);
         score

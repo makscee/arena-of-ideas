@@ -16,70 +16,42 @@ pub struct BonusEffect {
 impl BonusEffect {
     pub fn new_buff_effect(g: usize, rarity: Rarity, resources: &Resources) -> Self {
         let mut single_target = false;
-        let (effect, description) = if rarity == Rarity::Legendary {
+        let rng = &mut thread_rng();
+        let (effect, description) = if rarity == Rarity::Legendary && rng.gen_bool(0.5) {
             let buff = BuffPool::random_team_buff(resources);
-            let mut effects = Vec::default();
-            for (name, charges) in buff.statuses.iter() {
-                for _ in 0..*charges {
-                    effects.push(
-                        Effect::AddTeamStatus {
-                            name: name.to_owned(),
-                        }
-                        .wrap(),
-                    )
-                }
-            }
-            let effect = Effect::List {
-                effects: effects.into_iter().map(|x| Box::new(x)).collect_vec(),
-            }
-            .wrap();
-            (effect, format!("Add Team status {}", buff.prefix))
+            Self::get_team_status(buff)
         } else {
             let (name, mut charges) = BuffPool::random_unit_buff(resources);
+            let name = name.to_owned();
             match rarity {
                 Rarity::Common => {
                     single_target = true;
-                    (
-                        Effect::ChangeStatus {
-                            name: name.to_owned(),
-                            charges: ExpressionInt::Const { value: charges },
-                        }
-                        .wrap(),
-                        format!("Add {} ({})", name.to_owned(), charges),
-                    )
+                    Self::get_buff_single(charges, name)
                 }
                 Rarity::Rare => {
                     single_target = true;
                     charges *= 3;
-                    (
-                        Effect::ChangeStatus {
-                            name: name.to_owned(),
-                            charges: ExpressionInt::Const { value: charges },
-                        }
-                        .wrap(),
-                        format!("Add {} ({})", name.to_owned(), charges),
-                    )
+                    Self::get_buff_single(charges, name)
                 }
                 Rarity::Epic => {
-                    let effect = Box::new(
-                        Effect::ChangeStatus {
-                            name: name.to_owned(),
-                            charges: ExpressionInt::Const { value: charges },
-                        }
-                        .wrap(),
-                    );
-                    let effect = Effect::Aoe {
-                        factions: vec![ExpressionFaction::Team],
-                        effect,
-                        exclude_self: false,
+                    if rng.gen_bool(0.5) {
+                        single_target = true;
+                        charges *= 5;
+                        Self::get_buff_single(charges, name)
+                    } else {
+                        Self::get_buff_team(charges, name)
                     }
-                    .wrap();
-                    (
-                        effect,
-                        format!("Add {} ({}) to everyone", name.to_owned(), charges),
-                    )
                 }
-                _ => panic!(),
+                Rarity::Legendary => {
+                    if rng.gen_bool(0.5) {
+                        single_target = true;
+                        charges *= 10;
+                        Self::get_buff_single(charges, name)
+                    } else {
+                        charges *= 3;
+                        Self::get_buff_team(charges, name)
+                    }
+                }
             }
         };
         let (effect, description) = Self::add_g_effect(g, effect, description);
@@ -90,6 +62,54 @@ impl BonusEffect {
             single_target,
             target: None,
         }
+    }
+
+    fn get_buff_single(charges: i32, name: String) -> (EffectWrapped, String) {
+        (
+            Effect::ChangeStatus {
+                name: name.to_owned(),
+                charges: ExpressionInt::Const { value: charges },
+            }
+            .wrap(),
+            format!("Add {} ({})", name, charges),
+        )
+    }
+
+    fn get_buff_team(charges: i32, name: String) -> (EffectWrapped, String) {
+        let description = format!("Add {} ({}) to everyone", name, charges);
+        let effect = Box::new(
+            Effect::ChangeStatus {
+                name,
+                charges: ExpressionInt::Const { value: charges },
+            }
+            .wrap(),
+        );
+        let effect = Effect::Aoe {
+            factions: vec![ExpressionFaction::Team],
+            effect,
+            exclude_self: false,
+        }
+        .wrap();
+        (effect, description)
+    }
+
+    fn get_team_status(buff: &TeamBuff) -> (EffectWrapped, String) {
+        let mut effects = Vec::default();
+        for (name, charges) in buff.statuses.iter() {
+            for _ in 0..*charges {
+                effects.push(
+                    Effect::AddTeamStatus {
+                        name: name.to_owned(),
+                    }
+                    .wrap(),
+                )
+            }
+        }
+        let effect = Effect::List {
+            effects: effects.into_iter().map(|x| Box::new(x)).collect_vec(),
+        }
+        .wrap();
+        (effect, format!("Add Team status {}", buff.prefix))
     }
 
     pub fn new_slot_effect(g: usize, rarity: Rarity) -> Self {

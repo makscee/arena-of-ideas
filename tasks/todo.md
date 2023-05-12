@@ -6,9 +6,10 @@
 @visual Unit rank display
 @content
     Balance enemies & heroes
-    Legendary bonus give status too
+    Legendary bonus give status too {cm:2023-05-12T17:21:18}
 @bug
     Bonus choice hero name stats not actual {cm:2023-05-12T16:06:26}
-    Full team reorder not working
+    Full team reorder not working {cm:2023-05-12T17:01:18}
     Multiple status render not sorted, team status {cm:2023-05-12T16:18:19}
     Max team slots
+    Battle queue not cleared {cm:2023-05-12T17:21:15}
