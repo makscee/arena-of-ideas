@@ -52,18 +52,28 @@ impl BonusEffectPool {
         let units = UnitSystem::collect_faction(world, Faction::Team);
         resources.bonus_pool.current.clear();
 
-        let option_count = (1 + value).min(4);
+        let option_count = (value - 2).clamp(2, 4);
         let all_rarities = enum_iterator::all::<Rarity>().collect_vec();
-        let mut rarities = all_rarities
-            .choose_multiple_weighted(&mut thread_rng(), option_count, |item| item.weight())
-            .unwrap()
+        let rarities = (0..option_count)
+            .map(|_| {
+                all_rarities
+                    .choose_weighted(&mut thread_rng(), |i| i.weight())
+                    .unwrap()
+            })
             .collect_vec();
-        let ind = (&mut thread_rng()).gen_range(0..rarities.len());
-        rarities[ind] = &all_rarities[(value).min(all_rarities.len()) - 1];
+        // rarities[ind] = &all_rarities[(value).min(all_rarities.len()) - 1];
 
+        let ind = if TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Slots, world)
+            < MAX_SLOTS as i32
+        {
+            (&mut thread_rng()).gen_range(0..rarities.len())
+        } else {
+            MAX_SLOTS + 1
+        };
         let mut current = rarities
             .into_iter()
-            .map(|x| x.generate(value, units.len(), resources))
+            .enumerate()
+            .map(|(i, x)| x.generate(value, i != ind, resources))
             .collect_vec();
 
         current.iter_mut().for_each(|x| {

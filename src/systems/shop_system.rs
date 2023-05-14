@@ -252,7 +252,7 @@ impl ShopSystem {
         let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
-            vars.insert(VarName::FreeRerolls, Var::Int(free_rerolls - 1));
+            vars.change_int(&VarName::FreeRerolls, -1);
         } else {
             vars.change_int(&VarName::G, -vars.get_int(&VarName::RerollPrice));
         }
@@ -266,9 +266,8 @@ impl ShopSystem {
         let team = PackedTeam::new("Shop".to_owned(), default());
         team.unpack(&Faction::Shop, world, resources);
 
-        let team =
-            PackedTeam::new("Team".to_owned(), default()).unpack(&Faction::Team, world, resources);
-        let vars = &mut ContextState::get_mut(team, world).vars;
+        PackedTeam::new("Team".to_owned(), default()).unpack(&Faction::Team, world, resources);
+        let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
         vars.set_int(&VarName::G, 0);
         vars.set_int(&VarName::BuyPrice, 3);
         vars.set_int(&VarName::SellPrice, 1);
@@ -281,7 +280,7 @@ impl ShopSystem {
         SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
     }
 
-    fn create_reroll_button(world: &mut legion::World, resources: &mut Resources) {
+    fn create_reroll_button(resources: &mut Resources) {
         fn reroll_handler(
             event: HandleEvent,
             _: legion::Entity,
@@ -344,7 +343,7 @@ impl ShopSystem {
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, current_floor as i32);
-        Self::create_reroll_button(world, resources);
+        Self::create_reroll_button(resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {

@@ -107,13 +107,14 @@ impl VfxSystem {
             .set_uniform("u_offset", ShaderUniform::Vec2(vec2(0.0, 0.5)))
             .set_uniform("u_position_over_t", ShaderUniform::Vec2(vec2(0.0, 1.8)))
             .set_uniform("u_text", ShaderUniform::String((font, text.to_string())))
-            .set_uniform("u_color", ShaderUniform::Color(color))
+            .set_uniform("u_mid_border_color", ShaderUniform::Color(color))
             .set_uniform("u_outline_color", ShaderUniform::Color(outline_color))
             .set_uniform("u_outline_fade", ShaderUniform::Float(1.0))
             .set_uniform("u_text_border", ShaderUniform::Float(0.1))
             .set_uniform("u_alpha", ShaderUniform::Float(8.0))
             .set_vec2("u_box", vec2(3.0, 1.0))
             .set_uniform("u_alpha_over_t", ShaderUniform::Float(-8.0))
+            .set_color("u_color", resources.options.colors.text)
     }
 
     pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> TimedEffect {
@@ -195,5 +196,18 @@ impl VfxSystem {
             .set_uniform(&VarName::Position.uniform(), ShaderUniform::Vec2(light_pos))
             .set_uniform("u_text", ShaderUniform::String((2, light)));
         (light_shader, dark_shader)
+    }
+
+    pub fn vfx_show_stars_indicator_panel(world: &legion::World, resources: &mut Resources) {
+        let value = TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Stars, world);
+        let shader = resources
+            .options
+            .shaders
+            .stars_indicator
+            .clone()
+            .set_string("u_text", format!("x{value}"), 1);
+        Node::new_panel_scaled(shader)
+            .lock(NodeLockType::Empty)
+            .push_as_panel(new_entity(), resources);
     }
 }

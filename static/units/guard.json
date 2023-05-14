@@ -10,7 +10,10 @@
             "type": "Repeat",
             "effect": {
                 "type": "UseAbility",
-                "ability": "Shield"
+                "ability": "Shield",
+                "target": {
+                    "type": "Owner"
+                }
             },
             "count": {
                 "type": "Const",

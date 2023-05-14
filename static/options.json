@@ -756,6 +756,48 @@
             },
             "layer": "UI",
             "order": 1000
+        },
+        "stars_indicator": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_ui": 1,
+                    "u_aspect_adjust": 1,
+                    "u_size": 0.1,
+                    "u_outline_fbm": 0.1,
+                    "u_mid_border": 0.05,
+                    "u_outline_color": "#000000",
+                    "u_mid_border_color": "#ffffff",
+                    "u_color": "#FFD700",
+                    "u_position": [
+                        -0.9,
+                        0.5
+                    ],
+                    "u_align": [
+                        1.0,
+                        0.0
+                    ]
+                }
+            },
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/star.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_outline": 0.15,
+                            "u_scale": 0.9,
+                            "u_align": [
+                                -0.7,
+                                -0.1
+                            ]
+                        }
+                    },
+                    "layer": "UI",
+                    "order": 1002
+                }
+            ],
+            "layer": "UI",
+            "order": 1000
         }
     },
     "images": {
@@ -972,7 +1014,7 @@
                                     }
                                 }
                             },
-                            "chain_after": [
+                            "chain_before": [
                                 {
                                     "path": "shaders/vfx/star.glsl",
                                     "parameters": {
@@ -1143,7 +1185,7 @@
                             "u_ui": 1,
                             "u_sdf_border": -0.00,
                             "u_gradient": 0.0,
-                            "u_rounding": 0.2
+                            "u_rounding": 0.0
                         }
                     },
                     "layer": "UI",

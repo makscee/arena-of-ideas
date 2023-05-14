@@ -20,13 +20,15 @@
         "parameters": {
             "instances": 1500,
             "uniforms": {
-                "u_start_color": "#FFD700",
-                "u_end_color": "#3c8d21ff",
-                "u_size": 0.3,
-                "u_size_over_t": -0.3,
-                "u_velocity_over_t": 0.3,
-                "u_trail_count": 2,
-                "u_lifetime": 1.2
+                "local": {
+                    "u_start_color": "#FFD700",
+                    "u_end_color": "#3c8d21ff",
+                    "u_size": 0.3,
+                    "u_size_over_t": -0.3,
+                    "u_velocity_over_t": 0.3,
+                    "u_trail_count": 2,
+                    "u_lifetime": 1.2
+                }
             }
         }
     }

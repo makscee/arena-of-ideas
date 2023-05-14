@@ -157,9 +157,9 @@ impl Status {
             .send(world, resources),
             _ => {}
         }
-        let max_delay = 0.5;
+        let max_delay = 1.5;
         let delay_per_charge = max_delay / (delta as f32).abs();
-        let mut cnt = 0;
+        let mut cnt = 1;
         for _ in 0..delta.abs() {
             let (text, color) = if delta > 0 {
                 ("+", resources.options.colors.addition)

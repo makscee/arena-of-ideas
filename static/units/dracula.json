@@ -19,12 +19,14 @@
         "path": "shaders/vfx/layered_triangles.glsl",
         "parameters": {
             "uniforms": {
-                "u_color": "#9d0000",
-                "u_color_1": "#7183e6",
-                "u_radius": 0.8,
-                "u_alpha": 0.3,
-                "u_spin_part": 0.01,
-                "u_move_speed": 1.3
+                "local": {
+                    "u_color": "#9d0000",
+                    "u_color_1": "#7183e6",
+                    "u_radius": 0.8,
+                    "u_alpha": 0.3,
+                    "u_spin_part": 0.01,
+                    "u_move_speed": 1.3
+                }
             },
             "instances": 20,
             "vertices": 1

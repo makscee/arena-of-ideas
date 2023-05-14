@@ -304,6 +304,9 @@ impl GameStateSystem {
                     );
                     SacrificeSystem::show_bonus_widget(world, resources);
                 }
+                TeamSystem::get_state_mut(&Faction::Team, world)
+                    .vars
+                    .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
                 resources.camera.focus = Focus::Shop;
             }
@@ -312,11 +315,15 @@ impl GameStateSystem {
                 let mut tape = Some(Tape::default());
                 resources.battle_data.last_score =
                     BattleSystem::run_battle(world, resources, &mut tape);
+                TeamSystem::get_state_mut(&Faction::Team, world)
+                    .vars
+                    .change_int(&VarName::Stars, resources.battle_data.last_score as i32);
                 resources.tape_player.clear();
                 resources.tape_player.tape = tape.unwrap();
             }
             GameState::Gallery => {}
             GameState::Sacrifice => {
+                VfxSystem::vfx_show_stars_indicator_panel(world, resources);
                 for entity in UnitSystem::collect_faction(world, Faction::Team) {
                     ContextState::get_mut(entity, world)
                         .vars

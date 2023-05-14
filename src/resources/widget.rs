@@ -95,6 +95,9 @@ impl<'a> Widget<'_> {
                                     let mut dark = Ladder::generate_teams(dark);
                                     let light = PackedTeam::pack(&Faction::Team, world, resources);
                                     resources.battle_data.last_difficulty = difficulty;
+                                    TeamSystem::get_state_mut(&Faction::Team, world)
+                                        .vars
+                                        .change_int(&VarName::Stars, difficulty as i32 + 1);
                                     BattleSystem::init_battle(
                                         &light,
                                         &dark.remove(0),

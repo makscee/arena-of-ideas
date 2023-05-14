@@ -6,3 +6,7 @@
     Select and accept {cm:2023-05-11T20:10:55}
     Bonus choice {cm:2023-05-11T20:10:55}
 @gameplay Multiple ranks sequence in battle {cm:2023-05-12T15:52:38}
+@content {cm:2023-05-14T14:50:28}
+    Balance enemies & heroes {cm:2023-05-14T14:50:27}
+    Legendary bonus give status too {cm:2023-05-12T17:21:18}
+@visual Unit rank display {cm:2023-05-14T14:50:31}

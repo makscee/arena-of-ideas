@@ -126,8 +126,17 @@ impl Condition {
                 Condition::HaveStatus { name } => Ok(ExpressionInt::StatusCharges {
                     name: name.to_string(),
                 }
-                .calculate(context, world, resources)?
-                    > 0),
+                .calculate(
+                    &Context::new(
+                        ContextLayer::Unit {
+                            entity: context.target().unwrap(),
+                        },
+                        world,
+                        resources,
+                    ),
+                    world,
+                    resources,
+                )? > 0),
             };
         resources
             .logger

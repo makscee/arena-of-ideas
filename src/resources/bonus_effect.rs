@@ -172,23 +172,23 @@ impl Rarity {
     pub fn weight(&self) -> i32 {
         match self {
             Rarity::Common => 100,
-            Rarity::Rare => 25,
-            Rarity::Epic => 10,
+            Rarity::Rare => 15,
+            Rarity::Epic => 7,
             Rarity::Legendary => 3,
         }
     }
 
-    pub fn generate(&self, value: usize, units: usize, resources: &Resources) -> BonusEffect {
+    pub fn generate(&self, value: usize, buff: bool, resources: &Resources) -> BonusEffect {
         let rng = &mut thread_rng();
         let mut g = value;
         match self {
-            Rarity::Common => g += rng.gen_range(0..3),
-            Rarity::Rare => g += rng.gen_range(0..5),
-            Rarity::Epic => g += rng.gen_range(0..7),
-            Rarity::Legendary => g += rng.gen_range(0..9),
+            Rarity::Common => g += rng.gen_range(0..2),
+            Rarity::Rare => g += rng.gen_range(0..3),
+            Rarity::Epic => g += rng.gen_range(0..4),
+            Rarity::Legendary => g += rng.gen_range(0..5),
         };
-        match units > 0 && (rng.gen_bool(0.4) && (*self == Rarity::Common || *self == Rarity::Rare))
-        {
+
+        match buff {
             true => BonusEffect::new_buff_effect(g, *self, resources),
             false => BonusEffect::new_slot_effect(g, *self),
         }

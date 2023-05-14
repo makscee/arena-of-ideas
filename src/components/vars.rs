@@ -57,6 +57,7 @@ pub enum VarName {
     OutlineColor,
     LastAttacker,
     LastHealer,
+    Stars,
 }
 
 impl VarName {
