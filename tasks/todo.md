@@ -4,90 +4,127 @@
     Star {cm:2023-05-13T18:20:10}
     Phase name {cm:2023-05-12T15:52:42}
 
-@visual
+@visual {c}
     Fix node cluster timings
     Improve battle choice panel
         New disign
         Hide button
-@gameplay
+@gameplay {c}
     Gold sink
     Disable selling
 
 Next Iteration
-    @statuses
-        Inspire: Adjacent units get "+1/+1" at the start of the turn.
-        Enrage: Gain "+1" ATK when damage is taken.
-        Regeneration: Restores 1 HP at the end of each turn.
-        Thorns: Reflects 1 damage to attackers.
-        Rage: Gains "+2" ATK but loses 1 HP.
-        Weakness: -1 ATK
-        Shielded: The next damage this unit takes is reduced to 0.
-        Blessing: Gains "+1" ATK and "+1" HP at the start of each turn.
-        Fury: When an ally dies, gains "+2" ATK.
-        Splash: "+1" damage to all enemies after strike once.
-        Marked: The next attack against this hero deals double damage.
-        Chaotic: After strike deal 1 damage to random enemy.
-        Barrier: Absorb 1 damage
+    @statuses {c}
+        +Clerics [Fortitude]: "+1" HP
+        +Clerics [Blessing]: Gain "+1/+1" at the start of each turn
+        +Clerics [Mend]: Heal 1 damage
+        +Clerics [Martyr]: After Death, give [Blessing] to random ally
+        +Warriors [Might]: "+1" ATK
+        +Warriors [Endurance]: "+2" HP, but "-1" ATK
+        +Warriors [Honored]: After Death: give [Might] to all allies
+        +Witches [Weakness]: Lose 1 ATK
+        +Witches [Cursed]: After Death, apply [Weakness] to killer
+        +Witches [Marked]: Next taken damage is doubled
+        +Orcs [Rage]: "+2" ATK but "-1" HP
+        +Orcs [Fury]: Gain "+1" ATK when damage is taken
+        +Elementals [Adaptation]: "+1/+1", until the end of the turn
+        +Elementals [Splash]: "+1" damage to all enemies after strike once
+        +Druids [Regeneration]: After taking damage, restore 1 HP
+        +Druids [Thorns]: Reflect 1 damage to attackers
+        +Knights [Inspire]: "+1/+1" until the end of battle
+        +Knights [Rally]: [Inspire] all allies at the start of battle
+        +Knights [Vengeful]: After Death, deals 1 damage to killer
+        +Guardians [Shielded]: The next damage this unit takes is reduced to 0
+        +Guardians [Barrier]: Absorb 1 damage
+        +Demons [Chaotic]: After strike deal 1 damage to random enemy
+        +Demons [Stoneskin]: Gain "+1" HP for each alive ally
+        +Demons [Bursting]: After Death, inflict 1 damage to all enemies
     @heroes
-        Guardian Golem [0/5]: Absorbs damage directed at adjacent heroes.
-        Berserker [4/4]: Gains "+1" ATK each time it takes damage.
-        Blood Knight [4/2]: Loses 1 HP at the start of each turn, gains "+1" ATK.
-        Voidwalker [3/1]: Immune to the first attack each turn.
-        Lifebinder [1/4]: Heals a random ally by 1 at the start of each turn.
-        Necromancer [1/3]: Summons a 1/1 Skeleton when an enemy hero dies.
-        Spectral Wraith [2/2]: After Death, deal 2 damage to the enemy that killed it.
-        Mystic Sage [1/4]: At Battle end, if this hero survived, gain "+1/+1".
-        Vengeful Spirit [2/2]: After Death, gives all allies "+1" ATK.
-        Rune Forger [2/2]: After strike, grants "+1/+1" to a random ally.
-        Arcane Illusionist [1/1]: At the start of battle, creates a copy of itself.
-        Celestial Sorcerer [1/4]: At the end of the turn, grants a random ally a Shield.
-        Graveyard Warden [2/2]: When an ally dies, gains "+1" ATK.
-        Gnome Tinkerer [2/3]: At the start of battle, summons a 1/1 Robot.
-        Gnome Mechanic [2/2]: Gives a random ally "+1" HP at the start of each turn.
-        Goblin Alchemist [1/2]: At the end of turn, gives a random ally "+1/+1".
-        Stormcaller [2/2]: At the start of battle, deals 1 damage to all enemies.
-        Shadow Assassin [1/1]: Before strike, gains "+2" ATK.
-        Novice Wizard [1/2]: At the start of battle, grants "+1" ATK to a random ally.
-        Valor Caller [2/2]: When an ally uses Inspire, also gives all allies "+1" ATK for this turn.
-        Thorned Spirit [1/4]: When an ally gains Thorns, it also gains "+1" ATK.
-        Essence Keeper [2/2]: When an ally gains Regeneration, it also applies to adjacent units.
-        Frenzy Seer [2/2]: When an ally uses Rage, it also gives "+1/+1" to adjacent units.
-        Blessing Conduit [2/2]: When an ally uses Blessing, it also applies to a random ally.
-        Fury Warden [2/2]: When an ally gains Fury, they also gain Regeneration.
-        Marked Seer [2/1]: When an enemy becomes Marked, they also receive -1 ATK.
-        Chaos Manipulator [2/2]: When enemy takes damage from Chaotic, -1 ATK.
-        Barrier Shaper [3/3]: When an ally gains Barrier, they also gain "+1/+1".
-        Inspiring Herald [2/2]: Inspire now gives "+2/+2".
-        Rage Master [3/3]: Rage now gives "+3" ATK.
-        Regeneration Amplifier [2/2]: Regeneration now heals 2 HP.
-        Thorns Enchanter [1/4]: Thorns now reflect 2 damage.
-        Weakness Seer [2/2]: Weakness now applies "-2" ATK.
-        Shield Ascendant [3/3]: Shielded units now reflect damage back to attacker.
-        Blessing Amplifier [2/2]: Blessing now gives "+2/+2".
-        Fury Emissary [2/2]: Fury now gives "+3" ATK.
-        Splash Reaver [2/2]: Splash now deals 2 damage to all enemies.
-        Marked Prophet [2/1]: Marked now doubles the next two attacks against the hero.
-        Chaos Shaper [2/2]: Chaotic now deals 2 damage to a random enemy.
-        Thorns Artificer [1/4]: Thorns now give the attacker Weakness.
-        Weakness Oracle [2/2]: Weakness now makes the enemy lose its next attack.
-        Shield Philosopher [3/3]: Shielded units now gain "+1" ATK every time they block damage.
-        Blessing Enchanter [2/2]: Blessing now gives the hero Shielded instead of "+1/+1".
-        Splash Magus [2/2]: Splash now gives all enemies Weakness instead of dealing damage.
-        Chaotic Illusionist [2/2]: Chaotic now swaps the HP and ATK of a random enemy instead of dealing damage.
-        Barrier Alchemist [3/3]: Barrier now gives the hero "+2" ATK when it blocks damage.
-        Thorns Mystic [1/4]: Thorns now also heal the hero for the damage reflected.
-        Shield Savant [3/3]: Shielded units now also gain Enrage when they block damage.
-
-    @enemies
-        Blighted Ghoul [2/2]: After Death, inflicts 1 damage to all enemies.
-        Spectral Apparition [1/1]: After Death, reduces the ATK of its killer by 1.
-        Eroding Golem [3/1]: After Death, deals 2 damage to killer.
-        Vengeful Wraith [2/2]: After Death, gives all other Vengeful Wraiths "+1/+1".
-        Cursed Pharaoh [2/3]: After Death, curses all enemies, reducing their HP by "1".
-        Sacrificial Cultist [1/1]: After Death, all other Sacrificial Cultists gain "+1/+1".
-        Venomous Serpent [1/2]: After Death, poisons its killer, dealing "1" damage each turn.
-        Plague Rat [1/1]: After Death, infects all enemies with a disease, dealing "1" damage each turn.
-        Shadow Revenant [3/1]: After Death, reduces the HP of all enemies by "1".
-        Doomsayer [1/1]: After Death, reduces the ATK of all enemies by "1".
-        Spore Carrier [1/2]: After Death, spawns 2 "1/1" Sporelings.
+        [Fury]
+            +Orcs Berserker [4/4]: Start of battle: gain [Fury]
+            +Orcs Fury Emissary [2/2]: [Fury] now gives 1 more ATK
+            +Orcs +Druids Fury Warden [2/2]: When an ally gains [Fury], they also gain [Regeneration]
+        [Rage]
+            +Orcs Blood Knight [4/2]: Turn start: Gain [Rage]
+            +Orcs Rage Master [3/3]: [Rage] now gives 1 more ATK
+            +Orcs +Knights Frenzy Seer [2/2]: When an ally gains [Rage], it also gives [Inspire] to adjacent units
+        [Thorns]
+            +Druids Thorns Enchanter [1/4]: [Thorns] now reflect 2 damage
+            +Druids Thorns Mystic [1/4]: [Thorns] now also heal the unit for the damage reflected
+            +Druids +Witches Thorns Artificer [1/4]: [Thorns] now give the attacker [Weakness]
+            +Druids +Guardians Thorned Knight [2/4]: When an ally gains [Thorns], they also gain [Shielded]
+            +Druids +Warriors Thorned Spirit [1/4]: When an ally gains Thorns, they also gain [Might]
+        [Regeneration]
+            +Druids Regeneration Amplifier [2/2]: [Regeneration] now heals 2 HP
+            +Druids Essence Keeper [2/2]: When an ally gains [Regeneration], it also applies to adjacent units
+        [Inspire]
+            +Knights Inspiring Herald [2/2]: [Inspire] now gives "+2/+2"
+            +Knights Rune Forger [2/2]: After strike, grants [Inspire] to a random ally
+            +Knights Goblin Alchemist [1/2]: At the end of turn, [Inspire] random ally
+            +Knights +Guardians Barrier Shaper [3/3]: When an ally gains [Barrier], they also gain [Inspire]
+        [Might]
+            +Warriors +Knights  Valor Caller [2/2]: When an ally uses [Inspire], give all allies [Might]
+            +Warriors +Guardians  Shield Savant [3/3]: [Shielded] units now also gain [Might] when they block damage
+            +Warriors +Guardians Shield Philosopher [3/3]: [Shielded] units now gain [Might] every time they block damage
+            +Warriors +Guardians Barrier Alchemist [3/3]: [Barrier] now gives the hero [Might] (2) when it blocks damage
+            +Warriors +Guardians Guardian Knight [2/5]: When an ally gains [Shielded], they also gain [Might]
+            +Warriors Shadow Assassin [1/1]: Before strike, gain [Might] (2)
+            +Warriors Vengeful Spirit [2/2]: After Death, gives all allies [Might]
+            +Warriors Graveyard Warden [2/2]: When an ally dies, gain [Might]
+            +Warriors Squire [1/2]: At the start of battle, grant [Might] to a random ally
+        [Shielded]
+            +Guardians Celestial Sorcerer [1/4]: Turn end: give [Shielded] to random ally
+            +Guardians +Druids Holy Healer [2/4]: When an ally gains [Regeneration], they also gain [Shielded]
+            +Guardians +Clerics Holy Guardian [3/4]: When an ally gains [Shielded], they also gain [Blessing]
+            +Guardians Shield Ascendant [3/3]: [Shielded] units now reflect damage back to attacker
+            +Guardians +Clerics Blessing Enchanter [2/2]: [Blessing] now gives the hero [Shielded] instead of "+1/+1"
+        [Mend]
+            +Clerics Lifebinder [1/4]: [Mend] random injured ally at the start of each turn
+        [Fortitude]
+            +Clerics Gnome Mechanic [2/2]: Gives a random ally [Fortitude] at the start of each turn
+        [Blessing]
+            +Clerics Blessing Conduit [2/2]: When an gains [Blessing], it also applied to a random ally
+            +Clerics +Warriors Holy Avenger [3/3]: When an ally gains [Might], they also gain [Blessing]
+            +Clerics Blessing Amplifier [2/2]: [Blessing] gives "+1/+1" more
+        [Honored]
+            +Warriors Warchief [5/5]: Start of battle: gain [Honored]
+        [Mark]
+            +Witches Spectral Wraith [2/2]: After Death, apply [Mark] to killer
+            +Witches Hexweaver [2/2]: When an enemy gains [Weakness], they also receive [Marked]
+            +Witches Marked Prophet [2/1]: [Marked] now triples taken damage
+            +Witches +Elementals Cursed Elemental [2/4]: [Splash] now also applies [Marked] to all enemies
+        [Weakness]
+            +Witches Weakness Seer [2/2]: [Weakness] "+1" ATK decrease
+            +Witches Weakness Oracle [2/2]: [Weakness] now makes the enemy lose its next attack
+            +Witches Succubus [2/3]: Before strike: apply [Weakness] to attacker
+            +Demons +Witches Chaos Manipulator [2/2]: When enemy takes damage from [Chaotic], apply [Weakness]
+        [Chaotic]
+            +Demons Chaos Shaper [2/2]: [Chaotic] "+1" damage
+            +Demons +Clerics Soulstealer [3/2]: After an ally dies, gain [Chaotic] and [Fortitude]
+            +Demons +Clerics Soul Harvester [3/3]: After an ally dies, gain [Chaotic] and [Blessing]
+        [Splash]
+            +Elementals +Witches Splash Magus [2/2]: [Splash] now gives all enemies [Weakness] instead of dealing damage
+            +Elementals Splash Reaver [2/2]: [Splash] now deals "+1" damage
+            +Elementals +Witches Infernal Mage [2/3]: [Splash] deals 1 extra damage for each [Weakness] on target
+            +Elementals +Knights Radiant Paladin [3/4]: When an ally gains [Inspire], they also gain [Splash]
+        +Elementals Stormcaller [2/2]: At the start of battle, deals 1 damage to all enemies
+        +Elementals Arcane Illusionist [1/1]: At the start of battle, creates a copy of itself
+#         Chaotic Illusionist [2/2]: Chaotic now swaps the HP and ATK of a random enemy instead of dealing damage
+#         Guardian Golem [0/5]: Absorbs damage directed at adjacent heroes
+#         Voidwalker [3/1]: Immune to the first attack each turn
+#         Necromancer [1/3]: Summons a 1/1 Skeleton when an enemy hero dies
+#         Mystic Sage [1/4]: At Battle end, if this hero survived, gain "+1/+1"
+#         Gnome Tinkerer [2/3]: At the start of battle, summons a 1/1 Robot
+    @enemies {c}
+        Blighted Ghoul [2/2]: After Death, inflicts 1 damage to all enemies
+        Spectral Apparition [1/1]: After Death, reduces the ATK of its killer by 1
+        Eroding Golem [3/1]: After Death, deals 2 damage to killer
+        Vengeful Wraith [2/2]: After Death, gives all other Vengeful Wraiths "+1/+1"
+        Cursed Pharaoh [2/3]: After Death, curses all enemies, reducing their HP by "1"
+        Sacrificial Cultist [1/1]: After Death, all other Sacrificial Cultists gain "+1/+1"
+        Venomous Serpent [1/2]: After Death, poisons its killer, dealing "1" damage each turn
+        Plague Rat [1/1]: After Death, infects all enemies with a disease, dealing "1" damage each turn
+        Shadow Revenant [3/1]: After Death, reduces the HP of all enemies by "1"
+        Doomsayer [1/1]: After Death, reduces the ATK of all enemies by "1"
+        Spore Carrier [1/2]: After Death, spawns 2 "1/1" Sporelings
 
