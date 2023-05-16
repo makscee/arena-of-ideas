@@ -98,13 +98,12 @@ impl PackedUnit {
         state
             .vars
             .set_vec2(&VarName::Position, position.unwrap_or(vec2::ZERO));
+        let house_color = self.house_color(resources);
+        state.vars.set_color(&VarName::HouseColor, house_color);
         if let Some(house) = self.house {
             state
                 .vars
                 .set_string(&VarName::House, 0, format!("{house:?}"));
-            state
-                .vars
-                .set_color(&VarName::HouseColor, resources.house_pool.get_color(&house));
         }
         state
             .vars
@@ -112,13 +111,21 @@ impl PackedUnit {
         StatusSystem::unpack_into_state(&mut state, &self.statuses);
         entry.add_component(state);
 
-        entry.add_component(self.generate_shader(&resources.options));
+        entry.add_component(self.generate_shader(house_color, &resources.options));
 
         Event::AfterBirth { owner: entity }.send(world, resources);
         entity
     }
 
-    pub fn generate_shader(&self, options: &Options) -> Shader {
+    pub fn house_color(&self, resources: &Resources) -> Rgba<f32> {
+        if let Some(house) = self.house {
+            resources.house_pool.get_color(&house)
+        } else {
+            Rgba::MAGENTA
+        }
+    }
+
+    pub fn generate_shader(&self, house_color: Rgba<f32>, options: &Options) -> Shader {
         let mut shader = {
             if let Some(shader) = self.shader.as_ref() {
                 let mut shader = shader.clone();
@@ -128,6 +135,7 @@ impl PackedUnit {
                 options.shaders.unit.clone()
             }
         };
+        shader.set_color_ref("u_house_color", house_color);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
         shader.set_string_ref(&VarName::Description.uniform(), self.description.clone(), 0);

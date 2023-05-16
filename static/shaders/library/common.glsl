@@ -1,4 +1,5 @@
 uniform vec4 u_color = vec4(1, 0, 1, 1);
+uniform vec4 u_house_color;
 uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
@@ -36,6 +37,26 @@ uniform float u_rand;
 uniform float u_aspect_ratio;
 
 uniform int u_ui = 0;
+
+uniform int u_sdf_gradient_points = 0;
+uniform vec4 u_g_points;
+uniform vec4 u_g_alphas = vec4(1);
+uniform vec4 u_g_color_1;
+uniform vec4 u_g_color_2;
+uniform vec4 u_g_color_3;
+uniform vec4 u_g_color_4;
+
+vec4 sdf_gradient(float x) {
+    float oob = 1. - float(x > u_g_points[3]);
+    vec4 g1 = vec4(u_g_color_1.rgb, u_g_color_1.a * u_g_alphas[0]);
+    vec4 g2 = vec4(u_g_color_2.rgb, u_g_color_2.a * u_g_alphas[1]);
+    vec4 g3 = vec4(u_g_color_3.rgb, u_g_color_3.a * u_g_alphas[2]);
+    vec4 g4 = vec4(u_g_color_4.rgb, u_g_color_4.a * u_g_alphas[3]);
+    return oob * (float(x < u_g_points[0]) * u_color +
+        float(x > u_g_points[0] && x < u_g_points[1]) * mix(g1, g2, (x - u_g_points[0]) / (u_g_points[1] - u_g_points[0])) +
+        float(x > u_g_points[1] && x < u_g_points[2]) * mix(g2, g3, (x - u_g_points[1]) / (u_g_points[2] - u_g_points[1])) +
+        float(x > u_g_points[2] && x < u_g_points[3]) * mix(g3, g4, (x - u_g_points[2]) / (u_g_points[3] - u_g_points[2])));
+}
 
 vec2 get_card_uv(vec2 uv) {
     return mix(uv, uv * 2 + vec2(0, -.7), card);

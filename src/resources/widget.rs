@@ -135,8 +135,8 @@ impl<'a> Widget<'_> {
                     animation
                         .get_uniforms_mut()
                         .insert_vec2_ref("u_open_position", position);
-
-                    let mut unit_shader = unit.generate_shader(&resources.options);
+                    let house_color = unit.house_color(resources);
+                    let mut unit_shader = unit.generate_shader(house_color, &resources.options);
                     unit_shader
                         .parameters
                         .uniforms

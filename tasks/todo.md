@@ -6,15 +6,16 @@
 
 First team
     +Clerics
-        Turn start: give [Fortitude] to random ally
-        Battle start: give [Fortitude] to all allies
-        Turn end: [Mend] injured ally
-        When ally recieved [Mend], give [Fortitude]
-        After death: transfer all [Fortitude] to adjacent ally
-        On recieve [Mend] gain [Fortitude]
-        Turn end: [Mend] all allies with [Fortitude]
+        Resilient Protector [1/2]: Turn start: Grant [Fortitude] to a random ally {cm:2023-05-16T16:39:41}
+        Radiant Herald [2/2]: Battle start: Grant [Fortitude] to all allies
+        Restorative Guardian [1/3]: Turn end: [Mend] an injured ally
+        Empowering Healer [2/2]: When an ally receives [Mend], grant them [Fortitude]
+        Spirit Channeler [3/2]: After death, transfer all [Fortitude] to an adjacent ally
+        Resilient Soul [2/3]: On receiving [Mend], gain [Fortitude]
+        Benevolent Healer [2/2]: Turn end: [Mend] all allies with [Fortitude]
 
 @visual {c}
+    Sdf gradient fn
     Fix node cluster timings
     Improve battle choice panel
         New disign

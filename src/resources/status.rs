@@ -99,7 +99,6 @@ impl Status {
         if let Ok(trigger) = world.entry_ref(entity).unwrap().get_component::<Trigger>() {
             triggers.push(("_local".to_owned(), (trigger.clone(), 1)));
         }
-        let state = ContextState::get(entity, world);
         for (name, (trigger, charges)) in triggers {
             let status_context = context.clone_stack(
                 ContextLayer::Status {

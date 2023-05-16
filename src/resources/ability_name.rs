@@ -2,27 +2,8 @@ use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AbilityName {
-    Shield,
-    Defense,
-    Dispel,
-    Devour,
-    Shoot,
-    Rebirth,
-    Grow,
-    Reanimate,
-    Poison,
-    Swap,
-    Immortality,
-    LifeSteal,
-    Empower,
+    Fortitude,
     Mend,
-    SummonTreant,
-    Bounty,
-    Discount,
-    Bargain,
-    Prosper,
-    Favor,
-    Vitality,
 }
 
 impl fmt::Display for AbilityName {

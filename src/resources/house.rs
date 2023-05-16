@@ -25,20 +25,7 @@ pub struct House {
     EnumString,
 )]
 pub enum HouseName {
-    Vampires,
-    Dragons,
-    Robots,
-    Snakes,
-    Thieves,
-    Exorcists,
-    Warriors,
-    Demons,
-    Necromancers,
-    Archers,
     Clerics,
-    Titans,
-    Druids,
-    Pirates,
 }
 
 impl FileWatcherLoader for House {

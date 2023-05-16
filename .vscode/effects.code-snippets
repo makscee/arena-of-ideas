@@ -138,6 +138,19 @@
 		],
 		"description": "Ranom Enemy"
 	},
+	"Random Ally": {
+		"prefix": "random_ally",
+		"body": [
+			"{",
+			"    \"type\": \"RandomUnit\",",
+			"    \"faction\": {",
+			"        \"type\": \"Owner\"",
+			"    },",
+			"    \"exclude_self\": true",
+			"}"
+		],
+		"description": "Random Ally"
+	},
 	"Slot Relative": {
 		"prefix": "slot_relative",
 		"body": [
@@ -185,13 +198,23 @@
 			"{",
 			"    \"name\": \"${1:name}\",",
 			"    \"attack\": ${2:1},",
-			"    \"health\": ${2:1},",
-			"    \"description\": \"$3\",",
-			"    \"house\": ${4:\"Demons\"},",
-			"    \"trigger\": $5",
+			"    \"health\": ${3:1},",
+			"    \"description\": \"$4\",",
+			"    \"house\": \"${5:Demons}\",",
+			"    \"trigger\": $6",
 			"}"
 		],
 		"description": "New Unit"
+	},
+	"New Unit Simple": {
+		"prefix": "new_unit_simple",
+		"body": [
+			"{",
+			"    \"attack\": ${1:1},",
+			"    \"health\": ${2:5}",
+			"}"
+		],
+		"description": "New Unit Simple"
 	},
 	"New House": {
 		"prefix": "new_house",

@@ -11,28 +11,55 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
             "units": [
                 {
-                    "health": 10,
-                    "attack": 3,
-                    "statuses": [
-                        [
-                            "Vitality",
-                            10
-                        ],
-                        [
-                            "DarkVitality",
-                            1
-                        ],
-                        [
-                            "Devour",
-                            5
-                        ]
-                    ]
+                    "name": "Resilient Protector",
+                    "attack": 1,
+                    "health": 2,
+                    "description": "Turn start:\nGrant [Fortitude]\nto random ally",
+                    "house": "Clerics",
+                    "trigger": {
+                        "type": "TurnStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "ability": "Fortitude",
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
+                            },
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Owner"
+                                },
+                                "exclude_self": true
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#000000",
+                                "u_g_points": [
+                                    -0.5,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
+                                "mapping": {
+                                    "u_color": "u_house_color",
+                                    "u_g_color_1": "u_house_color"
+                                }
+                            }
+                        }
+                    }
                 }
             ]
         },
@@ -41,7 +68,7 @@
             "units": [
                 {
                     "health": 10,
-                    "attack": 3
+                    "attack": 2
                 }
             ],
             "name": "Enemies",
@@ -110,7 +137,6 @@
             "request_vars": [
                 "Description",
                 "FactionColor",
-                "HouseColor",
                 "Rank2",
                 "Rank1"
             ],
@@ -190,15 +216,26 @@
             "path": "shaders/vfx/circle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_size": 0.3,
-                    "u_circle_fbm": 0.0,
-                    "u_thickness": 1.0,
-                    "u_border": 0.1,
+                    "u_size": 0.55,
+                    "u_circle_fbm": 0.15,
+                    "u_circle_fbm_speed": 2.0,
                     "u_card_size": 0.2,
-                    "u_alpha": 1.0,
                     "u_aspect_offset_adjust": 1,
                     "u_text_color": "#ffffff",
-                    "u_text_extra_size": 0.0,
+                    "u_g_points": [
+                        0.0,
+                        0.4,
+                        1.0,
+                        1.0
+                    ],
+                    "u_g_alphas": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "u_g_color_1": "#ffffff",
+                    "u_g_color_2": "#ffffff",
                     "u_card_offset": [
                         -0.6,
                         -2.2
@@ -206,7 +243,11 @@
                     "u_offset": [
                         -0.9,
                         -0.8
-                    ]
+                    ],
+                    "mapping": {
+                        "u_g_color_1": "u_color",
+                        "u_g_color_2": "u_color"
+                    }
                 }
             },
             "chain_after": [

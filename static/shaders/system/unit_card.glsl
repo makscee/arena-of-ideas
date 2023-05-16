@@ -23,7 +23,6 @@ in vec2 uv;
 
 uniform sampler2D u_description;
 uniform vec2 u_description_size;
-uniform vec4 u_house_color;
 uniform vec4 u_faction_color;
 
 void main() {
