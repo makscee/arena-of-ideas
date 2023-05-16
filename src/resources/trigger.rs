@@ -23,6 +23,10 @@ pub enum Trigger {
         ability: AbilityName,
         effect: EffectWrapped,
     },
+    OnAbilityUse {
+        ability: AbilityName,
+        effect: EffectWrapped,
+    },
     BeforeIncomingDamage {
         effect: EffectWrapped,
     },
@@ -281,6 +285,18 @@ impl Trigger {
                 }
                 _ => {}
             },
+            Trigger::OnAbilityUse { ability, .. } => match event {
+                Event::AbilityUse {
+                    ability: event_ability,
+                    target,
+                    ..
+                } => {
+                    if ability == event_ability && *target == context.owner().unwrap() {
+                        self.fire(action_queue, context, logger)
+                    }
+                }
+                _ => {}
+            },
         }
     }
 
@@ -314,7 +330,8 @@ impl Trigger {
             | Trigger::OnStatusRemove { effect }
             | Trigger::OnStatusChargeAdd { effect }
             | Trigger::OnStatusChargeRemove { effect }
-            | Trigger::AnyAbilityUse { effect, .. } => {
+            | Trigger::AnyAbilityUse { effect, .. }
+            | Trigger::OnAbilityUse { effect, .. } => {
                 logger.log(
                     || format!("Caught trigger {:?}, {}", self.as_ref(), context),
                     &LogContext::Trigger,
