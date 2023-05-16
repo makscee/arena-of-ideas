@@ -1,3 +1,4 @@
 [
-    "units/resilient_protector.json"
+    "units/healer.json",
+    "units/reinforcer.json"
 ]

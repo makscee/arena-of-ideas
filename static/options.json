@@ -17,26 +17,33 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Resilient Protector",
+                    "name": "Healer",
                     "attack": 1,
-                    "health": 2,
-                    "description": "Turn start:\nGrant [Fortitude]\nto random ally",
+                    "health": 3,
+                    "description": "Turn end:\n[Mend]\nan injured ally",
                     "house": "Clerics",
                     "trigger": {
-                        "type": "TurnStart",
+                        "type": "TurnEnd",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Fortitude",
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "FindTarget",
+                            "faction": {
+                                "type": "Owner"
                             },
-                            "target": {
-                                "type": "RandomUnit",
-                                "faction": {
-                                    "type": "Owner"
+                            "exclude_self": true,
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "HpDamage"
                                 },
-                                "exclude_self": true
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
+                                }
+                            },
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Mend"
                             }
                         }
                     },
@@ -45,17 +52,25 @@
                         "parameters": {
                             "uniforms": {
                                 "u_color": "#000000",
+                                "u_size": 0.7,
+                                "u_padding": 0.5,
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#0055ab",
+                                "u_circle_fbm": 0.5,
                                 "u_g_points": [
                                     -0.5,
-                                    0.0,
+                                    0.4,
+                                    1.0,
+                                    1.0
+                                ],
+                                "u_g_alphas": [
+                                    1.0,
+                                    0.2,
                                     0.0,
                                     0.0
                                 ],
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
                                 "mapping": {
-                                    "u_color": "u_house_color",
-                                    "u_g_color_1": "u_house_color"
+                                    "u_color": "u_house_color"
                                 }
                             }
                         }

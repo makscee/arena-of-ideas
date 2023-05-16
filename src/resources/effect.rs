@@ -120,6 +120,8 @@ pub enum Effect {
         faction: ExpressionFaction,
         condition: Condition,
         effect: Box<EffectWrapped>,
+        #[serde(default)]
+        exclude_self: bool,
     },
     AllTargets {
         faction: ExpressionFaction,
@@ -666,11 +668,16 @@ impl EffectWrapped {
                 faction,
                 condition,
                 effect,
+                exclude_self,
             } => {
                 let faction = faction.calculate(&context, world, resources)?;
+                let owner = context.owner().unwrap();
                 let mut units = UnitSystem::collect_faction(world, faction);
                 units.shuffle(&mut thread_rng());
                 let target = units.into_iter().find(|entity| {
+                    if *exclude_self && owner == *entity {
+                        return false;
+                    }
                     match condition.calculate(
                         &Context::new(ContextLayer::Unit { entity: *entity }, world, resources),
                         world,
