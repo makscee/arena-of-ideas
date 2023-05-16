@@ -1,10 +1,10 @@
 {cr:2023-05-10T15:53:19} State background animation
 
 Next Iteration
-    @statuses {c}
+    @abilities {c}
         +Clerics [Fortitude]: "+1" HP
-        +Clerics [Blessing]: Gain "+1/+1" at the start of each turn
         +Clerics [Mend]: Heal 1 damage
+        +Clerics [Blessing]: Gain "+1/+1"
         +Clerics [Martyr]: After Death, give [Blessing] to random ally
         +Warriors [Might]: "+1" ATK
         +Warriors [Endurance]: "+2" HP, but "-1" ATK
@@ -21,7 +21,7 @@ Next Iteration
         +Knights [Inspire]: "+1/+1" until the end of battle
         +Knights [Rally]: [Inspire] all allies at the start of battle
         +Knights [Vengeful]: After Death, deals 1 damage to killer
-        +Guardians [Shielded]: The next damage this unit takes is reduced to 0
+        +Guardians [Shield]: The next damage this unit takes is reduced to 0
         +Guardians [Barrier]: Absorb 1 damage
         +Demons [Chaotic]: After strike deal 1 damage to random enemy
         +Demons [Stoneskin]: Gain "+1" HP for each alive ally
@@ -39,7 +39,7 @@ Next Iteration
             +Druids Thorns Enchanter [1/4]: [Thorns] now reflect 2 damage
             +Druids Thorns Mystic [1/4]: [Thorns] now also heal the unit for the damage reflected
             +Druids +Witches Thorns Artificer [1/4]: [Thorns] now give the attacker [Weakness]
-            +Druids +Guardians Thorned Knight [2/4]: When an ally gains [Thorns], they also gain [Shielded]
+            +Druids +Guardians Thorned Knight [2/4]: When an ally gains [Thorns], they also gain [Shield]
             +Druids +Warriors Thorned Spirit [1/4]: When an ally gains Thorns, they also gain [Might]
         [Regeneration]
             +Druids Regeneration Amplifier [2/2]: [Regeneration] now heals 2 HP
@@ -51,20 +51,20 @@ Next Iteration
             +Knights +Guardians Barrier Shaper [3/3]: When an ally gains [Barrier], they also gain [Inspire]
         [Might]
             +Warriors +Knights  Valor Caller [2/2]: When an ally uses [Inspire], give all allies [Might]
-            +Warriors +Guardians  Shield Savant [3/3]: [Shielded] units now also gain [Might] when they block damage
-            +Warriors +Guardians Shield Philosopher [3/3]: [Shielded] units now gain [Might] every time they block damage
+            +Warriors +Guardians  Shield Savant [3/3]: [Shield] units now also gain [Might] when they block damage
+            +Warriors +Guardians Shield Philosopher [3/3]: [Shield] units now gain [Might] every time they block damage
             +Warriors +Guardians Barrier Alchemist [3/3]: [Barrier] now gives the hero [Might] (2) when it blocks damage
-            +Warriors +Guardians Guardian Knight [2/5]: When an ally gains [Shielded], they also gain [Might]
+            +Warriors +Guardians Guardian Knight [2/5]: When an ally gains [Shield], they also gain [Might]
             +Warriors Shadow Assassin [1/1]: Before strike, gain [Might] (2)
             +Warriors Vengeful Spirit [2/2]: After Death, gives all allies [Might]
             +Warriors Graveyard Warden [2/2]: When an ally dies, gain [Might]
             +Warriors Squire [1/2]: At the start of battle, grant [Might] to a random ally
-        [Shielded]
-            +Guardians Celestial Sorcerer [1/4]: Turn end: give [Shielded] to random ally
-            +Guardians +Druids Holy Healer [2/4]: When an ally gains [Regeneration], they also gain [Shielded]
-            +Guardians +Clerics Holy Guardian [3/4]: When an ally gains [Shielded], they also gain [Blessing]
-            +Guardians Shield Ascendant [3/3]: [Shielded] units now reflect damage back to attacker
-            +Guardians +Clerics Blessing Enchanter [2/2]: [Blessing] now gives the hero [Shielded] instead of "+1/+1"
+        [Shield]
+            +Guardians Celestial Sorcerer [1/4]: Turn end: give [Shield] to random ally
+            +Guardians +Druids Holy Healer [2/4]: When an ally gains [Regeneration], they also gain [Shield]
+            +Guardians +Clerics Holy Guardian [3/4]: When an ally gains [Shield], they also gain [Blessing]
+            +Guardians Shield Ascendant [3/3]: [Shield] units now reflect damage back to attacker
+            +Guardians +Clerics Blessing Enchanter [2/2]: [Blessing] now gives the hero [Shield] instead of "+1/+1"
         [Mend]
             +Clerics Lifebinder [1/4]: [Mend] random injured ally at the start of each turn
         [Fortitude]
