@@ -195,7 +195,7 @@ impl ExpressionEntity {
                 .1
                 .entity),
             ExpressionEntity::Target => context.target().context("No target"),
-            ExpressionEntity::Attacker => context.attacker().context("No target"),
+            ExpressionEntity::Attacker => context.caster().context("No target"),
             ExpressionEntity::Owner => context.owner().context("No owner"),
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
@@ -287,7 +287,7 @@ impl ExpressionFaction {
             ExpressionFaction::Attacker => context
                 .clone_stack(
                     ContextLayer::Unit {
-                        entity: context.attacker().unwrap(),
+                        entity: context.caster().unwrap(),
                     },
                     world,
                     resources,

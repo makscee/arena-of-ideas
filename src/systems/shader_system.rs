@@ -3,7 +3,7 @@ use legion::EntityStore;
 
 use super::*;
 
-pub struct ShaderSystem {}
+pub struct ShaderSystem;
 
 impl System for ShaderSystem {
     fn draw(
@@ -97,7 +97,7 @@ impl ShaderSystem {
             })
             .map(|x| Self::flatten_shader_chain(x))
             .flatten()
-            .map(|x| x.inject_bounding_box(resources))
+            .map(|x| x.inject_uniforms(resources))
             .collect_vec();
 
         resources.prepared_shaders = shaders;

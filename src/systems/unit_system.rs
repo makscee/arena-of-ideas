@@ -32,7 +32,7 @@ impl UnitSystem {
     }
 
     pub fn deal_damage(
-        attacker: legion::Entity,
+        caster: legion::Entity,
         victim: legion::Entity,
         amount: usize,
         world: &mut legion::World,
@@ -41,7 +41,7 @@ impl UnitSystem {
             return;
         }
         let state = ContextState::get_mut(victim, world);
-        state.vars.set_entity(&VarName::LastAttacker, attacker);
+        state.vars.set_entity(&VarName::LastAttacker, caster);
         let damage = (state
             .vars
             .try_get_int(&VarName::HpDamage)

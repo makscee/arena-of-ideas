@@ -1,0 +1,52 @@
+{
+    "name": "Empowerer",
+    "attack": 2,
+    "health": 2,
+    "description": "When an ally\nreceives [Mend],\ngrant them [Fortitude]",
+    "house": "Clerics",
+    "trigger": {
+        "type": "AnyAbilityUse",
+        "ability": "Mend",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Fortitude",
+            "charges": {
+                "type": "Const",
+                "value": 1
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#000000",
+                "u_extra_size_multiplier": 0.01,
+                "u_size": 0.5,
+                "u_offset": [
+                    0.0,
+                    0.5
+                ],
+                "u_t_multiplier": 20.2,
+                "u_g_color_1": "#313381",
+                "u_g_points": [
+                    -0.3,
+                    -0.1,
+                    0.0,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "mapping": {
+                    "u_color": "u_house_color",
+                    "u_extra_size": "u_sin",
+                    "u_g_color_1": "u_faction_color"
+                }
+            }
+        }
+    }
+}

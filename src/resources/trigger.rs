@@ -4,39 +4,108 @@ use super::*;
 #[serde(tag = "type")]
 #[serde(deny_unknown_fields)]
 pub enum Trigger {
-    List { triggers: Vec<Box<Trigger>> },
-    OnStatusAdd { effect: EffectWrapped },
-    OnStatusRemove { effect: EffectWrapped },
-    OnStatusChargeAdd { effect: EffectWrapped },
-    OnStatusChargeRemove { effect: EffectWrapped },
-    BeforeIncomingDamage { effect: EffectWrapped },
-    AfterIncomingDamage { effect: EffectWrapped },
-    BeforeOutgoingDamage { effect: EffectWrapped },
-    AfterOutgoingDamage { effect: EffectWrapped },
-    AfterDamageDealt { effect: EffectWrapped },
-    AfterKill { effect: EffectWrapped },
-    BeforeDeath { effect: EffectWrapped },
-    AfterDeath { effect: EffectWrapped },
-    AfterBirth { effect: EffectWrapped },
-    BattleStart { effect: EffectWrapped },
-    BattleEnd { effect: EffectWrapped },
-    ShopStart { effect: EffectWrapped },
-    ShopEnd { effect: EffectWrapped },
-    TurnStart { effect: EffectWrapped },
-    TurnEnd { effect: EffectWrapped },
-    OnBuy { effect: EffectWrapped },
-    OnSell { effect: EffectWrapped },
-    AnyBuy { effect: EffectWrapped },
-    AnySell { effect: EffectWrapped },
-    BeforeStrike { effect: EffectWrapped },
-    AfterStrike { effect: EffectWrapped },
-    AddToTeam { effect: EffectWrapped },
-    RemoveFromTeam { effect: EffectWrapped },
-    ModifyIncomingDamage { value: ExpressionInt },
-    ModifyOutgoingDamage { value: ExpressionInt },
-    ChangeVarInt { var: VarName, delta: ExpressionInt }, // Preferred for stat changes
+    List {
+        triggers: Vec<Box<Trigger>>,
+    },
+    OnStatusAdd {
+        effect: EffectWrapped,
+    },
+    OnStatusRemove {
+        effect: EffectWrapped,
+    },
+    OnStatusChargeAdd {
+        effect: EffectWrapped,
+    },
+    OnStatusChargeRemove {
+        effect: EffectWrapped,
+    },
+    AnyAbilityUse {
+        ability: AbilityName,
+        effect: EffectWrapped,
+    },
+    BeforeIncomingDamage {
+        effect: EffectWrapped,
+    },
+    AfterIncomingDamage {
+        effect: EffectWrapped,
+    },
+    BeforeOutgoingDamage {
+        effect: EffectWrapped,
+    },
+    AfterOutgoingDamage {
+        effect: EffectWrapped,
+    },
+    AfterDamageDealt {
+        effect: EffectWrapped,
+    },
+    AfterKill {
+        effect: EffectWrapped,
+    },
+    BeforeDeath {
+        effect: EffectWrapped,
+    },
+    AfterDeath {
+        effect: EffectWrapped,
+    },
+    AfterBirth {
+        effect: EffectWrapped,
+    },
+    BattleStart {
+        effect: EffectWrapped,
+    },
+    BattleEnd {
+        effect: EffectWrapped,
+    },
+    ShopStart {
+        effect: EffectWrapped,
+    },
+    ShopEnd {
+        effect: EffectWrapped,
+    },
+    TurnStart {
+        effect: EffectWrapped,
+    },
+    TurnEnd {
+        effect: EffectWrapped,
+    },
+    OnBuy {
+        effect: EffectWrapped,
+    },
+    OnSell {
+        effect: EffectWrapped,
+    },
+    AnyBuy {
+        effect: EffectWrapped,
+    },
+    AnySell {
+        effect: EffectWrapped,
+    },
+    BeforeStrike {
+        effect: EffectWrapped,
+    },
+    AfterStrike {
+        effect: EffectWrapped,
+    },
+    AddToTeam {
+        effect: EffectWrapped,
+    },
+    RemoveFromTeam {
+        effect: EffectWrapped,
+    },
+    ModifyIncomingDamage {
+        value: ExpressionInt,
+    },
+    ModifyOutgoingDamage {
+        value: ExpressionInt,
+    },
+    ChangeVarInt {
+        var: VarName,
+        delta: ExpressionInt,
+    }, // Preferred for stat changes
     Noop,
-    AnyDeath { effect: EffectWrapped },
+    AnyDeath {
+        effect: EffectWrapped,
+    },
 }
 
 impl Default for Trigger {
@@ -201,6 +270,17 @@ impl Trigger {
             | Trigger::ModifyIncomingDamage { .. }
             | Trigger::ChangeVarInt { .. }
             | Trigger::Noop => {}
+            Trigger::AnyAbilityUse { ability, .. } => match event {
+                Event::AbilityUse {
+                    ability: event_ability,
+                    ..
+                } => {
+                    if ability == event_ability {
+                        self.fire(action_queue, context, logger)
+                    }
+                }
+                _ => {}
+            },
         }
     }
 
@@ -233,7 +313,8 @@ impl Trigger {
             | Trigger::OnStatusAdd { effect }
             | Trigger::OnStatusRemove { effect }
             | Trigger::OnStatusChargeAdd { effect }
-            | Trigger::OnStatusChargeRemove { effect } => {
+            | Trigger::OnStatusChargeRemove { effect }
+            | Trigger::AnyAbilityUse { effect, .. } => {
                 logger.log(
                     || format!("Caught trigger {:?}, {}", self.as_ref(), context),
                     &LogContext::Trigger,

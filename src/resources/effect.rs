@@ -235,7 +235,7 @@ impl EffectWrapped {
                 .send(world, resources);
                 Event::BeforeIncomingDamage {
                     owner: target,
-                    attacker: owner,
+                    caster: owner,
                     damage: initial_damage as usize,
                 }
                 .send(world, resources);
@@ -246,7 +246,7 @@ impl EffectWrapped {
                     world,
                     resources,
                 )
-                .set_attacker(context.owner().unwrap());
+                .set_caster(context.owner().unwrap());
                 target_context.insert_int(VarName::Damage, value);
                 Event::ModifyIncomingDamage.calculate(&mut target_context, world, resources);
                 value = target_context
@@ -312,7 +312,7 @@ impl EffectWrapped {
                 .send(world, resources);
                 Event::AfterIncomingDamage {
                     owner: target,
-                    attacker: owner,
+                    caster: owner,
                     damage: initial_damage as usize,
                 }
                 .send(world, resources);
@@ -460,6 +460,12 @@ impl EffectWrapped {
                         charges.calculate(&context, world, resources)?,
                     );
                 }
+                Event::AbilityUse {
+                    ability: *ability,
+                    caster: owner,
+                    target: context.target().unwrap(),
+                }
+                .send(world, resources);
                 let effect = {
                     let mut effect = Effect::ShowText {
                         text: ability.to_string(),

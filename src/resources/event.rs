@@ -4,6 +4,11 @@ use super::*;
 
 #[derive(Debug, AsRefStr)]
 pub enum Event {
+    AbilityUse {
+        ability: AbilityName,
+        caster: legion::Entity,
+        target: legion::Entity,
+    },
     StatusAdd {
         status: String,
         owner: legion::Entity,
@@ -29,12 +34,12 @@ pub enum Event {
     ModifyContext,
     BeforeIncomingDamage {
         owner: legion::Entity,
-        attacker: legion::Entity,
+        caster: legion::Entity,
         damage: usize,
     },
     AfterIncomingDamage {
         owner: legion::Entity,
-        attacker: legion::Entity,
+        caster: legion::Entity,
         damage: usize,
     },
     BeforeOutgoingDamage {
@@ -127,17 +132,17 @@ impl Display for Event {
             }
             Event::BeforeIncomingDamage {
                 owner,
-                attacker,
+                caster,
                 damage,
             }
             | Event::AfterIncomingDamage {
                 owner,
-                attacker,
+                caster,
                 damage,
             } => {
                 write!(
                     f,
-                    "Event {} o:{owner:?} a:{attacker:?} dmg:{damage}",
+                    "Event {} o:{owner:?} c:{caster:?} dmg:{damage}",
                     self.as_ref(),
                 )
             }
@@ -169,7 +174,7 @@ impl Display for Event {
             | Event::Buy { owner }
             | Event::Sell { owner }
             | Event::AddToTeam { owner }
-            | Event::RemoveFromTeam { owner } => write!(f, "{} o:{:?}", self.as_ref(), owner),
+            | Event::RemoveFromTeam { owner } => write!(f, "{} o:{owner:?}", self.as_ref()),
             Event::BeforeStrike { owner, target }
             | Event::AfterStrike { owner, target }
             | Event::AfterKill { owner, target } => {
@@ -184,7 +189,16 @@ impl Display for Event {
             | Event::ShopEnd
             | Event::TurnStart
             | Event::TurnEnd => write!(f, "Event {}", self.as_ref()),
-            Event::UnitDeath { target } => write!(f, "Event {} t:{:?}", self.as_ref(), target),
+            Event::UnitDeath { target } => write!(f, "Event {} t:{target:?}", self.as_ref()),
+            Event::AbilityUse {
+                ability,
+                caster,
+                target,
+            } => write!(
+                f,
+                "Event {} a:{ability} c:{caster:?} t:{target:?}",
+                self.as_ref()
+            ),
         }
     }
 }
@@ -213,6 +227,18 @@ impl Event {
                 Event::UnitDeath { target } => {
                     let factions = Faction::battle();
                     context = context.set_target(*target);
+                    Status::notify_all(self, &factions, &context, world, resources);
+                    true
+                }
+                _ => false,
+            };
+
+        // Notify all Faction::Dark and Faction::Light, set target & caster
+        caught = caught
+            || match self {
+                Event::AbilityUse { caster, target, .. } => {
+                    let factions = Faction::battle();
+                    context = context.set_target(*target).set_caster(*caster);
                     Status::notify_all(self, &factions, &context, world, resources);
                     true
                 }
@@ -266,12 +292,12 @@ impl Event {
             || match self {
                 Event::BeforeIncomingDamage {
                     owner,
-                    attacker,
+                    caster,
                     damage,
                 }
                 | Event::AfterIncomingDamage {
                     owner,
-                    attacker,
+                    caster,
                     damage,
                 } => {
                     let context = context
@@ -283,7 +309,7 @@ impl Event {
                             world,
                             resources,
                         )
-                        .set_attacker(*attacker);
+                        .set_caster(*caster);
                     Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }

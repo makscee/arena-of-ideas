@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, f32::consts::PI};
 
 use super::*;
 
@@ -31,7 +31,7 @@ pub struct Shader {
     pub update_handlers: Vec<Handler>,
 }
 
-const DEFAULT_REQUEST_VARS: [VarName; 15] = [
+const DEFAULT_REQUEST_VARS: [VarName; 16] = [
     VarName::Position,
     VarName::Radius,
     VarName::Box,
@@ -47,6 +47,7 @@ const DEFAULT_REQUEST_VARS: [VarName; 15] = [
     VarName::BackgroundLight,
     VarName::BackgroundDark,
     VarName::OutlineColor,
+    VarName::FactionColor,
 ];
 
 impl Debug for Shader {
@@ -192,8 +193,14 @@ impl Shader {
         aabb.contains(position)
     }
 
-    pub fn inject_bounding_box(mut self, resources: &Resources) -> Self {
+    pub fn inject_uniforms(mut self, resources: &Resources) -> Self {
         let uniforms = &mut self.parameters.uniforms;
+
+        let rand = uniforms.try_get_float("u_rand").unwrap_or_default();
+        let t = PI * rand * 2.0
+            + resources.global_time * uniforms.try_get_float("u_t_multiplier").unwrap_or(1.0);
+        uniforms.insert_float_ref("u_sin", t.sin());
+        uniforms.insert_float_ref("u_cos", t.cos());
 
         let mut position = uniforms.try_get_vec2("u_position").unwrap_or(vec2::ZERO);
         let align = uniforms.try_get_vec2("u_align").unwrap_or(vec2::ZERO);

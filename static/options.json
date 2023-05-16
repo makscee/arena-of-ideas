@@ -17,29 +17,21 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Herald",
+                    "name": "Empowerer",
                     "attack": 2,
                     "health": 2,
-                    "description": "Battle start:\nGrant [Fortitude]\nto all allies",
+                    "description": "When an ally\nreceives [Mend],\ngrant them [Fortitude]",
                     "house": "Clerics",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AnyAbilityUse",
+                        "ability": "Mend",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Owner"
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Fortitude",
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
-                            },
-                            "exclude_self": true
+                            "type": "UseAbility",
+                            "ability": "Fortitude",
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
+                            }
                         }
                     },
                     "shader": {
@@ -47,35 +39,34 @@
                         "parameters": {
                             "uniforms": {
                                 "u_color": "#000000",
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#000000",
+                                "u_extra_size_multiplier": 0.01,
                                 "u_size": 0.5,
-                                "local": {
-                                    "u_circle_fbm": 0.2,
-                                    "u_g_points": [
-                                        -0.7,
-                                        -0.3,
-                                        0.0,
-                                        1.0
-                                    ],
-                                    "u_g_alphas": [
-                                        1.0,
-                                        1.0,
-                                        0.0,
-                                        0.0
-                                    ]
-                                },
+                                "u_offset": [
+                                    0.0,
+                                    0.5
+                                ],
+                                "u_t_multiplier": 20.2,
+                                "u_g_color_1": "#313381",
+                                "u_g_points": [
+                                    -0.3,
+                                    -0.1,
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_g_alphas": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
                                 "mapping": {
                                     "u_color": "u_house_color",
-                                    "u_g_color_1": "u_house_color"
+                                    "u_extra_size": "u_sin",
+                                    "u_g_color_1": "u_faction_color"
                                 }
                             }
                         }
                     }
-                },
-                {
-                    "attack": 1,
-                    "health": 5
                 },
                 {
                     "attack": 1,
@@ -96,7 +87,40 @@
             "units": [
                 {
                     "health": 10,
-                    "attack": 2
+                    "attack": 2,
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#000000",
+                                "u_extra_size_multiplier": 0.01,
+                                "u_size": 0.5,
+                                "u_offset": [
+                                    0.0,
+                                    0.5
+                                ],
+                                "u_t_multiplier": 20.2,
+                                "u_g_color_1": "#313381",
+                                "u_g_points": [
+                                    -0.3,
+                                    -0.1,
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_g_alphas": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "mapping": {
+                                    "u_color": "u_house_color",
+                                    "u_extra_size": "u_sin",
+                                    "u_g_color_1": "u_faction_color"
+                                }
+                            }
+                        }
+                    }
                 }
             ],
             "name": "Enemies",
@@ -164,7 +188,6 @@
             },
             "request_vars": [
                 "Description",
-                "FactionColor",
                 "Rank2",
                 "Rank1"
             ],
@@ -225,7 +248,6 @@
             },
             "request_vars": [
                 "Description",
-                "FactionColor",
                 "HouseColor"
             ],
             "layer": "Unit"

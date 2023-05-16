@@ -160,7 +160,8 @@ impl ShaderUniforms {
     }
 
     pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
-        self.data.get(self.map(key))
+        let key = self.map(key);
+        self.local.get(key).or(self.data.get(key))
     }
 
     pub fn map<'a>(&'a self, mut key: &'a str) -> &'a str {

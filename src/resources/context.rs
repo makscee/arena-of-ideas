@@ -20,7 +20,7 @@ pub enum ContextLayer {
     Target {
         entity: legion::Entity,
     },
-    Attacker {
+    Caster {
         entity: legion::Entity,
     },
     Ability {
@@ -67,7 +67,7 @@ impl ContextLayer {
             | ContextLayer::Ability { .. }
             | ContextLayer::Empty { .. }
             | ContextLayer::Target { .. }
-            | ContextLayer::Attacker { .. } => None,
+            | ContextLayer::Caster { .. } => None,
         }
     }
 
@@ -136,9 +136,9 @@ impl ContextLayer {
         }
     }
 
-    pub fn get_attacker(&self) -> Option<legion::Entity> {
+    pub fn get_caster(&self) -> Option<legion::Entity> {
         match self {
-            ContextLayer::Attacker { entity } => Some(*entity),
+            ContextLayer::Caster { entity } => Some(*entity),
             _ => None,
         }
     }
@@ -257,7 +257,7 @@ impl Context {
             }
             ContextLayer::Status { .. }
             | ContextLayer::Target { .. }
-            | ContextLayer::Attacker { .. }
+            | ContextLayer::Caster { .. }
             | ContextLayer::Empty { .. }
             | ContextLayer::Vars { .. }
             | ContextLayer::Var { .. } => self.layers.push(layer),
@@ -286,27 +286,25 @@ impl Context {
         target
     }
 
-    pub fn set_attacker(mut self, attacker: legion::Entity) -> Self {
-        self.layers
-            .push(ContextLayer::Attacker { entity: attacker });
+    pub fn set_caster(mut self, caster: legion::Entity) -> Self {
+        self.layers.push(ContextLayer::Caster { entity: caster });
         self
     }
 
-    pub fn set_attacker_ref(&mut self, attacker: legion::Entity) -> &mut Self {
-        self.layers
-            .push(ContextLayer::Attacker { entity: attacker });
+    pub fn set_caster_ref(&mut self, caster: legion::Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Caster { entity: caster });
         self
     }
 
-    pub fn attacker(&self) -> Option<legion::Entity> {
-        let mut attacker = None;
+    pub fn caster(&self) -> Option<legion::Entity> {
+        let mut caster = None;
         for layer in self.layers.iter().rev() {
-            attacker = layer.get_attacker();
-            if attacker.is_some() {
+            caster = layer.get_caster();
+            if caster.is_some() {
                 break;
             }
         }
-        attacker
+        caster
     }
 
     pub fn owner(&self) -> Option<legion::Entity> {
@@ -473,7 +471,7 @@ impl Display for ContextLayer {
         let self_text = format!("{}:", self.as_ref()).bold();
         match self {
             ContextLayer::Target { entity }
-            | ContextLayer::Attacker { entity }
+            | ContextLayer::Caster { entity }
             | ContextLayer::Unit { entity }
             | ContextLayer::Entity { entity } => write!(f, "{self_text} {entity:?}"),
             ContextLayer::Ability { ability } => write!(f, "{self_text} {ability}"),

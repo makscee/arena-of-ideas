@@ -126,28 +126,16 @@ impl PackedUnit {
     }
 
     pub fn generate_shader(&self, house_color: Rgba<f32>, options: &Options) -> Shader {
-        let mut shader = {
-            if let Some(shader) = self.shader.as_ref() {
-                let mut shader = shader.clone();
-                shader.chain_after.push(options.shaders.unit.clone());
-                shader
-            } else {
-                options.shaders.unit.clone()
-            }
-        };
+        let mut shader = options.shaders.unit.clone();
+        if let Some(self_shader) = self.shader.as_ref() {
+            shader.chain_before.push(self_shader.clone());
+        }
         shader.set_color_ref("u_house_color", house_color);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
         shader.set_string_ref(&VarName::Description.uniform(), self.description.clone(), 0);
         shader.set_float_ref("u_rank_1", (self.rank > 0) as i32 as f32);
         shader.set_float_ref("u_rank_2", (self.rank > 0) as i32 as f32);
-        shader.chain_after.push(
-            options
-                .shaders
-                .name
-                .clone()
-                .set_uniform("u_text", ShaderUniform::String((0, self.name.clone()))),
-        );
 
         let hp_offset = options
             .shaders
@@ -187,6 +175,13 @@ impl PackedUnit {
             .set_mapping("u_text", "u_attack_str")
             .set_mapping("u_text_color", "u_attack_color");
         shader.chain_after.push(attack_shader);
+        shader.chain_after.push(
+            options
+                .shaders
+                .name
+                .clone()
+                .set_uniform("u_text", ShaderUniform::String((0, self.name.clone()))),
+        );
 
         shader
     }
