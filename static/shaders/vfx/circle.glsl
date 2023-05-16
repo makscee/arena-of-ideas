@@ -19,7 +19,7 @@ uniform float u_circle_fbm_speed = 1.0;
 uniform float u_aa = 0.03;
 
 void main() {
-    float sdf = circle_sdf(uv, u_size) + (fbm(uv + vec2(u_game_time * u_circle_fbm_speed)) - 0.5) * u_circle_fbm;
+    float sdf = circle_sdf(uv, 1.0) + (fbm(uv + vec2(u_game_time * u_circle_fbm_speed)) - 0.5) * u_circle_fbm;
     // float alpha = aliase(1 - u_thickness, 1, u_aa, sdf);
     // vec4 color = vec4(u_color.rgb, alpha);
     vec4 color = sdf_gradient(sdf);
