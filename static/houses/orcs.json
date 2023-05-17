@@ -1,0 +1,55 @@
+{
+    "name": "Orcs",
+    "color": "#a33818ff",
+    "abilities": {
+        "Enrage": {
+            "description": "+1 HP",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Enrage",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {
+        "Enrage": {
+            "trigger": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "Var",
+                                "var": "Charges"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": 2
+                            }
+                        }
+                    },
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "HpDamage",
+                        "delta": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

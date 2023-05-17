@@ -4,6 +4,7 @@ use super::*;
 pub enum AbilityName {
     Fortitude,
     Mend,
+    Enrage,
 }
 
 impl fmt::Display for AbilityName {

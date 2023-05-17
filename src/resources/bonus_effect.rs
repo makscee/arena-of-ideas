@@ -106,7 +106,7 @@ impl BonusEffect {
             }
         }
         let effect = Effect::List {
-            effects: effects.into_iter().map(|x| Box::new(x)).collect_vec(),
+            items: effects.into_iter().map(|x| Box::new(x)).collect_vec(),
         }
         .wrap();
         (effect, format!("Add Team status {}", buff.prefix))
@@ -150,7 +150,7 @@ impl BonusEffect {
         );
         (
             Effect::List {
-                effects: vec![g_effect, Box::new(effect)],
+                items: vec![g_effect, Box::new(effect)],
             }
             .wrap(),
             description,

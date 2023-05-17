@@ -5,7 +5,7 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub enum Trigger {
     List {
-        triggers: Vec<Box<Trigger>>,
+        items: Vec<Box<Trigger>>,
     },
     OnStatusAdd {
         effect: EffectWrapped,
@@ -152,8 +152,8 @@ impl Trigger {
                 Event::AfterKill { .. } => self.fire(action_queue, context, logger),
                 _ => {}
             },
-            Trigger::List { triggers } => {
-                triggers.iter().enumerate().for_each(|(i, trigger)| {
+            Trigger::List { items } => {
+                items.iter().enumerate().for_each(|(i, trigger)| {
                     trigger.catch_event(
                         event,
                         action_queue,
@@ -358,8 +358,8 @@ impl Trigger {
     ) -> Result<Vec<ContextLayer>, Error> {
         let mut extra_layers = Vec::default();
         match self {
-            Trigger::List { triggers } => {
-                for trigger in triggers {
+            Trigger::List { items } => {
+                for trigger in items {
                     extra_layers.extend(trigger.calculate_event(event, context, world, resources)?);
                 }
             }

@@ -4,7 +4,7 @@
 		"body": [
 			"{",
 			"    \"type\": \"List\",",
-			"    \"effects\": [",
+			"    \"items\": [",
 			"        $TM_SELECTED_TEXT$1",
 			"    ]",
 			"}"

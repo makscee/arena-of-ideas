@@ -1,40 +1,40 @@
 {cr:2023-05-10T15:53:19} State background animation
 
 Next Iteration
-    @abilities {c}
-        +Clerics [Fortitude]: "+1" HP
-        +Clerics [Mend]: Heal 1 damage
-        +Clerics [Blessing]: Gain "+1/+1"
-        +Clerics [Martyr]: After Death, give [Blessing] to random ally
-        +Warriors [Might]: "+1" ATK
-        +Warriors [Endurance]: "+2" HP, but "-1" ATK
-        +Warriors [Honored]: After Death: give [Might] to all allies
-        +Witches [Weakness]: Lose 1 ATK
-        +Witches [Cursed]: After Death, apply [Weakness] to killer
-        +Witches [Marked]: Next taken damage is doubled
-        +Orcs [Rage]: "+2" ATK but "-1" HP
-        +Orcs [Fury]: Gain "+1" ATK when damage is taken
-        +Elementals [Adaptation]: "+1/+1", until the end of the turn
-        +Elementals [Splash]: "+1" damage to all enemies after strike once
-        +Druids [Regeneration]: After taking damage, restore 1 HP
-        +Druids [Thorns]: Reflect 1 damage to attackers
-        +Knights [Inspire]: "+1/+1" until the end of battle
-        +Knights [Rally]: [Inspire] all allies at the start of battle
-        +Knights [Vengeful]: After Death, deals 1 damage to killer
-        +Guardians [Shield]: The next damage this unit takes is reduced to 0
-        +Guardians [Barrier]: Absorb 1 damage
-        +Demons [Chaotic]: After strike deal 1 damage to random enemy
-        +Demons [Stoneskin]: Gain "+1" HP for each alive ally
-        +Demons [Bursting]: After Death, inflict 1 damage to all enemies
+    @abilities
+        [Fortitude]: "+1" HP +Clerics {cm:2023-05-17T16:13:18}
+        [Mend]: Heal 1 damage +Clerics {cm:2023-05-17T16:13:17}
+        [Blessing]: Gain \+1/+1 +Clerics
+        [Martyr]: After Death, give [Blessing] to random ally +Clerics
+        [Might]: "+1" ATK +Warriors 
+        [Endurance]: "+2" HP, but "-1" ATK +Warriors 
+        [Honored]: After Death: give [Might] to all allies +Warriors 
+        [Weakness]: Lose 1 ATK +Witches 
+        [Cursed]: After Death, apply [Weakness] to killer +Witches 
+        [Marked]: Next taken damage is doubled +Witches 
+        [Enrage]: "+2" ATK, take 1 damage +Orcs 
+        [Fury]: Gain "+1" ATK when damage is taken +Orcs 
+        [Adaptation]: "+1/+1", until the end of the turn +Elementals 
+        [Splash]: "+1" damage to all enemies after strike once +Elementals 
+        [Regeneration]: After taking damage, restore 1 HP +Druids 
+        [Thorns]: Reflect 1 damage to attackers +Druids 
+        [Inspire]: "+1/+1" until the end of battle +Knights 
+        [Rally]: [Inspire] all allies at the start of battle +Knights 
+        [Vengeful]: After Death, deals 1 damage to killer +Knights 
+        [Shield]: The next damage this unit takes is reduced to 0 +Guardians 
+        [Barrier]: Absorb 1 damage +Guardians 
+        [Chaotic]: After strike deal 1 damage to random enemy +Demons 
+        [Stoneskin]: Gain "+1" HP for each alive ally +Demons 
+        [Bursting]: After Death, inflict 1 damage to all enemies +Demons 
     @heroes
         [Fury]
             +Orcs Berserker [4/4]: Start of battle: gain [Fury]
             +Orcs Fury Emissary [2/2]: [Fury] now gives 1 more ATK
             +Orcs +Druids Fury Warden [2/2]: When an ally gains [Fury], they also gain [Regeneration]
-        [Rage]
-            +Orcs Blood Knight [4/2]: Turn start: Gain [Rage]
-            +Orcs Rage Master [3/3]: [Rage] now gives 1 more ATK
-            +Orcs +Knights Frenzy Seer [2/2]: When an ally gains [Rage], it also gives [Inspire] to adjacent units
+        [Enrage]
+            +Orcs Blood Knight [4/2]: Turn start: Gain [Enrage]
+            +Orcs Enrage Master [3/3]: [Enrage] now gives 1 more ATK
+            +Orcs +Knights Frenzy Seer [2/2]: When an ally gains [Enrage], it also gives [Inspire] to adjacent units
         [Thorns]
             +Druids Thorns Enchanter [1/4]: [Thorns] now reflect 2 damage
             +Druids Thorns Mystic [1/4]: [Thorns] now also heal the unit for the damage reflected

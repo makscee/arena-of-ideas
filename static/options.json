@@ -17,32 +17,20 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Transferrer",
                     "attack": 1,
-                    "health": 1,
-                    "description": "Before death,\ntransfer all [Fortitude]\nally behind",
-                    "house": "Clerics",
-                    "statuses": [
-                        [
-                            "Fortitude",
-                            2
-                        ]
-                    ],
+                    "health": 5,
+                    "house": "Orcs",
                     "trigger": {
-                        "type": "BeforeDeath",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "ability": "Fortitude",
+                            "ability": "Enrage",
                             "target": {
-                                "type": "SlotRelative",
-                                "relation": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
+                                "type": "Owner"
                             },
                             "charges": {
-                                "type": "StatusCharges",
-                                "name": "Fortitude"
+                                "type": "Const",
+                                "value": 1
                             }
                         }
                     },
@@ -80,12 +68,25 @@
                 {
                     "attack": 1,
                     "health": 5,
-                    "statuses": [
-                        [
-                            "Fortitude",
-                            1
-                        ]
-                    ]
+                    "house": "Clerics",
+                    "trigger": {
+                        "type": "TurnEnd",
+                        "effect": {
+                            "type": "UseAbility",
+                            "ability": "Mend",
+                            "target": {
+                                "type": "SlotRelative",
+                                "relation": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            },
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    }
                 },
                 {
                     "attack": 1,

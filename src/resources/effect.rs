@@ -20,7 +20,7 @@ pub enum Effect {
         effect: Box<EffectWrapped>,
     },
     List {
-        effects: Vec<Box<EffectWrapped>>,
+        items: Vec<Box<EffectWrapped>>,
     },
     Debug {
         message: String,
@@ -358,8 +358,8 @@ impl EffectWrapped {
             }
             Effect::Debug { message } => debug!("Debug effect: {}", message),
             Effect::Noop => {}
-            Effect::List { effects } => {
-                for (i, effect) in effects.iter().enumerate().rev() {
+            Effect::List { items } => {
+                for (i, effect) in items.iter().enumerate().rev() {
                     resources.action_queue.push_front(Action::new(
                         context.clone_stack_string(&format!("list {i}")),
                         effect.deref().clone(),
