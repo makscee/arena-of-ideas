@@ -1,8 +1,11 @@
 [
+    "units/provoker.json",
+    "units/rampager.json",
     "units/transferer.json",
     "units/renewer.json",
     "units/rejuvenator.json",
     "units/empowerer.json",
+    "units/herald.json",
     "units/healer.json",
     "units/reinforcer.json"
 ]

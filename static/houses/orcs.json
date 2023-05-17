@@ -3,7 +3,7 @@
     "color": "#a33818ff",
     "abilities": {
         "Enrage": {
-            "description": "+1 HP",
+            "description": "+1 ATK,\ntake 1 damage",
             "effect": {
                 "type": "ChangeStatus",
                 "name": "Enrage",

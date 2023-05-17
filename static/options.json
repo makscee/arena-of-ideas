@@ -17,41 +17,65 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Rampager",
+                    "name": "Provoker",
                     "attack": 1,
-                    "health": 4,
-                    "description": "Before strike:\ngain [Enrage]",
+                    "health": 2,
+                    "description": "Turn end:\n[Enrage]\nadjacent allies",
                     "house": "Orcs",
                     "trigger": {
-                        "type": "BeforeStrike",
+                        "type": "TurnEnd",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Enrage",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
-                            }
+                            "type": "List",
+                            "items": [
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Enrage",
+                                    "target": {
+                                        "type": "SlotRelative",
+                                        "relation": {
+                                            "type": "Const",
+                                            "value": -1
+                                        }
+                                    },
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                },
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Enrage",
+                                    "target": {
+                                        "type": "SlotRelative",
+                                        "relation": {
+                                            "type": "Const",
+                                            "value": 1
+                                        }
+                                    },
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
+                            ]
                         }
                     },
                     "shader": {
                         "path": "shaders/vfx/rectangle.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#000000",
+                                "u_color": "#83aaaf",
                                 "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#ffffff",
                                 "u_g_color_3": "#ffffff",
-                                "u_warp_str": 0.0,
+                                "u_warp_str": 0.3,
                                 "u_warp_speed": 5.5,
-                                "u_fbm_sdf": 0.1,
-                                "u_fbm_sdf_size": 10.0,
-                                "u_rounding": 0.5,
+                                "u_fbm_sdf": 0.5,
+                                "u_fbm_sdf_size": 20.0,
+                                "u_rounding": 0.0,
                                 "u_rotation": 0.8,
                                 "u_g_points": [
-                                    -1.0,
+                                    -0.8,
                                     -0.4,
                                     -0.4,
                                     0.2
@@ -63,11 +87,13 @@
                                     1.0
                                 ],
                                 "u_size": 0.7,
+                                "u_t_multiplier": 1.2,
                                 "mapping": {
-                                    "u_g_color_1": "u_faction_color",
                                     "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_house_color",
-                                    "u_g_color_4": "u_house_color"
+                                    "u_g_color_3": "u_faction_color",
+                                    "u_g_color_4": "u_house_color",
+                                    "u_g_color_1": "u_house_color",
+                                    "u_rounding": "u_sin"
                                 }
                             }
                         }
@@ -75,26 +101,7 @@
                 },
                 {
                     "attack": 1,
-                    "health": 5,
-                    "house": "Clerics",
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Mend",
-                            "target": {
-                                "type": "SlotRelative",
-                                "relation": {
-                                    "type": "Const",
-                                    "value": -1
-                                }
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    }
+                    "health": 5
                 },
                 {
                     "attack": 1,
