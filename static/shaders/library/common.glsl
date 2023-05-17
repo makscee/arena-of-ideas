@@ -46,6 +46,9 @@ uniform vec4 u_g_color_2;
 uniform vec4 u_g_color_3;
 uniform vec4 u_g_color_4;
 
+uniform float u_warp_str = 0;
+uniform float u_warp_speed = 1;
+
 vec4 sdf_gradient(float x) {
     float oob = 1. - float(x > u_g_points[3]);
     vec4 g1 = vec4(u_g_color_1.rgb, u_g_color_1.a * u_g_alphas[0]);
@@ -81,6 +84,7 @@ float noise(in vec2 x) {
 mat2 m = mat2(0.6, 0.6, -0.6, 0.8);
 float fbm(vec2 p) {
     float f = 0.0;
+    p += vec2(u_rand * 3., u_rand * 5.);
     f += 0.5000 * noise(p);
     p *= m * 2.02;
     f += 0.2500 * noise(p);
@@ -90,7 +94,16 @@ float fbm(vec2 p) {
     f += 0.0625 * noise(p);
     p *= m * 2.04;
     f /= 0.9375;
-    return f;
+    return f * 2. - 1.;
+}
+
+vec2 warp(vec2 uv, float t) {
+    t *= u_warp_speed;
+    vec2 q = vec2(fbm(uv), fbm(uv + vec2(1)));
+    vec2 r = vec2(0);
+    r.x = fbm(uv + q + vec2(1.1, 4.3) + t * 0.15);
+    r.y = fbm(uv + q + vec2(8.3, 2.1) + t * 0.125);
+    return uv + r * u_warp_str;
 }
 
 vec2 rotate_cw(vec2 p, float a) {
