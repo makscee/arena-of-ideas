@@ -27,7 +27,6 @@
         "parameters": {
             "uniforms": {
                 "u_warp_str": 0.2,
-                "u_circle_fbm": 0.2,
                 "u_color": "#00000000",
                 "u_g_color_1": "#000000",
                 "u_g_color_2": "#000000",

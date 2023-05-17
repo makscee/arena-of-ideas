@@ -1,0 +1,64 @@
+{
+    "name": "Warlord",
+    "attack": 4,
+    "health": 3,
+    "description": "Battle start:\n[Enrage]\nall allies",
+    "house": "Orcs",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Enrage",
+                "charges": {
+                    "type": "Const",
+                    "value": 1
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/rectangle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#000000",
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#ffffff",
+                "u_g_color_3": "#ffffff",
+                "u_warp_str": -0.3,
+                "u_warp_speed": 2.5,
+                "u_fbm_sdf": 0.4,
+                "u_fbm_sdf_size": 1.0,
+                "u_rounding": 1.5,
+                "u_g_points": [
+                    -0.4,
+                    -0.4,
+                    -0.0,
+                    0.5
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "u_size": 0.7,
+                "u_t_multiplier": 1.5,
+                "mapping": {
+                    "u_color": "u_house_color",
+                    "u_g_color_2": "u_house_color",
+                    "u_g_color_3": "u_faction_color",
+                    "u_g_color_4": "u_house_color",
+                    "u_g_color_1": "u_house_color",
+                    "u_fbm_sdf_size": "u_sin"
+                }
+            }
+        }
+    }
+}

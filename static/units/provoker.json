@@ -46,18 +46,18 @@
         "path": "shaders/vfx/rectangle.glsl",
         "parameters": {
             "uniforms": {
-                "u_color": "#83aaaf",
+                "u_color": "#ffffff",
                 "u_g_color_1": "#ffffff",
                 "u_g_color_2": "#ffffff",
                 "u_g_color_3": "#ffffff",
                 "u_warp_str": 0.3,
                 "u_warp_speed": 5.5,
-                "u_fbm_sdf": 0.5,
+                "u_fbm_sdf": 0.25,
                 "u_fbm_sdf_size": 20.0,
                 "u_rounding": 0.0,
                 "u_rotation": 0.8,
                 "u_g_points": [
-                    -0.8,
+                    -0.6,
                     -0.4,
                     -0.4,
                     0.2

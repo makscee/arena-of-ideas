@@ -1,4 +1,5 @@
 [
+    "units/warlord.json",
     "units/provoker.json",
     "units/rampager.json",
     "units/transferer.json",

@@ -115,7 +115,7 @@ vec2 rotate_cw(vec2 p, float a) {
 }
 
 float fbm_sdf(float value, vec2 uv) {
-    return value + (fbm(uv + rotate_cw(vec2(u_global_time * u_fbm_sdf_speed, 0.0), fbm(uv) * .05 * u_fbm_sdf_size)) - 0.5) * u_fbm_sdf;
+    return value + (fbm(uv + rotate_cw(vec2(1.0), fbm(uv + vec2(fbm(vec2(u_game_time) + uv))) * 2. * u_fbm_sdf_size)) - 0.5) * u_fbm_sdf;
 }
 
 float get_field_value(vec2 uv) {
