@@ -48,6 +48,9 @@ uniform vec4 u_g_color_4;
 
 uniform float u_warp_str = 0;
 uniform float u_warp_speed = 1;
+uniform float u_fbm_sdf = 0;
+uniform float u_fbm_sdf_size = 1.0;
+uniform float u_fbm_sdf_speed = 1;
 
 vec4 sdf_gradient(float x) {
     float oob = 1. - float(x > u_g_points[3]);
@@ -109,6 +112,10 @@ vec2 warp(vec2 uv, float t) {
 vec2 rotate_cw(vec2 p, float a) {
     mat2 m = mat2(cos(a), sin(a), -sin(a), cos(a));
     return p * m;
+}
+
+float fbm_sdf(float value, vec2 uv) {
+    return value + (fbm(uv + rotate_cw(vec2(u_global_time * u_fbm_sdf_speed, 0.0), fbm(uv) * .05 * u_fbm_sdf_size)) - 0.5) * u_fbm_sdf;
 }
 
 float get_field_value(vec2 uv) {

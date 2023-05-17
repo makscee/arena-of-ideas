@@ -44,8 +44,8 @@
                         "type": "ChangeVarInt",
                         "var": "HpDamage",
                         "delta": {
-                            "type": "Const",
-                            "value": 1
+                            "type": "Var",
+                            "var": "Charges"
                         }
                     }
                 ]
