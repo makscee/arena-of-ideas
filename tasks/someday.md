@@ -23,7 +23,7 @@ Next Iteration
         [Vengeful]: After Death, deals 1 damage to killer +Knights 
         [Shield]: The next damage this unit takes is reduced to 0 +Guardians 
         [Barrier]: Absorb 1 damage +Guardians 
-        [Chaotic]: After strike deal 1 damage to random enemy +Demons 
+        [Chaotic]: After strike deal 1 damage to random enemy +Demons {cm:2023-05-18T17:53:10}
         [Stoneskin]: Gain "+1" HP for each alive ally +Demons 
         [Bursting]: After Death, inflict 1 damage to all enemies +Demons 
     @heroes
