@@ -17,27 +17,24 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Anarchist",
-                    "attack": 1,
-                    "health": 3,
-                    "description": "Battle start:\ngain [Chaotic]\nfor each enemy",
+                    "name": "Havoc",
+                    "attack": 2,
+                    "health": 1,
+                    "description": "[Chaotic] deals +1 damage",
                     "house": "Demons",
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
+                            "type": "ChangeAbilityVarInt",
                             "ability": "Chaotic",
-                            "target": {
-                                "type": "Owner"
+                            "var": "AttackExtra",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
                             },
-                            "charges": {
-                                "type": "Faction",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
+                            "after": {
+                                "type": "ShowText",
+                                "text": "Chaotic +DMG"
                             }
                         }
                     },
@@ -50,15 +47,15 @@
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#000000",
-                                "u_warp_str": 0.03,
-                                "u_warp_speed": 30.1,
-                                "u_fbm_sdf": 0.01,
-                                "u_fbm_sdf_size": 2.9,
+                                "u_warp_str": 0.1,
+                                "u_warp_speed": 5.5,
+                                "u_fbm_sdf": 0.1,
+                                "u_fbm_sdf_size": 100.9,
                                 "u_g_points": [
-                                    -0.8,
-                                    -0.6,
-                                    -0.6,
-                                    -0.0
+                                    -1.0,
+                                    -0.65,
+                                    -0.3,
+                                    0.2
                                 ],
                                 "u_g_alphas": [
                                     1.0,
@@ -67,11 +64,11 @@
                                     -0.5
                                 ],
                                 "mapping": {
-                                    "u_color": "u_faction_color",
+                                    "u_color": "u_house_color",
                                     "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_faction_color",
                                     "u_g_color_3": "u_house_color",
-                                    "u_g_color_4": "u_faction_color"
+                                    "u_g_color_4": "u_house_color"
                                 }
                             }
                         }

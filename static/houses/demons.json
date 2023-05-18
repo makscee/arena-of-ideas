@@ -16,7 +16,8 @@
                 }
             },
             "default_vars": {
-                "Charges": 1
+                "Charges": 1,
+                "AttackExtra": 1
             }
         }
     },
@@ -36,8 +37,16 @@
                         }
                     },
                     "value": {
-                        "type": "Var",
-                        "var": "Charges"
+                        "type": "Mul",
+                        "a": {
+                            "type": "Var",
+                            "var": "Charges"
+                        },
+                        "b": {
+                            "type": "AbilityVar",
+                            "ability": "Chaotic",
+                            "var": "AttackExtra"
+                        }
                     },
                     "after": {
                         "type": "ShowCurve"
