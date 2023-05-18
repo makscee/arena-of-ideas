@@ -1,4 +1,7 @@
 [
+    "units/revenant.json",
+    "units/catalyst.json",
+    "units/executioner.json",
     "units/frenzied.json",
     "units/aggressor.json",
     "units/berserker.json",

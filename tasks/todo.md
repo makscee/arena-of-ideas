@@ -7,7 +7,7 @@
 @content +Demons
     [Chaotic]: After strike deal 1 damage to random enemy {cm:2023-05-18T16:53:25}
     Catalyst [2/1]: Battle start: add [Chaotic] to all allies {cm:2023-05-18T17:06:27}
-    Revenant [1/2]: Ally died: gain [Chaotic]
+    Revenant [1/2]: Ally died: gain [Chaotic] {cm:2023-05-18T17:13:34}
     Executioner [2/1]: Enemy killed: gain [Chaotic]
     Anarchist [1/2]: Battle start: gain [Chaotic] for each enemy
     Havoc [2/1]: [Chaotic] deals "+1" damage
