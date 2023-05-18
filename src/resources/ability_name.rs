@@ -5,6 +5,7 @@ pub enum AbilityName {
     Fortitude,
     Mend,
     Enrage,
+    Chaotic,
 
     Grow,
     LifeSteal,

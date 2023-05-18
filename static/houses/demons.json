@@ -1,0 +1,49 @@
+{
+    "name": "Demons",
+    "color": "#930455ff",
+    "abilities": {
+        "Chaotic": {
+            "description": "After strike\ndeal 1 damage\nto random enemy",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Chaotic",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {
+        "Chaotic": {
+            "trigger": {
+                "type": "AfterStrike",
+                "effect": {
+                    "type": "Damage",
+                    "target": {
+                        "type": "RandomUnit",
+                        "faction": {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        }
+                    },
+                    "value": {
+                        "type": "Var",
+                        "var": "Charges"
+                    },
+                    "after": {
+                        "type": "ShowCurve"
+                    }
+                }
+            }
+        }
+    }
+}

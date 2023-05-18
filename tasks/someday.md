@@ -12,7 +12,7 @@ Next Iteration
         [Weakness]: Lose 1 ATK +Witches 
         [Cursed]: After Death, apply [Weakness] to killer +Witches 
         [Marked]: Next taken damage is doubled +Witches 
-        [Enrage]: "+2" ATK, take 1 damage +Orcs 
+        [Enrage]: "+2" ATK, take 1 damage +Orcs {cm:2023-05-18T16:29:36}
         [Fury]: Gain "+1" ATK when damage is taken +Orcs 
         [Adaptation]: "+1/+1", until the end of the turn +Elementals 
         [Splash]: "+1" damage to all enemies after strike once +Elementals 

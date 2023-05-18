@@ -255,8 +255,16 @@ impl Context {
                 }
                 self.layers.push(ContextLayer::Vars { vars })
             }
-            ContextLayer::Status { .. }
-            | ContextLayer::Target { .. }
+            ContextLayer::Status { name, .. } => {
+                if name != "_local" {
+                    self.layers.push(ContextLayer::Var {
+                        var: VarName::Color,
+                        value: Var::Color(StatusLibrary::get(name, resources).color),
+                    });
+                }
+                self.layers.push(layer);
+            }
+            ContextLayer::Target { .. }
             | ContextLayer::Caster { .. }
             | ContextLayer::Empty { .. }
             | ContextLayer::Vars { .. }

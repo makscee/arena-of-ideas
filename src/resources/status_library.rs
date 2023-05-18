@@ -21,7 +21,11 @@ impl StatusLibrary {
     }
 
     pub fn get<'a>(name: &str, resources: &'a Resources) -> &'a Status {
-        resources.status_library.register.get(name).unwrap()
+        resources
+            .status_library
+            .register
+            .get(name)
+            .expect(&format!("Status not found in library {name}"))
     }
 
     pub fn get_trigger(name: &str, resources: &Resources) -> Trigger {

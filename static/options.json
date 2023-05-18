@@ -19,141 +19,28 @@
                 {
                     "name": "Frenzied",
                     "attack": 2,
-                    "health": 2,
+                    "health": 10,
                     "description": "[Enrage] has +1 ATK",
-                    "house": "Orcs",
+                    "house": "Demons",
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "ChangeAbilityVarInt",
-                            "ability": "Enrage",
-                            "var": "AttackExtra",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
-                            },
-                            "after": {
-                                "type": "ShowText",
-                                "text": "Enrage +ATK"
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#000000",
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#ffffff",
-                                "u_g_color_3": "#ffffff",
-                                "u_fbm_sdf": 0.2,
-                                "u_fbm_sdf_size": 500.0,
-                                "u_rounding": 1.3,
-                                "u_g_points": [
-                                    -0.7,
-                                    -0.3,
-                                    -0.1,
-                                    0.6
-                                ],
-                                "u_g_alphas": [
-                                    1.0,
-                                    0.0,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_size": 0.8,
-                                "mapping": {
-                                    "u_color": "u_house_color",
-                                    "u_g_color_1": "u_faction_color",
-                                    "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_house_color",
-                                    "u_g_color_4": "u_faction_color"
-                                }
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "Berserker",
-                    "attack": 1,
-                    "health": 3,
-                    "description": "Turn end:\ngain [Enrage]",
-                    "house": "Orcs",
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
                             "type": "UseAbility",
-                            "ability": "Enrage",
+                            "ability": "Chaotic",
                             "target": {
                                 "type": "Owner"
                             },
                             "charges": {
                                 "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#000000",
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#ffffff",
-                                "u_g_color_3": "#ffffff",
-                                "u_warp_str": -0.1,
-                                "u_warp_speed": 5.5,
-                                "u_fbm_sdf": 0.6,
-                                "u_fbm_sdf_size": 0.1,
-                                "u_rounding": -0.5,
-                                "u_g_points": [
-                                    -0.6,
-                                    -0.2,
-                                    -0.2,
-                                    -0.1
-                                ],
-                                "u_g_alphas": [
-                                    0.0,
-                                    1.0,
-                                    1.0,
-                                    1.0
-                                ],
-                                "u_size": 0.5,
-                                "u_t_multiplier": 0.5,
-                                "mapping": {
-                                    "u_color": "u_house_color",
-                                    "u_g_color_1": "u_house_color",
-                                    "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_house_color",
-                                    "u_g_color_4": "u_house_color",
-                                    "u_rounding": "u_sin"
-                                }
+                                "value": 5
                             }
                         }
                     }
-                },
-                {
-                    "attack": 1,
-                    "health": 5
-                },
-                {
-                    "attack": 1,
-                    "health": 5,
-                    "statuses": [
-                        [
-                            "Fortitude",
-                            1
-                        ]
-                    ]
-                },
-                {
-                    "attack": 1,
-                    "health": 5
                 }
             ]
         },
         "dark": {
-            "replications": 1,
+            "replications": 3,
             "units": [
                 {
                     "health": 10,

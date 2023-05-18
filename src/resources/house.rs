@@ -27,6 +27,8 @@ pub struct House {
 pub enum HouseName {
     Clerics,
     Orcs,
+    Demons,
+
     Test,
 }
 

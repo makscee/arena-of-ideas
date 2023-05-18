@@ -25,3 +25,11 @@ First team {cm:2023-05-17T15:52:24}
         Rejuvenator [2/3]: On receiving [Mend], gain [Fortitude] {cm:2023-05-16T23:38:01}
         Renewer [2/2]: Turn end: [Mend] all allies with [Fortitude] {cm:2023-05-17T15:02:25}
         Transferrer [3/2]: After death, transfer all [Fortitude] to an adjacent ally {cm:2023-05-17T15:52:22}
+@content +Orcs {cm:2023-05-18T16:28:43}
+    [Enrage]: "+2" ATK, take 1 damage {cm:2023-05-17T16:29:12}
+    Rampager [2/1]: Before strike: gain [Enrage] {cm:2023-05-17T16:59:10}
+    Provoker [1/2]: Turn end: [Enrage] adjacent allies {cm:2023-05-17T17:17:36}
+    Warlord [2/1]: Start of battle: [Enrage] all allies {cm:2023-05-17T17:41:35}
+    Berserker [1/2]: Turn end: gain [Enrage] {cm:2023-05-18T15:23:40}
+    Aggressor [2/1]: Gain [Enrage] when ally gains [Enrage] {cm:2023-05-18T16:11:23}
+    Frenzied [2/1]: [Enrage] has "+1" ATK {cm:2023-05-18T16:28:37}
