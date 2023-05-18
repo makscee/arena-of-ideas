@@ -4,7 +4,7 @@
             {
                 "health": 2,
                 "attack": 2,
-                "house": "Vampires",
+                "house": "Test",
                 "trigger": {
                     "type": "TurnEnd",
                     "effect": {

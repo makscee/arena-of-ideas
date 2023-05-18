@@ -12,7 +12,7 @@
             {
                 "attack": 1,
                 "health": 5,
-                "house": "Demons",
+                "house": "Test",
                 "statuses": [
                     [
                         "Empower",

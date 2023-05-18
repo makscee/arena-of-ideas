@@ -8,7 +8,7 @@
             {
                 "attack": 3,
                 "health": 3,
-                "house": "Archers",
+                "house": "Test",
                 "trigger": {
                     "type": "AnyDeath",
                     "effect": {

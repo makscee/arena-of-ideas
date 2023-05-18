@@ -8,7 +8,7 @@
         "type": "AnySell",
         "effect": {
             "type": "List",
-            "effects": [
+            "items": [
                 {
                     "type": "UseAbility",
                     "ability": "Prosper",

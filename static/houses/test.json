@@ -1,0 +1,625 @@
+{
+    "name": "Test",
+    "color": "#ff00ffff",
+    "abilities": {
+        "Poison": {
+            "description": "Kill target\nafter dealing damage",
+            "effect": {
+                "type": "AddStatus",
+                "name": "Poison"
+            }
+        },
+        "Swap": {
+            "description": "Exchange faction\nwith target",
+            "effect": {
+                "type": "SetVarFaction",
+                "var": "Store",
+                "value": {
+                    "type": "Owner"
+                },
+                "after": {
+                    "type": "SetOwnerVarFaction",
+                    "var": "Faction",
+                    "value": {
+                        "type": "Target"
+                    },
+                    "after": {
+                        "type": "SetOwnerVarFaction",
+                        "var": "Faction",
+                        "value": {
+                            "type": "Var",
+                            "var": "Store"
+                        },
+                        "owner": {
+                            "type": "Target"
+                        }
+                    }
+                }
+            }
+        },
+        "Reanimate": {
+            "description": "Revive unit after death\nwith 1 HP and reversed faction",
+            "effect": {
+                "type": "AddStatus",
+                "name": "Reanimate"
+            }
+        },
+        "Dispel": {
+            "description": "Remove\nall statuses",
+            "effect": {
+                "type": "ClearStatuses",
+                "after": {
+                    "type": "ShowCurve"
+                }
+            }
+        },
+        "Defense": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Defense",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Reduce incoming damage by 1\nbut not less than 1",
+            "default_vars": {
+                "Charges": 1
+            }
+        },
+        "SummonTreant": {
+            "effect": {
+                "type": "Repeat",
+                "effect": {
+                    "type": "Summon",
+                    "unit": {
+                        "name": "Treant",
+                        "attack": 5,
+                        "health": 5,
+                        "statuses": [
+                            [
+                                "Defense",
+                                5
+                            ]
+                        ],
+                        "shader": {
+                            "path": "shaders/vfx/layered_triangles.glsl",
+                            "parameters": {
+                                "uniforms": {
+                                    "u_color_1": "#873901",
+                                    "u_color": "#dc6612",
+                                    "u_radius": 0.5,
+                                    "u_alpha": 1.0,
+                                    "u_spin_part": -0.1,
+                                    "u_move_speed": -0.5,
+                                    "u_size_amp": 0.1
+                                },
+                                "instances": 3,
+                                "vertices": 1
+                            }
+                        }
+                    }
+                },
+                "count": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            },
+            "description": "Summon a 5/5\nTreant with\n5 Defense"
+        },
+        "Shield": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Shield",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Negate one instance\nof incoming damage",
+            "default_vars": {
+                "Reflection": 0,
+                "Charges": 1
+            }
+        },
+        "Grow": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Growth",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Gain +1/+1"
+        },
+        "LifeSteal": {
+            "description": "Steal 1 HP\nfrom target",
+            "effect": {
+                "type": "ShowCurve",
+                "after": {
+                    "type": "ChangeStatus",
+                    "name": "LifeStealLose",
+                    "charges": {
+                        "type": "Var",
+                        "var": "Charges"
+                    },
+                    "after": {
+                        "type": "ChangeStatus",
+                        "name": "LifeStealGain",
+                        "charges": {
+                            "type": "Var",
+                            "var": "Charges"
+                        },
+                        "target": {
+                            "type": "Owner"
+                        }
+                    }
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        },
+        "Shoot": {
+            "description": "Deal attack damage\nto random enemy",
+            "effect": {
+                "type": "Repeat",
+                "effect": {
+                    "target": {
+                        "type": "RandomUnit",
+                        "faction": {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        }
+                    },
+                    "type": "If",
+                    "condition": {
+                        "type": "Not",
+                        "condition": {
+                            "type": "IsCorpse",
+                            "entity": {
+                                "type": "Target"
+                            }
+                        }
+                    },
+                    "then": {
+                        "type": "Damage",
+                        "value": {
+                            "type": "Var",
+                            "var": "AttackValue"
+                        },
+                        "after": {
+                            "type": "ShowCurve"
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                },
+                "count": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        },
+        "Empower": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Empower",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Next damage\nincreased by 1",
+            "default_vars": {
+                "Charges": 1,
+                "AttackExtra": 0,
+                "Persistent": 0
+            }
+        },
+        "Devour": {
+            "description": "Kill target, gain +1/+1\nper target HP",
+            "effect": {
+                "type": "TakeVar",
+                "entity": {
+                    "type": "Target"
+                },
+                "var": "HpValue",
+                "new_name": "Charges",
+                "effect": {
+                    "type": "Kill",
+                    "after": {
+                        "type": "ChangeStatus",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "name": "Devour",
+                        "charges": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    }
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            }
+        },
+        "Rebirth": {
+            "effect": {
+                "type": "AddStatus",
+                "name": "Rebirth"
+            },
+            "description": "Revive after death"
+        }
+    },
+    "statuses": {
+        "Rebirth": {
+            "trigger": {
+                "type": "AfterDeath",
+                "effect": {
+                    "type": "If",
+                    "condition": {
+                        "type": "IsCorpse",
+                        "entity": {
+                            "type": "Target"
+                        }
+                    },
+                    "then": {
+                        "type": "List",
+                        "items": [
+                            {
+                                "type": "ShowText",
+                                "text": "Rebirth"
+                            },
+                            {
+                                "type": "Revive",
+                                "slot": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "after": {
+                                    "type": "SetOwnerVarInt",
+                                    "var": "HpValue",
+                                    "value": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                }
+            }
+        },
+        "Poison": {
+            "trigger": {
+                "type": "AfterDamageDealt",
+                "effect": {
+                    "type": "Kill"
+                }
+            }
+        },
+        "Reanimate": {
+            "trigger": {
+                "type": "AfterDeath",
+                "effect": {
+                    "type": "If",
+                    "condition": {
+                        "type": "IsCorpse",
+                        "entity": {
+                            "type": "Owner"
+                        }
+                    },
+                    "then": {
+                        "type": "Revive",
+                        "target": {
+                            "type": "Owner"
+                        },
+                        "after": {
+                            "type": "SetOwnerVarFaction",
+                            "var": "Faction",
+                            "value": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Target"
+                                }
+                            },
+                            "after": {
+                                "type": "SetOwnerVarInt",
+                                "var": "HpValue",
+                                "value": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            }
+                        }
+                    },
+                    "else": {
+                        "type": "Noop"
+                    }
+                }
+            }
+        },
+        "Defense": {
+            "trigger": {
+                "type": "ModifyIncomingDamage",
+                "value": {
+                    "type": "If",
+                    "condition": {
+                        "type": "MoreInt",
+                        "a": {
+                            "type": "Var",
+                            "var": "Damage"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 0
+                        }
+                    },
+                    "then": {
+                        "type": "Max",
+                        "a": {
+                            "type": "Sub",
+                            "a": {
+                                "type": "Var",
+                                "var": "Damage"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "var": "Charges"
+                            }
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    "else": {
+                        "type": "Var",
+                        "var": "Damage"
+                    }
+                }
+            }
+        },
+        "Shield": {
+            "trigger": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ModifyIncomingDamage",
+                        "value": {
+                            "type": "Const",
+                            "value": 0
+                        }
+                    },
+                    {
+                        "type": "AfterIncomingDamage",
+                        "effect": {
+                            "type": "If",
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Damage"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
+                                }
+                            },
+                            "then": {
+                                "type": "List",
+                                "items": [
+                                    {
+                                        "type": "If",
+                                        "target": {
+                                            "type": "Attacker"
+                                        },
+                                        "condition": {
+                                            "type": "MoreInt",
+                                            "a": {
+                                                "type": "AbilityVar",
+                                                "ability": "Shield",
+                                                "var": "Reflection"
+                                            },
+                                            "b": {
+                                                "type": "Const",
+                                                "value": 0
+                                            }
+                                        },
+                                        "then": {
+                                            "type": "Damage",
+                                            "value": {
+                                                "type": "Var",
+                                                "var": "Damage"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "RemoveStatus",
+                                        "name": "Shield"
+                                    }
+                                ]
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "Growth": {
+            "description": "+1/+1",
+            "trigger": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "HpValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    },
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    }
+                ]
+            }
+        },
+        "LifeStealGain": {
+            "description": "+1 Health",
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            }
+        },
+        "LifeStealLose": {
+            "description": "-1 Health",
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Negate",
+                    "value": {
+                        "type": "Var",
+                        "var": "Charges"
+                    }
+                }
+            }
+        },
+        "Devour": {
+            "trigger": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "HpValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    },
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Var",
+                            "var": "Charges"
+                        }
+                    }
+                ]
+            }
+        },
+        "Empower": {
+            "trigger": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "Charges"
+                            },
+                            "b": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Charges"
+                                },
+                                "b": {
+                                    "type": "AbilityVar",
+                                    "ability": "Empower",
+                                    "var": "AttackExtra"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "type": "AfterOutgoingDamage",
+                        "effect": {
+                            "type": "If",
+                            "condition": {
+                                "type": "LessInt",
+                                "a": {
+                                    "type": "AbilityVar",
+                                    "ability": "Empower",
+                                    "var": "Persistent"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            },
+                            "then": {
+                                "type": "ChangeStatus",
+                                "target": {
+                                    "type": "Owner"
+                                },
+                                "name": "Empower",
+                                "charges": {
+                                    "type": "Sub",
+                                    "a": {
+                                        "type": "Const",
+                                        "value": 0
+                                    },
+                                    "b": {
+                                        "type": "Var",
+                                        "var": "Charges"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "DarkVitality": {
+            "description": "Double HP",
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Var",
+                    "var": "HpValue"
+                }
+            }
+        }
+    }
+}

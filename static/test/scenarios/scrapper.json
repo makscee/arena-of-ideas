@@ -4,7 +4,7 @@
             {
                 "health": 10,
                 "attack": 1,
-                "house": "Warriors",
+                "house": "Test",
                 "trigger": {
                     "type": "AfterKill",
                     "effect": {

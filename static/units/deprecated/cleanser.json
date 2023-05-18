@@ -4,32 +4,16 @@
         "health": 5,
         "attack": 2,
         "house": "Exorcists",
-    "trigger": {
-        "type": "OnBuy",
-        "effect": {
-            "type": "List",
-            "effects": [
-                {
-                    "type": "If",
-                    "condition": {
-                        "type": "SlotOccupied",
-                        "faction": "Team",
-                        "slot": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Var",
-                                "var": "Slot"
-                            },
-                            "b": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    },
-                    "then": {
-                        "type": "UseAbility",
-                        "target": {
-                            "type": "FindUnit",
+        "trigger": {
+            "type": "OnBuy",
+            "effect": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
                             "slot": {
                                 "type": "Sum",
                                 "a": {
@@ -40,37 +24,38 @@
                                     "type": "Const",
                                     "value": 1
                                 }
-                            },
-                            "faction": {
-                                "type": "Owner"
                             }
                         },
-                        "ability": "Dispel"
-                    },
-                    "else": {
-                        "type": "Noop"
-                    }
-                },
-                {
-                    "type": "If",
-                    "condition": {
-                        "type": "SlotOccupied",
-                        "faction": "Team",
-                        "slot": {
-                            "type": "Sum",
-                            "a": {
-                                "type": "Var",
-                                "var": "Slot"
+                        "then": {
+                            "type": "UseAbility",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                },
+                                "faction": {
+                                    "type": "Owner"
+                                }
                             },
-                            "b": {
-                                "type": "Const",
-                                "value": -1
-                            }
+                            "ability": "Dispel"
+                        },
+                        "else": {
+                            "type": "Noop"
                         }
                     },
-                    "then": {
-                        "target": {
-                            "type": "FindUnit",
+                    {
+                        "type": "If",
+                        "condition": {
+                            "type": "SlotOccupied",
+                            "faction": "Team",
                             "slot": {
                                 "type": "Sum",
                                 "a": {
@@ -81,33 +66,48 @@
                                     "type": "Const",
                                     "value": -1
                                 }
-                            },
-                            "faction": {
-                                "type": "Owner"
                             }
                         },
-                        "type": "UseAbility",
-                        "ability": "Dispel"
-                    },
-                    "else": {
-                        "type": "Noop"
+                        "then": {
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Sum",
+                                    "a": {
+                                        "type": "Var",
+                                        "var": "Slot"
+                                    },
+                                    "b": {
+                                        "type": "Const",
+                                        "value": -1
+                                    }
+                                },
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            },
+                            "type": "UseAbility",
+                            "ability": "Dispel"
+                        },
+                        "else": {
+                            "type": "Noop"
+                        }
                     }
+                ]
+            }
+        },
+        "shader": {
+            "path": "shaders/vfx/circle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_color": "#afafaf",
+                    "u_circle_radius": 0.9,
+                    "u_border": 0.2,
+                    "u_circle_fbm": 0.1,
+                    "u_circle_fbm_speed": 3.3,
+                    "u_padding": 0.2,
+                    "u_aa": 0.2
                 }
-            ]
-        }
-    },
-    "shader": {
-        "path": "shaders/vfx/circle.glsl",
-        "parameters": {
-            "uniforms": {
-                "u_color": "#afafaf",
-                "u_circle_radius": 0.9,
-                "u_border": 0.2,
-                "u_circle_fbm": 0.1,
-                "u_circle_fbm_speed": 3.3,
-                "u_padding": 0.2,
-                "u_aa": 0.2
             }
         }
     }
-}

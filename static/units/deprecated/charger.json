@@ -6,12 +6,12 @@
     "house": "Robots",
     "trigger": {
         "type": "List",
-        "triggers": [
+        "items": [
             {
                 "type": "AddToTeam",
                 "effect": {
                     "type": "List",
-                    "effects": [
+                    "items": [
                         {
                             "type": "ChangeAbilityVarInt",
                             "ability": "Shield",
@@ -32,7 +32,7 @@
                 "type": "RemoveFromTeam",
                 "effect": {
                     "type": "List",
-                    "effects": [
+                    "items": [
                         {
                             "type": "ChangeAbilityVarInt",
                             "ability": "Shield",

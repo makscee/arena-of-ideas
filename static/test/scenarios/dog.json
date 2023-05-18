@@ -4,12 +4,12 @@
             {
                 "attack": 1,
                 "health": 1,
-                "house": "Demons",
+                "house": "Test",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {
                         "type": "List",
-                        "effects": [
+                        "items": [
                             {
                                 "type": "UseAbility",
                                 "ability": "Devour",

@@ -8,7 +8,7 @@
         "type": "OnBuy",
         "effect": {
             "type": "List",
-            "effects": [
+            "items": [
                 {
                     "type": "If",
                     "condition": {

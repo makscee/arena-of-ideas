@@ -5,6 +5,20 @@ pub enum AbilityName {
     Fortitude,
     Mend,
     Enrage,
+
+    Grow,
+    LifeSteal,
+    Shoot,
+    Devour,
+    Empower,
+    Shield,
+    SummonTreant,
+    Defense,
+    Dispel,
+    Reanimate,
+    Swap,
+    Poison,
+    Rebirth,
 }
 
 impl fmt::Display for AbilityName {

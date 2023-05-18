@@ -463,7 +463,7 @@ impl EffectWrapped {
                 Event::AbilityUse {
                     ability: *ability,
                     caster: owner,
-                    target: context.target().unwrap(),
+                    target: context.target().unwrap_or(owner),
                 }
                 .send(world, resources);
                 let effect = {

@@ -12,7 +12,7 @@
             {
                 "attack": 1,
                 "health": 2,
-                "house": "Robots",
+                "house": "Test",
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {

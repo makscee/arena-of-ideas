@@ -3,83 +3,15 @@
         "units": [
             {
                 "attack": 1,
-                "health": 1
-            },
-            {
-                "attack": 5,
-                "health": 5
+                "health": 20
             }
         ]
     },
     "dark": {
         "units": [
             {
-                "health": 2,
                 "attack": 2,
-                "house": "Dragons",
-                "trigger": {
-                    "type": "AnyDeath",
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "EqualsFaction",
-                            "a": {
-                                "type": "Opposite",
-                                "faction": {
-                                    "type": "Owner"
-                                }
-                            },
-                            "b": {
-                                "type": "Target"
-                            }
-                        },
-                        "then": {
-                            "type": "UseAbility",
-                            "ability": "Grow",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 5
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                "health": 2,
-                "attack": 2,
-                "house": "Dragons",
-                "trigger": {
-                    "type": "AnyDeath",
-                    "effect": {
-                        "type": "If",
-                        "condition": {
-                            "type": "EqualsFaction",
-                            "a": {
-                                "type": "Opposite",
-                                "faction": {
-                                    "type": "Owner"
-                                }
-                            },
-                            "b": {
-                                "type": "Target"
-                            }
-                        },
-                        "then": {
-                            "type": "UseAbility",
-                            "ability": "Grow",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 5
-                            }
-                        }
-                    }
-                }
+                "health": 20
             }
         ]
     },

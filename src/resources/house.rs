@@ -27,6 +27,7 @@ pub struct House {
 pub enum HouseName {
     Clerics,
     Orcs,
+    Test,
 }
 
 impl FileWatcherLoader for House {

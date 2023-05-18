@@ -25,7 +25,7 @@
         "Shield": {
             "trigger": {
                 "type": "List",
-                "triggers": [
+                "items": [
                     {
                         "type": "ModifyIncomingDamage",
                         "value": {
@@ -50,7 +50,7 @@
                             },
                             "then": {
                                 "type": "List",
-                                "effects": [
+                                "items": [
                                     {
                                         "type": "If",
                                         "target": {

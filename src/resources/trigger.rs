@@ -22,6 +22,8 @@ pub enum Trigger {
     AnyAbilityUse {
         ability: AbilityName,
         effect: EffectWrapped,
+        #[serde(default)]
+        include_self: bool,
     },
     OnAbilityUse {
         ability: AbilityName,
@@ -274,12 +276,19 @@ impl Trigger {
             | Trigger::ModifyIncomingDamage { .. }
             | Trigger::ChangeVarInt { .. }
             | Trigger::Noop => {}
-            Trigger::AnyAbilityUse { ability, .. } => match event {
+            Trigger::AnyAbilityUse {
+                ability,
+                include_self,
+                ..
+            } => match event {
                 Event::AbilityUse {
                     ability: event_ability,
+                    target,
                     ..
                 } => {
-                    if ability == event_ability {
+                    if ability == event_ability
+                        && (*include_self || *target != context.owner().unwrap())
+                    {
                         self.fire(action_queue, context, logger)
                     }
                 }

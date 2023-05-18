@@ -16,7 +16,7 @@
             {
                 "health": 2,
                 "attack": 2,
-                "house": "Dragons",
+                "house": "Test",
                 "trigger": {
                     "type": "AnyDeath",
                     "effect": {
@@ -50,7 +50,7 @@
             {
                 "health": 2,
                 "attack": 2,
-                "house": "Dragons",
+                "house": "Test",
                 "trigger": {
                     "type": "AnyDeath",
                     "effect": {

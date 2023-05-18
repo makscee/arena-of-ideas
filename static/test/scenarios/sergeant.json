@@ -8,7 +8,7 @@
             {
                 "health": 3,
                 "attack": 3,
-                "house": "Demons",
+                "house": "Test",
                 "trigger": {
                     "type": "TurnStart",
                     "effect": {

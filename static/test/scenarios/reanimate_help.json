@@ -16,7 +16,7 @@
             {
                 "attack": 1,
                 "health": 1,
-                "house": "Necromancers",
+                "house": "Test",
                 "trigger": {
                     "type": "AfterDamageDealt",
                     "effect": {

@@ -4,7 +4,7 @@
             {
                 "health": 10,
                 "attack": 1,
-                "house": "Demons",
+                "house": "Test",
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {

@@ -54,7 +54,7 @@
         "Devour": {
             "trigger": {
                 "type": "List",
-                "triggers": [
+                "items": [
                     {
                         "type": "ChangeVarInt",
                         "var": "HpValue",
@@ -77,7 +77,7 @@
         "Empower": {
             "trigger": {
                 "type": "List",
-                "triggers": [
+                "items": [
                     {
                         "type": "ChangeVarInt",
                         "var": "AttackValue",
@@ -153,7 +153,7 @@
             "description": "+1/+1",
             "trigger": {
                 "type": "List",
-                "triggers": [
+                "items": [
                     {
                         "type": "ChangeVarInt",
                         "var": "HpValue",

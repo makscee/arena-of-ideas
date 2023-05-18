@@ -4,7 +4,7 @@
             {
                 "attack": 1,
                 "health": 2,
-                "house": "Archers",
+                "house": "Test",
                 "trigger": {
                     "type": "AfterStrike",
                     "effect": {

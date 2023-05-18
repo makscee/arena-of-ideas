@@ -29,7 +29,7 @@
             "description": "+1/+1",
             "trigger": {
                 "type": "List",
-                "triggers": [
+                "items": [
                     {
                         "type": "ChangeVarInt",
                         "var": "HpValue",
@@ -62,7 +62,7 @@
                     },
                     "then": {
                         "type": "List",
-                        "effects": [
+                        "items": [
                             {
                                 "type": "ShowText",
                                 "text": "Rebirth"

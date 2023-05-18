@@ -12,7 +12,7 @@
             {
                 "attack": 1,
                 "health": 4,
-                "house": "Warriors",
+                "house": "Test",
                 "statuses": [
                     [
                         "Defense",

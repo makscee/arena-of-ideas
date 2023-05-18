@@ -1,4 +1,5 @@
 [
+    "test/scenarios/enrage_endless.json",
     "test/scenarios/vulture.json",
     "test/scenarios/lilith.json",
     "test/scenarios/team_shield.json",

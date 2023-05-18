@@ -9,8 +9,8 @@
     Rampager [2/1]: Before strike: gain [Enrage] {cm:2023-05-17T16:59:10}
     Provoker [1/2]: Turn end: [Enrage] adjacent allies {cm:2023-05-17T17:17:36}
     Warlord [2/1]: Start of battle: [Enrage] all allies {cm:2023-05-17T17:41:35}
-    Berserker [1/2]: Turn end: gain [Enrage]
-    Aggressor [2/1]: Gain [Enrage] when ally gains [Enrage]
+    Berserker [1/2]: Turn end: gain [Enrage] {cm:2023-05-18T15:23:40}
+    Aggressor [2/1]: Gain [Enrage] when ally gains [Enrage] {cm:2023-05-18T16:11:23}
     Frenzied [2/1]: [Enrage] has "+1" ATK
         
 
