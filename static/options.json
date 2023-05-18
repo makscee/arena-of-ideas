@@ -17,23 +17,24 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Aggressor",
+                    "name": "Frenzied",
                     "attack": 2,
-                    "health": 4,
-                    "description": "Gain [Enrage]\nwhen ally\ngains [Enrage]",
+                    "health": 2,
+                    "description": "[Enrage] has +1 ATK",
                     "house": "Orcs",
                     "trigger": {
-                        "type": "AnyAbilityUse",
-                        "ability": "Enrage",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
+                            "type": "ChangeAbilityVarInt",
                             "ability": "Enrage",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
+                            "var": "AttackExtra",
+                            "delta": {
                                 "type": "Const",
                                 "value": 1
+                            },
+                            "after": {
+                                "type": "ShowText",
+                                "text": "Enrage +ATK"
                             }
                         }
                     },
@@ -45,15 +46,14 @@
                                 "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#ffffff",
                                 "u_g_color_3": "#ffffff",
-                                "u_fbm_sdf": 0.1,
-                                "u_fbm_sdf_size": 30.0,
-                                "u_rounding": 0.5,
-                                "u_rotation": 0.8,
+                                "u_fbm_sdf": 0.2,
+                                "u_fbm_sdf_size": 500.0,
+                                "u_rounding": 1.3,
                                 "u_g_points": [
-                                    -0.5,
-                                    -0.2,
-                                    -0.2,
-                                    0.2
+                                    -0.7,
+                                    -0.3,
+                                    -0.1,
+                                    0.6
                                 ],
                                 "u_g_alphas": [
                                     1.0,
@@ -62,10 +62,9 @@
                                     0.0
                                 ],
                                 "u_size": 0.8,
-                                "u_t_multiplier": 0.5,
                                 "mapping": {
-                                    "u_color": "u_faction_color",
-                                    "u_g_color_1": "u_house_color",
+                                    "u_color": "u_house_color",
+                                    "u_g_color_1": "u_faction_color",
                                     "u_g_color_2": "u_faction_color",
                                     "u_g_color_3": "u_house_color",
                                     "u_g_color_4": "u_faction_color"

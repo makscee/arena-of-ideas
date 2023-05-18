@@ -1,0 +1,57 @@
+{
+    "name": "Frenzied",
+    "attack": 2,
+    "health": 2,
+    "description": "[Enrage] has +1 ATK",
+    "house": "Orcs",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "ChangeAbilityVarInt",
+            "ability": "Enrage",
+            "var": "AttackExtra",
+            "delta": {
+                "type": "Const",
+                "value": 1
+            },
+            "after": {
+                "type": "ShowText",
+                "text": "Enrage +ATK"
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/rectangle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#000000",
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#ffffff",
+                "u_g_color_3": "#ffffff",
+                "u_fbm_sdf": 0.2,
+                "u_fbm_sdf_size": 500.0,
+                "u_rounding": 1.3,
+                "u_g_points": [
+                    -0.7,
+                    -0.3,
+                    -0.1,
+                    0.6
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "u_size": 0.8,
+                "mapping": {
+                    "u_color": "u_house_color",
+                    "u_g_color_1": "u_faction_color",
+                    "u_g_color_2": "u_faction_color",
+                    "u_g_color_3": "u_house_color",
+                    "u_g_color_4": "u_faction_color"
+                }
+            }
+        }
+    }
+}

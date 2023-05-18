@@ -16,7 +16,8 @@
                 }
             },
             "default_vars": {
-                "Charges": 1
+                "Charges": 1,
+                "AttackExtra": 0
             }
         }
     },
@@ -29,14 +30,22 @@
                         "type": "ChangeVarInt",
                         "var": "AttackValue",
                         "delta": {
-                            "type": "Mul",
+                            "type": "Sum",
                             "a": {
-                                "type": "Var",
-                                "var": "Charges"
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Charges"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 2
+                                }
                             },
                             "b": {
-                                "type": "Const",
-                                "value": 2
+                                "type": "AbilityVar",
+                                "ability": "Enrage",
+                                "var": "AttackExtra"
                             }
                         }
                     },
