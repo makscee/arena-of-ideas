@@ -10,8 +10,8 @@
     Revenant [1/2]: Ally died: gain [Chaotic] {cm:2023-05-18T17:13:34}
     Executioner [2/1]: Enemy killed: gain [Chaotic] {cm:2023-05-18T17:20:40}
     Anarchist [1/2]: Battle start: gain [Chaotic] for each enemy {cm:2023-05-18T17:28:25}
-    Havoc [2/1]: [Chaotic] deals "+1" damage
-    Gambler [1/2]: Turn end: give [Chaotic] to random ally
+    Havoc [2/1]: [Chaotic] deals "+1" damage {cm:2023-05-18T17:36:49}
+    Gambler [1/2]: Turn end: give [Chaotic] to random ally {cm:2023-05-18T17:45:24}
     Outburst [2/1]: Ally died: give [Chaotic] to adjacent allies
 
 @visual
