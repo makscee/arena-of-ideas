@@ -33,3 +33,12 @@ First team {cm:2023-05-17T15:52:24}
     Berserker [1/2]: Turn end: gain [Enrage] {cm:2023-05-18T15:23:40}
     Aggressor [2/1]: Gain [Enrage] when ally gains [Enrage] {cm:2023-05-18T16:11:23}
     Frenzied [2/1]: [Enrage] has "+1" ATK {cm:2023-05-18T16:28:37}
+@content +Demons {cm:2023-05-18T17:52:32}
+    [Chaotic]: After strike deal 1 damage to random enemy {cm:2023-05-18T16:53:25}
+    Catalyst [2/1]: Battle start: add [Chaotic] to all allies {cm:2023-05-18T17:06:27}
+    Revenant [1/2]: Ally died: gain [Chaotic] {cm:2023-05-18T17:13:34}
+    Executioner [2/1]: Enemy killed: gain [Chaotic] {cm:2023-05-18T17:20:40}
+    Anarchist [1/2]: Battle start: gain [Chaotic] for each enemy {cm:2023-05-18T17:28:25}
+    Havoc [2/1]: [Chaotic] deals "+1" damage {cm:2023-05-18T17:36:49}
+    Gambler [1/2]: Turn end: give [Chaotic] to random ally {cm:2023-05-18T17:45:24}
+    Outburst [2/1]: Ally died: give [Chaotic] to adjacent allies {cm:2023-05-18T17:52:30}
