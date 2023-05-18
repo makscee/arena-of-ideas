@@ -6,7 +6,13 @@
 
 @content +Demons
     [Chaotic]: After strike deal 1 damage to random enemy {cm:2023-05-18T16:53:25}
-
+    Catalyst [2/1]: Battle start: add [Chaotic] to all allies {cm:2023-05-18T17:06:27}
+    Revenant [1/2]: Ally died: gain [Chaotic]
+    Executioner [2/1]: Enemy killed: gain [Chaotic]
+    Anarchist [1/2]: Battle start: gain [Chaotic] for each enemy
+    Havoc [2/1]: [Chaotic] deals "+1" damage
+    Gambler [1/2]: Turn end: give [Chaotic] to random ally
+    Outburst [2/1]: Ally died: give [Chaotic] to adjacent allies
 
 @visual
     Sdf gradient fn {cm:2023-05-16T21:34:07}

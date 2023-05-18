@@ -1,0 +1,61 @@
+{
+    "name": "Catalyst",
+    "attack": 1,
+    "health": 2,
+    "description": "Battle start:\nadd [Chaotic]\nto all allies",
+    "house": "Demons",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Chaotic",
+                "charges": {
+                    "type": "Const",
+                    "value": 1
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#000000",
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "u_warp_str": 0.1,
+                "u_warp_speed": 2.5,
+                "u_fbm_sdf": 0.2,
+                "u_fbm_sdf_size": 1.0,
+                "u_g_points": [
+                    -0.8,
+                    -0.8,
+                    -0.5,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                ],
+                "mapping": {
+                    "u_color": "u_house_color",
+                    "u_g_color_1": "u_house_color",
+                    "u_g_color_2": "u_house_color",
+                    "u_g_color_3": "u_faction_color",
+                    "u_g_color_4": "u_faction_color"
+                }
+            }
+        }
+    }
+}
