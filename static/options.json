@@ -17,22 +17,27 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Executioner",
-                    "attack": 3,
-                    "health": 4,
-                    "description": "Enemy killed:\ngain [Chaotic] (3)",
+                    "name": "Anarchist",
+                    "attack": 1,
+                    "health": 3,
+                    "description": "Battle start:\ngain [Chaotic]\nfor each enemy",
                     "house": "Demons",
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Chaotic",
-                            "charges": {
-                                "type": "Const",
-                                "value": 3
-                            },
                             "target": {
                                 "type": "Owner"
+                            },
+                            "charges": {
+                                "type": "Faction",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
                             }
                         }
                     },
@@ -45,28 +50,28 @@
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#000000",
-                                "u_warp_str": 0.4,
-                                "u_warp_speed": 0.1,
-                                "u_fbm_sdf": 0.4,
-                                "u_fbm_sdf_size": 10.0,
+                                "u_warp_str": 0.03,
+                                "u_warp_speed": 30.1,
+                                "u_fbm_sdf": 0.01,
+                                "u_fbm_sdf_size": 2.9,
                                 "u_g_points": [
-                                    -1.0,
-                                    -0.9,
+                                    -0.8,
                                     -0.6,
-                                    -0.3
+                                    -0.6,
+                                    -0.0
                                 ],
                                 "u_g_alphas": [
                                     1.0,
                                     1.0,
                                     1.0,
-                                    0.0
+                                    -0.5
                                 ],
                                 "mapping": {
                                     "u_color": "u_faction_color",
                                     "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_faction_color",
-                                    "u_g_color_4": "u_house_color"
+                                    "u_g_color_3": "u_house_color",
+                                    "u_g_color_4": "u_faction_color"
                                 }
                             }
                         }

@@ -55,6 +55,9 @@ pub enum ExpressionInt {
     StatusCharges {
         name: String,
     },
+    Faction {
+        faction: ExpressionFaction,
+    },
 }
 
 impl ExpressionInt {
@@ -130,6 +133,11 @@ impl ExpressionInt {
                 ExpressionInt::StatusCharges { name } => {
                     Ok(context.get_status_charges(name, world))
                 }
+                ExpressionInt::Faction { faction } => Ok(UnitSystem::collect_faction(
+                    world,
+                    faction.calculate(context, world, resources)?,
+                )
+                .len() as i32),
             };
 
         resources
