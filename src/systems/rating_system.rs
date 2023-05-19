@@ -218,11 +218,21 @@ impl RatingSystem {
                 teams.push(t1);
                 teams.push(t2);
             }
-            println!("\nTop teams:\n{}", top_teams.iter().join("\n"));
             let heroes_rating = heroes_rating
                 .iter()
                 .sorted_by_key(|(_, (score, count))| (*score, *count))
-                .map(|(name, (score, count))| format!("{score}/{count}  {name}"))
+                .map(|(name, (score, count))| (name, score, count))
+                .collect_vec();
+            let ratings_json = heroes_rating
+                .iter()
+                .enumerate()
+                .map(|(ind, (name, _, _))| format!("\"{name}\":{ind}"))
+                .join(",");
+            println!("Ratings json:\n{{{ratings_json}}}");
+            println!("\nTop teams:\n{}", top_teams.iter().join("\n"));
+            let heroes_rating = heroes_rating
+                .iter()
+                .map(|(name, score, count)| format!("{score}/{count}  {name}"))
                 .join("\n");
             println!("\nHeroes rating:\n{heroes_rating}");
         }

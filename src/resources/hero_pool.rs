@@ -5,7 +5,7 @@ use super::*;
 #[derive(Default)]
 pub struct HeroPool {
     heroes: HashMap<PathBuf, PackedUnit>,
-    power: HashMap<String, f32>,
+    power: HashMap<String, usize>,
     list_top: PathBuf,
 }
 

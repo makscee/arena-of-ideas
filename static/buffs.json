@@ -5,7 +5,7 @@
             1
         ],
         [
-            "Vitality",
+            "Fortitude",
             1
         ],
         [
@@ -41,7 +41,7 @@
         {
             "prefix": "Healthy",
             "statuses": {
-                "Vitality": 4
+                "Fortitude": 4
             }
         },
         {

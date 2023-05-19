@@ -3,7 +3,6 @@
     "description": "On damage dealt:\nKill",
     "attack": 1,
     "health": 1,
-    "house": "Snakes",
     "statuses": [
         [
             "Poison",

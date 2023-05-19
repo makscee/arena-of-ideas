@@ -3,7 +3,7 @@
     "health": 1,
     "attack": 1,
     "description": "Turn start:\nGrow",
-    "house": "Dragons",
+    "house": "Test",
     "trigger": {
         "type": "TurnStart",
         "effect": {

@@ -2,7 +2,7 @@
     "name": "Havoc",
     "attack": 2,
     "health": 1,
-    "description": "[Chaotic] deals +1 damage",
+    "description": "[Chaotic]\ndeals +1 damage",
     "house": "Demons",
     "trigger": {
         "type": "BattleStart",

@@ -3,7 +3,7 @@
     "health": 3,
     "attack": 3,
     "description": "Turn start:\nShoot",
-    "house": "Archers",
+    "house": "Test",
     "trigger": {
         "type": "TurnStart",
         "effect": {

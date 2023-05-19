@@ -1,1 +1,22 @@
-{}
+{
+    "Aggressor": 0,
+    "Gambler": 1,
+    "Provoker": 2,
+    "Havoc": 3,
+    "Berserker": 4,
+    "Catalyst": 5,
+    "Harbinger": 6,
+    "Anarchist": 7,
+    "Revenant": 8,
+    "Reinforcer": 9,
+    "Healer": 10,
+    "Empowerer": 11,
+    "Rampager": 12,
+    "Rejuvenator": 13,
+    "Renewer": 14,
+    "Executioner": 15,
+    "Herald": 16,
+    "Transferrer": 17,
+    "Frenzied": 18,
+    "Warlord": 19
+}

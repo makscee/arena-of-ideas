@@ -3,7 +3,7 @@
     "health": 2,
     "attack": 2,
     "description": "Enemy died:\nGrow (5)",
-    "house": "Dragons",
+    "house": "Test",
     "trigger": {
         "type": "AnyDeath",
         "effect": {

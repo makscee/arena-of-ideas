@@ -2,7 +2,7 @@
     "name": "Golem",
     "attack": 5,
     "health": 5,
-    "house": "Warriors",
+    "house": "Test",
     "statuses": [
         [
             "Defense",
