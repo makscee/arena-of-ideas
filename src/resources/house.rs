@@ -23,6 +23,7 @@ pub struct House {
     Copy,
     enum_iterator::Sequence,
     EnumString,
+    strum_macros::Display,
 )]
 pub enum HouseName {
     Clerics,

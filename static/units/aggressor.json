@@ -8,8 +8,8 @@
         "type": "AnyAbilityUse",
         "ability": "Enrage",
         "effect": {
-            "type": "UseAbility",
-            "ability": "Enrage",
+            "type": "ChangeStatus",
+            "name": "Enrage",
             "target": {
                 "type": "Owner"
             },

@@ -92,24 +92,14 @@ impl<'a> Widget<'_> {
                                     debug!("Battle choice make selection: {difficulty}");
                                     let dark =
                                         Ladder::get_current_teams(resources)[difficulty].clone();
-                                    let mut dark = Ladder::generate_teams(dark);
                                     let light = PackedTeam::pack(&Faction::Team, world, resources);
                                     resources.battle_data.last_difficulty = difficulty;
                                     TeamSystem::get_state_mut(&Faction::Team, world)
                                         .vars
                                         .change_int(&VarName::Stars, difficulty as i32 + 1);
-                                    BattleSystem::init_battle(
-                                        &light,
-                                        &dark.remove(0),
-                                        world,
-                                        resources,
+                                    BattleSystem::init_ladder_battle(
+                                        &light, dark, world, resources,
                                     );
-                                    resources
-                                        .battle_data
-                                        .team_queue
-                                        .entry(Faction::Dark)
-                                        .or_default()
-                                        .extend(dark);
                                     GameStateSystem::set_transition(GameState::Battle, resources);
                                 }
                             }

@@ -61,6 +61,12 @@ impl PackedTeam {
         }
     }
 
+    pub fn from_units(units: Vec<PackedUnit>) -> Self {
+        let mut team = Self::new("".to_owned(), units);
+        team.generate_name();
+        team
+    }
+
     pub fn unpack(
         &self,
         faction: &Faction,
@@ -113,6 +119,10 @@ impl PackedTeam {
             statuses,
             slots,
         }
+    }
+
+    pub fn generate_name(&mut self) {
+        self.name = self.units.iter().map(|x| x.name.clone()).join(" ");
     }
 }
 

@@ -725,7 +725,6 @@ impl EffectWrapped {
                         }
                     })
                     .collect_vec();
-                dbg!(&targets);
                 for (ind, target) in targets.into_iter().enumerate() {
                     effect.process(
                         context

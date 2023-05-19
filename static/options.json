@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
     "initial_state": "Shop",
-    "walkthrough": false,
+    "walkthrough": true,
     "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
@@ -17,108 +17,63 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Harbinger",
                     "attack": 2,
-                    "health": 1,
-                    "description": "Ally died:\ngive [Chaotic]\nto adjacent allies",
-                    "house": "Demons",
+                    "health": 4,
+                    "house": "Orcs",
                     "trigger": {
-                        "type": "AnyDeath",
+                        "type": "AnyAbilityUse",
+                        "ability": "Enrage",
                         "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "EqualsFaction",
-                                "a": {
-                                    "type": "Owner"
-                                },
-                                "b": {
-                                    "type": "Target"
-                                }
+                            "type": "ChangeStatus",
+                            "name": "Enrage",
+                            "target": {
+                                "type": "Owner"
                             },
-                            "then": {
-                                "type": "List",
-                                "items": [
-                                    {
-                                        "type": "UseAbility",
-                                        "ability": "Chaotic",
-                                        "target": {
-                                            "type": "SlotRelative",
-                                            "relation": {
-                                                "type": "Const",
-                                                "value": -1
-                                            }
-                                        },
-                                        "charges": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    },
-                                    {
-                                        "type": "UseAbility",
-                                        "ability": "Chaotic",
-                                        "target": {
-                                            "type": "SlotRelative",
-                                            "relation": {
-                                                "type": "Const",
-                                                "value": 1
-                                            }
-                                        },
-                                        "charges": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    }
-                                ]
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
                             }
                         }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#000000",
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
-                                "u_g_color_4": "#000000",
-                                "u_warp_str": 0.1,
-                                "u_warp_speed": 0.1,
-                                "u_fbm_sdf": 0.2,
-                                "u_fbm_sdf_size": 10.2,
-                                "u_g_points": [
-                                    -0.9,
-                                    -0.5,
-                                    -0.3,
-                                    -0.2
-                                ],
-                                "u_g_alphas": [
-                                    0.0,
-                                    1.0,
-                                    1.0,
-                                    1.0
-                                ],
-                                "mapping": {
-                                    "u_color": "u_faction_color",
-                                    "u_g_color_1": "u_house_color",
-                                    "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_house_color",
-                                    "u_g_color_4": "u_house_color"
-                                }
+                    }
+                },
+                {
+                    "attack": 2,
+                    "health": 4,
+                    "house": "Orcs",
+                    "trigger": {
+                        "type": "AnyAbilityUse",
+                        "ability": "Enrage",
+                        "effect": {
+                            "type": "ChangeStatus",
+                            "name": "Enrage",
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
                             }
                         }
                     }
                 },
                 {
                     "attack": 1,
-                    "health": 5
-                },
-                {
-                    "attack": 1,
-                    "health": 5
-                },
-                {
-                    "attack": 1,
-                    "health": 5
+                    "health": 5,
+                    "house": "Orcs",
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "ability": "Enrage",
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
+                            }
+                        }
+                    }
                 }
             ]
         },
@@ -169,13 +124,13 @@
     },
     "fov": 16.0,
     "log": {
-        "Action": true,
+        "Action": false,
         "ActionFail": true,
         "Effect": true,
         "Contexts": false,
-        "Condition": true,
+        "Condition": false,
         "Expression": false,
-        "Trigger": true,
+        "Trigger": false,
         "Event": true,
         "UnitCreation": true,
         "Measurement": false,

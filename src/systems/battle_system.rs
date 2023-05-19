@@ -26,7 +26,17 @@ impl BattleSystem {
         if let Some(tape) = tape {
             tape.push(cluster.unwrap());
         }
+        let mut ticks = 0;
         loop {
+            ticks += 1;
+            if ticks > 100 {
+                error!(
+                    "Exceeded ticks limit: {ticks}, {} x {}",
+                    TeamSystem::get_state(&Faction::Light, world).name,
+                    TeamSystem::get_state(&Faction::Dark, world).name
+                );
+                return 0;
+            }
             let result = Self::tick(world, resources, tape);
             if !result {
                 let faction = if UnitSystem::collect_faction(world, Faction::Dark).is_empty() {
@@ -116,6 +126,28 @@ impl BattleSystem {
                 node.lock(NodeLockType::Full { world, resources }),
             ));
         }
+    }
+
+    pub fn init_ladder_battle(
+        light: &PackedTeam,
+        dark: PackedTeam,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let mut dark = Ladder::generate_teams(dark);
+        Self::init_battle(&light, &dark.remove(0), world, resources);
+        for team in dark {
+            Self::queue_team(Faction::Dark, team, resources);
+        }
+    }
+
+    pub fn queue_team(faction: Faction, team: PackedTeam, resources: &mut Resources) {
+        resources
+            .battle_data
+            .team_queue
+            .entry(faction)
+            .or_default()
+            .push_back(team);
     }
 
     pub fn init_battle(

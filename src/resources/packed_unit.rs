@@ -198,12 +198,13 @@ impl fmt::Display for PackedUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "[{} {}/{}-{} r:{}]",
+            "[{} {}/{}-{} r:{} h:{}]",
             self.name.as_str(),
             self.attack,
             self.health,
             self.damage,
-            self.rank
+            self.rank,
+            self.house.map(|x| x.to_string()).unwrap_or("_".to_owned()),
         )
     }
 }

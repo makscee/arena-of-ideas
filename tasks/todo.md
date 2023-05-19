@@ -13,12 +13,13 @@
     Echo [1/2]: After death: give [Splash] (2) to all allies.
     Surgeon [2/1]: Turn end: give [Splash] to random ally.
 
+
 @visual
     Sdf gradient fn {cm:2023-05-16T21:34:07}
     Fix node cluster timings
     Improve battle choice panel
         New disign
         Hide button
-@gameplay {c}
+@gameplay
     Gold sink
     Disable selling

@@ -1,5 +1,3 @@
-use geng::prelude::file::load_json;
-
 use super::*;
 
 pub struct RatingSystem {}
@@ -119,7 +117,8 @@ impl RatingSystem {
                 }
                 let new_team = PackedTeam::pack(&Faction::Team, world, resources);
                 UnitSystem::clear_faction(world, resources, Faction::Team);
-                let result = SimulationSystem::run_battle(&new_team, &dark, world, resources, None);
+                let (_, result) =
+                    SimulationSystem::run_battle(&new_team, &dark, world, resources, None);
                 resources.action_queue.clear();
                 if result > battle_result {
                     candidate = Some(new_team);
@@ -158,6 +157,89 @@ impl RatingSystem {
         )
     }
 
+    pub fn simulate_hero_ratings_calculation(world: &mut legion::World, resources: &mut Resources) {
+        resources.logger.set_enabled(false);
+
+        let heroes = resources.hero_pool.all();
+        let mut teams: Vec<PackedTeam> = default();
+        let mut team_ratings = Ratings::default();
+
+        // fill teams with random max size teams
+        // each team X random matches against other
+        // retain top 1/3
+        // sum end place of each hero
+        // fill 2/3 with mutations
+        // repeat
+        const TEAMS: usize = 30;
+        const SIZE: usize = 5;
+        const MATCHES: usize = 20;
+        for _ in 0..TEAMS * 3 {
+            let mut units: Vec<PackedUnit> = default();
+            for _ in 0..SIZE {
+                let unit = heroes.choose(&mut thread_rng()).unwrap().clone();
+                units.push(unit);
+            }
+            let team = PackedTeam::from_units(units);
+            teams.push(team);
+        }
+        let mut heroes_rating: HashMap<String, (usize, usize)> = default();
+        let mut top_teams: HashSet<String> = default();
+        loop {
+            team_ratings = default();
+            Self::rate_teams(&teams, &mut team_ratings, MATCHES, world, resources);
+            println!("{team_ratings}");
+            teams.sort_by(|a, b| {
+                team_ratings
+                    .get_rating(&a.name)
+                    .total_cmp(&team_ratings.get_rating(&b.name))
+            });
+            top_teams.insert(teams[0].name.to_owned());
+            let old_teams = teams;
+            teams = default();
+            for (_, (score, _)) in heroes_rating.iter_mut() {
+                *score = 0;
+            }
+            for (i, team) in old_teams.into_iter().rev().enumerate() {
+                if i >= TEAMS {
+                    debug!("-{i} {}", team.name);
+                    continue;
+                }
+                for (i, unit) in team.units.iter().enumerate() {
+                    let (score, count) = heroes_rating.entry(unit.name.to_owned()).or_default();
+                    *score += TEAMS - i;
+                    *count += 1;
+                }
+                let mut t1 = team.clone();
+                Self::mutate(&mut t1, &heroes);
+                let mut t2 = team.clone();
+                Self::mutate(&mut t2, &heroes);
+                Self::mutate(&mut t2, &heroes);
+                teams.push(team);
+                teams.push(t1);
+                teams.push(t2);
+            }
+            println!("\nTop teams:\n{}", top_teams.iter().join("\n"));
+            let heroes_rating = heroes_rating
+                .iter()
+                .sorted_by_key(|(_, (score, count))| (*score, *count))
+                .map(|(name, (score, count))| format!("{score}/{count}  {name}"))
+                .join("\n");
+            println!("\nHeroes rating:\n{heroes_rating}");
+        }
+    }
+
+    fn mutate(team: &mut PackedTeam, heroes: &Vec<PackedUnit>) {
+        let before = team.name.clone();
+        let rng = &mut thread_rng();
+        team.units.remove(rng.gen_range(0..team.units.len()));
+        team.units.insert(
+            rng.gen_range(0..=team.units.len()),
+            heroes.choose(rng).unwrap().clone(),
+        );
+        team.generate_name();
+        debug!("mutate: {before} -> {}", team.name);
+    }
+
     pub fn simulate_enemy_ratings_calculation(
         world: &mut legion::World,
         resources: &mut Resources,
@@ -171,8 +253,7 @@ impl RatingSystem {
         let mut cnt = 0;
         let save_path = static_path().join("levels.json");
         loop {
-            Self::rate_teams(&teams, &mut ratings, world, resources);
-            ratings.calculate();
+            Self::rate_teams(&teams, &mut ratings, 10, world, resources);
             cnt += 1;
             teams.sort_by(|a, b| {
                 ratings
@@ -192,17 +273,34 @@ impl RatingSystem {
     pub fn rate_teams(
         teams: &Vec<PackedTeam>,
         ratings: &mut Ratings,
+        match_count: usize,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        let teams_str = teams
+            .iter()
+            .enumerate()
+            .map(|(i, x)| format!("{}. {}", i, x.name.clone()))
+            .join("\n");
+        debug!("Start rating...\n{teams_str}");
+        let mut cnt = 0.0;
+        let total = (teams.len() * match_count) as f64;
         for light in teams.iter() {
-            for dark in teams.iter() {
-                let mut dark = dark.clone();
-                // dark = Ladder::generate_team(dark);
-                let result = SimulationSystem::run_battle(light, &dark, world, resources, None);
+            for _ in 0..match_count as i32 {
+                let mut dark = light;
+                while dark.name == light.name {
+                    dark = teams.choose(&mut thread_rng()).unwrap();
+                }
+                debug!("Run battle {} x {}", light.name, dark.name);
+                let result =
+                    SimulationSystem::run_ranked_battle(light, dark, world, resources, None);
+                debug!("Result: {result}");
                 ratings.add_rating(&light.name, RatingType::WinRate, result, 3);
+                cnt += 1.0;
             }
+            debug!("{:.0}%", cnt / total * 100.0);
         }
+        ratings.calculate();
     }
 }
 
@@ -242,6 +340,10 @@ impl Ratings {
 
     pub fn get_rating(&self, name: &str) -> f64 {
         self.data.get(name).unwrap().0
+    }
+
+    pub fn get_score(&self, name: &str, rating: RatingType) -> (usize, usize) {
+        *self.data.get(name).unwrap().1.get(&rating).unwrap()
     }
 
     pub fn calculate(&mut self) {

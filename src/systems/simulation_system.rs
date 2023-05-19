@@ -3,13 +3,47 @@ use super::*;
 pub struct SimulationSystem {}
 
 impl SimulationSystem {
-    pub fn run_battle(
+    pub fn run_ladder_battle(
         light: &PackedTeam,
         dark: &PackedTeam,
         world: &mut legion::World,
         resources: &mut Resources,
         assert: Option<&Condition>,
     ) -> usize {
+        BattleSystem::init_ladder_battle(light, dark.clone(), world, resources);
+        let (result, score) = Self::run_battle(light, dark, world, resources, assert);
+        score
+    }
+
+    pub fn run_ranked_battle(
+        light: &PackedTeam,
+        dark: &PackedTeam,
+        world: &mut legion::World,
+        resources: &mut Resources,
+        assert: Option<&Condition>,
+    ) -> usize {
+        let mut dark = dark.clone();
+        let mut score = 0;
+        for _ in 0..3 {
+            for unit in dark.units.iter_mut() {
+                unit.rank += 1;
+            }
+            let (result, _) = Self::run_battle(light, &dark, world, resources, assert);
+            if !result {
+                break;
+            }
+            score += 1;
+        }
+        score
+    }
+
+    pub fn run_battle(
+        light: &PackedTeam,
+        dark: &PackedTeam,
+        world: &mut legion::World,
+        resources: &mut Resources,
+        assert: Option<&Condition>,
+    ) -> (bool, usize) {
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
         resources.logger.log(
@@ -44,9 +78,10 @@ impl SimulationSystem {
             }
             None => Ladder::get_score(world),
         };
+        let win = UnitSystem::collect_faction(world, Faction::Dark).is_empty();
         BattleSystem::clear_world(world, resources);
         resources.action_queue.clear();
-        result
+        (win, result)
     }
 }
 
@@ -93,9 +128,9 @@ mod tests {
             rank: default(),
         };
         let light = PackedTeam::new(String::from("light"), vec![unit.clone()]);
-        let battle_result =
+        let (result, _) =
             SimulationSystem::run_battle(&light, &light, &mut world, &mut resources, None);
-        assert!(battle_result > 0)
+        assert!(result)
     }
 
     #[test]
@@ -120,14 +155,15 @@ mod tests {
         for (path, scenario) in scenarios.iter() {
             let text = format!("Run scenario: {:?}...", path.file_name().unwrap()).on_blue();
             println!("\n{text}\n");
+            let (_, result) = SimulationSystem::run_battle(
+                &scenario.light,
+                &scenario.dark,
+                &mut world,
+                &mut resources,
+                Some(&scenario.assert),
+            );
             assert!(
-                SimulationSystem::run_battle(
-                    &scenario.light,
-                    &scenario.dark,
-                    &mut world,
-                    &mut resources,
-                    Some(&scenario.assert),
-                ) > 0,
+                result > 0,
                 "Scenario {:?} failed assert: {:?}",
                 path,
                 scenario.assert
