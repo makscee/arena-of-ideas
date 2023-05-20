@@ -703,15 +703,26 @@
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_sdf_cut": 0.0,
-                    "u_sdf_border": -0.05,
-                    "u_aa": 0.03,
-                    "u_gradient": 0.0,
+                    "u_padding": 0.0,
+                    "u_g_color_1": "#ffffff",
+                    "u_g_color_2": "#ffffff",
+                    "u_g_color_3": "#ffffff",
+                    "u_g_color_4": "#ffffff",
+                    "u_g_points": [
+                        -0.07,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
                     "u_box": [
                         1.0,
-                        0.2
+                        0.4
                     ],
-                    "u_size": 1.0
+                    "u_size": 1.0,
+                    "mapping": {
+                        "u_g_color_1": "u_outline_color",
+                        "u_g_color_2": "u_outline_color"
+                    }
                 }
             },
             "chain_after": [
@@ -1065,7 +1076,6 @@
                         "uniforms": {
                             "u_ui": 1,
                             "u_aa": 0.003,
-                            "u_gradient": 0.0,
                             "u_box": [
                                 1.6,
                                 0.40
@@ -1074,7 +1084,6 @@
                                 0.0,
                                 0.25
                             ],
-                            "u_sdf_border": -0.1,
                             "u_rounding": 0.0,
                             "u_outline_color": "#1F3A4F"
                         }
@@ -1158,19 +1167,36 @@
                     "parameters": {
                         "uniforms": {
                             "u_ui": 1,
-                            "u_sdf_border": -0.03,
-                            "u_aa": 0.005,
-                            "u_outline_color": "#1F3A4F",
-                            "u_gradient": 1.1,
-                            "u_color": "#9007eb",
+                            "u_color": "#000000",
+                            "u_padding": 0.0,
+                            "u_fbm_sdf": -0.03,
+                            "u_fbm_sdf_size": 1.5,
+                            "u_fbm_sdf_speed": 0.05,
+                            "u_g_points": [
+                                -0.1,
+                                -0.02,
+                                0.0,
+                                0.1
+                            ],
+                            "u_g_alphas": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "u_g_color_1": "#010101",
+                            "u_g_color_2": "#ffffff",
+                            "u_g_color_3": "#ffffff",
+                            "u_g_color_4": "#ffffff",
                             "u_index_offset": [
                                 0.05,
                                 0.0
                             ],
                             "u_open": 0.0,
                             "mapping": {
-                                "u_outline_color": "u_rarity_color",
-                                "u_color": "u_rarity_color"
+                                "u_g_color_2": "u_color",
+                                "u_g_color_3": "u_rarity_color",
+                                "u_g_color_4": "u_color"
                             }
                         }
                     },
@@ -1181,9 +1207,11 @@
                             "path": "shaders/vfx/text.glsl",
                             "parameters": {
                                 "uniforms": {
-                                    "u_size": 0.6,
+                                    "u_size": 0.8,
                                     "u_color": "#ffffff",
                                     "u_aspect_adjust": 1,
+                                    "u_outline_color": "#ffffff",
+                                    "u_outline_fade": 1.0,
                                     "u_text_align": [
                                         1.0,
                                         0.0
@@ -1203,7 +1231,7 @@
                             "path": "shaders/vfx/text.glsl",
                             "parameters": {
                                 "uniforms": {
-                                    "u_size": 0.55,
+                                    "u_size": 0.6,
                                     "u_text_align": [
                                         1.0,
                                         0.0

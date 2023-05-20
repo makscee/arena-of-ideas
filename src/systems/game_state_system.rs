@@ -290,7 +290,6 @@ impl GameStateSystem {
                 if from == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
-                    // BonusEffectPool::load_widget(3, world, resources);
                 } else if from == GameState::Sacrifice {
                     PackedTeam::new("Dark".to_owned(), default()).unpack(
                         &Faction::Dark,
@@ -308,6 +307,10 @@ impl GameStateSystem {
                     .vars
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
+
+                // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
+                // ShopSystem::do_buy(entity, 1, resources, world);
+                // BonusEffectPool::load_widget(6, world, resources);
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {

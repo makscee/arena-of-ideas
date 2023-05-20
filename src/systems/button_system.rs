@@ -34,7 +34,8 @@ impl ButtonSystem {
         button
             .parameters
             .uniforms
-            .insert_color_ref(&VarName::Color.uniform(), options.colors.button);
+            .insert_color_ref("u_color", options.colors.button)
+            .insert_color_ref("u_outline_color", options.colors.outline);
         button.entity = Some(entity);
 
         button

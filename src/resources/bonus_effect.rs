@@ -182,10 +182,10 @@ impl Rarity {
         let rng = &mut thread_rng();
         let mut g = value;
         match self {
-            Rarity::Common => g += rng.gen_range(0..2),
-            Rarity::Rare => g += rng.gen_range(0..3),
-            Rarity::Epic => g += rng.gen_range(0..4),
-            Rarity::Legendary => g += rng.gen_range(0..5),
+            Rarity::Common => g += rng.gen_range(0..3),
+            Rarity::Rare => g += rng.gen_range(0..4),
+            Rarity::Epic => g += rng.gen_range(0..5),
+            Rarity::Legendary => g += rng.gen_range(0..6),
         };
 
         match buff {
