@@ -13,7 +13,7 @@ void main() {
     init_fields();
     position += u_position_over_t * u_t;
     box *= vec2(1. + u_size_over_t * u_t);
-    vec2 rel = vec2(u_text_size.x / u_text_size.y / u_aspect_ratio, 1) * box.y;
+    vec2 rel = vec2(u_text_size.x / u_text_size.y, 1) * box.y;
     box = rel * min(1.0, box.x / rel.x);
     position += box * u_text_align;
     uv = get_uv(a_pos);

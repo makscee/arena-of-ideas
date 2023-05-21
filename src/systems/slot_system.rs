@@ -210,6 +210,7 @@ impl SlotSystem {
             Self::activation_handler,
             None,
             entity,
+            None,
             &resources.options,
         );
         button
@@ -248,18 +249,6 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let mut ranked_units: HashMap<usize, legion::Entity> = default();
-        if state == GameState::Sacrifice {
-            for (entity, state) in UnitSystem::collect_faction_states(world, Faction::Team) {
-                if state.vars.get_int(&VarName::Rank) > 2 {
-                    let slot = state.vars.get_int(&VarName::Slot) as usize;
-                    ranked_units.insert(slot, entity);
-                }
-            }
-            for (slot, _) in ranked_units.iter() {
-                Self::handle_slot_activation(*slot, Faction::Team, world, resources);
-            }
-        }
         for (slot, entity, shader) in
             <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
         {
@@ -277,15 +266,7 @@ impl SlotSystem {
                 GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
                 GameState::Sacrifice => {
                     if faction == Faction::Team {
-                        if ranked_units.get(&slot).is_none() {
-                            Self::add_slot_activation_btn(
-                                shader,
-                                "Sacrifice",
-                                None,
-                                entity,
-                                resources,
-                            )
-                        }
+                        Self::add_slot_activation_btn(shader, "Sacrifice", None, entity, resources)
                     }
 
                     faction == Faction::Team

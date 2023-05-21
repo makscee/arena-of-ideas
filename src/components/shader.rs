@@ -179,11 +179,8 @@ impl Shader {
 
         let uniforms = &self.parameters.uniforms;
         let aabb = {
-            let mut position = uniforms.try_get_vec2("u_position").unwrap();
-            let mut bx = uniforms.try_get_vec2("u_box").unwrap();
-            let card = uniforms.try_get_float("u_card").unwrap_or_default();
-            bx *= 1.0 + card;
-            position -= card * vec2(0.0, 0.7);
+            let position = uniforms.try_get_vec2("u_position").unwrap();
+            let bx = uniforms.try_get_vec2("u_box").unwrap();
             Aabb2::from_corners(position - bx, position + bx)
         };
         let position = match uniforms.try_get_int("u_ui").unwrap_or_default() {
@@ -202,7 +199,7 @@ impl Shader {
         uniforms.insert_float_ref("u_sin", t.sin());
         uniforms.insert_float_ref("u_cos", t.cos());
 
-        let mut position = uniforms.try_get_vec2("u_position").unwrap_or(vec2::ZERO);
+        let position = uniforms.try_get_vec2("u_position").unwrap_or(vec2::ZERO);
         let align = uniforms.try_get_vec2("u_align").unwrap_or(vec2::ZERO);
         let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
 
@@ -212,11 +209,12 @@ impl Shader {
             .unwrap_or(vec2::ZERO);
         let card_offset = uniforms.try_get_vec2("u_card_offset").unwrap_or(vec2::ZERO);
 
-        let mut bx = uniforms.try_get_vec2("u_box").unwrap_or(vec2(1.0, 1.0));
+        let bx = uniforms.try_get_vec2("u_box").unwrap_or(vec2(1.0, 1.0));
 
         let card = uniforms.try_get_float("u_card").unwrap_or_default();
         let mut scale = uniforms.try_get_float("u_scale").unwrap_or(1.0)
             * uniforms.try_get_float("u_open").unwrap_or(1.0);
+        let local_scale = uniforms.try_get_float("u_local_scale").unwrap_or(1.0);
         let card_size = uniforms.try_get_float("u_card_size").unwrap_or_default();
         let size = uniforms.try_get_float("u_size").unwrap_or(1.0)
             + card_size * card
@@ -225,28 +223,17 @@ impl Shader {
                     .try_get_float("u_extra_size_multiplier")
                     .unwrap_or(1.0);
         let zoom = uniforms.try_get_float("u_zoom").unwrap_or(1.0);
-        let mut offset = offset + card_offset * card + index_offset * index as f32;
-        position += card * vec2(0.0, 0.7);
-        scale *= 1.0 - card * 0.5;
+        let offset = offset + card_offset * card + index_offset * index as f32;
         scale *= zoom;
 
-        let aspect_adjust = uniforms.try_get_int("u_aspect_adjust").unwrap_or_default() != 0;
-        let mut aspect_ratio = 1.0;
-        if aspect_adjust {
+        let aspect_ratio = {
             let screen_size = resources.camera.framebuffer_size;
-            aspect_ratio = screen_size.x / screen_size.y;
-            bx.x /= aspect_ratio;
-            if uniforms
-                .try_get_int("u_aspect_offset_adjust")
-                .unwrap_or_default()
-                != 0
-            {
-                offset.x /= aspect_ratio;
-            }
-        }
+            screen_size.x / screen_size.y
+        };
         uniforms.insert_float_ref("u_aspect_ratio", aspect_ratio);
 
-        let aabb = Aabb2::point(position + offset * scale).extend_symmetric(bx * size * scale);
+        let aabb = Aabb2::point(position + offset * scale)
+            .extend_symmetric(bx * size * scale * local_scale);
         let aabb = aabb.translate(align * aabb.size() * 0.5);
 
         uniforms.insert_vec2_ref("u_position", aabb.center());

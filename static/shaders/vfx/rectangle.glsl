@@ -10,7 +10,7 @@ attribute vec2 a_pos;
 void main() {
     init_fields();
     uv = get_uv(a_pos);
-    o_box = box;
+    o_box = vec2(box.x / box.y, 1.0);
     gl_Position = get_gl_position(uv);
 }
 #endif
@@ -21,7 +21,7 @@ in vec2 o_box;
 
 void main() {
     vec2 uv = warp(uv, u_global_time);
-    float sdf = rectangle_rounded_sdf(uv * o_box * vec2(u_aspect_ratio, 1), o_box, vec4(u_rounding * u_scale)) / u_scale;
+    float sdf = rectangle_rounded_sdf(uv * o_box, o_box, vec4(u_rounding));
     sdf = fbm_sdf(sdf, uv);
     // float alpha = mix(0, u_alpha, (u_sdf_cut - sdf) / u_aa);
     // float border = aliase(u_sdf_border, u_sdf_cut, u_aa, sdf);

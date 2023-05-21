@@ -43,3 +43,4 @@ First team {cm:2023-05-17T15:52:24}
     Gambler [1/2]: Turn end: give [Chaotic] to random ally {cm:2023-05-18T17:45:24}
     Outburst [2/1]: Ally died: give [Chaotic] to adjacent allies {cm:2023-05-18T17:52:30}
 @simulation New hero rating calculation {cm:2023-05-19T16:26:38}
+@shader sdf always from u_box size {cm:2023-05-21T18:07:32}

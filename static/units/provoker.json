@@ -55,6 +55,7 @@
                 "u_fbm_sdf": 0.25,
                 "u_fbm_sdf_size": 20.0,
                 "u_rounding": 0.0,
+                "u_padding": 1.0,
                 "u_rotation": 0.8,
                 "u_g_points": [
                     -0.6,
@@ -66,7 +67,7 @@
                     1.0,
                     1.0,
                     1.0,
-                    1.0
+                    0.0
                 ],
                 "u_size": 0.7,
                 "u_t_multiplier": 1.2,

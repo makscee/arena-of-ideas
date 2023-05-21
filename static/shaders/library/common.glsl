@@ -34,11 +34,10 @@ uniform float u_rotation = 0;
 float rotation;
 uniform int u_index;
 uniform float u_rand;
-uniform float u_aspect_ratio;
 
 uniform int u_ui = 0;
+uniform float u_aspect_ratio = 1;
 
-uniform int u_sdf_gradient_points = 0;
 uniform vec4 u_g_points;
 uniform vec4 u_g_alphas = vec4(1);
 uniform vec4 u_g_color_1;
@@ -66,10 +65,6 @@ vec4 sdf_gradient(float x) {
 
 vec2 get_card_uv(vec2 uv) {
     return mix(uv, uv * 2 + vec2(0, -.7), card);
-}
-
-vec2 get_card_pos(vec2 pos) {
-    return mix(pos, (pos + vec2(0, .7)) / 2, card);
 }
 
 float hash(float n) {
@@ -139,10 +134,10 @@ vec2 get_uv(vec2 a_pos) {
 }
 
 vec4 get_gl_position(vec2 uv) {
-    vec2 pos = rotate_cw(uv * box, rotation) + position;
+    vec2 pos = uv * box + position;
     vec3 p_pos = u_projection_matrix * u_view_matrix * vec3(pos, 1.0);
     vec4 cam_pos = vec4(p_pos.xy, 0.0, p_pos.z);
-    vec4 ui_pos = vec4(pos, 0.0, 1.0);
+    vec4 ui_pos = vec4(pos / vec2(u_aspect_ratio, 1.0), 0.0, 1.0);
     return mix(cam_pos, ui_pos, float(u_ui));
 }
 

@@ -26,18 +26,94 @@ pub enum Widget<'a> {
         update_handler: Option<Handler>,
         options: &'a Options,
         uniforms: ShaderUniforms,
+        shader: Option<Shader>,
+    },
+    CardChoicePanel {
+        title: String,
+        cards: Vec<&'a PackedUnit>,
+        entity: legion::Entity,
+        input_handler: Handler,
+        update_handler: Option<Handler>,
+        resources: &'a Resources,
     },
 }
 
 impl<'a> Widget<'_> {
     pub fn generate_node(self) -> Node {
         match self {
+            Self::CardChoicePanel {
+                title,
+                cards,
+                input_handler,
+                update_handler,
+                resources,
+                entity,
+            } => {
+                debug!(
+                    "Card choice panel {}",
+                    cards.iter().map(|x| x.name.to_owned()).join(" ")
+                );
+                let mut node: Node = default();
+
+                // card
+                let (shader, animation, duration) = {
+                    let anim = &resources.options.widgets.card_choice_panel.card_bg;
+                    let shader = anim.shader.clone();
+                    let animation = anim.animation.clone();
+                    let duration = anim.duration;
+                    (shader, animation, duration)
+                };
+                let i_shift = -(cards.len() as i32) / 2;
+                for (i, card) in cards.into_iter().enumerate() {
+                    let mut shader = shader.clone();
+                    shader
+                        .chain_after
+                        .push(card.get_ui_shader(Faction::Shop, resources));
+                    shader.set_int_ref("u_index", i as i32 + i_shift);
+                    shader.entity = Some(new_entity());
+                    shader.parent = Some(entity);
+
+                    ButtonSystem::add_button_handlers(&mut shader);
+                    shader.input_handlers.push(input_handler);
+                    if let Some(update_handler) = update_handler {
+                        shader.update_handlers.push(update_handler);
+                    }
+                    node.add_effect(TimedEffect::new(
+                        Some(duration),
+                        Animation::ShaderAnimation {
+                            shader,
+                            animation: animation.clone(),
+                        },
+                        0,
+                    ));
+                }
+
+                // panel
+                let (shader, animation, duration) = {
+                    let anim = &resources.options.widgets.card_choice_panel.panel;
+                    let shader = anim.shader.clone();
+                    let animation = anim.animation.clone();
+                    let duration = anim.duration;
+                    (shader, animation, duration)
+                };
+                node.add_effect(TimedEffect::new(
+                    Some(duration),
+                    Animation::ShaderAnimation {
+                        shader,
+                        animation: animation.clone(),
+                    },
+                    0,
+                ));
+
+                node.lock(NodeLockType::Empty)
+            }
             Self::Button {
                 text,
                 input_handler,
                 update_handler,
                 options,
                 uniforms,
+                shader,
             } => {
                 let button = ButtonSystem::create_button(
                     Some(&text),
@@ -45,6 +121,7 @@ impl<'a> Widget<'_> {
                     input_handler,
                     update_handler,
                     new_entity(),
+                    shader,
                     options,
                 )
                 .merge_uniforms(&uniforms, true);
@@ -125,32 +202,9 @@ impl<'a> Widget<'_> {
                     animation
                         .get_uniforms_mut()
                         .insert_vec2_ref("u_open_position", position);
-                    let house_color = unit.house_color(resources);
-                    let mut unit_shader = unit.generate_shader(house_color, &resources.options);
-                    unit_shader
-                        .parameters
-                        .uniforms
-                        .insert_float_ref("u_rotation", 0.0)
-                        .insert_int_ref("u_aspect_adjust", 1)
-                        .insert_float_ref(&VarName::Scale.uniform(), 0.35)
-                        .insert_float_ref(&VarName::Card.uniform(), 1.0)
-                        .insert_color_ref(
-                            &VarName::FactionColor.uniform(),
-                            *resources
-                                .options
-                                .colors
-                                .factions
-                                .get(&Faction::Dark)
-                                .unwrap(),
-                        )
-                        .insert_vec2_ref(&VarName::Box.uniform(), vec2(1.0, 1.0))
-                        .insert_vec2_ref("u_align", vec2::ZERO);
-                    if let Some(house) = unit.house {
-                        unit_shader.parameters.uniforms.insert_color_ref(
-                            &VarName::HouseColor.uniform(),
-                            resources.house_pool.get_color(&house),
-                        );
-                    }
+                    let mut unit_shader = unit
+                        .get_ui_shader(Faction::Dark, resources)
+                        .set_float("u_scale", 0.35);
                     shader.chain_after.push(unit_shader);
                     shader.order += difficulty as i32 * 3;
                     (shader, animation, anim.duration)

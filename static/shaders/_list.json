@@ -5,7 +5,6 @@
     "shaders/system/unit.glsl",
     "shaders/system/unit_card.glsl",
     "shaders/system/field.glsl",
-    "shaders/system/stats.glsl",
     "shaders/system/strike.glsl",
     "shaders/system/slot.glsl",
     "shaders/system/description_panel.glsl",

@@ -316,6 +316,7 @@ impl ShopSystem {
                 "u_position",
                 ShaderUniform::Vec2(Self::reroll_btn_position(resources)),
             ),
+            shader: None,
         }
         .generate_node()
         .lock(NodeLockType::Empty)

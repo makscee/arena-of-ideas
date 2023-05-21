@@ -183,6 +183,28 @@ impl PackedUnit {
 
         shader
     }
+
+    pub fn get_ui_shader(&self, faction: Faction, resources: &Resources) -> Shader {
+        let house_color = self.house_color(resources);
+        let mut unit_shader = self.generate_shader(house_color, &resources.options);
+        unit_shader
+            .parameters
+            .uniforms
+            .insert_float_ref("u_card", 1.0)
+            .insert_color_ref(
+                "u_faction_color",
+                *resources.options.colors.factions.get(&faction).unwrap(),
+            )
+            .insert_vec2_ref("u_box", vec2(1.0, 1.0))
+            .insert_vec2_ref("u_align", vec2::ZERO);
+        if let Some(house) = self.house {
+            unit_shader
+                .parameters
+                .uniforms
+                .insert_color_ref("u_house_color", resources.house_pool.get_color(&house));
+        }
+        unit_shader
+    }
 }
 
 impl FileWatcherLoader for PackedUnit {

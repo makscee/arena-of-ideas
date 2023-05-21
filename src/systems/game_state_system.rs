@@ -311,6 +311,47 @@ impl GameStateSystem {
                 // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
                 // ShopSystem::do_buy(entity, 1, resources, world);
                 // BonusEffectPool::load_widget(6, world, resources);
+                let by_name = resources
+                    .shop_data
+                    .pool
+                    .iter()
+                    .find(|x| x.name == "Aggressor")
+                    .unwrap();
+                let cards: Vec<&PackedUnit> = vec![
+                    resources.shop_data.pool.choose(&mut thread_rng()).unwrap(),
+                    by_name,
+                    resources.shop_data.pool.choose(&mut thread_rng()).unwrap(),
+                ];
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            debug!("Click {entity:?} {:?}", &shader.parameters.uniforms);
+                            resources
+                                .tape_player
+                                .tape
+                                .close_panels(shader.parent.unwrap(), resources.tape_player.head);
+                        }
+                        _ => {}
+                    }
+                };
+                let entity = new_entity();
+                Widget::CardChoicePanel {
+                    title: "Buy".to_owned(),
+                    cards,
+                    input_handler,
+                    update_handler: None,
+                    resources: &resources,
+                    entity,
+                }
+                .generate_node()
+                .push_as_panel(entity, resources);
+
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {
@@ -328,9 +369,9 @@ impl GameStateSystem {
             GameState::Sacrifice => {
                 VfxSystem::vfx_show_stars_indicator_panel(world, resources);
                 for entity in UnitSystem::collect_faction(world, Faction::Team) {
-                    ContextState::get_mut(entity, world)
-                        .vars
-                        .change_int(&VarName::Rank, 1);
+                    let vars = &mut ContextState::get_mut(entity, world).vars;
+                    let rank = (vars.try_get_int(&VarName::Rank).unwrap_or_default() + 1).min(2);
+                    vars.set_int(&VarName::Rank, rank);
                 }
 
                 resources.camera.focus = Focus::Shop;
@@ -365,6 +406,7 @@ impl GameStateSystem {
                     update_handler: Some(update_handler),
                     options: &resources.options,
                     uniforms: resources.options.uniforms.ui_button.clone(),
+                    shader: None,
                 }
                 .generate_node()
                 .lock(NodeLockType::Empty)

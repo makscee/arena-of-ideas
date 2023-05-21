@@ -79,6 +79,14 @@ pub struct Widgets {
     pub battle_choice_panel: BattleChoicePanel,
     pub battle_over_panel: BattleOverPanel,
     pub bonus_choice_panel: BonusChoicePanel,
+    pub card_choice_panel: CardChoicePanel,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CardChoicePanel {
+    pub panel: AnimatedShader,
+    pub card_bg: AnimatedShader,
 }
 
 #[derive(Deserialize, Debug)]

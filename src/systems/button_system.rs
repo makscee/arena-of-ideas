@@ -9,9 +9,14 @@ impl ButtonSystem {
         input_handler: Handler,
         update_handler: Option<Handler>,
         entity: legion::Entity,
+        shader: Option<Shader>,
         options: &Options,
     ) -> Shader {
-        let mut button = options.shaders.button.clone();
+        let mut button = if let Some(shader) = shader {
+            shader
+        } else {
+            options.shaders.button.clone()
+        };
         button.input_handlers.push(input_handler);
         if let Some(update_handler) = update_handler {
             button.update_handlers.push(update_handler);
