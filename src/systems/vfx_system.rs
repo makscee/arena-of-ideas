@@ -199,14 +199,54 @@ impl VfxSystem {
         (light_shader, dark_shader)
     }
 
-    pub fn vfx_show_stars_indicator_panel(world: &legion::World, resources: &mut Resources) {
-        let value = TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Stars, world);
-        let shader = resources
+    pub fn vfx_show_stars_indicator_panel(resources: &mut Resources) {
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            let value =
+                TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Stars, world);
+            shader.set_string_ref("u_text", format!("x{value}"), 1);
+        }
+        let mut shader = resources
             .options
             .shaders
-            .stars_indicator
+            .count_indicator
             .clone()
-            .set_string("u_text", format!("x{value}"), 1);
+            .set_float("u_star_enabled", 1.0)
+            .set_float("u_g_enabled", 0.0)
+            .set_int("u_index", 0);
+        shader.entity = Some(new_entity());
+        shader.update_handlers.push(update_handler);
+        Node::new_panel_scaled(shader)
+            .lock(NodeLockType::Empty)
+            .push_as_panel(new_entity(), resources);
+    }
+
+    pub fn vfx_show_g_indicator_panel(resources: &mut Resources) {
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            let value = TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::G, world);
+            shader.set_string_ref("u_text", format!("x{value}"), 1);
+        }
+        let mut shader = resources
+            .options
+            .shaders
+            .count_indicator
+            .clone()
+            .set_float("u_star_enabled", 0.0)
+            .set_float("u_g_enabled", 1.0)
+            .set_int("u_index", 1);
+        shader.entity = Some(new_entity());
+        shader.update_handlers.push(update_handler);
         Node::new_panel_scaled(shader)
             .lock(NodeLockType::Empty)
             .push_as_panel(new_entity(), resources);

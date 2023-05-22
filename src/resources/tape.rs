@@ -124,9 +124,8 @@ impl Tape {
     pub fn close_panels(&mut self, panel_entity: legion::Entity, ts: Time) -> bool {
         let mut result = false;
         for (entity, panel) in self.panels.iter_mut() {
-            if *entity == panel_entity {
+            if *entity == panel_entity && panel.set_open(false, ts) {
                 result = true;
-                panel.set_open(false, ts);
             }
         }
         result

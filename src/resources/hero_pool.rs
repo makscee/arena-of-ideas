@@ -22,6 +22,20 @@ impl HeroPool {
         self.heroes.values().find(|x| x.name.eq(name))
     }
 
+    pub fn rarity_by_name(name: &str, resources: &Resources) -> Rarity {
+        let ind = *resources.hero_pool.power.get(name).unwrap();
+        let perc = ind as f32 / resources.hero_pool.power.len() as f32;
+        if perc > 0.9 {
+            Rarity::Legendary
+        } else if perc > 0.7 {
+            Rarity::Epic
+        } else if perc > 0.4 {
+            Rarity::Rare
+        } else {
+            Rarity::Common
+        }
+    }
+
     pub fn all(&self) -> Vec<PackedUnit> {
         self.heroes.values().cloned().collect_vec()
     }

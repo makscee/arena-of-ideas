@@ -30,7 +30,7 @@ pub enum Widget<'a> {
     },
     CardChoicePanel {
         title: String,
-        cards: Vec<&'a PackedUnit>,
+        cards: Vec<Shader>,
         entity: legion::Entity,
         input_handler: Handler,
         update_handler: Option<Handler>,
@@ -51,7 +51,10 @@ impl<'a> Widget<'_> {
             } => {
                 debug!(
                     "Card choice panel {}",
-                    cards.iter().map(|x| x.name.to_owned()).join(" ")
+                    cards
+                        .iter()
+                        .map(|x| x.parameters.uniforms.try_get_string("u_name").unwrap())
+                        .join(" ")
                 );
                 let mut node: Node = default();
 
@@ -63,13 +66,16 @@ impl<'a> Widget<'_> {
                     let duration = anim.duration;
                     (shader, animation, duration)
                 };
-                let i_shift = -(cards.len() as i32) / 2;
                 for (i, card) in cards.into_iter().enumerate() {
                     let mut shader = shader.clone();
-                    shader
-                        .chain_after
-                        .push(card.get_ui_shader(Faction::Shop, resources));
-                    shader.set_int_ref("u_index", i as i32 + i_shift);
+                    let rarity = HeroPool::rarity_by_name(
+                        &card.parameters.uniforms.try_get_string("u_name").unwrap(),
+                        resources,
+                    )
+                    .color(resources);
+                    shader.chain_after.push(card);
+                    shader.set_int_ref("u_index", i as i32);
+                    shader.set_color_ref("u_rarity_color", rarity);
                     shader.entity = Some(new_entity());
                     shader.parent = Some(entity);
 
@@ -96,6 +102,64 @@ impl<'a> Widget<'_> {
                     let duration = anim.duration;
                     (shader, animation, duration)
                 };
+                node.add_effect(TimedEffect::new(
+                    Some(duration),
+                    Animation::ShaderAnimation {
+                        shader,
+                        animation: animation.clone(),
+                    },
+                    0,
+                ));
+
+                // reroll button
+                let shader = resources
+                    .options
+                    .widgets
+                    .card_choice_panel
+                    .reroll_btn
+                    .clone();
+                fn reroll_handler(
+                    event: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if ShopSystem::is_reroll_affordable(world)
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(shader.parent.unwrap(), 0.0)
+                            {
+                                ShopSystem::show_hero_buy_panel(resources);
+                                ShopSystem::deduct_reroll_cost(world, resources);
+                                debug!("Click reroll");
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                fn reroll_update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    _: &mut Resources,
+                ) {
+                    shader.set_active(ShopSystem::is_reroll_affordable(world));
+                }
+                let mut shader = ButtonSystem::create_button(
+                    None,
+                    None,
+                    reroll_handler,
+                    Some(reroll_update_handler),
+                    new_entity(),
+                    Some(shader),
+                    &resources.options,
+                );
+                shader.parent = Some(entity);
                 node.add_effect(TimedEffect::new(
                     Some(duration),
                     Animation::ShaderAnimation {

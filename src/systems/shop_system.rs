@@ -85,6 +85,52 @@ impl ShopSystem {
         default()
     }
 
+    pub fn show_hero_buy_panel(resources: &mut Resources) {
+        let mut cards: Vec<Shader> = default();
+        for _ in 0..3 {
+            let pool = &mut resources.shop_data.pool;
+            let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
+            let unit = pool.swap_remove(unit);
+            let shader = unit.get_ui_shader(Faction::Shop, resources);
+            cards.push(shader);
+            resources.shop_data.offered.push(unit);
+        }
+        fn input_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if resources
+                        .tape_player
+                        .tape
+                        .close_panels(shader.parent.unwrap(), resources.tape_player.head)
+                    {
+                        let ind =
+                            shader.parameters.uniforms.try_get_int("u_index").unwrap() as usize;
+                        debug!("Click {entity:?} {ind}");
+                        ShopSystem::do_buy_offered(ind, resources, world);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let entity = new_entity();
+        Widget::CardChoicePanel {
+            title: "Buy".to_owned(),
+            cards,
+            input_handler,
+            update_handler: None,
+            resources: &resources,
+            entity,
+        }
+        .generate_node()
+        .push_as_panel(entity, resources);
+    }
+
     pub fn show_battle_choice_widget(resources: &mut Resources) {
         debug!("Show widget");
         let teams = Ladder::get_current_teams(resources);
@@ -144,6 +190,20 @@ impl ShopSystem {
                 world,
                 resources,
             )
+        }
+    }
+
+    pub fn do_buy_offered(ind: usize, resources: &mut Resources, world: &mut legion::World) {
+        let mut offered: Vec<PackedUnit> = default();
+        mem::swap(&mut offered, &mut resources.shop_data.offered);
+        for (i, offer) in offered.into_iter().enumerate() {
+            if i == ind {
+                let team = TeamSystem::entity(&Faction::Team, world);
+                offer.unpack(world, resources, 0, None, team);
+                SlotSystem::fill_gaps(Faction::Team, world);
+            } else {
+                resources.shop_data.pool.push(offer);
+            }
         }
     }
 
@@ -239,16 +299,16 @@ impl ShopSystem {
         }
     }
 
-    fn is_reroll_affordable(world: &legion::World) -> bool {
+    pub fn is_reroll_affordable(world: &legion::World) -> bool {
         let vars = &TeamSystem::get_state(&Faction::Team, world).vars;
         vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
             || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
     }
 
-    fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
-        if resources.ladder.current_ind() == 0 {
-            return;
-        }
+    pub fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
+        // if resources.ladder.current_ind() == 0 {
+        //     return;
+        // }
         let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
@@ -259,7 +319,7 @@ impl ShopSystem {
     }
 
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
-        ShopData::load_pool(resources);
+        ShopData::load_pool_full(resources);
         PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
         PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
 

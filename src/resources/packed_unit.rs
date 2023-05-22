@@ -129,6 +129,7 @@ impl PackedUnit {
             shader.chain_before.push(self_shader.clone());
         }
         shader.set_color_ref("u_house_color", house_color);
+        shader.set_string_ref("u_name", self.name.to_owned(), 1);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
         shader.set_string_ref(&VarName::Description.uniform(), self.description.clone(), 0);

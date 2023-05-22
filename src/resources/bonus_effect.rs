@@ -169,6 +169,10 @@ pub enum Rarity {
 }
 
 impl Rarity {
+    pub fn color(&self, resources: &Resources) -> Rgba<f32> {
+        *resources.options.colors.rarities.get(self).unwrap()
+    }
+
     pub fn weight(&self) -> i32 {
         match self {
             Rarity::Common => 100,

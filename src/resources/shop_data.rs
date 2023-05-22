@@ -7,6 +7,7 @@ pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 #[derive(Default)]
 pub struct ShopData {
     pub pool: Vec<PackedUnit>,
+    pub offered: Vec<PackedUnit>,
     pub floor_extensions: Vec<Vec<PackedUnit>>,
     pub load_new_hero: bool,
 }
@@ -43,6 +44,10 @@ impl ShopData {
             .floor_extensions
             .iter()
             .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join("\n")));
+    }
+
+    pub fn load_pool_full(resources: &mut Resources) {
+        resources.shop_data.pool = resources.hero_pool.all();
     }
 
     pub fn load_floor(resources: &mut Resources, floor: usize) {

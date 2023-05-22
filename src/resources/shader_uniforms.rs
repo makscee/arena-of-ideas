@@ -192,6 +192,13 @@ impl ShaderUniforms {
         })
     }
 
+    pub fn try_get_string(&self, key: &str) -> Option<String> {
+        self.get(key).and_then(|v| match v {
+            ShaderUniform::String(v) => Some(v.1.to_owned()),
+            _ => None,
+        })
+    }
+
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
         self.data.keys().map(|key| {
             (

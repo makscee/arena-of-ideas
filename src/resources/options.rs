@@ -70,7 +70,7 @@ pub struct Shaders {
     pub shop_sell_field: Shader,
     pub battle_score_indicator: Shader,
     pub state_indicator: Shader,
-    pub stars_indicator: Shader,
+    pub count_indicator: Shader,
 }
 
 #[derive(Deserialize, Debug)]
@@ -87,6 +87,7 @@ pub struct Widgets {
 pub struct CardChoicePanel {
     pub panel: AnimatedShader,
     pub card_bg: AnimatedShader,
+    pub reroll_btn: Shader,
 }
 
 #[derive(Deserialize, Debug)]

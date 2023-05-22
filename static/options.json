@@ -929,13 +929,12 @@
             "layer": "UI",
             "order": 0
         },
-        "stars_indicator": {
+        "count_indicator": {
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
                     "u_ui": 1,
-                    "u_aspect_adjust": 1,
-                    "u_size": 0.1,
+                    "u_size": 0.14,
                     "u_outline_fbm": 0.1,
                     "u_mid_border": 0.05,
                     "u_outline_color": "#000000",
@@ -943,11 +942,15 @@
                     "u_color": "#FFD700",
                     "u_position": [
                         -0.9,
-                        0.5
+                        -0.7
                     ],
                     "u_align": [
                         1.0,
                         0.0
+                    ],
+                    "u_index_offset": [
+                        0.0,
+                        -0.2
                     ]
                 }
             },
@@ -958,18 +961,45 @@
                         "uniforms": {
                             "u_outline": 0.15,
                             "u_scale": 0.9,
+                            "u_enabled": 0.0,
                             "u_align": [
                                 -0.7,
                                 -0.1
-                            ]
+                            ],
+                            "mapping": {
+                                "u_enabled": "u_star_enabled"
+                            }
                         }
                     },
                     "layer": "UI",
                     "order": 1002
+                },
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "uniforms": {
+                            "u_outline_fbm": 0.0,
+                            "u_mid_border": 0.05,
+                            "u_outline_color": "#000000",
+                            "u_mid_border_color": "#ffffff",
+                            "u_color": "#FFD700",
+                            "u_text": [
+                                1,
+                                "G"
+                            ],
+                            "u_align": [
+                                -0.7,
+                                -0.0
+                            ],
+                            "mapping": {
+                                "u_enabled": "u_g_enabled"
+                            }
+                        }
+                    }
                 }
             ],
             "layer": "UI",
-            "order": 1000
+            "order": 2000
         }
     },
     "images": {
@@ -1607,6 +1637,71 @@
             }
         },
         "card_choice_panel": {
+            "reroll_btn": {
+                "path": "shaders/vfx/rectangle.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_ui": 1,
+                        "u_padding": 0.2,
+                        "u_g_color_1": "#000000",
+                        "u_g_color_2": "#000000",
+                        "u_g_color_3": "#000000",
+                        "u_g_color_4": "#000000",
+                        "u_rounding": 0.5,
+                        "u_color": "#000000",
+                        "u_position": [
+                            0.0,
+                            -0.8
+                        ],
+                        "u_g_points": [
+                            -0.2,
+                            0.0,
+                            0.2,
+                            0.2
+                        ],
+                        "u_g_alphas": [
+                            1.0,
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "u_box": [
+                            0.4,
+                            0.1
+                        ],
+                        "u_size": 1.0,
+                        "mapping": {
+                            "u_g_color_1": "u_outline_color",
+                            "u_g_color_2": "u_outline_color",
+                            "u_g_color_3": "u_outline_color",
+                            "u_g_color4": "u_outline_color"
+                        }
+                    }
+                },
+                "chain_after": [
+                    {
+                        "path": "shaders/vfx/text.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_text_inside": 0.5,
+                                "u_text_border": 0.3,
+                                "u_text_color": "#FFD700",
+                                "u_size": 0.8,
+                                "u_text": [
+                                    1,
+                                    "Reroll"
+                                ],
+                                "u_outline_color": "#000000",
+                                "mapping": {
+                                    "u_color": "u_text_color"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "layer": "UI",
+                "order": 1005
+            },
             "card_bg": {
                 "shader": {
                     "path": "shaders/vfx/rectangle.glsl",
@@ -1616,18 +1711,18 @@
                             "u_rounding": 0.2,
                             "u_padding": 0.5,
                             "u_fbm_sdf": 0.4,
-                            "u_scale": 0.35,
+                            "u_scale": 0.3,
                             "u_index_offset": [
                                 3.0,
                                 0.0
                             ],
                             "u_box": [
-                                1.0,
+                                1.2,
                                 1.5
                             ],
                             "u_color": "#000000",
                             "u_position": [
-                                0.0,
+                                -0.9,
                                 -0.0
                             ],
                             "u_g_color_1": "#000000",
@@ -1636,8 +1731,8 @@
                             "u_g_color_4": "#000000",
                             "u_g_points": [
                                 -2.0,
-                                -0.5,
-                                -0.1,
+                                -0.2,
+                                -0.0,
                                 0.1
                             ],
                             "u_g_alphas": [
@@ -1647,8 +1742,10 @@
                                 0.0
                             ],
                             "mapping": {
-                                "u_g_color_3": "u_color",
-                                "u_g_color_4": "u_color"
+                                "u_g_color_2": "u_color",
+                                "u_g_color_1": "u_rarity_color",
+                                "u_g_color_3": "u_rarity_color",
+                                "u_g_color_4": "u_rarity_color"
                             }
                         }
                     },
@@ -1693,15 +1790,18 @@
                     "parameters": {
                         "uniforms": {
                             "u_ui": 1,
-                            "u_color": "#FFD700",
+                            "u_color": "#000000",
                             "u_box": [
-                                2.0,
+                                5.0,
                                 1.0
                             ],
-                            "u_g_color_1": "#ffffff",
-                            "u_g_color_2": "#ffffff",
+                            "u_g_color_1": "#000000",
+                            "u_g_color_2": "#FFD700",
                             "u_g_color_3": "#ffffff",
                             "u_g_color_4": "#ffffff",
+                            "u_fbm_sdf": 0.5,
+                            "u_fbm_sdf_size": 30.5,
+                            "u_fbm_sdf_speed": 0.01,
                             "u_g_points": [
                                 -2.0,
                                 -0.5,
@@ -1710,9 +1810,9 @@
                             ],
                             "u_g_alphas": [
                                 1.0,
+                                0.0,
                                 1.0,
-                                1.0,
-                                0.0
+                                1.0
                             ],
                             "mapping": {
                                 "u_g_color_3": "u_color",
@@ -1734,7 +1834,7 @@
                                         0.0,
                                         0.8
                                     ],
-                                    "u_size": 0.3,
+                                    "u_size": 0.2,
                                     "u_outline_fbm": 0.2,
                                     "u_mid_border": 0.04,
                                     "u_outline_color": "#ffffff",
@@ -1799,8 +1899,6 @@
                 3.0,
                 0.0
             ],
-            "u_aspect_adjust": 1,
-            "u_aspect_offset_adjust": 1,
             "u_ui": 1
         }
     }
