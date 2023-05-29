@@ -1,6 +1,3 @@
-
-
-
 @content +Elementals
     [Splash]: "+1" damage to all enemies after strike once
     Torrent [2/1]: Battle start: give [Splash] to adjacent allies.
@@ -18,6 +15,7 @@
         New disign
         Hide button
 @gameplay
-    Hero card choice
+    Hero card choice {cm:2023-05-29T14:36:59}
+    Replace shop case with buy button
     Gold sink
     Disable selling

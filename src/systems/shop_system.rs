@@ -85,6 +85,20 @@ impl ShopSystem {
         default()
     }
 
+    pub fn reroll_hero_panel(world: &mut legion::World, resources: &mut Resources) {
+        Self::return_showed_heroes(resources);
+        Self::show_hero_buy_panel(resources);
+        Self::deduct_reroll_cost(world, resources);
+    }
+
+    fn return_showed_heroes(resources: &mut Resources) {
+        resources
+            .shop_data
+            .offered
+            .drain(..)
+            .for_each(|x| resources.shop_data.pool.push(x));
+    }
+
     pub fn show_hero_buy_panel(resources: &mut Resources) {
         let mut cards: Vec<Shader> = default();
         for _ in 0..3 {

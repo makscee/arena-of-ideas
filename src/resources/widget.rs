@@ -133,9 +133,8 @@ impl<'a> Widget<'_> {
                                     .tape
                                     .close_panels(shader.parent.unwrap(), 0.0)
                             {
-                                ShopSystem::show_hero_buy_panel(resources);
-                                ShopSystem::deduct_reroll_cost(world, resources);
-                                debug!("Click reroll");
+                                ShopSystem::reroll_hero_panel(world, resources);
+                                debug!("Reroll hero buy panel");
                             }
                         }
                         _ => {}
