@@ -14,7 +14,7 @@ pub struct BonusEffect {
 }
 
 impl BonusEffect {
-    pub fn new_buff_effect(g: usize, rarity: Rarity, resources: &Resources) -> Self {
+    pub fn new_buff_effect(rarity: Rarity, resources: &Resources) -> Self {
         let mut single_target = false;
         let rng = &mut thread_rng();
         let (effect, description) = if rarity == Rarity::Legendary && rng.gen_bool(0.5) {
@@ -54,7 +54,6 @@ impl BonusEffect {
                 }
             }
         };
-        let (effect, description) = Self::add_g_effect(g, effect, description);
         Self {
             effect,
             rarity,
@@ -112,7 +111,7 @@ impl BonusEffect {
         (effect, format!("Add Team status {}", buff.prefix))
     }
 
-    pub fn new_slot_effect(g: usize, rarity: Rarity) -> Self {
+    pub fn new_slot_effect(rarity: Rarity) -> Self {
         let value: i32 = match rarity {
             Rarity::Common | Rarity::Rare | Rarity::Epic => 1,
             Rarity::Legendary => 2,
@@ -124,7 +123,6 @@ impl BonusEffect {
         }
         .wrap();
         let description = format!("+{value} slots");
-        let (effect, description) = Self::add_g_effect(g, effect, description);
         Self {
             effect,
             rarity,
@@ -132,29 +130,6 @@ impl BonusEffect {
             single_target: default(),
             target: default(),
         }
-    }
-
-    fn add_g_effect(
-        g: usize,
-        effect: EffectWrapped,
-        description: String,
-    ) -> (EffectWrapped, String) {
-        let description = format!("+{g} g, {description}");
-        let g_effect = Box::new(
-            Effect::ChangeTeamVarInt {
-                var: VarName::G,
-                delta: ExpressionInt::Const { value: g as i32 },
-                faction: Some(ExpressionFaction::Team),
-            }
-            .wrap(),
-        );
-        (
-            Effect::List {
-                items: vec![g_effect, Box::new(effect)],
-            }
-            .wrap(),
-            description,
-        )
     }
 }
 
@@ -182,19 +157,10 @@ impl Rarity {
         }
     }
 
-    pub fn generate(&self, value: usize, buff: bool, resources: &Resources) -> BonusEffect {
-        let rng = &mut thread_rng();
-        let mut g = value;
-        match self {
-            Rarity::Common => g += rng.gen_range(0..3),
-            Rarity::Rare => g += rng.gen_range(0..4),
-            Rarity::Epic => g += rng.gen_range(0..5),
-            Rarity::Legendary => g += rng.gen_range(0..6),
-        };
-
+    pub fn generate(&self, buff: bool, resources: &Resources) -> BonusEffect {
         match buff {
-            true => BonusEffect::new_buff_effect(g, *self, resources),
-            false => BonusEffect::new_slot_effect(g, *self),
+            true => BonusEffect::new_buff_effect(*self, resources),
+            false => BonusEffect::new_slot_effect(*self),
         }
     }
 }

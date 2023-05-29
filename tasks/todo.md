@@ -1,4 +1,4 @@
-@content +Elementals
+@content +Elementals {c}
     [Splash]: "+1" damage to all enemies after strike once
     Torrent [2/1]: Battle start: give [Splash] to adjacent allies.
     Annihilator [1/2]: Enemy killed: gain [Splash].
@@ -16,7 +16,8 @@
 @gameplay
     Hero card choice {cm:2023-05-29T14:36:59}
     Replace shop case with buy button {cm:2023-05-29T15:29:55}
-    Gold sink
+    Gold sink {cm:2023-05-29T17:10:25}
     Disable selling {cm:2023-05-29T15:30:07}
+    G after Sacrifice
 
 @fix restart button

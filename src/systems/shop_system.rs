@@ -335,6 +335,7 @@ impl ShopSystem {
             .vars
             .set_int(&VarName::Level, current_floor as i32);
         Self::create_buy_button(resources);
+        Self::create_battle_button(resources);
         VfxSystem::vfx_show_stars_indicator_panel(resources);
         VfxSystem::vfx_show_g_indicator_panel(resources);
     }
@@ -343,6 +344,68 @@ impl ShopSystem {
         resources.tape_player.clear();
         Event::ShopEnd.send(world, resources);
         ShopSystem::reset_g(world);
+    }
+
+    fn create_battle_button(resources: &mut Resources) {
+        fn input_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            _: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if !UnitSystem::collect_faction(world, Faction::Team).is_empty()
+                        && resources
+                            .tape_player
+                            .tape
+                            .close_panels(entity, resources.tape_player.head)
+                    {
+                        let g = ShopSystem::get_g(world) as usize;
+                        if g > 0 {
+                            BonusEffectPool::load_widget(g, world, resources);
+                            ShopSystem::reset_g(world);
+                            fn start_battle(_: &mut legion::World, resources: &mut Resources) {
+                                ShopSystem::show_battle_choice_widget(resources);
+                            }
+                            resources.bonus_pool.after = Some(start_battle);
+                        } else {
+                            ShopSystem::show_battle_choice_widget(resources);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            shader.set_active(!UnitSystem::collect_faction(world, Faction::Team).is_empty());
+        }
+        let entity = new_entity();
+        let uniforms = resources
+            .options
+            .uniforms
+            .ui_button
+            .clone()
+            .insert_int("u_index", 1);
+        Widget::Button {
+            text: "Start battle".to_owned(),
+            input_handler,
+            update_handler: Some(update_handler),
+            options: &resources.options,
+            uniforms,
+            shader: None,
+            entity,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
     }
 
     fn create_buy_button(resources: &mut Resources) {

@@ -2,11 +2,11 @@ use geng::prelude::itertools::Itertools;
 
 use super::*;
 
-#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct BonusEffectPool {
     effects: HashMap<Rarity, Vec<BonusEffect>>,
-    #[serde(skip)]
     current: Vec<BonusEffect>,
+    pub after: Option<fn(&mut legion::World, &mut Resources)>,
 }
 
 impl BonusEffectPool {
@@ -26,12 +26,13 @@ impl BonusEffectPool {
         .push_as_panel(entity, resources);
     }
 
-    pub fn make_selection(ind: usize, world: &legion::World, resources: &mut Resources) {
+    pub fn make_selection(ind: usize, world: &mut legion::World, resources: &mut Resources) {
         let pool = &mut resources.bonus_pool;
         if pool.current.is_empty() {
             return;
         }
         let bonus = pool.current[ind].to_owned();
+        let after = pool.after.take();
         pool.current.clear();
         let mut context = Context::new(
             ContextLayer::Entity {
@@ -46,6 +47,9 @@ impl BonusEffectPool {
         resources
             .action_queue
             .push_back(Action::new(context, bonus.effect));
+        if let Some(after) = after {
+            (after)(world, resources);
+        }
     }
 
     fn load_bonuses(value: usize, world: &legion::World, resources: &mut Resources) {
@@ -73,7 +77,7 @@ impl BonusEffectPool {
         let mut current = rarities
             .into_iter()
             .enumerate()
-            .map(|(i, x)| x.generate(value, i != ind, resources))
+            .map(|(i, x)| x.generate(i != ind, resources))
             .collect_vec();
 
         current.iter_mut().for_each(|x| {
