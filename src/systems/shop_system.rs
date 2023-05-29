@@ -47,37 +47,6 @@ impl System for ShopSystem {
 
         Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
     }
-    fn draw(&self, world: &legion::World, resources: &mut Resources, _: &mut ugli::Framebuffer) {
-        let position = SlotSystem::get_position(0, &Faction::Shop, resources);
-        let text_color = *resources
-            .options
-            .colors
-            .factions
-            .get(&Faction::Shop)
-            .unwrap();
-        let text = format!("{} g", Self::get_g(world).to_string());
-        let money_indicator = &resources.options.shaders.money_indicator;
-        resources.frame_shaders.push(
-            money_indicator
-                .clone()
-                .set_uniform("u_position", ShaderUniform::Vec2(position))
-                .set_uniform("u_color", ShaderUniform::Color(text_color))
-                .set_uniform("u_text", ShaderUniform::String((0, text))),
-        );
-        let text = format!("{} g", Self::reroll_price(world, resources).to_string());
-        let money_indicator = &resources.options.shaders.money_indicator;
-        resources.frame_shaders.push(
-            money_indicator
-                .clone()
-                .set_uniform("u_size", ShaderUniform::Float(0.5))
-                .set_uniform(
-                    "u_position",
-                    ShaderUniform::Vec2(Self::reroll_btn_position(resources) + vec2(1.5, 0.0)),
-                )
-                .set_uniform("u_color", ShaderUniform::Color(text_color))
-                .set_uniform("u_text", ShaderUniform::String((0, text))),
-        );
-    }
 }
 
 impl ShopSystem {
@@ -219,6 +188,7 @@ impl ShopSystem {
                 resources.shop_data.pool.push(offer);
             }
         }
+        Self::create_buy_button(resources);
     }
 
     pub fn do_buy(
@@ -306,23 +276,22 @@ impl ShopSystem {
         }
     }
 
-    fn try_reroll(world: &mut legion::World, resources: &mut Resources) {
-        if Self::is_reroll_affordable(world) {
-            Self::reroll(world, resources);
-            Self::deduct_reroll_cost(world, resources);
-        }
-    }
-
     pub fn is_reroll_affordable(world: &legion::World) -> bool {
         let vars = &TeamSystem::get_state(&Faction::Team, world).vars;
         vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
             || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
     }
 
+    pub fn is_hero_affordable(world: &legion::World) -> bool {
+        Self::get_g(world) >= Self::buy_price(world)
+    }
+
     pub fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
-        // if resources.ladder.current_ind() == 0 {
-        //     return;
-        // }
+        if resources.ladder.current_ind() == 0
+            && UnitSystem::collect_faction(world, Faction::Team).len() == 0
+        {
+            return;
+        }
         let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
@@ -332,15 +301,17 @@ impl ShopSystem {
         }
     }
 
+    pub fn deduct_hero_price(world: &mut legion::World) {
+        let price = Self::buy_price(world);
+        Self::change_g(-price, world);
+    }
+
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         ShopData::load_pool_full(resources);
         PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
         PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
-
-        let team = PackedTeam::new("Shop".to_owned(), default());
-        team.unpack(&Faction::Shop, world, resources);
-
         PackedTeam::new("Team".to_owned(), default()).unpack(&Faction::Team, world, resources);
+
         let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
         vars.set_int(&VarName::G, 0);
         vars.set_int(&VarName::BuyPrice, 3);
@@ -350,20 +321,50 @@ impl ShopSystem {
         vars.set_int(&VarName::Slots, resources.options.initial_team_slots as i32);
     }
 
-    fn reroll_btn_position(resources: &Resources) -> vec2<f32> {
-        SlotSystem::get_position(0, &Faction::Shop, resources) + vec2(0.0, -2.0)
+    pub fn enter(world: &mut legion::World, resources: &mut Resources) {
+        let current_floor = resources.ladder.current_ind();
+        if current_floor == 0 {
+            Self::change_g(resources.options.initial_shop_g, world);
+        }
+        TeamSystem::get_state_mut(&Faction::Team, world)
+            .vars
+            .set_int(&VarName::FreeRerolls, resources.last_score as i32);
+
+        ShopData::load_floor(resources, current_floor);
+        WorldSystem::get_state_mut(world)
+            .vars
+            .set_int(&VarName::Level, current_floor as i32);
+        Self::create_buy_button(resources);
+        VfxSystem::vfx_show_stars_indicator_panel(resources);
+        VfxSystem::vfx_show_g_indicator_panel(resources);
     }
 
-    fn create_reroll_button(resources: &mut Resources) {
-        fn reroll_handler(
+    pub fn leave(world: &mut legion::World, resources: &mut Resources) {
+        resources.tape_player.clear();
+        Event::ShopEnd.send(world, resources);
+        ShopSystem::reset_g(world);
+    }
+
+    fn create_buy_button(resources: &mut Resources) {
+        fn input_handler(
             event: HandleEvent,
-            _: legion::Entity,
+            entity: legion::Entity,
             _: &mut Shader,
             world: &mut legion::World,
             resources: &mut Resources,
         ) {
             match event {
-                HandleEvent::Click => ShopSystem::try_reroll(world, resources),
+                HandleEvent::Click => {
+                    if ShopSystem::is_hero_affordable(world)
+                        && resources
+                            .tape_player
+                            .tape
+                            .close_panels(entity, resources.tape_player.head)
+                    {
+                        ShopSystem::deduct_hero_price(world);
+                        ShopSystem::show_hero_buy_panel(resources);
+                    }
+                }
                 _ => {}
             }
         }
@@ -374,109 +375,20 @@ impl ShopSystem {
             world: &mut legion::World,
             _: &mut Resources,
         ) {
-            let active = match ShopSystem::is_reroll_affordable(world) {
-                true => 1.0,
-                false => 0.0,
-            };
-            shader.set_float_ref("u_active", active);
+            shader.set_active(ShopSystem::is_hero_affordable(world));
         }
-
+        let entity = new_entity();
         Widget::Button {
-            text: "Reroll".to_owned(),
-            input_handler: reroll_handler,
+            text: "Buy hero".to_owned(),
+            input_handler,
             update_handler: Some(update_handler),
             options: &resources.options,
-            uniforms: ShaderUniforms::single(
-                "u_position",
-                ShaderUniform::Vec2(Self::reroll_btn_position(resources)),
-            ),
+            uniforms: resources.options.uniforms.ui_button.clone(),
             shader: None,
+            entity,
         }
         .generate_node()
         .lock(NodeLockType::Empty)
-        .push_as_panel(new_entity(), resources);
-    }
-
-    pub fn enter(world: &mut legion::World, resources: &mut Resources) {
-        let current_floor = resources.ladder.current_ind();
-        if current_floor == 0 {
-            Self::change_g(resources.options.initial_shop_g, world);
-        }
-        TeamSystem::get_state_mut(&Faction::Shop, world)
-            .vars
-            .set_int(
-                &VarName::Slots,
-                (current_floor + resources.options.initial_shop_slots)
-                    .min(resources.options.shop_max_slots) as i32,
-            );
-        TeamSystem::get_state_mut(&Faction::Shop, world)
-            .vars
-            .set_int(&VarName::FreeRerolls, resources.last_score as i32);
-
-        ShopData::load_floor(resources, current_floor);
-        Self::reroll(world, resources);
-        WorldSystem::get_state_mut(world)
-            .vars
-            .set_int(&VarName::Level, current_floor as i32);
-        Self::create_reroll_button(resources);
-    }
-
-    pub fn leave(world: &mut legion::World, resources: &mut Resources) {
-        resources.tape_player.clear();
-        Event::ShopEnd.send(world, resources);
-        ShopSystem::clear_case(world, resources);
-        ShopSystem::reset_g(world);
-    }
-
-    pub fn clear_case(world: &mut legion::World, resources: &mut Resources) {
-        let level = resources.ladder.current_ind();
-
-        UnitSystem::collect_faction(world, Faction::Shop)
-            .into_iter()
-            .for_each(|entity| {
-                if level != 0 || true {
-                    ShopData::pack_unit_into_pool(entity, world, resources)
-                } else {
-                    world.remove(entity);
-                }
-            })
-    }
-
-    pub fn fill_case(world: &mut legion::World, resources: &mut Resources) {
-        let slots = TeamSystem::get_state(&Faction::Shop, world)
-            .vars
-            .get_int(&VarName::Slots) as usize;
-        let level = resources.ladder.current_ind();
-        if level == 0 && false {
-            let top_units = resources
-                .hero_pool
-                .names_sorted()
-                .split_at(resources.hero_pool.len() - 10)
-                .1
-                .into_iter()
-                .cloned()
-                .choose_multiple(&mut thread_rng(), slots);
-            let team = TeamSystem::entity(&Faction::Shop, world).unwrap();
-            for (slot, name) in top_units.into_iter().enumerate() {
-                let slot = slot + 1;
-                let unit = resources.hero_pool.find_by_name(&name).unwrap().clone();
-                unit.unpack(world, resources, slot, None, Some(team));
-            }
-        } else {
-            for slot in 1..=slots {
-                let pool_len = ShopData::pool_len(resources);
-                if pool_len == 0 {
-                    return;
-                }
-                let mut rng = rand::thread_rng();
-                let ind = rng.gen_range(0..pool_len);
-                ShopData::unpack_pool_unit(ind, slot, resources, world);
-            }
-        }
-    }
-
-    pub fn reroll(world: &mut legion::World, resources: &mut Resources) {
-        Self::clear_case(world, resources);
-        Self::fill_case(world, resources);
+        .push_as_panel(entity, resources);
     }
 }

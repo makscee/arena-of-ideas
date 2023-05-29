@@ -27,6 +27,7 @@ pub enum Widget<'a> {
         options: &'a Options,
         uniforms: ShaderUniforms,
         shader: Option<Shader>,
+        entity: legion::Entity,
     },
     CardChoicePanel {
         title: String,
@@ -177,13 +178,14 @@ impl<'a> Widget<'_> {
                 options,
                 uniforms,
                 shader,
+                entity,
             } => {
                 let button = ButtonSystem::create_button(
                     Some(&text),
                     None,
                     input_handler,
                     update_handler,
-                    new_entity(),
+                    entity,
                     shader,
                     options,
                 )

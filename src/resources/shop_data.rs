@@ -68,25 +68,4 @@ impl ShopData {
     pub fn pool_len(resources: &Resources) -> usize {
         resources.shop_data.pool.len()
     }
-
-    pub fn unpack_pool_unit(
-        ind: usize,
-        slot: usize,
-        resources: &mut Resources,
-        world: &mut legion::World,
-    ) -> legion::Entity {
-        let unit = resources.shop_data.pool.remove(ind);
-        let team = TeamSystem::entity(&Faction::Shop, world);
-        unit.unpack(world, resources, slot, None, team)
-    }
-
-    pub fn pack_unit_into_pool(
-        entity: legion::Entity,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) {
-        let unit = PackedUnit::pack(entity, world, resources);
-        world.remove(entity);
-        resources.shop_data.pool.push(unit);
-    }
 }

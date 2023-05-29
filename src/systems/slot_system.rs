@@ -169,6 +169,9 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &Resources,
     ) {
+        if faction == Faction::Shop {
+            return;
+        }
         let entity = world.push((SlotComponent::new(slot, faction), TapeEntityComponent {}));
         let position = Self::get_position(slot, &faction, resources);
         let color = faction.color(&resources.options);
@@ -180,17 +183,6 @@ impl SlotSystem {
             .insert_color_ref("u_color", color)
             .insert_vec2_ref("u_position", position)
             .insert_float_ref("u_scale", scale);
-        match faction {
-            Faction::Light | Faction::Dark | Faction::Team => {}
-            Faction::Shop => {
-                shader
-                    .chain_after
-                    .push(resources.options.shaders.slot_price.clone().set_uniform(
-                        "u_text",
-                        ShaderUniform::String((0, format!("{} g", ShopSystem::buy_price(world)))),
-                    ));
-            }
-        };
 
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
@@ -257,12 +249,12 @@ impl SlotSystem {
             let faction = slot.faction;
             let slot = slot.slot;
             let enabled = match state {
-                GameState::Shop => {
-                    if faction == Faction::Team {
-                        Self::add_slot_activation_btn(shader, "Sell", None, entity, resources);
-                    }
-                    faction == Faction::Shop || faction == Faction::Team
-                }
+                // GameState::Shop => {
+                //     if faction == Faction::Team {
+                //         Self::add_slot_activation_btn(shader, "Sell", None, entity, resources);
+                //     }
+                //     faction == Faction::Shop || faction == Faction::Team
+                // }
                 GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
                 GameState::Sacrifice => {
                     if faction == Faction::Team {

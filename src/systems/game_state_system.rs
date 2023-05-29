@@ -85,18 +85,6 @@ impl System for GameStateSystem {
                     //     resources.tape_player.head,
                     // );
                 }
-                if resources.input_data.down_keys.contains(&P) {
-                    if let Some(entity) = SlotSystem::find_unit_by_slot(1, &Faction::Shop, world) {
-                        world.remove(entity);
-                    }
-                    resources.hero_pool.list_top().clone().unpack(
-                        world,
-                        resources,
-                        1,
-                        Some(SlotSystem::get_position(1, &Faction::Shop, resources)),
-                        TeamSystem::entity(&Faction::Shop, world),
-                    );
-                }
             }
             GameState::Gallery => {
                 if resources.input_data.down_keys.contains(&G) {
@@ -311,9 +299,7 @@ impl GameStateSystem {
                 // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
                 // ShopSystem::do_buy(entity, 1, resources, world);
                 // BonusEffectPool::load_widget(6, world, resources);
-                VfxSystem::vfx_show_stars_indicator_panel(resources);
-                VfxSystem::vfx_show_g_indicator_panel(resources);
-                ShopSystem::show_hero_buy_panel(resources);
+                // ShopSystem::show_hero_buy_panel(resources);
 
                 resources.camera.focus = Focus::Shop;
             }
@@ -362,7 +348,7 @@ impl GameStateSystem {
                 ) {
                     shader.set_active(!resources.sacrifice_data.marked_units.is_empty());
                 }
-
+                let entity = new_entity();
                 Widget::Button {
                     text: "Accept".to_owned(),
                     input_handler,
@@ -370,10 +356,11 @@ impl GameStateSystem {
                     options: &resources.options,
                     uniforms: resources.options.uniforms.ui_button.clone(),
                     shader: None,
+                    entity,
                 }
                 .generate_node()
                 .lock(NodeLockType::Empty)
-                .push_as_panel(new_entity(), resources);
+                .push_as_panel(entity, resources);
             }
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;

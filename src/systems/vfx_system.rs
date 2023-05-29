@@ -234,7 +234,7 @@ impl VfxSystem {
             world: &mut legion::World,
             _: &mut Resources,
         ) {
-            let value = TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::G, world);
+            let value = ShopSystem::get_g(world);
             shader.set_string_ref("u_text", format!("x{value}"), 1);
         }
         let mut shader = resources

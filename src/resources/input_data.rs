@@ -101,6 +101,6 @@ pub enum HandleEvent {
     PressStart,
     Press,
     PressStop,
-    Click,
     Update,
+    Click,
 }

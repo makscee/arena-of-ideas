@@ -768,6 +768,7 @@
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
                 "uniforms": {
+                    "u_active": 1.0,
                     "u_padding": 0.2,
                     "u_g_color_1": "#000000",
                     "u_g_color_2": "#000000",
@@ -776,7 +777,7 @@
                     "u_rounding": 0.5,
                     "u_g_points": [
                         -0.2,
-                        0.0,
+                        -0.1,
                         0.2,
                         0.2
                     ],
