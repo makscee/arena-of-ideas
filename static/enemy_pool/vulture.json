@@ -2,7 +2,7 @@
     "name": "Vulture",
     "health": 2,
     "attack": 2,
-    "description": "Enemy died:\nGrow (5)",
+    "description": "Enemy died:\nGrow (2)",
     "house": "Test",
     "trigger": {
         "type": "AnyDeath",
@@ -28,7 +28,7 @@
                 },
                 "charges": {
                     "type": "Const",
-                    "value": 5
+                    "value": 2
                 }
             }
         }
@@ -37,8 +37,8 @@
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
+                "u_color": "#00690e",
                 "local": {
-                    "u_color": "#00690e",
                     "u_radius": 0.9,
                     "u_border": 0.5,
                     "u_circle_fbm": 0.3,

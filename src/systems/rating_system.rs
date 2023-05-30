@@ -256,9 +256,9 @@ impl RatingSystem {
     ) {
         resources.logger.set_enabled(false);
 
-        const MAX_LEVELS: usize = 30;
+        const TEAMS: usize = 90;
 
-        let mut teams = EnemyPool::generate_teams(MAX_LEVELS, resources);
+        let mut teams = EnemyPool::generate_teams(TEAMS, resources);
         let mut ratings = Ratings::default();
         let mut cnt = 0;
         let save_path = static_path().join("levels.json");

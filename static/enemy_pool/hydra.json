@@ -1,7 +1,8 @@
 {
     "name": "Hydra",
-    "attack": 8,
-    "health": 8,
+    "attack": 6,
+    "health": 6,
+    "description": "Turn end:\nMend (4)",
     "house": "Clerics",
     "trigger": {
         "type": "TurnEnd",
@@ -22,7 +23,7 @@
         "parameters": {
             "uniforms": {
                 "local": {
-                    "u_color": "#895435",
+                    "u_color": "#358966",
                     "u_color_1": "#000000",
                     "u_radius": 0.5,
                     "u_spin_part": 0.05,

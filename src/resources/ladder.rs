@@ -52,7 +52,7 @@ impl Ladder {
     }
 
     pub fn next(&mut self) -> bool {
-        self.current += 1;
+        self.current += 3;
         self.current < self.teams.len()
     }
 

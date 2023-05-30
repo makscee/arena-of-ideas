@@ -1,7 +1,7 @@
 {
     "name": "Archer",
-    "health": 3,
-    "attack": 3,
+    "health": 2,
+    "attack": 2,
     "description": "Turn start:\nShoot",
     "house": "Test",
     "trigger": {

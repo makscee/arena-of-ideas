@@ -56,7 +56,7 @@ impl BonusEffectPool {
         let units = UnitSystem::collect_faction(world, Faction::Team);
         resources.bonus_pool.current.clear();
 
-        let option_count = (value - 2).clamp(2, 4);
+        let option_count = (value.saturating_sub(2)).clamp(2, 4);
         let all_rarities = enum_iterator::all::<Rarity>().collect_vec();
         let rarities = (0..option_count)
             .map(|_| {

@@ -400,7 +400,7 @@ impl Trigger {
                     let delta = delta.calculate(context, world, resources)?;
                     extra_layers.push(ContextLayer::Var {
                         var: *var,
-                        value: Var::Int(value + delta),
+                        value: Var::Int(value.saturating_add(delta as i32)),
                     });
                 }
                 _ => {}

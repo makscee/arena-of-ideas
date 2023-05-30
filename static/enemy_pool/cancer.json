@@ -2,10 +2,10 @@
     "name": "Cancer",
     "health": 1,
     "attack": 1,
-    "description": "Turn start:\nGrow",
+    "description": "Turn end:\nGrow",
     "house": "Test",
     "trigger": {
-        "type": "TurnStart",
+        "type": "TurnEnd",
         "effect": {
             "type": "UseAbility",
             "ability": "Grow",

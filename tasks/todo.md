@@ -15,10 +15,10 @@
     Replace shop case with buy button {cm:2023-05-29T15:29:55}
     Gold sink {cm:2023-05-29T17:10:25}
     Disable selling {cm:2023-05-29T15:30:07}
-    G after Sacrifice
-    Bonus target choice
+    G after Sacrifice {cm:2023-05-30T15:10:00}
 
 @fix 
     Restart button
     Node cluster timings
+    Empty team bonus
 @gallery
