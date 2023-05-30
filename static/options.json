@@ -1062,28 +1062,46 @@
                     "path": "shaders/vfx/rectangle.glsl",
                     "parameters": {
                         "uniforms": {
-                            "u_color_end": "#000000",
                             "u_ui": 1,
-                            "u_aa": 0.001,
                             "u_box": [
                                 1.0,
                                 2.0
                             ],
                             "u_align": [
-                                0.65,
+                                0.4,
                                 0.0
                             ],
                             "u_position": [
-                                -0.55,
-                                -0.3
+                                -0.95,
+                                0.0
                             ],
-                            "u_offset_each": 0.6,
-                            "u_rotation": 0.1,
-                            "u_sdf_border": -0.03
+                            "u_g_points": [
+                                -1.0,
+                                -0.12,
+                                -0.12,
+                                -0.0
+                            ],
+                            "u_g_alphas": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "u_g_color_1": "#000000",
+                            "u_g_color_2": "#000000",
+                            "u_g_color_3": "#9a2b1a",
+                            "u_g_color_4": "#501208",
+                            "u_offset_each": 1.05,
+                            "local": {
+                                "u_rotation": 0.1
+                            },
+                            "mapping": {
+                                "u_g_color_1": "u_color"
+                            }
                         }
                     },
                     "layer": "UI",
-                    "order": 1000
+                    "order": 2000
                 },
                 "animation": {
                     "key_frames": [
@@ -1091,7 +1109,7 @@
                             "t": 0.0,
                             "uniforms": {
                                 "u_position": [
-                                    1.5,
+                                    3.0,
                                     0.0
                                 ]
                             }
@@ -1109,7 +1127,7 @@
                             "t": 1.0,
                             "uniforms": {
                                 "u_position": [
-                                    1.5,
+                                    3.0,
                                     0.0
                                 ]
                             },
@@ -1125,11 +1143,11 @@
                         "u_size": 0.1,
                         "u_outline": 0.15,
                         "u_offset": [
-                            -0.3,
-                            -0.5
+                            -0.6,
+                            -0.85
                         ],
                         "u_index_offset": [
-                            0.01,
+                            0.02,
                             0.18
                         ],
                         "u_box": [
@@ -1142,27 +1160,29 @@
                     }
                 },
                 "layer": "UI",
-                "order": 1001
+                "order": 2001
             },
             "name": {
                 "path": "shaders/vfx/text.glsl",
                 "parameters": {
                     "uniforms": {
                         "u_ui": 1,
-                        "u_aspect_adjust": 1,
-                        "u_aspect_offset_adjust": 1,
-                        "u_color": "#000000",
+                        "u_color": "#ffffff",
                         "u_rotation": 0.0,
                         "u_offset": [
-                            -0.4,
-                            1.1
-                        ],
-                        "u_box": [
-                            3.0,
+                            0.0,
                             0.5
                         ],
-                        "u_outline_color": "#ffffff",
-                        "u_mid_border_color": "#ffffff",
+                        "u_align": [
+                            0.0,
+                            0.0
+                        ],
+                        "u_box": [
+                            2.0,
+                            0.45
+                        ],
+                        "u_outline_color": "#000000",
+                        "u_mid_border_color": "#000000",
                         "u_outline_fade": 0.5,
                         "u_mid_border": 0.04,
                         "u_size": 0.2,

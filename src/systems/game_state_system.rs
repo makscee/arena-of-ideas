@@ -300,6 +300,7 @@ impl GameStateSystem {
                 // ShopSystem::do_buy(entity, 1, resources, world);
                 // BonusEffectPool::load_widget(6, world, resources);
                 // ShopSystem::show_hero_buy_panel(resources);
+                // ShopSystem::show_battle_choice_widget(resources);
 
                 resources.camera.focus = Focus::Shop;
             }

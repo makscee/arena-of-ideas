@@ -267,7 +267,7 @@ impl<'a> Widget<'_> {
                     animation
                         .get_uniforms_mut()
                         .insert_vec2_ref("u_open_position", position);
-                    let mut unit_shader = unit
+                    let unit_shader = unit
                         .get_ui_shader(Faction::Dark, resources)
                         .set_float("u_scale", 0.35);
                     shader.chain_after.push(unit_shader);

@@ -115,7 +115,6 @@ impl ShopSystem {
     }
 
     pub fn show_battle_choice_widget(resources: &mut Resources) {
-        debug!("Show widget");
         let teams = Ladder::get_current_teams(resources);
         let data = teams
             .into_iter()
