@@ -98,7 +98,7 @@ impl<'a> Widget<'_> {
                 // panel
                 let (shader, animation, duration) = {
                     let anim = &resources.options.widgets.card_choice_panel.panel;
-                    let shader = anim.shader.clone();
+                    let shader = anim.shader.clone().set_string("u_title", title, 1);
                     let animation = anim.animation.clone();
                     let duration = anim.duration;
                     (shader, animation, duration)

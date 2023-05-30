@@ -1844,7 +1844,10 @@
                                     "u_position": [
                                         0.0,
                                         0.0
-                                    ]
+                                    ],
+                                    "mapping": {
+                                        "u_text": "u_title"
+                                    }
                                 }
                             },
                             "layer": "UI",

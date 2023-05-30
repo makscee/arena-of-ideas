@@ -103,7 +103,7 @@ impl ShopSystem {
         }
         let entity = new_entity();
         Widget::CardChoicePanel {
-            title: "Buy".to_owned(),
+            title: "Choose".to_owned(),
             cards,
             input_handler,
             update_handler: None,
