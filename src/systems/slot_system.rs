@@ -341,11 +341,7 @@ impl SlotSystem {
         {
             let state = ContextState::get(entity, world);
             let unit_faction = state.get_faction(&VarName::Faction, world);
-            if faction == Faction::Team && unit_faction == Faction::Shop {
-                ShopSystem::try_buy(entity, slot, resources, world);
-            } else if faction == Faction::Shop && unit_faction == Faction::Team {
-                ShopSystem::try_sell(entity, resources, world);
-            } else if faction == unit_faction {
+            if faction == unit_faction {
                 if Self::make_gap(faction, slot, world, Some(entity)) {
                     let state = ContextState::get_mut(entity, world);
                     state.vars.set_int(&VarName::Slot, slot as i32);

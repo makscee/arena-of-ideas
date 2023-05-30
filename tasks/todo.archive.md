@@ -48,3 +48,9 @@ First team {cm:2023-05-17T15:52:24}
     G {cm:2023-05-22T17:07:31}
     Star {cm:2023-05-13T18:20:10}
     Phase name {cm:2023-05-12T15:52:42}
+@gameplay {cm:2023-05-30T16:58:12}
+    Hero card choice {cm:2023-05-29T14:36:59}
+    Replace shop case with buy button {cm:2023-05-29T15:29:55}
+    Gold sink {cm:2023-05-29T17:10:25}
+    Disable selling {cm:2023-05-29T15:30:07}
+    G after Sacrifice {cm:2023-05-30T15:10:00}

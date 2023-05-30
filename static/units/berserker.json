@@ -4,6 +4,16 @@
     "health": 3,
     "description": "Turn end:\ngain [Enrage]",
     "house": "Orcs",
+    "statuses": [
+        [
+            "Chaotic",
+            1
+        ],
+        [
+            "Fortitude",
+            2
+        ]
+    ],
     "trigger": {
         "type": "TurnEnd",
         "effect": {
@@ -44,6 +54,7 @@
                     1.0
                 ],
                 "u_size": 0.5,
+                "u_card_size": -0.25,
                 "u_t_multiplier": 0.5,
                 "mapping": {
                     "u_color": "u_house_color",

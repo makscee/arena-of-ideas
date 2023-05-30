@@ -145,36 +145,6 @@ impl ShopSystem {
         .push_as_panel(panel_entity, resources);
     }
 
-    fn team_full(world: &legion::World) -> bool {
-        let faction = Faction::Team;
-        UnitSystem::collect_faction(world, faction).len()
-            >= TeamSystem::get_state(&faction, world)
-                .vars
-                .get_int(&VarName::Slots) as usize
-    }
-
-    pub fn try_buy(
-        entity: legion::Entity,
-        slot: usize,
-        resources: &mut Resources,
-        world: &mut legion::World,
-    ) {
-        let price = Self::buy_price(world);
-        if !Self::team_full(world) && Self::get_g(world) >= price {
-            Self::do_buy(entity, slot, resources, world);
-            Self::change_g(-Self::buy_price(world), world);
-            let color = Faction::Shop.color(&resources.options);
-            let position = SlotSystem::get_position(slot, &Faction::Team, resources);
-            VfxSystem::add_show_text_effect(
-                &format!("-{price} g"),
-                color,
-                position,
-                world,
-                resources,
-            )
-        }
-    }
-
     pub fn do_buy_offered(ind: usize, resources: &mut Resources, world: &mut legion::World) {
         let mut offered: Vec<PackedUnit> = default();
         mem::swap(&mut offered, &mut resources.shop_data.offered);

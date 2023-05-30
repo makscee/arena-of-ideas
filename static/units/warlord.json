@@ -49,6 +49,7 @@
                     1.0
                 ],
                 "u_size": 0.7,
+                "u_card_size": -0.35,
                 "u_t_multiplier": 1.5,
                 "mapping": {
                     "u_color": "u_house_color",

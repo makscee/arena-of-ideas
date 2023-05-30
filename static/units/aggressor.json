@@ -45,6 +45,7 @@
                     0.0
                 ],
                 "u_size": 0.8,
+                "u_card_size": -0.4,
                 "u_t_multiplier": 0.5,
                 "mapping": {
                     "u_color": "u_faction_color",

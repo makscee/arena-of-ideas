@@ -21,6 +21,7 @@
         "parameters": {
             "uniforms": {
                 "u_size": 0.8,
+                "u_card_size": -0.4,
                 "u_circle_fbm": 0.1,
                 "u_g_color_1": "#000000",
                 "u_g_color_2": "#000000",

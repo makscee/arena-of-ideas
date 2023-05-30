@@ -10,15 +10,12 @@
 @visual
     Sdf gradient fn {cm:2023-05-16T21:34:07}
     Fix battle choice panel {cm:2023-05-30T14:00:59}
-@gameplay
-    Hero card choice {cm:2023-05-29T14:36:59}
-    Replace shop case with buy button {cm:2023-05-29T15:29:55}
-    Gold sink {cm:2023-05-29T17:10:25}
-    Disable selling {cm:2023-05-29T15:30:07}
-    G after Sacrifice {cm:2023-05-30T15:10:00}
+    Card rework
 
 @fix 
     Restart button
     Node cluster timings
     Empty team bonus
+    Statuses & Definitions panels {cm:2023-05-30T16:58:07}
+    Card size (wa) {cm:2023-05-30T16:57:45}
 @gallery

@@ -302,6 +302,14 @@ impl GameStateSystem {
                 // ShopSystem::show_hero_buy_panel(resources);
                 // ShopSystem::show_battle_choice_widget(resources);
 
+                // let team = TeamSystem::entity(&Faction::Team, world);
+                // resources
+                //     .hero_pool
+                //     .find_by_name("Berserker")
+                //     .unwrap()
+                //     .clone()
+                //     .unpack(world, resources, 1, None, team);
+
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {
