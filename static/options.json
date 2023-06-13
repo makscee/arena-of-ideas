@@ -236,6 +236,28 @@
         "text": "#FFFFFF"
     },
     "shaders": {
+        "panel": {
+            "path": "shaders/system/panel.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_ui": 1,
+                    "u_box": [
+                        1.0,
+                        0.3
+                    ],
+                    "u_color": "#3F3F3F",
+                    "u_start_color": "#0085FF",
+                    "u_end_color": "#797979",
+                    "u_border_color": "#000000",
+                    "u_title_text": [
+                        1,
+                        "Empty Title"
+                    ]
+                }
+            },
+            "layer": "UI",
+            "order": 2000
+        },
         "unit": {
             "path": "shaders/system/unit.glsl",
             "parameters": {

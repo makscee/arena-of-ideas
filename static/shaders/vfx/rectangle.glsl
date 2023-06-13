@@ -1,5 +1,4 @@
 #include <common.glsl>
-uniform float u_sdf_cut = 0;
 uniform float u_rounding = 0.2;
 
 #ifdef VERTEX_SHADER

@@ -42,6 +42,7 @@ impl Options {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Shaders {
+    pub panel: Shader,
     pub unit: Shader,
     pub unit_card: Shader,
     pub field: Shader,

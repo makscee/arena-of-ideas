@@ -305,8 +305,6 @@ impl ShopSystem {
             .set_int(&VarName::Level, current_floor as i32);
         Self::create_buy_button(resources);
         Self::create_battle_button(resources);
-        VfxSystem::vfx_show_stars_indicator_panel(resources);
-        VfxSystem::vfx_show_g_indicator_panel(resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {

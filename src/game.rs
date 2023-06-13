@@ -47,6 +47,7 @@ impl Game {
         resources.total_score = default();
         ShopData::load_pool_full(resources);
         world.clear();
+        PanelsSystem::clear(resources);
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {

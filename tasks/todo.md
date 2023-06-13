@@ -1,4 +1,4 @@
-@content +Elementals {c}
+@content +Elementals
     [Splash]: "+1" damage to all enemies after strike once
     Torrent [2/1]: Battle start: give [Splash] to adjacent allies.
     Annihilator [1/2]: Enemy killed: gain [Splash].
@@ -19,3 +19,17 @@
     Statuses & Definitions panels {cm:2023-05-30T16:58:07}
     Card size (wa) {cm:2023-05-30T16:57:45}
 @gallery
+
+@ui Panels UI
+    SDF by pixels (same outline thickness always)
+    Mockups: {cm:2023-06-13T16:06:44}
+        Dialogue window {cm:2023-06-09T17:15:01}
+        Alert {cm:2023-06-09T17:15:01}
+        Card select {cm:2023-06-13T15:07:44}
+        Statuses list {cm:2023-06-13T16:07:07}
+        Hover hint {cm:2023-06-09T17:15:05}
+    Panels System
+        Center stack
+        Corner column
+        Top row
+        Sticky data

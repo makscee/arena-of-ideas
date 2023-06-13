@@ -119,6 +119,7 @@ pub struct Resources {
     pub transition_state: GameState,
 
     pub input_data: InputData,
+    pub panels_data: PanelsData,
     pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Option<Geng>,
@@ -162,6 +163,7 @@ impl Resources {
             status_library: default(),
             buff_pool: default(),
             sacrifice_data: default(),
+            panels_data: default(),
         }
     }
 

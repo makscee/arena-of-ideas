@@ -296,6 +296,8 @@ impl GameStateSystem {
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
 
+                PanelsSystem::add_alert("Test Title", "Test text", resources);
+
                 // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
                 // ShopSystem::do_buy(entity, 1, resources, world);
                 // BonusEffectPool::load_widget(6, world, resources);

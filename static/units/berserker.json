@@ -4,16 +4,6 @@
     "health": 3,
     "description": "Turn end:\ngain [Enrage]",
     "house": "Orcs",
-    "statuses": [
-        [
-            "Chaotic",
-            1
-        ],
-        [
-            "Fortitude",
-            2
-        ]
-    ],
     "trigger": {
         "type": "TurnEnd",
         "effect": {
