@@ -199,7 +199,7 @@ impl Shader {
         uniforms.insert_float_ref("u_sin", t.sin());
         uniforms.insert_float_ref("u_cos", t.cos());
 
-        let position = uniforms.try_get_vec2("u_position").unwrap_or(vec2::ZERO);
+        let position = self.parameters.r#box.pos;
         let align = uniforms.try_get_vec2("u_align").unwrap_or(vec2::ZERO);
         let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
 
@@ -209,7 +209,7 @@ impl Shader {
             .unwrap_or(vec2::ZERO);
         let card_offset = uniforms.try_get_vec2("u_card_offset").unwrap_or(vec2::ZERO);
 
-        let bx = uniforms.try_get_vec2("u_box").unwrap_or(vec2(1.0, 1.0));
+        let bx = self.parameters.r#box.size;
 
         let card = uniforms.try_get_float("u_card").unwrap_or_default();
         let mut scale = uniforms.try_get_float("u_scale").unwrap_or(1.0)
@@ -281,7 +281,10 @@ pub struct ShaderParameters {
     pub vertices: usize,
     #[serde(default = "instances_default")]
     pub instances: usize,
+    #[serde(default)]
     pub uniforms: ShaderUniforms,
+    #[serde(default)]
+    pub r#box: BoxParameters,
 }
 
 fn vertices_default() -> usize {
@@ -298,6 +301,7 @@ impl Default for ShaderParameters {
             vertices: 3,
             instances: 1,
             uniforms: default(),
+            r#box: default(),
         }
     }
 }
@@ -310,5 +314,43 @@ impl ugli::Uniforms for ShaderParameters {
         for (name, value) in self.uniforms.iter().chain(self.uniforms.iter_local()) {
             visitor.visit(name, value);
         }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct BoxParameters {
+    #[serde(default = "vec_zero")]
+    pub pos: vec2<f32>,
+    #[serde(default = "vec_one")]
+    pub size: vec2<f32>,
+    #[serde(default = "vec_zero")]
+    pub center: vec2<f32>,
+    #[serde(default = "vec_zero")]
+    pub anchor: vec2<f32>,
+}
+
+fn vec_zero() -> vec2<f32> {
+    vec2::ZERO
+}
+
+fn vec_one() -> vec2<f32> {
+    vec2(1.0, 1.0)
+}
+
+impl Default for BoxParameters {
+    fn default() -> Self {
+        Self {
+            pos: vec2::ZERO,
+            size: vec2(1.0, 1.0),
+            center: vec2::ZERO,
+            anchor: vec2::ZERO,
+        }
+    }
+}
+
+impl BoxParameters {
+    pub fn consider_parent(&mut self, parent: &BoxParameters) {
+        self.pos -= self.size * self.center;
+        self.pos += parent.size * self.anchor + parent.pos;
     }
 }

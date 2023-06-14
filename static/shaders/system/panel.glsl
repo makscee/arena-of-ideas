@@ -45,7 +45,7 @@ void main() {
     float box_sdf = rectangle_rounded_sdf(uv * o_box, o_box, vec4(u_rounding));
     float inner_box_sdf = rectangle_rounded_sdf(uv * o_box, o_box - vec2(0, EXTRA_HEIGHT), vec4(0));
     // sdf = fbm_sdf(sdf, uv);
-    vec4 box_body_color = mix(u_start_color, u_end_color, rotate_cw(uv, -PI * .25).x * 0.5 + 0.6 + sin(u_global_time) * .15);
+    vec4 box_body_color = mix(u_start_color, u_end_color, rotate_cw(uv, -PI * .25 + u_global_time * .5).x * 0.5 + 1.);
 
     vec4 color = vec4(0);
 

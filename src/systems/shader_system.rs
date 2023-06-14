@@ -82,7 +82,6 @@ impl ShaderSystem {
                 }),
         );
 
-        let hovered = resources.input_data.hovered_entity;
         let dragged = resources.input_data.dragged_entity;
         let shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
             .into_iter()
@@ -91,7 +90,7 @@ impl ShaderSystem {
                 (
                     dragged.is_some() && x.entity == dragged,
                     x.layer.index(),
-                    x.order + (hovered.is_some() && x.entity == hovered) as i32,
+                    x.order,
                     x.ts,
                 )
             })
@@ -230,18 +229,21 @@ impl ShaderSystem {
             .parameters
             .uniforms
             .insert_float_ref("u_rand", rng.gen_range(0.0..1.0));
-        let mut before = shader.chain_before.drain(..).collect_vec();
+        let mut before = default();
+        mem::swap(&mut before, shader.chain_before.deref_mut());
         before.iter_mut().for_each(|x| {
             x.parameters
                 .uniforms
                 .merge_mut(&shader.parameters.uniforms, false);
+            x.parameters.r#box.consider_parent(&shader.parameters.r#box);
         });
-
-        let mut after = shader.chain_after.drain(..).collect_vec();
+        let mut after = default();
+        mem::swap(&mut after, shader.chain_after.deref_mut());
         after.iter_mut().for_each(|x| {
             x.parameters
                 .uniforms
                 .merge_mut(&shader.parameters.uniforms, false);
+            x.parameters.r#box.consider_parent(&shader.parameters.r#box);
         });
 
         let mut result = [before, vec![shader], after].concat();

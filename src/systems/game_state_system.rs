@@ -297,6 +297,8 @@ impl GameStateSystem {
                 ShopSystem::enter(world, resources);
 
                 PanelsSystem::add_alert("Test Title", "Test text", resources);
+                PanelsSystem::add_alert("Test 2", "Test text", resources);
+                PanelsSystem::add_alert("Test 3", "Test text", resources);
 
                 // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
                 // ShopSystem::do_buy(entity, 1, resources, world);
