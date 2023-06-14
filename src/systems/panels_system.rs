@@ -24,7 +24,8 @@ impl PanelsSystem {
     }
 
     pub fn add_alert(title: &str, text: &str, resources: &mut Resources) {
-        let mut panel = Panel::new(title, text, &resources.options);
+        let mut panel = Panel::new(title, &resources.options);
+        panel.add_text(text, &resources.options);
         panel.add_close_button("Close", &resources.options);
         panel
             .shader
@@ -59,7 +60,7 @@ pub struct Panel {
 }
 
 impl Panel {
-    pub fn new(title: &str, text: &str, options: &Options) -> Self {
+    pub fn new(title: &str, options: &Options) -> Self {
         let mut shader =
             options
                 .shaders
@@ -74,6 +75,21 @@ impl Panel {
             // t: 1.0,
             t: default(),
         }
+    }
+
+    pub fn add_text(&mut self, text: &str, options: &Options) {
+        let mut shader =
+            options
+                .shaders
+                .panel_text
+                .clone()
+                .set_string("u_text", text.to_owned(), 0);
+        let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
+        let per_line = shader.parameters.r#box.size.y;
+        shader.parameters.r#box.size.y = lines as f32 * per_line;
+        self.shader.parameters.r#box = shader.parameters.r#box;
+        self.shader.parameters.r#box.size += vec2(0.0, 2.0 * per_line);
+        self.shader.chain_after.push(shader);
     }
 
     pub fn update(&mut self, delta: Time) {

@@ -296,9 +296,13 @@ impl GameStateSystem {
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
 
-                PanelsSystem::add_alert("Test Title", "Test text", resources);
-                PanelsSystem::add_alert("Test 2", "Test text", resources);
-                PanelsSystem::add_alert("Test 3", "Test text", resources);
+                PanelsSystem::add_alert(
+                    "Test Alert #2",
+                    "This is a multiline\ntest alert",
+                    resources,
+                );
+                PanelsSystem::add_alert("Test Alert #1", "One line test alert", resources);
+                PanelsSystem::add_alert("Test Alert #3", "This is a multiline\ntest alert\nThis is\na multiline\ntest alert test alert test alert test alert test alert \n", resources);
 
                 // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
                 // ShopSystem::do_buy(entity, 1, resources, world);

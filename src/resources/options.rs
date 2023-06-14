@@ -44,6 +44,7 @@ impl Options {
 pub struct Shaders {
     pub panel: Shader,
     pub panel_button: Shader,
+    pub panel_text: Shader,
     pub unit: Shader,
     pub unit_card: Shader,
     pub field: Shader,

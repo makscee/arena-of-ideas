@@ -3,7 +3,8 @@ uniform float u_rounding = 0.05;
 uniform sampler2D u_title_text;
 uniform vec2 u_title_text_size;
 
-const float EXTRA_HEIGHT = 0.1;
+const float EXTRA_HEIGHT = 0.14;
+const float EXTRA_WIDTH = 0.05;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -13,7 +14,7 @@ attribute vec2 a_pos;
 void main() {
     init_fields();
     uv = get_uv(a_pos);
-    box *= vec2(1, 1. + (EXTRA_HEIGHT) / box.y);
+    box *= vec2(1) + vec2(EXTRA_WIDTH, EXTRA_HEIGHT) / box;
     o_box = box;
     gl_Position = get_gl_position(uv);
 }
@@ -30,11 +31,11 @@ uniform vec4 u_end_color;
 const float BORDER_THICKNESS = 0.01;
 
 float title_sdf(vec2 uv) {
-    float p = EXTRA_HEIGHT * .25;
+    float p = EXTRA_HEIGHT * .2;
     vec2 padding = vec2(-p / o_box.x * 2, p / o_box.y * .5);
     uv += vec2(1, -1) + padding;
     uv *= o_box;
-    vec2 box = vec2(u_title_text_size.y / u_title_text_size.x, 1) / EXTRA_HEIGHT * 2;
+    vec2 box = vec2(u_title_text_size.y / u_title_text_size.x, 1) / EXTRA_HEIGHT * 2.5;
     uv *= box;
     uv += vec2(-1.0, 1.0);
     return get_text_sdf(uv, u_title_text);

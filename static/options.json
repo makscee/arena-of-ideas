@@ -264,6 +264,20 @@
             "layer": "UI",
             "order": 2000
         },
+        "panel_text": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "box": {
+                    "size": [
+                        0.9,
+                        0.05
+                    ]
+                },
+                "uniforms": {
+                    "u_color": "#ffffff"
+                }
+            }
+        },
         "panel_button": {
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
@@ -274,7 +288,7 @@
                     ],
                     "size": [
                         0.3,
-                        0.03
+                        0.04
                     ],
                     "anchor": [
                         0.0,
@@ -282,7 +296,7 @@
                     ],
                     "center": [
                         0.0,
-                        1.5
+                        1.6
                     ]
                 },
                 "uniforms": {
@@ -335,8 +349,7 @@
                         }
                     }
                 }
-            ],
-            "layer": "UI"
+            ]
         },
         "unit": {
             "path": "shaders/system/unit.glsl",

@@ -317,7 +317,7 @@ impl ugli::Uniforms for ShaderParameters {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct BoxParameters {
     #[serde(default = "vec_zero")]
     pub pos: vec2<f32>,

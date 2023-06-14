@@ -29,7 +29,10 @@
         Statuses list {cm:2023-06-13T16:07:07}
         Hover hint {cm:2023-06-09T17:15:05}
     Panels System
-        Center stack
+        Center stack {cm:2023-06-14T15:53:46}
+        Closing {cm:2023-06-14T15:53:56}
+        Render text {cm:2023-06-14T16:40:03}
+        Adjust size to content {cm:2023-06-14T16:40:04}
         Corner column
         Top row
         Sticky data
