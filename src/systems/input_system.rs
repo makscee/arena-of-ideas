@@ -17,7 +17,7 @@ impl InputSystem {
         Self::handle_events(shaders, world, resources)
     }
 
-    pub fn update_frame_data<'a>(shaders: &mut Vec<Shader>, resources: &mut Resources) {
+    pub fn update_frame_data(shaders: &mut Vec<Shader>, resources: &mut Resources) {
         let (prev, cur) = &mut resources.input_data.frame_data;
         mem::swap(prev, cur);
         cur.mouse = resources.input_data.mouse_world_pos;
@@ -91,7 +91,7 @@ impl InputSystem {
         }
     }
 
-    pub fn handle_events<'a>(
+    pub fn handle_events(
         shaders: &mut Vec<Shader>,
         world: &mut legion::World,
         resources: &mut Resources,

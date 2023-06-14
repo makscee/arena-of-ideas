@@ -1,4 +1,4 @@
-@content +Elementals
+@content +Elementals {c}
     [Splash]: "+1" damage to all enemies after strike once
     Torrent [2/1]: Battle start: give [Splash] to adjacent allies.
     Annihilator [1/2]: Enemy killed: gain [Splash].

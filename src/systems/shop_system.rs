@@ -28,25 +28,6 @@ impl System for ShopSystem {
                 .push_to_queue(cluster.unwrap(), resources.tape_player.head);
         }
     }
-
-    fn ui<'a>(
-        &'a mut self,
-        cx: &'a ui::Controller,
-        _: &'a legion::World,
-        resources: &'a Resources,
-    ) -> Box<dyn ui::Widget + 'a> {
-        let switch_button = CornerButtonWidget::new(
-            cx,
-            resources,
-            match resources.camera.focus {
-                Focus::Shop => resources.options.images.eye_icon.clone(),
-                Focus::Battle => resources.options.images.money_icon.clone(),
-            },
-        );
-        self.need_switch_battle = switch_button.was_clicked() || self.need_switch_battle;
-
-        Box::new((switch_button.place(vec2(1.0, 0.0)),).stack())
-    }
 }
 
 impl ShopSystem {

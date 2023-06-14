@@ -12,7 +12,6 @@ mod game_state_system;
 mod input_system;
 mod logger;
 mod panels_system;
-mod pool_ui_system;
 mod rating_system;
 mod sacrifice_system;
 mod save_system;
@@ -26,7 +25,6 @@ mod team_system;
 mod time_system;
 mod unit_system;
 mod vfx_system;
-mod widgets;
 mod world_system;
 
 pub use action_system::*;
@@ -41,7 +39,6 @@ pub use game_over_system::*;
 pub use game_state_system::*;
 pub use input_system::*;
 pub use logger::*;
-pub use pool_ui_system::*;
 pub use rating_system::*;
 pub use save_system::*;
 pub use shader_system::*;
@@ -54,7 +51,6 @@ pub use team_system::*;
 pub use time_system::*;
 pub use unit_system::*;
 pub use vfx_system::*;
-pub use widgets::*;
 pub use world_system::*;
 
 pub trait System {
@@ -93,10 +89,7 @@ impl Game {
         game_state.add_systems(GameState::MainMenu, vec![]);
         game_state.add_systems(GameState::Battle, vec![Box::new(BattleSystem::new())]);
         game_state.add_systems(GameState::CustomGame, vec![]);
-        game_state.add_systems(
-            GameState::Shop,
-            vec![Box::new(ShopSystem::new()), Box::new(PoolUiSystem::new())],
-        );
+        game_state.add_systems(GameState::Shop, vec![Box::new(ShopSystem::new())]);
         // game_state.add_systems(GameState::Gallery, vec![Box::new(GallerySystem::new())]);
         game_state.add_systems(GameState::GameOver, vec![Box::new(GameOverSystem::new())]);
 
