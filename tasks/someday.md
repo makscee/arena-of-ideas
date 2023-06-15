@@ -1,5 +1,12 @@
 {cr:2023-05-10T15:53:19} State background animation
-
+@content +Elementals {c}
+    [Splash]: "+1" damage to all enemies after strike once
+    Torrent [2/1]: Battle start: give [Splash] to adjacent allies.
+    Annihilator [1/2]: Enemy killed: gain [Splash].
+    Surge [2/1]: Turn start: gain [Splash].
+    Impact [2/1]: [Splash] "+1" DMG.
+    Echo [1/2]: After death: give [Splash] (2) to all allies.
+    Surgeon [2/1]: Turn end: give [Splash] to random ally.
 Next Iteration
     @abilities
         [Fortitude]: "+1" HP +Clerics {cm:2023-05-17T16:13:18}

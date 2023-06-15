@@ -1,38 +1,43 @@
-@content +Elementals {c}
-    [Splash]: "+1" damage to all enemies after strike once
-    Torrent [2/1]: Battle start: give [Splash] to adjacent allies.
-    Annihilator [1/2]: Enemy killed: gain [Splash].
-    Surge [2/1]: Turn start: gain [Splash].
-    Impact [2/1]: [Splash] "+1" DMG.
-    Echo [1/2]: After death: give [Splash] (2) to all allies.
-    Surgeon [2/1]: Turn end: give [Splash] to random ally.
-
-@visual
-    Sdf gradient fn {cm:2023-05-16T21:34:07}
-    Fix battle choice panel {cm:2023-05-30T14:00:59}
-    Card rework
-
-@fix 
-    Restart button
-    Node cluster timings
-    Empty team bonus
-    Statuses & Definitions panels {cm:2023-05-30T16:58:07}
-    Card size (wa) {cm:2023-05-30T16:57:45}
-@gallery
-
-@ui Panels UI
-    SDF by pixels (same outline thickness always)
-    Mockups: {cm:2023-06-13T16:06:44}
-        Dialogue window {cm:2023-06-09T17:15:01}
-        Alert {cm:2023-06-09T17:15:01}
-        Card select {cm:2023-06-13T15:07:44}
-        Statuses list {cm:2023-06-13T16:07:07}
-        Hover hint {cm:2023-06-09T17:15:05}
-    Panels System
-        Center stack {cm:2023-06-14T15:53:46}
-        Closing {cm:2023-06-14T15:53:56}
-        Render text {cm:2023-06-14T16:40:03}
-        Adjust size to content {cm:2023-06-14T16:40:04}
-        Corner column
-        Top row
-        Sticky data
+Screen box anchoring @ui
+Uniform referencing options @shaders
+Build
+    Card rework @visual
+    Push text @ui
+        g change
+        var change
+        enemy rank defeated
+    Stats info panel @ui
+        g
+        total score
+        team status
+        team vars
+        level
+    Hover hint @ui
+        unit statuses
+        shop buy btns
+        start battle btn
+        definitions
+    Alert text @ui
+        battle start
+        sacrifice start
+        shop start
+    Alert cards @ui
+        hero buy
+        enemy choose with count
+        status choose with count
+    Shop buttons @gameplay
+        buy hero
+        buy status
+        buy aoe status
+        buy team status
+        buy slot
+    Game over screen @ui
+        restart
+        score
+    Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay
+    No sacrifice for single hero team @gameplay
+    Chain all actions @visual
+    Max rank 3 @gameplay
+    ~50 Total heroes @content
+    ~20 Total enemies @content
+    15 (45) balanced levels @content

@@ -54,3 +54,20 @@ First team {cm:2023-05-17T15:52:24}
     Gold sink {cm:2023-05-29T17:10:25}
     Disable selling {cm:2023-05-29T15:30:07}
     G after Sacrifice {cm:2023-05-30T15:10:00}
+@ui Panels UI {cm:2023-06-15T14:57:06}
+    SDF by pixels (same outline thickness always) {cm:2023-06-15T14:56:45}
+    Mockups: {cm:2023-06-13T16:06:44}
+        Dialogue window {cm:2023-06-09T17:15:01}
+        Alert {cm:2023-06-09T17:15:01}
+        Card select {cm:2023-06-13T15:07:44}
+        Statuses list {cm:2023-06-13T16:07:07}
+        Hover hint {cm:2023-06-09T17:15:05}
+    Panels System {cm:2023-06-15T14:57:03}
+        Center stack {cm:2023-06-14T15:53:46}
+        Closing {cm:2023-06-14T15:53:56}
+        Render text {cm:2023-06-14T16:40:03}
+        Adjust size to content {cm:2023-06-14T16:40:04}
+Card size (wa) {cm:2023-05-30T16:57:45}
+Statuses & Definitions panels {cm:2023-05-30T16:58:07}
+Sdf gradient fn {cm:2023-05-16T21:34:07}
+Fix battle choice panel {cm:2023-05-30T14:00:59}
