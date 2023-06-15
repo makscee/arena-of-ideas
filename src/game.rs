@@ -137,6 +137,8 @@ impl geng::State for Game {
 
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.resources.camera.framebuffer_size = framebuffer.size().map(|x| x as f32);
+        self.resources.camera.aspect_ratio =
+            self.resources.camera.framebuffer_size.x / self.resources.camera.framebuffer_size.y;
         let mouse_pos = self
             .resources
             .geng
@@ -145,13 +147,9 @@ impl geng::State for Game {
             .window()
             .mouse_pos()
             .map(|x| x as f32);
-        let aspect_ratio = {
-            let size = self.resources.camera.framebuffer_size;
-            size.y / size.x
-        };
         self.resources.input_data.mouse_screen_pos =
             (mouse_pos / self.resources.camera.framebuffer_size * 2.0 - vec2(1.0, 1.0))
-                / vec2(aspect_ratio, 1.0);
+                * vec2(self.resources.camera.aspect_ratio, 1.0);
         self.resources.input_data.mouse_world_pos = self
             .resources
             .camera

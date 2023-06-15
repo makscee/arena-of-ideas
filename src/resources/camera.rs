@@ -4,6 +4,7 @@ pub struct Camera {
     pub camera: geng::Camera2d,
     pub pos: vec2<f32>,
     pub framebuffer_size: vec2<f32>,
+    pub aspect_ratio: f32,
     pub focus: Focus,
 }
 
@@ -25,6 +26,7 @@ impl Camera {
             camera,
             pos,
             framebuffer_size: vec2::ZERO,
+            aspect_ratio: 0.0,
             focus: Focus::Shop,
         }
     }

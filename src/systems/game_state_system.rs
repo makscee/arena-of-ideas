@@ -70,6 +70,9 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&X) {
                     GameStateSystem::set_transition(GameState::Sacrifice, resources);
                 }
+                if resources.input_data.down_keys.contains(&P) {
+                    PanelsSystem::add_push("Test 1", "This is a\ntest push", resources);
+                }
                 if resources.input_data.down_keys.contains(&B) {
                     BonusEffectPool::load_widget(5, world, resources);
 
@@ -295,6 +298,7 @@ impl GameStateSystem {
                     .vars
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
+                PanelsSystem::add_push("Test 1", "This is a test push", resources);
 
                 PanelsSystem::add_alert(
                     "Test Alert #2",

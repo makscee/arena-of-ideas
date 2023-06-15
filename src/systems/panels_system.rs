@@ -3,16 +3,25 @@ use super::*;
 pub struct PanelsSystem {}
 
 impl System for PanelsSystem {
-    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        for panel in resources.panels_data.center.iter_mut() {
+    fn update(&mut self, _: &mut legion::World, resources: &mut Resources) {
+        for panel in resources
+            .panels_data
+            .alert
+            .iter_mut()
+            .chain(resources.panels_data.push.iter_mut())
+        {
             panel.update(resources.delta_time)
         }
-        resources.panels_data.center.retain(|x| !x.is_closed());
+
+        resources.panels_data.alert.retain(|x| !x.is_closed());
+        resources.panels_data.push.retain(|x| !x.is_closed());
+
         resources.frame_shaders.extend(
             resources
                 .panels_data
-                .center
+                .alert
                 .iter()
+                .chain(resources.panels_data.push.iter())
                 .map(|x| x.shader.clone()),
         );
     }
@@ -24,31 +33,44 @@ impl PanelsSystem {
     }
 
     pub fn add_alert(title: &str, text: &str, resources: &mut Resources) {
-        let mut panel = Panel::new(title, &resources.options);
+        let mut panel = Panel::new(title, PanelType::Alert, &resources.options);
         panel.add_text(text, &resources.options);
         panel.add_close_button("Close", &resources.options);
         panel
             .shader
-            .set_int_ref("u_index", resources.panels_data.center.len() as i32);
-        resources.panels_data.center.push(panel);
+            .set_int_ref("u_index", resources.panels_data.alert.len() as i32);
+        resources.panels_data.alert.push(panel);
     }
 
-    pub fn close_panel(entity: legion::Entity, resources: &mut Resources) {
-        for panel in resources.panels_data.center.iter_mut() {
+    pub fn close_alert(entity: legion::Entity, resources: &mut Resources) {
+        for panel in resources.panels_data.alert.iter_mut() {
             if panel.shader.entity == Some(entity) || panel.shader.parent == Some(entity) {
                 panel.state = PanelState::Closed;
             }
         }
     }
 
+    pub fn add_push(title: &str, text: &str, resources: &mut Resources) {
+        let mut panel = Panel::new(title, PanelType::Push, &resources.options);
+        panel.add_text(text, &resources.options);
+        resources.panels_data.push.insert(0, panel);
+        let corner = vec2(-resources.camera.aspect_ratio, -1.0) + vec2(0.1, 0.1);
+
+        for (ind, panel) in resources.panels_data.push.iter_mut().enumerate() {
+            panel.shader.parameters.r#box.pos = corner;
+        }
+    }
+
     pub fn clear(resources: &mut Resources) {
-        resources.panels_data.center.clear();
+        resources.panels_data.alert.clear();
+        resources.panels_data.push.clear();
     }
 }
 
 #[derive(Default)]
 pub struct PanelsData {
-    pub center: Vec<Panel>,
+    pub alert: Vec<Panel>,
+    pub push: Vec<Panel>,
 }
 
 #[derive(Debug)]
@@ -60,18 +82,26 @@ pub struct Panel {
 }
 
 impl Panel {
-    pub fn new(title: &str, options: &Options) -> Self {
+    pub fn new(title: &str, r#type: PanelType, options: &Options) -> Self {
         let mut shader =
             options
                 .shaders
                 .panel
                 .clone()
                 .set_string("u_title_text", title.to_owned(), 1);
+        match r#type {
+            PanelType::Push => {
+                shader.parameters.r#box.center = vec2(-1.0, -1.0);
+                shader.parameters.r#box.size.x = 0.2;
+            }
+            PanelType::Alert => {}
+            PanelType::Hint => {}
+        }
         shader.entity = Some(new_entity());
         Self {
             shader,
             state: PanelState::Open,
-            r#type: PanelType::Alert,
+            r#type,
             // t: 1.0,
             t: default(),
         }
@@ -87,8 +117,7 @@ impl Panel {
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
         let per_line = shader.parameters.r#box.size.y;
         shader.parameters.r#box.size.y = lines as f32 * per_line;
-        self.shader.parameters.r#box = shader.parameters.r#box;
-        self.shader.parameters.r#box.size += vec2(0.0, 2.0 * per_line);
+        self.shader.parameters.r#box.size.y = shader.parameters.r#box.size.y + 2.0 * per_line;
         self.shader.chain_after.push(shader);
     }
 
@@ -97,7 +126,8 @@ impl Panel {
             PanelState::Open => self.t = (self.t + delta * 2.0).min(1.0),
             PanelState::Closed => self.t = (self.t - delta * 2.0).max(0.0),
         }
-        self.shader.set_float_ref("u_open", self.t);
+        self.shader
+            .set_float_ref("u_open", EasingType::QuadInOut.f(self.t));
     }
 
     pub fn is_closed(&self) -> bool {
@@ -124,7 +154,7 @@ impl Panel {
             match event {
                 HandleEvent::Click => {
                     if let Some(entity) = shader.parent {
-                        PanelsSystem::close_panel(entity, resources);
+                        PanelsSystem::close_alert(entity, resources);
                     }
                 }
                 _ => {}
@@ -132,6 +162,7 @@ impl Panel {
         }
         button.input_handlers.push(close_panel_handler);
         self.shader.chain_after.push(button);
+        self.shader.set_float_ref("u_footer", 1.0);
     }
 }
 

@@ -2,8 +2,9 @@
 uniform float u_rounding = 0.05;
 uniform sampler2D u_title_text;
 uniform vec2 u_title_text_size;
+uniform float u_footer = 0;
 
-const float EXTRA_HEIGHT = 0.14;
+const float EXTRA_HEIGHT = 0.07;
 const float EXTRA_WIDTH = 0.05;
 
 #ifdef VERTEX_SHADER
@@ -28,10 +29,10 @@ uniform vec4 u_border_color;
 uniform vec4 u_start_color;
 uniform vec4 u_end_color;
 
-const float BORDER_THICKNESS = 0.01;
+const float BORDER_THICKNESS = 0.008;
 
 float title_sdf(vec2 uv) {
-    float p = EXTRA_HEIGHT * .2;
+    float p = EXTRA_HEIGHT * .3;
     vec2 padding = vec2(-p / o_box.x * 2, p / o_box.y * .5);
     uv += vec2(1, -1) + padding;
     uv *= o_box;
@@ -51,7 +52,7 @@ void main() {
     vec4 color = vec4(0);
 
     vec4 box_color = mix(box_body_color, u_border_color, float(abs(box_sdf) < BORDER_THICKNESS && box_sdf < 0));
-    box_color.a = smoothstep(0.0, -0.001, box_sdf);
+    box_color.a = smoothstep(0.001, 0., box_sdf);
 
     bool is_border = inner_box_sdf > -BORDER_THICKNESS && inner_box_sdf < 0;
     vec4 body_border_color = vec4(u_border_color.rgb, float(is_border && box_sdf < 0));
@@ -64,6 +65,7 @@ void main() {
     vec4 title_color = vec4(0, 0, 0, smoothstep(0.2, 0.5, title_sdf));
     title_color = alpha_blend(title_color, vec4(1, 1, 1, float(title_sdf > 0.5)));
     color = alpha_blend(color, title_color);
+    color.a *= mix(float(uv.y * o_box.y > -o_box.y + EXTRA_HEIGHT), 1., u_footer);
     gl_FragColor = color;
 }
 #endif

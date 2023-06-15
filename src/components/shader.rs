@@ -199,8 +199,7 @@ impl Shader {
         uniforms.insert_float_ref("u_sin", t.sin());
         uniforms.insert_float_ref("u_cos", t.cos());
 
-        let position = self.parameters.r#box.pos;
-        let align = uniforms.try_get_vec2("u_align").unwrap_or(vec2::ZERO);
+        let (position, bx) = self.parameters.r#box.get_pos_size();
         let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
 
         let index = uniforms.try_get_int("u_index").unwrap_or_default();
@@ -208,8 +207,6 @@ impl Shader {
             .try_get_vec2("u_index_offset")
             .unwrap_or(vec2::ZERO);
         let card_offset = uniforms.try_get_vec2("u_card_offset").unwrap_or(vec2::ZERO);
-
-        let bx = self.parameters.r#box.size;
 
         let card = uniforms.try_get_float("u_card").unwrap_or_default();
         let mut scale = uniforms.try_get_float("u_scale").unwrap_or(1.0)
@@ -226,15 +223,11 @@ impl Shader {
         let offset = offset + card_offset * card + index_offset * index as f32;
         scale *= zoom;
 
-        let aspect_ratio = {
-            let screen_size = resources.camera.framebuffer_size;
-            screen_size.x / screen_size.y
-        };
+        let aspect_ratio = resources.camera.aspect_ratio;
         uniforms.insert_float_ref("u_aspect_ratio", aspect_ratio);
 
         let aabb = Aabb2::point(position + offset * scale)
             .extend_symmetric(bx * size * scale * local_scale);
-        let aabb = aabb.translate(align * aabb.size() * 0.5);
 
         uniforms.insert_vec2_ref("u_position", aabb.center());
         uniforms.insert_vec2_ref("u_box", aabb.size() * 0.5);
@@ -350,7 +343,11 @@ impl Default for BoxParameters {
 
 impl BoxParameters {
     pub fn consider_parent(&mut self, parent: &BoxParameters) {
-        self.pos -= self.size * self.center;
-        self.pos += parent.size * self.anchor + parent.pos;
+        let (pos, size) = parent.get_pos_size();
+        self.pos += size * self.anchor + pos;
+    }
+
+    pub fn get_pos_size(&self) -> (vec2<f32>, vec2<f32>) {
+        (self.pos - self.center * self.size, self.size)
     }
 }
