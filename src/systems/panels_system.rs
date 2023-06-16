@@ -32,10 +32,21 @@ impl PanelsSystem {
         Self {}
     }
 
-    pub fn add_alert(title: &str, text: &str, resources: &mut Resources) {
-        let mut panel = Panel::new(title, PanelType::Alert, &resources.options);
-        panel.add_text(text, &resources.options);
-        panel.add_close_button("Close", &resources.options);
+    pub fn add_alert(
+        title: &str,
+        text: &str,
+        pos: vec2<f32>,
+        footer: bool,
+        resources: &mut Resources,
+    ) {
+        let mut panel = Self::generate_text_shader(text, &resources.options)
+            .wrap_panel_body(&resources.options)
+            .wrap_panel_header(title, &resources.options);
+        if footer {
+            panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
+        }
+        panel.parameters.r#box.pos = pos;
+        let mut panel = panel.panel(PanelType::Alert);
         panel
             .shader
             .set_int_ref("u_index", resources.panels_data.alert.len() as i32);
@@ -50,20 +61,22 @@ impl PanelsSystem {
         }
     }
 
-    pub fn add_push(title: &str, text: &str, resources: &mut Resources) {
-        let mut panel = Panel::new(title, PanelType::Push, &resources.options);
-        panel.add_text(text, &resources.options);
-        resources.panels_data.push.insert(0, panel);
-        let corner = vec2(-resources.camera.aspect_ratio, -1.0) + vec2(0.1, 0.1);
-
-        for (ind, panel) in resources.panels_data.push.iter_mut().enumerate() {
-            panel.shader.parameters.r#box.pos = corner;
-        }
-    }
-
     pub fn clear(resources: &mut Resources) {
         resources.panels_data.alert.clear();
         resources.panels_data.push.clear();
+    }
+
+    pub fn generate_text_shader(text: &str, options: &Options) -> Shader {
+        let mut shader =
+            options
+                .shaders
+                .panel_text
+                .clone()
+                .set_string("u_text", text.to_owned(), 0);
+        let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
+        let per_line = shader.parameters.r#box.size.y;
+        shader.parameters.r#box.size.y = lines as f32 * per_line;
+        shader
     }
 }
 
@@ -82,95 +95,77 @@ pub struct Panel {
 }
 
 impl Panel {
-    pub fn new(title: &str, r#type: PanelType, options: &Options) -> Self {
-        let mut shader =
-            options
-                .shaders
-                .panel
-                .clone()
-                .set_string("u_title_text", title.to_owned(), 1);
-        match r#type {
-            PanelType::Push => {
-                shader.parameters.r#box.center = vec2(-1.0, -1.0);
-                shader.parameters.r#box.size.x = 0.2;
-            }
-            PanelType::Alert => {}
-            PanelType::Hint => {}
-        }
-        shader.entity = Some(new_entity());
-        Self {
-            shader,
-            state: PanelState::Open,
-            r#type,
-            // t: 1.0,
-            t: default(),
-        }
-    }
-
-    pub fn add_text(&mut self, text: &str, options: &Options) {
-        let mut shader =
-            options
-                .shaders
-                .panel_text
-                .clone()
-                .set_string("u_text", text.to_owned(), 0);
-        let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
-        let per_line = shader.parameters.r#box.size.y;
-        shader.parameters.r#box.size.y = lines as f32 * per_line;
-        self.shader.parameters.r#box.size.y = shader.parameters.r#box.size.y + 2.0 * per_line;
-        self.shader.chain_after.push(shader);
-    }
-
     pub fn update(&mut self, delta: Time) {
         match self.state {
-            PanelState::Open => self.t = (self.t + delta * 2.0).min(1.0),
-            PanelState::Closed => self.t = (self.t - delta * 2.0).max(0.0),
+            PanelState::Open => self.t = (self.t + delta * 1.5).min(1.0),
+            PanelState::Closed => self.t = (self.t - delta * 1.5).max(0.0),
         }
         self.shader
-            .set_float_ref("u_open", EasingType::QuadInOut.f(self.t));
+            .set_float_ref("u_open", EasingType::QuartInOut.f(self.t));
     }
 
     pub fn is_closed(&self) -> bool {
         self.state == PanelState::Closed && self.t <= 0.0
     }
-
-    pub fn add_close_button(&mut self, title: &str, options: &Options) {
-        let mut button =
-            options
-                .shaders
-                .panel_button
-                .clone()
-                .set_string("u_text", title.to_owned(), 1);
-        button.parent = self.shader.entity;
-        button.entity = Some(new_entity());
-        ButtonSystem::add_button_handlers(&mut button);
-        fn close_panel_handler(
-            event: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            _: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if let Some(entity) = shader.parent {
-                        PanelsSystem::close_alert(entity, resources);
-                    }
-                }
-                _ => {}
-            }
-        }
-        button.input_handlers.push(close_panel_handler);
-        self.shader.chain_after.push(button);
-        self.shader.set_float_ref("u_footer", 1.0);
-    }
 }
 
 impl Shader {
-    // pub fn wrap_in_panel(self, title: &str) -> Self {}
+    pub fn wrap_panel_body(self, options: &Options) -> Self {
+        let mut shader = options.shaders.panel_body.clone();
+        shader.parameters.r#box = self.parameters.r#box;
+        let padding = options.floats.panel_body_padding;
+        shader.parameters.r#box.size += vec2(padding, padding);
+        shader.chain_after.push(self);
+        shader.entity = Some(new_entity());
+        shader
+    }
+
+    pub fn wrap_panel_header(mut self, title: &str, options: &Options) -> Self {
+        let mut shader =
+            options
+                .shaders
+                .panel_header
+                .clone()
+                .set_string("u_title_text", title.to_owned(), 1);
+        shader.parameters.r#box.size.x = self.parameters.r#box.size.x;
+        for child in shader.chain_after.iter_mut() {
+            child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
+        }
+        self.chain_after.push(shader);
+        self
+    }
+
+    pub fn wrap_panel_footer(mut self, button: PanelFooterButton, options: &Options) -> Self {
+        let mut shader = options.shaders.panel_footer.clone();
+        shader.parameters.r#box.size.x = self.parameters.r#box.size.x;
+        for child in shader.chain_after.iter_mut() {
+            child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
+        }
+        let mut button_shader = options.shaders.panel_button.clone().set_string(
+            "u_text",
+            button.get_text().to_owned(),
+            1,
+        );
+        button_shader.parent = self.entity;
+        button_shader.entity = Some(new_entity());
+        ButtonSystem::add_button_handlers(&mut button_shader);
+        button_shader.input_handlers.push(button.get_handler());
+        shader.chain_after.push(button_shader);
+        self.chain_after.push(shader);
+        self
+    }
+
+    pub fn panel(self, r#type: PanelType) -> Panel {
+        Panel {
+            shader: self,
+            state: PanelState::Open,
+            r#type,
+            t: default(),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
 pub enum PanelType {
     Push,
     Alert,
@@ -181,4 +176,39 @@ pub enum PanelType {
 pub enum PanelState {
     Open,
     Closed,
+}
+pub enum PanelFooterButton {
+    Close,
+}
+
+impl PanelFooterButton {
+    pub fn get_text(&self) -> &str {
+        match self {
+            PanelFooterButton::Close => "Close",
+        }
+    }
+
+    pub fn get_handler(&self) -> Handler {
+        match self {
+            PanelFooterButton::Close => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if let Some(entity) = shader.parent {
+                                PanelsSystem::close_alert(entity, resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+        }
+    }
 }

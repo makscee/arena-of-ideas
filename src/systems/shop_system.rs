@@ -1,5 +1,3 @@
-use geng::ui::*;
-
 use crate::resources::Widget;
 
 use super::*;
@@ -276,16 +274,12 @@ impl ShopSystem {
         if current_floor == 0 {
             Self::change_g(resources.options.initial_shop_g, world);
         }
-        // TeamSystem::get_state_mut(&Faction::Team, world)
-        //     .vars
-        //     .set_int(&VarName::FreeRerolls, resources.last_score as i32);
-
         ShopData::load_floor(resources, current_floor);
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, current_floor as i32);
-        Self::create_buy_button(resources);
-        Self::create_battle_button(resources);
+        // Self::create_buy_button(resources);
+        // Self::create_battle_button(resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {

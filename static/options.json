@@ -236,29 +236,121 @@
         "text": "#FFFFFF"
     },
     "shaders": {
-        "panel": {
-            "path": "shaders/system/panel.glsl",
+        "panel_header": {
+            "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
                 "box": {
                     "size": [
-                        1.0,
-                        0.6
+                        0.0,
+                        0.05
+                    ],
+                    "center": [
+                        0.0,
+                        0.0
+                    ],
+                    "anchor": [
+                        0.0,
+                        1.0
                     ]
                 },
                 "uniforms": {
                     "u_ui": 1,
-                    "u_color": "#3F3F3F",
-                    "u_start_color": "#0085FF",
-                    "u_end_color": "#797979",
-                    "u_border_color": "#000000",
-                    "u_index_offset": [
-                        0.1,
-                        -0.1
+                    "u_color": "#6495ED"
+                }
+            },
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "box": {
+                            "size": [
+                                0.0,
+                                0.037
+                            ],
+                            "center": [
+                                0.9,
+                                0.0
+                            ],
+                            "anchor": [
+                                -0.0,
+                                0.0
+                            ]
+                        },
+                        "uniforms": {
+                            "u_outline_color": "#000000",
+                            "u_outline_fade": 1.0,
+                            "u_text_border": 0.2,
+                            "u_color": "#ffffff",
+                            "u_text_align": [
+                                1.0,
+                                0.0
+                            ],
+                            "u_text": [
+                                1,
+                                "Empty Title"
+                            ],
+                            "mapping": {
+                                "u_text": "u_title_text"
+                            }
+                        }
+                    }
+                }
+            ],
+            "layer": "UI",
+            "order": 2000
+        },
+        "panel_footer": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "box": {
+                    "size": [
+                        0.0,
+                        0.05
                     ],
-                    "u_title_text": [
-                        1,
-                        "Empty Title"
+                    "center": [
+                        0.0,
+                        0.0
+                    ],
+                    "anchor": [
+                        0.0,
+                        -1.0
                     ]
+                },
+                "uniforms": {
+                    "u_ui": 1,
+                    "u_color": "#6495ED"
+                }
+            },
+            "layer": "UI",
+            "order": 2000
+        },
+        "panel_body": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_ui": 1,
+                    "u_rounding": 0.04,
+                    "u_color": "#3F3F3F",
+                    "u_index_offset": [
+                        0.05,
+                        -0.05
+                    ],
+                    "u_g_points": [
+                        -0.01,
+                        -0.01,
+                        -0.005,
+                        0.0
+                    ],
+                    "u_g_alphas": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        0.0
+                    ],
+                    "u_g_color_1": "#000000",
+                    "u_g_color_2": "#000000",
+                    "u_g_color_3": "#000000",
+                    "u_g_color_4": "#000000"
                 }
             },
             "layer": "UI",
@@ -269,7 +361,7 @@
             "parameters": {
                 "box": {
                     "size": [
-                        0.9,
+                        0.5,
                         0.03
                     ]
                 },
@@ -282,59 +374,53 @@
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
                 "box": {
-                    "pos": [
-                        0.0,
-                        0.0
-                    ],
                     "size": [
                         0.2,
-                        0.025
+                        0.03
                     ],
                     "anchor": [
                         0.0,
-                        -1.0
+                        -0.0
                     ],
                     "center": [
                         0.0,
-                        1.25
+                        -0.0
                     ]
                 },
                 "uniforms": {
                     "u_active": 1.0,
-                    "u_padding": 0.2,
-                    "u_g_color_1": "#000000",
-                    "u_g_color_2": "#000000",
-                    "u_g_color_3": "#000000",
-                    "u_g_color_4": "#000000",
-                    "u_rounding": 0.5,
+                    "u_rounding": 0.02,
                     "u_g_points": [
-                        -0.1,
-                        -0.1,
-                        0.2,
-                        0.2
+                        -0.01,
+                        -0.01,
+                        -0.005,
+                        0.0
                     ],
                     "u_g_alphas": [
                         1.0,
                         1.0,
-                        0.0,
+                        1.0,
                         0.0
                     ],
-                    "mapping": {
-                        "u_g_color_1": "u_outline_color",
-                        "u_g_color_2": "u_outline_color",
-                        "u_g_color_3": "u_outline_color",
-                        "u_g_color4": "u_outline_color"
-                    }
+                    "u_g_color_1": "#000000",
+                    "u_g_color_2": "#000000",
+                    "u_g_color_3": "#000000",
+                    "u_g_color_4": "#000000"
                 }
             },
             "chain_after": [
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {
+                        "box": {
+                            "size": [
+                                1.0,
+                                0.025
+                            ]
+                        },
                         "uniforms": {
                             "u_text_inside": 0.5,
                             "u_text_border": 0.3,
-                            "u_size": 0.05,
                             "u_outline_color": "#000000",
                             "u_text_color": "#ffffff",
                             "mapping": {
@@ -1147,6 +1233,7 @@
         }
     },
     "floats": {
+        "panel_body_padding": 0.05,
         "slots_shop_team_position": [
             6.0,
             4.0
@@ -2037,6 +2124,24 @@
                 1.0
             ],
             "u_ui": 1
+        }
+    },
+    "parameters": {
+        "panels": {
+            "Alert": {
+                "box": {
+                    "size": [
+                        1.0,
+                        0.6
+                    ]
+                },
+                "uniforms": {
+                    "u_index_offset": [
+                        0.1,
+                        -0.1
+                    ]
+                }
+            }
         }
     }
 }

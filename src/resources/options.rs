@@ -9,6 +9,7 @@ pub struct Options {
     pub floats: Floats,
     pub widgets: Widgets,
     pub uniforms: Uniforms,
+    pub parameters: Parameters,
 
     pub fov: f32,
     pub rewind_speed: f32,
@@ -42,7 +43,9 @@ impl Options {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Shaders {
-    pub panel: Shader,
+    pub panel_header: Shader,
+    pub panel_footer: Shader,
+    pub panel_body: Shader,
     pub panel_button: Shader,
     pub panel_text: Shader,
     pub unit: Shader,
@@ -182,9 +185,15 @@ pub struct Floats {
     pub slots_battle_team_scale: f32,
     pub slots_striker_scale: f32,
     pub slot_info_offset: f32,
+    pub panel_body_padding: f32,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Uniforms {
     pub ui_button: ShaderUniforms,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Parameters {
+    pub panels: HashMap<PanelType, ShaderParameters>,
 }

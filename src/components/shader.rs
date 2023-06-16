@@ -310,6 +310,17 @@ impl ugli::Uniforms for ShaderParameters {
     }
 }
 
+impl ShaderParameters {
+    pub fn merge(&mut self, other: &ShaderParameters, force: bool) {
+        if force {
+            self.r#box = other.r#box;
+            self.instances = other.instances;
+            self.vertices = other.vertices;
+        }
+        self.uniforms.merge_mut(&other.uniforms, force);
+    }
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct BoxParameters {
     #[serde(default = "vec_zero")]

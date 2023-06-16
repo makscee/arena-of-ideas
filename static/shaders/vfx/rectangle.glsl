@@ -1,5 +1,5 @@
 #include <common.glsl>
-uniform float u_rounding = 0.2;
+uniform float u_rounding = 0;
 
 #ifdef VERTEX_SHADER
 out vec2 uv;
@@ -9,7 +9,7 @@ attribute vec2 a_pos;
 void main() {
     init_fields();
     uv = get_uv(a_pos);
-    o_box = vec2(box.x / box.y, 1.0);
+    o_box = box;
     gl_Position = get_gl_position(uv);
 }
 #endif
