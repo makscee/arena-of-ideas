@@ -1,15 +1,26 @@
 use super::*;
 
 pub struct PanelsSystem {}
+const PADDING: f32 = 0.05;
 
 impl System for PanelsSystem {
     fn update(&mut self, _: &mut legion::World, resources: &mut Resources) {
-        const PADDING: f32 = 0.05;
-        let corner = vec2(-resources.camera.aspect_ratio, -1.0) + vec2(PADDING, PADDING);
-        let mut offset = vec2::ZERO;
+        let bot_left_corner = vec2(-resources.camera.aspect_ratio, -1.0) + vec2(PADDING, PADDING);
+        let bot_right_corner = vec2(resources.camera.aspect_ratio, -1.0) + vec2(-PADDING, PADDING);
+        let top_left_corner =
+            vec2(-resources.camera.aspect_ratio, 1.0) + vec2(PADDING, -PADDING * 2.0);
 
+        let mut offset = vec2::ZERO;
         for panel in resources.panels_data.push.iter_mut() {
-            panel.need_pos = corner + offset;
+            panel.need_pos = bot_left_corner + offset;
+            if panel.t == 0.0 && panel.state == PanelState::Open {
+                panel.shader.parameters.r#box.pos = panel.need_pos;
+            }
+            offset += vec2(0.0, PADDING + panel.shader.parameters.r#box.size.y * 2.0);
+        }
+        let mut offset = vec2::ZERO;
+        for panel in resources.panels_data.hint.iter_mut() {
+            panel.need_pos = bot_right_corner + offset;
             if panel.t == 0.0 && panel.state == PanelState::Open {
                 panel.shader.parameters.r#box.pos = panel.need_pos;
             }
@@ -17,8 +28,7 @@ impl System for PanelsSystem {
         }
 
         if let Some(panel) = resources.panels_data.stats.as_mut() {
-            panel.need_pos =
-                vec2(-resources.camera.aspect_ratio, 1.0) + vec2(PADDING, -PADDING * 2.0);
+            panel.need_pos = top_left_corner;
         }
 
         let delta_time = resources.delta_time;
@@ -29,12 +39,14 @@ impl System for PanelsSystem {
             .iter_mut()
             .chain(resources.panels_data.push.iter_mut())
             .chain(resources.panels_data.stats.iter_mut())
+            .chain(resources.panels_data.hint.iter_mut())
         {
             panel.update(delta_time, global_time)
         }
 
         resources.panels_data.alert.retain(|x| !x.is_closed());
         resources.panels_data.push.retain(|x| !x.is_closed());
+        resources.panels_data.hint.retain(|x| !x.is_closed());
 
         resources.frame_shaders.extend(
             resources
@@ -43,6 +55,7 @@ impl System for PanelsSystem {
                 .iter()
                 .chain(resources.panels_data.push.iter())
                 .chain(resources.panels_data.stats.iter())
+                .chain(resources.panels_data.hint.iter())
                 .map(|x| x.shader.clone()),
         );
     }
@@ -93,6 +106,14 @@ impl PanelsSystem {
         resources.panels_data.stats = Some(panel);
     }
 
+    pub fn add_hint(title: &str, text: &str, resources: &mut Resources) {
+        let panel = Self::generate_text_shader(&text, &resources.options)
+            .wrap_panel_body(&resources.options)
+            .wrap_panel_header(&title, &resources.options)
+            .panel(PanelType::Hint, resources);
+        resources.panels_data.hint.push(panel);
+    }
+
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
         let g = ShopSystem::get_g(world);
         let level = resources.ladder.current_ind();
@@ -115,9 +136,16 @@ impl PanelsSystem {
         }
     }
 
+    pub fn close_hints(resources: &mut Resources) {
+        for panel in resources.panels_data.hint.iter_mut() {
+            panel.state = PanelState::Closed;
+        }
+    }
+
     pub fn clear(resources: &mut Resources) {
         resources.panels_data.alert.clear();
         resources.panels_data.push.clear();
+        resources.panels_data.hint.clear();
         resources.panels_data.stats = None;
     }
 
@@ -139,6 +167,7 @@ impl PanelsSystem {
 pub struct PanelsData {
     pub alert: Vec<Panel>,
     pub push: Vec<Panel>,
+    pub hint: Vec<Panel>,
     pub stats: Option<Panel>,
 }
 
@@ -229,7 +258,9 @@ impl Shader {
                 self.parameters.r#box.center = vec2(-1.0, -1.0);
             }
             PanelType::Alert => {}
-            PanelType::Hint => todo!(),
+            PanelType::Hint => {
+                self.parameters.r#box.center = vec2(1.0, -1.0);
+            }
             PanelType::Stats => {
                 self.parameters.r#box.center = vec2(-1.0, 1.0);
             }

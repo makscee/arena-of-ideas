@@ -73,6 +73,9 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&P) {
                     PanelsSystem::add_push("Test 1", "This is a\ntest push", resources);
                 }
+                if resources.input_data.down_keys.contains(&K) {
+                    PanelsSystem::close_hints(resources);
+                }
                 if resources.input_data.down_keys.contains(&B) {
                     BonusEffectPool::load_widget(5, world, resources);
 
@@ -300,6 +303,9 @@ impl GameStateSystem {
                 ShopSystem::enter(world, resources);
                 PanelsSystem::add_push("Test 1", "This is a test push", resources);
                 PanelsSystem::add_stats(world, resources);
+                PanelsSystem::add_hint("Hint 1", "This is a hint", resources);
+                PanelsSystem::add_hint("Hint 2", "This is a\nmultiline hint", resources);
+                PanelsSystem::add_hint("Hint 3", "This is a\ntriple\nmultiline hint", resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",

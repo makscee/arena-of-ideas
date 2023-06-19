@@ -9,13 +9,13 @@ Build
         enemy rank defeated
     Stats info panel @ui
         panel working {start:2023-06-19T14:47:43} {cm:2023-06-19T15:17:25} {duration:29m}
-        g
+        g {cm:2023-06-19T15:55:08}
         total score
         team status
         team vars
-        level
+        level {cm:2023-06-19T15:55:11}
     Hover hint @ui
-        panel working
+        panel working {start:2023-06-19T15:42:09} {cm:2023-06-19T15:55:22} {duration:13m}
         unit statuses
         shop buy btns
         start battle btn
