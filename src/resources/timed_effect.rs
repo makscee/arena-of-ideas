@@ -122,22 +122,12 @@ impl Animation {
                             .merge(&shader.parameters.uniforms)
                             .merge(&animation.get_mixed(t));
                         uniforms.insert_ref(
-                            "u_from",
-                            from_shader
-                                .parameters
-                                .uniforms
-                                .get(&VarName::Position.uniform())
-                                .cloned()
-                                .unwrap(),
+                            "u_from".to_owned(),
+                            from_shader.parameters.uniforms.get("u_position").unwrap(),
                         );
                         uniforms.insert_ref(
-                            "u_to",
-                            to_shader
-                                .parameters
-                                .uniforms
-                                .get(&VarName::Position.uniform())
-                                .cloned()
-                                .unwrap(),
+                            "u_to".to_owned(),
+                            to_shader.parameters.uniforms.get("u_position").unwrap(),
                         );
                         shader.parameters.uniforms = uniforms;
                         return Some(shader);

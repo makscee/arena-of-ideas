@@ -128,13 +128,13 @@ impl PackedUnit {
         if let Some(self_shader) = self.shader.as_ref() {
             shader.chain_before.push(self_shader.clone());
         }
-        shader.set_color_ref("u_house_color", house_color);
-        shader.set_string_ref("u_name", self.name.to_owned(), 1);
+        shader.set_color_ref("u_house_color".to_owned(), house_color);
+        shader.set_string_ref("u_name".to_owned(), self.name.to_owned(), 1);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
-        shader.set_string_ref(&VarName::Description.uniform(), self.description.clone(), 0);
-        shader.set_float_ref("u_rank_1", (self.rank > 0) as i32 as f32);
-        shader.set_float_ref("u_rank_2", (self.rank > 0) as i32 as f32);
+        shader.set_string_ref("u_description".to_owned(), self.description.clone(), 0);
+        shader.set_float_ref("u_rank_1".to_owned(), (self.rank > 0) as i32 as f32);
+        shader.set_float_ref("u_rank_2".to_owned(), (self.rank > 0) as i32 as f32);
 
         let hp_offset = options
             .shaders
@@ -156,10 +156,16 @@ impl PackedUnit {
             .shaders
             .stats
             .clone()
-            .set_uniform("u_offset", ShaderUniform::Vec2(hp_offset))
-            .set_uniform("u_card_offset", ShaderUniform::Vec2(hp_card_offset))
-            .set_uniform("u_color", ShaderUniform::Color(options.colors.stats_health))
-            .set_string("u_text", self.health.to_string(), 1)
+            .set_uniform("u_offset".to_owned(), ShaderUniform::Vec2(hp_offset))
+            .set_uniform(
+                "u_card_offset".to_owned(),
+                ShaderUniform::Vec2(hp_card_offset),
+            )
+            .set_uniform(
+                "u_color".to_owned(),
+                ShaderUniform::Color(options.colors.stats_health),
+            )
+            .set_string("u_text".to_owned(), self.health.to_string(), 1)
             .set_mapping("u_text", "u_hp_str")
             .set_mapping("u_text_extra_size", "u_damage_taken")
             .set_mapping("u_text_color", "u_hp_color");
@@ -169,18 +175,20 @@ impl PackedUnit {
             .shaders
             .stats
             .clone()
-            .set_uniform("u_color", ShaderUniform::Color(options.colors.stats_attack))
-            .set_string("u_text", self.attack.to_string(), 1)
+            .set_uniform(
+                "u_color".to_owned(),
+                ShaderUniform::Color(options.colors.stats_attack),
+            )
+            .set_string("u_text".to_owned(), self.attack.to_string(), 1)
             .set_mapping("u_text", "u_attack_str")
             .set_mapping("u_text_color", "u_attack_color");
         shader.chain_after.push(attack_shader);
-        shader.chain_after.push(
-            options
-                .shaders
-                .name
-                .clone()
-                .set_uniform("u_text", ShaderUniform::String((0, self.name.clone()))),
-        );
+        shader
+            .chain_after
+            .push(options.shaders.name.clone().set_uniform(
+                "u_text".to_owned(),
+                ShaderUniform::String((0, self.name.clone())),
+            ));
 
         shader
     }
@@ -191,18 +199,18 @@ impl PackedUnit {
         unit_shader
             .parameters
             .uniforms
-            .insert_float_ref("u_card", 1.0)
+            .insert_float_ref("u_card".to_owned(), 1.0)
             .insert_color_ref(
-                "u_faction_color",
+                "u_faction_color".to_owned(),
                 *resources.options.colors.factions.get(&faction).unwrap(),
             )
-            .insert_vec2_ref("u_box", vec2(1.0, 1.0))
-            .insert_vec2_ref("u_align", vec2::ZERO);
+            .insert_vec2_ref("u_box".to_owned(), vec2(1.0, 1.0))
+            .insert_vec2_ref("u_align".to_owned(), vec2::ZERO);
         if let Some(house) = self.house {
-            unit_shader
-                .parameters
-                .uniforms
-                .insert_color_ref("u_house_color", resources.house_pool.get_color(&house));
+            unit_shader.parameters.uniforms.insert_color_ref(
+                "u_house_color".to_owned(),
+                resources.house_pool.get_color(&house),
+            );
         }
         unit_shader
     }

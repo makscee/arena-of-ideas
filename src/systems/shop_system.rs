@@ -335,7 +335,7 @@ impl ShopSystem {
             .uniforms
             .ui_button
             .clone()
-            .insert_int("u_index", 1);
+            .insert_int("u_index".to_owned(), 1);
         Widget::Button {
             text: "Start battle".to_owned(),
             input_handler,

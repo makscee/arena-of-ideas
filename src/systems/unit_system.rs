@@ -93,18 +93,18 @@ impl UnitSystem {
             .parameters
             .uniforms
             .insert_float_ref(
-                &VarName::Card.uniform(),
+                "u_card".to_owned(),
                 match faction {
                     Faction::Shop => 1.0,
                     _ => 0.0,
                 },
             )
             .insert_color_ref(
-                &VarName::FactionColor.uniform(),
+                "u_faction".to_owned(),
                 *options.colors.factions.get(&faction).unwrap(),
             )
             .insert_float_ref(
-                &VarName::Scale.uniform(),
+                "u_scale".to_owned(),
                 SlotSystem::get_scale(slot, faction, resources),
             );
         let original_hp = context.get_int(&VarName::HpOriginalValue, world).unwrap();
@@ -119,21 +119,24 @@ impl UnitSystem {
         shader
             .parameters
             .uniforms
-            .insert_string_ref(&VarName::HpStr.uniform(), (hp - damage).to_string(), 1)
-            .insert_string_ref(&VarName::AttackStr.uniform(), atk.to_string(), 1);
+            .insert_string_ref("u_hp_str".to_owned(), (hp - damage).to_string(), 1)
+            .insert_string_ref("u_attack_str".to_owned(), atk.to_string(), 1);
         let rank = context.get_int(&VarName::Rank, world).unwrap();
-        shader.set_float_ref("u_rank_1", (rank > 0) as i32 as f32);
-        shader.set_float_ref("u_rank_2", (rank > 1) as i32 as f32);
-        shader.set_float_ref("u_rank_3", (rank > 2) as i32 as f32);
+        shader.set_float_ref("u_rank_1".to_owned(), (rank > 0) as i32 as f32);
+        shader.set_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32);
+        shader.set_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
 
         if damage > 0 {
-            shader.set_color_ref("u_hp_color", resources.options.colors.damage);
+            shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.damage);
         } else if hp > original_hp {
-            shader.set_color_ref("u_hp_color", resources.options.colors.addition);
+            shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.addition);
         }
 
         if original_atk < atk {
-            shader.set_color_ref("u_attack_color", resources.options.colors.addition);
+            shader.set_color_ref(
+                "u_attack_color".to_owned(),
+                resources.options.colors.addition,
+            );
         }
 
         shader.entity = Some(entity);
@@ -339,9 +342,9 @@ impl UnitSystem {
                 shader
                     .parameters
                     .uniforms
-                    .insert_ref(&VarName::Card.uniform(), ShaderUniform::Float(card_value));
+                    .insert_ref("u_card".to_owned(), ShaderUniform::Float(card_value));
                 shader.parameters.uniforms.insert_ref(
-                    &VarName::Zoom.uniform(),
+                    "u_zoom".to_owned(),
                     ShaderUniform::Float(1.0 + hover_value * 1.4),
                 );
             }

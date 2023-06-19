@@ -255,7 +255,10 @@
                 },
                 "uniforms": {
                     "u_ui": 1,
-                    "u_color": "#6495ED"
+                    "u_color": "#6495ED",
+                    "mapping": {
+                        "u_color": "c_secondary"
+                    }
                 }
             },
             "chain_after": [

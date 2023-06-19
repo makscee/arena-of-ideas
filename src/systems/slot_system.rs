@@ -180,9 +180,9 @@ impl SlotSystem {
         shader
             .parameters
             .uniforms
-            .insert_color_ref("u_color", color)
-            .insert_vec2_ref("u_position", position)
-            .insert_float_ref("u_scale", scale);
+            .insert_color_ref("u_color".to_owned(), color)
+            .insert_vec2_ref("u_position".to_owned(), position)
+            .insert_float_ref("u_scale".to_owned(), scale);
 
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
@@ -210,7 +210,7 @@ impl SlotSystem {
             .uniforms
             .add_mapping("u_active", "u_filled");
         shader.chain_after.push(button.set_uniform(
-            "u_offset",
+            "u_offset".to_owned(),
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
         ));
     }
@@ -265,7 +265,7 @@ impl SlotSystem {
                 }
                 _ => true,
             };
-            shader.set_float_ref("u_enabled", enabled as i32 as f32);
+            shader.set_float_ref("u_enabled".to_owned(), enabled as i32 as f32);
         }
     }
 
@@ -296,9 +296,12 @@ impl SlotSystem {
                                     .shaders
                                     .slot_sacrifice_marker
                                     .clone()
-                                    .set_vec2("u_position", position)
-                                    .set_color("u_color", resources.options.colors.deletion)
-                                    .set_string("u_star_text", text, 1),
+                                    .set_vec2("u_position".to_owned(), position)
+                                    .set_color(
+                                        "u_color".to_owned(),
+                                        resources.options.colors.deletion,
+                                    )
+                                    .set_string("u_star_text".to_owned(), text, 1),
                             )
                             .lock(NodeLockType::Empty)
                             .push_as_panel(entity, resources);
@@ -452,9 +455,9 @@ impl SlotSystem {
             shader
                 .parameters
                 .uniforms
-                .insert_float_ref("u_filled", filled)
-                .insert_float_ref("u_enabled", enabled)
-                .insert_float_ref("u_hovered", hovered);
+                .insert_float_ref("u_filled".to_owned(), filled)
+                .insert_float_ref("u_enabled".to_owned(), enabled)
+                .insert_float_ref("u_hovered".to_owned(), hovered);
         }
     }
 }

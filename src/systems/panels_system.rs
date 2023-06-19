@@ -81,9 +81,10 @@ impl PanelsSystem {
         }
         let mut panel = panel.panel(PanelType::Alert, resources);
         panel.need_pos = pos;
-        panel
-            .shader
-            .set_int_ref("u_index", resources.panels_data.alert.len() as i32);
+        panel.shader.set_int_ref(
+            "u_index".to_owned(),
+            resources.panels_data.alert.len() as i32,
+        );
         resources.panels_data.alert.push(panel);
     }
 
@@ -97,6 +98,14 @@ impl PanelsSystem {
             .insert(0, panel.panel(PanelType::Push, resources));
     }
 
+    pub fn add_hint(title: &str, text: &str, resources: &mut Resources) {
+        let panel = Self::generate_text_shader(&text, &resources.options)
+            .wrap_panel_body(&resources.options)
+            .wrap_panel_header(&title, &resources.options)
+            .panel(PanelType::Hint, resources);
+        resources.panels_data.hint.push(panel);
+    }
+
     pub fn add_stats(world: &legion::World, resources: &mut Resources) {
         let text = Self::get_stats_text(world, resources);
         let panel = Self::generate_text_shader(&text, &resources.options)
@@ -104,14 +113,6 @@ impl PanelsSystem {
             .wrap_panel_header("Stats", &resources.options)
             .panel(PanelType::Stats, resources);
         resources.panels_data.stats = Some(panel);
-    }
-
-    pub fn add_hint(title: &str, text: &str, resources: &mut Resources) {
-        let panel = Self::generate_text_shader(&text, &resources.options)
-            .wrap_panel_body(&resources.options)
-            .wrap_panel_header(&title, &resources.options)
-            .panel(PanelType::Hint, resources);
-        resources.panels_data.hint.push(panel);
     }
 
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
@@ -124,7 +125,9 @@ impl PanelsSystem {
         if resources.panels_data.stats.is_some() {
             let text = Self::get_stats_text(world, resources);
             let panel = resources.panels_data.stats.as_mut().unwrap();
-            panel.shader.set_string_ref("u_panel_text", text, 0);
+            panel
+                .shader
+                .set_string_ref("u_panel_text".to_owned(), text, 0);
         }
     }
 
@@ -155,7 +158,7 @@ impl PanelsSystem {
                 .shaders
                 .panel_text
                 .clone()
-                .set_string("u_text", text.to_owned(), 0);
+                .set_string("u_text".to_owned(), text.to_owned(), 0);
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
         let per_line = shader.parameters.r#box.size.y;
         shader.parameters.r#box.size.y = lines as f32 * per_line;
@@ -198,7 +201,7 @@ impl Panel {
             PanelState::Closed => self.t = (self.t - delta_time * 1.5).max(0.0),
         }
         self.shader
-            .set_float_ref("u_open", EasingType::QuartInOut.f(self.t));
+            .set_float_ref("u_open".to_owned(), EasingType::QuartInOut.f(self.t));
     }
 
     pub fn is_closed(&self) -> bool {
@@ -218,12 +221,11 @@ impl Shader {
     }
 
     pub fn wrap_panel_header(mut self, title: &str, options: &Options) -> Self {
-        let mut shader =
-            options
-                .shaders
-                .panel_header
-                .clone()
-                .set_string("u_title_text", title.to_owned(), 1);
+        let mut shader = options.shaders.panel_header.clone().set_string(
+            "u_title_text".to_owned(),
+            title.to_owned(),
+            1,
+        );
         shader.parameters.r#box.size.x = self.parameters.r#box.size.x;
         for child in shader.chain_after.iter_mut() {
             child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
@@ -239,7 +241,7 @@ impl Shader {
             child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
         }
         let mut button_shader = options.shaders.panel_button.clone().set_string(
-            "u_text",
+            "u_text".to_owned(),
             button.get_text().to_owned(),
             1,
         );

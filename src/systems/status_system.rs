@@ -17,7 +17,7 @@ impl StatusSystem {
                         .status_panel_text
                         .clone()
                         .set_uniform(
-                            "u_text",
+                            "u_text".to_owned(),
                             ShaderUniform::String((
                                 0,
                                 match *charges > 1 {
@@ -26,7 +26,10 @@ impl StatusSystem {
                                 },
                             )),
                         )
-                        .set_uniform("u_outline_color", ShaderUniform::Color(def.color)),
+                        .set_uniform(
+                            "u_outline_color".to_owned(),
+                            ShaderUniform::Color(def.color),
+                        ),
                 ),
                 None => None,
             })
@@ -49,15 +52,21 @@ impl StatusSystem {
                         .shaders
                         .definitions_panel_title
                         .clone()
-                        .set_uniform("u_text", ShaderUniform::String((2, name.deref().clone())))
-                        .set_uniform("u_outline_color", ShaderUniform::Color(def.color)),
+                        .set_uniform(
+                            "u_text".to_owned(),
+                            ShaderUniform::String((2, name.deref().clone())),
+                        )
+                        .set_uniform(
+                            "u_outline_color".to_owned(),
+                            ShaderUniform::Color(def.color),
+                        ),
                     resources
                         .options
                         .shaders
                         .definitions_panel_text
                         .clone()
                         .set_uniform(
-                            "u_text",
+                            "u_text".to_owned(),
                             ShaderUniform::String((0, def.description.clone())),
                         ),
                 ]),
@@ -90,7 +99,7 @@ impl StatusSystem {
                     shader
                         .parameters
                         .uniforms
-                        .insert_int_ref("u_index", ind as i32);
+                        .insert_int_ref("u_index".to_owned(), ind as i32);
                     effects.push(TimedEffect::new(
                         None,
                         Animation::EntityExtraShaderConst { entity, shader },
@@ -109,7 +118,7 @@ impl StatusSystem {
                     shader
                         .parameters
                         .uniforms
-                        .insert_int_ref("u_index", ind as i32 / 2);
+                        .insert_int_ref("u_index".to_owned(), ind as i32 / 2);
                     effects.push(TimedEffect::new(
                         None,
                         Animation::EntityExtraShaderConst { entity, shader },

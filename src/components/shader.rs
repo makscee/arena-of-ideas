@@ -66,54 +66,54 @@ impl Debug for Shader {
 }
 
 impl Shader {
-    pub fn set_uniform(mut self, key: &str, value: ShaderUniform) -> Self {
+    pub fn set_uniform(mut self, key: String, value: ShaderUniform) -> Self {
         self.parameters.uniforms.insert_ref(key, value);
         self
     }
-    pub fn set_uniform_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Self {
+    pub fn set_uniform_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
         self.parameters.uniforms.insert_ref(key, value);
         self
     }
-    pub fn set_uniform_local_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Self {
+    pub fn set_uniform_local_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
         self.parameters.uniforms.insert_local_ref(key, value);
         self
     }
 
-    pub fn set_color(self, key: &str, value: Rgba<f32>) -> Self {
+    pub fn set_color(self, key: String, value: Rgba<f32>) -> Self {
         self.set_uniform(key, ShaderUniform::Color(value))
     }
-    pub fn set_color_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+    pub fn set_color_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
         self.set_uniform_ref(key, ShaderUniform::Color(value))
     }
-    pub fn set_color_local_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+    pub fn set_color_local_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
         self.set_uniform_local_ref(key, ShaderUniform::Color(value))
     }
 
-    pub fn set_int(self, key: &str, value: i32) -> Self {
+    pub fn set_int(self, key: String, value: i32) -> Self {
         self.set_uniform(key, ShaderUniform::Int(value))
     }
-    pub fn set_int_ref(&mut self, key: &str, value: i32) -> &mut Self {
+    pub fn set_int_ref(&mut self, key: String, value: i32) -> &mut Self {
         self.set_uniform_ref(key, ShaderUniform::Int(value))
     }
 
-    pub fn set_float(self, key: &str, value: f32) -> Self {
+    pub fn set_float(self, key: String, value: f32) -> Self {
         self.set_uniform(key, ShaderUniform::Float(value))
     }
-    pub fn set_float_ref(&mut self, key: &str, value: f32) -> &mut Self {
+    pub fn set_float_ref(&mut self, key: String, value: f32) -> &mut Self {
         self.set_uniform_ref(key, ShaderUniform::Float(value))
     }
 
-    pub fn set_vec2(self, key: &str, value: vec2<f32>) -> Self {
+    pub fn set_vec2(self, key: String, value: vec2<f32>) -> Self {
         self.set_uniform(key, ShaderUniform::Vec2(value))
     }
-    pub fn set_vec2_ref(&mut self, key: &str, value: vec2<f32>) -> &mut Self {
+    pub fn set_vec2_ref(&mut self, key: String, value: vec2<f32>) -> &mut Self {
         self.set_uniform_ref(key, ShaderUniform::Vec2(value))
     }
 
-    pub fn set_string(self, key: &str, value: String, font: usize) -> Self {
+    pub fn set_string(self, key: String, value: String, font: usize) -> Self {
         self.set_uniform(key, ShaderUniform::String((font, value)))
     }
-    pub fn set_string_ref(&mut self, key: &str, value: String, font: usize) -> &mut Self {
+    pub fn set_string_ref(&mut self, key: String, value: String, font: usize) -> &mut Self {
         self.set_uniform_ref(key, ShaderUniform::String((font, value)))
     }
 
@@ -133,7 +133,7 @@ impl Shader {
     }
 
     pub fn set_enabled(&mut self, value: bool) {
-        self.set_float_ref("u_enabled", value as i32 as f32);
+        self.set_float_ref("u_enabled".to_owned(), value as i32 as f32);
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -145,7 +145,7 @@ impl Shader {
     }
 
     pub fn set_active(&mut self, value: bool) {
-        self.set_float_ref("u_active", value as i32 as f32);
+        self.set_float_ref("u_active".to_owned(), value as i32 as f32);
     }
 
     pub fn is_active(&self) -> bool {
@@ -196,8 +196,8 @@ impl Shader {
         let rand = uniforms.try_get_float("u_rand").unwrap_or_default();
         let t = PI * rand * 2.0
             + resources.global_time * uniforms.try_get_float("u_t_multiplier").unwrap_or(1.0);
-        uniforms.insert_float_ref("u_sin", t.sin());
-        uniforms.insert_float_ref("u_cos", t.cos());
+        uniforms.insert_float_ref("u_sin".to_owned(), t.sin());
+        uniforms.insert_float_ref("u_cos".to_owned(), t.cos());
 
         let (position, bx) = self.parameters.r#box.get_pos_size();
         let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
@@ -224,13 +224,13 @@ impl Shader {
         scale *= zoom;
 
         let aspect_ratio = resources.camera.aspect_ratio;
-        uniforms.insert_float_ref("u_aspect_ratio", aspect_ratio);
+        uniforms.insert_float_ref("u_aspect_ratio".to_owned(), aspect_ratio);
 
         let aabb = Aabb2::point(position + offset * scale)
             .extend_symmetric(bx * size * scale * local_scale);
 
-        uniforms.insert_vec2_ref("u_position", aabb.center());
-        uniforms.insert_vec2_ref("u_box", aabb.size() * 0.5);
+        uniforms.insert_vec2_ref("u_position".to_owned(), aabb.center());
+        uniforms.insert_vec2_ref("u_box".to_owned(), aabb.size() * 0.5);
 
         self
     }
@@ -304,7 +304,10 @@ impl ugli::Uniforms for ShaderParameters {
     where
         C: ugli::UniformVisitor,
     {
-        for (name, value) in self.uniforms.iter().chain(self.uniforms.iter_local()) {
+        for (name, value) in self.uniforms.iter() {
+            visitor.visit(name, &value);
+        }
+        for (name, value) in self.uniforms.iter_local() {
             visitor.visit(name, value);
         }
     }

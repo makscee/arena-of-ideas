@@ -23,14 +23,14 @@ impl ShaderUniforms {
         let mut result: ShaderUniforms = self.clone();
         other
             .iter()
-            .for_each(|(key, value)| result.insert_ref(key, value.clone()));
+            .for_each(|(key, value)| result.insert_ref(key.to_owned(), value.clone()));
         result
     }
 
     pub fn merge_mut(&mut self, other: &ShaderUniforms, force: bool) -> &mut Self {
         other.iter().for_each(|(key, value)| {
             if force || !self.data.contains_key(key) {
-                self.insert_ref(key, value.clone());
+                self.insert_ref(key.to_owned(), value.clone());
             }
         });
         self
@@ -50,25 +50,25 @@ impl ShaderUniforms {
                     "Failed to mix key {key} b: {b:?} defaults: {defaults:?}"
                 ))
             });
-            match (a, b) {
+            match (&a, &b) {
                 (ShaderUniform::Int(a), ShaderUniform::Int(b)) => {
-                    result.insert_ref(key, ShaderUniform::Int(a + (b - a) * t as i32));
+                    result.insert_ref(key.to_owned(), ShaderUniform::Int(a + (b - a) * t as i32));
                 }
                 (ShaderUniform::Float(a), ShaderUniform::Float(b)) => {
-                    result.insert_ref(key, ShaderUniform::Float(a + (b - a) * t));
+                    result.insert_ref(key.to_owned(), ShaderUniform::Float(a + (b - a) * t));
                 }
                 (ShaderUniform::Vec2(a), ShaderUniform::Vec2(b)) => {
-                    result.insert_ref(key, ShaderUniform::Vec2(*a + (*b - *a) * t));
+                    result.insert_ref(key.to_owned(), ShaderUniform::Vec2(*a + (*b - *a) * t));
                 }
                 (ShaderUniform::Vec3(a), ShaderUniform::Vec3(b)) => {
-                    result.insert_ref(key, ShaderUniform::Vec3(*a + (*b - *a) * t));
+                    result.insert_ref(key.to_owned(), ShaderUniform::Vec3(*a + (*b - *a) * t));
                 }
                 (ShaderUniform::Vec4(a), ShaderUniform::Vec4(b)) => {
-                    result.insert_ref(key, ShaderUniform::Vec4(*a + (*b - *a) * t));
+                    result.insert_ref(key.to_owned(), ShaderUniform::Vec4(*a + (*b - *a) * t));
                 }
                 (ShaderUniform::Color(a), ShaderUniform::Color(b)) => {
                     result.insert_ref(
-                        key,
+                        key.to_owned(),
                         ShaderUniform::Color(Rgba::new(
                             a.r + (b.r - a.r) * t,
                             a.g + (b.g - a.g) * t,
@@ -79,7 +79,7 @@ impl ShaderUniforms {
                 }
                 (ShaderUniform::String(a), ShaderUniform::String(b)) => {
                     result.insert_ref(
-                        key,
+                        key.to_owned(),
                         ShaderUniform::String(match t < 0.5 {
                             true => a.clone(),
                             false => b.clone(),
@@ -96,72 +96,75 @@ impl ShaderUniforms {
         result
     }
 
-    pub fn insert_ref(&mut self, key: &str, value: ShaderUniform) {
-        self.data.insert(key.to_string(), value);
+    pub fn insert_ref(&mut self, key: String, value: ShaderUniform) {
+        self.data.insert(key, value);
     }
 
-    pub fn insert_vec2_ref(&mut self, key: &str, value: vec2<f32>) -> &mut Self {
+    pub fn insert_vec2_ref(&mut self, key: String, value: vec2<f32>) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Vec2(value));
         self
     }
 
-    pub fn insert_float_ref(&mut self, key: &str, value: f32) -> &mut Self {
+    pub fn insert_float_ref(&mut self, key: String, value: f32) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Float(value));
         self
     }
 
-    pub fn insert_int_ref(&mut self, key: &str, value: i32) -> &mut Self {
+    pub fn insert_int_ref(&mut self, key: String, value: i32) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Int(value));
         self
     }
 
-    pub fn insert_color_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+    pub fn insert_color_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
         self.insert_ref(key, ShaderUniform::Color(value));
         self
     }
 
-    pub fn insert_string_ref(&mut self, key: &str, value: String, font: usize) -> &mut Self {
+    pub fn insert_string_ref(&mut self, key: String, value: String, font: usize) -> &mut Self {
         self.insert_ref(key, ShaderUniform::String((font, value)));
         self
     }
 
-    pub fn insert(mut self, key: &str, value: ShaderUniform) -> Self {
+    pub fn insert(mut self, key: String, value: ShaderUniform) -> Self {
         self.insert_ref(key, value);
         self
     }
 
-    pub fn insert_vec2(mut self, key: &str, value: vec2<f32>) -> Self {
+    pub fn insert_vec2(mut self, key: String, value: vec2<f32>) -> Self {
         self.insert_vec2_ref(key, value);
         self
     }
 
-    pub fn insert_float(mut self, key: &str, value: f32) -> Self {
+    pub fn insert_float(mut self, key: String, value: f32) -> Self {
         self.insert_float_ref(key, value);
         self
     }
 
-    pub fn insert_int(mut self, key: &str, value: i32) -> Self {
+    pub fn insert_int(mut self, key: String, value: i32) -> Self {
         self.insert_int_ref(key, value);
         self
     }
 
-    pub fn insert_color(mut self, key: &str, value: Rgba<f32>) -> Self {
+    pub fn insert_color(mut self, key: String, value: Rgba<f32>) -> Self {
         self.insert_color_ref(key, value);
         self
     }
 
-    pub fn insert_local_ref(&mut self, key: &str, value: ShaderUniform) -> &mut Self {
+    pub fn insert_local_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
         self.local.insert(key.to_owned(), value);
         self
     }
 
-    pub fn insert_color_local_ref(&mut self, key: &str, value: Rgba<f32>) -> &mut Self {
+    pub fn insert_color_local_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
         self.insert_local_ref(key, ShaderUniform::Color(value))
     }
 
-    pub fn get(&self, key: &str) -> Option<&ShaderUniform> {
+    pub fn get(&self, key: &str) -> Option<ShaderUniform> {
         let key = self.map(key);
-        self.local.get(key).or(self.data.get(key))
+        if key.starts_with("c_") {
+            return Some(ShaderUniform::Color(options_color(key)));
+        }
+        self.local.get(key).or(self.data.get(key)).cloned()
     }
 
     pub fn map<'a>(&'a self, mut key: &'a str) -> &'a str {
@@ -173,21 +176,21 @@ impl ShaderUniforms {
 
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {
         self.get(key).and_then(|v| match v {
-            ShaderUniform::Vec2(v) => Some(*v),
+            ShaderUniform::Vec2(v) => Some(v),
             _ => None,
         })
     }
 
     pub fn try_get_float(&self, key: &str) -> Option<f32> {
         self.get(key).and_then(|v| match v {
-            ShaderUniform::Float(v) => Some(*v),
+            ShaderUniform::Float(v) => Some(v),
             _ => None,
         })
     }
 
     pub fn try_get_int(&self, key: &str) -> Option<i32> {
         self.get(key).and_then(|v| match v {
-            ShaderUniform::Int(v) => Some(*v),
+            ShaderUniform::Int(v) => Some(v),
             _ => None,
         })
     }
@@ -199,12 +202,16 @@ impl ShaderUniforms {
         })
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, ShaderUniform)> + 'a {
         self.data.keys().map(|key| {
             (
                 key,
-                self.get(key)
-                    .unwrap_or_else(|| self.data.get(key).expect(&format!("Key not found {key}"))),
+                self.get(key).unwrap_or_else(|| {
+                    self.data
+                        .get(key)
+                        .expect(&format!("Key not found {key}"))
+                        .clone()
+                }),
             )
         })
     }
@@ -213,8 +220,10 @@ impl ShaderUniforms {
         self.mapping.iter()
     }
 
-    pub fn iter_data<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
-        self.data.iter()
+    pub fn iter_data<'a>(&'a self) -> impl Iterator<Item = (String, ShaderUniform)> + 'a {
+        self.data
+            .iter()
+            .map(|(key, value)| (key.clone(), value.clone()))
     }
 
     pub fn iter_local<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {

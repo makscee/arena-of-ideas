@@ -75,8 +75,8 @@ impl<'a> Widget<'_> {
                     )
                     .color(resources);
                     shader.chain_after.push(card);
-                    shader.set_int_ref("u_index", i as i32);
-                    shader.set_color_ref("u_rarity_color", rarity);
+                    shader.set_int_ref("u_index".to_owned(), i as i32);
+                    shader.set_color_ref("u_rarity_color".to_owned(), rarity);
                     shader.entity = Some(new_entity());
                     shader.parent = Some(entity);
 
@@ -98,7 +98,10 @@ impl<'a> Widget<'_> {
                 // panel
                 let (shader, animation, duration) = {
                     let anim = &resources.options.widgets.card_choice_panel.panel;
-                    let shader = anim.shader.clone().set_string("u_title", title, 1);
+                    let shader = anim
+                        .shader
+                        .clone()
+                        .set_string("u_title".to_owned(), title, 1);
                     let animation = anim.animation.clone();
                     let duration = anim.duration;
                     (shader, animation, duration)
@@ -213,9 +216,9 @@ impl<'a> Widget<'_> {
                     let mut shader = anim
                         .shader
                         .clone()
-                        .set_color("u_color", rarity_color)
-                        .set_color("u_outline_color", rarity_color)
-                        .set_int("u_difficulty", difficulty as i32);
+                        .set_color("u_color".to_owned(), rarity_color)
+                        .set_color("u_outline_color".to_owned(), rarity_color)
+                        .set_int("u_difficulty".to_owned(), difficulty as i32);
                     ButtonSystem::add_button_handlers(&mut shader);
                     shader
                         .input_handlers
@@ -266,10 +269,10 @@ impl<'a> Widget<'_> {
                     let mut animation = anim.animation.clone();
                     animation
                         .get_uniforms_mut()
-                        .insert_vec2_ref("u_open_position", position);
+                        .insert_vec2_ref("u_open_position".to_owned(), position);
                     let unit_shader = unit
                         .get_ui_shader(Faction::Dark, resources)
-                        .set_float("u_scale", 0.35);
+                        .set_float("u_scale".to_owned(), 0.35);
                     shader.chain_after.push(unit_shader);
                     shader.order += difficulty as i32 * 3;
                     (shader, animation, anim.duration)
@@ -281,8 +284,8 @@ impl<'a> Widget<'_> {
                     .battle_choice_panel
                     .name
                     .clone()
-                    .set_string("u_text", name, 1)
-                    .set_color("u_mid_border_color", rarity_color);
+                    .set_string("u_text".to_owned(), name, 1)
+                    .set_color("u_mid_border_color".to_owned(), rarity_color);
                 shader.chain_after.push(name_shader);
 
                 let star_shader = &resources.options.widgets.battle_choice_panel.star;
@@ -294,8 +297,8 @@ impl<'a> Widget<'_> {
                     };
                     let star_shader = star_shader
                         .clone()
-                        .set_color(&VarName::Color.uniform(), color)
-                        .set_int("u_index", i as i32);
+                        .set_color("u_color".to_owned(), color)
+                        .set_int("u_index".to_owned(), i as i32);
                     shader.chain_after.push(star_shader);
                 }
                 node.add_effect(TimedEffect::new(
@@ -319,7 +322,7 @@ impl<'a> Widget<'_> {
                 let (shader, animation, duration) = {
                     let anim = &options.widgets.battle_over_panel.bg_1;
                     (
-                        anim.shader.clone().set_color("u_color", color),
+                        anim.shader.clone().set_color("u_color".to_owned(), color),
                         anim.animation.clone(),
                         anim.duration,
                     )
@@ -335,7 +338,7 @@ impl<'a> Widget<'_> {
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", options.colors.background_dark),
+                            .set_color("u_color".to_owned(), options.colors.background_dark),
                         anim.animation.clone(),
                         anim.duration,
                     )
@@ -351,8 +354,8 @@ impl<'a> Widget<'_> {
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", color)
-                            .set_string("u_text", text, 1),
+                            .set_color("u_color".to_owned(), color)
+                            .set_string("u_text".to_owned(), text, 1),
                         anim.animation.clone(),
                         anim.duration,
                     )
@@ -367,20 +370,20 @@ impl<'a> Widget<'_> {
                     let anim = &options.widgets.battle_over_panel.star;
                     let mut animation = anim.animation.clone();
                     let uniforms = animation.get_uniforms_mut();
-                    uniforms.insert_vec2_ref("u_index_offset", vec2(-0.15, 0.0));
+                    uniforms.insert_vec2_ref("u_index_offset".to_owned(), vec2(-0.15, 0.0));
                     if score > 0 {
                         uniforms
-                            .insert_float_ref("u_active_scale", 1.5)
-                            .insert_color_ref("u_active_color", options.colors.star);
+                            .insert_float_ref("u_active_scale".to_owned(), 1.5)
+                            .insert_color_ref("u_active_color".to_owned(), options.colors.star);
                     } else {
                         uniforms
-                            .insert_float_ref("u_active_scale", 1.0)
-                            .insert_color_ref("u_active_color", options.colors.inactive);
+                            .insert_float_ref("u_active_scale".to_owned(), 1.0)
+                            .insert_color_ref("u_active_color".to_owned(), options.colors.inactive);
                     }
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", options.colors.inactive),
+                            .set_color("u_color".to_owned(), options.colors.inactive),
                         animation,
                         anim.duration,
                     )
@@ -395,20 +398,20 @@ impl<'a> Widget<'_> {
                     let anim = &options.widgets.battle_over_panel.star;
                     let mut animation = anim.animation.clone();
                     let uniforms = animation.get_uniforms_mut();
-                    uniforms.insert_vec2_ref("u_index_offset", vec2(0.15, 0.0));
+                    uniforms.insert_vec2_ref("u_index_offset".to_owned(), vec2(0.15, 0.0));
                     if score > 1 {
                         uniforms
-                            .insert_float_ref("u_active_scale", 1.5)
-                            .insert_color_ref("u_active_color", options.colors.star);
+                            .insert_float_ref("u_active_scale".to_owned(), 1.5)
+                            .insert_color_ref("u_active_color".to_owned(), options.colors.star);
                     } else {
                         uniforms
-                            .insert_float_ref("u_active_scale", 1.0)
-                            .insert_color_ref("u_active_color", options.colors.inactive);
+                            .insert_float_ref("u_active_scale".to_owned(), 1.0)
+                            .insert_color_ref("u_active_color".to_owned(), options.colors.inactive);
                     }
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", options.colors.inactive),
+                            .set_color("u_color".to_owned(), options.colors.inactive),
                         animation,
                         anim.duration,
                     )
@@ -425,20 +428,20 @@ impl<'a> Widget<'_> {
                     let anim = &options.widgets.battle_over_panel.star;
                     let mut animation = anim.animation.clone();
                     let uniforms = animation.get_uniforms_mut();
-                    uniforms.insert_vec2_ref("u_index_offset", vec2(0.0, -0.1));
+                    uniforms.insert_vec2_ref("u_index_offset".to_owned(), vec2(0.0, -0.1));
                     if score > 2 {
                         uniforms
-                            .insert_float_ref("u_active_scale", 1.5)
-                            .insert_color_ref("u_active_color", options.colors.star);
+                            .insert_float_ref("u_active_scale".to_owned(), 1.5)
+                            .insert_color_ref("u_active_color".to_owned(), options.colors.star);
                     } else {
                         uniforms
-                            .insert_float_ref("u_active_scale", 1.0)
-                            .insert_color_ref("u_active_color", options.colors.inactive);
+                            .insert_float_ref("u_active_scale".to_owned(), 1.0)
+                            .insert_color_ref("u_active_color".to_owned(), options.colors.inactive);
                     }
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", options.colors.inactive),
+                            .set_color("u_color".to_owned(), options.colors.inactive),
                         animation,
                         anim.duration,
                     )
@@ -472,8 +475,8 @@ impl<'a> Widget<'_> {
                     (
                         anim.shader
                             .clone()
-                            .set_color("u_color", options.colors.background)
-                            .set_string("u_value_text", value.to_string(), 1),
+                            .set_color("u_color".to_owned(), options.colors.background)
+                            .set_string("u_value_text".to_owned(), value.to_string(), 1),
                         anim.animation.clone(),
                         anim.duration,
                     )

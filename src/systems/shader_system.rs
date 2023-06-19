@@ -133,7 +133,7 @@ impl ShaderSystem {
             .iter()
             .filter_map(|(key, uniform)| match uniform {
                 ShaderUniform::String((font, text)) => {
-                    Some((*font, text, key, format!("{}_size", key)))
+                    Some((font, text, key, format!("{}_size", key)))
                 }
                 _ => None,
             })
@@ -141,7 +141,7 @@ impl ShaderSystem {
         resources.fonts.load_textures(
             texts
                 .iter()
-                .map(|(font, text, _, _)| (*font, *text))
+                .map(|(font, text, _, _)| (*font, text))
                 .collect_vec(),
         );
         let images = shader
@@ -167,7 +167,7 @@ impl ShaderSystem {
             ));
         }
         for (image, key) in images {
-            let texture = resources.image_textures.get_texture(image);
+            let texture = resources.image_textures.get_texture(&image);
             if texture.is_none() {
                 panic!("Can't find texture {:?}", image);
             }
@@ -228,7 +228,7 @@ impl ShaderSystem {
         shader
             .parameters
             .uniforms
-            .insert_float_ref("u_rand", rng.gen_range(0.0..1.0));
+            .insert_float_ref("u_rand".to_owned(), rng.gen_range(0.0..1.0));
         let mut before = default();
         mem::swap(&mut before, shader.chain_before.deref_mut());
         before.iter_mut().for_each(|x| {

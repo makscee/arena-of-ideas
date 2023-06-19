@@ -55,6 +55,14 @@ fn mix_vec(a: vec2<f32>, b: vec2<f32>, t: f32) -> vec2<f32> {
 fn new_entity() -> legion::Entity {
     legion::world::Allocate::new().next().unwrap()
 }
+fn options_color(key: &str) -> Rgba<f32> {
+    OPTIONS_COLORS.with(|map| {
+        map.borrow()
+            .get(key)
+            .expect(&format!("Color Key \"{key}\" not found in options.json"))
+            .clone()
+    })
+}
 fn main() {
     let timer = Instant::now();
     logger::init();

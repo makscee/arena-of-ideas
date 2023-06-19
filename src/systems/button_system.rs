@@ -24,8 +24,8 @@ impl ButtonSystem {
         Self::add_button_handlers(&mut button);
         if let Some(text) = text {
             button
-                .set_color_ref("u_text_color", options.colors.text)
-                .set_string_ref("u_text", text.to_owned(), 1);
+                .set_color_ref("u_text_color".to_owned(), options.colors.text)
+                .set_string_ref("u_text".to_owned(), text.to_owned(), 1);
         }
         if let Some(icon) = icon {
             button.chain_after.push(
@@ -33,14 +33,14 @@ impl ButtonSystem {
                     .shaders
                     .button_icon
                     .clone()
-                    .set_uniform("u_texture", ShaderUniform::Texture(icon)),
+                    .set_uniform("u_texture".to_owned(), ShaderUniform::Texture(icon)),
             );
         }
         button
             .parameters
             .uniforms
-            .insert_color_ref("u_color", options.colors.button)
-            .insert_color_ref("u_outline_color", options.colors.outline);
+            .insert_color_ref("u_color".to_owned(), options.colors.button)
+            .insert_color_ref("u_outline_color".to_owned(), options.colors.outline);
         button.entity = Some(entity);
 
         button
@@ -56,10 +56,10 @@ impl ButtonSystem {
         if shader.is_active() {
             match event {
                 HandleEvent::Hover => {
-                    shader.set_float_ref("u_hovered", 1.0);
+                    shader.set_float_ref("u_hovered".to_owned(), 1.0);
                 }
                 HandleEvent::Press => {
-                    shader.set_float_ref("u_pressed", 1.0);
+                    shader.set_float_ref("u_pressed".to_owned(), 1.0);
                 }
                 _ => {}
             };
@@ -76,15 +76,21 @@ impl ButtonSystem {
         if shader.is_active() {
             if let Some(pressed) = shader.parameters.uniforms.try_get_float("u_pressed") {
                 if pressed == 1.0 {
-                    shader.set_color_local_ref("u_color", resources.options.colors.pressed);
+                    shader.set_color_local_ref(
+                        "u_color".to_owned(),
+                        resources.options.colors.pressed,
+                    );
                 }
             } else if let Some(hovered) = shader.parameters.uniforms.try_get_float("u_hovered") {
                 if hovered == 1.0 {
-                    shader.set_color_local_ref("u_color", resources.options.colors.hovered);
+                    shader.set_color_local_ref(
+                        "u_color".to_owned(),
+                        resources.options.colors.hovered,
+                    );
                 }
             }
         } else {
-            shader.set_color_local_ref("u_color", resources.options.colors.inactive);
+            shader.set_color_local_ref("u_color".to_owned(), resources.options.colors.inactive);
         }
     }
 

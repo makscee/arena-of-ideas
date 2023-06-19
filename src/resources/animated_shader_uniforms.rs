@@ -44,7 +44,7 @@ impl AnimatedShaderUniforms {
                     uniforms.insert_ref(key, value.clone());
                 }
                 for (key, mapping) in frame.uniforms.iter_mappings() {
-                    uniforms.insert_ref(key, uniforms.get(mapping).unwrap().clone());
+                    uniforms.insert_ref(key.to_owned(), uniforms.get(mapping).unwrap().clone());
                 }
             } else {
                 t = (t - prev_t) / (frame.t - prev_t);
@@ -56,7 +56,7 @@ impl AnimatedShaderUniforms {
             prev_t = frame.t;
         }
 
-        uniforms.insert_ref("u_t", ShaderUniform::Float(t));
+        uniforms.insert_ref("u_t".to_owned(), ShaderUniform::Float(t));
         uniforms
     }
 

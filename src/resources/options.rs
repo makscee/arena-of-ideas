@@ -1,3 +1,5 @@
+use geng::prelude::serde_json::Value;
+
 use super::*;
 
 #[derive(Deserialize, Debug)]
@@ -27,6 +29,9 @@ pub struct Options {
     pub shop_max_slots: usize,
 }
 
+use std::cell::RefCell;
+thread_local!(pub static OPTIONS_COLORS: RefCell<HashMap<String, Rgba<f32>>> = RefCell::new(HashMap::default()));
+
 impl FileWatcherLoader for Options {
     fn load(resources: &mut Resources, _: &PathBuf, _: &mut FileWatcherSystem) {
         resources.options = Self::do_load();
@@ -36,7 +41,29 @@ impl FileWatcherLoader for Options {
 
 impl Options {
     pub fn do_load() -> Options {
-        futures::executor::block_on(load_json(static_path().join("options.json"))).unwrap()
+        let value: Value =
+            futures::executor::block_on(load_json(static_path().join("options.json"))).unwrap();
+        let map = value
+            .as_object()
+            .unwrap()
+            .get("colors")
+            .unwrap()
+            .clone()
+            .as_object()
+            .unwrap()
+            .clone();
+        let mut colors: HashMap<String, Rgba<f32>> = default();
+        for (key, value) in map {
+            if let Some(value) = value.as_str() {
+                if let Ok(value) = Rgba::try_from(value) {
+                    colors.insert(format!("c_{key}"), value);
+                }
+            }
+        }
+        OPTIONS_COLORS.with(|map| {
+            *map.borrow_mut() = colors;
+        });
+        serde_json::from_value(value).unwrap()
     }
 }
 
