@@ -2,7 +2,7 @@ Screen box anchoring @ui
 Uniform referencing options @shaders
 Build
     Card rework @visual
-    Push text @ui
+    Push text @ui {start:2023-06-19T13:49:25}
         g change
         var change
         enemy rank defeated

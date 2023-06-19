@@ -4,13 +4,27 @@ pub struct PanelsSystem {}
 
 impl System for PanelsSystem {
     fn update(&mut self, _: &mut legion::World, resources: &mut Resources) {
+        const PADDING: f32 = 0.05;
+        let corner = vec2(-resources.camera.aspect_ratio, -1.0) + vec2(PADDING, PADDING);
+        let mut offset = vec2::ZERO;
+
+        for panel in resources.panels_data.push.iter_mut() {
+            panel.need_pos = corner + offset;
+            if panel.t == 0.0 && panel.state == PanelState::Open {
+                panel.shader.parameters.r#box.pos = panel.need_pos;
+            }
+            offset += vec2(0.0, PADDING + panel.shader.parameters.r#box.size.y * 2.0);
+        }
+
+        let delta_time = resources.delta_time;
+        let global_time = resources.global_time;
         for panel in resources
             .panels_data
             .alert
             .iter_mut()
             .chain(resources.panels_data.push.iter_mut())
         {
-            panel.update(resources.delta_time)
+            panel.update(delta_time, global_time)
         }
 
         resources.panels_data.alert.retain(|x| !x.is_closed());
@@ -45,12 +59,22 @@ impl PanelsSystem {
         if footer {
             panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
         }
-        panel.parameters.r#box.pos = pos;
-        let mut panel = panel.panel(PanelType::Alert);
+        let mut panel = panel.panel(PanelType::Alert, resources);
+        panel.need_pos = pos;
         panel
             .shader
             .set_int_ref("u_index", resources.panels_data.alert.len() as i32);
         resources.panels_data.alert.push(panel);
+    }
+
+    pub fn add_push(title: &str, text: &str, resources: &mut Resources) {
+        let panel = Self::generate_text_shader(text, &resources.options)
+            .wrap_panel_body(&resources.options)
+            .wrap_panel_header(title, &resources.options);
+        resources
+            .panels_data
+            .push
+            .insert(0, panel.panel(PanelType::Push, resources));
     }
 
     pub fn close_alert(entity: legion::Entity, resources: &mut Resources) {
@@ -89,16 +113,28 @@ pub struct PanelsData {
 #[derive(Debug)]
 pub struct Panel {
     pub shader: Shader,
+    pub need_pos: vec2<f32>,
     pub state: PanelState,
     pub r#type: PanelType,
     pub t: Time,
+    pub ts: Time,
 }
 
 impl Panel {
-    pub fn update(&mut self, delta: Time) {
+    pub fn update(&mut self, delta_time: Time, global_time: Time) {
+        const SPEED: f32 = 10.0;
+
+        self.shader.parameters.r#box.pos +=
+            (self.need_pos - self.shader.parameters.r#box.pos) * SPEED * delta_time;
+        if self.state == PanelState::Open {
+            let duration = self.r#type.duration();
+            if duration > 0.0 && self.ts + duration < global_time {
+                self.state = PanelState::Closed;
+            }
+        }
         match self.state {
-            PanelState::Open => self.t = (self.t + delta * 1.5).min(1.0),
-            PanelState::Closed => self.t = (self.t - delta * 1.5).max(0.0),
+            PanelState::Open => self.t = (self.t + delta_time * 1.5).min(1.0),
+            PanelState::Closed => self.t = (self.t - delta_time * 1.5).max(0.0),
         }
         self.shader
             .set_float_ref("u_open", EasingType::QuartInOut.f(self.t));
@@ -155,12 +191,21 @@ impl Shader {
         self
     }
 
-    pub fn panel(self, r#type: PanelType) -> Panel {
+    pub fn panel(mut self, r#type: PanelType, resources: &Resources) -> Panel {
+        match r#type {
+            PanelType::Push => {
+                self.parameters.r#box.center = vec2(-1.0, -1.0);
+            }
+            PanelType::Alert => {}
+            PanelType::Hint => todo!(),
+        }
         Panel {
+            need_pos: self.parameters.r#box.pos,
             shader: self,
             state: PanelState::Open,
             r#type,
             t: default(),
+            ts: resources.global_time,
         }
     }
 }
@@ -170,6 +215,16 @@ pub enum PanelType {
     Push,
     Alert,
     Hint,
+}
+
+impl PanelType {
+    pub fn duration(&self) -> Time {
+        match self {
+            PanelType::Push => 5.0,
+            PanelType::Alert => 0.0,
+            PanelType::Hint => 0.0,
+        }
+    }
 }
 
 #[derive(Eq, PartialEq, Debug)]

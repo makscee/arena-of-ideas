@@ -71,7 +71,7 @@ impl System for GameStateSystem {
                     GameStateSystem::set_transition(GameState::Sacrifice, resources);
                 }
                 if resources.input_data.down_keys.contains(&P) {
-                    // PanelsSystem::add_push("Test 1", "This is a\ntest push", resources);
+                    PanelsSystem::add_push("Test 1", "This is a\ntest push", resources);
                 }
                 if resources.input_data.down_keys.contains(&B) {
                     BonusEffectPool::load_widget(5, world, resources);
@@ -298,45 +298,43 @@ impl GameStateSystem {
                     .vars
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
-                // PanelsSystem::add_push("Test 1", "This is a test push", resources);
+                PanelsSystem::add_push("Test 1", "This is a test push", resources);
 
-                PanelsSystem::add_alert(
-                    "Test no footer alert",
-                    "This is a multiline\ntest no footer alert",
-                    vec2::ZERO,
-                    false,
-                    resources,
-                );
-                PanelsSystem::add_alert(
-                    "Test footer alert",
-                    "This is a multiline\ntest footer\nalert",
-                    vec2(-0.5, -0.5),
-                    true,
-                    resources,
-                );
-                PanelsSystem::add_alert(
-                    "Test footer alert",
-                    "This is a multiline\ntest footer\nalert",
-                    vec2(-0.5, -0.5),
-                    true,
-                    resources,
-                );
-                PanelsSystem::add_alert(
-                    "Test footer alert",
-                    "This is a multiline\ntest footer\nalert",
-                    vec2(-0.5, -0.5),
-                    true,
-                    resources,
-                );
-                PanelsSystem::add_alert(
-                    "Test footer alert",
-                    "This is a multiline\ntest footer\nalert",
-                    vec2(-0.5, -0.5),
-                    true,
-                    resources,
-                );
-                // PanelsSystem::add_alert("Test Alert #1", "One line test alert", resources);
-                // PanelsSystem::add_alert("Test Alert #3", "This is a multiline\ntest alert\nThis is\na multiline\ntest alert test alert test alert test alert test alert \n", resources);
+                // PanelsSystem::add_alert(
+                //     "Test no footer alert",
+                //     "This is a multiline\ntest no footer alert",
+                //     vec2::ZERO,
+                //     false,
+                //     resources,
+                // );
+                // PanelsSystem::add_alert(
+                //     "Test footer alert",
+                //     "This is a multiline\ntest footer\nalert",
+                //     vec2(-0.5, -0.5),
+                //     true,
+                //     resources,
+                // );
+                // PanelsSystem::add_alert(
+                //     "Test footer alert",
+                //     "This is a multiline\ntest footer\nalert",
+                //     vec2(-0.5, -0.5),
+                //     true,
+                //     resources,
+                // );
+                // PanelsSystem::add_alert(
+                //     "Test footer alert",
+                //     "This is a multiline\ntest footer\nalert",
+                //     vec2(-0.5, -0.5),
+                //     true,
+                //     resources,
+                // );
+                // PanelsSystem::add_alert(
+                //     "Test footer alert",
+                //     "This is a multiline\ntest footer\nalert",
+                //     vec2(-0.5, -0.5),
+                //     true,
+                //     resources,
+                // );
 
                 // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
                 // ShopSystem::do_buy(entity, 1, resources, world);
