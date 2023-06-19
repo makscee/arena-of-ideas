@@ -299,6 +299,7 @@ impl GameStateSystem {
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
                 PanelsSystem::add_push("Test 1", "This is a test push", resources);
+                PanelsSystem::add_stats(world, resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",

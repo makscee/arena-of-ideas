@@ -366,7 +366,10 @@
                     ]
                 },
                 "uniforms": {
-                    "u_color": "#ffffff"
+                    "u_color": "#ffffff",
+                    "mapping": {
+                        "u_text": "u_panel_text"
+                    }
                 }
             }
         },

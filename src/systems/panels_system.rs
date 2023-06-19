@@ -16,6 +16,11 @@ impl System for PanelsSystem {
             offset += vec2(0.0, PADDING + panel.shader.parameters.r#box.size.y * 2.0);
         }
 
+        if let Some(panel) = resources.panels_data.stats.as_mut() {
+            panel.need_pos =
+                vec2(-resources.camera.aspect_ratio, 1.0) + vec2(PADDING, -PADDING * 2.0);
+        }
+
         let delta_time = resources.delta_time;
         let global_time = resources.global_time;
         for panel in resources
@@ -23,6 +28,7 @@ impl System for PanelsSystem {
             .alert
             .iter_mut()
             .chain(resources.panels_data.push.iter_mut())
+            .chain(resources.panels_data.stats.iter_mut())
         {
             panel.update(delta_time, global_time)
         }
@@ -36,6 +42,7 @@ impl System for PanelsSystem {
                 .alert
                 .iter()
                 .chain(resources.panels_data.push.iter())
+                .chain(resources.panels_data.stats.iter())
                 .map(|x| x.shader.clone()),
         );
     }
@@ -77,6 +84,29 @@ impl PanelsSystem {
             .insert(0, panel.panel(PanelType::Push, resources));
     }
 
+    pub fn add_stats(world: &legion::World, resources: &mut Resources) {
+        let text = Self::get_stats_text(world, resources);
+        let panel = Self::generate_text_shader(&text, &resources.options)
+            .wrap_panel_body(&resources.options)
+            .wrap_panel_header("Stats", &resources.options)
+            .panel(PanelType::Stats, resources);
+        resources.panels_data.stats = Some(panel);
+    }
+
+    pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
+        let g = ShopSystem::get_g(world);
+        let level = resources.ladder.current_ind();
+        format!("g: {g}\nlevel: {level}")
+    }
+
+    pub fn refresh_stats(world: &legion::World, resources: &mut Resources) {
+        if resources.panels_data.stats.is_some() {
+            let text = Self::get_stats_text(world, resources);
+            let panel = resources.panels_data.stats.as_mut().unwrap();
+            panel.shader.set_string_ref("u_panel_text", text, 0);
+        }
+    }
+
     pub fn close_alert(entity: legion::Entity, resources: &mut Resources) {
         for panel in resources.panels_data.alert.iter_mut() {
             if panel.shader.entity == Some(entity) || panel.shader.parent == Some(entity) {
@@ -88,6 +118,7 @@ impl PanelsSystem {
     pub fn clear(resources: &mut Resources) {
         resources.panels_data.alert.clear();
         resources.panels_data.push.clear();
+        resources.panels_data.stats = None;
     }
 
     pub fn generate_text_shader(text: &str, options: &Options) -> Shader {
@@ -108,6 +139,7 @@ impl PanelsSystem {
 pub struct PanelsData {
     pub alert: Vec<Panel>,
     pub push: Vec<Panel>,
+    pub stats: Option<Panel>,
 }
 
 #[derive(Debug)]
@@ -198,6 +230,9 @@ impl Shader {
             }
             PanelType::Alert => {}
             PanelType::Hint => todo!(),
+            PanelType::Stats => {
+                self.parameters.r#box.center = vec2(-1.0, 1.0);
+            }
         }
         Panel {
             need_pos: self.parameters.r#box.pos,
@@ -215,14 +250,14 @@ pub enum PanelType {
     Push,
     Alert,
     Hint,
+    Stats,
 }
 
 impl PanelType {
     pub fn duration(&self) -> Time {
         match self {
             PanelType::Push => 5.0,
-            PanelType::Alert => 0.0,
-            PanelType::Hint => 0.0,
+            _ => 0.0,
         }
     }
 }

@@ -2,17 +2,20 @@ Screen box anchoring @ui
 Uniform referencing options @shaders
 Build
     Card rework @visual
-    Push text @ui {start:2023-06-19T13:49:25}
+    Push text @ui
+        panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change
         var change
         enemy rank defeated
     Stats info panel @ui
+        panel working {start:2023-06-19T14:47:43} {cm:2023-06-19T15:17:25} {duration:29m}
         g
         total score
         team status
         team vars
         level
     Hover hint @ui
+        panel working
         unit statuses
         shop buy btns
         start battle btn
