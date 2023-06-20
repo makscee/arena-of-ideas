@@ -91,15 +91,38 @@ impl PanelsSystem {
         let padding = resources.options.floats.panel_row_padding;
         let cards = cards
             .drain(..)
-            .map(|x| {
-                Self::generate_card_shader(x, &resources.options)
+            .enumerate()
+            .map(|(ind, x)| {
+                let mut shader = Self::generate_card_shader(x, &resources.options)
                     .wrap_panel_header("Hero", &resources.options)
-                    .wrap_panel_footer(PanelFooterButton::Close, &resources.options)
+                    .wrap_panel_footer(PanelFooterButton::Select, &resources.options)
+                    .set_int("u_index".to_owned(), ind as i32);
+
+                fn update_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    if let Some(chosen) = resources.panels_data.chosen_ind {
+                        if shader.parameters.uniforms.try_get_int("u_index").unwrap()
+                            == chosen as i32
+                        {
+                            shader.set_color_ref(
+                                "u_color".to_owned(),
+                                resources.options.colors.active,
+                            );
+                        }
+                    }
+                }
+                shader.update_handlers.push(update_handler);
+                shader
             })
             .collect_vec();
         let panel = Shader::wrap_panel_body_row(cards, padding, &resources.options)
             .wrap_panel_header("Choose Hero", &resources.options)
-            .wrap_panel_footer(PanelFooterButton::Close, &resources.options);
+            .wrap_panel_footer(PanelFooterButton::Accept, &resources.options);
         resources
             .panels_data
             .alert
@@ -196,6 +219,7 @@ pub struct PanelsData {
     pub push: Vec<Panel>,
     pub hint: Vec<Panel>,
     pub stats: Option<Panel>,
+    pub chosen_ind: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -243,12 +267,12 @@ impl Shader {
         shader.parameters.r#box.size += vec2(padding * count * 2.0, padding);
         shader.chain_after.push({
             let mut shader = shaders.remove(0);
-            shader.parameters.r#box.anchor = vec2(-0.65, 0.0);
+            shader.parameters.r#box.anchor = vec2(-0.66, 0.0);
             shader
         });
         shader.chain_after.push({
             let mut shader = shaders.remove(0);
-            shader.parameters.r#box.anchor = vec2(0.65, 0.0);
+            shader.parameters.r#box.anchor = vec2(0.66, 0.0);
             shader
         });
 
@@ -298,7 +322,12 @@ impl Shader {
         button_shader.parent = self.entity;
         button_shader.entity = Some(new_entity());
         ButtonSystem::add_button_handlers(&mut button_shader);
-        button_shader.input_handlers.push(button.get_handler());
+        button_shader
+            .input_handlers
+            .push(button.get_input_handler());
+        if let Some(update_handler) = button.get_update_handler() {
+            button_shader.update_handlers.insert(0, update_handler);
+        }
         shader.chain_after.push(button_shader);
         self.chain_after.push(shader);
         self
@@ -352,16 +381,20 @@ pub enum PanelState {
 }
 pub enum PanelFooterButton {
     Close,
+    Select,
+    Accept,
 }
 
 impl PanelFooterButton {
     pub fn get_text(&self) -> &str {
         match self {
             PanelFooterButton::Close => "Close",
+            PanelFooterButton::Select => "Select",
+            PanelFooterButton::Accept => "Accept",
         }
     }
 
-    pub fn get_handler(&self) -> Handler {
+    pub fn get_input_handler(&self) -> Handler {
         match self {
             PanelFooterButton::Close => {
                 fn input_handler(
@@ -382,6 +415,68 @@ impl PanelFooterButton {
                 }
                 input_handler
             }
+            PanelFooterButton::Select => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if let Some(entity) = shader.parent {
+                                let ind = shader.parameters.uniforms.try_get_int("u_index").unwrap()
+                                    as usize;
+                                resources.panels_data.chosen_ind = Some(ind);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            PanelFooterButton::Accept => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if let Some(chosen) = resources.panels_data.chosen_ind {
+                                debug!("Chosen {chosen}");
+                                if let Some(entity) = shader.parent {
+                                    PanelsSystem::close_alert(entity, resources);
+                                    resources.panels_data.chosen_ind = None;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+        }
+    }
+
+    pub fn get_update_handler(&self) -> Option<Handler> {
+        match self {
+            PanelFooterButton::Accept => {
+                fn update_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    shader.set_active(resources.panels_data.chosen_ind.is_some());
+                }
+                Some(update_handler)
+            }
+            _ => None,
         }
     }
 }

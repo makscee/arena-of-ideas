@@ -215,7 +215,7 @@
         "background_light": "#F2F2F2",
         "background_dark": "#222222",
         "inactive": "#C4C4C4",
-        "active": "#1D1D1D",
+        "active": "#8a5e00",
         "hovered": "#FFD700",
         "pressed": "#86C4E4",
         "outline": "#1D1D1D",
@@ -341,10 +341,6 @@
                     "u_ui": 1,
                     "u_rounding": 0.04,
                     "u_color": "#3F3F3F",
-                    "u_index_offset": [
-                        0.05,
-                        -0.05
-                    ],
                     "u_g_points": [
                         -0.01,
                         -0.01,
