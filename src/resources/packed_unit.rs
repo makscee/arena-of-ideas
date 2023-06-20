@@ -92,7 +92,6 @@ impl PackedUnit {
         state.vars.set_int(&VarName::HpDamage, self.damage as i32);
         state.vars.set_int(&VarName::Slot, slot as i32);
         state.vars.set_int(&VarName::Rank, self.rank as i32);
-        state.vars.set_float(&VarName::Radius, 1.0);
         state
             .vars
             .set_vec2(&VarName::Position, position.unwrap_or(vec2::ZERO));

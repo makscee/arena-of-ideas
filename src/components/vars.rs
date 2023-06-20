@@ -18,7 +18,6 @@ pub enum VarName {
     AttackStr,
     AttackExtra,
     Position,
-    Radius,
     Box,
     Size,
     Scale,

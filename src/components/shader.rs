@@ -31,9 +31,8 @@ pub struct Shader {
     pub update_handlers: Vec<Handler>,
 }
 
-const DEFAULT_REQUEST_VARS: [VarName; 16] = [
+const DEFAULT_REQUEST_VARS: [VarName; 15] = [
     VarName::Position,
-    VarName::Radius,
     VarName::Box,
     VarName::Size,
     VarName::Scale,
