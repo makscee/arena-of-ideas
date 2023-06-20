@@ -71,7 +71,7 @@ impl System for GameStateSystem {
                     GameStateSystem::set_transition(GameState::Sacrifice, resources);
                 }
                 if resources.input_data.down_keys.contains(&P) {
-                    PanelsSystem::add_push("Test 1", "This is a\ntest push", resources);
+                    PanelsSystem::open_push("Test 1", "This is a\ntest push", resources);
                 }
                 if resources.input_data.down_keys.contains(&K) {
                     PanelsSystem::close_hints(resources);
@@ -301,22 +301,20 @@ impl GameStateSystem {
                     .vars
                     .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
-                PanelsSystem::add_push("Test 1", "This is a test push", resources);
-                PanelsSystem::add_stats(world, resources);
-                PanelsSystem::add_hint("Hint 1", "This is a hint", resources);
-                PanelsSystem::add_hint("Hint 2", "This is a\nmultiline hint", resources);
-                PanelsSystem::add_hint("Hint 3", "This is a\ntriple\nmultiline hint", resources);
+                PanelsSystem::open_push("Test 1", "This is a test push", resources);
+                PanelsSystem::open_stats(world, resources);
+                PanelsSystem::open_hint("Hint 1", "This is a hint", resources);
+                PanelsSystem::open_hint("Hint 2", "This is a\nmultiline hint", resources);
+                PanelsSystem::open_hint("Hint 3", "This is a\ntriple\nmultiline hint", resources);
 
                 let mut cards = Vec::default();
                 for _ in 0..3 {
                     let pool = &mut resources.shop_data.pool;
                     let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
                     let unit = pool.swap_remove(unit);
-                    let shader = unit.get_ui_shader(Faction::Shop, resources);
-                    cards.push(shader);
-                    resources.shop_data.offered.push(unit);
+                    cards.push(unit);
                 }
-                PanelsSystem::add_card_choice(cards, resources);
+                PanelsSystem::open_card_choice(cards, resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",

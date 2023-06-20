@@ -1,6 +1,5 @@
 uniform vec4 u_color = vec4(1, 0, 1, 1);
 uniform vec4 u_house_color;
-uniform float u_faction = 1;
 uniform float u_game_time;
 uniform float u_global_time;
 uniform vec2 u_field_position;

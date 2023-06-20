@@ -87,20 +87,21 @@ impl PanelsSystem {
         resources.panels_data.alert.push(panel);
     }
 
-    pub fn add_card_choice(mut cards: Vec<Shader>, resources: &mut Resources) {
+    pub fn open_card_choice(mut cards: Vec<PackedUnit>, resources: &mut Resources) {
         let padding = resources.options.floats.panel_row_padding;
-        let cards = cards
-            .drain(..)
+        let shaders = cards
+            .iter()
             .enumerate()
             .map(|(ind, x)| {
-                let mut shader = Self::generate_card_shader(x, &resources.options)
+                let shader = x.get_ui_shader(Faction::Shop, resources);
+                let mut shader = Self::generate_card_shader(shader, &resources.options)
                     .wrap_panel_header("Hero", &resources.options)
                     .wrap_panel_footer(PanelFooterButton::Select, &resources.options)
                     .set_int("u_index".to_owned(), ind as i32);
 
                 fn update_handler(
-                    event: HandleEvent,
-                    entity: legion::Entity,
+                    _: HandleEvent,
+                    _: legion::Entity,
                     shader: &mut Shader,
                     world: &mut legion::World,
                     resources: &mut Resources,
@@ -120,7 +121,8 @@ impl PanelsSystem {
                 shader
             })
             .collect_vec();
-        let panel = Shader::wrap_panel_body_row(cards, padding, &resources.options)
+        resources.panels_data.choice_options = Some(CardChoice::AddUnit { units: cards });
+        let panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header("Choose Hero", &resources.options)
             .wrap_panel_footer(PanelFooterButton::Accept, &resources.options);
         resources
@@ -129,7 +131,7 @@ impl PanelsSystem {
             .push(panel.panel(PanelType::Alert, resources));
     }
 
-    pub fn add_push(title: &str, text: &str, resources: &mut Resources) {
+    pub fn open_push(title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(text, &resources.options)
             .wrap_panel_header(title, &resources.options);
         resources
@@ -138,14 +140,14 @@ impl PanelsSystem {
             .insert(0, panel.panel(PanelType::Push, resources));
     }
 
-    pub fn add_hint(title: &str, text: &str, resources: &mut Resources) {
+    pub fn open_hint(title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(&text, &resources.options)
             .wrap_panel_header(&title, &resources.options)
             .panel(PanelType::Hint, resources);
         resources.panels_data.hint.push(panel);
     }
 
-    pub fn add_stats(world: &legion::World, resources: &mut Resources) {
+    pub fn open_stats(world: &legion::World, resources: &mut Resources) {
         let text = Self::get_stats_text(world, resources);
         let panel = Self::generate_text_shader(&text, &resources.options)
             .wrap_panel_header("Stats", &resources.options)
@@ -219,7 +221,23 @@ pub struct PanelsData {
     pub push: Vec<Panel>,
     pub hint: Vec<Panel>,
     pub stats: Option<Panel>,
+    pub choice_options: Option<CardChoice>,
     pub chosen_ind: Option<usize>,
+}
+
+pub enum CardChoice {
+    AddUnit { units: Vec<PackedUnit> },
+}
+
+impl CardChoice {
+    pub fn do_choose(self, ind: usize, world: &mut legion::World, resources: &mut Resources) {
+        match self {
+            CardChoice::AddUnit { mut units } => {
+                let unit = units.remove(ind);
+                ShopSystem::add_unit_to_team(unit, world, resources);
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -450,6 +468,11 @@ impl PanelFooterButton {
                                 debug!("Chosen {chosen}");
                                 if let Some(entity) = shader.parent {
                                     PanelsSystem::close_alert(entity, resources);
+                                    if let Some(choice) =
+                                        resources.panels_data.choice_options.take()
+                                    {
+                                        choice.do_choose(chosen, world, resources);
+                                    }
                                     resources.panels_data.chosen_ind = None;
                                 }
                             }

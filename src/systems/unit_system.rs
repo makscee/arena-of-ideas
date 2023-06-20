@@ -100,7 +100,7 @@ impl UnitSystem {
                 },
             )
             .insert_color_ref(
-                "u_faction".to_owned(),
+                "u_faction_color".to_owned(),
                 *options.colors.factions.get(&faction).unwrap(),
             )
             .insert_float_ref(

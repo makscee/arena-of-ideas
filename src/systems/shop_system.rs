@@ -139,6 +139,16 @@ impl ShopSystem {
         Self::create_buy_button(resources);
     }
 
+    pub fn add_unit_to_team(
+        unit: PackedUnit,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let team = TeamSystem::entity(&Faction::Team, world);
+        unit.unpack(world, resources, 0, None, team);
+        SlotSystem::fill_gaps(Faction::Team, world);
+    }
+
     pub fn do_buy(
         entity: legion::Entity,
         slot: usize,
