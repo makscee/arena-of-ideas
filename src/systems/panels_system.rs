@@ -87,7 +87,7 @@ impl PanelsSystem {
         resources.panels_data.alert.push(panel);
     }
 
-    pub fn open_card_choice(mut cards: Vec<PackedUnit>, resources: &mut Resources) {
+    pub fn open_card_choice(cards: Vec<PackedUnit>, resources: &mut Resources) {
         let padding = resources.options.floats.panel_row_padding;
         let shaders = cards
             .iter()
@@ -121,7 +121,7 @@ impl PanelsSystem {
                 shader
             })
             .collect_vec();
-        resources.panels_data.choice_options = Some(CardChoice::AddUnit { units: cards });
+        resources.panels_data.choice_options = Some(CardChoice::BuyHero { units: cards });
         let panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header("Choose Hero", &resources.options)
             .wrap_panel_footer(PanelFooterButton::Accept, &resources.options);
@@ -226,15 +226,16 @@ pub struct PanelsData {
 }
 
 pub enum CardChoice {
-    AddUnit { units: Vec<PackedUnit> },
+    BuyHero { units: Vec<PackedUnit> },
 }
 
 impl CardChoice {
     pub fn do_choose(self, ind: usize, world: &mut legion::World, resources: &mut Resources) {
         match self {
-            CardChoice::AddUnit { mut units } => {
+            CardChoice::BuyHero { mut units } => {
                 let unit = units.remove(ind);
                 ShopSystem::add_unit_to_team(unit, world, resources);
+                ShopSystem::create_buy_button(resources);
             }
         }
     }

@@ -48,49 +48,14 @@ impl ShopSystem {
     }
 
     pub fn show_hero_buy_panel(resources: &mut Resources) {
-        let mut cards: Vec<Shader> = default();
+        let mut cards = Vec::default();
         for _ in 0..3 {
             let pool = &mut resources.shop_data.pool;
             let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
             let unit = pool.swap_remove(unit);
-            let shader = unit.get_ui_shader(Faction::Shop, resources);
-            cards.push(shader);
-            resources.shop_data.offered.push(unit);
+            cards.push(unit);
         }
-        fn input_handler(
-            event: HandleEvent,
-            entity: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if resources
-                        .tape_player
-                        .tape
-                        .close_panels(shader.parent.unwrap(), resources.tape_player.head)
-                    {
-                        let ind =
-                            shader.parameters.uniforms.try_get_int("u_index").unwrap() as usize;
-                        debug!("Click {entity:?} {ind}");
-                        ShopSystem::do_buy_offered(ind, resources, world);
-                    }
-                }
-                _ => {}
-            }
-        }
-        let entity = new_entity();
-        Widget::CardChoicePanel {
-            title: "Choose".to_owned(),
-            cards,
-            input_handler,
-            update_handler: None,
-            resources: &resources,
-            entity,
-        }
-        .generate_node()
-        .push_as_panel(entity, resources);
+        PanelsSystem::open_card_choice(cards, resources);
     }
 
     pub fn show_battle_choice_widget(resources: &mut Resources) {
@@ -171,7 +136,7 @@ impl ShopSystem {
             .get_vec2(&VarName::Position, world)
             .unwrap();
         VfxSystem::add_show_text_effect(&format!("+{price} g"), color, position, world, resources);
-        Self::change_g(price, world);
+        Self::change_g(price, world, resources);
         resources
             .shop_data
             .pool
@@ -198,10 +163,11 @@ impl ShopSystem {
             .get_int(&VarName::G)
     }
 
-    pub fn change_g(delta: i32, world: &mut legion::World) {
+    pub fn change_g(delta: i32, world: &mut legion::World, resources: &mut Resources) {
         TeamSystem::get_state_mut(&Faction::Team, world)
             .vars
-            .change_int(&VarName::G, delta)
+            .change_int(&VarName::G, delta);
+        PanelsSystem::refresh_stats(world, resources);
     }
 
     pub fn reset_g(world: &mut legion::World) {
@@ -259,9 +225,9 @@ impl ShopSystem {
         }
     }
 
-    pub fn deduct_hero_price(world: &mut legion::World) {
+    pub fn deduct_hero_price(world: &mut legion::World, resources: &mut Resources) {
         let price = Self::buy_price(world);
-        Self::change_g(-price, world);
+        Self::change_g(-price, world, resources);
     }
 
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
@@ -282,14 +248,14 @@ impl ShopSystem {
     pub fn enter(world: &mut legion::World, resources: &mut Resources) {
         let current_floor = resources.ladder.current_ind();
         if current_floor == 0 {
-            Self::change_g(resources.options.initial_shop_g, world);
+            Self::change_g(resources.options.initial_shop_g, world, resources);
         }
         ShopData::load_floor(resources, current_floor);
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, current_floor as i32);
-        // Self::create_buy_button(resources);
-        // Self::create_battle_button(resources);
+        Self::create_buy_button(resources);
+        Self::create_battle_button(resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
@@ -360,7 +326,7 @@ impl ShopSystem {
         .push_as_panel(entity, resources);
     }
 
-    fn create_buy_button(resources: &mut Resources) {
+    pub fn create_buy_button(resources: &mut Resources) {
         fn input_handler(
             event: HandleEvent,
             entity: legion::Entity,
@@ -376,7 +342,7 @@ impl ShopSystem {
                             .tape
                             .close_panels(entity, resources.tape_player.head)
                     {
-                        ShopSystem::deduct_hero_price(world);
+                        ShopSystem::deduct_hero_price(world, resources);
                         ShopSystem::show_hero_buy_panel(resources);
                     }
                 }

@@ -1,6 +1,6 @@
 Screen box anchoring @ui
 Build
-    Card rework @visual
+    Card rework @visual {cm:2023-06-20T20:24:25}
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change
@@ -15,6 +15,7 @@ Build
         level {cm:2023-06-19T15:55:11}
     Hover hint @ui
         panel working {start:2023-06-19T15:42:09} {cm:2023-06-19T15:55:22} {duration:13m}
+        hover working
         unit statuses
         shop buy btns
         start battle btn
@@ -29,7 +30,7 @@ Build
         enemy choose with count
         status choose with count
     Shop buttons @gameplay
-        buy hero
+        buy hero {cm:2023-06-20T21:02:46}
         buy status
         buy aoe status
         buy team status

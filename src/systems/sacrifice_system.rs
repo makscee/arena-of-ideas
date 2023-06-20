@@ -26,6 +26,6 @@ impl SacrificeSystem {
             TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Stars, world) as usize;
         resources.sacrifice_data.marked_units.clear();
         BonusEffectPool::load_widget(value, world, resources);
-        ShopSystem::change_g(value as i32, world);
+        ShopSystem::change_g(value as i32, world, resources);
     }
 }

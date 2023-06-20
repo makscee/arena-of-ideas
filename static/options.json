@@ -974,35 +974,31 @@
                 "box": {
                     "size": [
                         1.0,
-                        0.4
+                        0.2
                     ]
                 },
                 "uniforms": {
                     "u_active": 1.0,
-                    "u_padding": 0.2,
-                    "u_g_color_1": "#000000",
-                    "u_g_color_2": "#000000",
-                    "u_g_color_3": "#000000",
-                    "u_g_color_4": "#000000",
-                    "u_rounding": 0.5,
+                    "u_rounding": 0.02,
                     "u_g_points": [
-                        -0.2,
-                        -0.1,
-                        0.2,
-                        0.2
+                        -0.01,
+                        -0.01,
+                        -0.005,
+                        0.0
                     ],
                     "u_g_alphas": [
                         1.0,
                         1.0,
-                        0.0,
+                        1.0,
                         0.0
                     ],
-                    "u_size": 1.0,
+                    "u_g_color_1": "#000000",
+                    "u_g_color_2": "#000000",
+                    "u_g_color_3": "#000000",
+                    "u_g_color_4": "#000000",
+                    "u_color": "#6495ED",
                     "mapping": {
-                        "u_g_color_1": "u_outline_color",
-                        "u_g_color_2": "u_outline_color",
-                        "u_g_color_3": "u_outline_color",
-                        "u_g_color4": "u_outline_color"
+                        "u_color": "c_button"
                     }
                 }
             },
@@ -1010,19 +1006,24 @@
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {
+                        "box": {
+                            "size": [
+                                1.0,
+                                0.15
+                            ]
+                        },
                         "uniforms": {
                             "u_text_inside": 0.5,
                             "u_text_border": 0.3,
-                            "u_size": 0.8,
-                            "u_outline_color": "#404040",
+                            "u_outline_color": "#000000",
+                            "u_text_color": "#ffffff",
                             "mapping": {
                                 "u_color": "u_text_color"
                             }
                         }
                     }
                 }
-            ],
-            "layer": "UI"
+            ]
         },
         "button_icon": {
             "path": "shaders/system/icon.glsl",
@@ -2127,7 +2128,6 @@
     "uniforms": {
         "ui_button": {
             "u_scale": 0.35,
-            "u_aa": 0.01,
             "u_index_offset": [
                 0.0,
                 1.0

@@ -87,7 +87,6 @@ impl Tape {
             let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
             extra_shaders.extend(effect.animation.generate_shaders(t, &entity_shaders));
         }
-
         entity_shaders
             .into_values()
             .chain(extra_shaders.into_iter())

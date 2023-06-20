@@ -199,7 +199,8 @@ impl Shader {
         uniforms.insert_float_ref("u_sin".to_owned(), t.sin());
         uniforms.insert_float_ref("u_cos".to_owned(), t.cos());
 
-        let (position, bx) = self.parameters.r#box.get_pos_size();
+        let (mut position, bx) = self.parameters.r#box.get_pos_size();
+        position += uniforms.try_get_vec2("u_position").unwrap_or(vec2::ZERO);
         let offset = uniforms.try_get_vec2("u_offset").unwrap_or(vec2::ZERO);
 
         let index = uniforms.try_get_int("u_index").unwrap_or_default();

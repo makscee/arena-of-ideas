@@ -40,8 +40,6 @@ impl System for GameStateSystem {
             }
             GameState::Shop => {
                 if resources.input_data.down_keys.contains(&Space) {
-                    // ShopSystem::switch_to_battle(world, resources);
-                    // resources.transition_state = GameState::Battle;
                     match resources.camera.focus == Focus::Shop {
                         true => ShopSystem::show_battle_choice_widget(resources),
                         false => resources.transition_state = GameState::Battle,
@@ -59,7 +57,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::MainMenu;
                 }
                 if resources.input_data.down_keys.contains(&C) {
-                    ShopSystem::change_g(100, world);
+                    ShopSystem::change_g(100, world, resources);
                 }
                 if resources.input_data.down_keys.contains(&L) {
                     SaveSystem::load(world, resources);
@@ -297,24 +295,12 @@ impl GameStateSystem {
                     );
                     SacrificeSystem::show_bonus_widget(world, resources);
                 }
-                TeamSystem::get_state_mut(&Faction::Team, world)
-                    .vars
-                    .set_int(&VarName::Stars, 0);
                 ShopSystem::enter(world, resources);
                 PanelsSystem::open_push("Test 1", "This is a test push", resources);
                 PanelsSystem::open_stats(world, resources);
                 PanelsSystem::open_hint("Hint 1", "This is a hint", resources);
                 PanelsSystem::open_hint("Hint 2", "This is a\nmultiline hint", resources);
                 PanelsSystem::open_hint("Hint 3", "This is a\ntriple\nmultiline hint", resources);
-
-                let mut cards = Vec::default();
-                for _ in 0..3 {
-                    let pool = &mut resources.shop_data.pool;
-                    let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
-                    let unit = pool.swap_remove(unit);
-                    cards.push(unit);
-                }
-                PanelsSystem::open_card_choice(cards, resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",
