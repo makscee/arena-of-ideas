@@ -74,7 +74,6 @@ impl PanelsSystem {
         resources: &mut Resources,
     ) {
         let mut panel = Self::generate_text_shader(text, &resources.options)
-            .wrap_panel_body(&resources.options)
             .wrap_panel_header(title, &resources.options);
         if footer {
             panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
@@ -88,9 +87,27 @@ impl PanelsSystem {
         resources.panels_data.alert.push(panel);
     }
 
+    pub fn add_card_choice(mut cards: Vec<Shader>, resources: &mut Resources) {
+        let padding = resources.options.floats.panel_row_padding;
+        let cards = cards
+            .drain(..)
+            .map(|x| {
+                Self::generate_card_shader(x, &resources.options)
+                    .wrap_panel_header("Hero", &resources.options)
+                    .wrap_panel_footer(PanelFooterButton::Close, &resources.options)
+            })
+            .collect_vec();
+        let panel = Shader::wrap_panel_body_row(cards, padding, &resources.options)
+            .wrap_panel_header("Choose Hero", &resources.options)
+            .wrap_panel_footer(PanelFooterButton::Close, &resources.options);
+        resources
+            .panels_data
+            .alert
+            .push(panel.panel(PanelType::Alert, resources));
+    }
+
     pub fn add_push(title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(text, &resources.options)
-            .wrap_panel_body(&resources.options)
             .wrap_panel_header(title, &resources.options);
         resources
             .panels_data
@@ -100,7 +117,6 @@ impl PanelsSystem {
 
     pub fn add_hint(title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(&text, &resources.options)
-            .wrap_panel_body(&resources.options)
             .wrap_panel_header(&title, &resources.options)
             .panel(PanelType::Hint, resources);
         resources.panels_data.hint.push(panel);
@@ -109,7 +125,6 @@ impl PanelsSystem {
     pub fn add_stats(world: &legion::World, resources: &mut Resources) {
         let text = Self::get_stats_text(world, resources);
         let panel = Self::generate_text_shader(&text, &resources.options)
-            .wrap_panel_body(&resources.options)
             .wrap_panel_header("Stats", &resources.options)
             .panel(PanelType::Stats, resources);
         resources.panels_data.stats = Some(panel);
@@ -162,7 +177,16 @@ impl PanelsSystem {
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
         let per_line = shader.parameters.r#box.size.y;
         shader.parameters.r#box.size.y = lines as f32 * per_line;
+        let padding = options.floats.panel_text_padding;
+        shader = shader.wrap_panel_body(padding, options);
         shader
+    }
+
+    pub fn generate_card_shader(mut card: Shader, options: &Options) -> Shader {
+        card.parameters.merge(&options.parameters.panel_card, true);
+        let padding = options.floats.panel_card_padding;
+        let card = card.wrap_panel_body(padding, options);
+        card
     }
 }
 
@@ -210,11 +234,37 @@ impl Panel {
 }
 
 impl Shader {
-    pub fn wrap_panel_body(self, options: &Options) -> Self {
+    pub fn wrap_panel_body_row(mut shaders: Vec<Shader>, padding: f32, options: &Options) -> Self {
+        let r#box = shaders[0].parameters.r#box;
+        let mut shader = shaders.remove(1).wrap_panel_body(padding, options);
+        shader.parameters.r#box = r#box;
+        let count = shaders.len() as f32;
+        shader.parameters.r#box.size.x *= count;
+        shader.parameters.r#box.size += vec2(padding * count * 2.0, padding);
+        shader.chain_after.push({
+            let mut shader = shaders.remove(0);
+            shader.parameters.r#box.anchor = vec2(-0.65, 0.0);
+            shader
+        });
+        shader.chain_after.push({
+            let mut shader = shaders.remove(0);
+            shader.parameters.r#box.anchor = vec2(0.65, 0.0);
+            shader
+        });
+
+        shader
+    }
+
+    pub fn wrap_panel_body(self, padding: f32, options: &Options) -> Self {
         let mut shader = options.shaders.panel_body.clone();
+        let scale = self
+            .parameters
+            .uniforms
+            .try_get_float("u_scale")
+            .unwrap_or(1.0);
         shader.parameters.r#box = self.parameters.r#box;
-        let padding = options.floats.panel_body_padding;
         shader.parameters.r#box.size += vec2(padding, padding);
+        shader.parameters.r#box.size *= scale;
         shader.chain_after.push(self);
         shader.entity = Some(new_entity());
         shader

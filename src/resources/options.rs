@@ -212,7 +212,10 @@ pub struct Floats {
     pub slots_battle_team_scale: f32,
     pub slots_striker_scale: f32,
     pub slot_info_offset: f32,
-    pub panel_body_padding: f32,
+    pub panel_text_padding: f32,
+    pub panel_card_padding: f32,
+    pub panel_row_padding: f32,
+    pub panel_row_index_offset: vec2<f32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -223,4 +226,5 @@ pub struct Uniforms {
 #[derive(Deserialize, Debug)]
 pub struct Parameters {
     pub panels: HashMap<PanelType, ShaderParameters>,
+    pub panel_card: ShaderParameters,
 }

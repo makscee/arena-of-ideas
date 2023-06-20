@@ -23,7 +23,8 @@ Build
         battle start
         sacrifice start
         shop start
-    Alert cards @ui
+    Alert cards @ui {start:2023-06-20T13:59:26}
+        panel working
         hero buy
         enemy choose with count
         status choose with count

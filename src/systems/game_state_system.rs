@@ -307,6 +307,17 @@ impl GameStateSystem {
                 PanelsSystem::add_hint("Hint 2", "This is a\nmultiline hint", resources);
                 PanelsSystem::add_hint("Hint 3", "This is a\ntriple\nmultiline hint", resources);
 
+                let mut cards = Vec::default();
+                for _ in 0..3 {
+                    let pool = &mut resources.shop_data.pool;
+                    let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
+                    let unit = pool.swap_remove(unit);
+                    let shader = unit.get_ui_shader(Faction::Shop, resources);
+                    cards.push(shader);
+                    resources.shop_data.offered.push(unit);
+                }
+                PanelsSystem::add_card_choice(cards, resources);
+
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",
                 //     "This is a multiline\ntest no footer alert",

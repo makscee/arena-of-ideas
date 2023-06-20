@@ -271,11 +271,15 @@
                                 0.037
                             ],
                             "center": [
-                                0.9,
+                                1.0,
                                 0.0
                             ],
                             "anchor": [
                                 -0.0,
+                                0.0
+                            ],
+                            "pos": [
+                                0.03,
                                 0.0
                             ]
                         },
@@ -321,7 +325,10 @@
                 },
                 "uniforms": {
                     "u_ui": 1,
-                    "u_color": "#6495ED"
+                    "u_color": "#6495ED",
+                    "mapping": {
+                        "u_color": "c_secondary"
+                    }
                 }
             },
             "layer": "UI",
@@ -411,7 +418,11 @@
                     "u_g_color_1": "#000000",
                     "u_g_color_2": "#000000",
                     "u_g_color_3": "#000000",
-                    "u_g_color_4": "#000000"
+                    "u_g_color_4": "#000000",
+                    "u_color": "#6495ED",
+                    "mapping": {
+                        "u_color": "c_button"
+                    }
                 }
             },
             "chain_after": [
@@ -442,12 +453,7 @@
             "parameters": {
                 "uniforms": {
                     "u_padding": 0.25,
-                    "u_card_size": -0.5,
-                    "u_fbm_sdf": 0.0,
-                    "u_card_offset": [
-                        0.0,
-                        0.4
-                    ]
+                    "u_fbm_sdf": 0.0
                 }
             },
             "request_vars": [
@@ -503,12 +509,7 @@
             "path": "shaders/system/unit_card.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_padding": 0.2,
-                    "u_card_size": -0.0,
-                    "u_card_offset": [
-                        0.0,
-                        -0.0
-                    ]
+                    "u_padding": 0.2
                 }
             },
             "request_vars": [
@@ -531,7 +532,7 @@
             "path": "shaders/vfx/circle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_size": 0.3,
+                    "u_size": 0.35,
                     "u_circle_fbm": 0.15,
                     "u_circle_fbm_speed": 2.0,
                     "u_card_size": -0.1,
@@ -556,7 +557,7 @@
                         -0.2
                     ],
                     "u_offset": [
-                        -0.9,
+                        -1.0,
                         -0.8
                     ],
                     "mapping": {
@@ -1239,7 +1240,13 @@
         }
     },
     "floats": {
-        "panel_body_padding": 0.05,
+        "panel_text_padding": 0.05,
+        "panel_card_padding": 0.8,
+        "panel_row_padding": 0.15,
+        "panel_row_index_offset": [
+            0.5,
+            0.0
+        ],
         "slots_shop_team_position": [
             6.0,
             4.0
@@ -2147,6 +2154,11 @@
                         -0.1
                     ]
                 }
+            }
+        },
+        "panel_card": {
+            "uniforms": {
+                "u_scale": 0.15
             }
         }
     }

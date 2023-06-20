@@ -13,7 +13,7 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-const vec2 CARD_SIZE = vec2(1.0, 1.5);
+const vec2 CARD_SIZE = vec2(1.1, 1.1);
 const float CARD_BORDER = 0.07;
 const float CARD_AA = 0.1;
 const float TEXT_INSIDE = 0.5;
