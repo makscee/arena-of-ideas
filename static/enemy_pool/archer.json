@@ -21,7 +21,6 @@
             "uniforms": {
                 "local": {
                     "u_color": "#00690e",
-                    "u_radius": 0.9,
                     "u_border": 0.5,
                     "u_circle_fbm": 0.3,
                     "u_aa": 1.5,

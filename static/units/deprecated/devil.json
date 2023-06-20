@@ -35,7 +35,6 @@
             "uniforms": {
                 "u_color": "#8e0039ff",
                 "u_color_1": "#000000",
-                "u_radius": 1.5,
                 "u_alpha": 0.1,
                 "u_spin_part": 0.01,
                 "u_move_speed": 0.5

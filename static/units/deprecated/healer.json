@@ -37,7 +37,6 @@
         "parameters": {
             "uniforms": {
                 "u_color": "#c7c7c7",
-                "u_radius": 0.8,
                 "u_border": 0.8,
                 "u_circle_fbm": 0.7,
                 "u_circle_fbm_speed": 1.0,

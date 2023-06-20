@@ -23,8 +23,6 @@ vec2 position;
 uniform vec2 u_offset = vec2(0, 0);
 uniform vec2 u_box = vec2(0);
 vec2 box;
-uniform float u_radius = 0;
-float radius;
 uniform float u_padding = 0;
 float padding;
 uniform float u_scale = 1;

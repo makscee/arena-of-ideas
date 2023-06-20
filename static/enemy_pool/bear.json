@@ -9,7 +9,6 @@
                 "local": {
                     "u_color": "#6a2700",
                     "u_color_1": "#000000",
-                    "u_radius": 0.6,
                     "u_spin_part": 0.05,
                     "u_move_speed": 5.3
                 }

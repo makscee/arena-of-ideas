@@ -16,7 +16,6 @@
                 "local": {
                     "u_color": "#00d836",
                     "u_color_1": "#00ff22",
-                    "u_radius": 0.8,
                     "u_alpha": 0.3,
                     "u_spin_part": 0.01,
                     "u_move_speed": 1.3
