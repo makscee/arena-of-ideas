@@ -41,7 +41,7 @@ impl System for GameStateSystem {
             GameState::Shop => {
                 if resources.input_data.down_keys.contains(&Space) {
                     match resources.camera.focus == Focus::Shop {
-                        true => ShopSystem::show_battle_choice_widget(resources),
+                        true => ShopSystem::show_battle_choice_panel(resources),
                         false => resources.transition_state = GameState::Battle,
                     }
                 }

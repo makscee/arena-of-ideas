@@ -1,5 +1,3 @@
-use geng::prelude::itertools::Itertools;
-
 use super::*;
 
 pub enum Widget<'a> {
@@ -13,13 +11,6 @@ pub enum Widget<'a> {
         panel_entity: legion::Entity,
         options: &'a Options,
     },
-    BattleChoicePanel {
-        unit: &'a PackedUnit,
-        difficulty: usize,
-        name: String,
-        panel_entity: legion::Entity,
-        resources: &'a Resources,
-    },
     Button {
         text: String,
         input_handler: Handler,
@@ -29,151 +20,11 @@ pub enum Widget<'a> {
         shader: Option<Shader>,
         entity: legion::Entity,
     },
-    CardChoicePanel {
-        title: String,
-        cards: Vec<Shader>,
-        entity: legion::Entity,
-        input_handler: Handler,
-        update_handler: Option<Handler>,
-        resources: &'a Resources,
-    },
 }
 
 impl<'a> Widget<'_> {
     pub fn generate_node(self) -> Node {
         match self {
-            Self::CardChoicePanel {
-                title,
-                cards,
-                input_handler,
-                update_handler,
-                resources,
-                entity,
-            } => {
-                debug!(
-                    "Card choice panel {}",
-                    cards
-                        .iter()
-                        .map(|x| x.parameters.uniforms.try_get_string("u_name").unwrap())
-                        .join(" ")
-                );
-                let mut node: Node = default();
-
-                // card
-                let (shader, animation, duration) = {
-                    let anim = &resources.options.widgets.card_choice_panel.card_bg;
-                    let shader = anim.shader.clone();
-                    let animation = anim.animation.clone();
-                    let duration = anim.duration;
-                    (shader, animation, duration)
-                };
-                for (i, card) in cards.into_iter().enumerate() {
-                    let mut shader = shader.clone();
-                    let rarity = HeroPool::rarity_by_name(
-                        &card.parameters.uniforms.try_get_string("u_name").unwrap(),
-                        resources,
-                    )
-                    .color(resources);
-                    shader.chain_after.push(card);
-                    shader.set_int_ref("u_index".to_owned(), i as i32);
-                    shader.set_color_ref("u_rarity_color".to_owned(), rarity);
-                    shader.entity = Some(new_entity());
-                    shader.parent = Some(entity);
-
-                    ButtonSystem::add_button_handlers(&mut shader);
-                    shader.input_handlers.push(input_handler);
-                    if let Some(update_handler) = update_handler {
-                        shader.update_handlers.push(update_handler);
-                    }
-                    node.add_effect(TimedEffect::new(
-                        Some(duration),
-                        Animation::ShaderAnimation {
-                            shader,
-                            animation: animation.clone(),
-                        },
-                        0,
-                    ));
-                }
-
-                // panel
-                let (shader, animation, duration) = {
-                    let anim = &resources.options.widgets.card_choice_panel.panel;
-                    let shader = anim
-                        .shader
-                        .clone()
-                        .set_string("u_title".to_owned(), title, 1);
-                    let animation = anim.animation.clone();
-                    let duration = anim.duration;
-                    (shader, animation, duration)
-                };
-                node.add_effect(TimedEffect::new(
-                    Some(duration),
-                    Animation::ShaderAnimation {
-                        shader,
-                        animation: animation.clone(),
-                    },
-                    0,
-                ));
-
-                // reroll button
-                let shader = resources
-                    .options
-                    .widgets
-                    .card_choice_panel
-                    .reroll_btn
-                    .clone();
-                fn reroll_handler(
-                    event: HandleEvent,
-                    _: legion::Entity,
-                    shader: &mut Shader,
-                    world: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    match event {
-                        HandleEvent::Click => {
-                            if ShopSystem::is_reroll_affordable(world)
-                                && resources
-                                    .tape_player
-                                    .tape
-                                    .close_panels(shader.parent.unwrap(), 0.0)
-                            {
-                                ShopSystem::reroll_hero_panel(world, resources);
-                                debug!("Reroll hero buy panel");
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                fn reroll_update_handler(
-                    _: HandleEvent,
-                    _: legion::Entity,
-                    shader: &mut Shader,
-                    world: &mut legion::World,
-                    _: &mut Resources,
-                ) {
-                    shader.set_active(ShopSystem::is_reroll_affordable(world));
-                }
-                let mut shader = ButtonSystem::create_button(
-                    None,
-                    None,
-                    reroll_handler,
-                    Some(reroll_update_handler),
-                    new_entity(),
-                    Some(shader),
-                    &resources.options,
-                );
-                shader.parent = Some(entity);
-                node.add_effect(TimedEffect::new(
-                    Some(duration),
-                    Animation::ShaderAnimation {
-                        shader,
-                        animation: animation.clone(),
-                    },
-                    0,
-                ));
-
-                node.lock(NodeLockType::Empty)
-            }
             Self::Button {
                 text,
                 input_handler,
@@ -195,122 +46,6 @@ impl<'a> Widget<'_> {
                 .merge_uniforms(&uniforms, true);
 
                 Node::new_panel_scaled(button)
-            }
-            Self::BattleChoicePanel {
-                unit,
-                difficulty,
-                resources,
-                name,
-                panel_entity,
-            } => {
-                let mut node = Node::default();
-                let rarity_color = *resources
-                    .options
-                    .colors
-                    .rarities
-                    .get(&enum_iterator::all::<Rarity>().collect_vec()[difficulty])
-                    .unwrap();
-                let (mut shader, animation, duration) = {
-                    let anim = &resources.options.widgets.battle_choice_panel.bg;
-
-                    let mut shader = anim
-                        .shader
-                        .clone()
-                        .set_color("u_color".to_owned(), rarity_color)
-                        .set_color("u_outline_color".to_owned(), rarity_color)
-                        .set_int("u_difficulty".to_owned(), difficulty as i32);
-                    ButtonSystem::add_button_handlers(&mut shader);
-                    shader
-                        .input_handlers
-                        .push(|event, _, shader, world, resources| match event {
-                            HandleEvent::Click => {
-                                if resources.tape_player.tape.close_panels(
-                                    shader.parent.unwrap(),
-                                    resources.tape_player.head,
-                                ) {
-                                    let difficulty = shader
-                                        .parameters
-                                        .uniforms
-                                        .try_get_int("u_difficulty")
-                                        .unwrap()
-                                        as usize;
-                                    debug!("Battle choice make selection: {difficulty}");
-                                    let dark =
-                                        Ladder::get_current_teams(resources)[difficulty].clone();
-                                    let light = PackedTeam::pack(&Faction::Team, world, resources);
-                                    resources.battle_data.last_difficulty = difficulty;
-                                    TeamSystem::get_state_mut(&Faction::Team, world)
-                                        .vars
-                                        .change_int(&VarName::Stars, difficulty as i32 + 1);
-                                    BattleSystem::init_ladder_battle(
-                                        &light, dark, world, resources,
-                                    );
-                                    GameStateSystem::set_transition(GameState::Battle, resources);
-                                }
-                            }
-                            _ => {}
-                        });
-                    shader.parent = Some(panel_entity);
-                    shader.entity = Some(new_entity());
-                    let position = shader
-                        .parameters
-                        .uniforms
-                        .try_get_vec2(&VarName::Position.uniform())
-                        .unwrap()
-                        + vec2(
-                            shader
-                                .parameters
-                                .uniforms
-                                .try_get_float("u_offset_each")
-                                .unwrap()
-                                * difficulty as f32,
-                            0.0,
-                        );
-                    let mut animation = anim.animation.clone();
-                    animation
-                        .get_uniforms_mut()
-                        .insert_vec2_ref("u_open_position".to_owned(), position);
-                    let unit_shader = unit
-                        .get_ui_shader(Faction::Dark, resources)
-                        .set_float("u_scale".to_owned(), 0.35);
-                    shader.chain_after.push(unit_shader);
-                    shader.order += difficulty as i32 * 3;
-                    (shader, animation, anim.duration)
-                };
-
-                let name_shader = resources
-                    .options
-                    .widgets
-                    .battle_choice_panel
-                    .name
-                    .clone()
-                    .set_string("u_text".to_owned(), name, 1)
-                    .set_color("u_mid_border_color".to_owned(), rarity_color);
-                shader.chain_after.push(name_shader);
-
-                let star_shader = &resources.options.widgets.battle_choice_panel.star;
-                for i in 0..3 {
-                    let color = if difficulty >= i {
-                        resources.options.colors.star
-                    } else {
-                        resources.options.colors.inactive
-                    };
-                    let star_shader = star_shader
-                        .clone()
-                        .set_color("u_color".to_owned(), color)
-                        .set_int("u_index".to_owned(), i as i32);
-                    shader.chain_after.push(star_shader);
-                }
-                node.add_effect(TimedEffect::new(
-                    Some(duration),
-                    Animation::ShaderAnimation {
-                        shader,
-                        animation: animation.clone(),
-                    },
-                    0,
-                ));
-
-                node.lock(NodeLockType::Empty)
             }
             Self::BattleOverPanel { score, options } => {
                 let mut node = Node::default();

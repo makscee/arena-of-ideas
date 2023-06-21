@@ -22,13 +22,15 @@ Build
         definitions {cm:2023-06-21T15:25:41}
     Alert text @ui
         battle start
+        battle end
         sacrifice start
         shop start
     Alert cards @ui {start:2023-06-20T13:59:26}
         panel working {cm:2023-06-20T16:34:39}
         hero buy {cm:2023-06-20T16:34:41}
-        enemy choose with count
-        status choose with count
+        enemy choose {start:2023-06-21T15:31:58} {cm:2023-06-21T16:20:26} {duration:48m}
+        status choose
+        team status choose with count
     Shop buttons @gameplay
         buy hero {cm:2023-06-20T21:02:46}
         buy status

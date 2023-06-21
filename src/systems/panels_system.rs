@@ -88,23 +88,73 @@ impl PanelsSystem {
         resources.panels_data.alert.push(panel);
     }
 
-    pub fn open_card_choice(cards: Vec<PackedUnit>, resources: &mut Resources) {
+    pub fn open_card_choice(choice: CardChoice, resources: &mut Resources) {
+        if resources.panels_data.choice_options.is_some() {
+            return;
+        }
         let padding = resources.options.floats.panel_row_padding;
+        let cards: Vec<(String, usize, &PackedUnit)> = match &choice {
+            CardChoice::BuyHero { units } => units
+                .iter()
+                .map(|x| ("Hero".to_owned(), 1, x))
+                .collect_vec(),
+            CardChoice::SelectEnemy { teams } => teams
+                .iter()
+                .map(|team| (team.name.clone(), team.units.len(), &team.units[0]))
+                .collect_vec(),
+        };
+        let faction = match &choice {
+            CardChoice::BuyHero { .. } => Faction::Shop,
+            CardChoice::SelectEnemy { .. } => Faction::Dark,
+        };
+        let title = match &choice {
+            CardChoice::BuyHero { .. } => "Choose new hero",
+            CardChoice::SelectEnemy { .. } => "Choose enemy team",
+        };
+        let (panel_color, card_color) = match &choice {
+            CardChoice::BuyHero { .. } => (
+                resources
+                    .options
+                    .colors
+                    .factions
+                    .get(&Faction::Shop)
+                    .unwrap()
+                    .clone(),
+                resources
+                    .options
+                    .colors
+                    .factions
+                    .get(&Faction::Team)
+                    .unwrap()
+                    .clone(),
+            ),
+            CardChoice::SelectEnemy { .. } => (
+                resources.options.colors.defeat,
+                resources
+                    .options
+                    .colors
+                    .factions
+                    .get(&Faction::Dark)
+                    .unwrap()
+                    .clone(),
+            ),
+        };
         let shaders = cards
             .iter()
             .enumerate()
-            .map(|(ind, x)| {
-                let shader = x.get_ui_shader(Faction::Shop, resources);
+            .map(|(ind, (name, count, unit))| {
+                let shader = unit.get_ui_shader(faction, resources);
                 let mut shader = Self::generate_card_shader(shader, &resources.options)
-                    .wrap_panel_header("Hero", &resources.options)
+                    .wrap_panel_header(name, &resources.options)
                     .wrap_panel_footer(PanelFooterButton::Select, &resources.options)
-                    .set_int("u_index".to_owned(), ind as i32);
+                    .set_int("u_index".to_owned(), ind as i32)
+                    .set_panel_color(card_color);
 
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
                     shader: &mut Shader,
-                    world: &mut legion::World,
+                    _: &mut legion::World,
                     resources: &mut Resources,
                 ) {
                     if let Some(chosen) = resources.panels_data.chosen_ind {
@@ -122,22 +172,15 @@ impl PanelsSystem {
                 shader
             })
             .collect_vec();
-        resources.panels_data.choice_options = Some(CardChoice::BuyHero { units: cards });
+        resources.panels_data.choice_options = Some(choice);
         let panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
-            .wrap_panel_header("Choose Hero", &resources.options)
+            .wrap_panel_header(title, &resources.options)
             .wrap_panel_footer(PanelFooterButton::Accept, &resources.options);
-        resources.panels_data.alert.push(
-            panel.panel(
-                PanelType::Alert,
-                resources
-                    .options
-                    .colors
-                    .factions
-                    .get(&Faction::Shop)
-                    .cloned(),
-                resources,
-            ),
-        );
+        resources.panels_data.alert.push(panel.panel(
+            PanelType::Alert,
+            Some(panel_color),
+            resources,
+        ));
     }
 
     pub fn open_push(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
@@ -241,6 +284,7 @@ pub struct PanelsData {
 
 pub enum CardChoice {
     BuyHero { units: Vec<PackedUnit> },
+    SelectEnemy { teams: Vec<PackedTeam> },
 }
 
 impl CardChoice {
@@ -250,6 +294,14 @@ impl CardChoice {
                 let unit = units.remove(ind);
                 ShopSystem::add_unit_to_team(unit, world, resources);
                 ShopSystem::create_buy_button(resources);
+            }
+            CardChoice::SelectEnemy { mut teams } => {
+                let dark = teams.remove(ind);
+                let light = PackedTeam::pack(&Faction::Team, world, resources);
+                resources.battle_data.last_difficulty = ind;
+                ShopSystem::change_g(ind as i32 + 1, Some("Battle difficulty"), world, resources);
+                BattleSystem::init_ladder_battle(&light, dark, world, resources);
+                GameStateSystem::set_transition(GameState::Battle, resources);
             }
         }
     }
@@ -366,6 +418,10 @@ impl Shader {
         self
     }
 
+    pub fn set_panel_color(self, color: Rgba<f32>) -> Self {
+        self.set_color("u_panel_color".to_owned(), color)
+    }
+
     pub fn panel(
         mut self,
         r#type: PanelType,
@@ -385,7 +441,7 @@ impl Shader {
             }
         }
         if let Some(color) = color {
-            self.set_color_ref("u_panel_color".to_owned(), color);
+            self = self.set_panel_color(color);
         }
         Panel {
             need_pos: self.parameters.r#box.pos,

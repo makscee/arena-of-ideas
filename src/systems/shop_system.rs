@@ -10,7 +10,7 @@ pub struct ShopSystem {
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if self.need_switch_battle {
-            Self::show_battle_choice_widget(resources);
+            Self::show_battle_choice_panel(resources);
             self.need_switch_battle = false;
         }
         Self::refresh_tape(world, resources);
@@ -48,60 +48,24 @@ impl ShopSystem {
     }
 
     pub fn show_hero_buy_panel(resources: &mut Resources) {
-        let mut cards = Vec::default();
+        let mut units = Vec::default();
         for _ in 0..3 {
             let pool = &mut resources.shop_data.pool;
             let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
             let unit = pool.swap_remove(unit);
-            cards.push(unit);
+            units.push(unit);
         }
-        PanelsSystem::open_card_choice(cards, resources);
+        let choice = CardChoice::BuyHero { units };
+        PanelsSystem::open_card_choice(choice, resources);
     }
 
-    pub fn show_battle_choice_widget(resources: &mut Resources) {
-        let teams = Ladder::get_current_teams(resources);
-        let data = teams
+    pub fn show_battle_choice_panel(resources: &mut Resources) {
+        let teams = Ladder::get_current_teams(resources)
             .into_iter()
-            .map(|team| (team.units[0].clone(), team.name.clone()))
+            .map(|x| x.clone())
             .collect_vec();
-        let panel_entity = new_entity();
-        for (difficulty, (unit, name)) in data.into_iter().enumerate() {
-            Self::show_battle_choice_widget_part(&unit, difficulty, name, panel_entity, resources);
-        }
-    }
-
-    fn show_battle_choice_widget_part(
-        unit: &PackedUnit,
-        difficulty: usize,
-        name: String,
-        panel_entity: legion::Entity,
-        resources: &mut Resources,
-    ) {
-        Widget::BattleChoicePanel {
-            unit: &unit,
-            difficulty,
-            resources: &resources,
-            name,
-            panel_entity,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(panel_entity, resources);
-    }
-
-    pub fn do_buy_offered(ind: usize, resources: &mut Resources, world: &mut legion::World) {
-        let mut offered: Vec<PackedUnit> = default();
-        mem::swap(&mut offered, &mut resources.shop_data.offered);
-        for (i, offer) in offered.into_iter().enumerate() {
-            if i == ind {
-                let team = TeamSystem::entity(&Faction::Team, world);
-                offer.unpack(world, resources, 0, None, team);
-                SlotSystem::fill_gaps(Faction::Team, world);
-            } else {
-                resources.shop_data.pool.push(offer);
-            }
-        }
-        Self::create_buy_button(resources);
+        let choice = CardChoice::SelectEnemy { teams };
+        PanelsSystem::open_card_choice(choice, resources);
     }
 
     pub fn add_unit_to_team(
@@ -174,6 +138,10 @@ impl ShopSystem {
             .change_int(&VarName::G, delta);
         PanelsSystem::refresh_stats(world, resources);
         if let Some(reason) = reason {
+            let sign = match delta.signum() > 0 {
+                true => "+",
+                false => "",
+            };
             PanelsSystem::open_push(
                 resources
                     .options
@@ -183,7 +151,7 @@ impl ShopSystem {
                     .unwrap()
                     .clone(),
                 reason,
-                &format!("{delta} g"),
+                &format!("{sign}{delta} g"),
                 resources,
             );
         }
@@ -299,17 +267,7 @@ impl ShopSystem {
                             .tape
                             .close_panels(entity, resources.tape_player.head)
                     {
-                        let g = ShopSystem::get_g(world) as usize;
-                        if g > 0 {
-                            BonusEffectPool::load_widget(g, world, resources);
-                            ShopSystem::reset_g(world);
-                            fn start_battle(_: &mut legion::World, resources: &mut Resources) {
-                                ShopSystem::show_battle_choice_widget(resources);
-                            }
-                            resources.bonus_pool.after = Some(start_battle);
-                        } else {
-                            ShopSystem::show_battle_choice_widget(resources);
-                        }
+                        ShopSystem::show_battle_choice_panel(resources);
                     }
                 }
                 _ => {}
