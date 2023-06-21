@@ -36,7 +36,7 @@ void main() {
     vec4 mixed_color = mix(u_house_color, u_faction_color, smoothstep(0.7, .1, -border_dist / CARD_BORDER));
     vec4 border_color = vec4(mixed_color.rgb, border_dist < 0);
 
-    vec2 text_uv = uv * 2 + vec2(0, 1.0);
+    vec2 text_uv = uv * 1.5 + vec2(0, 1.0) / 1.3;
     text_uv *= vec2(1, u_description_size.x / u_description_size.y);
     float text_sdf = get_text_sdf(text_uv, u_description);
     vec3 text_base_color = vec3(1);

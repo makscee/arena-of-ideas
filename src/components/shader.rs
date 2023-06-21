@@ -29,6 +29,8 @@ pub struct Shader {
     pub input_handlers: Vec<Handler>,
     #[serde(skip)]
     pub update_handlers: Vec<Handler>,
+    #[serde(skip)]
+    pub hover_hints: Vec<(Rgba<f32>, String, String)>,
 }
 
 const DEFAULT_REQUEST_VARS: [VarName; 15] = [

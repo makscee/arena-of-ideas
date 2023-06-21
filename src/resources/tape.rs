@@ -30,27 +30,10 @@ pub struct NodeCluster {
 
 #[derive(Default, Clone, Debug)]
 pub struct Node {
-    entities: HashMap<legion::Entity, EntityData>,
+    entities: HashMap<legion::Entity, Shader>,
     key_effects: HashMap<String, Vec<TimedEffect>>,
     effects: Vec<TimedEffect>,
     duration: Option<Time>,
-}
-
-#[derive(Clone, Debug)]
-struct EntityData {
-    pub shader: Shader,
-    pub statuses: Vec<(String, i32)>,
-    pub definitions: HashSet<String>,
-}
-
-impl EntityData {
-    fn new(shader: Shader) -> Self {
-        Self {
-            shader,
-            statuses: default(),
-            definitions: default(),
-        }
-    }
 }
 
 impl Tape {
@@ -72,9 +55,6 @@ impl Tape {
         self.panels
             .retain(|(_, panel)| panel.join_node(&mut node, ts));
         entity_shaders.extend(node.get_entity_shaders());
-        node.add_effects(StatusSystem::get_active_statuses_panel_effects(
-            &node, resources,
-        ));
 
         for effect in node.all_effects() {
             let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
@@ -345,35 +325,17 @@ impl Node {
 
     pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
         if let Some(data) = self.entities.get_mut(&entity) {
-            data.shader = shader;
+            *data = shader;
         } else {
-            self.entities.insert(entity, EntityData::new(shader));
+            self.entities.insert(entity, shader);
         }
-    }
-
-    pub fn save_entity_statuses(
-        &mut self,
-        entity: &legion::Entity,
-        context: &Context,
-        world: &legion::World,
-    ) {
-        let statuses = context.collect_statuses(world);
-        self.entities.get_mut(&entity).unwrap().statuses = statuses;
-    }
-
-    pub fn save_entity_definitions(
-        &mut self,
-        entity: legion::Entity,
-        definitions: HashSet<String>,
-    ) {
-        self.entities.get_mut(&entity).unwrap().definitions = definitions;
     }
 
     pub fn get_entity_shaders(&self) -> HashMap<legion::Entity, Shader> {
         HashMap::from_iter(
             self.entities
                 .iter()
-                .map(|(entity, data)| (*entity, data.shader.clone())),
+                .map(|(entity, shader)| (*entity, shader.clone())),
         )
     }
 
@@ -381,18 +343,6 @@ impl Node {
         self.effects
             .iter()
             .chain(self.key_effects.values().flatten())
-    }
-
-    pub fn get_entity_statuses(&self, entity: &legion::Entity) -> Option<&Vec<(String, i32)>> {
-        self.entities
-            .get(entity)
-            .and_then(|data| Some(&data.statuses))
-    }
-
-    pub fn get_entity_definitions(&self, entity: &legion::Entity) -> Option<&HashSet<String>> {
-        self.entities
-            .get(entity)
-            .and_then(|data| Some(&data.definitions))
     }
 
     pub fn duration(&self) -> Time {

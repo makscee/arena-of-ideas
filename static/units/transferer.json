@@ -1,9 +1,15 @@
 {
     "name": "Transferrer",
     "attack": 3,
-    "health": 2,
+    "health": 1,
     "description": "Before death,\ntransfer all [Fortitude]\nally behind",
     "house": "Clerics",
+    "statuses": [
+        [
+            "Fortitude",
+            3
+        ]
+    ],
     "trigger": {
         "type": "BeforeDeath",
         "effect": {

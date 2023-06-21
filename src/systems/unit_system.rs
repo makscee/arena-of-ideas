@@ -145,10 +145,27 @@ impl UnitSystem {
         status_shaders
             .into_iter()
             .for_each(|x| shader.chain_after.insert(0, x));
-        node.add_entity_shader(entity, shader);
-        node.save_entity_statuses(&entity, &context, world);
+        let statuses = context.collect_statuses(world);
+        if !statuses.is_empty() {
+            let hint_text = statuses
+                .iter()
+                .map(|(name, charges)| format!("{name} ({charges})"))
+                .join("\n");
+            shader.hover_hints.push((
+                resources.options.colors.secondary,
+                "Statuses".to_owned(),
+                hint_text,
+            ));
+        }
         let definitions = UnitSystem::extract_definition_names(entity, world, resources);
-        node.save_entity_definitions(entity, definitions);
+        if !definitions.is_empty() {
+            for title in definitions {
+                let data = resources.definitions.get(&title).unwrap();
+                let (color, text) = (data.color.clone(), data.description.clone());
+                shader.hover_hints.push((color, title, text));
+            }
+        }
+        node.add_entity_shader(entity, shader);
     }
 
     pub fn draw_all_units_to_node(

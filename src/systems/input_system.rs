@@ -225,14 +225,22 @@ impl InputSystem {
             for f in shader.input_handlers.clone() {
                 (f)(event, entity, &mut shader, world, resources);
             }
-            shaders.insert(ind, shader);
             match &event {
-                HandleEvent::HoverStart => resources.input_data.hovered_entity = Some(entity),
-                HandleEvent::HoverStop => resources.input_data.hovered_entity = None,
+                HandleEvent::HoverStart => {
+                    resources.input_data.hovered_entity = Some(entity);
+                    for (color, title, text) in shader.hover_hints.iter() {
+                        PanelsSystem::open_hint(color.clone(), title, text, resources);
+                    }
+                }
+                HandleEvent::HoverStop => {
+                    resources.input_data.hovered_entity = None;
+                    PanelsSystem::close_hints(resources);
+                }
                 HandleEvent::DragStart => resources.input_data.dragged_entity = Some(entity),
                 HandleEvent::DragStop => resources.input_data.dragged_entity = None,
                 _ => {}
             }
+            shaders.insert(ind, shader);
         }
     }
 }

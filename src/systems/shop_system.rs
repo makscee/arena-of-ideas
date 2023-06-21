@@ -136,7 +136,7 @@ impl ShopSystem {
             .get_vec2(&VarName::Position, world)
             .unwrap();
         VfxSystem::add_show_text_effect(&format!("+{price} g"), color, position, world, resources);
-        Self::change_g(price, world, resources);
+        Self::change_g(price, Some("Sell hero"), world, resources);
         resources
             .shop_data
             .pool
@@ -163,11 +163,30 @@ impl ShopSystem {
             .get_int(&VarName::G)
     }
 
-    pub fn change_g(delta: i32, world: &mut legion::World, resources: &mut Resources) {
+    pub fn change_g(
+        delta: i32,
+        reason: Option<&str>,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
         TeamSystem::get_state_mut(&Faction::Team, world)
             .vars
             .change_int(&VarName::G, delta);
         PanelsSystem::refresh_stats(world, resources);
+        if let Some(reason) = reason {
+            PanelsSystem::open_push(
+                resources
+                    .options
+                    .colors
+                    .factions
+                    .get(&Faction::Shop)
+                    .unwrap()
+                    .clone(),
+                reason,
+                &format!("{delta} g"),
+                resources,
+            );
+        }
     }
 
     pub fn reset_g(world: &mut legion::World) {
@@ -227,7 +246,7 @@ impl ShopSystem {
 
     pub fn deduct_hero_price(world: &mut legion::World, resources: &mut Resources) {
         let price = Self::buy_price(world);
-        Self::change_g(-price, world, resources);
+        Self::change_g(-price, Some("Buy hero"), world, resources);
     }
 
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
@@ -248,7 +267,7 @@ impl ShopSystem {
     pub fn enter(world: &mut legion::World, resources: &mut Resources) {
         let current_floor = resources.ladder.current_ind();
         if current_floor == 0 {
-            Self::change_g(resources.options.initial_shop_g, world, resources);
+            Self::change_g(resources.options.initial_shop_g, None, world, resources);
         }
         ShopData::load_floor(resources, current_floor);
         WorldSystem::get_state_mut(world)

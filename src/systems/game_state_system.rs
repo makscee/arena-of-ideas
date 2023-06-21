@@ -57,7 +57,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::MainMenu;
                 }
                 if resources.input_data.down_keys.contains(&C) {
-                    ShopSystem::change_g(100, world, resources);
+                    ShopSystem::change_g(100, Some("Cheat"), world, resources);
                 }
                 if resources.input_data.down_keys.contains(&L) {
                     SaveSystem::load(world, resources);
@@ -69,7 +69,12 @@ impl System for GameStateSystem {
                     GameStateSystem::set_transition(GameState::Sacrifice, resources);
                 }
                 if resources.input_data.down_keys.contains(&P) {
-                    PanelsSystem::open_push("Test 1", "This is a\ntest push", resources);
+                    PanelsSystem::open_push(
+                        resources.options.colors.secondary,
+                        "Test 1",
+                        "This is a\ntest push",
+                        resources,
+                    );
                 }
                 if resources.input_data.down_keys.contains(&K) {
                     PanelsSystem::close_hints(resources);
@@ -264,16 +269,6 @@ impl GameStateSystem {
         resources: &mut Resources,
     ) {
         debug!("enter_state {from} -> {to}");
-        // Node::new_panel_scaled(
-        //     resources
-        //         .options
-        //         .shaders
-        //         .state_indicator
-        //         .clone()
-        //         .set_string("u_text", to.to_string(), 1),
-        // )
-        // .lock(NodeLockType::Empty)
-        // .push_as_panel(new_entity(), resources);
         match to {
             GameState::MainMenu => {
                 Game::restart(world, resources);
@@ -296,11 +291,7 @@ impl GameStateSystem {
                     SacrificeSystem::show_bonus_widget(world, resources);
                 }
                 ShopSystem::enter(world, resources);
-                PanelsSystem::open_push("Test 1", "This is a test push", resources);
                 PanelsSystem::open_stats(world, resources);
-                PanelsSystem::open_hint("Hint 1", "This is a hint", resources);
-                PanelsSystem::open_hint("Hint 2", "This is a\nmultiline hint", resources);
-                PanelsSystem::open_hint("Hint 3", "This is a\ntriple\nmultiline hint", resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",

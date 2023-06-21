@@ -67,6 +67,7 @@ impl PanelsSystem {
     }
 
     pub fn add_alert(
+        color: Rgba<f32>,
         title: &str,
         text: &str,
         pos: vec2<f32>,
@@ -78,7 +79,7 @@ impl PanelsSystem {
         if footer {
             panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
         }
-        let mut panel = panel.panel(PanelType::Alert, resources);
+        let mut panel = panel.panel(PanelType::Alert, Some(color), resources);
         panel.need_pos = pos;
         panel.shader.set_int_ref(
             "u_index".to_owned(),
@@ -125,25 +126,33 @@ impl PanelsSystem {
         let panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header("Choose Hero", &resources.options)
             .wrap_panel_footer(PanelFooterButton::Accept, &resources.options);
-        resources
-            .panels_data
-            .alert
-            .push(panel.panel(PanelType::Alert, resources));
+        resources.panels_data.alert.push(
+            panel.panel(
+                PanelType::Alert,
+                resources
+                    .options
+                    .colors
+                    .factions
+                    .get(&Faction::Shop)
+                    .cloned(),
+                resources,
+            ),
+        );
     }
 
-    pub fn open_push(title: &str, text: &str, resources: &mut Resources) {
+    pub fn open_push(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(text, &resources.options)
             .wrap_panel_header(title, &resources.options);
         resources
             .panels_data
             .push
-            .insert(0, panel.panel(PanelType::Push, resources));
+            .insert(0, panel.panel(PanelType::Push, Some(color), resources));
     }
 
-    pub fn open_hint(title: &str, text: &str, resources: &mut Resources) {
+    pub fn open_hint(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(&text, &resources.options)
             .wrap_panel_header(&title, &resources.options)
-            .panel(PanelType::Hint, resources);
+            .panel(PanelType::Hint, Some(color), resources);
         resources.panels_data.hint.push(panel);
     }
 
@@ -151,14 +160,19 @@ impl PanelsSystem {
         let text = Self::get_stats_text(world, resources);
         let panel = Self::generate_text_shader(&text, &resources.options)
             .wrap_panel_header("Stats", &resources.options)
-            .panel(PanelType::Stats, resources);
+            .panel(
+                PanelType::Stats,
+                Some(resources.options.colors.accent),
+                resources,
+            );
         resources.panels_data.stats = Some(panel);
     }
 
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
         let g = ShopSystem::get_g(world);
         let level = resources.ladder.current_ind();
-        format!("g: {g}\nlevel: {level}")
+        let state = resources.current_state.to_string();
+        format!("g: {g}\nlevel: {level}\nstate: {state}")
     }
 
     pub fn refresh_stats(world: &legion::World, resources: &mut Resources) {
@@ -352,7 +366,12 @@ impl Shader {
         self
     }
 
-    pub fn panel(mut self, r#type: PanelType, resources: &Resources) -> Panel {
+    pub fn panel(
+        mut self,
+        r#type: PanelType,
+        color: Option<Rgba<f32>>,
+        resources: &Resources,
+    ) -> Panel {
         match r#type {
             PanelType::Push => {
                 self.parameters.r#box.center = vec2(-1.0, -1.0);
@@ -364,6 +383,9 @@ impl Shader {
             PanelType::Stats => {
                 self.parameters.r#box.center = vec2(-1.0, 1.0);
             }
+        }
+        if let Some(color) = color {
+            self.set_color_ref("u_panel_color".to_owned(), color);
         }
         Panel {
             need_pos: self.parameters.r#box.pos,

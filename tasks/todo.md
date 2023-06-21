@@ -3,7 +3,7 @@ Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
-        g change
+        g change {cm:2023-06-21T15:25:50}
         var change
         enemy rank defeated
     Stats info panel @ui
@@ -15,11 +15,11 @@ Build
         level {cm:2023-06-19T15:55:11}
     Hover hint @ui
         panel working {start:2023-06-19T15:42:09} {cm:2023-06-19T15:55:22} {duration:13m}
-        hover working
-        unit statuses
+        hover working {cm:2023-06-21T15:25:35}
+        unit statuses {cm:2023-06-21T15:25:37}
         shop buy btns
         start battle btn
-        definitions
+        definitions {cm:2023-06-21T15:25:41}
     Alert text @ui
         battle start
         sacrifice start

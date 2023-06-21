@@ -257,7 +257,7 @@
                     "u_ui": 1,
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "c_secondary"
+                        "u_color": "u_panel_color"
                     }
                 }
             },
@@ -327,7 +327,7 @@
                     "u_ui": 1,
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "c_secondary"
+                        "u_color": "u_panel_color"
                     }
                 }
             },
@@ -341,6 +341,7 @@
                     "u_ui": 1,
                     "u_rounding": 0.04,
                     "u_color": "#3F3F3F",
+                    "u_panel_color": "#6495ED",
                     "u_g_points": [
                         -0.01,
                         -0.01,
