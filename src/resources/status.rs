@@ -205,4 +205,32 @@ impl Status {
             }
         }
     }
+
+    pub fn generate_card_shader(&self, name: &str, resources: &Resources) -> Shader {
+        let mut shader = resources.options.shaders.unit_card.clone();
+        if let Some(self_shader) = self.shader.as_ref() {
+            shader.chain_before.push(
+                self_shader
+                    .clone()
+                    .set_int("u_index".to_owned(), 0)
+                    .set_float("u_scale".to_owned(), 0.1),
+            );
+        }
+        shader
+            .set_color_ref("u_house_color".to_owned(), self.color)
+            .set_color_ref("u_color".to_owned(), self.color)
+            .set_float_ref("u_card".to_owned(), 1.0)
+            .set_vec2_ref("u_box".to_owned(), vec2(1.0, 1.0))
+            .set_vec2_ref("u_align".to_owned(), vec2::ZERO);
+
+        if let Some(description) = self
+            .description
+            .as_ref()
+            .or(resources.definitions.get(name).map(|x| &x.description))
+        {
+            shader.set_string_ref("u_description".to_owned(), description.clone(), 0);
+        }
+
+        shader
+    }
 }
