@@ -189,26 +189,64 @@ impl SlotSystem {
         entry.add_component(shader);
     }
 
+    pub fn clear_slots_buttons(faction: Faction, world: &mut legion::World) {
+        for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
+            if slot.faction != faction {
+                continue;
+            }
+            shader.chain_after.clear();
+        }
+    }
+
+    pub fn add_slots_buttons(
+        faction: Faction,
+        text: &str,
+        enable_key: Option<&str>,
+        activate_key: Option<&str>,
+        world: &mut legion::World,
+        resources: &Resources,
+    ) {
+        for (slot, entity, shader) in
+            <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
+        {
+            if slot.faction != faction {
+                continue;
+            }
+            Self::add_slot_activation_btn(
+                shader,
+                text,
+                enable_key,
+                activate_key,
+                entity.entity,
+                resources,
+            );
+        }
+    }
+
     fn add_slot_activation_btn(
         shader: &mut Shader,
         text: &str,
-        icon: Option<Image>,
+        enable_key: Option<&str>,
+        activate_key: Option<&str>,
         entity: legion::Entity,
         resources: &Resources,
     ) {
         let mut button = ButtonSystem::create_button(
             Some(text),
-            icon,
             Self::activation_handler,
             None,
             entity,
-            None,
+            Some(resources.options.shaders.slot_button.clone()),
+            default(),
             &resources.options,
         );
-        button
-            .parameters
-            .uniforms
-            .add_mapping("u_active", "u_filled");
+
+        if let Some(key) = enable_key {
+            button.parameters.uniforms.add_mapping("u_enabled", key);
+        }
+        if let Some(key) = activate_key {
+            button.parameters.uniforms.add_mapping("u_active", key);
+        }
         shader.chain_after.push(button.set_uniform(
             "u_offset".to_owned(),
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
@@ -247,18 +285,18 @@ impl SlotSystem {
             shader.chain_after.clear();
             let entity = entity.entity;
             let faction = slot.faction;
-            let slot = slot.slot;
             let enabled = match state {
-                // GameState::Shop => {
-                //     if faction == Faction::Team {
-                //         Self::add_slot_activation_btn(shader, "Sell", None, entity, resources);
-                //     }
-                //     faction == Faction::Shop || faction == Faction::Team
-                // }
                 GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
                 GameState::Sacrifice => {
                     if faction == Faction::Team {
-                        Self::add_slot_activation_btn(shader, "Sacrifice", None, entity, resources)
+                        Self::add_slot_activation_btn(
+                            shader,
+                            "Sacrifice",
+                            Some("u_filled"),
+                            None,
+                            entity,
+                            resources,
+                        )
                     }
 
                     faction == Faction::Team
@@ -279,7 +317,9 @@ impl SlotSystem {
             match faction {
                 Faction::Team => match resources.current_state {
                     GameState::Shop => {
-                        ShopSystem::try_sell(entity, resources, world);
+                        // ShopSystem::try_sell(entity, resources, world);
+                        debug!("Choose {slot} for status");
+                        ShopSystem::finish_status_apply(slot, world, resources);
                     }
                     GameState::Sacrifice => {
                         if !resources.sacrifice_data.marked_units.contains(&entity) {

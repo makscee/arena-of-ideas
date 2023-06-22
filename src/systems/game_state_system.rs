@@ -269,6 +269,7 @@ impl GameStateSystem {
         resources: &mut Resources,
     ) {
         debug!("enter_state {from} -> {to}");
+        SlotSystem::handle_state_enter(to, world, resources);
         match to {
             GameState::MainMenu => {
                 Game::restart(world, resources);
@@ -292,6 +293,21 @@ impl GameStateSystem {
                 }
                 ShopSystem::enter(world, resources);
                 PanelsSystem::open_stats(world, resources);
+
+                // resources
+                //     .hero_pool
+                //     .find_by_name("Havoc")
+                //     .unwrap()
+                //     .clone()
+                //     .unpack(
+                //         world,
+                //         resources,
+                //         0,
+                //         None,
+                //         TeamSystem::entity(&Faction::Team, world),
+                //     );
+                // SlotSystem::fill_gaps(Faction::Team, world);
+                // ShopSystem::start_status_apply("Fortitude".to_owned(), 3, world, resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",
@@ -399,6 +415,7 @@ impl GameStateSystem {
                     uniforms: resources.options.uniforms.ui_button.clone(),
                     shader: None,
                     entity,
+                    hover_hints: default(),
                 }
                 .generate_node()
                 .lock(NodeLockType::Empty)
@@ -432,7 +449,6 @@ impl GameStateSystem {
                 resources.tape_player.tape = tape;
             }
         }
-        SlotSystem::handle_state_enter(to, world, resources);
     }
 
     fn transition(&mut self, world: &mut legion::World, resources: &mut Resources) {

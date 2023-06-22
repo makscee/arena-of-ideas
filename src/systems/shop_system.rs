@@ -61,9 +61,9 @@ impl ShopSystem {
 
     pub fn show_status_buy_panel(resources: &mut Resources) {
         let mut statuses = Vec::default();
-        for i in 1..=3 {
-            statuses.push((i, "Chaotic".to_owned()));
-        }
+        statuses.push(("Chaotic".to_owned(), 2));
+        statuses.push(("Fortitude".to_owned(), 3));
+        statuses.push(("Shield".to_owned(), 1));
         let choice = CardChoice::BuyStatus { statuses };
         PanelsSystem::open_card_choice(choice, resources);
     }
@@ -306,6 +306,7 @@ impl ShopSystem {
             options: &resources.options,
             uniforms,
             shader: None,
+            hover_hints: default(),
             entity,
         }
         .generate_node()
@@ -346,6 +347,7 @@ impl ShopSystem {
             shader.set_active(ShopSystem::is_hero_affordable(world));
         }
         let entity = new_entity();
+        let hover_hints = vec![];
         Widget::Button {
             text: "Buy hero".to_owned(),
             input_handler,
@@ -353,6 +355,7 @@ impl ShopSystem {
             options: &resources.options,
             uniforms: resources.options.uniforms.ui_button.clone(),
             shader: None,
+            hover_hints,
             entity,
         }
         .generate_node()
@@ -390,7 +393,8 @@ impl ShopSystem {
             world: &mut legion::World,
             _: &mut Resources,
         ) {
-            shader.set_active(ShopSystem::is_hero_affordable(world));
+            let team_empty = UnitSystem::collect_faction(world, Faction::Team).len() == 0;
+            shader.set_active(ShopSystem::is_hero_affordable(world) && !team_empty);
         }
         let entity = new_entity();
         Widget::Button {
@@ -406,9 +410,41 @@ impl ShopSystem {
                 .insert_int("u_index".to_owned(), -1),
             shader: None,
             entity,
+            hover_hints: default(),
         }
         .generate_node()
         .lock(NodeLockType::Empty)
         .push_as_panel(entity, resources);
+    }
+
+    pub fn start_status_apply(
+        name: String,
+        charges: i32,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        SlotSystem::add_slots_buttons(
+            Faction::Team,
+            "Apply",
+            Some("u_filled"),
+            None,
+            world,
+            resources,
+        );
+        resources.shop_data.status_apply = Some((name, charges));
+    }
+
+    pub fn finish_status_apply(slot: usize, world: &mut legion::World, resources: &mut Resources) {
+        let (name, charges) = resources.shop_data.status_apply.take().unwrap();
+        Status::change_charges(
+            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world).unwrap(),
+            charges,
+            &name,
+            &mut None,
+            world,
+            resources,
+        );
+        SlotSystem::clear_slots_buttons(Faction::Team, world);
+        Self::create_buy_status_button(resources);
     }
 }

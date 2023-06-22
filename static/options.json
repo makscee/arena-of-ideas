@@ -1010,7 +1010,64 @@
                         "box": {
                             "size": [
                                 1.0,
-                                0.15
+                                0.2
+                            ]
+                        },
+                        "uniforms": {
+                            "u_text_inside": 0.5,
+                            "u_text_border": 0.3,
+                            "u_outline_color": "#000000",
+                            "u_text_color": "#ffffff",
+                            "mapping": {
+                                "u_color": "u_text_color"
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "slot_button": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "box": {
+                    "size": [
+                        1.1,
+                        0.3
+                    ]
+                },
+                "uniforms": {
+                    "u_active": 1.0,
+                    "u_rounding": 0.15,
+                    "u_g_points": [
+                        -0.06,
+                        -0.06,
+                        -0.005,
+                        0.0
+                    ],
+                    "u_g_alphas": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        0.0
+                    ],
+                    "u_g_color_1": "#000000",
+                    "u_g_color_2": "#000000",
+                    "u_g_color_3": "#000000",
+                    "u_g_color_4": "#000000",
+                    "u_color": "#6495ED",
+                    "mapping": {
+                        "u_color": "c_button"
+                    }
+                }
+            },
+            "chain_after": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "box": {
+                            "size": [
+                                1.0,
+                                0.3
                             ]
                         },
                         "uniforms": {

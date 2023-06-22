@@ -114,11 +114,11 @@ impl PanelsSystem {
                 .collect_vec(),
             CardChoice::BuyStatus { statuses } => statuses
                 .iter()
-                .map(|(count, name)| {
+                .map(|(name, count)| {
                     let status = StatusLibrary::get(name, resources);
                     (
                         name.clone(),
-                        *count,
+                        *count as usize,
                         status.generate_card_shader(name, resources),
                     )
                 })
@@ -302,7 +302,7 @@ pub struct PanelsData {
 pub enum CardChoice {
     BuyHero { units: Vec<PackedUnit> },
     SelectEnemy { teams: Vec<PackedTeam> },
-    BuyStatus { statuses: Vec<(usize, String)> },
+    BuyStatus { statuses: Vec<(String, i32)> },
 }
 
 impl CardChoice {
@@ -321,7 +321,10 @@ impl CardChoice {
                 BattleSystem::init_ladder_battle(&light, dark, world, resources);
                 GameStateSystem::set_transition(GameState::Battle, resources);
             }
-            CardChoice::BuyStatus { statuses } => todo!(),
+            CardChoice::BuyStatus { mut statuses } => {
+                let (name, charges) = { statuses.remove(ind) };
+                ShopSystem::start_status_apply(name, charges, world, resources)
+            }
         }
     }
 }

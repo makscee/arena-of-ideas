@@ -5,11 +5,11 @@ pub struct ButtonSystem;
 impl ButtonSystem {
     pub fn create_button(
         text: Option<&str>,
-        icon: Option<Image>,
         input_handler: Handler,
         update_handler: Option<Handler>,
         entity: legion::Entity,
         shader: Option<Shader>,
+        hover_hints: Vec<(Rgba<f32>, String, String)>,
         options: &Options,
     ) -> Shader {
         let mut button = if let Some(shader) = shader {
@@ -27,21 +27,13 @@ impl ButtonSystem {
                 .set_color_ref("u_text_color".to_owned(), options.colors.text)
                 .set_string_ref("u_text".to_owned(), text.to_owned(), 1);
         }
-        if let Some(icon) = icon {
-            button.chain_after.push(
-                options
-                    .shaders
-                    .button_icon
-                    .clone()
-                    .set_uniform("u_texture".to_owned(), ShaderUniform::Texture(icon)),
-            );
-        }
         button
             .parameters
             .uniforms
             .insert_color_ref("u_color".to_owned(), options.colors.button)
             .insert_color_ref("u_outline_color".to_owned(), options.colors.outline);
         button.entity = Some(entity);
+        button.hover_hints = hover_hints;
 
         button
     }

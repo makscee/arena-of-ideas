@@ -18,6 +18,7 @@ pub enum Widget<'a> {
         options: &'a Options,
         uniforms: ShaderUniforms,
         shader: Option<Shader>,
+        hover_hints: Vec<(Rgba<f32>, String, String)>,
         entity: legion::Entity,
     },
 }
@@ -33,14 +34,15 @@ impl<'a> Widget<'_> {
                 uniforms,
                 shader,
                 entity,
+                hover_hints,
             } => {
                 let button = ButtonSystem::create_button(
                     Some(&text),
-                    None,
                     input_handler,
                     update_handler,
                     entity,
                     shader,
+                    hover_hints,
                     options,
                 )
                 .merge_uniforms(&uniforms, true);

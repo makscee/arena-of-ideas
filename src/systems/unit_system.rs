@@ -157,9 +157,10 @@ impl UnitSystem {
                 hint_text,
             ));
         }
-        let definitions = UnitSystem::extract_definition_names(entity, world, resources);
+        let mut definitions = UnitSystem::extract_definition_names(entity, world, resources);
+        definitions.extend(statuses.into_iter().map(|(name, _)| name));
         if !definitions.is_empty() {
-            for title in definitions {
+            for title in definitions.into_iter() {
                 let data = resources.definitions.get(&title).unwrap();
                 let (color, text) = (data.color.clone(), data.description.clone());
                 shader.hover_hints.push((color, title, text));

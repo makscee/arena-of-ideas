@@ -29,11 +29,11 @@ Build
         panel working {cm:2023-06-20T16:34:39}
         hero buy {cm:2023-06-20T16:34:41}
         enemy choose {start:2023-06-21T15:31:58} {cm:2023-06-21T16:20:26} {duration:48m}
-        status choose
+        status choose {start:2023-06-22T12:52:30}
         team status choose with count
     Shop buttons @gameplay
         buy hero {cm:2023-06-20T21:02:46}
-        buy status
+        buy status {cm:2023-06-22T13:25:48}
         buy aoe status
         buy team status
         buy slot

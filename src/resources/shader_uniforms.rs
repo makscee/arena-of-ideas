@@ -230,8 +230,9 @@ impl ShaderUniforms {
         self.local.iter()
     }
 
-    pub fn add_mapping(&mut self, from: &str, to: &str) {
+    pub fn add_mapping(&mut self, from: &str, to: &str) -> &mut Self {
         self.mapping.insert(from.to_string(), to.to_string());
+        self
     }
 }
 
