@@ -244,8 +244,8 @@ impl ShopSystem {
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, current_floor as i32);
-        Self::create_buy_hero_button(resources);
-        Self::create_buy_status_button(resources);
+        Self::create_buy_hero_button(world, resources);
+        Self::create_buy_status_button(world, resources);
         Self::create_battle_button(resources);
     }
 
@@ -287,6 +287,11 @@ impl ShopSystem {
             shader.set_active(!UnitSystem::collect_faction(world, Faction::Team).is_empty());
         }
         let entity = new_entity();
+        let hover_hints = vec![(
+            resources.options.colors.enemy,
+            "Start Battle".to_owned(),
+            format!("Choose enemy by difficulty\nand send copy of team\ninto battle"),
+        )];
         let uniforms = resources
             .options
             .uniforms
@@ -300,7 +305,7 @@ impl ShopSystem {
             options: &resources.options,
             uniforms,
             shader: None,
-            hover_hints: default(),
+            hover_hints,
             entity,
         }
         .generate_node()
@@ -308,7 +313,7 @@ impl ShopSystem {
         .push_as_panel(entity, resources);
     }
 
-    pub fn create_buy_hero_button(resources: &mut Resources) {
+    pub fn create_buy_hero_button(world: &legion::World, resources: &mut Resources) {
         fn input_handler(
             event: HandleEvent,
             entity: legion::Entity,
@@ -341,7 +346,12 @@ impl ShopSystem {
             shader.set_active(ShopSystem::is_hero_affordable(world));
         }
         let entity = new_entity();
-        let hover_hints = vec![];
+        let cost = Self::buy_price(world);
+        let hover_hints = vec![(
+            resources.options.colors.shop,
+            "Buy Hero".to_owned(),
+            format!("-{cost} g"),
+        )];
         Widget::Button {
             text: "Buy hero".to_owned(),
             input_handler,
@@ -357,7 +367,7 @@ impl ShopSystem {
         .push_as_panel(entity, resources);
     }
 
-    pub fn create_buy_status_button(resources: &mut Resources) {
+    pub fn create_buy_status_button(world: &legion::World, resources: &mut Resources) {
         fn input_handler(
             event: HandleEvent,
             entity: legion::Entity,
@@ -392,6 +402,12 @@ impl ShopSystem {
             shader.set_active(ShopSystem::is_hero_affordable(world) && !team_empty);
         }
         let entity = new_entity();
+        let cost = Self::buy_price(world);
+        let hover_hints = vec![(
+            resources.options.colors.shop,
+            "Buy Status".to_owned(),
+            format!("Add status to 1 hero\n-{cost} g"),
+        )];
         Widget::Button {
             text: "Buy status".to_owned(),
             input_handler,
@@ -405,7 +421,7 @@ impl ShopSystem {
                 .insert_int("u_index".to_owned(), -1),
             shader: None,
             entity,
-            hover_hints: default(),
+            hover_hints,
         }
         .generate_node()
         .lock(NodeLockType::Empty)
@@ -445,6 +461,6 @@ impl ShopSystem {
             resources.tape_player.head,
         );
         SlotSystem::clear_slots_buttons(Faction::Team, world);
-        Self::create_buy_status_button(resources);
+        Self::create_buy_status_button(world, resources);
     }
 }

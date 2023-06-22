@@ -14,12 +14,12 @@ Build
         team status
         team vars
         level {cm:2023-06-19T15:55:11}
-    Hover hint @ui
+    Hover hint @ui {cm:2023-06-22T21:26:28}
         panel working {start:2023-06-19T15:42:09} {cm:2023-06-19T15:55:22} {duration:13m}
         hover working {cm:2023-06-21T15:25:35}
         unit statuses {cm:2023-06-21T15:25:37}
-        shop buy btns
-        start battle btn
+        shop buy btns {cm:2023-06-22T21:26:24}
+        start battle btn {cm:2023-06-22T21:26:24}
         definitions {cm:2023-06-21T15:25:41}
     Alert text @ui
         battle start
@@ -30,7 +30,7 @@ Build
         panel working {cm:2023-06-20T16:34:39}
         hero buy {cm:2023-06-20T16:34:41}
         enemy choose {start:2023-06-21T15:31:58} {cm:2023-06-21T16:20:26} {duration:48m}
-        status choose {start:2023-06-22T12:52:30}
+        status choose {start:2023-06-22T12:52:30} {cm:2023-06-22T20:41:28} {duration:07h48m}
         team status choose with count
     Shop buttons @gameplay
         buy hero {cm:2023-06-20T21:02:46}

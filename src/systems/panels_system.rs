@@ -294,7 +294,7 @@ impl CardChoice {
             CardChoice::BuyHero { mut units } => {
                 let unit = units.remove(ind);
                 ShopSystem::add_unit_to_team(unit, world, resources);
-                ShopSystem::create_buy_hero_button(resources);
+                ShopSystem::create_buy_hero_button(world, resources);
             }
             CardChoice::SelectEnemy { mut teams } => {
                 let dark = teams.remove(ind);
