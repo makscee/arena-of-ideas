@@ -119,18 +119,18 @@ impl UnitSystem {
             .insert_string_ref("u_hp_str".to_owned(), (hp - damage).to_string(), 1)
             .insert_string_ref("u_attack_str".to_owned(), atk.to_string(), 1);
         let rank = context.get_int(&VarName::Rank, world).unwrap();
-        shader.set_float_ref("u_rank_1".to_owned(), (rank > 0) as i32 as f32);
-        shader.set_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32);
-        shader.set_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
+        shader.insert_float_ref("u_rank_1".to_owned(), (rank > 0) as i32 as f32);
+        shader.insert_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32);
+        shader.insert_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
 
         if damage > 0 {
-            shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.damage);
+            shader.insert_color_ref("u_hp_color".to_owned(), resources.options.colors.damage);
         } else if hp > original_hp {
-            shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.add);
+            shader.insert_color_ref("u_hp_color".to_owned(), resources.options.colors.add);
         }
 
         if original_atk < atk {
-            shader.set_color_ref("u_attack_color".to_owned(), resources.options.colors.add);
+            shader.insert_color_ref("u_attack_color".to_owned(), resources.options.colors.add);
         }
 
         shader.entity = Some(entity);

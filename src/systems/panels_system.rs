@@ -81,7 +81,7 @@ impl PanelsSystem {
         }
         let mut panel = panel.panel(PanelType::Alert, Some(color), resources);
         panel.need_pos = pos;
-        panel.shader.set_int_ref(
+        panel.shader.insert_int_ref(
             "u_index".to_owned(),
             resources.panels_data.alert.len() as i32,
         );
@@ -146,7 +146,7 @@ impl PanelsSystem {
                 let mut shader = Self::generate_card_shader(shader, &resources.options)
                     .wrap_panel_header(&name, &resources.options)
                     .wrap_panel_footer(PanelFooterButton::Select, &resources.options)
-                    .set_int("u_index".to_owned(), ind as i32)
+                    .insert_int("u_index".to_owned(), ind as i32)
                     .set_panel_color(card_color);
 
                 fn update_handler(
@@ -160,7 +160,7 @@ impl PanelsSystem {
                         if shader.parameters.uniforms.try_get_int("u_index").unwrap()
                             == chosen as i32
                         {
-                            shader.set_color_ref(
+                            shader.insert_color_ref(
                                 "u_color".to_owned(),
                                 resources.options.colors.active,
                             );
@@ -251,12 +251,11 @@ impl PanelsSystem {
     }
 
     pub fn generate_text_shader(text: &str, options: &Options) -> Shader {
-        let mut shader =
-            options
-                .shaders
-                .panel_text
-                .clone()
-                .set_string("u_text".to_owned(), text.to_owned(), 0);
+        let mut shader = options.shaders.panel_text.clone().insert_string(
+            "u_text".to_owned(),
+            text.to_owned(),
+            0,
+        );
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
         let per_line = shader.parameters.r#box.size.y;
         shader.parameters.r#box.size.y = lines as f32 * per_line;
@@ -340,7 +339,7 @@ impl Panel {
             PanelState::Closed => self.t = (self.t - delta_time * 1.5).max(0.0),
         }
         self.shader
-            .set_float_ref("u_open".to_owned(), EasingType::QuartInOut.f(self.t));
+            .insert_float_ref("u_open".to_owned(), EasingType::QuartInOut.f(self.t));
     }
 
     pub fn is_closed(&self) -> bool {
@@ -386,7 +385,7 @@ impl Shader {
     }
 
     pub fn wrap_panel_header(mut self, title: &str, options: &Options) -> Self {
-        let mut shader = options.shaders.panel_header.clone().set_string(
+        let mut shader = options.shaders.panel_header.clone().insert_string(
             "u_title_text".to_owned(),
             title.to_owned(),
             1,
@@ -405,7 +404,7 @@ impl Shader {
         for child in shader.chain_after.iter_mut() {
             child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
         }
-        let mut button_shader = options.shaders.panel_button.clone().set_string(
+        let mut button_shader = options.shaders.panel_button.clone().insert_string(
             "u_text".to_owned(),
             button.get_text().to_owned(),
             1,
@@ -425,7 +424,7 @@ impl Shader {
     }
 
     pub fn set_panel_color(self, color: Rgba<f32>) -> Self {
-        self.set_color("u_panel_color".to_owned(), color)
+        self.insert_color("u_panel_color".to_owned(), color)
     }
 
     pub fn panel(

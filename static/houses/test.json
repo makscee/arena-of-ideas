@@ -311,6 +311,15 @@
                         "type": "Noop"
                     }
                 }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "Poison": {
@@ -319,6 +328,15 @@
                 "effect": {
                     "type": "Kill"
                 }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "Reanimate": {
@@ -360,6 +378,15 @@
                         "type": "Noop"
                     }
                 }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "Defense": {
@@ -401,6 +428,15 @@
                         "var": "Damage"
                     }
                 }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "Shield": {
@@ -469,6 +505,15 @@
                         }
                     }
                 ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "Growth": {
@@ -493,6 +538,15 @@
                         }
                     }
                 ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "LifeStealGain": {
@@ -541,6 +595,15 @@
                         }
                     }
                 ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "Empower": {
@@ -607,6 +670,15 @@
                         }
                     }
                 ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         },
         "DarkVitality": {
@@ -618,6 +690,15 @@
                     "type": "Var",
                     "var": "HpValue"
                 }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
             }
         }
     }

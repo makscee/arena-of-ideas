@@ -64,7 +64,7 @@ impl VfxSystem {
             delay,
             Animation::ShaderAnimation {
                 shader: Self::get_show_text_shader(resources, text, font, color, outline_color)
-                    .set_uniform("u_position".to_owned(), ShaderUniform::Vec2(position)),
+                    .insert_uniform("u_position".to_owned(), ShaderUniform::Vec2(position)),
                 animation: AnimatedShaderUniforms::empty(),
             },
             0,
@@ -104,23 +104,27 @@ impl VfxSystem {
             .shaders
             .text
             .clone()
-            .set_uniform("u_offset".to_owned(), ShaderUniform::Vec2(vec2(0.0, 0.5)))
-            .set_uniform(
+            .insert_uniform("u_offset".to_owned(), ShaderUniform::Vec2(vec2(0.0, 0.5)))
+            .insert_uniform(
                 "u_position_over_t".to_owned(),
                 ShaderUniform::Vec2(vec2(0.0, 1.8)),
             )
-            .set_uniform(
+            .insert_uniform(
                 "u_text".to_owned(),
                 ShaderUniform::String((font, text.to_string())),
             )
-            .set_uniform("u_mid_border_color".to_owned(), ShaderUniform::Color(color))
-            .set_uniform("u_outline_fade".to_owned(), ShaderUniform::Float(1.0))
-            .set_uniform("u_text_border".to_owned(), ShaderUniform::Float(0.1))
-            .set_uniform("u_alpha".to_owned(), ShaderUniform::Float(8.0))
-            .set_uniform("u_alpha_over_t".to_owned(), ShaderUniform::Float(-8.0))
-            .set_vec2("u_box".to_owned(), vec2(3.0, 1.0))
-            .set_float("u_size".to_owned(), 1.0)
-            .set_color("u_color".to_owned(), resources.options.colors.text)
+            .insert_uniform(
+                "u_mid_border_color".to_owned(),
+                ShaderUniform::Color(resources.options.colors.outline),
+            )
+            .insert_float("u_outline_fade".to_owned(), 1.0)
+            .insert_float("u_text_border".to_owned(), 0.1)
+            .insert_float("u_alpha".to_owned(), 4.0)
+            .insert_float("u_alpha_over_t".to_owned(), -4.0)
+            .insert_float("u_size".to_owned(), 2.0)
+            .insert_color("u_color".to_owned(), resources.options.colors.text)
+            .insert_color("u_outline_color".to_owned(), outline_color)
+            .remove_mapping("u_outline_color")
     }
 
     pub fn vfx_strike(resources: &Resources, position: vec2<f32>) -> TimedEffect {
@@ -132,7 +136,7 @@ impl VfxSystem {
                     .shaders
                     .strike
                     .clone()
-                    .set_uniform("u_position".to_owned(), ShaderUniform::Vec2(position)),
+                    .insert_uniform("u_position".to_owned(), ShaderUniform::Vec2(position)),
                 animation: default(),
             },
             0,
@@ -155,7 +159,7 @@ impl VfxSystem {
                     .shaders
                     .curve
                     .clone()
-                    .set_uniform("u_color".to_owned(), ShaderUniform::Color(color)),
+                    .insert_uniform("u_color".to_owned(), ShaderUniform::Color(color)),
                 animation: default(),
             },
             0,
@@ -189,7 +193,7 @@ impl VfxSystem {
         let shader = &resources.options.shaders.team_name;
         let dark_shader = shader
             .clone()
-            .set_uniform("u_text".to_owned(), ShaderUniform::String((2, dark)));
+            .insert_uniform("u_text".to_owned(), ShaderUniform::String((2, dark)));
         let light_pos = shader
             .parameters
             .uniforms
@@ -198,9 +202,9 @@ impl VfxSystem {
             * vec2(-1.0, 1.0);
         let light_shader = shader
             .clone()
-            .set_uniform("u_align".to_owned(), ShaderUniform::Vec2(vec2(-1.0, 0.0)))
-            .set_uniform("u_position".to_owned(), ShaderUniform::Vec2(light_pos))
-            .set_uniform("u_text".to_owned(), ShaderUniform::String((2, light)));
+            .insert_uniform("u_align".to_owned(), ShaderUniform::Vec2(vec2(-1.0, 0.0)))
+            .insert_uniform("u_position".to_owned(), ShaderUniform::Vec2(light_pos))
+            .insert_uniform("u_text".to_owned(), ShaderUniform::String((2, light)));
         (light_shader, dark_shader)
     }
 }

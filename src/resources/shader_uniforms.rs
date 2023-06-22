@@ -234,6 +234,11 @@ impl ShaderUniforms {
         self.mapping.insert(from.to_string(), to.to_string());
         self
     }
+
+    pub fn remove_mapping(&mut self, key: &str) -> &mut Self {
+        self.mapping.remove(key);
+        self
+    }
 }
 
 impl From<HashMap<&str, ShaderUniform>> for ShaderUniforms {

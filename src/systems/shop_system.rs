@@ -431,13 +431,18 @@ impl ShopSystem {
 
     pub fn finish_status_apply(slot: usize, world: &mut legion::World, resources: &mut Resources) {
         let (name, charges) = resources.shop_data.status_apply.take().unwrap();
+        let mut node = Some(Node::default());
         Status::change_charges(
             SlotSystem::find_unit_by_slot(slot, &Faction::Team, world).unwrap(),
             charges,
             &name,
-            &mut None,
+            &mut node,
             world,
             resources,
+        );
+        resources.tape_player.tape.push_to_queue(
+            NodeCluster::new(node.unwrap().lock(NodeLockType::Empty)),
+            resources.tape_player.head,
         );
         SlotSystem::clear_slots_buttons(Faction::Team, world);
         Self::create_buy_status_button(resources);

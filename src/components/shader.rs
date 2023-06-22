@@ -67,59 +67,64 @@ impl Debug for Shader {
 }
 
 impl Shader {
-    pub fn set_uniform(mut self, key: String, value: ShaderUniform) -> Self {
+    pub fn insert_uniform(mut self, key: String, value: ShaderUniform) -> Self {
         self.parameters.uniforms.insert_ref(key, value);
         self
     }
-    pub fn set_uniform_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
+    pub fn insert_uniform_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
         self.parameters.uniforms.insert_ref(key, value);
         self
     }
-    pub fn set_uniform_local_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
+    pub fn insert_uniform_local_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
         self.parameters.uniforms.insert_local_ref(key, value);
         self
     }
 
-    pub fn set_color(self, key: String, value: Rgba<f32>) -> Self {
-        self.set_uniform(key, ShaderUniform::Color(value))
+    pub fn insert_color(self, key: String, value: Rgba<f32>) -> Self {
+        self.insert_uniform(key, ShaderUniform::Color(value))
     }
-    pub fn set_color_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
-        self.set_uniform_ref(key, ShaderUniform::Color(value))
+    pub fn insert_color_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Color(value))
     }
-    pub fn set_color_local_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
-        self.set_uniform_local_ref(key, ShaderUniform::Color(value))
-    }
-
-    pub fn set_int(self, key: String, value: i32) -> Self {
-        self.set_uniform(key, ShaderUniform::Int(value))
-    }
-    pub fn set_int_ref(&mut self, key: String, value: i32) -> &mut Self {
-        self.set_uniform_ref(key, ShaderUniform::Int(value))
+    pub fn insert_color_local_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
+        self.insert_uniform_local_ref(key, ShaderUniform::Color(value))
     }
 
-    pub fn set_float(self, key: String, value: f32) -> Self {
-        self.set_uniform(key, ShaderUniform::Float(value))
+    pub fn insert_int(self, key: String, value: i32) -> Self {
+        self.insert_uniform(key, ShaderUniform::Int(value))
     }
-    pub fn set_float_ref(&mut self, key: String, value: f32) -> &mut Self {
-        self.set_uniform_ref(key, ShaderUniform::Float(value))
-    }
-
-    pub fn set_vec2(self, key: String, value: vec2<f32>) -> Self {
-        self.set_uniform(key, ShaderUniform::Vec2(value))
-    }
-    pub fn set_vec2_ref(&mut self, key: String, value: vec2<f32>) -> &mut Self {
-        self.set_uniform_ref(key, ShaderUniform::Vec2(value))
+    pub fn insert_int_ref(&mut self, key: String, value: i32) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Int(value))
     }
 
-    pub fn set_string(self, key: String, value: String, font: usize) -> Self {
-        self.set_uniform(key, ShaderUniform::String((font, value)))
+    pub fn insert_float(self, key: String, value: f32) -> Self {
+        self.insert_uniform(key, ShaderUniform::Float(value))
+    }
+    pub fn insert_float_ref(&mut self, key: String, value: f32) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Float(value))
+    }
+
+    pub fn insert_vec2(self, key: String, value: vec2<f32>) -> Self {
+        self.insert_uniform(key, ShaderUniform::Vec2(value))
+    }
+    pub fn insert_vec2_ref(&mut self, key: String, value: vec2<f32>) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Vec2(value))
+    }
+
+    pub fn insert_string(self, key: String, value: String, font: usize) -> Self {
+        self.insert_uniform(key, ShaderUniform::String((font, value)))
     }
     pub fn set_string_ref(&mut self, key: String, value: String, font: usize) -> &mut Self {
-        self.set_uniform_ref(key, ShaderUniform::String((font, value)))
+        self.insert_uniform_ref(key, ShaderUniform::String((font, value)))
     }
 
-    pub fn set_mapping(mut self, from: &str, to: &str) -> Self {
+    pub fn add_mapping(mut self, from: &str, to: &str) -> Self {
         self.parameters.uniforms.add_mapping(from, to);
+        self
+    }
+
+    pub fn remove_mapping(mut self, key: &str) -> Self {
+        self.parameters.uniforms.remove_mapping(key);
         self
     }
 
@@ -134,7 +139,7 @@ impl Shader {
     }
 
     pub fn set_enabled(&mut self, value: bool) {
-        self.set_float_ref("u_enabled".to_owned(), value as i32 as f32);
+        self.insert_float_ref("u_enabled".to_owned(), value as i32 as f32);
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -146,7 +151,7 @@ impl Shader {
     }
 
     pub fn set_active(&mut self, value: bool) {
-        self.set_float_ref("u_active".to_owned(), value as i32 as f32);
+        self.insert_float_ref("u_active".to_owned(), value as i32 as f32);
     }
 
     pub fn is_active(&self) -> bool {

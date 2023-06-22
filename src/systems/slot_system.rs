@@ -247,7 +247,7 @@ impl SlotSystem {
         if let Some(key) = activate_key {
             button.parameters.uniforms.add_mapping("u_active", key);
         }
-        shader.chain_after.push(button.set_uniform(
+        shader.chain_after.push(button.insert_uniform(
             "u_offset".to_owned(),
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
         ));
@@ -303,7 +303,7 @@ impl SlotSystem {
                 }
                 _ => true,
             };
-            shader.set_float_ref("u_enabled".to_owned(), enabled as i32 as f32);
+            shader.insert_float_ref("u_enabled".to_owned(), enabled as i32 as f32);
         }
     }
 
@@ -336,12 +336,12 @@ impl SlotSystem {
                                     .shaders
                                     .slot_sacrifice_marker
                                     .clone()
-                                    .set_vec2("u_position".to_owned(), position)
-                                    .set_color(
+                                    .insert_vec2("u_position".to_owned(), position)
+                                    .insert_color(
                                         "u_color".to_owned(),
                                         resources.options.colors.subtract,
                                     )
-                                    .set_string("u_star_text".to_owned(), text, 1),
+                                    .insert_string("u_star_text".to_owned(), text, 1),
                             )
                             .lock(NodeLockType::Empty)
                             .push_as_panel(entity, resources);

@@ -671,6 +671,7 @@
             "path": "shaders/vfx/text.glsl",
             "parameters": {
                 "uniforms": {
+                    "u_mid_border": 0.03,
                     "mapping": {
                         "u_outline_color": "c_outline"
                     }

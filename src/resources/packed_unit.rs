@@ -127,13 +127,13 @@ impl PackedUnit {
         if let Some(self_shader) = self.shader.as_ref() {
             shader.chain_before.push(self_shader.clone());
         }
-        shader.set_color_ref("u_house_color".to_owned(), house_color);
+        shader.insert_color_ref("u_house_color".to_owned(), house_color);
         shader.set_string_ref("u_name".to_owned(), self.name.to_owned(), 1);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
         shader.set_string_ref("u_description".to_owned(), self.description.clone(), 0);
-        shader.set_float_ref("u_rank_1".to_owned(), (self.rank > 0) as i32 as f32);
-        shader.set_float_ref("u_rank_2".to_owned(), (self.rank > 0) as i32 as f32);
+        shader.insert_float_ref("u_rank_1".to_owned(), (self.rank > 0) as i32 as f32);
+        shader.insert_float_ref("u_rank_2".to_owned(), (self.rank > 0) as i32 as f32);
 
         let hp_offset = options
             .shaders
@@ -155,36 +155,36 @@ impl PackedUnit {
             .shaders
             .stats
             .clone()
-            .set_uniform("u_offset".to_owned(), ShaderUniform::Vec2(hp_offset))
-            .set_uniform(
+            .insert_uniform("u_offset".to_owned(), ShaderUniform::Vec2(hp_offset))
+            .insert_uniform(
                 "u_card_offset".to_owned(),
                 ShaderUniform::Vec2(hp_card_offset),
             )
-            .set_uniform(
+            .insert_uniform(
                 "u_color".to_owned(),
                 ShaderUniform::Color(options.colors.stat_hp),
             )
-            .set_string("u_text".to_owned(), self.health.to_string(), 1)
-            .set_mapping("u_text", "u_hp_str")
-            .set_mapping("u_text_extra_size", "u_damage_taken")
-            .set_mapping("u_text_color", "u_hp_color");
+            .insert_string("u_text".to_owned(), self.health.to_string(), 1)
+            .add_mapping("u_text", "u_hp_str")
+            .add_mapping("u_text_extra_size", "u_damage_taken")
+            .add_mapping("u_text_color", "u_hp_color");
         shader.chain_after.push(hp_shader);
 
         let attack_shader = options
             .shaders
             .stats
             .clone()
-            .set_uniform(
+            .insert_uniform(
                 "u_color".to_owned(),
                 ShaderUniform::Color(options.colors.stat_atk),
             )
-            .set_string("u_text".to_owned(), self.attack.to_string(), 1)
-            .set_mapping("u_text", "u_attack_str")
-            .set_mapping("u_text_color", "u_attack_color");
+            .insert_string("u_text".to_owned(), self.attack.to_string(), 1)
+            .add_mapping("u_text", "u_attack_str")
+            .add_mapping("u_text_color", "u_attack_color");
         shader.chain_after.push(attack_shader);
         shader
             .chain_after
-            .push(options.shaders.name.clone().set_uniform(
+            .push(options.shaders.name.clone().insert_uniform(
                 "u_text".to_owned(),
                 ShaderUniform::String((0, self.name.clone())),
             ));

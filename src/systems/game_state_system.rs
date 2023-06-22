@@ -275,19 +275,26 @@ impl GameStateSystem {
                 ShopSystem::enter(world, resources);
                 PanelsSystem::open_stats(world, resources);
 
-                // resources
-                //     .hero_pool
-                //     .find_by_name("Havoc")
-                //     .unwrap()
-                //     .clone()
-                //     .unpack(
-                //         world,
-                //         resources,
-                //         0,
-                //         None,
-                //         TeamSystem::entity(&Faction::Team, world),
-                //     );
-                // SlotSystem::fill_gaps(Faction::Team, world);
+                let entity = resources
+                    .hero_pool
+                    .find_by_name("Havoc")
+                    .unwrap()
+                    .clone()
+                    .unpack(
+                        world,
+                        resources,
+                        0,
+                        None,
+                        TeamSystem::entity(&Faction::Team, world),
+                    );
+                SlotSystem::fill_gaps(Faction::Team, world);
+                let mut node = Some(Node::default());
+                Status::change_charges(entity, 2, "Fortitude", &mut node, world, resources);
+                resources.tape_player.tape.push_to_queue(
+                    NodeCluster::new(node.unwrap().lock(NodeLockType::Empty)),
+                    resources.tape_player.head,
+                );
+
                 // ShopSystem::start_status_apply("Fortitude".to_owned(), 3, world, resources);
 
                 // PanelsSystem::add_alert(

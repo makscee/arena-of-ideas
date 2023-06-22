@@ -41,10 +41,10 @@ impl ButtonSystem {
         if shader.is_active() {
             match event {
                 HandleEvent::Hover => {
-                    shader.set_float_ref("u_hovered".to_owned(), 1.0);
+                    shader.insert_float_ref("u_hovered".to_owned(), 1.0);
                 }
                 HandleEvent::Press => {
-                    shader.set_float_ref("u_pressed".to_owned(), 1.0);
+                    shader.insert_float_ref("u_pressed".to_owned(), 1.0);
                 }
                 _ => {}
             };
@@ -61,21 +61,21 @@ impl ButtonSystem {
         if shader.is_active() {
             if let Some(pressed) = shader.parameters.uniforms.try_get_float("u_pressed") {
                 if pressed == 1.0 {
-                    shader.set_color_local_ref(
+                    shader.insert_color_local_ref(
                         "u_color".to_owned(),
                         resources.options.colors.pressed,
                     );
                 }
             } else if let Some(hovered) = shader.parameters.uniforms.try_get_float("u_hovered") {
                 if hovered == 1.0 {
-                    shader.set_color_local_ref(
+                    shader.insert_color_local_ref(
                         "u_color".to_owned(),
                         resources.options.colors.hovered,
                     );
                 }
             }
         } else {
-            shader.set_color_local_ref("u_color".to_owned(), resources.options.colors.inactive);
+            shader.insert_color_local_ref("u_color".to_owned(), resources.options.colors.inactive);
         }
     }
 
