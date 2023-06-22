@@ -34,6 +34,7 @@ uniform float u_outline_fade = 0;
 uniform float u_mid_border = 0.0;
 uniform float u_outline_fbm = 0.05;
 uniform vec4 u_mid_border_color = vec4(0, 0, 0, 1);
+uniform vec4 u_outline_color = vec4(0);
 
 void main() {
     init_fields();

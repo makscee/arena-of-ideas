@@ -339,7 +339,7 @@ impl SlotSystem {
                                     .set_vec2("u_position".to_owned(), position)
                                     .set_color(
                                         "u_color".to_owned(),
-                                        resources.options.colors.deletion,
+                                        resources.options.colors.subtract,
                                     )
                                     .set_string("u_star_text".to_owned(), text, 1),
                             )

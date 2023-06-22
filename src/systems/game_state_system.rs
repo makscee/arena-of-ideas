@@ -76,24 +76,6 @@ impl System for GameStateSystem {
                         resources,
                     );
                 }
-                if resources.input_data.down_keys.contains(&K) {
-                    PanelsSystem::close_hints(resources);
-                }
-                if resources.input_data.down_keys.contains(&B) {
-                    BonusEffectPool::load_widget(5, world, resources);
-
-                    // resources.tape_player.tape.push_to_queue(
-                    //     NodeCluster::new(
-                    //         Widget::BattleOverPanel {
-                    //             score: 3,
-                    //             options: &resources.options,
-                    //         }
-                    //         .generate_node()
-                    //         .lock(NodeLockType::Empty),
-                    //     ),
-                    //     resources.tape_player.head,
-                    // );
-                }
             }
             GameState::Gallery => {
                 if resources.input_data.down_keys.contains(&G) {
@@ -289,7 +271,6 @@ impl GameStateSystem {
                         world,
                         resources,
                     );
-                    SacrificeSystem::show_bonus_widget(world, resources);
                 }
                 ShopSystem::enter(world, resources);
                 PanelsSystem::open_stats(world, resources);
@@ -374,7 +355,6 @@ impl GameStateSystem {
             }
             GameState::Gallery => {}
             GameState::Sacrifice => {
-                VfxSystem::vfx_show_stars_indicator_panel(resources);
                 for entity in UnitSystem::collect_faction(world, Faction::Team) {
                     let vars = &mut ContextState::get_mut(entity, world).vars;
                     let rank = (vars.try_get_int(&VarName::Rank).unwrap_or_default() + 1).min(2);

@@ -117,14 +117,8 @@ impl BattleSystem {
         tape: &mut Option<Tape>,
     ) {
         if let Some(tape) = tape {
-            let node = Widget::BattleOverPanel {
-                score,
-                options: &resources.options,
-            }
-            .generate_node();
-            tape.push(NodeCluster::new(
-                node.lock(NodeLockType::Full { world, resources }),
-            ));
+            // Add battle over panel
+            todo!();
         }
     }
 

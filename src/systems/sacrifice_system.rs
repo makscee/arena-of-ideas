@@ -20,12 +20,4 @@ impl SacrificeSystem {
             .vars
             .change_int(&VarName::Stars, sum);
     }
-
-    pub fn show_bonus_widget(world: &mut legion::World, resources: &mut Resources) {
-        let value =
-            TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Stars, world) as usize;
-        resources.sacrifice_data.marked_units.clear();
-        BonusEffectPool::load_widget(value, world, resources);
-        ShopSystem::change_g(value as i32, None, world, resources);
-    }
 }

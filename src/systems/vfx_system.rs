@@ -114,10 +114,6 @@ impl VfxSystem {
                 ShaderUniform::String((font, text.to_string())),
             )
             .set_uniform("u_mid_border_color".to_owned(), ShaderUniform::Color(color))
-            .set_uniform(
-                "u_outline_color".to_owned(),
-                ShaderUniform::Color(outline_color),
-            )
             .set_uniform("u_outline_fade".to_owned(), ShaderUniform::Float(1.0))
             .set_uniform("u_text_border".to_owned(), ShaderUniform::Float(0.1))
             .set_uniform("u_alpha".to_owned(), ShaderUniform::Float(8.0))
@@ -206,58 +202,5 @@ impl VfxSystem {
             .set_uniform("u_position".to_owned(), ShaderUniform::Vec2(light_pos))
             .set_uniform("u_text".to_owned(), ShaderUniform::String((2, light)));
         (light_shader, dark_shader)
-    }
-
-    pub fn vfx_show_stars_indicator_panel(resources: &mut Resources) {
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            let value =
-                TeamSystem::get_state(&Faction::Team, world).get_int(&VarName::Stars, world);
-            shader.set_string_ref("u_text".to_owned(), format!("x{value}"), 1);
-        }
-        let mut shader = resources
-            .options
-            .shaders
-            .count_indicator
-            .clone()
-            .set_float("u_star_enabled".to_owned(), 1.0)
-            .set_float("u_g_enabled".to_owned(), 0.0)
-            .set_int("u_index".to_owned(), 0);
-        shader.entity = Some(new_entity());
-        shader.update_handlers.push(update_handler);
-        Node::new_panel_scaled(shader)
-            .lock(NodeLockType::Empty)
-            .push_as_panel(new_entity(), resources);
-    }
-
-    pub fn vfx_show_g_indicator_panel(resources: &mut Resources) {
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            let value = ShopSystem::get_g(world);
-            shader.set_string_ref("u_text".to_owned(), format!("x{value}"), 1);
-        }
-        let mut shader = resources
-            .options
-            .shaders
-            .count_indicator
-            .clone()
-            .set_float("u_star_enabled".to_owned(), 0.0)
-            .set_float("u_g_enabled".to_owned(), 1.0)
-            .set_int("u_index".to_owned(), 1);
-        shader.entity = Some(new_entity());
-        shader.update_handlers.push(update_handler);
-        Node::new_panel_scaled(shader)
-            .lock(NodeLockType::Empty)
-            .push_as_panel(new_entity(), resources);
     }
 }

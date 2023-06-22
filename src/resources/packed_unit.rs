@@ -162,7 +162,7 @@ impl PackedUnit {
             )
             .set_uniform(
                 "u_color".to_owned(),
-                ShaderUniform::Color(options.colors.stats_health),
+                ShaderUniform::Color(options.colors.stat_hp),
             )
             .set_string("u_text".to_owned(), self.health.to_string(), 1)
             .set_mapping("u_text", "u_hp_str")
@@ -176,7 +176,7 @@ impl PackedUnit {
             .clone()
             .set_uniform(
                 "u_color".to_owned(),
-                ShaderUniform::Color(options.colors.stats_attack),
+                ShaderUniform::Color(options.colors.stat_atk),
             )
             .set_string("u_text".to_owned(), self.attack.to_string(), 1)
             .set_mapping("u_text", "u_attack_str")
@@ -201,7 +201,7 @@ impl PackedUnit {
             .insert_float_ref("u_card".to_owned(), 1.0)
             .insert_color_ref(
                 "u_faction_color".to_owned(),
-                *resources.options.colors.factions.get(&faction).unwrap(),
+                faction.color(&resources.options),
             )
             .insert_vec2_ref("u_box".to_owned(), vec2(1.0, 1.0))
             .insert_vec2_ref("u_align".to_owned(), vec2::ZERO);

@@ -259,7 +259,7 @@ impl EffectWrapped {
                         resources,
                         &text,
                         resources.options.colors.damage,
-                        resources.options.colors.deletion,
+                        resources.options.colors.subtract,
                         target,
                         1,
                         0.0,

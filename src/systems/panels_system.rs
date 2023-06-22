@@ -131,30 +131,12 @@ impl PanelsSystem {
         };
         let (panel_color, card_color) = match &choice {
             CardChoice::BuyStatus { .. } | CardChoice::BuyHero { .. } => (
-                resources
-                    .options
-                    .colors
-                    .factions
-                    .get(&Faction::Shop)
-                    .unwrap()
-                    .clone(),
-                resources
-                    .options
-                    .colors
-                    .factions
-                    .get(&Faction::Team)
-                    .unwrap()
-                    .clone(),
+                resources.options.colors.shop,
+                resources.options.colors.player,
             ),
             CardChoice::SelectEnemy { .. } => (
                 resources.options.colors.defeat,
-                resources
-                    .options
-                    .colors
-                    .factions
-                    .get(&Faction::Dark)
-                    .unwrap()
-                    .clone(),
+                resources.options.colors.dark,
             ),
         };
         let shaders = cards
@@ -222,7 +204,7 @@ impl PanelsSystem {
             .wrap_panel_header("Stats", &resources.options)
             .panel(
                 PanelType::Stats,
-                Some(resources.options.colors.accent),
+                Some(resources.options.colors.primary),
                 resources,
             );
         resources.panels_data.stats = Some(panel);
@@ -264,6 +246,8 @@ impl PanelsSystem {
         resources.panels_data.push.clear();
         resources.panels_data.hint.clear();
         resources.panels_data.stats = None;
+        resources.panels_data.choice_options = None;
+        resources.panels_data.chosen_ind = None;
     }
 
     pub fn generate_text_shader(text: &str, options: &Options) -> Shader {

@@ -152,13 +152,7 @@ impl ShopSystem {
                 false => "",
             };
             PanelsSystem::open_push(
-                resources
-                    .options
-                    .colors
-                    .factions
-                    .get(&Faction::Shop)
-                    .unwrap()
-                    .clone(),
+                resources.options.colors.shop,
                 reason,
                 &format!("{sign}{delta} g"),
                 resources,
@@ -373,7 +367,8 @@ impl ShopSystem {
         ) {
             match event {
                 HandleEvent::Click => {
-                    if ShopSystem::is_hero_affordable(world)
+                    if UnitSystem::collect_faction(world, Faction::Team).len() > 0
+                        && ShopSystem::is_hero_affordable(world)
                         && resources
                             .tape_player
                             .tape

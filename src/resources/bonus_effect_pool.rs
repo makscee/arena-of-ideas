@@ -10,22 +10,6 @@ pub struct BonusEffectPool {
 }
 
 impl BonusEffectPool {
-    pub fn load_widget(value: usize, world: &legion::World, resources: &mut Resources) {
-        debug!("Load bonus choice widget {value}");
-        let entity = new_entity();
-        Self::load_bonuses(value, world, resources);
-        let bonuses = resources.bonus_pool.current.clone();
-        Widget::BonusChoicePanel {
-            bonuses,
-            panel_entity: entity,
-            options: &resources.options,
-            value,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(entity, resources);
-    }
-
     pub fn make_selection(ind: usize, world: &mut legion::World, resources: &mut Resources) {
         let pool = &mut resources.bonus_pool;
         if pool.current.is_empty() {

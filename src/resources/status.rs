@@ -161,9 +161,9 @@ impl Status {
         let mut cnt = 1;
         for _ in 0..delta.abs() {
             let (text, color) = if delta > 0 {
-                ("+", resources.options.colors.addition)
+                ("+", resources.options.colors.add)
             } else {
-                ("-", resources.options.colors.deletion)
+                ("-", resources.options.colors.subtract)
             };
 
             if let Some(node) = node.as_mut() {

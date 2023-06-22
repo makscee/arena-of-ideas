@@ -99,10 +99,7 @@ impl UnitSystem {
                     _ => 0.0,
                 },
             )
-            .insert_color_ref(
-                "u_faction_color".to_owned(),
-                *options.colors.factions.get(&faction).unwrap(),
-            )
+            .insert_color_ref("u_faction_color".to_owned(), faction.color(options))
             .insert_float_ref(
                 "u_scale".to_owned(),
                 SlotSystem::get_scale(slot, faction, resources),
@@ -129,14 +126,11 @@ impl UnitSystem {
         if damage > 0 {
             shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.damage);
         } else if hp > original_hp {
-            shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.addition);
+            shader.set_color_ref("u_hp_color".to_owned(), resources.options.colors.add);
         }
 
         if original_atk < atk {
-            shader.set_color_ref(
-                "u_attack_color".to_owned(),
-                resources.options.colors.addition,
-            );
+            shader.set_color_ref("u_attack_color".to_owned(), resources.options.colors.add);
         }
 
         shader.entity = Some(entity);

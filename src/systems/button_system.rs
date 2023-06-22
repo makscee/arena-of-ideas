@@ -23,15 +23,8 @@ impl ButtonSystem {
         }
         Self::add_button_handlers(&mut button);
         if let Some(text) = text {
-            button
-                .set_color_ref("u_text_color".to_owned(), options.colors.text)
-                .set_string_ref("u_text".to_owned(), text.to_owned(), 1);
+            button.set_string_ref("u_text".to_owned(), text.to_owned(), 1);
         }
-        button
-            .parameters
-            .uniforms
-            .insert_color_ref("u_color".to_owned(), options.colors.button)
-            .insert_color_ref("u_outline_color".to_owned(), options.colors.outline);
         button.entity = Some(entity);
         button.hover_hints = hover_hints;
 

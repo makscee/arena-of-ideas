@@ -9,7 +9,6 @@ pub struct Options {
     pub images: Images,
     pub colors: Colors,
     pub floats: Floats,
-    pub widgets: Widgets,
     pub uniforms: Uniforms,
     pub parameters: Parameters,
 
@@ -87,65 +86,13 @@ pub struct Shaders {
     pub slot: Shader,
     pub slot_price: Shader,
     pub slot_sacrifice_marker: Shader,
-    pub money_indicator: Shader,
-    pub status_panel: Shader,
-    pub definitions_panel: Shader,
-    pub status_panel_text: Shader,
-    pub definitions_panel_text: Shader,
-    pub definitions_panel_title: Shader,
     pub button: Shader,
     pub slot_button: Shader,
     pub button_icon: Shader,
     pub icon: Shader,
-    pub corner_button: Shader,
     pub team_name: Shader,
     pub team_name_intro: Shader,
     pub tape_indicator: Shader,
-    pub shop_sell_field: Shader,
-    pub battle_score_indicator: Shader,
-    pub state_indicator: Shader,
-    pub count_indicator: Shader,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct Widgets {
-    pub battle_choice_panel: BattleChoicePanel,
-    pub battle_over_panel: BattleOverPanel,
-    pub bonus_choice_panel: BonusChoicePanel,
-    pub card_choice_panel: CardChoicePanel,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct CardChoicePanel {
-    pub panel: AnimatedShader,
-    pub card_bg: AnimatedShader,
-    pub reroll_btn: Shader,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct BattleChoicePanel {
-    pub bg: AnimatedShader,
-    pub star: Shader,
-    pub name: Shader,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct BattleOverPanel {
-    pub bg_1: AnimatedShader,
-    pub bg_2: AnimatedShader,
-    pub title: AnimatedShader,
-    pub star: AnimatedShader,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct BonusChoicePanel {
-    pub bg: AnimatedShader,
-    pub option: AnimatedShader,
 }
 
 #[derive(Deserialize, Debug)]
@@ -170,30 +117,33 @@ pub struct Images {
 
 #[derive(Deserialize, Debug)]
 pub struct Colors {
-    pub factions: HashMap<Faction, Rgba<f32>>,
-    pub rarities: HashMap<Rarity, Rgba<f32>>,
-    pub background_light: Rgba<f32>,
-    pub background_dark: Rgba<f32>,
-    pub inactive: Rgba<f32>,
-    pub active: Rgba<f32>,
-    pub hovered: Rgba<f32>,
-    pub pressed: Rgba<f32>,
-    pub outline: Rgba<f32>,
+    pub shop: Rgba<f32>,
+    pub player: Rgba<f32>,
+    pub enemy: Rgba<f32>,
+    pub text: Rgba<f32>,
+    pub sacrifice: Rgba<f32>,
     pub primary: Rgba<f32>,
     pub secondary: Rgba<f32>,
-    pub accent: Rgba<f32>,
-    pub background: Rgba<f32>,
-    pub stats_attack: Rgba<f32>,
-    pub stats_health: Rgba<f32>,
+    pub button: Rgba<f32>,
+    pub outline: Rgba<f32>,
+    pub active: Rgba<f32>,
+    pub inactive: Rgba<f32>,
+    pub hovered: Rgba<f32>,
+    pub pressed: Rgba<f32>,
+    pub add: Rgba<f32>,
+    pub subtract: Rgba<f32>,
+    pub common: Rgba<f32>,
+    pub rare: Rgba<f32>,
+    pub epic: Rgba<f32>,
+    pub legendary: Rgba<f32>,
     pub damage: Rgba<f32>,
     pub healing: Rgba<f32>,
-    pub addition: Rgba<f32>,
-    pub deletion: Rgba<f32>,
     pub victory: Rgba<f32>,
     pub defeat: Rgba<f32>,
-    pub star: Rgba<f32>,
-    pub button: Rgba<f32>,
-    pub text: Rgba<f32>,
+    pub stat_hp: Rgba<f32>,
+    pub stat_atk: Rgba<f32>,
+    pub light: Rgba<f32>,
+    pub dark: Rgba<f32>,
 }
 
 #[derive(Deserialize, Debug)]

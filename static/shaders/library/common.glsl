@@ -5,7 +5,6 @@ uniform float u_global_time;
 uniform vec2 u_field_position;
 uniform float u_t = 0;
 
-uniform vec4 u_outline_color;
 uniform vec4 u_background_light;
 uniform vec4 u_background_dark;
 vec3 base_color;

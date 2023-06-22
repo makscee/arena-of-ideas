@@ -200,40 +200,33 @@
         "Test": true
     },
     "colors": {
-        "factions": {
-            "Dark": "#E6E6E6",
-            "Light": "#1D1D1D",
-            "Shop": "#FFD700",
-            "Team": "#86C4E4"
-        },
-        "rarities": {
-            "Common": "#B2B2B2",
-            "Rare": "#70B0FF",
-            "Epic": "#782fc1",
-            "Legendary": "#ffae00"
-        },
-        "background_light": "#F2F2F2",
-        "background_dark": "#222222",
-        "inactive": "#C4C4C4",
-        "active": "#8a5e00",
-        "hovered": "#FFD700",
-        "pressed": "#86C4E4",
-        "outline": "#1D1D1D",
-        "primary": "#FFFFFF",
-        "secondary": "#FFA500",
-        "accent": "#FF6F61",
-        "background": "#E5E5E5",
-        "stats_attack": "#FFA500",
-        "stats_health": "#FF4D4D",
-        "damage": "#FF4D4D",
-        "healing": "#08d932",
-        "addition": "#0ae227",
-        "deletion": "#C0392B",
-        "victory": "#0bc1d1",
-        "defeat": "#FF6666",
-        "star": "#FFD700",
-        "button": "#6495ED",
-        "text": "#FFFFFF"
+        "shop": "#E8A87C",
+        "player": "#2A89B3",
+        "enemy": "#A37CD3",
+        "text": "#F0F0F0",
+        "sacrifice": "#B82750",
+        "primary": "#E58220",
+        "secondary": "#36D2E2",
+        "button": "#4BD7D6",
+        "outline": "#595560",
+        "active": "#8A689A",
+        "inactive": "#AB9BA4",
+        "hovered": "#DCE986",
+        "pressed": "#7A7468",
+        "add": "#6FCB8F",
+        "subtract": "#E1586E",
+        "common": "#C4C0A8",
+        "rare": "#3070CA",
+        "epic": "#BD20BD",
+        "legendary": "#EB9428",
+        "damage": "#D26363",
+        "healing": "#2FD554",
+        "victory": "#5BDFA8",
+        "defeat": "#FF8979",
+        "stat_hp": "#E55A5A",
+        "stat_atk": "#EDB848",
+        "light": "#F0F0F0",
+        "dark": "#5A5A5A"
     },
     "shaders": {
         "panel_header": {
@@ -284,10 +277,10 @@
                             ]
                         },
                         "uniforms": {
-                            "u_outline_color": "#000000",
                             "u_outline_fade": 1.0,
                             "u_text_border": 0.2,
                             "u_color": "#ffffff",
+                            "u_outline_color": "#000000",
                             "u_text_align": [
                                 1.0,
                                 0.0
@@ -297,7 +290,8 @@
                                 "Empty Title"
                             ],
                             "mapping": {
-                                "u_text": "u_title_text"
+                                "u_text": "u_title_text",
+                                "u_outline_color": "c_outline"
                             }
                         }
                     }
@@ -436,9 +430,9 @@
                             "u_text_inside": 0.5,
                             "u_text_border": 0.3,
                             "u_outline_color": "#000000",
-                            "u_text_color": "#ffffff",
                             "mapping": {
-                                "u_color": "u_text_color"
+                                "u_color": "c_text",
+                                "u_outline_color": "c_outline"
                             }
                         }
                     }
@@ -471,7 +465,6 @@
                         "uniforms": {
                             "u_size": 0.3,
                             "u_outline": 0.15,
-                            "u_outline_color": "#404040",
                             "u_offset": [
                                 0.9,
                                 -0.2
@@ -529,10 +522,10 @@
             "path": "shaders/vfx/circle.glsl",
             "parameters": {
                 "uniforms": {
-                    "u_size": 0.35,
+                    "u_size": 0.3,
                     "u_circle_fbm": 0.15,
                     "u_circle_fbm_speed": 2.0,
-                    "u_card_size": -0.1,
+                    "u_card_size": 0.0,
                     "u_text_color": "#ffffff",
                     "u_padding": 0.5,
                     "u_g_points": [
@@ -550,12 +543,12 @@
                     "u_g_color_1": "#ffffff",
                     "u_g_color_2": "#ffffff",
                     "u_card_offset": [
-                        0.1,
+                        -0.1,
                         -0.2
                     ],
                     "u_offset": [
                         -1.0,
-                        -0.8
+                        -0.9
                     ],
                     "mapping": {
                         "u_g_color_1": "u_color",
@@ -572,11 +565,12 @@
                             "u_text_inside": 0.47,
                             "u_text_border": 0.3,
                             "u_size": 0.5,
-                            "u_outline_color": "#404040",
                             "u_extra_size_multiplier": 0.3,
+                            "u_outline_color": "#000000",
                             "mapping": {
                                 "u_color": "u_text_color",
-                                "u_extra_size": "u_text_extra_size"
+                                "u_extra_size": "u_text_extra_size",
+                                "u_outline_color": "c_outline"
                             }
                         }
                     }
@@ -595,6 +589,7 @@
                 },
                 "uniforms": {
                     "u_color": "#ffffff",
+                    "u_outline_color": "#000000",
                     "u_alpha": 1.0,
                     "u_size": 0.6,
                     "u_card_size": -0.02,
@@ -603,7 +598,6 @@
                         0.0,
                         0.0
                     ],
-                    "u_outline_color": "#212121",
                     "u_size_over_t": 0.0,
                     "u_text_border": 0.2,
                     "u_text_inside": 0.48,
@@ -614,11 +608,11 @@
                     ],
                     "u_card_offset": [
                         0.0,
-                        0.0
+                        -0.1
                     ],
                     "u_padding": 0.0,
                     "mapping": {
-                        "u_outline_color": "u_house_color"
+                        "u_outline_color": "c_outline"
                     }
                 }
             },
@@ -638,7 +632,6 @@
                         0.0
                     ],
                     "u_color": "#000000",
-                    "u_outline_color": "#ffffff",
                     "u_mid_border_color": "#ffffff",
                     "u_outline_fade": 1.0,
                     "u_mid_border": 0.03,
@@ -676,6 +669,13 @@
         },
         "text": {
             "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "uniforms": {
+                    "mapping": {
+                        "u_outline_color": "c_outline"
+                    }
+                }
+            },
             "layer": "UI"
         },
         "battle_timer": {
@@ -687,8 +687,10 @@
                         -5.0
                     ],
                     "u_color": "#ffffff",
-                    "u_outline_color": "#515151",
-                    "u_size": 0.7
+                    "u_size": 0.7,
+                    "mapping": {
+                        "u_outline_color": "c_outline"
+                    }
                 }
             },
             "layer": "UI"
@@ -724,7 +726,6 @@
                         0.0,
                         -2.0
                     ],
-                    "u_outline_color": "#404040",
                     "u_text": [
                         0,
                         "3 g"
@@ -732,7 +733,8 @@
                     "u_text_inside": 0.45,
                     "u_text_border": 0.35,
                     "mapping": {
-                        "u_enabled": "u_filled"
+                        "u_enabled": "u_filled",
+                        "u_outline_color": "c_outline"
                     }
                 }
             },
@@ -767,7 +769,6 @@
                     "parameters": {
                         "uniforms": {
                             "u_color": "#ffffff",
-                            "u_outline_color": "#000000",
                             "u_outline_fade": 1.0,
                             "u_size": 3.3,
                             "u_text_inside": 0.48,
@@ -783,7 +784,8 @@
                                 "no_text"
                             ],
                             "mapping": {
-                                "u_text": "u_star_text"
+                                "u_text": "u_star_text",
+                                "u_outline_color": "c_outline"
                             }
                         }
                     },
@@ -794,7 +796,6 @@
                                 "uniforms": {
                                     "u_size": 0.8,
                                     "u_outline": 0.15,
-                                    "u_outline_color": "#404040",
                                     "u_offset": [
                                         0.7,
                                         0.0
@@ -806,167 +807,6 @@
                     ]
                 }
             ],
-            "layer": "UI"
-        },
-        "money_indicator": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_size": 1.2,
-                    "u_outline_color": "#404040",
-                    "u_text": [
-                        0,
-                        "3 g"
-                    ],
-                    "u_align": [
-                        0.0,
-                        0.0
-                    ],
-                    "u_text_inside": 0.45,
-                    "u_text_border": 0.35,
-                    "u_max_width": 1.0
-                }
-            },
-            "layer": "Background",
-            "order": 100
-        },
-        "status_panel": {
-            "path": "shaders/system/description_panel.glsl",
-            "layer": "UI",
-            "parameters": {
-                "box": {
-                    "size": [
-                        1.5,
-                        3.0
-                    ]
-                },
-                "uniforms": {
-                    "u_color": "#9266CC",
-                    "u_size": 1.0,
-                    "u_alpha": 1.0,
-                    "u_offset": [
-                        -1.8,
-                        -0.7
-                    ],
-                    "u_padding": 0.0,
-                    "u_title": [
-                        2,
-                        "Statuses"
-                    ]
-                }
-            }
-        },
-        "status_panel_text": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#ffffff",
-                    "u_text_border": 0.05,
-                    "u_outline_fade": 1.0,
-                    "u_text_inside": 0.48,
-                    "u_alpha": 1.0,
-                    "u_card_size": 0.0,
-                    "u_size": 0.2,
-                    "u_box": [
-                        3.0,
-                        0.8
-                    ],
-                    "u_offset": [
-                        -1.8,
-                        0.0
-                    ],
-                    "u_index_offset": [
-                        0.0,
-                        -0.4
-                    ]
-                }
-            },
-            "layer": "UI"
-        },
-        "definitions_panel": {
-            "path": "shaders/system/description_panel.glsl",
-            "layer": "UI",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#D99E82",
-                    "u_size": 1.0,
-                    "u_alpha": 1.0,
-                    "u_offset": [
-                        2.0,
-                        -0.7
-                    ],
-                    "u_box": [
-                        1.8,
-                        3.0
-                    ],
-                    "u_padding": 0.0,
-                    "u_title": [
-                        2,
-                        "Definitions"
-                    ]
-                }
-            }
-        },
-        "definitions_panel_title": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#ffffff",
-                    "u_alpha": 1.0,
-                    "u_text_border": 0.05,
-                    "u_outline_fade": 1.3,
-                    "u_mid_border": 0.04,
-                    "u_text_inside": 0.48,
-                    "u_card_size": 0.0,
-                    "u_size": 0.2,
-                    "u_padding": 0.0,
-                    "u_box": [
-                        3.0,
-                        1.0
-                    ],
-                    "u_align": [
-                        -1.0,
-                        0.0
-                    ],
-                    "u_offset": [
-                        2.1,
-                        -0.0
-                    ],
-                    "u_index_offset": [
-                        0.0,
-                        -0.6
-                    ]
-                }
-            },
-            "layer": "UI"
-        },
-        "definitions_panel_text": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#ffffff",
-                    "u_alpha": 1.0,
-                    "u_outline_color": "#000000",
-                    "u_text_border": 0.05,
-                    "u_padding": 0.0,
-                    "u_card_size": 0.0,
-                    "u_outline_fade": 1.0,
-                    "u_text_inside": 0.48,
-                    "u_box": [
-                        4.0,
-                        1.0
-                    ],
-                    "u_size": 0.2,
-                    "u_offset": [
-                        2.3,
-                        -0.0
-                    ],
-                    "u_index_offset": [
-                        0.0,
-                        -0.6
-                    ]
-                }
-            },
             "layer": "UI"
         },
         "button": {
@@ -1017,9 +857,9 @@
                             "u_text_inside": 0.5,
                             "u_text_border": 0.3,
                             "u_outline_color": "#000000",
-                            "u_text_color": "#ffffff",
                             "mapping": {
-                                "u_color": "u_text_color"
+                                "u_color": "c_text",
+                                "u_outline_color": "c_outline"
                             }
                         }
                     }
@@ -1073,10 +913,11 @@
                         "uniforms": {
                             "u_text_inside": 0.5,
                             "u_text_border": 0.3,
-                            "u_outline_color": "#000000",
                             "u_text_color": "#ffffff",
+                            "u_outline_color": "#000000",
                             "mapping": {
-                                "u_color": "u_text_color"
+                                "u_color": "u_text_color",
+                                "u_outline_color": "c_outline"
                             }
                         }
                     }
@@ -1089,10 +930,6 @@
         },
         "icon": {
             "path": "shaders/system/icon.glsl",
-            "layer": "UI"
-        },
-        "corner_button": {
-            "path": "shaders/widgets/corner_button.glsl",
             "layer": "UI"
         },
         "tape_indicator": {
@@ -1108,164 +945,6 @@
                 }
             },
             "layer": "UI"
-        },
-        "shop_sell_field": {
-            "path": "shaders/vfx/rectangle.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#fbc000",
-                    "u_box": [
-                        50.0,
-                        10.0
-                    ],
-                    "u_align": [
-                        0.0,
-                        1.0
-                    ],
-                    "u_alpha": 0.3
-                }
-            },
-            "chain_after": [
-                {
-                    "path": "shaders/vfx/text.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_size": 1.5,
-                            "u_outline_color": "#404040",
-                            "u_mid_border": 0.05,
-                            "u_align": [
-                                0.0,
-                                0.0
-                            ],
-                            "u_outline_fade": 1.0,
-                            "u_offset": [
-                                0.0,
-                                3.0
-                            ],
-                            "u_text_inside": 0.45,
-                            "u_text_border": 0.3,
-                            "u_alpha": 1.0
-                        }
-                    }
-                }
-            ],
-            "layer": "UI"
-        },
-        "battle_score_indicator": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_color": "#666fcc",
-                    "u_offset": [
-                        0.0,
-                        5.0
-                    ],
-                    "u_outline_color": "#404040",
-                    "u_mid_border_color": "#ffffff",
-                    "u_mid_border": 0.05,
-                    "u_size": 1.5,
-                    "u_outline_fade": 1.0
-                }
-            },
-            "layer": "Background",
-            "order": 10
-        },
-        "state_indicator": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_ui": 1,
-                    "u_aspect_adjust": 1,
-                    "u_size": 0.4,
-                    "u_outline_fbm": 0.2,
-                    "u_mid_border": 0.04,
-                    "u_outline_color": "#ffffff",
-                    "u_mid_border_color": "#000000",
-                    "u_color": "#51b5b5",
-                    "u_position": [
-                        -1.5,
-                        0.8
-                    ],
-                    "u_align": [
-                        1.0,
-                        0.0
-                    ]
-                }
-            },
-            "layer": "UI",
-            "order": 0
-        },
-        "count_indicator": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_ui": 1,
-                    "u_size": 0.14,
-                    "u_outline_fbm": 0.1,
-                    "u_mid_border": 0.05,
-                    "u_outline_color": "#000000",
-                    "u_mid_border_color": "#ffffff",
-                    "u_color": "#FFD700",
-                    "u_position": [
-                        -0.9,
-                        -0.6
-                    ],
-                    "u_align": [
-                        1.0,
-                        0.0
-                    ],
-                    "u_index_offset": [
-                        0.0,
-                        -0.2
-                    ]
-                }
-            },
-            "chain_after": [
-                {
-                    "path": "shaders/vfx/star.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_outline": 0.15,
-                            "u_scale": 0.9,
-                            "u_enabled": 0.0,
-                            "u_align": [
-                                -0.7,
-                                -0.1
-                            ],
-                            "mapping": {
-                                "u_enabled": "u_star_enabled"
-                            }
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1002
-                },
-                {
-                    "path": "shaders/vfx/text.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_outline_fbm": 0.0,
-                            "u_mid_border": 0.05,
-                            "u_outline_color": "#000000",
-                            "u_mid_border_color": "#ffffff",
-                            "u_color": "#FFD700",
-                            "u_text": [
-                                1,
-                                "G"
-                            ],
-                            "u_align": [
-                                -0.7,
-                                -0.0
-                            ],
-                            "mapping": {
-                                "u_enabled": "u_g_enabled"
-                            }
-                        }
-                    }
-                }
-            ],
-            "layer": "UI",
-            "order": 2000
         }
     },
     "images": {
@@ -1325,863 +1004,6 @@
         "slots_battle_team_scale": 0.7,
         "slots_striker_scale": 1.5,
         "slot_info_offset": 2.0
-    },
-    "widgets": {
-        "battle_choice_panel": {
-            "bg": {
-                "duration": 2.0,
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_box": [
-                                1.0,
-                                2.0
-                            ],
-                            "u_align": [
-                                0.4,
-                                0.0
-                            ],
-                            "u_position": [
-                                -0.95,
-                                0.0
-                            ],
-                            "u_g_points": [
-                                -1.0,
-                                -0.12,
-                                -0.12,
-                                -0.0
-                            ],
-                            "u_g_alphas": [
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "u_g_color_1": "#000000",
-                            "u_g_color_2": "#000000",
-                            "u_g_color_3": "#9a2b1a",
-                            "u_g_color_4": "#501208",
-                            "u_offset_each": 1.05,
-                            "local": {
-                                "u_rotation": 0.1
-                            },
-                            "mapping": {
-                                "u_g_color_1": "u_color"
-                            }
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 2000
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_position": [
-                                    3.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        {
-                            "t": 0.5,
-                            "uniforms": {
-                                "mapping": {
-                                    "u_position": "u_open_position"
-                                }
-                            },
-                            "easing": "QuartInOut"
-                        },
-                        {
-                            "t": 1.0,
-                            "uniforms": {
-                                "u_position": [
-                                    3.0,
-                                    0.0
-                                ]
-                            },
-                            "easing": "QuartInOut"
-                        }
-                    ]
-                }
-            },
-            "star": {
-                "path": "shaders/vfx/star.glsl",
-                "parameters": {
-                    "uniforms": {
-                        "u_size": 0.1,
-                        "u_outline": 0.15,
-                        "u_offset": [
-                            -0.6,
-                            -0.85
-                        ],
-                        "u_index_offset": [
-                            0.02,
-                            0.18
-                        ],
-                        "u_box": [
-                            1.0,
-                            1.0
-                        ],
-                        "u_aspect_adjust": 1,
-                        "u_outline_color": "#000000",
-                        "u_rotation": 0.0
-                    }
-                },
-                "layer": "UI",
-                "order": 2001
-            },
-            "name": {
-                "path": "shaders/vfx/text.glsl",
-                "parameters": {
-                    "uniforms": {
-                        "u_ui": 1,
-                        "u_color": "#ffffff",
-                        "u_rotation": 0.0,
-                        "u_offset": [
-                            0.0,
-                            0.5
-                        ],
-                        "u_align": [
-                            0.0,
-                            0.0
-                        ],
-                        "u_box": [
-                            2.0,
-                            0.45
-                        ],
-                        "u_outline_color": "#000000",
-                        "u_mid_border_color": "#000000",
-                        "u_outline_fade": 0.5,
-                        "u_mid_border": 0.04,
-                        "u_size": 0.2,
-                        "u_padding": 0.0
-                    }
-                },
-                "layer": "UI"
-            }
-        },
-        "bonus_choice_panel": {
-            "bg": {
-                "duration": 1.0,
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_aa": 0.003,
-                            "u_box": [
-                                1.6,
-                                0.40
-                            ],
-                            "u_position": [
-                                0.0,
-                                0.25
-                            ],
-                            "u_rounding": 0.0,
-                            "u_outline_color": "#1F3A4F"
-                        }
-                    },
-                    "chain_after": [
-                        {
-                            "path": "shaders/vfx/text.glsl",
-                            "parameters": {
-                                "uniforms": {
-                                    "u_ui": 1,
-                                    "u_size": 0.5,
-                                    "u_position": [
-                                        -0.5,
-                                        -0.3
-                                    ],
-                                    "u_color": "#ffffff",
-                                    "u_aspect_adjust": 1,
-                                    "u_text": [
-                                        1,
-                                        "no_text"
-                                    ],
-                                    "mapping": {
-                                        "u_text": "u_value_text"
-                                    }
-                                }
-                            },
-                            "chain_before": [
-                                {
-                                    "path": "shaders/vfx/star.glsl",
-                                    "parameters": {
-                                        "uniforms": {
-                                            "u_size": 0.12,
-                                            "u_outline": 0.15,
-                                            "u_box": [
-                                                1.0,
-                                                1.0
-                                            ],
-                                            "u_offset": [
-                                                0.1,
-                                                0.0
-                                            ],
-                                            "u_color": "#FFD700"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "layer": "UI",
-                    "order": 1000
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_scale": 0.0
-                            }
-                        },
-                        {
-                            "t": 0.5,
-                            "uniforms": {
-                                "u_scale": 1.0
-                            },
-                            "easing": "QuadOut"
-                        },
-                        {
-                            "t": 1.0,
-                            "uniforms": {
-                                "u_scale": 0.0
-                            },
-                            "easing": "BackIn"
-                        }
-                    ]
-                }
-            },
-            "option": {
-                "duration": 1.0,
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_color": "#000000",
-                            "u_padding": 0.0,
-                            "u_fbm_sdf": -0.03,
-                            "u_fbm_sdf_size": 1.5,
-                            "u_fbm_sdf_speed": 0.05,
-                            "u_g_points": [
-                                -0.1,
-                                -0.02,
-                                0.0,
-                                0.1
-                            ],
-                            "u_g_alphas": [
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "u_g_color_1": "#010101",
-                            "u_g_color_2": "#ffffff",
-                            "u_g_color_3": "#ffffff",
-                            "u_g_color_4": "#ffffff",
-                            "u_index_offset": [
-                                0.05,
-                                0.0
-                            ],
-                            "u_open": 0.0,
-                            "mapping": {
-                                "u_g_color_2": "u_color",
-                                "u_g_color_3": "u_rarity_color",
-                                "u_g_color_4": "u_color"
-                            }
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1001,
-                    "chain_after": [
-                        {
-                            "path": "shaders/vfx/text.glsl",
-                            "parameters": {
-                                "uniforms": {
-                                    "u_size": 0.8,
-                                    "u_color": "#ffffff",
-                                    "u_aspect_adjust": 1,
-                                    "u_outline_color": "#ffffff",
-                                    "u_outline_fade": 1.0,
-                                    "u_text_align": [
-                                        1.0,
-                                        0.0
-                                    ],
-                                    "u_offset": [
-                                        -0.3,
-                                        0.0
-                                    ],
-                                    "mapping": {
-                                        "u_scale": "u_open",
-                                        "u_color": "u_text_color"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "path": "shaders/vfx/text.glsl",
-                            "parameters": {
-                                "uniforms": {
-                                    "u_size": 0.6,
-                                    "u_text_align": [
-                                        1.0,
-                                        0.0
-                                    ],
-                                    "u_offset": [
-                                        -0.6,
-                                        0.0
-                                    ],
-                                    "u_outline_color": "#ffffff",
-                                    "u_aspect_adjust": 1,
-                                    "mapping": {
-                                        "u_scale": "u_open",
-                                        "u_text": "u_rarity_text",
-                                        "u_color": "u_rarity_color"
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_box": [
-                                    2.0,
-                                    0.0
-                                ],
-                                "u_open": 0.0
-                            }
-                        },
-                        {
-                            "t": 0.5,
-                            "uniforms": {
-                                "u_box": [
-                                    2.0,
-                                    0.08
-                                ],
-                                "u_open": 1.0
-                            },
-                            "easing": "QuadOut"
-                        },
-                        {
-                            "t": 1.0,
-                            "uniforms": {
-                                "u_open": 0.0,
-                                "u_box": [
-                                    2.0,
-                                    0.0
-                                ]
-                            },
-                            "easing": "QuadIn"
-                        }
-                    ]
-                }
-            }
-        },
-        "battle_over_panel": {
-            "bg_1": {
-                "duration": 4.0,
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_rounding": 0.0
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1000
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_box": [
-                                    1.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        {
-                            "t": 0.2,
-                            "uniforms": {
-                                "u_box": [
-                                    1.5,
-                                    0.5
-                                ]
-                            },
-                            "easing": "CubicOut"
-                        },
-                        {
-                            "t": 0.8
-                        },
-                        {
-                            "t": 1.0,
-                            "uniforms": {
-                                "u_box": [
-                                    1.0,
-                                    0.0
-                                ]
-                            },
-                            "easing": "CubicIn"
-                        }
-                    ]
-                }
-            },
-            "bg_2": {
-                "duration": 4.0,
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_rounding": 0.0
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1000
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.00,
-                            "uniforms": {
-                                "u_box": [
-                                    1.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        {
-                            "t": 0.05
-                        },
-                        {
-                            "t": 0.15,
-                            "uniforms": {
-                                "u_box": [
-                                    1.0,
-                                    0.45
-                                ]
-                            },
-                            "easing": "CubicOut"
-                        },
-                        {
-                            "t": 0.65
-                        },
-                        {
-                            "t": 0.85,
-                            "uniforms": {
-                                "u_box": [
-                                    1.0,
-                                    0.0
-                                ]
-                            },
-                            "easing": "CubicIn"
-                        }
-                    ]
-                }
-            },
-            "title": {
-                "duration": 4.0,
-                "shader": {
-                    "path": "shaders/vfx/text.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_size": 0.3,
-                            "u_offset": [
-                                0.0,
-                                0.25
-                            ],
-                            "u_outline_color": "#000000",
-                            "u_ui": 1,
-                            "u_aspect_adjust": 1
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1001
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_position": [
-                                    3.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        {
-                            "t": 0.1
-                        },
-                        {
-                            "t": 0.2,
-                            "uniforms": {
-                                "u_position": [
-                                    0.0,
-                                    0.0
-                                ]
-                            },
-                            "easing": "CubicOut"
-                        },
-                        {
-                            "t": 0.6
-                        },
-                        {
-                            "t": 0.8,
-                            "uniforms": {
-                                "u_position": [
-                                    -2.0,
-                                    0.0
-                                ]
-                            },
-                            "easing": "CubicIn"
-                        }
-                    ]
-                }
-            },
-            "star": {
-                "duration": 4.0,
-                "shader": {
-                    "path": "shaders/vfx/star.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_size": 0.15,
-                            "u_outline": 0.1,
-                            "u_aspect_adjust": 1,
-                            "u_ui": 1,
-                            "u_scale": 0.0
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1002
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_position": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "u_offset": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "u_scale": 0.0
-                            }
-                        },
-                        {
-                            "t": 0.2
-                        },
-                        {
-                            "t": 0.3,
-                            "uniforms": {
-                                "u_scale": 1.0,
-                                "mapping": {
-                                    "u_offset": "u_index_offset"
-                                }
-                            }
-                        },
-                        {
-                            "t": 0.45
-                        },
-                        {
-                            "t": 0.47,
-                            "uniforms": {
-                                "mapping": {
-                                    "u_scale": "u_active_scale",
-                                    "u_color": "u_active_color"
-                                }
-                            }
-                        },
-                        {
-                            "t": 0.6,
-                            "uniforms": {
-                                "u_scale": 1.0
-                            }
-                        },
-                        {
-                            "t": 0.75
-                        },
-                        {
-                            "t": 0.9,
-                            "uniforms": {
-                                "u_scale": 0.0,
-                                "u_offset": [
-                                    0.0,
-                                    1.0
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        "card_choice_panel": {
-            "reroll_btn": {
-                "path": "shaders/vfx/rectangle.glsl",
-                "parameters": {
-                    "uniforms": {
-                        "u_ui": 1,
-                        "u_padding": 0.2,
-                        "u_g_color_1": "#000000",
-                        "u_g_color_2": "#000000",
-                        "u_g_color_3": "#000000",
-                        "u_g_color_4": "#000000",
-                        "u_rounding": 0.5,
-                        "u_color": "#000000",
-                        "u_position": [
-                            0.0,
-                            -0.8
-                        ],
-                        "u_g_points": [
-                            -0.2,
-                            0.0,
-                            0.2,
-                            0.2
-                        ],
-                        "u_g_alphas": [
-                            1.0,
-                            1.0,
-                            0.0,
-                            0.0
-                        ],
-                        "u_box": [
-                            0.4,
-                            0.1
-                        ],
-                        "u_size": 1.0,
-                        "mapping": {
-                            "u_g_color_1": "u_outline_color",
-                            "u_g_color_2": "u_outline_color",
-                            "u_g_color_3": "u_outline_color",
-                            "u_g_color4": "u_outline_color"
-                        }
-                    }
-                },
-                "chain_after": [
-                    {
-                        "path": "shaders/vfx/text.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_text_inside": 0.5,
-                                "u_text_border": 0.3,
-                                "u_text_color": "#FFD700",
-                                "u_size": 0.8,
-                                "u_text": [
-                                    1,
-                                    "Reroll"
-                                ],
-                                "u_outline_color": "#000000",
-                                "mapping": {
-                                    "u_color": "u_text_color"
-                                }
-                            }
-                        }
-                    }
-                ],
-                "layer": "UI",
-                "order": 1005
-            },
-            "card_bg": {
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_rounding": 0.2,
-                            "u_padding": 0.5,
-                            "u_fbm_sdf": 0.4,
-                            "u_scale": 0.3,
-                            "u_index_offset": [
-                                3.0,
-                                0.0
-                            ],
-                            "u_box": [
-                                1.2,
-                                1.5
-                            ],
-                            "u_color": "#000000",
-                            "u_position": [
-                                -0.9,
-                                -0.0
-                            ],
-                            "u_g_color_1": "#000000",
-                            "u_g_color_2": "#000000",
-                            "u_g_color_3": "#000000",
-                            "u_g_color_4": "#000000",
-                            "u_g_points": [
-                                -2.0,
-                                -0.2,
-                                -0.0,
-                                0.1
-                            ],
-                            "u_g_alphas": [
-                                1.0,
-                                1.0,
-                                1.0,
-                                0.0
-                            ],
-                            "mapping": {
-                                "u_g_color_2": "u_color",
-                                "u_g_color_1": "u_rarity_color",
-                                "u_g_color_3": "u_rarity_color",
-                                "u_g_color_4": "u_rarity_color"
-                            }
-                        }
-                    },
-                    "layer": "UI",
-                    "order": 1000
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_fbm_sdf": 4.0,
-                                "u_padding": 3.0,
-                                "u_local_scale": 0.0
-                            }
-                        },
-                        {
-                            "t": 0.5,
-                            "uniforms": {
-                                "u_fbm_sdf": 0.2,
-                                "u_padding": 1.0,
-                                "u_local_scale": 1.0
-                            },
-                            "easing": "QuartOut"
-                        },
-                        {
-                            "t": 1.0,
-                            "uniforms": {
-                                "u_fbm_sdf": 2.0,
-                                "u_padding": 3.0,
-                                "u_local_scale": 0.0
-                            },
-                            "easing": "QuadIn"
-                        }
-                    ]
-                },
-                "duration": 2.0
-            },
-            "panel": {
-                "shader": {
-                    "path": "shaders/vfx/rectangle.glsl",
-                    "parameters": {
-                        "uniforms": {
-                            "u_ui": 1,
-                            "u_color": "#000000",
-                            "u_box": [
-                                5.0,
-                                1.0
-                            ],
-                            "u_g_color_1": "#000000",
-                            "u_g_color_2": "#FFD700",
-                            "u_g_color_3": "#ffffff",
-                            "u_g_color_4": "#ffffff",
-                            "u_fbm_sdf": 0.5,
-                            "u_fbm_sdf_size": 30.5,
-                            "u_fbm_sdf_speed": 0.01,
-                            "u_g_points": [
-                                -2.0,
-                                -0.5,
-                                -0.1,
-                                0.1
-                            ],
-                            "u_g_alphas": [
-                                1.0,
-                                0.0,
-                                1.0,
-                                1.0
-                            ],
-                            "mapping": {
-                                "u_g_color_3": "u_color",
-                                "u_g_color_4": "u_color"
-                            }
-                        }
-                    },
-                    "chain_after": [
-                        {
-                            "path": "shaders/vfx/text.glsl",
-                            "parameters": {
-                                "uniforms": {
-                                    "u_ui": 1,
-                                    "u_text": [
-                                        1,
-                                        "Choose"
-                                    ],
-                                    "u_offset": [
-                                        0.0,
-                                        0.8
-                                    ],
-                                    "u_size": 0.2,
-                                    "u_outline_fbm": 0.2,
-                                    "u_mid_border": 0.04,
-                                    "u_outline_color": "#ffffff",
-                                    "u_mid_border_color": "#000000",
-                                    "u_color": "#FFD700",
-                                    "u_position": [
-                                        0.0,
-                                        0.0
-                                    ],
-                                    "mapping": {
-                                        "u_text": "u_title"
-                                    }
-                                }
-                            },
-                            "layer": "UI",
-                            "order": 0
-                        }
-                    ],
-                    "layer": "UI",
-                    "order": 999
-                },
-                "animation": {
-                    "key_frames": [
-                        {
-                            "t": 0.0,
-                            "uniforms": {
-                                "u_fbm_sdf": 4.0,
-                                "u_padding": 3.0,
-                                "u_local_scale": 0.0
-                            }
-                        },
-                        {
-                            "t": 0.5,
-                            "uniforms": {
-                                "u_fbm_sdf": 0.2,
-                                "u_padding": 1.0,
-                                "u_local_scale": 1.0
-                            },
-                            "easing": "QuartOut"
-                        },
-                        {
-                            "t": 1.0,
-                            "uniforms": {
-                                "u_fbm_sdf": 2.0,
-                                "u_padding": 3.0,
-                                "u_local_scale": 0.0
-                            },
-                            "easing": "QuadIn"
-                        }
-                    ]
-                },
-                "duration": 2.0
-            }
-        }
     },
     "uniforms": {
         "ui_button": {

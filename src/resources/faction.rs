@@ -40,7 +40,12 @@ impl Into<f32> for Faction {
 
 impl Faction {
     pub fn color(&self, options: &Options) -> Rgba<f32> {
-        *options.colors.factions.get(self).unwrap()
+        match self {
+            Faction::Light => options.colors.light,
+            Faction::Dark => options.colors.dark,
+            Faction::Team => options.colors.player,
+            Faction::Shop => options.colors.shop,
+        }
     }
     pub fn opposite(&self) -> Faction {
         match self {

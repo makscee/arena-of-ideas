@@ -28,6 +28,7 @@ float sdf_star5(in vec2 p, in float r, in float rf) {
 
 uniform float u_alpha = 1;
 uniform float u_outline = 0;
+uniform vec4 u_outline_color = vec4(0);
 
 void main() {
     float sdf = sdf_star5(uv, 1, 0.5);

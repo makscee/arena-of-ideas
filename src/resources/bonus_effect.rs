@@ -145,7 +145,12 @@ pub enum Rarity {
 
 impl Rarity {
     pub fn color(&self, resources: &Resources) -> Rgba<f32> {
-        *resources.options.colors.rarities.get(self).unwrap()
+        match self {
+            Rarity::Common => resources.options.colors.common,
+            Rarity::Rare => resources.options.colors.rare,
+            Rarity::Epic => resources.options.colors.epic,
+            Rarity::Legendary => resources.options.colors.legendary,
+        }
     }
 
     pub fn weight(&self) -> i32 {
