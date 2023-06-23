@@ -64,7 +64,22 @@ impl ShopSystem {
         statuses.push(("Chaotic".to_owned(), 2));
         statuses.push(("Fortitude".to_owned(), 3));
         statuses.push(("Shield".to_owned(), 1));
-        let choice = CardChoice::BuyStatus { statuses };
+        let choice = CardChoice::BuyStatus {
+            statuses,
+            target: StatusTarget::Single { slot: None },
+        };
+        PanelsSystem::open_card_choice(choice, resources);
+    }
+
+    pub fn show_team_status_buy_panel(resources: &mut Resources) {
+        let mut statuses = Vec::default();
+        statuses.push(("Chaotic".to_owned(), 2));
+        statuses.push(("Fortitude".to_owned(), 3));
+        statuses.push(("Shield".to_owned(), 1));
+        let choice = CardChoice::BuyStatus {
+            statuses,
+            target: StatusTarget::Team,
+        };
         PanelsSystem::open_card_choice(choice, resources);
     }
 
@@ -244,9 +259,10 @@ impl ShopSystem {
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, current_floor as i32);
+        Self::create_battle_button(resources);
         Self::create_buy_hero_button(world, resources);
         Self::create_buy_status_button(world, resources);
-        Self::create_battle_button(resources);
+        Self::create_buy_team_status_button(world, resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
@@ -297,9 +313,9 @@ impl ShopSystem {
             .uniforms
             .ui_button
             .clone()
-            .insert_int("u_index".to_owned(), 1);
+            .insert_int("u_index".to_owned(), 0);
         Widget::Button {
-            text: "Start battle".to_owned(),
+            text: "Start Battle".to_owned(),
             input_handler,
             update_handler: Some(update_handler),
             options: &resources.options,
@@ -353,11 +369,16 @@ impl ShopSystem {
             format!("-{cost} g"),
         )];
         Widget::Button {
-            text: "Buy hero".to_owned(),
+            text: "Buy Hero".to_owned(),
             input_handler,
             update_handler: Some(update_handler),
             options: &resources.options,
-            uniforms: resources.options.uniforms.ui_button.clone(),
+            uniforms: resources
+                .options
+                .uniforms
+                .ui_button
+                .clone()
+                .insert_int("u_index".to_owned(), 1),
             shader: None,
             hover_hints,
             entity,
@@ -409,7 +430,7 @@ impl ShopSystem {
             format!("Add status to 1 hero\n-{cost} g"),
         )];
         Widget::Button {
-            text: "Buy status".to_owned(),
+            text: "Buy Status".to_owned(),
             input_handler,
             update_handler: Some(update_handler),
             options: &resources.options,
@@ -418,7 +439,7 @@ impl ShopSystem {
                 .uniforms
                 .ui_button
                 .clone()
-                .insert_int("u_index".to_owned(), -1),
+                .insert_int("u_index".to_owned(), 2),
             shader: None,
             entity,
             hover_hints,
@@ -431,36 +452,124 @@ impl ShopSystem {
     pub fn start_status_apply(
         name: String,
         charges: i32,
+        target: StatusTarget,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        SlotSystem::add_slots_buttons(
-            Faction::Team,
-            "Apply",
-            Some("u_filled"),
-            None,
-            world,
-            resources,
-        );
-        resources.shop_data.status_apply = Some((name, charges));
+        resources.shop_data.status_apply = Some((name, charges, target));
+        match &target {
+            StatusTarget::Single { .. } => {
+                SlotSystem::add_slots_buttons(
+                    Faction::Team,
+                    "Apply",
+                    Some("u_filled"),
+                    None,
+                    world,
+                    resources,
+                );
+            }
+            StatusTarget::Aoe | StatusTarget::Team => Self::finish_status_apply(world, resources),
+        }
     }
 
-    pub fn finish_status_apply(slot: usize, world: &mut legion::World, resources: &mut Resources) {
-        let (name, charges) = resources.shop_data.status_apply.take().unwrap();
+    pub fn finish_status_apply(world: &mut legion::World, resources: &mut Resources) {
+        let (name, charges, target) = resources.shop_data.status_apply.take().unwrap();
         let mut node = Some(Node::default());
-        Status::change_charges(
-            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world).unwrap(),
-            charges,
-            &name,
-            &mut node,
-            world,
-            resources,
-        );
+        let mut entities = Vec::default();
+        match target {
+            StatusTarget::Single { slot } => {
+                entities.push(
+                    SlotSystem::find_unit_by_slot(
+                        slot.expect("Slot wasn't set for status apply"),
+                        &Faction::Team,
+                        world,
+                    )
+                    .unwrap(),
+                );
+                Self::create_buy_status_button(world, resources);
+            }
+            StatusTarget::Aoe => {
+                for unit in UnitSystem::collect_faction(world, Faction::Team) {
+                    entities.push(unit);
+                }
+            }
+            StatusTarget::Team => {
+                entities.push(TeamSystem::entity(&Faction::Team, world).unwrap());
+                PanelsSystem::open_push(
+                    resources.options.colors.player,
+                    "New Team Status",
+                    &format!("{name} +{charges}"),
+                    resources,
+                );
+                Self::create_buy_team_status_button(world, resources);
+            }
+        };
+        for entity in entities {
+            Status::change_charges(entity, charges, &name, &mut node, world, resources);
+        }
         resources.tape_player.tape.push_to_queue(
             NodeCluster::new(node.unwrap().lock(NodeLockType::Empty)),
             resources.tape_player.head,
         );
         SlotSystem::clear_slots_buttons(Faction::Team, world);
-        Self::create_buy_status_button(world, resources);
+    }
+
+    pub fn create_buy_team_status_button(world: &legion::World, resources: &mut Resources) {
+        fn input_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            _: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if ShopSystem::is_hero_affordable(world)
+                        && resources
+                            .tape_player
+                            .tape
+                            .close_panels(entity, resources.tape_player.head)
+                    {
+                        ShopSystem::deduct_hero_price(world, resources);
+                        ShopSystem::show_team_status_buy_panel(resources);
+                    }
+                }
+                _ => {}
+            }
+        }
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            shader.set_active(ShopSystem::is_hero_affordable(world));
+        }
+        let entity = new_entity();
+        let cost = Self::buy_price(world);
+        let hover_hints = vec![(
+            resources.options.colors.shop,
+            "Buy Team Status".to_owned(),
+            format!("Add status that will be\napplies to whole team\n-{cost} g"),
+        )];
+        Widget::Button {
+            text: "Buy Team Status".to_owned(),
+            input_handler,
+            update_handler: Some(update_handler),
+            options: &resources.options,
+            uniforms: resources
+                .options
+                .uniforms
+                .ui_button
+                .clone()
+                .insert_int("u_index".to_owned(), 3),
+            shader: None,
+            entity,
+            hover_hints,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
     }
 }

@@ -2,9 +2,11 @@ Screen box anchoring @ui
 Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
+    Statuses pool
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change {cm:2023-06-21T15:25:50}
+        gain team status {cm:2023-06-23T15:35:57}
         var change
         enemy rank defeated
     Stats info panel @ui
@@ -14,7 +16,7 @@ Build
         team status
         team vars
         level {cm:2023-06-19T15:55:11}
-    Hover hint @ui {cm:2023-06-22T21:26:28}
+    Hover hint @ui {cm:2023-06-22T21:26:28} {c}
         panel working {start:2023-06-19T15:42:09} {cm:2023-06-19T15:55:22} {duration:13m}
         hover working {cm:2023-06-21T15:25:35}
         unit statuses {cm:2023-06-21T15:25:37}
@@ -31,12 +33,13 @@ Build
         hero buy {cm:2023-06-20T16:34:41}
         enemy choose {start:2023-06-21T15:31:58} {cm:2023-06-21T16:20:26} {duration:48m}
         status choose {start:2023-06-22T12:52:30} {cm:2023-06-22T20:41:28} {duration:07h48m}
-        team status choose with count
+        team status choose {start:2023-06-23T14:59:39} {cm:2023-06-23T15:35:54} {duration:36m}
+        aoe status
     Shop buttons @gameplay
         buy hero {cm:2023-06-20T21:02:46}
         buy status {cm:2023-06-22T13:25:48}
         buy aoe status
-        buy team status
+        buy team status {cm:2023-06-23T15:36:23}
         buy slot
     Game over screen @ui
         restart

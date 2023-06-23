@@ -319,7 +319,18 @@ impl SlotSystem {
                     GameState::Shop => {
                         // ShopSystem::try_sell(entity, resources, world);
                         debug!("Choose {slot} for status");
-                        ShopSystem::finish_status_apply(slot, world, resources);
+                        if let Some(choice) = resources.panels_data.choice_options.as_mut() {
+                            match choice {
+                                CardChoice::BuyStatus { target, .. } => match target {
+                                    StatusTarget::Single { slot: saved_slot } => {
+                                        *saved_slot = Some(slot);
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            }
+                        }
+                        ShopSystem::finish_status_apply(world, resources);
                     }
                     GameState::Sacrifice => {
                         if !resources.sacrifice_data.marked_units.contains(&entity) {

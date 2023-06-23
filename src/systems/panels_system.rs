@@ -112,7 +112,7 @@ impl PanelsSystem {
                     )
                 })
                 .collect_vec(),
-            CardChoice::BuyStatus { statuses } => statuses
+            CardChoice::BuyStatus { statuses, target } => statuses
                 .iter()
                 .map(|(name, count)| {
                     let status = StatusLibrary::get(name, resources);
@@ -127,7 +127,11 @@ impl PanelsSystem {
         let title = match &choice {
             CardChoice::BuyHero { .. } => "Choose new hero",
             CardChoice::SelectEnemy { .. } => "Choose enemy team",
-            CardChoice::BuyStatus { .. } => "Choose status",
+            CardChoice::BuyStatus { statuses, target } => match target {
+                StatusTarget::Single { .. } => "Choose status for one hero",
+                StatusTarget::Aoe => "Choose status for all heroes",
+                StatusTarget::Team => "Choose team status",
+            },
         };
         let (panel_color, card_color) = match &choice {
             CardChoice::BuyStatus { .. } | CardChoice::BuyHero { .. } => (
@@ -283,9 +287,23 @@ pub struct PanelsData {
 }
 
 pub enum CardChoice {
-    BuyHero { units: Vec<PackedUnit> },
-    SelectEnemy { teams: Vec<PackedTeam> },
-    BuyStatus { statuses: Vec<(String, i32)> },
+    BuyHero {
+        units: Vec<PackedUnit>,
+    },
+    SelectEnemy {
+        teams: Vec<PackedTeam>,
+    },
+    BuyStatus {
+        statuses: Vec<(String, i32)>,
+        target: StatusTarget,
+    },
+}
+
+#[derive(Clone, Copy)]
+pub enum StatusTarget {
+    Single { slot: Option<usize> },
+    Aoe,
+    Team,
 }
 
 impl CardChoice {
@@ -304,9 +322,12 @@ impl CardChoice {
                 BattleSystem::init_ladder_battle(&light, dark, world, resources);
                 GameStateSystem::set_transition(GameState::Battle, resources);
             }
-            CardChoice::BuyStatus { mut statuses } => {
+            CardChoice::BuyStatus {
+                mut statuses,
+                target,
+            } => {
                 let (name, charges) = { statuses.remove(ind) };
-                ShopSystem::start_status_apply(name, charges, world, resources)
+                ShopSystem::start_status_apply(name, charges, target, world, resources)
             }
         }
     }
