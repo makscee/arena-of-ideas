@@ -3,16 +3,288 @@ use crate::resources::Widget;
 use super::*;
 
 #[derive(Default)]
-pub struct ShopSystem {
-    need_switch_battle: bool,
+pub struct ShopSystem;
+
+#[derive(enum_iterator::Sequence, Clone, Copy)]
+pub enum Product {
+    Hero,
+    Status,
+    AoeStatus,
+    TeamStatus,
+    Slot,
+}
+
+impl Product {
+    pub fn index(&self) -> usize {
+        *self as usize
+    }
+
+    pub fn price(&self) -> usize {
+        match self {
+            Product::Hero => 3,
+            Product::Status => 2,
+            Product::AoeStatus => 5,
+            Product::TeamStatus => 9,
+            Product::Slot => 4,
+        }
+    }
+
+    pub fn input_handler(&self) -> Handler {
+        match self {
+            Product::Hero => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            let price = shader.get_int("u_price");
+                            if ShopSystem::get_g(world) >= price
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(entity, resources.tape_player.head)
+                            {
+                                ShopSystem::change_g(-price, Some("Buy Hero"), world, resources);
+                                ShopSystem::show_hero_buy_panel(resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            Product::Status => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            let price = shader.get_int("u_price");
+                            if ShopSystem::get_g(world) >= price
+                                && UnitSystem::collect_faction(world, Faction::Team).len() > 0
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(entity, resources.tape_player.head)
+                            {
+                                ShopSystem::change_g(-price, Some("Buy Status"), world, resources);
+                                ShopSystem::show_status_buy_panel(resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            Product::AoeStatus => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            let price = shader.get_int("u_price");
+                            if ShopSystem::get_g(world) >= price
+                                && UnitSystem::collect_faction(world, Faction::Team).len() > 0
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(entity, resources.tape_player.head)
+                            {
+                                ShopSystem::change_g(
+                                    -price,
+                                    Some("Buy Aoe Status"),
+                                    world,
+                                    resources,
+                                );
+                                ShopSystem::show_aoe_status_buy_panel(resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            Product::TeamStatus => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            let price = shader.get_int("u_price");
+                            if ShopSystem::get_g(world) >= price
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(entity, resources.tape_player.head)
+                            {
+                                ShopSystem::change_g(
+                                    -price,
+                                    Some("Buy Team Status"),
+                                    world,
+                                    resources,
+                                );
+                                ShopSystem::show_team_status_buy_panel(resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            Product::Slot => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            let price = shader.get_int("u_price");
+                            if ShopSystem::get_g(world) >= price
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(entity, resources.tape_player.head)
+                            {
+                                ShopSystem::change_g(-price, Some("Buy Slot"), world, resources);
+                                TeamSystem::change_slots(1, &Faction::Team, world);
+                                Product::Slot.create_button(resources);
+                                PanelsSystem::open_push(
+                                    resources.options.colors.add,
+                                    "Add Slot",
+                                    "+1 Slot",
+                                    resources,
+                                );
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+        }
+    }
+
+    pub fn update_handler(&self) -> Handler {
+        match self {
+            Product::Hero | Product::AoeStatus | Product::TeamStatus | Product::Slot => {
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    _: &mut Resources,
+                ) {
+                    shader.set_active(
+                        ShopSystem::get_g(world)
+                            >= shader.parameters.uniforms.try_get_int("u_price").unwrap(),
+                    );
+                }
+                update_handler
+            }
+            Product::Status => {
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    _: &mut Resources,
+                ) {
+                    let team_empty = UnitSystem::collect_faction(world, Faction::Team).len() == 0;
+                    shader.set_active(ShopSystem::is_hero_affordable(world) && !team_empty);
+                }
+                update_handler
+            }
+        }
+    }
+
+    pub fn hover_hints(&self, cost: usize, options: &Options) -> Vec<(Rgba<f32>, String, String)> {
+        match self {
+            Product::Hero => vec![(
+                options.colors.shop,
+                "Buy Hero".to_owned(),
+                format!("-{cost} g"),
+            )],
+            Product::Status => vec![(
+                options.colors.shop,
+                "Buy Status".to_owned(),
+                format!("Add status to 1 hero\n-{cost} g"),
+            )],
+            Product::AoeStatus => vec![(
+                options.colors.shop,
+                "Buy Aoe Status".to_owned(),
+                format!("Apply a status\nto each hero on the team\n-{cost} g"),
+            )],
+            Product::TeamStatus => vec![(
+                options.colors.shop,
+                "Buy Team Status".to_owned(),
+                format!("Add status that is always\napplied to whole team\n-{cost} g"),
+            )],
+            Product::Slot => vec![(
+                options.colors.shop,
+                "Buy Slot".to_owned(),
+                format!("+1 team slot\n-{cost} g"),
+            )],
+        }
+    }
+
+    pub fn title(&self) -> String {
+        match self {
+            Product::Hero => "Buy Hero".to_owned(),
+            Product::Status => "Buy Status".to_owned(),
+            Product::AoeStatus => "Buy Aoe Status".to_owned(),
+            Product::TeamStatus => "Buy Team Status".to_owned(),
+            Product::Slot => "Buy Slot".to_owned(),
+        }
+    }
+
+    pub fn create_button(&self, resources: &mut Resources) {
+        let entity = new_entity();
+        let price = self.price();
+        let hover_hints = self.hover_hints(price, &resources.options);
+        let title = self.title();
+        Widget::Button {
+            text: title,
+            input_handler: self.input_handler(),
+            update_handler: Some(self.update_handler()),
+            options: &resources.options,
+            uniforms: resources
+                .options
+                .uniforms
+                .ui_button
+                .clone()
+                .insert_int("u_index".to_owned(), self.index() as i32)
+                .insert_int("u_price".to_owned(), price as i32),
+            shader: None,
+            entity,
+            hover_hints,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
+    }
 }
 
 impl System for ShopSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
-        if self.need_switch_battle {
-            Self::show_battle_choice_panel(resources);
-            self.need_switch_battle = false;
-        }
         Self::refresh_tape(world, resources);
         if !resources.action_queue.is_empty() {
             let mut cluster = Some(NodeCluster::default());
@@ -272,11 +544,10 @@ impl ShopSystem {
             .vars
             .set_int(&VarName::Level, current_floor as i32);
         Self::create_battle_button(resources);
-        Self::create_buy_hero_button(world, resources);
-        Self::create_buy_status_button(world, resources);
-        Self::create_buy_team_status_button(world, resources);
-        Self::create_buy_aoe_status_button(world, resources);
-        Self::create_buy_slot_button(world, resources);
+
+        for product in enum_iterator::all::<Product>() {
+            product.create_button(resources);
+        }
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
@@ -327,7 +598,7 @@ impl ShopSystem {
             .uniforms
             .ui_button
             .clone()
-            .insert_int("u_index".to_owned(), 0);
+            .insert_int("u_index".to_owned(), -1);
         Widget::Button {
             text: "Start Battle".to_owned(),
             input_handler,
@@ -337,126 +608,6 @@ impl ShopSystem {
             shader: None,
             hover_hints,
             entity,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(entity, resources);
-    }
-
-    pub fn create_buy_hero_button(world: &legion::World, resources: &mut Resources) {
-        fn input_handler(
-            event: HandleEvent,
-            entity: legion::Entity,
-            _: &mut Shader,
-            world: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if ShopSystem::is_hero_affordable(world)
-                        && resources
-                            .tape_player
-                            .tape
-                            .close_panels(entity, resources.tape_player.head)
-                    {
-                        ShopSystem::deduct_hero_price(world, resources);
-                        ShopSystem::show_hero_buy_panel(resources);
-                    }
-                }
-                _ => {}
-            }
-        }
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            shader.set_active(ShopSystem::is_hero_affordable(world));
-        }
-        let entity = new_entity();
-        let cost = Self::buy_price(world);
-        let hover_hints = vec![(
-            resources.options.colors.shop,
-            "Buy Hero".to_owned(),
-            format!("-{cost} g"),
-        )];
-        Widget::Button {
-            text: "Buy Hero".to_owned(),
-            input_handler,
-            update_handler: Some(update_handler),
-            options: &resources.options,
-            uniforms: resources
-                .options
-                .uniforms
-                .ui_button
-                .clone()
-                .insert_int("u_index".to_owned(), 1),
-            shader: None,
-            hover_hints,
-            entity,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(entity, resources);
-    }
-
-    pub fn create_buy_status_button(world: &legion::World, resources: &mut Resources) {
-        fn input_handler(
-            event: HandleEvent,
-            entity: legion::Entity,
-            _: &mut Shader,
-            world: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if UnitSystem::collect_faction(world, Faction::Team).len() > 0
-                        && ShopSystem::is_hero_affordable(world)
-                        && resources
-                            .tape_player
-                            .tape
-                            .close_panels(entity, resources.tape_player.head)
-                    {
-                        ShopSystem::deduct_hero_price(world, resources);
-                        ShopSystem::show_status_buy_panel(resources);
-                    }
-                }
-                _ => {}
-            }
-        }
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            let team_empty = UnitSystem::collect_faction(world, Faction::Team).len() == 0;
-            shader.set_active(ShopSystem::is_hero_affordable(world) && !team_empty);
-        }
-        let entity = new_entity();
-        let cost = Self::buy_price(world);
-        let hover_hints = vec![(
-            resources.options.colors.shop,
-            "Buy Status".to_owned(),
-            format!("Add status to 1 hero\n-{cost} g"),
-        )];
-        Widget::Button {
-            text: "Buy Status".to_owned(),
-            input_handler,
-            update_handler: Some(update_handler),
-            options: &resources.options,
-            uniforms: resources
-                .options
-                .uniforms
-                .ui_button
-                .clone()
-                .insert_int("u_index".to_owned(), 2),
-            shader: None,
-            entity,
-            hover_hints,
         }
         .generate_node()
         .lock(NodeLockType::Empty)
@@ -500,13 +651,13 @@ impl ShopSystem {
                     )
                     .unwrap(),
                 );
-                Self::create_buy_status_button(world, resources);
+                Product::Status.create_button(resources);
             }
             StatusTarget::Aoe => {
                 for unit in UnitSystem::collect_faction(world, Faction::Team) {
                     entities.push(unit);
                 }
-                Self::create_buy_aoe_status_button(world, resources);
+                Product::AoeStatus.create_button(resources);
             }
             StatusTarget::Team => {
                 entities.push(TeamSystem::entity(&Faction::Team, world).unwrap());
@@ -516,7 +667,7 @@ impl ShopSystem {
                     &format!("{name} +{charges}"),
                     resources,
                 );
-                Self::create_buy_team_status_button(world, resources);
+                Product::TeamStatus.create_button(resources);
             }
         };
         for entity in entities {
@@ -527,183 +678,5 @@ impl ShopSystem {
             resources.tape_player.head,
         );
         SlotSystem::clear_slots_buttons(Faction::Team, world);
-    }
-
-    pub fn create_buy_team_status_button(world: &legion::World, resources: &mut Resources) {
-        fn input_handler(
-            event: HandleEvent,
-            entity: legion::Entity,
-            _: &mut Shader,
-            world: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if ShopSystem::is_hero_affordable(world)
-                        && resources
-                            .tape_player
-                            .tape
-                            .close_panels(entity, resources.tape_player.head)
-                    {
-                        ShopSystem::deduct_hero_price(world, resources);
-                        ShopSystem::show_team_status_buy_panel(resources);
-                    }
-                }
-                _ => {}
-            }
-        }
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            shader.set_active(ShopSystem::is_hero_affordable(world));
-        }
-        let entity = new_entity();
-        let cost = Self::buy_price(world);
-        let hover_hints = vec![(
-            resources.options.colors.shop,
-            "Buy Team Status".to_owned(),
-            format!("Add status that is always\napplied to whole team\n-{cost} g"),
-        )];
-        Widget::Button {
-            text: "Buy Team Status".to_owned(),
-            input_handler,
-            update_handler: Some(update_handler),
-            options: &resources.options,
-            uniforms: resources
-                .options
-                .uniforms
-                .ui_button
-                .clone()
-                .insert_int("u_index".to_owned(), 3),
-            shader: None,
-            entity,
-            hover_hints,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(entity, resources);
-    }
-
-    pub fn create_buy_aoe_status_button(world: &legion::World, resources: &mut Resources) {
-        fn input_handler(
-            event: HandleEvent,
-            entity: legion::Entity,
-            _: &mut Shader,
-            world: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if ShopSystem::is_hero_affordable(world)
-                        && resources
-                            .tape_player
-                            .tape
-                            .close_panels(entity, resources.tape_player.head)
-                    {
-                        ShopSystem::deduct_hero_price(world, resources);
-                        ShopSystem::show_aoe_status_buy_panel(resources);
-                    }
-                }
-                _ => {}
-            }
-        }
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            shader.set_active(ShopSystem::is_hero_affordable(world));
-        }
-        let entity = new_entity();
-        let cost = Self::buy_price(world);
-        let hover_hints = vec![(
-            resources.options.colors.shop,
-            "Buy Aoe Status".to_owned(),
-            format!("Apply a status\nto each hero on the team\n-{cost} g"),
-        )];
-        Widget::Button {
-            text: "Buy Aoe Status".to_owned(),
-            input_handler,
-            update_handler: Some(update_handler),
-            options: &resources.options,
-            uniforms: resources
-                .options
-                .uniforms
-                .ui_button
-                .clone()
-                .insert_int("u_index".to_owned(), 4),
-            shader: None,
-            entity,
-            hover_hints,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(entity, resources);
-    }
-
-    pub fn create_buy_slot_button(world: &legion::World, resources: &mut Resources) {
-        fn input_handler(
-            event: HandleEvent,
-            entity: legion::Entity,
-            _: &mut Shader,
-            world: &mut legion::World,
-            resources: &mut Resources,
-        ) {
-            match event {
-                HandleEvent::Click => {
-                    if ShopSystem::is_hero_affordable(world)
-                        && resources
-                            .tape_player
-                            .tape
-                            .close_panels(entity, resources.tape_player.head)
-                    {
-                        ShopSystem::deduct_hero_price(world, resources);
-                        TeamSystem::change_slots(1, &Faction::Team, world);
-                        ShopSystem::create_buy_slot_button(world, resources);
-                    }
-                }
-                _ => {}
-            }
-        }
-        fn update_handler(
-            _: HandleEvent,
-            _: legion::Entity,
-            shader: &mut Shader,
-            world: &mut legion::World,
-            _: &mut Resources,
-        ) {
-            shader.set_active(ShopSystem::is_hero_affordable(world));
-        }
-        let entity = new_entity();
-        let cost = Self::buy_price(world);
-        let hover_hints = vec![(
-            resources.options.colors.shop,
-            "Buy Slot".to_owned(),
-            format!("+1 team slot\n-{cost} g"),
-        )];
-        Widget::Button {
-            text: "Buy Slot".to_owned(),
-            input_handler,
-            update_handler: Some(update_handler),
-            options: &resources.options,
-            uniforms: resources
-                .options
-                .uniforms
-                .ui_button
-                .clone()
-                .insert_int("u_index".to_owned(), 5),
-            shader: None,
-            entity,
-            hover_hints,
-        }
-        .generate_node()
-        .lock(NodeLockType::Empty)
-        .push_as_panel(entity, resources);
     }
 }

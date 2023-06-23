@@ -114,8 +114,24 @@ impl Shader {
     pub fn insert_string(self, key: String, value: String, font: usize) -> Self {
         self.insert_uniform(key, ShaderUniform::String((font, value)))
     }
-    pub fn set_string_ref(&mut self, key: String, value: String, font: usize) -> &mut Self {
+    pub fn insert_string_ref(&mut self, key: String, value: String, font: usize) -> &mut Self {
         self.insert_uniform_ref(key, ShaderUniform::String((font, value)))
+    }
+
+    pub fn get_int(&self, key: &str) -> i32 {
+        self.parameters.uniforms.try_get_int(key).unwrap()
+    }
+
+    pub fn get_float(&self, key: &str) -> f32 {
+        self.parameters.uniforms.try_get_float(key).unwrap()
+    }
+
+    pub fn get_vec2(&self, key: &str) -> vec2<f32> {
+        self.parameters.uniforms.try_get_vec2(key).unwrap()
+    }
+
+    pub fn get_string(&self, key: &str) -> String {
+        self.parameters.uniforms.try_get_string(key).unwrap()
     }
 
     pub fn add_mapping(mut self, from: &str, to: &str) -> Self {

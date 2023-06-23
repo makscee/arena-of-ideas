@@ -228,7 +228,7 @@ impl Status {
             .as_ref()
             .or(resources.definitions.get(name).map(|x| &x.description))
         {
-            shader.set_string_ref("u_description".to_owned(), description.clone(), 0);
+            shader.insert_string_ref("u_description".to_owned(), description.clone(), 0);
         }
 
         shader

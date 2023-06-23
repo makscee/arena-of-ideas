@@ -23,7 +23,7 @@ impl ButtonSystem {
         }
         Self::add_button_handlers(&mut button);
         if let Some(text) = text {
-            button.set_string_ref("u_text".to_owned(), text.to_owned(), 1);
+            button.insert_string_ref("u_text".to_owned(), text.to_owned(), 1);
         }
         button.entity = Some(entity);
         button.hover_hints = hover_hints;

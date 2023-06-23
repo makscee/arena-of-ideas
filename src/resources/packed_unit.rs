@@ -128,10 +128,10 @@ impl PackedUnit {
             shader.chain_before.push(self_shader.clone());
         }
         shader.insert_color_ref("u_house_color".to_owned(), house_color);
-        shader.set_string_ref("u_name".to_owned(), self.name.to_owned(), 1);
+        shader.insert_string_ref("u_name".to_owned(), self.name.to_owned(), 1);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
-        shader.set_string_ref("u_description".to_owned(), self.description.clone(), 0);
+        shader.insert_string_ref("u_description".to_owned(), self.description.clone(), 0);
         shader.insert_float_ref("u_rank_1".to_owned(), (self.rank > 0) as i32 as f32);
         shader.insert_float_ref("u_rank_2".to_owned(), (self.rank > 0) as i32 as f32);
 

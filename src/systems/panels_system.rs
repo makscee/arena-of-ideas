@@ -227,7 +227,7 @@ impl PanelsSystem {
             let panel = resources.panels_data.stats.as_mut().unwrap();
             panel
                 .shader
-                .set_string_ref("u_panel_text".to_owned(), text, 0);
+                .insert_string_ref("u_panel_text".to_owned(), text, 0);
         }
     }
 
@@ -312,7 +312,7 @@ impl CardChoice {
             CardChoice::BuyHero { mut units } => {
                 let unit = units.remove(ind);
                 ShopSystem::add_unit_to_team(unit, world, resources);
-                ShopSystem::create_buy_hero_button(world, resources);
+                Product::Hero.create_button(resources);
             }
             CardChoice::SelectEnemy { mut teams } => {
                 let dark = teams.remove(ind);
