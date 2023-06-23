@@ -276,6 +276,7 @@ impl ShopSystem {
         Self::create_buy_status_button(world, resources);
         Self::create_buy_team_status_button(world, resources);
         Self::create_buy_aoe_status_button(world, resources);
+        Self::create_buy_slot_button(world, resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
@@ -637,6 +638,66 @@ impl ShopSystem {
                 .ui_button
                 .clone()
                 .insert_int("u_index".to_owned(), 4),
+            shader: None,
+            entity,
+            hover_hints,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
+    }
+
+    pub fn create_buy_slot_button(world: &legion::World, resources: &mut Resources) {
+        fn input_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            _: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if ShopSystem::is_hero_affordable(world)
+                        && resources
+                            .tape_player
+                            .tape
+                            .close_panels(entity, resources.tape_player.head)
+                    {
+                        ShopSystem::deduct_hero_price(world, resources);
+                        TeamSystem::change_slots(1, &Faction::Team, world);
+                        ShopSystem::create_buy_slot_button(world, resources);
+                    }
+                }
+                _ => {}
+            }
+        }
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            shader.set_active(ShopSystem::is_hero_affordable(world));
+        }
+        let entity = new_entity();
+        let cost = Self::buy_price(world);
+        let hover_hints = vec![(
+            resources.options.colors.shop,
+            "Buy Slot".to_owned(),
+            format!("+1 team slot\n-{cost} g"),
+        )];
+        Widget::Button {
+            text: "Buy Slot".to_owned(),
+            input_handler,
+            update_handler: Some(update_handler),
+            options: &resources.options,
+            uniforms: resources
+                .options
+                .uniforms
+                .ui_button
+                .clone()
+                .insert_int("u_index".to_owned(), 5),
             shader: None,
             entity,
             hover_hints,

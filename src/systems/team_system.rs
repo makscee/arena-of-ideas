@@ -37,4 +37,10 @@ impl TeamSystem {
             .find(|(_, state)| state.get_faction(&VarName::Faction, world) == *faction)
             .map(|x| x.0.entity)
     }
+
+    pub fn change_slots(delta: i32, faction: &Faction, world: &mut legion::World) {
+        Self::get_state_mut(faction, world)
+            .vars
+            .change_int(&VarName::Slots, delta);
+    }
 }

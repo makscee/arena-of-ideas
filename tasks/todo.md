@@ -38,9 +38,9 @@ Build
     Shop buttons @gameplay
         buy hero {cm:2023-06-20T21:02:46}
         buy status {cm:2023-06-22T13:25:48}
-        buy aoe status
+        buy aoe status {cm:2023-06-23T15:50:05}
         buy team status {cm:2023-06-23T15:36:23}
-        buy slot
+        buy slot {start:2023-06-23T15:50:07} {cm:2023-06-23T15:54:23} {duration:04m}
     Game over screen @ui
         restart
         score
