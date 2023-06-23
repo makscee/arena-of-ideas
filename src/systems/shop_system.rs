@@ -83,6 +83,18 @@ impl ShopSystem {
         PanelsSystem::open_card_choice(choice, resources);
     }
 
+    pub fn show_aoe_status_buy_panel(resources: &mut Resources) {
+        let mut statuses = Vec::default();
+        statuses.push(("Chaotic".to_owned(), 2));
+        statuses.push(("Fortitude".to_owned(), 3));
+        statuses.push(("Shield".to_owned(), 1));
+        let choice = CardChoice::BuyStatus {
+            statuses,
+            target: StatusTarget::Aoe,
+        };
+        PanelsSystem::open_card_choice(choice, resources);
+    }
+
     pub fn show_battle_choice_panel(resources: &mut Resources) {
         let teams = Ladder::get_current_teams(resources)
             .into_iter()
@@ -263,6 +275,7 @@ impl ShopSystem {
         Self::create_buy_hero_button(world, resources);
         Self::create_buy_status_button(world, resources);
         Self::create_buy_team_status_button(world, resources);
+        Self::create_buy_aoe_status_button(world, resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
@@ -492,6 +505,7 @@ impl ShopSystem {
                 for unit in UnitSystem::collect_faction(world, Faction::Team) {
                     entities.push(unit);
                 }
+                Self::create_buy_aoe_status_button(world, resources);
             }
             StatusTarget::Team => {
                 entities.push(TeamSystem::entity(&Faction::Team, world).unwrap());
@@ -551,7 +565,7 @@ impl ShopSystem {
         let hover_hints = vec![(
             resources.options.colors.shop,
             "Buy Team Status".to_owned(),
-            format!("Add status that will be\napplies to whole team\n-{cost} g"),
+            format!("Add status that is always\napplied to whole team\n-{cost} g"),
         )];
         Widget::Button {
             text: "Buy Team Status".to_owned(),
@@ -564,6 +578,65 @@ impl ShopSystem {
                 .ui_button
                 .clone()
                 .insert_int("u_index".to_owned(), 3),
+            shader: None,
+            entity,
+            hover_hints,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
+    }
+
+    pub fn create_buy_aoe_status_button(world: &legion::World, resources: &mut Resources) {
+        fn input_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            _: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if ShopSystem::is_hero_affordable(world)
+                        && resources
+                            .tape_player
+                            .tape
+                            .close_panels(entity, resources.tape_player.head)
+                    {
+                        ShopSystem::deduct_hero_price(world, resources);
+                        ShopSystem::show_aoe_status_buy_panel(resources);
+                    }
+                }
+                _ => {}
+            }
+        }
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            shader.set_active(ShopSystem::is_hero_affordable(world));
+        }
+        let entity = new_entity();
+        let cost = Self::buy_price(world);
+        let hover_hints = vec![(
+            resources.options.colors.shop,
+            "Buy Aoe Status".to_owned(),
+            format!("Apply a status\nto each hero on the team\n-{cost} g"),
+        )];
+        Widget::Button {
+            text: "Buy Aoe Status".to_owned(),
+            input_handler,
+            update_handler: Some(update_handler),
+            options: &resources.options,
+            uniforms: resources
+                .options
+                .uniforms
+                .ui_button
+                .clone()
+                .insert_int("u_index".to_owned(), 4),
             shader: None,
             entity,
             hover_hints,
