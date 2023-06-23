@@ -74,7 +74,7 @@ impl PanelsSystem {
         footer: bool,
         resources: &mut Resources,
     ) {
-        let mut panel = Self::generate_text_shader(text, 0.0, &resources.options)
+        let mut panel = Self::generate_text_shader(text, vec2(0.5, 0.1), &resources.options)
             .wrap_panel_header(title, &resources.options);
         if footer {
             panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
@@ -187,7 +187,7 @@ impl PanelsSystem {
     }
 
     pub fn open_push(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
-        let panel = Self::generate_text_shader(text, 0.0, &resources.options)
+        let panel = Self::generate_text_shader(text, vec2::ZERO, &resources.options)
             .wrap_panel_header(title, &resources.options);
         resources
             .panels_data
@@ -196,7 +196,7 @@ impl PanelsSystem {
     }
 
     pub fn open_hint(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
-        let panel = Self::generate_text_shader(&text, 0.0, &resources.options)
+        let panel = Self::generate_text_shader(&text, vec2::ZERO, &resources.options)
             .wrap_panel_header(&title, &resources.options)
             .panel(PanelType::Hint, Some(color), resources);
         resources.panels_data.hint.push(panel);
@@ -204,7 +204,7 @@ impl PanelsSystem {
 
     pub fn open_stats(world: &legion::World, resources: &mut Resources) {
         let text = Self::get_stats_text(world, resources);
-        let mut panel = Self::generate_text_shader(&text, 0.15, &resources.options);
+        let panel = Self::generate_text_shader(&text, vec2(0.15, 0.0), &resources.options);
         let panel = panel.wrap_panel_header("Stats", &resources.options).panel(
             PanelType::Stats,
             Some(resources.options.colors.primary),
@@ -262,13 +262,13 @@ impl PanelsSystem {
         resources.panels_data.chosen_ind = None;
     }
 
-    pub fn generate_text_shader(text: &str, extra_width: f32, options: &Options) -> Shader {
+    pub fn generate_text_shader(text: &str, extra_size: vec2<f32>, options: &Options) -> Shader {
         let mut shader = options.shaders.panel_text.clone().insert_string(
             "u_text".to_owned(),
             text.to_owned(),
             0,
         );
-        shader.parameters.r#box.size.x += extra_width;
+        shader.parameters.r#box.size += extra_size;
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
         let per_line = shader.parameters.r#box.size.y;
         shader.parameters.r#box.size.y = lines as f32 * per_line;
@@ -295,6 +295,7 @@ pub struct PanelsData {
     pub chosen_ind: Option<usize>,
 }
 
+#[derive(Debug)]
 pub enum CardChoice {
     BuyHero {
         units: Vec<PackedUnit>,
@@ -308,7 +309,7 @@ pub enum CardChoice {
     },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum StatusTarget {
     Single { slot: Option<usize> },
     Aoe,
@@ -327,7 +328,6 @@ impl CardChoice {
                 let dark = teams.remove(ind);
                 let light = PackedTeam::pack(&Faction::Team, world, resources);
                 resources.battle_data.last_difficulty = ind;
-                ShopSystem::change_g(ind as i32 + 1, Some("Battle difficulty"), world, resources);
                 BattleSystem::init_ladder_battle(&light, dark, world, resources);
                 GameStateSystem::set_transition(GameState::Battle, resources);
             }
@@ -571,7 +571,7 @@ impl PanelFooterButton {
             PanelFooterButton::Accept => {
                 fn input_handler(
                     event: HandleEvent,
-                    entity: legion::Entity,
+                    _: legion::Entity,
                     shader: &mut Shader,
                     world: &mut legion::World,
                     resources: &mut Resources,

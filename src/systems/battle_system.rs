@@ -1,5 +1,3 @@
-use crate::resources::Widget;
-
 use super::*;
 use geng::ui::*;
 
@@ -62,9 +60,7 @@ impl BattleSystem {
         }
         Self::clear_tape_entities(world, resources, tape);
         resources.battle_data.team_queue.clear();
-        let score = Ladder::get_score(world);
-        Self::add_outro(score, world, resources, tape);
-        score
+        Ladder::get_score(world)
     }
 
     fn create_tape_entities(
@@ -101,24 +97,9 @@ impl BattleSystem {
         if tape.is_none() {
             return;
         }
-        if let Some(entity) = resources.battle_data.score_entity {
-            world.remove(entity);
-        }
         if let Some((left, right)) = resources.battle_data.team_names_entitities {
             world.remove(left);
             world.remove(right);
-        }
-    }
-
-    fn add_outro(
-        score: usize,
-        world: &mut legion::World,
-        resources: &mut Resources,
-        tape: &mut Option<Tape>,
-    ) {
-        if let Some(tape) = tape {
-            // Add battle over panel
-            todo!();
         }
     }
 
@@ -156,19 +137,38 @@ impl BattleSystem {
     }
 
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
-        resources.last_score = Ladder::get_score(world);
-        resources.last_round = resources.ladder.current_ind();
-        resources.total_score += resources.last_score;
-        if resources.last_score > 0 {
+        resources.battle_data.last_score = Ladder::get_score(world);
+        resources.battle_data.last_round = resources.ladder.current_ind();
+        resources.battle_data.total_score += resources.battle_data.last_score;
+        let (title, color) = if resources.battle_data.last_score > 0 {
             if resources.ladder.next() {
                 resources.transition_state = GameState::Sacrifice;
             } else {
                 resources.transition_state = GameState::GameOver;
             }
+            ("Victory", resources.options.colors.victory)
         } else {
             resources.transition_state = GameState::GameOver;
-        }
+            ("Defeat", resources.options.colors.defeat)
+        };
         Self::clear_world(world, resources);
+        let score = resources.battle_data.last_score;
+        let difficulty = resources.battle_data.last_difficulty + 3;
+        ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
+        ShopSystem::change_g(
+            difficulty as i32,
+            Some("Enemy Difficulty"),
+            world,
+            resources,
+        );
+        PanelsSystem::add_alert(
+            color,
+            title,
+            &format!("Battle Over\n{score} ranks defeated, +{score} g\n+{difficulty} g for enemy difficulty"),
+            vec2::ZERO,
+            true,
+            resources,
+        )
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {

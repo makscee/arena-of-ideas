@@ -27,7 +27,7 @@ Build
         definitions {cm:2023-06-21T15:25:41}
     Alert text @ui
         battle start
-        battle end
+        battle end {start:2023-06-23T18:37:12} {cm:2023-06-23T19:09:45} {duration:32m}
         sacrifice start
         shop start
     Alert cards @ui {start:2023-06-20T13:59:26} {cm:2023-06-23T16:45:35} {duration:3d_02h46m} {c}
@@ -46,7 +46,7 @@ Build
     Game over screen @ui
         restart
         score
-    Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay
+    Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay {start:2023-06-23T18:36:22}
     No sacrifice for single hero team @gameplay
     Chain all actions @visual
     Max rank 3 @gameplay

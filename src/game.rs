@@ -44,7 +44,7 @@ impl Game {
         resources.ladder.reset();
         resources.action_queue.clear();
         resources.prepared_shaders.clear();
-        resources.total_score = default();
+        resources.battle_data.total_score = default();
         ShopData::load_pool_full(resources);
         world.clear();
         PanelsSystem::clear(resources);

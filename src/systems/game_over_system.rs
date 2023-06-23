@@ -36,9 +36,9 @@ impl System for GameOverSystem {
                 Text::new(
                     format!(
                         "{}",
-                        match resources.last_score > 0 {
+                        match resources.battle_data.last_score > 0 {
                             true => "Victory!".to_string(),
-                            false => format!("Defeat! Level #{}", resources.last_round),
+                            false => format!("Defeat! Level #{}", resources.battle_data.last_round),
                         }
                     ),
                     resources.fonts.get_font(0),
@@ -46,7 +46,7 @@ impl System for GameOverSystem {
                     Rgba::BLACK,
                 ),
                 Text::new(
-                    format!("Total score: {}", resources.total_score),
+                    format!("Total score: {}", resources.battle_data.total_score),
                     resources.fonts.get_font(0),
                     90.0,
                     Rgba::BLACK,

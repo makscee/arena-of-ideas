@@ -317,18 +317,8 @@ impl SlotSystem {
             match faction {
                 Faction::Team => match resources.current_state {
                     GameState::Shop => {
-                        // ShopSystem::try_sell(entity, resources, world);
-                        debug!("Choose {slot} for status");
-                        if let Some(choice) = resources.panels_data.choice_options.as_mut() {
-                            match choice {
-                                CardChoice::BuyStatus { target, .. } => match target {
-                                    StatusTarget::Single { slot: saved_slot } => {
-                                        *saved_slot = Some(slot);
-                                    }
-                                    _ => {}
-                                },
-                                _ => {}
-                            }
+                        if let Some(data) = resources.shop_data.status_apply.as_mut() {
+                            data.2 = StatusTarget::Single { slot: Some(slot) };
                         }
                         ShopSystem::finish_status_apply(world, resources);
                     }
