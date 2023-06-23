@@ -207,7 +207,7 @@
         "sacrifice": "#B82750",
         "primary": "#E58220",
         "secondary": "#36D2E2",
-        "button": "#4BD7D6",
+        "button": "#8ec5df",
         "outline": "#595560",
         "active": "#8A689A",
         "inactive": "#AB9BA4",
@@ -380,7 +380,7 @@
                 "box": {
                     "size": [
                         0.2,
-                        0.03
+                        0.035
                     ],
                     "anchor": [
                         0.0,
@@ -423,7 +423,7 @@
                         "box": {
                             "size": [
                                 1.0,
-                                0.025
+                                0.033
                             ]
                         },
                         "uniforms": {

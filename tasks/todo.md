@@ -1,9 +1,10 @@
 Screen box anchoring @ui
+Text shader constant scale, size depending on lines @ui
 Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
     Statuses pool
-    Show status after status on card
+    Show stats after status on card
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change {cm:2023-06-21T15:25:50}
@@ -14,7 +15,7 @@ Build
         panel working {start:2023-06-19T14:47:43} {cm:2023-06-19T15:17:25} {duration:29m}
         g {cm:2023-06-19T15:55:08}
         total score
-        team status
+        team status {cm:2023-06-23T17:07:51}
         team vars
         level {cm:2023-06-19T15:55:11}
     Hover hint @ui {cm:2023-06-22T21:26:28} {c}

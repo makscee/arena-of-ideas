@@ -74,7 +74,7 @@ impl PanelsSystem {
         footer: bool,
         resources: &mut Resources,
     ) {
-        let mut panel = Self::generate_text_shader(text, &resources.options)
+        let mut panel = Self::generate_text_shader(text, 0.0, &resources.options)
             .wrap_panel_header(title, &resources.options);
         if footer {
             panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
@@ -187,7 +187,7 @@ impl PanelsSystem {
     }
 
     pub fn open_push(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
-        let panel = Self::generate_text_shader(text, &resources.options)
+        let panel = Self::generate_text_shader(text, 0.0, &resources.options)
             .wrap_panel_header(title, &resources.options);
         resources
             .panels_data
@@ -196,7 +196,7 @@ impl PanelsSystem {
     }
 
     pub fn open_hint(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
-        let panel = Self::generate_text_shader(&text, &resources.options)
+        let panel = Self::generate_text_shader(&text, 0.0, &resources.options)
             .wrap_panel_header(&title, &resources.options)
             .panel(PanelType::Hint, Some(color), resources);
         resources.panels_data.hint.push(panel);
@@ -204,21 +204,29 @@ impl PanelsSystem {
 
     pub fn open_stats(world: &legion::World, resources: &mut Resources) {
         let text = Self::get_stats_text(world, resources);
-        let panel = Self::generate_text_shader(&text, &resources.options)
-            .wrap_panel_header("Stats", &resources.options)
-            .panel(
-                PanelType::Stats,
-                Some(resources.options.colors.primary),
-                resources,
-            );
+        let mut panel = Self::generate_text_shader(&text, 0.15, &resources.options);
+        let panel = panel.wrap_panel_header("Stats", &resources.options).panel(
+            PanelType::Stats,
+            Some(resources.options.colors.primary),
+            resources,
+        );
         resources.panels_data.stats = Some(panel);
     }
 
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
-        let g = ShopSystem::get_g(world);
-        let level = resources.ladder.current_ind();
-        let state = resources.current_state.to_string();
-        format!("g: {g}\nlevel: {level}\nstate: {state}")
+        let mut texts = Vec::default();
+        texts.push(format!("g: {}", ShopSystem::get_g(world)));
+        texts.push(format!("level: {}", resources.ladder.current_ind()));
+        let mut team_status = TeamSystem::get_state(&Faction::Team, world)
+            .statuses
+            .iter()
+            .map(|(name, charges)| format!("{name} +{charges}"))
+            .join(" | ");
+        if team_status.is_empty() {
+            team_status = "none".to_owned();
+        }
+        texts.push(format!("team status: {team_status}"));
+        texts.join("\n")
     }
 
     pub fn refresh_stats(world: &legion::World, resources: &mut Resources) {
@@ -254,12 +262,13 @@ impl PanelsSystem {
         resources.panels_data.chosen_ind = None;
     }
 
-    pub fn generate_text_shader(text: &str, options: &Options) -> Shader {
+    pub fn generate_text_shader(text: &str, extra_width: f32, options: &Options) -> Shader {
         let mut shader = options.shaders.panel_text.clone().insert_string(
             "u_text".to_owned(),
             text.to_owned(),
             0,
         );
+        shader.parameters.r#box.size.x += extra_width;
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
         let per_line = shader.parameters.r#box.size.y;
         shader.parameters.r#box.size.y = lines as f32 * per_line;

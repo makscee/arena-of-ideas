@@ -185,7 +185,7 @@ impl Product {
 
     pub fn update_handler(&self) -> Handler {
         match self {
-            Product::Hero | Product::AoeStatus | Product::TeamStatus | Product::Slot => {
+            Product::Hero | Product::TeamStatus | Product::Slot => {
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
@@ -200,7 +200,7 @@ impl Product {
                 }
                 update_handler
             }
-            Product::Status => {
+            Product::Status | Product::AoeStatus => {
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
@@ -673,6 +673,7 @@ impl ShopSystem {
         for entity in entities {
             Status::change_charges(entity, charges, &name, &mut node, world, resources);
         }
+        PanelsSystem::refresh_stats(world, resources);
         resources.tape_player.tape.push_to_queue(
             NodeCluster::new(node.unwrap().lock(NodeLockType::Empty)),
             resources.tape_player.head,
