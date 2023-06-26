@@ -200,6 +200,52 @@ impl PanelsSystem {
         ));
     }
 
+    pub fn open_card_list(
+        mut shaders: Vec<Shader>,
+        title: &str,
+        color: Rgba<f32>,
+        pos: vec2<f32>,
+        row_limit: usize,
+        resources: &mut Resources,
+    ) {
+        for shader in shaders.iter_mut() {
+            shader
+                .parameters
+                .merge(&resources.options.parameters.panel_card, true);
+        }
+
+        let row_limit = if row_limit == 0 || row_limit > shaders.len() {
+            shaders.len()
+        } else {
+            row_limit
+        };
+
+        let mut rows: Vec<Shader> = default();
+        while !shaders.is_empty() {
+            let limit = row_limit.min(shaders.len());
+            let shaders = shaders.drain(0..limit).collect_vec();
+            let row = Shader::wrap_panel_body_row(
+                shaders,
+                resources.options.floats.panel_row_padding,
+                &resources.options,
+            );
+            rows.push(row);
+        }
+        let shader = Shader::wrap_panel_body_column(
+            rows,
+            resources.options.floats.panel_row_padding,
+            &resources.options,
+        );
+
+        let mut panel = shader.wrap_panel_header(title, &resources.options).panel(
+            PanelType::Alert,
+            Some(color),
+            resources,
+        );
+        panel.need_pos = pos;
+        resources.panels_data.alert.push(panel);
+    }
+
     pub fn open_push(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
         let panel = Self::generate_text_shader(text, vec2::ZERO, &resources.options)
             .wrap_panel_header(title, &resources.options);
@@ -390,22 +436,53 @@ impl Panel {
 
 impl Shader {
     pub fn wrap_panel_body_row(mut shaders: Vec<Shader>, padding: f32, options: &Options) -> Self {
-        let r#box = shaders[0].parameters.r#box;
-        let mut shader = shaders.remove(1).wrap_panel_body(padding, options);
-        shader.parameters.r#box = r#box;
+        let size = {
+            let shader = &shaders[0];
+            shader.parameters.r#box.size * shader.get_float("u_scale")
+        };
+        let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
+        shader.parameters.r#box.size = size;
         let count = shaders.len() as f32;
         shader.parameters.r#box.size.x *= count;
-        shader.parameters.r#box.size += vec2(padding * count * 2.0, padding);
-        shader.chain_after.push({
-            let mut shader = shaders.remove(0);
-            shader.parameters.r#box.anchor = vec2(-0.66, 0.0);
-            shader
-        });
-        shader.chain_after.push({
-            let mut shader = shaders.remove(0);
-            shader.parameters.r#box.anchor = vec2(0.66, 0.0);
-            shader
-        });
+        shader.parameters.r#box.size += vec2(padding * count, padding);
+
+        shader.chain_after.extend(shaders.drain(..));
+        let spacing = 2.0 / shader.chain_after.len() as f32;
+        let mut anchor_position = -1.0 + spacing * 0.5;
+        for shader in shader.chain_after.iter_mut() {
+            shader.parameters.r#box.anchor.x = anchor_position;
+            anchor_position += spacing;
+        }
+
+        shader
+    }
+    pub fn wrap_panel_body_column(
+        mut shaders: Vec<Shader>,
+        padding: f32,
+        options: &Options,
+    ) -> Self {
+        let size = {
+            let shader = &shaders[0];
+            shader.parameters.r#box.size
+                * shader
+                    .parameters
+                    .uniforms
+                    .try_get_float("u_scale")
+                    .unwrap_or(1.0)
+        };
+        let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
+        shader.parameters.r#box.size = size;
+        let count = shaders.len() as f32;
+        shader.parameters.r#box.size.y *= count;
+        shader.parameters.r#box.size += vec2(padding, padding * count);
+
+        shader.chain_after.extend(shaders.drain(..));
+        let spacing = 2.0 / shader.chain_after.len() as f32;
+        let mut anchor_position = -1.0 + spacing * 0.5;
+        for shader in shader.chain_after.iter_mut() {
+            shader.parameters.r#box.anchor.y = anchor_position;
+            anchor_position += spacing;
+        }
 
         shader
     }

@@ -17,6 +17,14 @@
 			}
 		},
 		{
+			"label": "Flamegraph Run Debug",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "sudo cargo flamegraph --dev"
+		},
+		{
 			"type": "cargo",
 			"command": "test",
 			"args": [

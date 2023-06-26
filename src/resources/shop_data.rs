@@ -16,7 +16,7 @@ pub struct ShopData {
 impl ShopData {
     pub fn load_pool(resources: &mut Resources) {
         resources.shop_data.pool.clear();
-        let mut sorted_by_rating = VecDeque::from_iter(resources.hero_pool.all_sorted());
+        let mut sorted_by_rating = VecDeque::from_iter(HeroPool::all_sorted(&resources));
         let heroes_per_extension = (sorted_by_rating.len() as f32 / (6.0)).ceil() as usize;
         let mut cur_level = 0;
         resources.shop_data.floor_extensions = vec![default()];
@@ -48,7 +48,7 @@ impl ShopData {
     }
 
     pub fn load_pool_full(resources: &mut Resources) {
-        resources.shop_data.pool = resources.hero_pool.all();
+        resources.shop_data.pool = HeroPool::all(&resources);
     }
 
     pub fn load_floor(resources: &mut Resources, floor: usize) {

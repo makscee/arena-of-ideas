@@ -10,16 +10,20 @@ pub struct HeroPool {
 }
 
 impl HeroPool {
-    pub fn insert(&mut self, path: PathBuf, unit: PackedUnit) {
-        self.heroes.insert(path, unit);
+    pub fn insert(path: PathBuf, unit: PackedUnit, resources: &mut Resources) {
+        resources.hero_pool.heroes.insert(path, unit);
     }
 
-    pub fn get(&self, path: &PathBuf) -> &PackedUnit {
-        self.heroes.get(path).unwrap()
+    pub fn get<'a>(path: &PathBuf, resources: &'a Resources) -> &'a PackedUnit {
+        resources.hero_pool.heroes.get(path).unwrap()
     }
 
-    pub fn find_by_name(&self, name: &str) -> Option<&PackedUnit> {
-        self.heroes.values().find(|x| x.name.eq(name))
+    pub fn find_by_name<'a>(name: &str, resources: &'a Resources) -> Option<&'a PackedUnit> {
+        resources
+            .hero_pool
+            .heroes
+            .values()
+            .find(|x| x.name.eq(name))
     }
 
     pub fn rarity_by_name(name: &str, resources: &Resources) -> Rarity {
@@ -36,31 +40,33 @@ impl HeroPool {
         }
     }
 
-    pub fn all(&self) -> Vec<PackedUnit> {
-        self.heroes.values().cloned().collect_vec()
+    pub fn all(resources: &Resources) -> Vec<PackedUnit> {
+        resources.hero_pool.heroes.values().cloned().collect_vec()
     }
 
-    pub fn list_top(&self) -> &PackedUnit {
-        self.heroes.get(&self.list_top).unwrap()
-    }
-
-    pub fn names_sorted(&self) -> Vec<String> {
-        self.power
+    pub fn names_sorted(resources: &Resources) -> Vec<String> {
+        resources
+            .hero_pool
+            .power
             .iter()
             .sorted_by(|a, b| a.1.partial_cmp(b.1).unwrap())
             .map(|(name, _)| name.clone())
             .collect_vec()
     }
 
-    pub fn len(&self) -> usize {
-        self.heroes.len()
+    pub fn len(resources: &Resources) -> usize {
+        resources.hero_pool.heroes.len()
     }
 
-    pub fn all_sorted(&self) -> Vec<PackedUnit> {
-        self.heroes
+    pub fn all_sorted(resources: &Resources) -> Vec<PackedUnit> {
+        resources
+            .hero_pool
+            .heroes
             .values()
             .filter_map(|unit| {
-                self.power
+                resources
+                    .hero_pool
+                    .power
                     .get(&unit.name)
                     .and_then(|x| Some((unit.clone(), x)))
             })

@@ -6,12 +6,12 @@ pub struct HousePool {
 }
 
 impl HousePool {
-    pub fn get_color(&self, house: &HouseName) -> Rgba<f32> {
-        self.houses.get(house).unwrap().color
+    pub fn get_color(house: &HouseName, resources: &Resources) -> Rgba<f32> {
+        resources.house_pool.houses.get(house).unwrap().color
     }
 
-    pub fn insert_house(&mut self, name: HouseName, house: House) {
-        self.houses.insert(name, house);
+    pub fn insert_house(name: HouseName, house: House, resources: &mut Resources) {
+        resources.house_pool.houses.insert(name, house);
     }
 }
 

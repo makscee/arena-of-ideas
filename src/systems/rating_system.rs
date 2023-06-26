@@ -55,9 +55,7 @@ impl RatingSystem {
         HashMap<String, (usize, usize)>,
     ) {
         let pool: HashMap<String, PackedUnit> = HashMap::from_iter(
-            resources
-                .hero_pool
-                .all()
+            HeroPool::all(&resources)
                 .into_iter()
                 .map(|x| (x.name.clone(), x)),
         );
@@ -160,7 +158,7 @@ impl RatingSystem {
     pub fn simulate_hero_ratings_calculation(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
 
-        let heroes = resources.hero_pool.all();
+        let heroes = HeroPool::all(&resources);
         let mut teams: Vec<PackedTeam> = default();
         let mut team_ratings = Ratings::default();
 

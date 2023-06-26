@@ -170,6 +170,7 @@ impl Resources {
     }
 
     pub fn load_geng(&mut self, watcher: &mut FileWatcherSystem, geng: &Geng) {
+        dbg!("load geng");
         self.geng = Some(geng.clone());
         ShaderPrograms::shader_library_loader(
             self,

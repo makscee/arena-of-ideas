@@ -8,6 +8,7 @@ Build
         rarity display {cm:2023-06-26T14:51:25}
     Show stats after status on card
     Shop reroll
+    Gallery {start:2023-06-26T19:43:22}
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change {cm:2023-06-21T15:25:50}

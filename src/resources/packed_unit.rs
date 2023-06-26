@@ -116,7 +116,7 @@ impl PackedUnit {
 
     pub fn house_color(&self, resources: &Resources) -> Rgba<f32> {
         if let Some(house) = self.house {
-            resources.house_pool.get_color(&house)
+            HousePool::get_color(&house, resources)
         } else {
             Rgba::MAGENTA
         }
@@ -203,12 +203,11 @@ impl PackedUnit {
                 "u_faction_color".to_owned(),
                 faction.color(&resources.options),
             )
-            .insert_vec2_ref("u_box".to_owned(), vec2(1.0, 1.0))
             .insert_vec2_ref("u_align".to_owned(), vec2::ZERO);
         if let Some(house) = self.house {
             unit_shader.parameters.uniforms.insert_color_ref(
                 "u_house_color".to_owned(),
-                resources.house_pool.get_color(&house),
+                HousePool::get_color(&house, resources),
             );
         }
         unit_shader
@@ -220,7 +219,7 @@ impl FileWatcherLoader for PackedUnit {
         watcher.watch_file(path, Box::new(Self::load));
         debug!("Load unit {:?}", path);
         let unit = futures::executor::block_on(load_json(path)).unwrap();
-        resources.hero_pool.insert(path.clone(), unit);
+        HeroPool::insert(path.clone(), unit, resources);
     }
 }
 

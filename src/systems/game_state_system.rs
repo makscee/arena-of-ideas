@@ -19,6 +19,10 @@ pub enum GameState {
 
 impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        if resources.input_data.down_keys.contains(&R) {
+            resources.transition_state = GameState::MainMenu;
+            resources.tape_player.head = 0.0;
+        }
         match resources.current_state {
             GameState::MainMenu => {
                 if resources.options.custom_game.enable {
@@ -28,9 +32,6 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Battle => {
-                if resources.input_data.down_keys.contains(&R) {
-                    resources.tape_player.head = 0.0;
-                }
                 if resources.input_data.down_keys.contains(&Escape) {
                     resources.tape_player.head = resources.tape_player.tape.length() - 3.0;
                 }
@@ -52,9 +53,6 @@ impl System for GameStateSystem {
 
                 if resources.input_data.down_keys.contains(&O) {
                     resources.transition_state = GameState::GameOver;
-                }
-                if resources.input_data.down_keys.contains(&R) {
-                    resources.transition_state = GameState::MainMenu;
                 }
                 if resources.input_data.down_keys.contains(&C) {
                     ShopSystem::change_g(100, Some("Cheat"), world, resources);
@@ -87,12 +85,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::Shop;
                 }
             }
-            GameState::CustomGame => {
-                if resources.input_data.down_keys.contains(&R) {
-                    resources.transition_state = GameState::MainMenu;
-                    resources.tape_player.head = 0.0;
-                }
-            }
+            GameState::CustomGame => {}
             GameState::Sacrifice => {
                 resources.tape_player.tape.persistent_node =
                     Node::default().lock(NodeLockType::Factions {
@@ -100,10 +93,6 @@ impl System for GameStateSystem {
                         world,
                         resources,
                     });
-                if resources.input_data.down_keys.contains(&R) {
-                    resources.transition_state = GameState::MainMenu;
-                    resources.tape_player.head = 0.0;
-                }
             }
         }
         self.systems
@@ -359,15 +348,15 @@ impl GameStateSystem {
                 resources.tape_player.clear();
                 resources.tape_player.tape = tape.unwrap();
             }
-            GameState::Gallery => {}
+            GameState::Gallery => {
+                GallerySystem::enter_state(resources);
+            }
             GameState::Sacrifice => {
                 if from == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
                     let team = TeamSystem::entity(Faction::Team, world);
-                    resources
-                        .hero_pool
-                        .find_by_name("Berserker")
+                    HeroPool::find_by_name("Berserker", &resources)
                         .unwrap()
                         .clone()
                         .unpack(world, resources, 1, None, team);

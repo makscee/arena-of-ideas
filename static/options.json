@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "initial_state": "Shop",
+    "initial_state": "Gallery",
     "walkthrough": false,
     "team_ratings": false,
     "rewind_speed": 10.0,

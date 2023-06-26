@@ -46,6 +46,6 @@ impl FileWatcherLoader for House {
         house.abilities.iter().for_each(|(name, ability)| {
             AbilityPool::define_ability(name, ability, house.color, house.name, resources);
         });
-        resources.house_pool.insert_house(house.name, house);
+        HousePool::insert_house(house.name, house, resources);
     }
 }
