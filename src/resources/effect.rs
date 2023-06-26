@@ -388,7 +388,7 @@ impl EffectWrapped {
                     _ => 0,
                 };
                 let target = match &self.effect {
-                    Effect::AddTeamStatus { .. } => TeamSystem::entity(&Faction::Team, world)
+                    Effect::AddTeamStatus { .. } => TeamSystem::entity(Faction::Team, world)
                         .expect(&format!("Team entity not found {context}")),
                     Effect::AddStatus { .. }
                     | Effect::RemoveStatus { .. }
@@ -495,7 +495,7 @@ impl EffectWrapped {
                     .get_int(var, world)
                     .unwrap_or_default();
                 TeamSystem::get_state_mut(
-                    &context
+                    context
                         .get_faction(&VarName::Faction, world)
                         .expect(&format!("Faction not found {context}")),
                     world,
@@ -762,7 +762,7 @@ impl EffectWrapped {
                         .get_faction(&VarName::Faction, world)
                         .expect(&format!("Faction not found {context}"))
                 };
-                let state = TeamSystem::get_state_mut(&faction, world);
+                let state = TeamSystem::get_state_mut(faction, world);
                 state.vars.change_int(var, delta);
             }
             Effect::SetTeamVarInt {
@@ -778,7 +778,7 @@ impl EffectWrapped {
                         .get_faction(&VarName::Faction, world)
                         .expect(&format!("Faction not found {context}"))
                 };
-                let state = TeamSystem::get_state_mut(&faction, world);
+                let state = TeamSystem::get_state_mut(faction, world);
                 state.vars.set_int(var, value);
             }
             Effect::ChangeOwnerVarInt { var, delta } => {

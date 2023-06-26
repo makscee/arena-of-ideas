@@ -10,7 +10,7 @@ pub struct ShopData {
     pub offered: Vec<PackedUnit>,
     pub floor_extensions: Vec<Vec<PackedUnit>>,
     pub load_new_hero: bool,
-    pub status_apply: Option<(String, i32, StatusTarget)>,
+    pub status_apply: Option<(String, i32, BuffTarget)>,
 }
 
 impl ShopData {

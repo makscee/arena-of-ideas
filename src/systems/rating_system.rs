@@ -115,7 +115,7 @@ impl RatingSystem {
                     ShopSystem::do_buy(entity, slot, resources, world);
                     ActionSystem::run_ticks(world, resources, &mut None);
                 }
-                let new_team = PackedTeam::pack(&Faction::Team, world, resources);
+                let new_team = PackedTeam::pack(Faction::Team, world, resources);
                 UnitSystem::clear_faction(world, resources, Faction::Team);
                 let (_, result) =
                     SimulationSystem::run_battle(&new_team, &dark, world, resources, None);

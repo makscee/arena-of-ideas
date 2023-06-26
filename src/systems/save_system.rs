@@ -12,7 +12,7 @@ fn path() -> PathBuf {
 impl SaveSystem {
     pub fn save(world: &legion::World, resources: &Resources) {
         debug!("Saving...");
-        let team = PackedTeam::pack(&Faction::Team, world, resources);
+        let team = PackedTeam::pack(Faction::Team, world, resources);
         let save = SaveData {
             team,
             floor: resources.ladder.current_ind(),

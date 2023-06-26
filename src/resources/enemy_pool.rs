@@ -24,9 +24,10 @@ impl EnemyPool {
             let unit = units.choose(rng).unwrap().clone();
             let replications = thread_rng().gen_range(1..=MAX_SLOTS);
             let mut team = PackedTeam::new(format!("{}s x{replications}", unit.name), vec![unit]);
-            if rng.gen::<f32>() > 0.5 {
-                BuffPool::random_team_buff(resources).apply(&mut team);
-            }
+            // todo: add random buffs
+            // if rng.gen::<f32>() > 0.5 {
+            //     BuffPool::random_team_buff(resources).apply(&mut team);
+            // }
             let team: PackedTeam = ReplicatedTeam { team, replications }.into();
             if teams.contains_key(&team.name) {
                 continue;

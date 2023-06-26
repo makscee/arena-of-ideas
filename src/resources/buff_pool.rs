@@ -1,33 +1,20 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 #[derive(Deserialize, Debug, Default)]
 pub struct BuffPool {
-    unit: Vec<(String, i32)>,
-    team: Vec<TeamBuff>,
+    pool: Vec<Buff>,
 }
-
-#[derive(Deserialize, Debug)]
-pub struct TeamBuff {
-    pub prefix: String,
-    pub statuses: HashMap<String, i32>,
-}
-
-impl TeamBuff {
-    pub fn apply(&self, team: &mut PackedTeam) {
-        for (status, charges) in self.statuses.iter() {
-            team.statuses.push((status.to_owned(), *charges));
-        }
-        team.name = format!("{} {}", self.prefix, team.name);
-    }
-}
-
 impl BuffPool {
-    pub fn random_team_buff(resources: &Resources) -> &TeamBuff {
-        resources.buff_pool.team.choose(&mut thread_rng()).unwrap()
-    }
-
-    pub fn random_unit_buff(resources: &Resources) -> &(String, i32) {
-        resources.buff_pool.unit.choose(&mut thread_rng()).unwrap()
+    pub fn get_random(count: usize, resources: &Resources) -> Vec<Buff> {
+        resources
+            .buff_pool
+            .pool
+            .choose_multiple_weighted(&mut thread_rng(), count, |x| x.rarity.weight())
+            .unwrap()
+            .cloned()
+            .collect_vec()
     }
 }
 

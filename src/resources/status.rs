@@ -230,6 +230,12 @@ impl Status {
         {
             shader.insert_string_ref("u_description".to_owned(), description.clone(), 0);
         }
+        shader
+            .chain_after
+            .push(resources.options.shaders.name.clone().insert_uniform(
+                "u_text".to_owned(),
+                ShaderUniform::String((0, name.to_string())),
+            ));
 
         shader
     }

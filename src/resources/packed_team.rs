@@ -99,8 +99,8 @@ impl PackedTeam {
         team
     }
 
-    pub fn pack(faction: &Faction, world: &legion::World, resources: &Resources) -> PackedTeam {
-        let units = UnitSystem::collect_faction_states(world, *faction)
+    pub fn pack(faction: Faction, world: &legion::World, resources: &Resources) -> PackedTeam {
+        let units = UnitSystem::collect_faction_states(world, faction)
             .iter()
             .sorted_by_key(|(_, state)| state.vars.get_int(&VarName::Slot))
             .map(|(entity, _)| PackedUnit::pack(*entity, world, resources))

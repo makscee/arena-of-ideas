@@ -8,9 +8,9 @@ pub struct ShopSystem;
 #[derive(enum_iterator::Sequence, Clone, Copy)]
 pub enum Product {
     Hero,
-    Status,
-    AoeStatus,
-    TeamStatus,
+    Buff,
+    AoeBuff,
+    TeamBuff,
     Slot,
 }
 
@@ -22,9 +22,9 @@ impl Product {
     pub fn price(&self) -> usize {
         match self {
             Product::Hero => 3,
-            Product::Status => 2,
-            Product::AoeStatus => 5,
-            Product::TeamStatus => 9,
+            Product::Buff => 2,
+            Product::AoeBuff => 5,
+            Product::TeamBuff => 9,
             Product::Slot => 4,
         }
     }
@@ -57,7 +57,7 @@ impl Product {
                 }
                 input_handler
             }
-            Product::Status => {
+            Product::Buff => {
                 fn input_handler(
                     event: HandleEvent,
                     entity: legion::Entity,
@@ -75,8 +75,8 @@ impl Product {
                                     .tape
                                     .close_panels(entity, resources.tape_player.head)
                             {
-                                ShopSystem::change_g(-price, Some("Buy Status"), world, resources);
-                                ShopSystem::show_status_buy_panel(resources);
+                                ShopSystem::change_g(-price, Some("Buy Buff"), world, resources);
+                                ShopSystem::show_buff_buy_panel(resources);
                             }
                         }
                         _ => {}
@@ -84,7 +84,7 @@ impl Product {
                 }
                 input_handler
             }
-            Product::AoeStatus => {
+            Product::AoeBuff => {
                 fn input_handler(
                     event: HandleEvent,
                     entity: legion::Entity,
@@ -104,11 +104,11 @@ impl Product {
                             {
                                 ShopSystem::change_g(
                                     -price,
-                                    Some("Buy Aoe Status"),
+                                    Some("Buy Aoe Buff"),
                                     world,
                                     resources,
                                 );
-                                ShopSystem::show_aoe_status_buy_panel(resources);
+                                ShopSystem::show_aoe_buff_buy_panel(resources);
                             }
                         }
                         _ => {}
@@ -116,7 +116,7 @@ impl Product {
                 }
                 input_handler
             }
-            Product::TeamStatus => {
+            Product::TeamBuff => {
                 fn input_handler(
                     event: HandleEvent,
                     entity: legion::Entity,
@@ -135,11 +135,11 @@ impl Product {
                             {
                                 ShopSystem::change_g(
                                     -price,
-                                    Some("Buy Team Status"),
+                                    Some("Buy Team Buff"),
                                     world,
                                     resources,
                                 );
-                                ShopSystem::show_team_status_buy_panel(resources);
+                                ShopSystem::show_team_buff_buy_panel(resources);
                             }
                         }
                         _ => {}
@@ -165,7 +165,7 @@ impl Product {
                                     .close_panels(entity, resources.tape_player.head)
                             {
                                 ShopSystem::change_g(-price, Some("Buy Slot"), world, resources);
-                                TeamSystem::change_slots(1, &Faction::Team, world);
+                                TeamSystem::change_slots(1, Faction::Team, world);
                                 Product::Slot.create_button(resources);
                                 PanelsSystem::open_push(
                                     resources.options.colors.add,
@@ -185,7 +185,7 @@ impl Product {
 
     pub fn update_handler(&self) -> Handler {
         match self {
-            Product::Hero | Product::TeamStatus | Product::Slot => {
+            Product::Hero | Product::TeamBuff | Product::Slot => {
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
@@ -200,7 +200,7 @@ impl Product {
                 }
                 update_handler
             }
-            Product::Status | Product::AoeStatus => {
+            Product::Buff | Product::AoeBuff => {
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
@@ -209,7 +209,11 @@ impl Product {
                     _: &mut Resources,
                 ) {
                     let team_empty = UnitSystem::collect_faction(world, Faction::Team).len() == 0;
-                    shader.set_active(ShopSystem::is_hero_affordable(world) && !team_empty);
+                    shader.set_active(
+                        ShopSystem::get_g(world)
+                            >= shader.parameters.uniforms.try_get_int("u_price").unwrap()
+                            && !team_empty,
+                    );
                 }
                 update_handler
             }
@@ -223,20 +227,20 @@ impl Product {
                 "Buy Hero".to_owned(),
                 format!("-{cost} g"),
             )],
-            Product::Status => vec![(
+            Product::Buff => vec![(
                 options.colors.shop,
-                "Buy Status".to_owned(),
-                format!("Add status to 1 hero\n-{cost} g"),
+                "Buy Buff".to_owned(),
+                format!("Add buff to 1 hero\n-{cost} g"),
             )],
-            Product::AoeStatus => vec![(
+            Product::AoeBuff => vec![(
                 options.colors.shop,
-                "Buy Aoe Status".to_owned(),
-                format!("Apply a status\nto each hero on the team\n-{cost} g"),
+                "Buy Aoe Buff".to_owned(),
+                format!("Apply a buff\nto each hero on the team\n-{cost} g"),
             )],
-            Product::TeamStatus => vec![(
+            Product::TeamBuff => vec![(
                 options.colors.shop,
-                "Buy Team Status".to_owned(),
-                format!("Add status that is always\napplied to whole team\n-{cost} g"),
+                "Buy Team Buff".to_owned(),
+                format!("Add buff that is always\napplied to whole team\n-{cost} g"),
             )],
             Product::Slot => vec![(
                 options.colors.shop,
@@ -249,9 +253,9 @@ impl Product {
     pub fn title(&self) -> String {
         match self {
             Product::Hero => "Buy Hero".to_owned(),
-            Product::Status => "Buy Status".to_owned(),
-            Product::AoeStatus => "Buy Aoe Status".to_owned(),
-            Product::TeamStatus => "Buy Team Status".to_owned(),
+            Product::Buff => "Buy Buff".to_owned(),
+            Product::AoeBuff => "Buy Aoe Buff".to_owned(),
+            Product::TeamBuff => "Buy Team Buff".to_owned(),
             Product::Slot => "Buy Slot".to_owned(),
         }
     }
@@ -331,38 +335,26 @@ impl ShopSystem {
         PanelsSystem::open_card_choice(choice, resources);
     }
 
-    pub fn show_status_buy_panel(resources: &mut Resources) {
-        let mut statuses = Vec::default();
-        statuses.push(("Chaotic".to_owned(), 2));
-        statuses.push(("Fortitude".to_owned(), 3));
-        statuses.push(("Shield".to_owned(), 1));
-        let choice = CardChoice::BuyStatus {
-            statuses,
-            target: StatusTarget::Single { slot: None },
+    pub fn show_buff_buy_panel(resources: &mut Resources) {
+        let choice = CardChoice::BuyBuff {
+            buffs: BuffPool::get_random(3, resources),
+            target: BuffTarget::Single { slot: None },
         };
         PanelsSystem::open_card_choice(choice, resources);
     }
 
-    pub fn show_team_status_buy_panel(resources: &mut Resources) {
-        let mut statuses = Vec::default();
-        statuses.push(("Chaotic".to_owned(), 2));
-        statuses.push(("Fortitude".to_owned(), 3));
-        statuses.push(("Shield".to_owned(), 1));
-        let choice = CardChoice::BuyStatus {
-            statuses,
-            target: StatusTarget::Team,
+    pub fn show_team_buff_buy_panel(resources: &mut Resources) {
+        let choice = CardChoice::BuyBuff {
+            buffs: BuffPool::get_random(3, resources),
+            target: BuffTarget::Team,
         };
         PanelsSystem::open_card_choice(choice, resources);
     }
 
-    pub fn show_aoe_status_buy_panel(resources: &mut Resources) {
-        let mut statuses = Vec::default();
-        statuses.push(("Chaotic".to_owned(), 2));
-        statuses.push(("Fortitude".to_owned(), 3));
-        statuses.push(("Shield".to_owned(), 1));
-        let choice = CardChoice::BuyStatus {
-            statuses,
-            target: StatusTarget::Aoe,
+    pub fn show_aoe_buff_buy_panel(resources: &mut Resources) {
+        let choice = CardChoice::BuyBuff {
+            buffs: BuffPool::get_random(3, resources),
+            target: BuffTarget::Aoe,
         };
         PanelsSystem::open_card_choice(choice, resources);
     }
@@ -381,7 +373,7 @@ impl ShopSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let team = TeamSystem::entity(&Faction::Team, world);
+        let team = TeamSystem::entity(Faction::Team, world);
         unit.unpack(world, resources, 0, None, team);
         SlotSystem::fill_gaps(Faction::Team, world);
     }
@@ -392,7 +384,7 @@ impl ShopSystem {
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
-        let team = TeamSystem::entity(&Faction::Team, world);
+        let team = TeamSystem::entity(Faction::Team, world);
         let state = ContextState::get_mut(entity, world);
         state.parent = team;
         state.vars.set_int(&VarName::Slot, slot as i32);
@@ -430,7 +422,7 @@ impl ShopSystem {
     }
 
     pub fn get_g(world: &legion::World) -> i32 {
-        TeamSystem::get_state(&Faction::Team, world)
+        TeamSystem::get_state(Faction::Team, world)
             .vars
             .get_int(&VarName::G)
     }
@@ -441,7 +433,7 @@ impl ShopSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        TeamSystem::get_state_mut(&Faction::Team, world)
+        TeamSystem::get_state_mut(Faction::Team, world)
             .vars
             .change_int(&VarName::G, delta);
         PanelsSystem::refresh_stats(world, resources);
@@ -460,19 +452,19 @@ impl ShopSystem {
     }
 
     pub fn reset_g(world: &mut legion::World) {
-        TeamSystem::get_state_mut(&Faction::Team, world)
+        TeamSystem::get_state_mut(Faction::Team, world)
             .vars
             .set_int(&VarName::G, 0);
     }
 
     pub fn sell_price(world: &legion::World) -> i32 {
-        TeamSystem::get_state(&Faction::Team, world)
+        TeamSystem::get_state(Faction::Team, world)
             .vars
             .get_int(&VarName::SellPrice)
     }
 
     pub fn buy_price(world: &legion::World) -> i32 {
-        TeamSystem::get_state(&Faction::Team, world)
+        TeamSystem::get_state(Faction::Team, world)
             .vars
             .get_int(&VarName::BuyPrice)
     }
@@ -481,7 +473,7 @@ impl ShopSystem {
         if resources.ladder.current_ind() == 0 {
             return 0;
         }
-        let vars = &TeamSystem::get_state(&Faction::Team, world).vars;
+        let vars = &TeamSystem::get_state(Faction::Team, world).vars;
         if vars.get_int(&VarName::FreeRerolls) > 0 {
             0
         } else {
@@ -490,7 +482,7 @@ impl ShopSystem {
     }
 
     pub fn is_reroll_affordable(world: &legion::World) -> bool {
-        let vars = &TeamSystem::get_state(&Faction::Team, world).vars;
+        let vars = &TeamSystem::get_state(Faction::Team, world).vars;
         vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
             || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
     }
@@ -505,7 +497,7 @@ impl ShopSystem {
         {
             return;
         }
-        let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
+        let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
             vars.change_int(&VarName::FreeRerolls, -1);
@@ -525,7 +517,7 @@ impl ShopSystem {
         PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
         PackedTeam::new("Team".to_owned(), default()).unpack(&Faction::Team, world, resources);
 
-        let vars = &mut TeamSystem::get_state_mut(&Faction::Team, world).vars;
+        let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
         vars.set_int(&VarName::G, 0);
         vars.set_int(&VarName::BuyPrice, 3);
         vars.set_int(&VarName::SellPrice, 1);
@@ -614,16 +606,16 @@ impl ShopSystem {
         .push_as_panel(entity, resources);
     }
 
-    pub fn start_status_apply(
+    pub fn start_buff_apply(
         name: String,
         charges: i32,
-        target: StatusTarget,
+        target: BuffTarget,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
         resources.shop_data.status_apply = Some((name, charges, target));
         match &target {
-            StatusTarget::Single { .. } => {
+            BuffTarget::Single { .. } => {
                 SlotSystem::add_slots_buttons(
                     Faction::Team,
                     "Apply",
@@ -633,41 +625,41 @@ impl ShopSystem {
                     resources,
                 );
             }
-            StatusTarget::Aoe | StatusTarget::Team => Self::finish_status_apply(world, resources),
+            BuffTarget::Aoe | BuffTarget::Team => Self::finish_buff_apply(world, resources),
         }
     }
 
-    pub fn finish_status_apply(world: &mut legion::World, resources: &mut Resources) {
+    pub fn finish_buff_apply(world: &mut legion::World, resources: &mut Resources) {
         let (name, charges, target) = resources.shop_data.status_apply.take().unwrap();
         let mut node = Some(Node::default());
         let mut entities = Vec::default();
         match target {
-            StatusTarget::Single { slot } => {
+            BuffTarget::Single { slot } => {
                 entities.push(
                     SlotSystem::find_unit_by_slot(
-                        slot.expect("Slot wasn't set for status apply"),
+                        slot.expect("Slot wasn't set for buff apply"),
                         &Faction::Team,
                         world,
                     )
                     .unwrap(),
                 );
-                Product::Status.create_button(resources);
+                Product::Buff.create_button(resources);
             }
-            StatusTarget::Aoe => {
+            BuffTarget::Aoe => {
                 for unit in UnitSystem::collect_faction(world, Faction::Team) {
                     entities.push(unit);
                 }
-                Product::AoeStatus.create_button(resources);
+                Product::AoeBuff.create_button(resources);
             }
-            StatusTarget::Team => {
-                entities.push(TeamSystem::entity(&Faction::Team, world).unwrap());
+            BuffTarget::Team => {
+                entities.push(TeamSystem::entity(Faction::Team, world).unwrap());
                 PanelsSystem::open_push(
                     resources.options.colors.player,
                     "New Team Status",
                     &format!("{name} +{charges}"),
                     resources,
                 );
-                Product::TeamStatus.create_button(resources);
+                Product::TeamBuff.create_button(resources);
             }
         };
         for entity in entities {

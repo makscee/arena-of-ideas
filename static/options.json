@@ -583,22 +583,22 @@
             "parameters": {
                 "box": {
                     "size": [
-                        1.1,
+                        1.5,
                         0.5
                     ]
                 },
                 "uniforms": {
                     "u_color": "#ffffff",
                     "u_outline_color": "#000000",
+                    "u_mid_border": 0.06,
                     "u_alpha": 1.0,
                     "u_size": 0.6,
-                    "u_card_size": -0.02,
+                    "u_card_size": 0.05,
                     "u_outline_fbm": 0.15,
                     "u_align": [
                         0.0,
                         0.0
                     ],
-                    "u_size_over_t": 0.0,
                     "u_text_border": 0.2,
                     "u_text_inside": 0.48,
                     "u_outline_fade": 1.0,
@@ -608,11 +608,11 @@
                     ],
                     "u_card_offset": [
                         0.0,
-                        -0.1
+                        1.1
                     ],
                     "u_padding": 0.0,
                     "mapping": {
-                        "u_outline_color": "c_outline"
+                        "u_outline_color": "u_house_color"
                     }
                 }
             },

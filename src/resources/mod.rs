@@ -9,8 +9,7 @@ mod ability_name;
 mod ability_pool;
 mod animated_shader_uniforms;
 mod battle_data;
-mod bonus_effect;
-mod bonus_effect_pool;
+mod buff;
 mod buff_pool;
 mod camera;
 mod condition;
@@ -32,6 +31,7 @@ mod ladder;
 mod options;
 mod packed_team;
 mod packed_unit;
+mod rarity;
 mod sacrifice_data;
 mod shader_programs;
 mod shader_uniforms;
@@ -49,8 +49,7 @@ pub use ability_name::*;
 pub use ability_pool::*;
 pub use animated_shader_uniforms::*;
 pub use battle_data::*;
-pub use bonus_effect::*;
-pub use bonus_effect_pool::*;
+pub use buff::*;
 pub use buff_pool::*;
 pub use camera::*;
 pub use condition::*;
@@ -72,6 +71,7 @@ pub use ladder::*;
 pub use options::*;
 pub use packed_team::*;
 pub use packed_unit::*;
+pub use rarity::*;
 pub use sacrifice_data::*;
 pub use shader_programs::*;
 pub use shader_uniforms::*;
@@ -109,7 +109,6 @@ pub struct Resources {
 
     pub house_pool: HousePool,
     pub hero_pool: HeroPool,
-    pub bonus_pool: BonusEffectPool,
     pub definitions: Definitions,
 
     pub current_state: GameState,
@@ -152,7 +151,6 @@ impl Resources {
             options,
             ability_pool: default(),
             prepared_shaders: default(),
-            bonus_pool: default(),
             definitions_regex: Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap(),
             status_library: default(),
             buff_pool: default(),

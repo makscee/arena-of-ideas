@@ -188,8 +188,8 @@ impl VfxSystem {
     }
 
     pub fn vfx_battle_team_names(world: &legion::World, resources: &Resources) -> (Shader, Shader) {
-        let light = TeamSystem::get_state(&Faction::Light, world).name.clone();
-        let dark = TeamSystem::get_state(&Faction::Dark, world).name.clone();
+        let light = TeamSystem::get_state(Faction::Light, world).name.clone();
+        let dark = TeamSystem::get_state(Faction::Dark, world).name.clone();
         let shader = &resources.options.shaders.team_name;
         let dark_shader = shader
             .clone()

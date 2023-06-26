@@ -100,7 +100,7 @@ impl SlotSystem {
         let mut result = None;
         let mut min_distance = f32::MAX;
         for faction in Faction::all_iter() {
-            if let Some(state) = TeamSystem::try_get_state(&faction, world) {
+            if let Some(state) = TeamSystem::try_get_state(faction, world) {
                 for slot in 1..=state.vars.get_int(&VarName::Slots) as usize {
                     let slot_pos = Self::get_position(slot, &faction, resources);
                     let distance = (mouse_pos - slot_pos).len();
@@ -137,7 +137,7 @@ impl SlotSystem {
         world: &legion::World,
     ) -> HashMap<Faction, usize> {
         HashMap::from_iter(factions.into_iter().filter_map(|faction| {
-            if let Some(state) = TeamSystem::try_get_state(&faction, world) {
+            if let Some(state) = TeamSystem::try_get_state(faction, world) {
                 Some((faction, state.vars.get_int(&VarName::Slots) as usize))
             } else {
                 None
@@ -318,9 +318,9 @@ impl SlotSystem {
                 Faction::Team => match resources.current_state {
                     GameState::Shop => {
                         if let Some(data) = resources.shop_data.status_apply.as_mut() {
-                            data.2 = StatusTarget::Single { slot: Some(slot) };
+                            data.2 = BuffTarget::Single { slot: Some(slot) };
                         }
-                        ShopSystem::finish_status_apply(world, resources);
+                        ShopSystem::finish_buff_apply(world, resources);
                     }
                     GameState::Sacrifice => {
                         if !resources.sacrifice_data.marked_units.contains(&entity) {
@@ -415,7 +415,7 @@ impl SlotSystem {
         world: &mut legion::World,
         ignore: Option<legion::Entity>,
     ) -> bool {
-        let slots = TeamSystem::get_state(&faction, world)
+        let slots = TeamSystem::get_state(faction, world)
             .vars
             .get_int(&VarName::Slots) as usize;
         let units = UnitSystem::collect_faction(world, faction)

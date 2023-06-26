@@ -16,7 +16,7 @@ impl SacrificeSystem {
             ActionSystem::death_check(world, resources, &mut None);
             GameStateSystem::set_transition(GameState::Shop, resources);
         }
-        TeamSystem::get_state_mut(&Faction::Team, world)
+        TeamSystem::get_state_mut(Faction::Team, world)
             .vars
             .change_int(&VarName::Stars, sum);
     }

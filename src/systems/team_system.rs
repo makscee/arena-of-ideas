@@ -4,7 +4,7 @@ pub struct TeamSystem;
 
 impl TeamSystem {
     pub fn try_get_state<'a>(
-        faction: &Faction,
+        faction: Faction,
         world: &'a legion::World,
     ) -> Option<&'a ContextState> {
         if let Some(entity) = Self::entity(faction, world) {
@@ -14,13 +14,13 @@ impl TeamSystem {
         }
     }
 
-    pub fn get_state<'a>(faction: &Faction, world: &'a legion::World) -> &'a ContextState {
+    pub fn get_state<'a>(faction: Faction, world: &'a legion::World) -> &'a ContextState {
         Self::try_get_state(faction, world)
             .expect(&format!("Failed to find team entity for {faction}"))
     }
 
     pub fn get_state_mut<'a>(
-        faction: &Faction,
+        faction: Faction,
         world: &'a mut legion::World,
     ) -> &'a mut ContextState {
         ContextState::get_mut(
@@ -30,15 +30,15 @@ impl TeamSystem {
         )
     }
 
-    pub fn entity(faction: &Faction, world: &legion::World) -> Option<legion::Entity> {
+    pub fn entity(faction: Faction, world: &legion::World) -> Option<legion::Entity> {
         <(&EntityComponent, &ContextState)>::query()
             .filter(component::<TeamComponent>())
             .iter(world)
-            .find(|(_, state)| state.get_faction(&VarName::Faction, world) == *faction)
+            .find(|(_, state)| state.get_faction(&VarName::Faction, world) == faction)
             .map(|x| x.0.entity)
     }
 
-    pub fn change_slots(delta: i32, faction: &Faction, world: &mut legion::World) {
+    pub fn change_slots(delta: i32, faction: Faction, world: &mut legion::World) {
         Self::get_state_mut(faction, world)
             .vars
             .change_int(&VarName::Slots, delta);

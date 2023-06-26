@@ -253,7 +253,7 @@ impl UnitSystem {
             world.remove(*entity);
         }
         for faction in factions {
-            if let Some(team) = TeamSystem::entity(faction, world) {
+            if let Some(team) = TeamSystem::entity(*faction, world) {
                 world.remove(team);
             }
         }

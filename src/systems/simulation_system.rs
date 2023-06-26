@@ -50,10 +50,10 @@ impl SimulationSystem {
             || format!("Run simulation: {light} {dark}"),
             &LogContext::Test,
         );
-        TeamSystem::get_state_mut(&Faction::Light, world)
+        TeamSystem::get_state_mut(Faction::Light, world)
             .vars
             .set_int(&VarName::Slots, light.units.len() as i32);
-        TeamSystem::get_state_mut(&Faction::Dark, world)
+        TeamSystem::get_state_mut(Faction::Dark, world)
             .vars
             .set_int(&VarName::Slots, dark.units.len() as i32);
         BattleSystem::run_battle(world, resources, &mut None);
@@ -68,8 +68,8 @@ impl SimulationSystem {
                 );
                 let result = condition.calculate(context, world, resources).unwrap();
                 if !result {
-                    let light = PackedTeam::pack(&Faction::Light, world, resources);
-                    let dark = PackedTeam::pack(&Faction::Dark, world, resources);
+                    let light = PackedTeam::pack(Faction::Light, world, resources);
+                    let dark = PackedTeam::pack(Faction::Dark, world, resources);
                     println!("Light: {light}\nDark : {dark}");
                     0
                 } else {

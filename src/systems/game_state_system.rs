@@ -275,6 +275,8 @@ impl GameStateSystem {
                 ShopSystem::enter(world, resources);
                 PanelsSystem::open_stats(world, resources);
 
+                // ShopSystem::show_buff_buy_panel(resources);
+
                 // let entity = resources
                 //     .hero_pool
                 //     .find_by_name("Havoc")
@@ -354,7 +356,7 @@ impl GameStateSystem {
                 let mut tape = Some(Tape::default());
                 resources.battle_data.last_score =
                     BattleSystem::run_battle(world, resources, &mut tape);
-                TeamSystem::get_state_mut(&Faction::Team, world)
+                TeamSystem::get_state_mut(Faction::Team, world)
                     .vars
                     .change_int(&VarName::Stars, resources.battle_data.last_score as i32);
                 resources.tape_player.clear();

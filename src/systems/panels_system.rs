@@ -94,32 +94,50 @@ impl PanelsSystem {
         }
         let padding = resources.options.floats.panel_row_padding;
         let faction = match &choice {
-            CardChoice::BuyStatus { .. } | CardChoice::BuyHero { .. } => Faction::Shop,
+            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => Faction::Shop,
             CardChoice::SelectEnemy { .. } => Faction::Dark,
         };
-        let cards: Vec<(String, usize, Shader)> = match &choice {
+        let cards: Vec<(String, usize, Shader, Rgba<f32>)> = match &choice {
             CardChoice::BuyHero { units } => units
                 .iter()
-                .map(|x| ("Hero".to_owned(), 1, x.get_ui_shader(faction, resources)))
+                .map(|x| {
+                    (
+                        "Hero".to_owned(),
+                        1,
+                        x.get_ui_shader(faction, resources),
+                        resources.options.colors.player,
+                    )
+                })
                 .collect_vec(),
             CardChoice::SelectEnemy { teams } => teams
                 .iter()
-                .map(|team| {
+                .enumerate()
+                .map(|(ind, team)| {
                     (
                         team.name.clone(),
                         team.units.len(),
                         team.units[0].get_ui_shader(faction, resources),
+                        match ind {
+                            0 => resources.options.colors.common,
+                            1 => resources.options.colors.rare,
+                            2 => resources.options.colors.epic,
+                            _ => panic!(),
+                        },
                     )
                 })
                 .collect_vec(),
-            CardChoice::BuyStatus { statuses, target } => statuses
+            CardChoice::BuyBuff {
+                buffs: statuses,
+                target,
+            } => statuses
                 .iter()
-                .map(|(name, count)| {
-                    let status = StatusLibrary::get(name, resources);
+                .map(|buff| {
+                    let status = StatusLibrary::get(&buff.name, resources);
                     (
-                        name.clone(),
-                        *count as usize,
-                        status.generate_card_shader(name, resources),
+                        buff.rarity.to_string(),
+                        buff.charges as usize,
+                        status.generate_card_shader(&buff.name, resources),
+                        buff.rarity.color(resources),
                     )
                 })
                 .collect_vec(),
@@ -127,31 +145,27 @@ impl PanelsSystem {
         let title = match &choice {
             CardChoice::BuyHero { .. } => "Choose new hero",
             CardChoice::SelectEnemy { .. } => "Choose enemy team",
-            CardChoice::BuyStatus { statuses, target } => match target {
-                StatusTarget::Single { .. } => "Choose status for one hero",
-                StatusTarget::Aoe => "Choose status for all heroes",
-                StatusTarget::Team => "Choose team status",
+            CardChoice::BuyBuff { target, .. } => match target {
+                BuffTarget::Single { .. } => "Choose buff for one hero",
+                BuffTarget::Aoe => "Choose buff for all heroes",
+                BuffTarget::Team => "Choose team buff",
             },
         };
-        let (panel_color, card_color) = match &choice {
-            CardChoice::BuyStatus { .. } | CardChoice::BuyHero { .. } => (
-                resources.options.colors.shop,
-                resources.options.colors.player,
-            ),
-            CardChoice::SelectEnemy { .. } => (
-                resources.options.colors.defeat,
-                resources.options.colors.dark,
-            ),
+        let panel_color = match &choice {
+            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => {
+                resources.options.colors.shop
+            }
+            CardChoice::SelectEnemy { .. } => resources.options.colors.enemy,
         };
         let shaders = cards
             .into_iter()
             .enumerate()
-            .map(|(ind, (name, count, shader))| {
+            .map(|(ind, (name, count, shader, color))| {
                 let mut shader = Self::generate_card_shader(shader, &resources.options)
                     .wrap_panel_header(&name, &resources.options)
                     .wrap_panel_footer(PanelFooterButton::Select, &resources.options)
                     .insert_int("u_index".to_owned(), ind as i32)
-                    .set_panel_color(card_color);
+                    .set_panel_color(color);
 
                 fn update_handler(
                     _: HandleEvent,
@@ -217,7 +231,7 @@ impl PanelsSystem {
         let mut texts = Vec::default();
         texts.push(format!("g: {}", ShopSystem::get_g(world)));
         texts.push(format!("level: {}", resources.ladder.current_ind()));
-        let mut team_status = TeamSystem::get_state(&Faction::Team, world)
+        let mut team_status = TeamSystem::get_state(Faction::Team, world)
             .statuses
             .iter()
             .map(|(name, charges)| format!("{name} +{charges}"))
@@ -303,14 +317,14 @@ pub enum CardChoice {
     SelectEnemy {
         teams: Vec<PackedTeam>,
     },
-    BuyStatus {
-        statuses: Vec<(String, i32)>,
-        target: StatusTarget,
+    BuyBuff {
+        buffs: Vec<Buff>,
+        target: BuffTarget,
     },
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum StatusTarget {
+pub enum BuffTarget {
     Single { slot: Option<usize> },
     Aoe,
     Team,
@@ -326,17 +340,14 @@ impl CardChoice {
             }
             CardChoice::SelectEnemy { mut teams } => {
                 let dark = teams.remove(ind);
-                let light = PackedTeam::pack(&Faction::Team, world, resources);
+                let light = PackedTeam::pack(Faction::Team, world, resources);
                 resources.battle_data.last_difficulty = ind;
                 BattleSystem::init_ladder_battle(&light, dark, world, resources);
                 GameStateSystem::set_transition(GameState::Battle, resources);
             }
-            CardChoice::BuyStatus {
-                mut statuses,
-                target,
-            } => {
-                let (name, charges) = { statuses.remove(ind) };
-                ShopSystem::start_status_apply(name, charges, target, world, resources)
+            CardChoice::BuyBuff { mut buffs, target } => {
+                let buff = { buffs.remove(ind) };
+                ShopSystem::start_buff_apply(buff.name, buff.charges, target, world, resources)
             }
         }
     }

@@ -30,8 +30,8 @@ impl BattleSystem {
             if ticks > 100 {
                 error!(
                     "Exceeded ticks limit: {ticks}, {} x {}",
-                    TeamSystem::get_state(&Faction::Light, world).name,
-                    TeamSystem::get_state(&Faction::Dark, world).name
+                    TeamSystem::get_state(Faction::Light, world).name,
+                    TeamSystem::get_state(Faction::Dark, world).name
                 );
                 return 0;
             }

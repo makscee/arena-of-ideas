@@ -1,60 +1,58 @@
 {
-    "unit": [
-        [
-            "Empower",
-            1
-        ],
-        [
-            "Fortitude",
-            1
-        ],
-        [
-            "Defense",
-            1
-        ]
-    ],
-    "team": [
+    "pool": [
         {
-            "prefix": "Shielded",
-            "statuses": {
-                "Shield": 1
-            }
+            "name": "Vitality",
+            "charges": 2,
+            "rarity": "Common",
+            "team_prefix": "Healthy"
         },
         {
-            "prefix": "Grown",
-            "statuses": {
-                "Growth": 1
-            }
+            "name": "Thorns",
+            "charges": 1,
+            "rarity": "Common",
+            "team_prefix": "Prickly"
         },
         {
-            "prefix": "Big",
-            "statuses": {
-                "Growth": 3
-            }
+            "name": "Volatility",
+            "charges": 1,
+            "rarity": "Common",
+            "team_prefix": "Volatile"
         },
         {
-            "prefix": "Hard",
-            "statuses": {
-                "Defense": 2
-            }
+            "name": "Strength",
+            "charges": 1,
+            "rarity": "Rare",
+            "team_prefix": "Strong"
         },
         {
-            "prefix": "Healthy",
-            "statuses": {
-                "Fortitude": 4
-            }
+            "name": "Martyr",
+            "charges": 1,
+            "rarity": "Rare",
+            "team_prefix": "Holy"
         },
         {
-            "prefix": "Dark",
-            "statuses": {
-                "DarkVitality": 1
-            }
+            "name": "Defense",
+            "charges": 1,
+            "rarity": "Epic",
+            "team_prefix": "Hard"
         },
         {
-            "prefix": "Empowered",
-            "statuses": {
-                "Empower": 5
-            }
+            "name": "Shield",
+            "charges": 1,
+            "rarity": "Epic",
+            "team_prefix": "Shielded"
+        },
+        {
+            "name": "Splash",
+            "charges": 1,
+            "rarity": "Legendary",
+            "team_prefix": "Splashing"
+        },
+        {
+            "name": "Rebirth",
+            "charges": 2,
+            "rarity": "Legendary",
+            "team_prefix": "Immortal"
         }
     ]
 }

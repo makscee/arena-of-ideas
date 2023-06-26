@@ -116,7 +116,7 @@ impl ExpressionInt {
                 }
                 ExpressionInt::TeamVar { var } => {
                     let faction = context.get_faction(&VarName::Faction, world).unwrap();
-                    TeamSystem::get_state(&faction, world)
+                    TeamSystem::get_state(faction, world)
                         .vars
                         .try_get_int(var)
                         .context("Failed to get team var")
