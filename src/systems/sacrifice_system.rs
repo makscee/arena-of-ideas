@@ -14,10 +14,8 @@ impl SacrificeSystem {
             Effect::Kill.wrap().push(context, resources);
             ActionSystem::spin(world, resources, &mut None);
             ActionSystem::death_check(world, resources, &mut None);
-            GameStateSystem::set_transition(GameState::Shop, resources);
         }
-        TeamSystem::get_state_mut(Faction::Team, world)
-            .vars
-            .change_int(&VarName::Stars, sum);
+        ShopSystem::change_g(sum, Some("Sacrifice"), world, resources);
+        GameStateSystem::set_transition(GameState::Shop, resources);
     }
 }

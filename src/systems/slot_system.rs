@@ -274,40 +274,20 @@ impl SlotSystem {
         }
     }
 
-    pub fn handle_state_enter(
-        state: GameState,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) {
-        for (slot, entity, shader) in
-            <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
-        {
+    pub fn handle_state_enter(state: GameState, world: &mut legion::World) {
+        for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
             shader.chain_after.clear();
-            let entity = entity.entity;
             let faction = slot.faction;
             let enabled = match state {
                 GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
-                GameState::Sacrifice => {
-                    if faction == Faction::Team {
-                        Self::add_slot_activation_btn(
-                            shader,
-                            "Sacrifice",
-                            Some("u_filled"),
-                            None,
-                            entity,
-                            resources,
-                        )
-                    }
-
-                    faction == Faction::Team
-                }
+                GameState::Sacrifice => faction == Faction::Team,
                 _ => true,
             };
             shader.insert_float_ref("u_enabled".to_owned(), enabled as i32 as f32);
         }
     }
 
-    fn handle_slot_activation(
+    pub fn handle_slot_activation(
         slot: usize,
         faction: Faction,
         world: &mut legion::World,
@@ -325,10 +305,9 @@ impl SlotSystem {
                     GameState::Sacrifice => {
                         if !resources.sacrifice_data.marked_units.contains(&entity) {
                             resources.sacrifice_data.marked_units.insert(entity);
-                            debug!("Mark {entity:?}");
                             let position = Self::get_position(slot, &faction, resources);
                             let text = format!(
-                                "+{}",
+                                "+{} g",
                                 ContextState::get(entity, world).get_int(&VarName::Rank, world)
                             );
                             Node::new_panel_scaled(
@@ -342,7 +321,7 @@ impl SlotSystem {
                                         "u_color".to_owned(),
                                         resources.options.colors.subtract,
                                     )
-                                    .insert_string("u_star_text".to_owned(), text, 1),
+                                    .insert_string("u_g_text".to_owned(), text, 1),
                             )
                             .lock(NodeLockType::Empty)
                             .push_as_panel(entity, resources);

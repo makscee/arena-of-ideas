@@ -744,11 +744,13 @@
         "slot_sacrifice_marker": {
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
-                "uniforms": {
-                    "u_box": [
+                "box": {
+                    "size": [
                         1.8,
-                        0.25
-                    ],
+                        0.2
+                    ]
+                },
+                "uniforms": {
                     "u_rounding": 0.1,
                     "u_gradient": 0.3,
                     "u_sdf_cut": 0.2,
@@ -760,6 +762,12 @@
                 {
                     "path": "shaders/vfx/rectangle.glsl",
                     "parameters": {
+                        "box": {
+                            "size": [
+                                1.8,
+                                0.2
+                            ]
+                        },
                         "uniforms": {
                             "u_rotation": -1.0
                         }
@@ -770,42 +778,23 @@
                     "parameters": {
                         "uniforms": {
                             "u_color": "#ffffff",
-                            "u_outline_fade": 1.0,
-                            "u_size": 3.3,
+                            "u_outline_color": "#ffffff",
                             "u_text_inside": 0.48,
-                            "u_text_border": 0.1,
+                            "u_text_border": 0.3,
+                            "u_mid_border": 0.06,
                             "u_rotation": 0.0,
-                            "u_outline_fbm": 0.2,
-                            "u_offset": [
-                                -0.3,
-                                0.0
-                            ],
                             "u_text": [
                                 0,
                                 "no_text"
                             ],
                             "mapping": {
-                                "u_text": "u_star_text",
-                                "u_outline_color": "c_outline"
+                                "u_text": "u_g_text",
+                                "u_outline_color": "c_shop",
+                                "u_mid_border_color": "c_outline",
+                                "u_color": "c_text"
                             }
                         }
-                    },
-                    "chain_before": [
-                        {
-                            "path": "shaders/vfx/star.glsl",
-                            "parameters": {
-                                "uniforms": {
-                                    "u_size": 0.8,
-                                    "u_outline": 0.15,
-                                    "u_offset": [
-                                        0.7,
-                                        0.0
-                                    ],
-                                    "u_color": "#FFD700"
-                                }
-                            }
-                        }
-                    ]
+                    }
                 }
             ],
             "layer": "UI"

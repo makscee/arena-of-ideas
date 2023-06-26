@@ -13,7 +13,6 @@ Build
         g change {cm:2023-06-21T15:25:50}
         gain team status {cm:2023-06-23T15:35:57}
         var change
-        enemy rank defeated
     Stats info panel @ui
         panel working {start:2023-06-19T14:47:43} {cm:2023-06-19T15:17:25} {duration:29m}
         g {cm:2023-06-19T15:55:08}
@@ -28,7 +27,7 @@ Build
         shop buy btns {cm:2023-06-22T21:26:24}
         start battle btn {cm:2023-06-22T21:26:24}
         definitions {cm:2023-06-21T15:25:41}
-    Alert text @ui
+    Alert text @ui {c}
         battle start
         battle end {start:2023-06-23T18:37:12} {cm:2023-06-23T19:09:45} {duration:32m}
         sacrifice start
@@ -49,10 +48,10 @@ Build
     Game over screen @ui
         restart
         score
-    Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay {start:2023-06-23T18:36:22}
-    No sacrifice for single hero team @gameplay
+    Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay {start:2023-06-23T18:36:22} {cm:2023-06-26T15:27:58} {duration:2d_20h51m}
+    No sacrifice for single hero team @gameplay {cm:2023-06-26T15:27:47}
     Chain all actions @visual
-    Max rank 3 @gameplay
+    Max rank 3 @gameplay {cm:2023-06-26T15:27:50}
     ~50 Total heroes @content
     ~20 Total enemies @content
     15 (45) balanced levels @content

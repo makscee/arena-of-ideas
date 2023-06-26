@@ -119,9 +119,17 @@ impl UnitSystem {
             .insert_string_ref("u_hp_str".to_owned(), (hp - damage).to_string(), 1)
             .insert_string_ref("u_attack_str".to_owned(), atk.to_string(), 1);
         let rank = context.get_int(&VarName::Rank, world).unwrap();
-        shader.insert_float_ref("u_rank_1".to_owned(), (rank > 0) as i32 as f32);
-        shader.insert_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32);
-        shader.insert_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
+        if rank > 0 {
+            shader.insert_float_ref("u_rank_1".to_owned(), 1.0);
+            shader.insert_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32);
+            shader.insert_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
+
+            shader.hover_hints.push((
+                resources.options.colors.primary,
+                format!("Rank {rank}"),
+                format!("+{rank}/+{rank}"),
+            ));
+        }
 
         if damage > 0 {
             shader.insert_color_ref("u_hp_color".to_owned(), resources.options.colors.damage);

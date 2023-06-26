@@ -251,7 +251,7 @@ impl GameStateSystem {
         resources: &mut Resources,
     ) {
         debug!("enter_state {from} -> {to}");
-        SlotSystem::handle_state_enter(to, world, resources);
+        SlotSystem::handle_state_enter(to, world);
         match to {
             GameState::MainMenu => {
                 Game::restart(world, resources);
@@ -341,7 +341,7 @@ impl GameStateSystem {
                 // ShopSystem::show_hero_buy_panel(resources);
                 // ShopSystem::show_battle_choice_widget(resources);
 
-                // let team = TeamSystem::entity(&Faction::Team, world);
+                // let team = TeamSystem::entity(Faction::Team, world);
                 // resources
                 //     .hero_pool
                 //     .find_by_name("Berserker")
@@ -356,17 +356,36 @@ impl GameStateSystem {
                 let mut tape = Some(Tape::default());
                 resources.battle_data.last_score =
                     BattleSystem::run_battle(world, resources, &mut tape);
-                TeamSystem::get_state_mut(Faction::Team, world)
-                    .vars
-                    .change_int(&VarName::Stars, resources.battle_data.last_score as i32);
                 resources.tape_player.clear();
                 resources.tape_player.tape = tape.unwrap();
             }
             GameState::Gallery => {}
             GameState::Sacrifice => {
+                if from == GameState::MainMenu {
+                    ShopSystem::init_game(world, resources);
+                    SlotSystem::create_entries(world, resources);
+                    let team = TeamSystem::entity(Faction::Team, world);
+                    resources
+                        .hero_pool
+                        .find_by_name("Berserker")
+                        .unwrap()
+                        .clone()
+                        .unpack(world, resources, 1, None, team);
+                }
+                let team_size = UnitSystem::collect_faction(world, Faction::Team).len() as i32;
+                if team_size > 1 {
+                    SlotSystem::add_slots_buttons(
+                        Faction::Team,
+                        "Sacrifice",
+                        Some("u_filled"),
+                        None,
+                        world,
+                        resources,
+                    );
+                }
                 for entity in UnitSystem::collect_faction(world, Faction::Team) {
                     let vars = &mut ContextState::get_mut(entity, world).vars;
-                    let rank = (vars.try_get_int(&VarName::Rank).unwrap_or_default() + 1).min(2);
+                    let rank = (vars.try_get_int(&VarName::Rank).unwrap_or_default() + 1).min(3);
                     vars.set_int(&VarName::Rank, rank);
                 }
 
@@ -393,7 +412,10 @@ impl GameStateSystem {
                     _: &mut legion::World,
                     resources: &mut Resources,
                 ) {
-                    shader.set_active(!resources.sacrifice_data.marked_units.is_empty());
+                    shader.set_active(
+                        !resources.sacrifice_data.marked_units.is_empty()
+                            || shader.get_int("u_team_size") == 1,
+                    );
                 }
                 let entity = new_entity();
                 Widget::Button {
@@ -401,10 +423,16 @@ impl GameStateSystem {
                     input_handler,
                     update_handler: Some(update_handler),
                     options: &resources.options,
-                    uniforms: resources.options.uniforms.ui_button.clone(),
+                    uniforms: resources.options.uniforms.ui_button.clone().insert_int("u_team_size".to_owned(), team_size),
                     shader: None,
                     entity,
-                    hover_hints: default(),
+                    hover_hints: vec![
+                        (
+                            resources.options.colors.subtract,
+                            "Accept Sacrifice".to_owned(),
+                            "Sacrifice selected heroes,\nremoving them from team.\nNo sacrifice needed for\nteam of 1 hero.".to_owned()
+                        )
+                    ],
                 }
                 .generate_node()
                 .lock(NodeLockType::Empty)
