@@ -21,6 +21,7 @@ mod event;
 mod expression;
 mod faction;
 mod fonts;
+mod gallery_data;
 mod hero_pool;
 mod house;
 mod house_pool;
@@ -61,6 +62,7 @@ pub use event::*;
 pub use expression::*;
 pub use faction::*;
 pub use fonts::*;
+pub use gallery_data::*;
 pub use hero_pool::*;
 pub use house::*;
 pub use house_pool::*;
@@ -94,9 +96,6 @@ pub struct Resources {
 
     pub global_time: Time,
     pub delta_time: Time,
-    pub status_library: StatusLibrary,
-    pub ability_pool: AbilityPool,
-    pub buff_pool: BuffPool,
     pub action_queue: VecDeque<Action>,
     pub tape_player: TapePlayer,
     pub frame_shaders: Vec<Shader>,
@@ -105,17 +104,22 @@ pub struct Resources {
     pub shop_data: ShopData,
     pub battle_data: BattleData,
     pub sacrifice_data: SacrificeData,
-    pub ladder: Ladder,
+    pub input_data: InputData,
+    pub panels_data: PanelsData,
+    pub gallery_data: GalleryData,
 
-    pub house_pool: HousePool,
     pub hero_pool: HeroPool,
+    pub house_pool: HousePool,
+    pub ability_pool: AbilityPool,
+    pub buff_pool: BuffPool,
+    pub status_library: StatusLibrary,
+
+    pub ladder: Ladder,
     pub definitions: Definitions,
 
     pub current_state: GameState,
     pub transition_state: GameState,
 
-    pub input_data: InputData,
-    pub panels_data: PanelsData,
     pub camera: Camera,
     pub fonts: Fonts,
     pub geng: Option<Geng>,
@@ -156,6 +160,7 @@ impl Resources {
             buff_pool: default(),
             sacrifice_data: default(),
             panels_data: default(),
+            gallery_data: default(),
         }
     }
 

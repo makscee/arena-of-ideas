@@ -166,7 +166,10 @@ pub struct Floats {
     pub panel_text_padding: f32,
     pub panel_card_padding: f32,
     pub panel_row_padding: f32,
+    pub panel_row_spacing: f32,
     pub panel_row_index_offset: vec2<f32>,
+    pub panel_column_padding: f32,
+    pub panel_column_spacing: f32,
 }
 
 #[derive(Deserialize, Debug)]

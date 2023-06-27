@@ -206,8 +206,10 @@ impl PanelsSystem {
         color: Rgba<f32>,
         pos: vec2<f32>,
         row_limit: usize,
+        input_handler: Handler,
+        button_name: &str,
         resources: &mut Resources,
-    ) {
+    ) -> Option<legion::Entity> {
         for shader in shaders.iter_mut() {
             shader
                 .parameters
@@ -224,26 +226,34 @@ impl PanelsSystem {
         while !shaders.is_empty() {
             let limit = row_limit.min(shaders.len());
             let shaders = shaders.drain(0..limit).collect_vec();
-            let row = Shader::wrap_panel_body_row(
+            let mut row = Shader::wrap_panel_body_row(
                 shaders,
                 resources.options.floats.panel_row_padding,
                 &resources.options,
             );
+
             rows.push(row);
         }
         let shader = Shader::wrap_panel_body_column(
             rows,
-            resources.options.floats.panel_row_padding,
+            resources.options.floats.panel_column_padding,
             &resources.options,
         );
 
-        let mut panel = shader.wrap_panel_header(title, &resources.options).panel(
-            PanelType::Alert,
-            Some(color),
-            resources,
-        );
+        let mut panel = shader
+            .wrap_panel_header(title, &resources.options)
+            .wrap_panel_footer(
+                PanelFooterButton::Custom {
+                    name: button_name.to_owned(),
+                    handler: input_handler,
+                },
+                &resources.options,
+            )
+            .panel(PanelType::Alert, Some(color), resources);
         panel.need_pos = pos;
+        let entity = panel.shader.entity;
         resources.panels_data.alert.push(panel);
+        entity
     }
 
     pub fn open_push(color: Rgba<f32>, title: &str, text: &str, resources: &mut Resources) {
@@ -438,13 +448,18 @@ impl Shader {
     pub fn wrap_panel_body_row(mut shaders: Vec<Shader>, padding: f32, options: &Options) -> Self {
         let size = {
             let shader = &shaders[0];
-            shader.parameters.r#box.size * shader.get_float("u_scale")
+            shader.parameters.r#box.size
+                * shader
+                    .parameters
+                    .uniforms
+                    .try_get_float("u_scale")
+                    .unwrap_or(1.0)
         };
         let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
-        shader.parameters.r#box.size = size;
         let count = shaders.len() as f32;
-        shader.parameters.r#box.size.x *= count;
-        shader.parameters.r#box.size += vec2(padding * count, padding);
+        shader.parameters.r#box.size.x += count * size.x;
+        shader.parameters.r#box.size +=
+            vec2(options.floats.panel_row_spacing * (count + 1.0), padding);
 
         shader.chain_after.extend(shaders.drain(..));
         let spacing = 2.0 / shader.chain_after.len() as f32;
@@ -471,17 +486,16 @@ impl Shader {
                     .unwrap_or(1.0)
         };
         let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
-        shader.parameters.r#box.size = size;
         let count = shaders.len() as f32;
-        shader.parameters.r#box.size.y *= count;
-        shader.parameters.r#box.size += vec2(padding, padding * count);
+        shader.parameters.r#box.size.y += count * size.y;
+        shader.parameters.r#box.size += vec2(0.0, options.floats.panel_column_spacing * count);
 
         shader.chain_after.extend(shaders.drain(..));
         let spacing = 2.0 / shader.chain_after.len() as f32;
-        let mut anchor_position = -1.0 + spacing * 0.5;
+        let mut anchor_position = 1.0 - spacing * 0.5;
         for shader in shader.chain_after.iter_mut() {
             shader.parameters.r#box.anchor.y = anchor_position;
-            anchor_position += spacing;
+            anchor_position -= spacing;
         }
 
         shader
@@ -603,6 +617,7 @@ pub enum PanelFooterButton {
     Close,
     Select,
     Accept,
+    Custom { name: String, handler: Handler },
 }
 
 impl PanelFooterButton {
@@ -611,6 +626,7 @@ impl PanelFooterButton {
             PanelFooterButton::Close => "Close",
             PanelFooterButton::Select => "Select",
             PanelFooterButton::Accept => "Accept",
+            PanelFooterButton::Custom { name, .. } => &name,
         }
     }
 
@@ -684,6 +700,7 @@ impl PanelFooterButton {
                 }
                 input_handler
             }
+            PanelFooterButton::Custom { handler, .. } => *handler,
         }
     }
 

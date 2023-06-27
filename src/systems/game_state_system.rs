@@ -226,10 +226,10 @@ impl GameStateSystem {
                 resources.camera.camera.fov = resources.options.fov;
                 resources.camera.focus = Focus::Battle;
             }
-            GameState::Sacrifice
-            | GameState::Gallery
-            | GameState::MainMenu
-            | GameState::CustomGame => {}
+            GameState::Gallery => {
+                GallerySystem::leave_state(resources);
+            }
+            GameState::Sacrifice | GameState::MainMenu | GameState::CustomGame => {}
         }
     }
 

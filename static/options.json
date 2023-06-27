@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "initial_state": "Gallery",
+    "initial_state": "Shop",
     "walkthrough": false,
     "team_ratings": false,
     "rewind_speed": 10.0,
@@ -966,7 +966,10 @@
     "floats": {
         "panel_text_padding": 0.05,
         "panel_card_padding": 0.8,
-        "panel_row_padding": 0.15,
+        "panel_row_padding": 0.1,
+        "panel_row_spacing": 0.1,
+        "panel_column_padding": 0.1,
+        "panel_column_spacing": -0.03,
         "panel_row_index_offset": [
             0.5,
             0.0

@@ -1,5 +1,6 @@
 Screen box anchoring @ui
 Text shader constant scale, size depending on lines @ui
+Move u_scale into box
 Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
@@ -8,7 +9,7 @@ Build
         rarity display {cm:2023-06-26T14:51:25}
     Show stats after status on card
     Shop reroll
-    Gallery {start:2023-06-26T19:43:22}
+    Gallery {start:2023-06-26T19:43:22} {cm:2023-06-27T17:10:03} {duration:21h26m}
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change {cm:2023-06-21T15:25:50}
@@ -28,7 +29,7 @@ Build
         shop buy btns {cm:2023-06-22T21:26:24}
         start battle btn {cm:2023-06-22T21:26:24}
         definitions {cm:2023-06-21T15:25:41}
-    Alert text @ui {c}
+    Alert text @ui
         battle start
         battle end {start:2023-06-23T18:37:12} {cm:2023-06-23T19:09:45} {duration:32m}
         sacrifice start
