@@ -3,7 +3,7 @@
     "color": "#a5c9ffff",
     "abilities": {
         "Mend": {
-            "description": "Heal\n1 damage",
+            "description": "Heal\nX damage",
             "effect": {
                 "type": "Heal",
                 "value": {
