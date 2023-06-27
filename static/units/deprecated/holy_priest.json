@@ -3,7 +3,7 @@
     "attack": 3,
     "health": 10,
     "description": "End of turn\nMend (3)\nall allies",
-    "house": "Clerics",
+    "house": "Medics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {

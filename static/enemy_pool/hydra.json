@@ -3,7 +3,7 @@
     "attack": 6,
     "health": 6,
     "description": "Turn end:\nMend (4)",
-    "house": "Clerics",
+    "house": "Medics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {

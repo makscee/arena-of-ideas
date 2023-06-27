@@ -8,10 +8,10 @@
     Surgeon [2/1]: Turn end: give [Splash] to random ally.
 Next Iteration
     @abilities
-        [Fortitude]: "+1" HP +Clerics {cm:2023-05-17T16:13:18}
-        [Mend]: Heal 1 damage +Clerics {cm:2023-05-17T16:13:17}
-        [Blessing]: Gain \+1/+1 +Clerics
-        [Martyr]: After Death, give [Blessing] to random ally +Clerics
+        [Vitality]: "+1" HP +Medics {cm:2023-05-17T16:13:18}
+        [Mend]: Heal 1 damage +Medics {cm:2023-05-17T16:13:17}
+        [Blessing]: Gain \+1/+1 +Medics
+        [Martyr]: After Death, give [Blessing] to random ally +Medics
         [Might]: "+1" ATK +Warriors 
         [Endurance]: "+2" HP, but "-1" ATK +Warriors 
         [Honored]: After Death: give [Might] to all allies +Warriors 
@@ -68,17 +68,17 @@ Next Iteration
         [Shield]
             +Guardians Celestial Sorcerer [1/4]: Turn end: give [Shield] to random ally
             +Guardians +Druids Holy Healer [2/4]: When an ally gains [Regeneration], they also gain [Shield]
-            +Guardians +Clerics Holy Guardian [3/4]: When an ally gains [Shield], they also gain [Blessing]
+            +Guardians +Medics Holy Guardian [3/4]: When an ally gains [Shield], they also gain [Blessing]
             +Guardians Shield Ascendant [3/3]: [Shield] units now reflect damage back to attacker
-            +Guardians +Clerics Blessing Enchanter [2/2]: [Blessing] now gives the hero [Shield] instead of "+1/+1"
+            +Guardians +Medics Blessing Enchanter [2/2]: [Blessing] now gives the hero [Shield] instead of "+1/+1"
         [Mend]
-            +Clerics Lifebinder [1/4]: [Mend] random injured ally at the start of each turn
-        [Fortitude]
-            +Clerics Gnome Mechanic [2/2]: Gives a random ally [Fortitude] at the start of each turn
+            +Medics Lifebinder [1/4]: [Mend] random injured ally at the start of each turn
+        [Vitality]
+            +Medics Gnome Mechanic [2/2]: Gives a random ally [Vitality] at the start of each turn
         [Blessing]
-            +Clerics Blessing Conduit [2/2]: When an gains [Blessing], it also applied to a random ally
-            +Clerics +Warriors Holy Avenger [3/3]: When an ally gains [Might], they also gain [Blessing]
-            +Clerics Blessing Amplifier [2/2]: [Blessing] gives "+1/+1" more
+            +Medics Blessing Conduit [2/2]: When an gains [Blessing], it also applied to a random ally
+            +Medics +Warriors Holy Avenger [3/3]: When an ally gains [Might], they also gain [Blessing]
+            +Medics Blessing Amplifier [2/2]: [Blessing] gives "+1/+1" more
         [Honored]
             +Warriors Warchief [5/5]: Start of battle: gain [Honored]
         [Mark]
@@ -93,8 +93,8 @@ Next Iteration
             +Demons +Witches Chaos Manipulator [2/2]: When enemy takes damage from [Chaotic], apply [Weakness]
         [Chaotic]
             +Demons Chaos Shaper [2/2]: [Chaotic] "+1" damage
-            +Demons +Clerics Soulstealer [3/2]: After an ally dies, gain [Chaotic] and [Fortitude]
-            +Demons +Clerics Soul Harvester [3/3]: After an ally dies, gain [Chaotic] and [Blessing]
+            +Demons +Medics Soulstealer [3/2]: After an ally dies, gain [Chaotic] and [Vitality]
+            +Demons +Medics Soul Harvester [3/3]: After an ally dies, gain [Chaotic] and [Blessing]
         [Splash]
             +Elementals +Witches Splash Magus [2/2]: [Splash] now gives all enemies [Weakness] instead of dealing damage
             +Elementals Splash Reaver [2/2]: [Splash] now deals "+1" damage

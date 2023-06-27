@@ -2,14 +2,14 @@
     "name": "Empowerer",
     "attack": 2,
     "health": 2,
-    "description": "When an ally\nreceives [Mend],\ngrant them [Fortitude]",
-    "house": "Clerics",
+    "description": "When an ally\nreceives [Mend],\ngrant them [Vitality]",
+    "house": "Medics",
     "trigger": {
         "type": "AnyAbilityUse",
         "ability": "Mend",
         "effect": {
             "type": "UseAbility",
-            "ability": "Fortitude",
+            "ability": "Vitality",
             "charges": {
                 "type": "Const",
                 "value": 1

@@ -2,11 +2,11 @@
     "name": "Transferrer",
     "attack": 3,
     "health": 1,
-    "description": "Before death,\ntransfer all [Fortitude]\nally behind",
-    "house": "Clerics",
+    "description": "Before death,\ntransfer all [Vitality]\nally behind",
+    "house": "Medics",
     "statuses": [
         [
-            "Fortitude",
+            "Vitality",
             3
         ]
     ],
@@ -14,7 +14,7 @@
         "type": "BeforeDeath",
         "effect": {
             "type": "UseAbility",
-            "ability": "Fortitude",
+            "ability": "Vitality",
             "target": {
                 "type": "SlotRelative",
                 "relation": {
@@ -24,7 +24,7 @@
             },
             "charges": {
                 "type": "StatusCharges",
-                "name": "Fortitude"
+                "name": "Vitality"
             }
         }
     },

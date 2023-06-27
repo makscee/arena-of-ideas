@@ -3,7 +3,7 @@
     "health": 5,
     "attack": 1,
     "description": "Turn end:\nMend (8)\nfront adjacent ally",
-    "house": "Clerics",
+    "house": "Medics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {

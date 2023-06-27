@@ -1,5 +1,5 @@
 {
-    "name": "Clerics",
+    "name": "Medics",
     "color": "#a5c9ffff",
     "abilities": {
         "Mend": {
@@ -18,11 +18,11 @@
                 "Charges": 1
             }
         },
-        "Fortitude": {
+        "Vitality": {
             "description": "+1 HP",
             "effect": {
                 "type": "ChangeStatus",
-                "name": "Fortitude",
+                "name": "Vitality",
                 "charges": {
                     "type": "Var",
                     "var": "Charges"
@@ -37,7 +37,7 @@
         }
     },
     "statuses": {
-        "Fortitude": {
+        "Vitality": {
             "trigger": {
                 "type": "ChangeVarInt",
                 "var": "HpValue",

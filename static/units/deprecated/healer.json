@@ -1,9 +1,9 @@
 {
     "name": "Healer",
-    "health": 3,
     "attack": 1,
-    "description": "Turn end:\nMend (4)\ninjured ally",
-    "house": "Clerics",
+    "health": 3,
+    "description": "Turn end:\n[Mend]\nan injured ally",
+    "house": "Medics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {
@@ -11,6 +11,7 @@
             "faction": {
                 "type": "Owner"
             },
+            "exclude_self": true,
             "condition": {
                 "type": "MoreInt",
                 "a": {
@@ -24,11 +25,7 @@
             },
             "effect": {
                 "type": "UseAbility",
-                "ability": "Mend",
-                "charges": {
-                    "type": "Const",
-                    "value": 4
-                }
+                "ability": "Mend"
             }
         }
     },
@@ -36,11 +33,28 @@
         "path": "shaders/vfx/circle.glsl",
         "parameters": {
             "uniforms": {
-                "u_color": "#c7c7c7",
-                "u_border": 0.8,
-                "u_circle_fbm": 0.7,
-                "u_circle_fbm_speed": 1.0,
-                "u_padding": 1.0
+                "u_color": "#000000",
+                "u_size": 0.7,
+                "u_card_size": -0.35,
+                "u_padding": 0.5,
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#0055ab",
+                "u_circle_fbm": 0.5,
+                "u_g_points": [
+                    -0.5,
+                    0.4,
+                    1.0,
+                    1.0
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    0.2,
+                    0.0,
+                    0.0
+                ],
+                "mapping": {
+                    "u_color": "u_house_color"
+                }
             }
         }
     }

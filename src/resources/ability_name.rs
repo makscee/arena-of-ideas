@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AbilityName {
-    Fortitude,
+    Vitality,
     Mend,
     Enrage,
     Chaotic,

@@ -18,87 +18,88 @@ First Build @content
         [MagicMissile] Deal X damage to random enemy +Wizards
     @heroes
         [Vitality]
-            Start of battle: gain [Vitality] for each unit in battle
-            End of turn: gain [Vitality]
-            End of turn: give [Vitality] to random ally
-            After strike: give [Vitality] to all allies
-            Start of battle: give [Vitality](2) to all allies
-            Before death: give [Vitality](2) to all allies
-            [Vitality] gives 1 more HP per charge
-            On kill: give [Vitality](3) to all allies
+            Lifebringer - Start of battle: gain [Vitality] for each unit in battle
+            Endurance Knight - End of turn: gain [Vitality]
+            Vitality Giver - End of turn: give [Vitality] to random ally
+            Heartward Paladin - After strike: give [Vitality] to all allies
+            Genesis Warden - Start of battle: give [Vitality](2) to all allies
+            Last Breath - Before death: give [Vitality](2) to all allies
+            Lifebloom - [Vitality] gives 1 more HP per charge
+            Vital Striker - On kill: give [Vitality](3) to all allies
         [Mend]
-            End of turn: [Mend](3) injured ally
-            Ally died: [Mend](5) all allies
-            End of turn: [Mend] all allies
-            After strike: [Mend](2) self
-            [Mend] heals 1 more DMG per charge
-            On kill: [Mend](5) all allies
+            Healing Hand - End of turn: [Mend](3) injured ally
+            Mourning Spirit - Ally died: [Mend](5) all allies
+            Recovery Priest - End of turn: [Mend] all allies
+            Lifetide Warrior - After strike: [Mend](2) self
+            Overhealer - [Mend] heals 1 more DMG per charge
+            Life Reclaimer - On kill: [Mend](5) all allies
         [Shield]
-            Start of battle: gain [Shield]
-            Before death: give [Shield] to ally behind
-            Ally died: gain [Shield]
-            Start of battle: give [Shield] to allies with 10+ HP
-            [Shield] reflects damage back to attacker
-            Start of battle: give [Shield] to adjacent allies
-            On kill: gain [Shield]
+            Bulwark Champion - Start of battle: gain [Shield]
+            Safeguard - Before death: give [Shield] to ally behind
+            Resilience Warden - Ally died: gain [Shield]
+            Aegis Bearer - Start of battle: give [Shield] to allies with 10+ HP
+            Reflective Guardian - [Shield] reflects damage back to attacker
+            Shieldbearer - Start of battle: give [Shield] to adjacent allies
+            Shield Slinger - On kill: gain [Shield]
         [Martyr]
-            Start of battle: gain [Martyr] for each enemy
-            Ally died: gain [Martyr]
-            Before strike: gain [Martyr]
-            On kill: gain [Martyr](2)
+            Sacrificial Soul - Start of battle: gain [Martyr] for each enemy
+            Undying Martyr - Ally died: gain [Martyr]
+            Searing Sacrifice - Before strike: gain [Martyr]
+            Killblessed - On kill: gain [Martyr](2)
         [Strength]
-            On kill: give [Strength] to all allies
-            Start of battle: give [Strength] to all allies
-            Before death: give [Strength](4) to random ally
-            Ally died: give [Strength] to ally behind
+            Empowerment Warrior - On kill: give [Strength] to all allies
+            Warcry Barbarian - Start of battle: give [Strength] to all allies
+            Soldier - Before death: give [Strength](4) to random ally
+            Commander - Ally died: give [Strength] to ally behind
         [Defense]
-            Start of battle: gain [Defense](99)
-            After strike: give [Defense] to random ally
-            Start of battle: gain [Defense] per empty slot
-            On kill: give [Defense] to all allies
+            Stalwart Defender - Start of battle: gain [Defense](99)
+            Shieldsmith - After strike: give [Defense] to random ally
+            Fortress Master - Start of battle: gain [Defense] per empty slot
+            Deflective Knight - On kill: give [Defense] to all allies
         [Weakness]
-            Ally died: apply [Weakness] to killer
-            Before death: apply [Weakness] to all enemies
-            Start of battle: apply [Weakness] to 3 enemies
-            [Weakness] also reduces HP
+            Cursed Seer - Ally died: apply [Weakness] to killer
+            Harbinger of Despair - Before death: apply [Weakness] to all enemies
+            Potion Thrower - Start of battle: apply [Weakness] to 3 enemies
+            Drainspirit Witch - [Weakness] also reduces HP
         [Thorns]
-            Start of battle: apply [Thorns] to right ally
-            Start of battle: gain [Thorns] for each enemy
-            [Thorns] deal 1 more DMG per charge
-            Ally died: give [Thorns] to all allies
+            Bramble Knight - Start of battle: apply [Thorns] to right ally
+            Thornwall Sentinel - Start of battle: gain [Thorns] for each enemy
+            Thorned Protector - [Thorns] deal 1 more DMG per charge
+            Thornwreath - Ally died: give [Thorns] to all allies
         [Rebirth]
-            Start of battle: gain [Rebirth]
-            On kill: gain [Rebirth]
-            Start of battle: give [Rebirth] to first ally
+            Phoenix Mage - Start of battle: gain [Rebirth]
+            Soulclaimer - On kill: gain [Rebirth]
+            Rebirth Ritualist - Start of battle: give [Rebirth] to first ally
         [Volatility]
-            Start of battle: gain [Volatility](2)
-            On kill: gain [Volatility]
-            Before death: give [Volatility](3) to left ally
+            Firestorm Warlock - Start of battle: gain [Volatility](2)
+            Volatile Slayer - On kill: gain [Volatility]
+            Explosion Bringer - Before death: give [Volatility](3) to left ally
         [Splash]
-            Start of battle: gain [Splash]
-            On kill: gain [Splash]
-            Start of battle: gain [Splash] for each enemy
+            Rainmaker - Start of battle: gain [Splash]
+            Wavecrusher - On kill: gain [Splash]
+            Splashtide Warrior - Start of battle: gain [Splash] for each enemy
         [Marked]
-            Before strike: apply [Marked]
-            Start of battle: apply [Marked] to all enemies
-            On kill: apply [Marked](3) to next enemy
+            Marking Hand - Before strike: apply [Marked]
+            Policeman - Start of battle: apply [Marked] to all enemies
+            Dark Sigil - On kill: apply [Marked](3) to next enemy
         [Shoot]
-            Before strike: [Shoot]
-            Ally died: [Shoot]
-            Last ally died: [Shoot](3)
-            Start of battle: [Shoot](2)
+            Archon Marksman - Before strike: [Shoot]
+            Avenger - Ally died: [Shoot]
+            Last Arrow - Last ally died: [Shoot](3)
+            Sharpshooter - Start of battle: [Shoot](2)
         [MagicMissile]
-            Start of battle: use [MagicMissile](4)
-            Ally died: use [MagicMissile](2)
-            On kill: use [MagicMissile](6)
+            Arcane Gunner - Start of battle: use [MagicMissile](4)
+            Magic Vendetta - Ally died: use [MagicMissile](2)
+            Arcane Punisher - On kill: use [MagicMissile](6)
     @enemies
-        After Death, deal 1 DMG to all enemies
-        After Death, apply [Weakness] to killer
-        After Death, deal 2 DMG to killer
-        Has [Martyr]
-        After death: apply [Decay] to all enemies
-        Kill after dealing damage
-        Enemy died: gain [Vitality](2)
-        Enemy died: gain [Strength]
-        End of turn: gain [Vitality]
-        Ally died: apply [Weakness] to random enemy
+        Havoc - After Death, deal 1 DMG to all enemies
+        Hexer - After Death, apply [Weakness] to killer
+        Vengeance - After Death, deal 2 DMG to killer
+        Sacrilege - Has [Martyr]
+        Wither - After death: apply [Decay] to all enemies
+        Snake - Kill after dealing damage
+        Leech - Enemy died: gain [Vitality](2)
+        Fiend  - Enemy died: gain [Strength]
+        Gorge - End of turn: gain [Vitality]
+        Bane - Ally died: apply [Weakness] to random enemy
+

@@ -2,8 +2,8 @@
     "name": "Herald",
     "attack": 2,
     "health": 2,
-    "description": "Battle start:\nGrant [Fortitude]\nto all allies",
-    "house": "Clerics",
+    "description": "Battle start:\nGrant [Vitality]\nto all allies",
+    "house": "Medics",
     "trigger": {
         "type": "BattleStart",
         "effect": {
@@ -15,7 +15,7 @@
             ],
             "effect": {
                 "type": "UseAbility",
-                "ability": "Fortitude",
+                "ability": "Vitality",
                 "charges": {
                     "type": "Const",
                     "value": 1

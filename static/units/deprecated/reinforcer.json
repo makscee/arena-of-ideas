@@ -2,13 +2,13 @@
     "name": "Reinforcer",
     "attack": 1,
     "health": 2,
-    "description": "Turn start:\nGrant [Fortitude]\nto random ally",
-    "house": "Clerics",
+    "description": "Turn start:\nGrant [Vitality]\nto random ally",
+    "house": "Medics",
     "trigger": {
         "type": "TurnStart",
         "effect": {
             "type": "UseAbility",
-            "ability": "Fortitude",
+            "ability": "Vitality",
             "charges": {
                 "type": "Const",
                 "value": 1

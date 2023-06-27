@@ -8,7 +8,7 @@
             {
                 "health": 3,
                 "attack": 1,
-                "house": "Clerics",
+                "house": "Medics",
                 "trigger": {
                     "type": "TurnEnd",
                     "effect": {

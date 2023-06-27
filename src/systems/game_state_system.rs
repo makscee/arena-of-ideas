@@ -280,13 +280,13 @@ impl GameStateSystem {
                 //     );
                 // SlotSystem::fill_gaps(Faction::Team, world);
                 // let mut node = Some(Node::default());
-                // Status::change_charges(entity, 2, "Fortitude", &mut node, world, resources);
+                // Status::change_charges(entity, 2, "Vitality", &mut node, world, resources);
                 // resources.tape_player.tape.push_to_queue(
                 //     NodeCluster::new(node.unwrap().lock(NodeLockType::Empty)),
                 //     resources.tape_player.head,
                 // );
 
-                // ShopSystem::start_status_apply("Fortitude".to_owned(), 3, world, resources);
+                // ShopSystem::start_status_apply("Vitality".to_owned(), 3, world, resources);
 
                 // PanelsSystem::add_alert(
                 //     "Test no footer alert",

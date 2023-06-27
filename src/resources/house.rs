@@ -26,7 +26,7 @@ pub struct House {
     strum_macros::Display,
 )]
 pub enum HouseName {
-    Clerics,
+    Medics,
     Orcs,
     Demons,
 

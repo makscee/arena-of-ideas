@@ -2,14 +2,14 @@
     "name": "Rejuvenator",
     "attack": 2,
     "health": 3,
-    "description": "On receiving [Mend],\ngain [Fortitude]",
-    "house": "Clerics",
+    "description": "On receiving [Mend],\ngain [Vitality]",
+    "house": "Medics",
     "trigger": {
         "type": "OnAbilityUse",
         "ability": "Mend",
         "effect": {
             "type": "UseAbility",
-            "ability": "Fortitude",
+            "ability": "Vitality",
             "charges": {
                 "type": "Const",
                 "value": 1

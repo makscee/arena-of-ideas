@@ -3,7 +3,7 @@
     "attack": 4,
     "health": 1,
     "description": "Before strike:\ngain Vitality (5)",
-    "house": "Clerics",
+    "house": "Medics",
     "trigger": {
         "type": "BeforeStrike",
         "effect": {

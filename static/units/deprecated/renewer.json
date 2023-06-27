@@ -2,8 +2,8 @@
     "name": "Renewer",
     "attack": 2,
     "health": 2,
-    "description": "Turn end: [Mend]\nall allies\nwith [Fortitude]",
-    "house": "Clerics",
+    "description": "Turn end: [Mend]\nall allies\nwith [Vitality]",
+    "house": "Medics",
     "trigger": {
         "type": "TurnEnd",
         "effect": {
@@ -13,7 +13,7 @@
             },
             "condition": {
                 "type": "HaveStatus",
-                "name": "Fortitude"
+                "name": "Vitality"
             },
             "effect": {
                 "type": "UseAbility",

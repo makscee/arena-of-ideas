@@ -17,14 +17,14 @@
     Max team slots {cm:2023-05-13T18:20:15}
     Battle queue not cleared {cm:2023-05-12T17:21:15}
 First team {cm:2023-05-17T15:52:24}
-    +Clerics {cm:2023-05-17T15:52:23}
-        Reinforcer [1/2]: Turn start: Grant [Fortitude] to a random ally {cm:2023-05-16T16:39:41}
+    +Medics {cm:2023-05-17T15:52:23}
+        Reinforcer [1/2]: Turn start: Grant [Vitality] to a random ally {cm:2023-05-16T16:39:41}
         Healer [1/3]: Turn end: [Mend] an injured ally {cm:2023-05-16T17:15:50}
-        Herald [2/2]: Battle start: Grant [Fortitude] to all allies {cm:2023-05-16T17:38:25}
-        Empowerer [2/2]: When an ally receives [Mend], grant them [Fortitude] {cm:2023-05-16T23:07:32}
-        Rejuvenator [2/3]: On receiving [Mend], gain [Fortitude] {cm:2023-05-16T23:38:01}
-        Renewer [2/2]: Turn end: [Mend] all allies with [Fortitude] {cm:2023-05-17T15:02:25}
-        Transferrer [3/2]: After death, transfer all [Fortitude] to an adjacent ally {cm:2023-05-17T15:52:22}
+        Herald [2/2]: Battle start: Grant [Vitality] to all allies {cm:2023-05-16T17:38:25}
+        Empowerer [2/2]: When an ally receives [Mend], grant them [Vitality] {cm:2023-05-16T23:07:32}
+        Rejuvenator [2/3]: On receiving [Mend], gain [Vitality] {cm:2023-05-16T23:38:01}
+        Renewer [2/2]: Turn end: [Mend] all allies with [Vitality] {cm:2023-05-17T15:02:25}
+        Transferrer [3/2]: After death, transfer all [Vitality] to an adjacent ally {cm:2023-05-17T15:52:22}
 @content +Orcs {cm:2023-05-18T16:28:43}
     [Enrage]: "+2" ATK, take 1 damage {cm:2023-05-17T16:29:12}
     Rampager [2/1]: Before strike: gain [Enrage] {cm:2023-05-17T16:59:10}
