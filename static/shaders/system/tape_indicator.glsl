@@ -36,7 +36,7 @@ void main() {
     if(u_velocity != 0) {
         vec2 triangle_uv = uv;
         triangle_uv.x /= u_velocity;
-        float sdf = triangle_sdf(triangle_uv, 1., 0.25);
+        float sdf = triangle_sdf(triangle_uv, 1., -0.25);
         vec4 triangle = u_color;
         triangle.a = float(sdf < 0.);
         color = alpha_blend(color, triangle);

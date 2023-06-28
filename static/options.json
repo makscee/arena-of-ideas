@@ -11,178 +11,82 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
             "units": [
                 {
-                    "name": "Provoker",
+                    "name": "Genesis Warden",
                     "attack": 1,
-                    "health": 2,
-                    "description": "Turn end:\n[Enrage]\nadjacent allies",
-                    "house": "Orcs",
-                    "trigger": {
-                        "type": "TurnEnd",
-                        "effect": {
-                            "type": "List",
-                            "items": [
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Enrage",
-                                    "target": {
-                                        "type": "SlotRelative",
-                                        "relation": {
-                                            "type": "Const",
-                                            "value": -1
-                                        }
-                                    },
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
-                                },
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Enrage",
-                                    "target": {
-                                        "type": "SlotRelative",
-                                        "relation": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    },
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#ffffff",
-                                "u_g_color_3": "#ffffff",
-                                "u_warp_str": 0.3,
-                                "u_warp_speed": 5.5,
-                                "u_fbm_sdf": 0.25,
-                                "u_fbm_sdf_size": 20.0,
-                                "u_rounding": 0.0,
-                                "u_rotation": 0.8,
-                                "u_g_points": [
-                                    -0.6,
-                                    -0.4,
-                                    -0.4,
-                                    0.2
-                                ],
-                                "u_g_alphas": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0
-                                ],
-                                "u_size": 0.7,
-                                "u_t_multiplier": 1.2,
-                                "mapping": {
-                                    "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_faction_color",
-                                    "u_g_color_4": "u_house_color",
-                                    "u_g_color_1": "u_house_color",
-                                    "u_rounding": "u_sin"
-                                }
-                            }
-                        }
-                    }
-                },
-                {
-                    "attack": 2,
-                    "health": 4,
-                    "house": "Orcs",
-                    "trigger": {
-                        "type": "AnyAbilityUse",
-                        "ability": "Enrage",
-                        "effect": {
-                            "type": "ChangeStatus",
-                            "name": "Enrage",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
-                            }
-                        }
-                    }
-                },
-                {
-                    "attack": 1,
-                    "health": 5,
-                    "house": "Orcs",
+                    "health": 1,
+                    "description": "Start of battle\n give Vitality +2\nto all allies",
+                    "house": "Medics",
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Enrage",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Vitality",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 2
+                                }
                             }
                         }
-                    }
-                }
-            ]
-        },
-        "dark": {
-            "replications": 6,
-            "units": [
-                {
-                    "health": 3,
-                    "attack": 1,
+                    },
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "uniforms": {
                                 "u_color": "#000000",
-                                "u_extra_size_multiplier": 0.01,
-                                "u_size": 0.5,
-                                "u_offset": [
-                                    0.0,
-                                    0.5
-                                ],
-                                "u_t_multiplier": 20.2,
-                                "u_g_color_1": "#313381",
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
                                 "u_g_points": [
-                                    -0.3,
+                                    -0.7,
                                     -0.1,
                                     0.0,
                                     0.0
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.0,
+                                    0.2,
                                     0.0,
                                     0.0
                                 ],
                                 "mapping": {
                                     "u_color": "u_house_color",
-                                    "u_extra_size": "u_sin",
-                                    "u_g_color_1": "u_faction_color"
+                                    "u_g_color_2": "u_house_color"
                                 }
                             }
                         }
                     }
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                }
+            ]
+        },
+        "dark": {
+            "replications": 3,
+            "units": [
+                {
+                    "attack": 1,
+                    "health": 2
                 }
             ],
-            "name": "Enemies",
-            "slots": 2
+            "name": "Enemies"
         }
     },
     "fov": 16.0,

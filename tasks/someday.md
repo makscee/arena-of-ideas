@@ -80,7 +80,7 @@ First Build @content
             Splashtide Warrior - Start of battle: gain [Splash] for each enemy
         [Marked]
             Marking Hand - Before strike: apply [Marked]
-            Policeman - Start of battle: apply [Marked] to all enemies
+            Sheriff - Start of battle: apply [Marked] to all enemies
             Dark Sigil - On kill: apply [Marked](3) to next enemy
         [Shoot]
             Archon Marksman - Before strike: [Shoot]
