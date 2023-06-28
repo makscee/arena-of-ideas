@@ -9,7 +9,7 @@ Build
         pool take {cm:2023-06-26T14:51:31}
         rarity display {cm:2023-06-26T14:51:25}
     Show stats after status on card
-    Shop reroll
+    Shop reroll {start:2023-06-28T13:10:37} {cm:2023-06-28T13:34:04} {duration:23m}
     Gallery {start:2023-06-26T19:43:22} {cm:2023-06-27T17:10:03} {duration:21h26m}
     Push text @ui
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}

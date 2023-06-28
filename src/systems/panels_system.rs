@@ -77,7 +77,7 @@ impl PanelsSystem {
         let mut panel = Self::generate_text_shader(text, vec2(0.5, 0.1), &resources.options)
             .wrap_panel_header(title, &resources.options);
         if footer {
-            panel = panel.wrap_panel_footer(PanelFooterButton::Close, &resources.options);
+            panel = panel.wrap_panel_footer(vec![PanelFooterButton::Close], &resources.options);
         }
         let mut panel = panel.panel(PanelType::Alert, Some(color), resources);
         panel.need_pos = pos;
@@ -163,7 +163,7 @@ impl PanelsSystem {
             .map(|(ind, (name, count, shader, color))| {
                 let mut shader = Self::generate_card_shader(shader, &resources.options)
                     .wrap_panel_header(&name, &resources.options)
-                    .wrap_panel_footer(PanelFooterButton::Select, &resources.options)
+                    .wrap_panel_footer(vec![PanelFooterButton::Select], &resources.options)
                     .insert_int("u_index".to_owned(), ind as i32)
                     .set_panel_color(color);
 
@@ -189,10 +189,16 @@ impl PanelsSystem {
                 shader
             })
             .collect_vec();
+        let buttons = match choice {
+            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => {
+                vec![PanelFooterButton::Reroll, PanelFooterButton::Accept]
+            }
+            CardChoice::SelectEnemy { .. } => vec![PanelFooterButton::Accept],
+        };
         resources.panels_data.choice_options = Some(choice);
         let panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header(title, &resources.options)
-            .wrap_panel_footer(PanelFooterButton::Accept, &resources.options);
+            .wrap_panel_footer(buttons, &resources.options);
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
             Some(panel_color),
@@ -243,10 +249,10 @@ impl PanelsSystem {
         let mut panel = shader
             .wrap_panel_header(title, &resources.options)
             .wrap_panel_footer(
-                PanelFooterButton::Custom {
+                vec![PanelFooterButton::Custom {
                     name: button_name.to_owned(),
                     handler: input_handler,
-                },
+                }],
                 &resources.options,
             )
             .panel(PanelType::Alert, Some(color), resources);
@@ -530,27 +536,21 @@ impl Shader {
         self
     }
 
-    pub fn wrap_panel_footer(mut self, button: PanelFooterButton, options: &Options) -> Self {
+    pub fn wrap_panel_footer(mut self, buttons: Vec<PanelFooterButton>, options: &Options) -> Self {
         let mut shader = options.shaders.panel_footer.clone();
         shader.parameters.r#box.size.x = self.parameters.r#box.size.x;
         for child in shader.chain_after.iter_mut() {
             child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
         }
-        let mut button_shader = options.shaders.panel_button.clone().insert_string(
-            "u_text".to_owned(),
-            button.get_text().to_owned(),
-            1,
-        );
-        button_shader.parent = self.entity;
-        button_shader.entity = Some(new_entity());
-        ButtonSystem::add_button_handlers(&mut button_shader);
-        button_shader
-            .input_handlers
-            .push(button.get_input_handler());
-        if let Some(update_handler) = button.get_update_handler() {
-            button_shader.update_handlers.insert(0, update_handler);
+        let mut buttons = buttons
+            .into_iter()
+            .map(|x| x.get_button(self.entity, options))
+            .collect_vec();
+        if buttons.len() == 2 {
+            buttons[0].parameters.r#box.anchor = vec2(-0.5, 0.0);
+            buttons[1].parameters.r#box.anchor = vec2(0.5, 0.0);
         }
-        shader.chain_after.push(button_shader);
+        shader.chain_after.extend(buttons.into_iter());
         self.chain_after.push(shader);
         self
     }
@@ -617,15 +617,33 @@ pub enum PanelFooterButton {
     Close,
     Select,
     Accept,
+    Reroll,
     Custom { name: String, handler: Handler },
 }
 
 impl PanelFooterButton {
+    pub fn get_button(&self, entity: Option<legion::Entity>, options: &Options) -> Shader {
+        let mut button_shader = options.shaders.panel_button.clone().insert_string(
+            "u_text".to_owned(),
+            self.get_text().to_owned(),
+            1,
+        );
+        button_shader.parent = entity;
+        button_shader.entity = Some(new_entity());
+        ButtonSystem::add_button_handlers(&mut button_shader);
+        button_shader.input_handlers.push(self.get_input_handler());
+        if let Some(update_handler) = self.get_update_handler() {
+            button_shader.update_handlers.insert(0, update_handler);
+        }
+        button_shader
+    }
+
     pub fn get_text(&self) -> &str {
         match self {
             PanelFooterButton::Close => "Close",
             PanelFooterButton::Select => "Select",
             PanelFooterButton::Accept => "Accept",
+            PanelFooterButton::Reroll => "Reroll",
             PanelFooterButton::Custom { name, .. } => &name,
         }
     }
@@ -644,6 +662,46 @@ impl PanelFooterButton {
                         HandleEvent::Click => {
                             if let Some(entity) = shader.parent {
                                 PanelsSystem::close_alert(entity, resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            PanelFooterButton::Reroll => {
+                fn input_handler(
+                    event: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if let Some(entity) = shader.parent {
+                                PanelsSystem::close_alert(entity, resources);
+                                resources.panels_data.chosen_ind = None;
+                                let choice = resources.panels_data.choice_options.take().unwrap();
+                                ShopSystem::deduct_reroll_cost(world, resources);
+                                match choice {
+                                    CardChoice::BuyHero { .. } => {
+                                        ShopSystem::show_hero_buy_panel(resources)
+                                    }
+                                    CardChoice::BuyBuff { target, .. } => match target {
+                                        BuffTarget::Single { .. } => {
+                                            ShopSystem::show_buff_buy_panel(resources)
+                                        }
+                                        BuffTarget::Aoe => {
+                                            ShopSystem::show_aoe_buff_buy_panel(resources)
+                                        }
+                                        BuffTarget::Team => {
+                                            ShopSystem::show_team_buff_buy_panel(resources)
+                                        }
+                                    },
+                                    _ => panic!("Can't reroll {choice:?}"),
+                                }
+                                debug!("reroll");
                             }
                         }
                         _ => {}
@@ -708,10 +766,10 @@ impl PanelFooterButton {
         match self {
             PanelFooterButton::Accept => {
                 fn update_handler(
-                    event: HandleEvent,
-                    entity: legion::Entity,
+                    _: HandleEvent,
+                    _: legion::Entity,
                     shader: &mut Shader,
-                    world: &mut legion::World,
+                    _: &mut legion::World,
                     resources: &mut Resources,
                 ) {
                     shader.set_active(resources.panels_data.chosen_ind.is_some());

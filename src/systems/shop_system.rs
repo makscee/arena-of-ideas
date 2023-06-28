@@ -324,13 +324,19 @@ impl ShopSystem {
     }
 
     pub fn show_hero_buy_panel(resources: &mut Resources) {
-        let mut units = Vec::default();
-        for _ in 0..3 {
-            let pool = &mut resources.shop_data.pool;
-            let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
-            let unit = pool.swap_remove(unit);
-            units.push(unit);
-        }
+        // let mut units = Vec::default();
+        // for _ in 0..3 {
+        //     let pool = &mut resources.shop_data.pool;
+        //     let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
+        //     let unit = pool.swap_remove(unit);
+        //     units.push(unit);
+        // }
+        let units = resources
+            .shop_data
+            .pool
+            .choose_multiple(&mut thread_rng(), 3)
+            .cloned()
+            .collect_vec();
         let choice = CardChoice::BuyHero { units };
         PanelsSystem::open_card_choice(choice, resources);
     }
@@ -502,7 +508,12 @@ impl ShopSystem {
         if free_rerolls > 0 {
             vars.change_int(&VarName::FreeRerolls, -1);
         } else {
-            vars.change_int(&VarName::G, -vars.get_int(&VarName::RerollPrice));
+            Self::change_g(
+                -vars.get_int(&VarName::RerollPrice),
+                Some("Reroll"),
+                world,
+                resources,
+            );
         }
     }
 
