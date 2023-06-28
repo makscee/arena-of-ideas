@@ -1,0 +1,52 @@
+{
+    "name": "Vitality Giver",
+    "attack": 1,
+    "health": 5,
+    "description": "End of turn:\ngive Vitality +1\nto random ally",
+    "house": "Medics",
+    "trigger": {
+        "type": "TurnEnd",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Vitality",
+            "target": {
+                "type": "RandomUnit",
+                "faction": {
+                    "type": "Owner"
+                },
+                "exclude_self": true
+            },
+            "charges": {
+                "type": "Const",
+                "value": 1
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#000000",
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#ffffff",
+                "u_g_color_3": "#ffffff",
+                "u_g_points": [
+                    -0.8,
+                    -0.5,
+                    -0.2,
+                    -0.1
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    0.5,
+                    0.0,
+                    0.0
+                ],
+                "mapping": {
+                    "u_color": "u_faction_color",
+                    "u_g_color_2": "u_house_color"
+                }
+            }
+        }
+    }
+}

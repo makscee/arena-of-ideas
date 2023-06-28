@@ -128,7 +128,6 @@ impl PackedUnit {
             shader.chain_before.push(self_shader.clone());
         }
         shader.insert_color_ref("u_house_color".to_owned(), house_color);
-        shader.insert_string_ref("u_name".to_owned(), self.name.to_owned(), 1);
         shader.chain_after.push(options.shaders.unit_card.clone());
 
         shader.insert_string_ref("u_description".to_owned(), self.description.clone(), 0);
@@ -186,7 +185,7 @@ impl PackedUnit {
             .chain_after
             .push(options.shaders.name.clone().insert_uniform(
                 "u_text".to_owned(),
-                ShaderUniform::String((0, self.name.clone())),
+                ShaderUniform::String((1, self.name.clone())),
             ));
 
         shader
