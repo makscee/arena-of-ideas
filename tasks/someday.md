@@ -21,8 +21,8 @@ First Build @content
             Lifebringer - Start of battle: gain [Vitality] for each unit in battle
             Endurance Knight - End of turn: gain [Vitality]
             Vitality Giver - End of turn: give [Vitality] to random ally
-            Heartward Paladin - After strike: give [Vitality] to all allies
-            Genesis Warden - Start of battle: give [Vitality](2) to all allies
+            Vital Reclaimer - After strike: give [Vitality] to all allies {cm:2023-06-28T13:00:01}
+            Genesis Warden - Start of battle: give [Vitality](2) to all allies {cm:2023-06-28T12:48:50}
             Last Breath - Before death: give [Vitality](2) to all allies
             Lifebloom - [Vitality] gives 1 more HP per charge
             Vital Striker - On kill: give [Vitality](3) to all allies

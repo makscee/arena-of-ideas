@@ -9,14 +9,8 @@ impl WorldSystem {
         world_entry.add_component(EntityComponent::new(world_entity));
         let mut vars = Vars::default();
         vars.insert(VarName::FieldPosition, Var::Vec2(vec2(0.0, 0.0)));
-        vars.set_color(
-            &VarName::BackgroundLight,
-            options.colors.light.map(|x| x * 0.9),
-        );
-        vars.set_color(
-            &VarName::BackgroundDark,
-            options.colors.dark.map(|x| x * 0.9),
-        );
+        vars.set_color(&VarName::BackgroundLight, options.colors.light);
+        vars.set_color(&VarName::BackgroundDark, options.colors.dark);
         vars.set_color(&VarName::OutlineColor, options.colors.outline);
         vars.set_float(&VarName::Rank1, 0.0);
         vars.set_float(&VarName::Rank2, 0.0);

@@ -17,13 +17,13 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Genesis Warden",
+                    "name": "Vital Reclaimer",
                     "attack": 1,
-                    "health": 1,
-                    "description": "Start of battle\n give Vitality +2\nto all allies",
+                    "health": 5,
+                    "description": "After strike:\ngive Vitality +1\nto all allies",
                     "house": "Medics",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AfterStrike",
                         "effect": {
                             "type": "Aoe",
                             "factions": [
@@ -36,7 +36,7 @@
                                 "ability": "Vitality",
                                 "charges": {
                                     "type": "Const",
-                                    "value": 2
+                                    "value": 1
                                 }
                             }
                         }
@@ -47,21 +47,20 @@
                             "uniforms": {
                                 "u_color": "#000000",
                                 "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
+                                "u_g_color_2": "#ffffff",
                                 "u_g_points": [
-                                    -0.7,
-                                    -0.1,
-                                    0.0,
-                                    0.0
+                                    -0.9,
+                                    -0.5,
+                                    0.1,
+                                    0.1
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.2,
+                                    2.5,
                                     0.0,
                                     0.0
                                 ],
                                 "mapping": {
-                                    "u_color": "u_house_color",
                                     "u_g_color_2": "u_house_color"
                                 }
                             }
@@ -487,7 +486,7 @@
             "parameters": {
                 "box": {
                     "size": [
-                        1.5,
+                        1.2,
                         0.5
                     ]
                 },

@@ -41,8 +41,8 @@ impl Into<f32> for Faction {
 impl Faction {
     pub fn color(&self, options: &Options) -> Rgba<f32> {
         match self {
-            Faction::Light => options.colors.light,
-            Faction::Dark => options.colors.dark,
+            Faction::Light => options.colors.dark,
+            Faction::Dark => options.colors.light,
             Faction::Team => options.colors.player,
             Faction::Shop => options.colors.shop,
         }
