@@ -17,20 +17,27 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Overhealer",
-                    "attack": 1,
-                    "health": 1,
-                    "description": "Mend heals\n1 more DMG\nper charge",
+                    "name": "Life Reclaimer",
+                    "attack": 4,
+                    "health": 3,
+                    "description": "After Kill:\nMend +5 all allies",
                     "house": "Medics",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AfterKill",
                         "effect": {
-                            "type": "ChangeAbilityVarInt",
-                            "ability": "Mend",
-                            "var": "HpExtra",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Mend",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 5
+                                }
                             }
                         }
                     },
@@ -44,10 +51,12 @@
                                 "u_g_color_3": "#ffffff",
                                 "u_g_color_4": "#000000",
                                 "u_fbm_sdf": 0.2,
-                                "u_fbm_sdf_size": 80.0,
-                                "u_fbm_sdf_speed": 0.1,
-                                "u_warp_str": -0.05,
-                                "u_warp_speed": 9.01,
+                                "u_fbm_sdf_size": 50.0,
+                                "u_fbm_sdf_speed": 0.3,
+                                "u_warp_str": 1.0,
+                                "u_warp_speed": 0.0,
+                                "u_warp_pos": 199.3,
+                                "u_warp_size": 1.1,
                                 "u_g_points": [
                                     -0.9,
                                     -0.6,
@@ -57,12 +66,12 @@
                                 "u_g_alphas": [
                                     1.0,
                                     1.0,
-                                    0.0,
+                                    1.0,
                                     0.0
                                 ],
                                 "mapping": {
-                                    "u_color": "u_house_color",
-                                    "u_g_color_2": "u_house_color",
+                                    "u_color": "u_faction_color",
+                                    "u_g_color_2": "u_faction_color",
                                     "u_g_color_3": "u_house_color",
                                     "u_g_color_4": "u_house_color"
                                 }
@@ -72,27 +81,7 @@
                 },
                 {
                     "attack": 1,
-                    "health": 1,
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Owner"
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Vitality",
-                                "force": true,
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
-                            }
-                        }
-                    }
+                    "health": 1
                 },
                 {
                     "attack": 1,

@@ -43,6 +43,8 @@ uniform vec4 u_g_color_4;
 
 uniform float u_warp_str = 0;
 uniform float u_warp_speed = 1;
+uniform float u_warp_pos = 0;
+uniform float u_warp_size = 1;
 uniform float u_fbm_sdf = 0;
 uniform float u_fbm_sdf_size = 1.0;
 uniform float u_fbm_sdf_speed = 1;
@@ -93,6 +95,8 @@ float fbm(vec2 p) {
 
 vec2 warp(vec2 uv, float t) {
     t *= u_warp_speed;
+    t += u_warp_pos;
+    uv /= u_warp_size;
     vec2 q = vec2(fbm(uv), fbm(uv + vec2(1)));
     vec2 r = vec2(0);
     r.x = fbm(uv + q + vec2(1.1, 4.3) + t * 0.15);

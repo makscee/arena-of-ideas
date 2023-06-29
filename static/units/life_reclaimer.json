@@ -1,0 +1,63 @@
+{
+    "name": "Life Reclaimer",
+    "attack": 4,
+    "health": 3,
+    "description": "After Kill:\nMend +5 all allies",
+    "house": "Medics",
+    "trigger": {
+        "type": "AfterKill",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Owner"
+                }
+            ],
+            "effect": {
+                "type": "UseAbility",
+                "ability": "Mend",
+                "charges": {
+                    "type": "Const",
+                    "value": 5
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#ffffff",
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#ffffff",
+                "u_g_color_4": "#000000",
+                "u_fbm_sdf": 0.2,
+                "u_fbm_sdf_size": 50.0,
+                "u_fbm_sdf_speed": 0.3,
+                "u_warp_str": 1.0,
+                "u_warp_speed": 0.0,
+                "u_warp_pos": 199.3,
+                "u_warp_size": 1.1,
+                "u_g_points": [
+                    -0.9,
+                    -0.6,
+                    -0.1,
+                    -0.0
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                ],
+                "mapping": {
+                    "u_color": "u_faction_color",
+                    "u_g_color_2": "u_faction_color",
+                    "u_g_color_3": "u_house_color",
+                    "u_g_color_4": "u_house_color"
+                }
+            }
+        }
+    }
+}
