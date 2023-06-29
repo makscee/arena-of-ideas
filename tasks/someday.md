@@ -19,17 +19,17 @@ First Build @content
     @heroes
         [Vitality]
             Lifebringer - Battle Start: gain [Vitality] for each unit in battle {cm:2023-06-29T13:07:12}
-            Endurance Knight - End of turn: gain [Vitality]
-            Vitality Giver - End of turn: give [Vitality] to random ally {cm:2023-06-29T12:56:42}
+            Endurance Knight - Turn End: gain [Vitality] {cm:2023-06-29T13:13:32}
+            Vitality Giver - Turn End: give [Vitality] to random ally {cm:2023-06-29T12:56:42}
             Vital Reclaimer - After strike: give [Vitality] to all allies {cm:2023-06-28T13:00:01}
             Genesis Warden - Battle Start: give [Vitality](2) to all allies {cm:2023-06-28T12:48:50}
             Last Breath - Before death: give [Vitality](2) to all allies
             Lifebloom - [Vitality] gives 1 more HP per charge
             Vital Striker - On kill: give [Vitality](3) to all allies
         [Mend]
-            Healing Hand - End of turn: [Mend](3) injured ally
+            Healing Hand - Turn End: [Mend](3) injured ally
             Mourning Spirit - Ally died: [Mend](5) all allies
-            Recovery Priest - End of turn: [Mend] all allies
+            Recovery Priest - Turn End: [Mend] all allies
             Lifetide Warrior - After strike: [Mend](2) self
             Overhealer - [Mend] heals 1 more DMG per charge
             Life Reclaimer - On kill: [Mend](5) all allies
@@ -100,6 +100,6 @@ First Build @content
         Snake - Kill after dealing damage
         Leech - Enemy died: gain [Vitality](2)
         Fiend  - Enemy died: gain [Strength]
-        Gorge - End of turn: gain [Vitality]
+        Gorge - Turn End: gain [Vitality]
         Bane - Ally died: apply [Weakness] to random enemy
 
