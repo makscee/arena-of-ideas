@@ -11,32 +11,39 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
             "units": [
                 {
-                    "name": "Vitality Giver",
+                    "name": "Lifebringer",
                     "attack": 1,
-                    "health": 5,
-                    "description": "End of turn:\ngive Vitality +1\nto random ally",
+                    "health": 1,
+                    "description": "Battle Start:\ngain Vitality +1\nfor each unit in battle",
                     "house": "Medics",
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Vitality",
                             "target": {
-                                "type": "RandomUnit",
-                                "faction": {
-                                    "type": "Owner"
-                                },
-                                "exclude_self": true
+                                "type": "Owner"
                             },
                             "charges": {
-                                "type": "Const",
-                                "value": 1
+                                "type": "Sum",
+                                "a": {
+                                    "type": "Faction",
+                                    "faction": {
+                                        "type": "Dark"
+                                    }
+                                },
+                                "b": {
+                                    "type": "Faction",
+                                    "faction": {
+                                        "type": "Light"
+                                    }
+                                }
                             }
                         }
                     },
@@ -47,21 +54,20 @@
                                 "u_color": "#000000",
                                 "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#ffffff",
-                                "u_g_color_3": "#ffffff",
+                                "u_g_color_3": "#000000",
                                 "u_g_points": [
-                                    -0.8,
-                                    -0.5,
+                                    -1.1,
                                     -0.2,
-                                    -0.1
+                                    -0.0,
+                                    0.0
                                 ],
                                 "u_g_alphas": [
-                                    1.0,
-                                    0.5,
                                     0.0,
+                                    1.5,
+                                    1.0,
                                     0.0
                                 ],
                                 "mapping": {
-                                    "u_color": "u_faction_color",
                                     "u_g_color_2": "u_house_color"
                                 }
                             }
@@ -569,6 +575,12 @@
         "text": {
             "path": "shaders/vfx/text.glsl",
             "parameters": {
+                "box": {
+                    "size": [
+                        1.0,
+                        0.5
+                    ]
+                },
                 "uniforms": {
                     "u_mid_border": 0.03,
                     "mapping": {
