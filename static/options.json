@@ -17,22 +17,26 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Stalwart Defender",
+                    "name": "Shieldsmith",
                     "attack": 1,
-                    "health": 4,
-                    "description": "Battle Start:\ngain Defense +10",
+                    "health": 3,
+                    "description": "After Strike:\ngive Defense +1\nto random ally",
                     "house": "Warriors",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AfterStrike",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Defense",
                             "target": {
-                                "type": "Owner"
+                                "type": "RandomUnit",
+                                "faction": {
+                                    "type": "Owner"
+                                },
+                                "exclude_self": true
                             },
                             "charges": {
                                 "type": "Const",
-                                "value": 10
+                                "value": 1
                             }
                         }
                     },
@@ -53,16 +57,16 @@
                                     -0.5,
                                     0.0
                                 ],
-                                "u_fbm_sdf": 0.2,
+                                "u_fbm_sdf": 0.05,
                                 "u_fbm_sdf_speed": 0.05,
                                 "u_fbm_sdf_size": 50.1,
-                                "u_warp_str": 0.1,
+                                "u_warp_str": 0.0,
                                 "u_warp_speed": 0.0,
                                 "u_warp_pos": 5000.0,
-                                "u_rounding": 0.2,
+                                "u_rounding": 0.6,
                                 "u_g_alphas": [
                                     1.0,
-                                    1.0,
+                                    0.0,
                                     1.0,
                                     0.0
                                 ],
@@ -95,7 +99,7 @@
             "replications": 3,
             "units": [
                 {
-                    "attack": 12,
+                    "attack": 1,
                     "health": 2
                 }
             ],

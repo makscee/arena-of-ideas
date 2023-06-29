@@ -40,7 +40,7 @@ First Build @content
             Commander - Ally Died: give [Strength] to ally behind {cm:2023-06-29T19:42:40}
         [Defense]
             Stalwart Defender - Battle Start: gain [Defense](99) {cm:2023-06-29T19:49:55}
-            Shieldsmith - After Strike: give [Defense] to random ally
+            Shieldsmith - After Strike: give [Defense] to random ally {cm:2023-06-29T19:52:07}
             Fortress Master - Battle Start: gain [Defense] per empty slot
             Deflective Knight - After Kill: give [Defense] to all allies
         [Shield]
