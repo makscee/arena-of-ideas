@@ -42,7 +42,7 @@ First Build @content
             Stalwart Defender - Battle Start: gain [Defense](99) {cm:2023-06-29T19:49:55}
             Shieldsmith - After Strike: give [Defense] to random ally {cm:2023-06-29T19:52:07}
             Fortress Master - Battle Start: gain [Defense] per empty slot {cm:2023-06-29T19:59:37}
-            Deflective Knight - After Kill: give [Defense] to all allies
+            Deflective Knight - After Kill: give [Defense] to all allies {cm:2023-06-29T20:04:23}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind

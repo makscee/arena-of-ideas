@@ -11,36 +11,33 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 1,
             "units": [
                 {
-                    "name": "Fortress Master",
+                    "name": "Deflective Knight",
                     "attack": 1,
                     "health": 3,
-                    "description": "Battle Start:\ngain Defense +1\nper empty slot",
+                    "description": "After Kill:\ngive Defense +1\nto all other allies",
                     "house": "Warriors",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AfterKill",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Defense",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Sub",
-                                "a": {
-                                    "type": "Var",
-                                    "var": "Slots"
-                                },
-                                "b": {
-                                    "type": "Faction",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                }
+                            ],
+                            "exclude_self": true,
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Defense",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
                                 }
                             }
                         }
@@ -58,8 +55,8 @@
                                 "u_color": "#000000",
                                 "u_g_points": [
                                     -0.8,
-                                    -0.5,
-                                    -0.5,
+                                    -0.3,
+                                    -0.3,
                                     0.2
                                 ],
                                 "u_fbm_sdf": 0.03,
@@ -68,11 +65,12 @@
                                 "u_warp_str": 0.0,
                                 "u_warp_speed": 0.0,
                                 "u_warp_pos": 5000.0,
-                                "u_rounding": 0.2,
+                                "u_rounding": 0.6,
+                                "u_rotation": 0.78,
                                 "u_g_alphas": [
                                     1.0,
-                                    0.0,
-                                    10.0,
+                                    1.0,
+                                    1.0,
                                     0.0
                                 ],
                                 "u_g_color_1": "#000000",
@@ -81,10 +79,10 @@
                                 "u_g_color_4": "#000000",
                                 "u_normal_scaling": 1.0,
                                 "mapping": {
-                                    "u_color": "u_house_color",
-                                    "u_g_color_1": "u_house_color",
+                                    "u_color": "u_faction_color",
+                                    "u_g_color_1": "u_faction_color",
                                     "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_faction_color"
+                                    "u_g_color_3": "u_house_color"
                                 }
                             }
                         }

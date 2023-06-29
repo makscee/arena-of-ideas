@@ -20,7 +20,7 @@
             }
         },
         "Defense": {
-            "description": "Reduce incoming damage by X",
+            "description": "Reduce incoming damage\nby X",
             "effect": {
                 "type": "ChangeStatus",
                 "name": "Defense",
