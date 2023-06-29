@@ -17,13 +17,13 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Empowerment Warrior",
+                    "name": "Warcry Barbarian",
                     "attack": 3,
-                    "health": 2,
-                    "description": "After Kill:\ngive Strength +1\nto all allies",
+                    "health": 3,
+                    "description": "Battle Start:\ngive Strength +1\nto all allies",
                     "house": "Warriors",
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "Aoe",
                             "factions": [
@@ -59,6 +59,7 @@
                                     0.2
                                 ],
                                 "u_rounding": 0.5,
+                                "u_rotation": 0.78,
                                 "u_g_alphas": [
                                     0.0,
                                     1.0,
