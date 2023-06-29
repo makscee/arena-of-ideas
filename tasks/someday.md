@@ -17,14 +17,14 @@ First Build @content
         [Shoot] Deal ATK damage X times to random enemy +Hunters
         [MagicMissile] Deal X damage to random enemy +Wizards
     @heroes
-        [Vitality]
+        [Vitality] {cm:2023-06-29T13:54:33}
             Lifebringer - Battle Start: gain [Vitality] for each unit in battle {cm:2023-06-29T13:07:12}
             Endurance Knight - Turn End: gain [Vitality] {cm:2023-06-29T13:13:32}
             Vitality Giver - Turn End: give [Vitality] to random ally {cm:2023-06-29T12:56:42}
             Vital Reclaimer - After Strike: give [Vitality] to all allies {cm:2023-06-28T13:00:01}
             Genesis Warden - Battle Start: give [Vitality](2) to all allies {cm:2023-06-28T12:48:50}
             Lifegiver - Before death: give [Vitality](2) to all allies {cm:2023-06-29T13:19:46}
-            Lifebloom - [Vitality] gives 1 more HP per charge
+            Lifebloom - [Vitality] gives 1 more HP per charge {cm:2023-06-29T13:54:28}
             Vital Striker - After Kill: give [Vitality](3) to all allies {cm:2023-06-29T13:24:51}
         [Mend]
             Healing Hand - Turn End: [Mend](3) injured ally

@@ -504,6 +504,19 @@ impl EffectWrapped {
                 .entry(ability)
                 .or_default()
                 .insert(*var, Var::Int(prev_value + delta));
+
+                if let Some(node) = node.as_mut() {
+                    let text = format!("+{ability}/{var}");
+                    node.add_effect(VfxSystem::vfx_show_parent_text(
+                        resources,
+                        &text,
+                        resources.options.colors.text,
+                        AbilityPool::get_house_origin(resources, &ability).get_color(&resources),
+                        context.owner().unwrap(),
+                        1,
+                        0.0,
+                    ));
+                }
             }
             Effect::If {
                 condition,

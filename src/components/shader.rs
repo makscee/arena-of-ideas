@@ -33,10 +33,8 @@ pub struct Shader {
     pub hover_hints: Vec<(Rgba<f32>, String, String)>,
 }
 
-const DEFAULT_REQUEST_VARS: [VarName; 15] = [
+const DEFAULT_REQUEST_VARS: [VarName; 12] = [
     VarName::Position,
-    VarName::Box,
-    VarName::Size,
     VarName::Scale,
     VarName::Card,
     VarName::Zoom,
@@ -47,7 +45,6 @@ const DEFAULT_REQUEST_VARS: [VarName; 15] = [
     VarName::Rank,
     VarName::BackgroundLight,
     VarName::BackgroundDark,
-    VarName::OutlineColor,
     VarName::FactionColor,
 ];
 

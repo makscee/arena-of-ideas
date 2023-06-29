@@ -31,6 +31,12 @@ pub enum HouseName {
     Test,
 }
 
+impl HouseName {
+    pub fn get_color(&self, resources: &Resources) -> Rgba<f32> {
+        HousePool::get_color(self, resources)
+    }
+}
+
 impl FileWatcherLoader for House {
     fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::load));

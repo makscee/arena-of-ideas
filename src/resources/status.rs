@@ -175,7 +175,7 @@ impl Status {
                     color,
                     outline_color,
                     entity,
-                    0,
+                    1,
                     delay_per_charge * cnt as f32,
                 ));
                 cnt += 1;

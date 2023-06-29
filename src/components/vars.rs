@@ -18,7 +18,6 @@ pub enum VarName {
     AttackStr,
     AttackExtra,
     Position,
-    Box,
     Size,
     Scale,
     Test,
@@ -53,7 +52,6 @@ pub enum VarName {
     Rank3,
     BackgroundLight,
     BackgroundDark,
-    OutlineColor,
     LastAttacker,
     LastHealer,
 }

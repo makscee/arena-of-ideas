@@ -32,7 +32,8 @@
                 }
             },
             "default_vars": {
-                "Charges": 1
+                "Charges": 1,
+                "HpExtra": 1
             }
         }
     },
@@ -42,8 +43,16 @@
                 "type": "ChangeVarInt",
                 "var": "HpValue",
                 "delta": {
-                    "type": "Var",
-                    "var": "Charges"
+                    "type": "Mul",
+                    "a": {
+                        "type": "Var",
+                        "var": "Charges"
+                    },
+                    "b": {
+                        "type": "AbilityVar",
+                        "ability": "Vitality",
+                        "var": "HpExtra"
+                    }
                 }
             },
             "shader": {
