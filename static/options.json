@@ -11,17 +11,17 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
             "units": [
                 {
-                    "name": "Life Reclaimer",
-                    "attack": 4,
-                    "health": 3,
-                    "description": "After Kill:\nMend +5 all allies",
-                    "house": "Medics",
+                    "name": "Empowerment Warrior",
+                    "attack": 3,
+                    "health": 2,
+                    "description": "After Kill:\ngive Strength +1\nto all allies",
+                    "house": "Warriors",
                     "trigger": {
                         "type": "AfterKill",
                         "effect": {
@@ -33,47 +33,48 @@
                             ],
                             "effect": {
                                 "type": "UseAbility",
-                                "ability": "Mend",
+                                "ability": "Strength",
                                 "charges": {
                                     "type": "Const",
-                                    "value": 5
+                                    "value": 1
                                 }
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/rectangle.glsl",
                         "parameters": {
+                            "box": {
+                                "size": [
+                                    0.8,
+                                    0.8
+                                ]
+                            },
                             "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#ffffff",
-                                "u_g_color_4": "#000000",
-                                "u_fbm_sdf": 0.2,
-                                "u_fbm_sdf_size": 50.0,
-                                "u_fbm_sdf_speed": 0.3,
-                                "u_warp_str": 1.0,
-                                "u_warp_speed": 0.0,
-                                "u_warp_pos": 199.3,
-                                "u_warp_size": 1.1,
+                                "u_color": "#000000",
                                 "u_g_points": [
-                                    -0.9,
-                                    -0.6,
-                                    -0.1,
-                                    -0.0
+                                    -1.0,
+                                    -0.4,
+                                    -0.3,
+                                    0.2
                                 ],
+                                "u_rounding": 0.5,
                                 "u_g_alphas": [
-                                    1.0,
+                                    0.0,
                                     1.0,
                                     1.0,
                                     0.0
                                 ],
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#000000",
+                                "u_g_color_4": "#000000",
+                                "u_normal_scaling": 1.0,
                                 "mapping": {
-                                    "u_color": "u_faction_color",
+                                    "u_color": "u_house_color",
+                                    "u_g_color_1": "u_faction_color",
                                     "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_house_color",
-                                    "u_g_color_4": "u_house_color"
+                                    "u_g_color_3": "u_house_color"
                                 }
                             }
                         }

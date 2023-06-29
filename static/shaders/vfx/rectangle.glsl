@@ -17,10 +17,11 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 in vec2 o_box;
+uniform float u_normal_scaling = 0.0;
 
 void main() {
     vec2 uv = warp(uv, u_global_time);
-    float sdf = rectangle_rounded_sdf(uv * o_box, o_box, vec4(u_rounding));
+    float sdf = rectangle_rounded_sdf(mix(uv * o_box, uv, u_normal_scaling), mix(o_box, vec2(1), u_normal_scaling), vec4(u_rounding));
     sdf = fbm_sdf(sdf, uv);
     // float alpha = mix(0, u_alpha, (u_sdf_cut - sdf) / u_aa);
     // float border = aliase(u_sdf_border, u_sdf_cut, u_aa, sdf);

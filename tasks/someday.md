@@ -34,7 +34,7 @@ First Build @content
             Overhealer - [Mend] heals 1 more DMG per charge {cm:2023-06-29T18:02:36}
             Life Reclaimer - After Kill: [Mend](5) all allies {cm:2023-06-29T18:13:44}
         [Strength]
-            Empowerment Warrior - After Kill: give [Strength] to all allies
+            Empowerment Warrior - After Kill: give [Strength] to all allies {cm:2023-06-29T19:10:31}
             Warcry Barbarian - Battle Start: give [Strength] to all allies
             Soldier - Before death: give [Strength](4) to random ally
             Commander - Ally Died: give [Strength] to ally behind

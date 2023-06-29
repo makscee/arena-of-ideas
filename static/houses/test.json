@@ -560,17 +560,6 @@
                 }
             }
         },
-        "Strength": {
-            "description": "+1 ATK",
-            "trigger": {
-                "type": "ChangeVarInt",
-                "var": "AttackValue",
-                "delta": {
-                    "type": "Var",
-                    "var": "Charges"
-                }
-            }
-        },
         "Martyr": {
             "description": "+1 ATK",
             "trigger": {

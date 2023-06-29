@@ -1,0 +1,44 @@
+{
+    "name": "Warriors",
+    "color": "#b17000ff",
+    "abilities": {
+        "Strength": {
+            "description": "+1 ATK",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Strength",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {
+        "Strength": {
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "AttackValue",
+                "delta": {
+                    "type": "Var",
+                    "var": "Charges"
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        }
+    }
+}

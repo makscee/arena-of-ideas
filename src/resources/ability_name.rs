@@ -4,8 +4,8 @@ use super::*;
 pub enum AbilityName {
     Vitality,
     Mend,
-    Enrage,
-    Chaotic,
+    Strength,
+    Defense,
 
     Grow,
     LifeSteal,
@@ -14,7 +14,6 @@ pub enum AbilityName {
     Empower,
     Shield,
     SummonTreant,
-    Defense,
     Dispel,
     Reanimate,
     Swap,
