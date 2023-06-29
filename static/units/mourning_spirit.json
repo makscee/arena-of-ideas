@@ -1,34 +1,36 @@
 {
-    "name": "Healing Hand",
+    "name": "Mourning Spirit",
     "attack": 1,
-    "health": 2,
-    "description": "Turn End:\nMend +3\ninjured ally",
+    "health": 1,
+    "description": "Ally Died:\nMend +5\nall allies",
     "house": "Medics",
     "trigger": {
-        "type": "TurnEnd",
+        "type": "AnyDeath",
         "effect": {
-            "type": "FindTarget",
-            "faction": {
-                "type": "Owner"
-            },
-            "exclude_self": true,
+            "type": "If",
             "condition": {
-                "type": "MoreInt",
+                "type": "EqualsFaction",
                 "a": {
-                    "type": "Var",
-                    "var": "HpDamage"
+                    "type": "Owner"
                 },
                 "b": {
-                    "type": "Const",
-                    "value": 0
+                    "type": "Target"
                 }
             },
-            "effect": {
-                "type": "UseAbility",
-                "ability": "Mend",
-                "charges": {
-                    "type": "Const",
-                    "value": 3
+            "then": {
+                "type": "Aoe",
+                "factions": [
+                    {
+                        "type": "Owner"
+                    }
+                ],
+                "effect": {
+                    "type": "UseAbility",
+                    "ability": "Mend",
+                    "charges": {
+                        "type": "Const",
+                        "value": 5
+                    }
                 }
             }
         }
@@ -42,12 +44,12 @@
                 "u_g_color_2": "#000000",
                 "u_g_color_3": "#ffffff",
                 "u_g_color_4": "#000000",
-                "u_fbm_sdf": 0.1,
+                "u_fbm_sdf": 0.3,
                 "u_g_points": [
-                    -0.7,
+                    -1.5,
                     -0.5,
-                    -0.1,
-                    0.0
+                    -0.3,
+                    -0.2
                 ],
                 "u_g_alphas": [
                     1.0,
@@ -57,7 +59,6 @@
                 ],
                 "mapping": {
                     "u_color": "u_house_color",
-                    "u_g_color_1": "u_house_color",
                     "u_g_color_2": "u_house_color",
                     "u_g_color_3": "u_house_color",
                     "u_g_color_4": "u_house_color"
