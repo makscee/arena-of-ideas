@@ -3,10 +3,27 @@
     "color": "#b17000ff",
     "abilities": {
         "Strength": {
-            "description": "+1 ATK",
+            "description": "+X ATK",
             "effect": {
                 "type": "ChangeStatus",
                 "name": "Strength",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        },
+        "Defense": {
+            "description": "Reduce incoming damage by X",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Defense",
                 "charges": {
                     "type": "Var",
                     "var": "Charges"
@@ -28,6 +45,56 @@
                 "delta": {
                     "type": "Var",
                     "var": "Charges"
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        },
+        "Defense": {
+            "trigger": {
+                "type": "ModifyIncomingDamage",
+                "value": {
+                    "type": "If",
+                    "condition": {
+                        "type": "MoreInt",
+                        "a": {
+                            "type": "Var",
+                            "var": "Damage"
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 0
+                        }
+                    },
+                    "then": {
+                        "type": "Max",
+                        "a": {
+                            "type": "Sub",
+                            "a": {
+                                "type": "Var",
+                                "var": "Damage"
+                            },
+                            "b": {
+                                "type": "Var",
+                                "var": "Charges"
+                            }
+                        },
+                        "b": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    "else": {
+                        "type": "Var",
+                        "var": "Damage"
+                    }
                 }
             },
             "shader": {
