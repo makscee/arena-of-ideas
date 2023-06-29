@@ -23,7 +23,7 @@ First Build @content
             Vitality Giver - Turn End: give [Vitality] to random ally {cm:2023-06-29T12:56:42}
             Vital Reclaimer - After strike: give [Vitality] to all allies {cm:2023-06-28T13:00:01}
             Genesis Warden - Battle Start: give [Vitality](2) to all allies {cm:2023-06-28T12:48:50}
-            Last Breath - Before death: give [Vitality](2) to all allies
+            Lifegiver - Before death: give [Vitality](2) to all allies {cm:2023-06-29T13:19:46}
             Lifebloom - [Vitality] gives 1 more HP per charge
             Vital Striker - On kill: give [Vitality](3) to all allies
         [Mend]
