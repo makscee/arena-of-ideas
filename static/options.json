@@ -17,13 +17,21 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Soldier",
                     "attack": 1,
-                    "health": 2,
-                    "description": "Before death:\ngive Strength +4\nto random ally",
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "Commander",
+                    "attack": 4,
+                    "health": 4,
+                    "description": "Ally Died: give Strength +2 to random ally",
                     "house": "Warriors",
                     "trigger": {
-                        "type": "BeforeDeath",
+                        "type": "AnyDeath",
                         "effect": {
                             "type": "UseAbility",
                             "target": {
@@ -36,7 +44,7 @@
                             "ability": "Strength",
                             "charges": {
                                 "type": "Const",
-                                "value": 4
+                                "value": 2
                             }
                         }
                     },
@@ -53,17 +61,21 @@
                                 "u_color": "#000000",
                                 "u_g_points": [
                                     -1.0,
-                                    -0.7,
+                                    -0.5,
                                     -0.3,
                                     0.2
                                 ],
-                                "u_fbm_sdf": 0.1,
-                                "u_fbm_sdf_speed": 0.1,
-                                "u_rounding": 0.5,
+                                "u_fbm_sdf": 0.3,
+                                "u_fbm_sdf_speed": 0.5,
+                                "u_fbm_sdf_size": 3.1,
+                                "u_warp_str": 1.0,
+                                "u_warp_speed": 0.0,
+                                "u_warp_pos": 3000.0,
+                                "u_rounding": 0.4,
                                 "u_g_alphas": [
                                     1.0,
                                     0.0,
-                                    1.0,
+                                    0.5,
                                     0.0
                                 ],
                                 "u_g_color_1": "#000000",
@@ -73,8 +85,8 @@
                                 "u_normal_scaling": 1.0,
                                 "mapping": {
                                     "u_color": "u_house_color",
-                                    "u_g_color_1": "u_house_color",
-                                    "u_g_color_2": "u_faction_color",
+                                    "u_g_color_1": "u_faction_color",
+                                    "u_g_color_2": "u_house_color",
                                     "u_g_color_3": "u_faction_color"
                                 }
                             }
