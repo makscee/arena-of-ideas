@@ -17,38 +17,26 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Mourning Spirit",
+                    "name": "Recovery Priest",
                     "attack": 1,
-                    "health": 1,
-                    "description": "Ally Died:\nMend +5\nall allies",
+                    "health": 3,
+                    "description": "Turn End:\nMend all allies",
                     "house": "Medics",
                     "trigger": {
-                        "type": "AnyDeath",
+                        "type": "TurnEnd",
                         "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "EqualsFaction",
-                                "a": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
                                     "type": "Owner"
-                                },
-                                "b": {
-                                    "type": "Target"
                                 }
-                            },
-                            "then": {
-                                "type": "Aoe",
-                                "factions": [
-                                    {
-                                        "type": "Owner"
-                                    }
-                                ],
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Mend",
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 5
-                                    }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Mend",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
                                 }
                             }
                         }
@@ -63,16 +51,20 @@
                                 "u_g_color_3": "#ffffff",
                                 "u_g_color_4": "#000000",
                                 "u_fbm_sdf": 0.3,
+                                "u_fbm_sdf_size": 20.0,
+                                "u_fbm_sdf_speed": 0.5,
+                                "u_warp_str": 0.05,
+                                "u_warp_speed": 20.0,
                                 "u_g_points": [
-                                    -1.5,
+                                    -5.5,
                                     -0.5,
                                     -0.3,
                                     -0.2
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.0,
                                     1.0,
+                                    0.0,
                                     0.0
                                 ],
                                 "mapping": {
@@ -120,8 +112,8 @@
             "replications": 3,
             "units": [
                 {
-                    "attack": 2,
-                    "health": 1
+                    "attack": 1,
+                    "health": 2
                 }
             ],
             "name": "Enemies"

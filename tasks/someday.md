@@ -29,7 +29,7 @@ First Build @content
         [Mend]
             Healing Hand - Turn End: [Mend](3) injured ally {cm:2023-06-29T14:14:36}
             Mourning Spirit - Ally Died: [Mend](5) all allies {cm:2023-06-29T14:25:32}
-            Recovery Priest - Turn End: [Mend] all allies
+            Holy Priest - Turn End: [Mend] all allies {cm:2023-06-29T17:50:40}
             Lifetide Warrior - After Strike: [Mend](2) self
             Overhealer - [Mend] heals 1 more DMG per charge
             Life Reclaimer - After Kill: [Mend](5) all allies
