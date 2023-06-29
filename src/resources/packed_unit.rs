@@ -191,18 +191,20 @@ impl PackedUnit {
         shader
     }
 
-    pub fn get_ui_shader(&self, faction: Faction, resources: &Resources) -> Shader {
+    pub fn get_ui_shader(&self, faction: Faction, set_card: bool, resources: &Resources) -> Shader {
         let house_color = self.house_color(resources);
         let mut unit_shader = self.generate_shader(house_color, &resources.options);
         unit_shader
             .parameters
             .uniforms
-            .insert_float_ref("u_card".to_owned(), 1.0)
             .insert_color_ref(
                 "u_faction_color".to_owned(),
                 faction.color(&resources.options),
             )
             .insert_vec2_ref("u_align".to_owned(), vec2::ZERO);
+        if set_card {
+            unit_shader.insert_float_ref("u_card".to_owned(), 1.0);
+        }
         if let Some(house) = self.house {
             unit_shader.parameters.uniforms.insert_color_ref(
                 "u_house_color".to_owned(),

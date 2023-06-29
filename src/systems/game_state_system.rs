@@ -79,6 +79,20 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&G) {
                     resources.transition_state = GameState::Shop;
                 }
+                if resources.input_data.down_keys.contains(&C) {
+                    resources.gallery_data.card = !resources.gallery_data.card;
+                }
+                resources.gallery_data.cur_card += (resources.gallery_data.card as i32 as f32
+                    - resources.gallery_data.cur_card)
+                    * resources.delta_time
+                    * 5.0;
+                if let Some(entity) = resources.gallery_data.panel {
+                    let value = resources.gallery_data.cur_card;
+                    PanelsSystem::find_alert_mut(entity, resources)
+                        .unwrap()
+                        .shader
+                        .insert_float_ref("u_card".to_owned(), value);
+                }
             }
             GameState::GameOver => {
                 if resources.input_data.down_keys.contains(&Enter) {

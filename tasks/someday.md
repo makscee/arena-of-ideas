@@ -2,11 +2,11 @@ First Build @content
     @abilities
         [Vitality] "+X" HP +Medics
         [Mend] Heal X DMG +Medics
+        [Strength] "+X" ATK +Warriors
+        [Defense] Decrease incoming damage by X +Warriors
         [Shield] Ignore next taken damage +Paladins
         [Martyr] After death, give [Blessing](X) to all allies +Paladins
         [Blessing] "+X/+X" +Paladins
-        [Strength] "+X" ATK +Warriors
-        [Defense] Decrease incoming damage by X +Warriors
         [Weakness] "-X" ATK +Witches
         [Decay] reduce HP by X +Witches
         [Thorns] Deal X damage to attacker +Druids
@@ -33,6 +33,16 @@ First Build @content
             Lifetide Warrior - After Strike: [Mend](2) self {cm:2023-06-29T17:54:01}
             Overhealer - [Mend] heals 1 more DMG per charge {cm:2023-06-29T18:02:36}
             Life Reclaimer - After Kill: [Mend](5) all allies {cm:2023-06-29T18:13:44}
+        [Strength]
+            Empowerment Warrior - After Kill: give [Strength] to all allies
+            Warcry Barbarian - Battle Start: give [Strength] to all allies
+            Soldier - Before death: give [Strength](4) to random ally
+            Commander - Ally Died: give [Strength] to ally behind
+        [Defense]
+            Stalwart Defender - Battle Start: gain [Defense](99)
+            Shieldsmith - After Strike: give [Defense] to random ally
+            Fortress Master - Battle Start: gain [Defense] per empty slot
+            Deflective Knight - After Kill: give [Defense] to all allies
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind
@@ -46,16 +56,6 @@ First Build @content
             Undying Martyr - Ally Died: gain [Martyr]
             Searing Sacrifice - Before strike: gain [Martyr]
             Killblessed - After Kill: gain [Martyr](2)
-        [Strength]
-            Empowerment Warrior - After Kill: give [Strength] to all allies
-            Warcry Barbarian - Battle Start: give [Strength] to all allies
-            Soldier - Before death: give [Strength](4) to random ally
-            Commander - Ally Died: give [Strength] to ally behind
-        [Defense]
-            Stalwart Defender - Battle Start: gain [Defense](99)
-            Shieldsmith - After Strike: give [Defense] to random ally
-            Fortress Master - Battle Start: gain [Defense] per empty slot
-            Deflective Knight - After Kill: give [Defense] to all allies
         [Weakness]
             Cursed Seer - Ally Died: apply [Weakness] to killer
             Harbinger of Despair - Before death: apply [Weakness] to all enemies

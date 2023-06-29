@@ -24,7 +24,7 @@ impl GallerySystem {
         for unit in HeroPool::all(resources) {
             let unit_house = unit.house.unwrap();
             if unit_house == house {
-                let shader = unit.get_ui_shader(Faction::Team, resources);
+                let shader = unit.get_ui_shader(Faction::Team, false, resources);
                 shaders.push(shader);
             }
         }
@@ -45,7 +45,7 @@ impl GallerySystem {
             &house.to_string(),
             HousePool::get_color(&house, resources),
             vec2::ZERO,
-            3,
+            6,
             input_handler,
             "Next",
             resources,

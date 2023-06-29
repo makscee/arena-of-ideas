@@ -88,6 +88,14 @@ impl PanelsSystem {
         resources.panels_data.alert.push(panel);
     }
 
+    pub fn find_alert_mut(entity: legion::Entity, resources: &mut Resources) -> Option<&mut Panel> {
+        resources
+            .panels_data
+            .alert
+            .iter_mut()
+            .find(|x| x.shader.entity == Some(entity))
+    }
+
     pub fn open_card_choice(choice: CardChoice, resources: &mut Resources) {
         if resources.panels_data.choice_options.is_some() {
             return;
@@ -104,7 +112,7 @@ impl PanelsSystem {
                     (
                         "Hero".to_owned(),
                         1,
-                        x.get_ui_shader(faction, resources),
+                        x.get_ui_shader(faction, true, resources),
                         resources.options.colors.player,
                     )
                 })
@@ -116,7 +124,7 @@ impl PanelsSystem {
                     (
                         team.name.clone(),
                         team.units.len(),
-                        team.units[0].get_ui_shader(faction, resources),
+                        team.units[0].get_ui_shader(faction, true, resources),
                         match ind {
                             0 => resources.options.colors.common,
                             1 => resources.options.colors.rare,
