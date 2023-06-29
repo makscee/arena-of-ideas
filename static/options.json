@@ -17,20 +17,41 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Lifebloom",
+                    "attack": 1,
+                    "health": 5
+                },
+                {
+                    "name": "Healing Hand",
                     "attack": 1,
                     "health": 2,
-                    "description": "Vitality\ngives +1 HP\nper charge",
+                    "description": "Turn End: Mend +3 injured ally",
                     "house": "Medics",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "TurnEnd",
                         "effect": {
-                            "type": "ChangeAbilityVarInt",
-                            "ability": "Vitality",
-                            "var": "HpExtra",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "FindTarget",
+                            "faction": {
+                                "type": "Owner"
+                            },
+                            "exclude_self": true,
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "HpDamage"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
+                                }
+                            },
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Mend",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 3
+                                }
                             }
                         }
                     },
@@ -39,25 +60,28 @@
                         "parameters": {
                             "uniforms": {
                                 "u_color": "#ffffff",
-                                "u_g_color_1": "#ffffff",
+                                "u_g_color_1": "#000000",
                                 "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
+                                "u_g_color_3": "#ffffff",
                                 "u_g_color_4": "#000000",
-                                "u_padding": 0.5,
+                                "u_fbm_sdf": 0.1,
                                 "u_g_points": [
                                     -0.7,
-                                    -0.3,
-                                    0.1,
-                                    0.5
+                                    -0.5,
+                                    -0.1,
+                                    0.0
                                 ],
                                 "u_g_alphas": [
                                     1.0,
+                                    0.0,
                                     1.0,
-                                    1.5,
                                     0.0
                                 ],
                                 "mapping": {
+                                    "u_color": "u_house_color",
+                                    "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_house_color",
+                                    "u_g_color_3": "u_house_color",
                                     "u_g_color_4": "u_house_color"
                                 }
                             }
@@ -98,7 +122,7 @@
             "replications": 3,
             "units": [
                 {
-                    "attack": 1,
+                    "attack": 4,
                     "health": 2
                 }
             ],

@@ -27,7 +27,7 @@ First Build @content
             Lifebloom - [Vitality] gives 1 more HP per charge {cm:2023-06-29T13:54:28}
             Vital Striker - After Kill: give [Vitality](3) to all allies {cm:2023-06-29T13:24:51}
         [Mend]
-            Healing Hand - Turn End: [Mend](3) injured ally
+            Healing Hand - Turn End: [Mend](3) injured ally {cm:2023-06-29T14:14:36}
             Mourning Spirit - Ally Died: [Mend](5) all allies
             Recovery Priest - Turn End: [Mend] all allies
             Lifetide Warrior - After Strike: [Mend](2) self

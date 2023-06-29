@@ -341,7 +341,7 @@ impl EffectWrapped {
                         resources.options.colors.healing,
                         color,
                         target,
-                        0,
+                        1,
                         0.0,
                     ));
                 }
