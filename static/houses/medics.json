@@ -7,15 +7,23 @@
             "effect": {
                 "type": "Heal",
                 "value": {
-                    "type": "Var",
-                    "var": "Charges"
+                    "type": "Mul",
+                    "a": {
+                        "type": "Var",
+                        "var": "Charges"
+                    },
+                    "b": {
+                        "type": "Var",
+                        "var": "HpExtra"
+                    }
                 },
                 "after": {
                     "type": "ShowCurve"
                 }
             },
             "default_vars": {
-                "Charges": 1
+                "Charges": 1,
+                "HpExtra": 1
             }
         },
         "Vitality": {
