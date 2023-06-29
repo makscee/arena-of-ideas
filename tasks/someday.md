@@ -36,7 +36,7 @@ First Build @content
         [Strength]
             Empowerment Warrior - After Kill: give [Strength] to all allies {cm:2023-06-29T19:10:31}
             Warcry Barbarian - Battle Start: give [Strength] to all allies {cm:2023-06-29T19:30:44}
-            Soldier - Before death: give [Strength](4) to random ally
+            Soldier - Before death: give [Strength](4) to random ally {cm:2023-06-29T19:36:04}
             Commander - Ally Died: give [Strength] to ally behind
         [Defense]
             Stalwart Defender - Battle Start: gain [Defense](99)

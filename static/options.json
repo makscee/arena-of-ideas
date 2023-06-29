@@ -17,27 +17,26 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Warcry Barbarian",
-                    "attack": 3,
-                    "health": 3,
-                    "description": "Battle Start:\ngive Strength +1\nto all allies",
+                    "name": "Soldier",
+                    "attack": 1,
+                    "health": 2,
+                    "description": "Before death:\ngive Strength +4\nto random ally",
                     "house": "Warriors",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "BeforeDeath",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
+                            "type": "UseAbility",
+                            "target": {
+                                "type": "RandomUnit",
+                                "faction": {
                                     "type": "Owner"
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Strength",
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
+                                },
+                                "exclude_self": true
+                            },
+                            "ability": "Strength",
+                            "charges": {
+                                "type": "Const",
+                                "value": 4
                             }
                         }
                     },
@@ -54,15 +53,16 @@
                                 "u_color": "#000000",
                                 "u_g_points": [
                                     -1.0,
-                                    -0.4,
+                                    -0.7,
                                     -0.3,
                                     0.2
                                 ],
+                                "u_fbm_sdf": 0.1,
+                                "u_fbm_sdf_speed": 0.1,
                                 "u_rounding": 0.5,
-                                "u_rotation": 0.78,
                                 "u_g_alphas": [
-                                    0.0,
                                     1.0,
+                                    0.0,
                                     1.0,
                                     0.0
                                 ],
@@ -73,9 +73,9 @@
                                 "u_normal_scaling": 1.0,
                                 "mapping": {
                                     "u_color": "u_house_color",
-                                    "u_g_color_1": "u_faction_color",
+                                    "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_faction_color",
-                                    "u_g_color_3": "u_house_color"
+                                    "u_g_color_3": "u_faction_color"
                                 }
                             }
                         }
