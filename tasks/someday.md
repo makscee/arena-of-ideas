@@ -45,7 +45,7 @@ First Build @content
             Deflective Knight - After Kill: give [Defense] to all allies {cm:2023-06-29T20:04:23}
         [Weakness]
             Cursed Seer - Ally Died: apply [Weakness] to killer {cm:2023-06-30T14:16:02}
-            Harbinger of Despair - Before death: apply [Weakness] to all enemies
+            Harbinger of Despair - Before death: apply [Weakness] to all enemies {cm:2023-06-30T14:20:46}
             Potion Thrower - Battle Start: apply [Weakness] to 3 enemies
             Drainspirit Witch - [Weakness] also reduces HP
         [Shield]
