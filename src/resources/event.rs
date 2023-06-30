@@ -98,6 +98,7 @@ pub enum Event {
     TurnEnd,
     UnitDeath {
         target: legion::Entity,
+        killer: legion::Entity,
     },
 }
 
@@ -189,7 +190,9 @@ impl Display for Event {
             | Event::ShopEnd
             | Event::TurnStart
             | Event::TurnEnd => write!(f, "Event {}", self.as_ref()),
-            Event::UnitDeath { target } => write!(f, "Event {} t:{target:?}", self.as_ref()),
+            Event::UnitDeath { target, killer } => {
+                write!(f, "Event {} t:{target:?} k:{killer:?}", self.as_ref())
+            }
             Event::AbilityUse {
                 ability,
                 caster,
@@ -224,9 +227,9 @@ impl Event {
         // Notify all Faction::Dark and Faction::Light and set target
         caught = caught
             || match self {
-                Event::UnitDeath { target } => {
+                Event::UnitDeath { target, killer } => {
                     let factions = Faction::battle();
-                    context = context.set_target(*target);
+                    context = context.set_target(*target).set_caster(*killer);
                     Status::notify_all(self, &factions, &context, world, resources);
                     true
                 }

@@ -54,7 +54,7 @@
                                     {
                                         "type": "If",
                                         "target": {
-                                            "type": "Attacker"
+                                            "type": "Caster"
                                         },
                                         "condition": {
                                             "type": "MoreInt",

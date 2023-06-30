@@ -1,14 +1,14 @@
 First Build @content
     @abilities
-        [Vitality] "+X" HP +Medics
-        [Mend] Heal X DMG +Medics
-        [Strength] "+X" ATK +Warriors
-        [Defense] Decrease incoming damage by X +Warriors
+        [Vitality] "+X" HP +Medics {cm:2023-06-30T13:50:27}
+        [Mend] Heal X DMG +Medics {cm:2023-06-30T13:50:29}
+        [Strength] "+X" ATK +Warriors {cm:2023-06-30T13:50:30}
+        [Defense] Decrease incoming damage by X +Warriors {cm:2023-06-30T13:50:32}
+        [Weakness] "-X" ATK +Witches
+        [Decay] reduce HP by X +Witches
         [Shield] Ignore next taken damage +Paladins
         [Martyr] After death, give [Blessing](X) to all allies +Paladins
         [Blessing] "+X/+X" +Paladins
-        [Weakness] "-X" ATK +Witches
-        [Decay] reduce HP by X +Witches
         [Thorns] Deal X damage to attacker +Druids
         [Rebirth] After death, revive with X HP +Druids
         [Volatility] Deal X damage to all enemies after death +Elementals
@@ -43,6 +43,11 @@ First Build @content
             Shieldsmith - After Strike: give [Defense] to random ally {cm:2023-06-29T19:52:07}
             Fortress Master - Battle Start: gain [Defense] per empty slot {cm:2023-06-29T19:59:37}
             Deflective Knight - After Kill: give [Defense] to all allies {cm:2023-06-29T20:04:23}
+        [Weakness]
+            Cursed Seer - Ally Died: apply [Weakness] to killer {cm:2023-06-30T14:16:02}
+            Harbinger of Despair - Before death: apply [Weakness] to all enemies
+            Potion Thrower - Battle Start: apply [Weakness] to 3 enemies
+            Drainspirit Witch - [Weakness] also reduces HP
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind
@@ -56,11 +61,6 @@ First Build @content
             Undying Martyr - Ally Died: gain [Martyr]
             Searing Sacrifice - Before strike: gain [Martyr]
             Killblessed - After Kill: gain [Martyr](2)
-        [Weakness]
-            Cursed Seer - Ally Died: apply [Weakness] to killer
-            Harbinger of Despair - Before death: apply [Weakness] to all enemies
-            Potion Thrower - Battle Start: apply [Weakness] to 3 enemies
-            Drainspirit Witch - [Weakness] also reduces HP
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to right ally
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy

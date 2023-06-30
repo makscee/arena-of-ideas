@@ -152,7 +152,7 @@ impl ExpressionInt {
 pub enum ExpressionEntity {
     World,
     Target,
-    Attacker,
+    Caster,
     Owner,
     FindUnit {
         slot: Box<ExpressionInt>,
@@ -203,7 +203,7 @@ impl ExpressionEntity {
                 .1
                 .entity),
             ExpressionEntity::Target => context.target().context("No target"),
-            ExpressionEntity::Attacker => context.caster().context("No target"),
+            ExpressionEntity::Caster => context.caster().context("No target"),
             ExpressionEntity::Owner => context.owner().context("No owner"),
             ExpressionEntity::FindUnit { slot, faction } => {
                 let slot = slot.calculate(context, world, resources)? as usize;
@@ -245,7 +245,7 @@ impl ExpressionEntity {
 pub enum ExpressionFaction {
     Owner,
     Target,
-    Attacker,
+    Caster,
     Opposite { faction: Box<ExpressionFaction> },
     Var { var: VarName },
     Team,
@@ -292,7 +292,7 @@ impl ExpressionFaction {
                 )
                 .get_faction(&VarName::Faction, world)
                 .context("Failed to get faction"),
-            ExpressionFaction::Attacker => context
+            ExpressionFaction::Caster => context
                 .clone_stack(
                     ContextLayer::Unit {
                         entity: context.caster().unwrap(),

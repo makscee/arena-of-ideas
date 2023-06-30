@@ -1,0 +1,73 @@
+{
+    "name": "Cursed Seer",
+    "attack": 1,
+    "health": 2,
+    "description": "Ally Died: apply Weakness +1 to killer",
+    "house": "Witches",
+    "trigger": {
+        "type": "AnyDeath",
+        "effect": {
+            "type": "If",
+            "condition": {
+                "type": "EqualsFaction",
+                "a": {
+                    "type": "Owner"
+                },
+                "b": {
+                    "type": "Target"
+                }
+            },
+            "then": {
+                "type": "UseAbility",
+                "ability": "Weakness",
+                "target": {
+                    "type": "Caster"
+                },
+                "charges": {
+                    "type": "Const",
+                    "value": 1
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.8,
+                    0.8
+                ]
+            },
+            "uniforms": {
+                "u_color": "#000000",
+                "u_g_points": [
+                    -0.6,
+                    -0.4,
+                    -0.4,
+                    0.2
+                ],
+                "u_fbm_sdf": 0.3,
+                "u_fbm_sdf_speed": 0.15,
+                "u_fbm_sdf_size": 30.1,
+                "u_warp_str": 0.0,
+                "u_warp_speed": 0.0,
+                "u_warp_pos": 0.0,
+                "u_g_alphas": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                ],
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "u_normal_scaling": 1.0,
+                "mapping": {
+                    "u_g_color_3": "u_house_color"
+                }
+            }
+        }
+    }
+}

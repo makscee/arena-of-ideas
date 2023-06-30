@@ -230,6 +230,16 @@ impl UnitSystem {
         }
     }
 
+    pub fn get_corpse_killer(
+        unit: legion::Entity,
+        world: &legion::World,
+    ) -> Result<legion::Entity> {
+        Ok(world
+            .entry_ref(unit)?
+            .get_component::<CorpseComponent>()?
+            .killer)
+    }
+
     pub fn revive_corpse(
         entity: legion::Entity,
         slot: Option<usize>,

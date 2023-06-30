@@ -1,36 +1,12 @@
 {
-    "name": "Medics",
-    "color": "#a5c9ffff",
+    "name": "Witches",
+    "color": "#740055ff",
     "abilities": {
-        "Mend": {
-            "description": "Heal\nX damage",
-            "effect": {
-                "type": "Heal",
-                "value": {
-                    "type": "Mul",
-                    "a": {
-                        "type": "Var",
-                        "var": "Charges"
-                    },
-                    "b": {
-                        "type": "Var",
-                        "var": "HpExtra"
-                    }
-                },
-                "after": {
-                    "type": "ShowCurve"
-                }
-            },
-            "default_vars": {
-                "Charges": 1,
-                "HpExtra": 1
-            }
-        },
-        "Vitality": {
-            "description": "+X HP",
+        "Weakness": {
+            "description": "-X ATK",
             "effect": {
                 "type": "ChangeStatus",
-                "name": "Vitality",
+                "name": "Weakness",
                 "charges": {
                     "type": "Var",
                     "var": "Charges"
@@ -46,10 +22,10 @@
         }
     },
     "statuses": {
-        "Vitality": {
+        "Weakness": {
             "trigger": {
                 "type": "ChangeVarInt",
-                "var": "HpValue",
+                "var": "AttackValue",
                 "delta": {
                     "type": "Mul",
                     "a": {
@@ -57,9 +33,8 @@
                         "var": "Charges"
                     },
                     "b": {
-                        "type": "AbilityVar",
-                        "ability": "Vitality",
-                        "var": "HpExtra"
+                        "type": "Const",
+                        "value": -1
                     }
                 }
             },

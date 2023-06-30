@@ -197,7 +197,7 @@ impl Trigger {
                 _ => {}
             },
             Trigger::AnyDeath { .. } => match event {
-                Event::UnitDeath { target } => {
+                Event::UnitDeath { target, .. } => {
                     if context.owner() != Some(*target) {
                         self.fire(action_queue, context, logger);
                     }
