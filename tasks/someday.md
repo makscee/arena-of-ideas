@@ -53,7 +53,7 @@ First Build @content
         [Martyr]
             Suffering Soul - Battle Start: gain [Martyr] for each enemy {cm:2023-06-30T15:47:28}
             Mourning Martyr - Ally Died: gain [Martyr] {cm:2023-06-30T15:53:19}
-            Searing Sacrifice - Before strike: gain [Martyr]
+            Searing Sacrifice - After Strike: gain [Martyr] {cm:2023-06-30T15:59:38}
             Killblessed - After Kill: gain [Martyr](2)
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
@@ -81,11 +81,11 @@ First Build @content
             Wavecrusher - After Kill: gain [Splash]
             Splashtide Warrior - Battle Start: gain [Splash] for each enemy
         [Marked]
-            Marking Hand - Before strike: apply [Marked]
+            Marking Hand - Before Strike: apply [Marked]
             Sheriff - Battle Start: apply [Marked] to all enemies
             Dark Sigil - After Kill: apply [Marked](3) to next enemy
         [Shoot]
-            Archon Marksman - Before strike: [Shoot]
+            Archon Marksman - Before Strike: [Shoot]
             Avenger - Ally Died: [Shoot]
             Last Arrow - Last ally Died: [Shoot](3)
             Sharpshooter - Battle Start: [Shoot](2)
