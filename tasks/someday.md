@@ -46,8 +46,8 @@ First Build @content
         [Weakness]
             Cursed Seer - Ally Died: apply [Weakness] to killer {cm:2023-06-30T14:16:02}
             Harbinger of Despair - Before death: apply [Weakness] to all enemies {cm:2023-06-30T14:20:46}
-            Potion Thrower - Battle Start: apply [Weakness] to 3 enemies
-            Drainspirit Witch - [Weakness] also reduces HP
+            Potion Thrower - Battle Start: apply [Weakness] to 3 enemies {cm:2023-06-30T14:40:49}
+            Drainspirit - [Weakness] also reduces HP {cm:2023-06-30T15:01:01}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind

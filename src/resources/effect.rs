@@ -110,6 +110,8 @@ pub enum Effect {
         effect: Box<EffectWrapped>,
         #[serde(default)]
         exclude_self: bool,
+        #[serde(default)]
+        limit: Option<ExpressionInt>,
     },
     Revive {
         slot: Option<ExpressionInt>,
@@ -627,14 +629,21 @@ impl EffectWrapped {
                 factions,
                 effect,
                 exclude_self,
+                limit,
             } => {
                 let mut faction_values: Vec<Faction> = default();
                 for faction in factions {
                     faction_values.push(faction.calculate(&context, world, resources)?);
                 }
-                for entity in
-                    UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values))
-                {
+                let mut units =
+                    UnitSystem::collect_factions(world, &HashSet::from_iter(faction_values));
+                let limit = if let Some(limit) = limit {
+                    limit.calculate(&context, world, resources)? as usize
+                } else {
+                    units.len()
+                };
+                units.split_off(limit);
+                for entity in units {
                     if *exclude_self && Some(entity) == context.owner() {
                         continue;
                     }

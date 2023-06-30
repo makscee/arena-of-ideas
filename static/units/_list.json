@@ -1,4 +1,6 @@
 [
+    "units/drainspirit.json",
+    "units/potion_thrower.json",
     "units/harbringer_of_despair.json",
     "units/cursed_seer.json",
     "units/deflective_knight.json",

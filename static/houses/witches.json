@@ -17,26 +17,54 @@
             },
             "default_vars": {
                 "Charges": 1,
-                "HpExtra": 1
+                "HpExtra": 0
             }
         }
     },
     "statuses": {
         "Weakness": {
             "trigger": {
-                "type": "ChangeVarInt",
-                "var": "AttackValue",
-                "delta": {
-                    "type": "Mul",
-                    "a": {
-                        "type": "Var",
-                        "var": "Charges"
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "AttackValue",
+                        "delta": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "Var",
+                                "var": "Charges"
+                            },
+                            "b": {
+                                "type": "Const",
+                                "value": -1
+                            }
+                        }
                     },
-                    "b": {
-                        "type": "Const",
-                        "value": -1
+                    {
+                        "type": "ChangeVarInt",
+                        "var": "HpValue",
+                        "delta": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Charges"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": -1
+                                }
+                            },
+                            "b": {
+                                "type": "AbilityVar",
+                                "ability": "Weakness",
+                                "var": "HpExtra"
+                            }
+                        }
                     }
-                }
+                ]
             },
             "shader": {
                 "path": "shaders/status/default_status.glsl",

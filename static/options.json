@@ -17,13 +17,79 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Harbinger of Despair",
-                    "attack": 4,
-                    "health": 1,
-                    "description": "Before death:\napply Weakness +1\nto all enemies",
+                    "name": "Drainspirit",
+                    "attack": 2,
+                    "health": 2,
+                    "description": "Weakness also reduces HP",
                     "house": "Witches",
                     "trigger": {
-                        "type": "BeforeDeath",
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "SetVarFaction",
+                            "var": "Faction",
+                            "value": {
+                                "type": "Opposite",
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            },
+                            "after": {
+                                "type": "ChangeAbilityVarInt",
+                                "ability": "Weakness",
+                                "var": "HpExtra",
+                                "delta": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_color": "#000000",
+                                "u_g_points": [
+                                    -0.95,
+                                    -0.5,
+                                    -0.1,
+                                    -0.1
+                                ],
+                                "u_fbm_sdf": 0.03,
+                                "u_fbm_sdf_speed": 0.35,
+                                "u_fbm_sdf_size": 10.1,
+                                "u_warp_str": 0.4,
+                                "u_warp_speed": 3.0,
+                                "u_warp_size": 1.1,
+                                "u_g_alphas": [
+                                    1.0,
+                                    0.3,
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#000000",
+                                "u_g_color_4": "#000000",
+                                "u_normal_scaling": 1.0,
+                                "mapping": {
+                                    "u_color": "u_house_color",
+                                    "u_g_color_1": "u_house_color"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 5,
+                    "damage": 3,
+                    "trigger": {
+                        "type": "BattleStart",
                         "effect": {
                             "type": "Aoe",
                             "factions": [
@@ -37,65 +103,22 @@
                             "effect": {
                                 "type": "UseAbility",
                                 "ability": "Weakness",
+                                "force": true,
                                 "charges": {
                                     "type": "Const",
                                     "value": 1
                                 }
                             }
                         }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "uniforms": {
-                                "u_color": "#000000",
-                                "u_g_points": [
-                                    -0.6,
-                                    -0.5,
-                                    -0.4,
-                                    -0.2
-                                ],
-                                "u_fbm_sdf": 0.3,
-                                "u_fbm_sdf_speed": 0.15,
-                                "u_fbm_sdf_size": 30.1,
-                                "u_warp_str": 0.2,
-                                "u_warp_speed": 0.0,
-                                "u_warp_pos": 0.0,
-                                "u_g_alphas": [
-                                    1.0,
-                                    1.0,
-                                    3.0,
-                                    0.0
-                                ],
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
-                                "u_g_color_4": "#000000",
-                                "u_normal_scaling": 1.0,
-                                "mapping": {
-                                    "u_g_color_1": "u_house_color",
-                                    "u_g_color_2": "u_house_color"
-                                }
-                            }
-                        }
                     }
-                },
-                {
-                    "attack": 1,
-                    "health": 1
-                },
-                {
-                    "attack": 1,
-                    "health": 5,
-                    "damage": 3
                 }
             ]
         },
         "dark": {
-            "replications": 3,
+            "replications": 5,
             "units": [
                 {
-                    "attack": 1,
+                    "attack": 5,
                     "health": 2
                 }
             ],
