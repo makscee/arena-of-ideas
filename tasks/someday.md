@@ -94,9 +94,9 @@ First Build @content
             Magic Vendetta - Ally Died: use [MagicMissile](2)
             Arcane Punisher - After Kill: use [MagicMissile](6)
     @enemies
-        Havoc - After Death, deal 1 DMG to all enemies {cm:2023-06-30T19:28:58}
-        Hexer - After Death, apply [Weakness] to killer {cm:2023-06-30T20:24:32}
-        Vengeance - After Death, deal 2 DMG to killer
+        Havoc - Before Death, deal 1 DMG to all enemies {cm:2023-06-30T19:28:58}
+        Hexer - Before Death, apply [Weakness] to killer {cm:2023-06-30T20:24:32}
+        Vengeance - Before Death, deal 2 DMG to killer {cm:2023-06-30T20:35:05}
         Sacrilege - Has [Martyr]
         Wither - After death: apply [Decay] to all enemies
         Snake - Kill after dealing damage
