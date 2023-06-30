@@ -52,7 +52,7 @@ First Build @content
             Rotmender - Turn End: apply [Decay] to random enemy {cm:2023-06-30T15:14:48}
         [Martyr]
             Suffering Soul - Battle Start: gain [Martyr] for each enemy {cm:2023-06-30T15:47:28}
-            Undying Martyr - Ally Died: gain [Martyr]
+            Mourning Martyr - Ally Died: gain [Martyr] {cm:2023-06-30T15:53:19}
             Searing Sacrifice - Before strike: gain [Martyr]
             Killblessed - After Kill: gain [Martyr](2)
         [Shield]
