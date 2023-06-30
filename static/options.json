@@ -35,28 +35,23 @@
             "replications": 3,
             "units": [
                 {
-                    "name": "Havoc",
+                    "name": "Hexer",
                     "attack": 3,
-                    "health": 3,
-                    "description": "Before Death\ndeal ATK DMG\nto all enemies",
+                    "health": 1,
+                    "description": "Before Death:\napply Weakness +1\n to killer",
                     "house": "Enemy",
                     "trigger": {
                         "type": "BeforeDeath",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            ],
-                            "effect": {
-                                "type": "Damage",
-                                "after": {
-                                    "type": "ShowCurve"
-                                }
+                            "type": "UseAbility",
+                            "ability": "Weakness",
+                            "target": {
+                                "type": "Var",
+                                "var": "LastAttacker"
+                            },
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
                             }
                         }
                     },
@@ -64,21 +59,22 @@
                         "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#000000",
+                                "u_g_color_1": "#ff0000",
+                                "u_g_color_2": "#8a0774",
                                 "u_g_color_3": "#ffffff",
                                 "u_g_color_4": "#aa3b08",
-                                "u_p_vel_gravity": -1.5,
                                 "u_p_vel_center": 1.5,
+                                "u_p_scale_start": 0.6,
+                                "u_p_scale_end": 0.2,
                                 "u_g_points": [
                                     0.0,
-                                    0.3,
+                                    0.4,
                                     0.6,
                                     1.0
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.0,
+                                    1.0,
                                     1.0,
                                     0.0
                                 ],

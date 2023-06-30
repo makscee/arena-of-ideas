@@ -95,7 +95,7 @@ First Build @content
             Arcane Punisher - After Kill: use [MagicMissile](6)
     @enemies
         Havoc - After Death, deal 1 DMG to all enemies {cm:2023-06-30T19:28:58}
-        Hexer - After Death, apply [Weakness] to killer
+        Hexer - After Death, apply [Weakness] to killer {cm:2023-06-30T20:24:32}
         Vengeance - After Death, deal 2 DMG to killer
         Sacrilege - Has [Martyr]
         Wither - After death: apply [Decay] to all enemies

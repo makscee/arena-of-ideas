@@ -169,6 +169,9 @@ pub enum ExpressionEntity {
     Entity {
         entity: legion::Entity,
     },
+    Var {
+        var: VarName,
+    },
 }
 
 impl Default for ExpressionEntity {
@@ -209,7 +212,7 @@ impl ExpressionEntity {
                 let slot = slot.calculate(context, world, resources)? as usize;
                 let faction = faction.calculate(context, world, resources)?;
                 SlotSystem::find_unit_by_slot(slot, &faction, world)
-                    .context(format!("No unit of {:?} found in {} slot", faction, slot))
+                    .context(format!("No unit of {faction:?} found in {slot} slot"))
             }
             ExpressionEntity::RandomUnit {
                 faction,
@@ -220,7 +223,7 @@ impl ExpressionEntity {
                     .into_iter()
                     .filter(|x| !exclude_self || Some(*x) != context.owner())
                     .choose(&mut thread_rng())
-                    .context(format!("No units of {:?} found", faction))
+                    .context(format!("No units of {faction:?} found"))
             }
             ExpressionEntity::SlotRelative { relation } => {
                 let faction = context.get_faction(&VarName::Faction, world).unwrap();
@@ -228,9 +231,12 @@ impl ExpressionEntity {
                     + relation.calculate(context, world, resources)?)
                     as usize;
                 SlotSystem::find_unit_by_slot(slot, &faction, world)
-                    .context(format!("No unit of {:?} found in slot {}", faction, slot))
+                    .context(format!("No unit of {faction:?} found in slot {slot}"))
             }
             ExpressionEntity::Entity { entity } => Ok(*entity),
+            ExpressionEntity::Var { var } => context
+                .get_entity(var, world)
+                .context(format!("Failed to get entity from {var:?}")),
         };
 
         resources

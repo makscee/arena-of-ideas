@@ -430,6 +430,20 @@ impl Context {
         }
     }
 
+    pub fn insert_entity(&mut self, var: VarName, value: legion::Entity) -> &mut Self {
+        self.insert_var(var, Var::Entity(value))
+    }
+
+    pub fn get_entity(&self, var: &VarName, world: &legion::World) -> Option<legion::Entity> {
+        match self.get_var(var, world) {
+            Some(value) => match value {
+                Var::Entity(value) => Some(value),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
     pub fn get_status_charges(&self, name: &str, world: &legion::World) -> i32 {
         let mut result = 0;
         for layer in self.layers.iter() {
