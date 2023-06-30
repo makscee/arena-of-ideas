@@ -170,7 +170,7 @@ float rand(int i) {
 }
 
 vec2 rand_vec(int i) {
-    return n22(vec2(i * .001));
+    return n22(vec2(i * .001)) * vec2(2) - vec2(1);
 }
 
 vec2 rand_circle(int i) {

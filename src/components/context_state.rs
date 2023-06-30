@@ -79,6 +79,21 @@ impl ContextState {
         })
     }
 
+    pub fn get_color(&self, var: &VarName, world: &legion::World) -> Rgba<f32> {
+        let value = self.get_var(var, world).unwrap();
+        match value {
+            Var::Color(value) => *value,
+            _ => panic!("Wrong var type {value:?}"),
+        }
+    }
+
+    pub fn try_get_color(&self, var: &VarName, world: &legion::World) -> Option<Rgba<f32>> {
+        self.get_var(var, world).map(|x| match x {
+            Var::Color(value) => *value,
+            _ => panic!("Wrong var type {x:?}"),
+        })
+    }
+
     pub fn get_faction(&self, var: &VarName, world: &legion::World) -> Faction {
         let value = self.get_var(var, world).unwrap();
         match value {

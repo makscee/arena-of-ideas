@@ -437,13 +437,11 @@ impl EffectWrapped {
                     .owner()
                     .expect(&format!("Owner not found {context}"));
                 let house = &AbilityPool::get_house_origin(resources, ability);
-                if !force
-                    && ContextState::get(owner, world)
-                        .vars
-                        .try_get_house()
-                        .unwrap()
-                        != *house
-                {
+                let unit_house = ContextState::get(owner, world)
+                    .vars
+                    .try_get_house()
+                    .unwrap();
+                if !force && unit_house != HouseName::Enemy && unit_house != *house {
                     panic!(
                         "{} tried to use {} while not being a member of the {:?}",
                         ContextState::get(owner, world).name,

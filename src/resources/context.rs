@@ -217,8 +217,15 @@ impl Context {
     ) -> &mut Self {
         match &layer {
             ContextLayer::Unit { entity } => {
-                self.stack(ContextLayer::Entity { entity: *entity }, world, resources);
+                let entity = *entity;
+                self.stack(ContextLayer::Entity { entity }, world, resources);
                 self.layers.push(layer);
+                self.layers.push(ContextLayer::Var {
+                    var: VarName::Color,
+                    value: Var::Color(
+                        ContextState::get(entity, world).get_color(&VarName::HouseColor, world),
+                    ),
+                });
                 self.layers.push(ContextLayer::Var {
                     var: VarName::HpOriginalValue,
                     value: self.get_var(&VarName::HpValue, world).unwrap(),

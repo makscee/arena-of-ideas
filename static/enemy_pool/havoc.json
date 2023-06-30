@@ -1,0 +1,57 @@
+{
+    "name": "Havoc",
+    "attack": 3,
+    "health": 3,
+    "description": "Before Death\ndeal ATK DMG\nto all enemies",
+    "house": "Enemy",
+    "trigger": {
+        "type": "BeforeDeath",
+        "effect": {
+            "type": "Aoe",
+            "factions": [
+                {
+                    "type": "Opposite",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            ],
+            "effect": {
+                "type": "Damage",
+                "after": {
+                    "type": "ShowCurve"
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/particle_emitter.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#ffffff",
+                "u_g_color_4": "#aa3b08",
+                "u_p_vel_gravity": -1.5,
+                "u_p_vel_center": 1.5,
+                "u_g_points": [
+                    0.0,
+                    0.3,
+                    0.6,
+                    1.0
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "mapping": {
+                    "u_g_color_2": "u_house_color",
+                    "u_g_color_3": "u_house_color"
+                }
+            },
+            "instances": 1000
+        }
+    }
+}

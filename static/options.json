@@ -17,72 +17,12 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Killblessed",
-                    "attack": 3,
-                    "health": 2,
-                    "description": "After Kill:\ngain Martyr +2",
-                    "house": "Paladins",
-                    "trigger": {
-                        "type": "AfterKill",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Martyr",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "box": {
-                                "size": [
-                                    0.65,
-                                    0.65
-                                ]
-                            },
-                            "uniforms": {
-                                "u_color": "#ffffff",
-                                "u_g_points": [
-                                    -1.5,
-                                    -0.3,
-                                    0.0,
-                                    0.0
-                                ],
-                                "u_fbm_sdf": 0.2,
-                                "u_fbm_sdf_speed": 0.1,
-                                "u_fbm_sdf_size": 70.3,
-                                "u_warp_str": 0.1,
-                                "u_warp_speed": 2.1,
-                                "u_g_alphas": [
-                                    0.5,
-                                    3.0,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#ffffff",
-                                "u_g_color_4": "#ffffff",
-                                "u_normal_scaling": 1.0,
-                                "u_rotation": 0.0,
-                                "u_t_multiplier": 0.15,
-                                "mapping": {
-                                    "u_g_color_1": "u_house_color",
-                                    "u_g_color_3": "u_house_color",
-                                    "u_rotation": "u_sin"
-                                }
-                            }
-                        }
-                    }
+                    "attack": 5,
+                    "health": 5
                 },
                 {
                     "attack": 1,
-                    "health": 1
+                    "health": 5
                 },
                 {
                     "attack": 1,
@@ -92,11 +32,64 @@
             ]
         },
         "dark": {
-            "replications": 5,
+            "replications": 3,
             "units": [
                 {
-                    "attack": 1,
-                    "health": 2
+                    "name": "Havoc",
+                    "attack": 3,
+                    "health": 3,
+                    "description": "Before Death\ndeal ATK DMG\nto all enemies",
+                    "house": "Enemy",
+                    "trigger": {
+                        "type": "BeforeDeath",
+                        "effect": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            ],
+                            "effect": {
+                                "type": "Damage",
+                                "after": {
+                                    "type": "ShowCurve"
+                                }
+                            }
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "parameters": {
+                            "uniforms": {
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#ffffff",
+                                "u_g_color_4": "#aa3b08",
+                                "u_p_vel_gravity": -1.5,
+                                "u_p_vel_center": 1.5,
+                                "u_g_points": [
+                                    0.0,
+                                    0.3,
+                                    0.6,
+                                    1.0
+                                ],
+                                "u_g_alphas": [
+                                    1.0,
+                                    0.0,
+                                    1.0,
+                                    0.0
+                                ],
+                                "mapping": {
+                                    "u_g_color_2": "u_house_color",
+                                    "u_g_color_3": "u_house_color"
+                                }
+                            },
+                            "instances": 1000
+                        }
+                    }
                 }
             ],
             "name": "Enemies"
@@ -143,7 +136,7 @@
         "stat_hp": "#E55A5A",
         "stat_atk": "#EDB848",
         "light": "#F0F0F0",
-        "dark": "#5A5A5A"
+        "dark": "#1f1f1f"
     },
     "shaders": {
         "panel_header": {

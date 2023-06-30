@@ -31,6 +31,8 @@ pub enum HouseName {
     Witches,
     Paladins,
 
+    Enemy,
+
     Test,
 }
 
@@ -44,7 +46,7 @@ impl FileWatcherLoader for House {
     fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::load));
         debug!("Load house {:?}", path);
-        let house: House = futures::executor::block_on(load_json(path)).unwrap();
+        let mut house: House = futures::executor::block_on(load_json(path)).unwrap();
         house.statuses.iter().for_each(|(name, status)| {
             let mut status = status.clone();
             status.color = house.color;
@@ -53,6 +55,12 @@ impl FileWatcherLoader for House {
         house.abilities.iter().for_each(|(name, ability)| {
             AbilityPool::define_ability(name, ability, house.color, house.name, resources);
         });
+        match &house.name {
+            HouseName::Enemy => {
+                house.color = resources.options.colors.enemy;
+            }
+            _ => {}
+        }
         HousePool::insert_house(house.name, house, resources);
     }
 }
