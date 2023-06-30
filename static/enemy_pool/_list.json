@@ -1,3 +1,7 @@
 [
+    "enemy_pool/wither.json",
+    "enemy_pool/vengeance.json",
+    "enemy_pool/sacrilege.json",
+    "enemy_pool/hexer.json",
     "enemy_pool/havoc.json"
 ]
