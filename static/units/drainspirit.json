@@ -2,7 +2,7 @@
     "name": "Drainspirit",
     "attack": 2,
     "health": 2,
-    "description": "Weakness also reduces HP",
+    "description": "Weakness\nalso reduces HP",
     "house": "Witches",
     "trigger": {
         "type": "BattleStart",

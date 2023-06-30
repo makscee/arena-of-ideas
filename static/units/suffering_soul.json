@@ -1,0 +1,60 @@
+{
+    "name": "Suffering Soul",
+    "attack": 1,
+    "health": 1,
+    "description": "Battle Start:\ngain Martyr +1\nfor each enemy",
+    "house": "Paladins",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Martyr",
+            "target": {
+                "type": "Owner"
+            },
+            "charges": {
+                "type": "Faction",
+                "faction": {
+                    "type": "Opposite",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/rectangle.glsl",
+        "parameters": {
+            "uniforms": {
+                "u_color": "#ffffff",
+                "u_g_points": [
+                    -1.5,
+                    -0.7,
+                    -0.5,
+                    -0.3
+                ],
+                "u_fbm_sdf": 0.4,
+                "u_fbm_sdf_speed": 0.02,
+                "u_fbm_sdf_size": 10.3,
+                "u_warp_str": 0.1,
+                "u_warp_speed": 5.0,
+                "u_rotation": 0.78,
+                "u_g_alphas": [
+                    0.0,
+                    1.5,
+                    0.5,
+                    0.0
+                ],
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#ffffff",
+                "u_g_color_3": "#ffffff",
+                "u_g_color_4": "#ffffff",
+                "u_normal_scaling": 1.0,
+                "mapping": {
+                    "u_g_color_3": "u_house_color"
+                }
+            }
+        }
+    }
+}

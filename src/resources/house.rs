@@ -29,6 +29,7 @@ pub enum HouseName {
     Medics,
     Warriors,
     Witches,
+    Paladins,
 
     Test,
 }

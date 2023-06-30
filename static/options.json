@@ -17,32 +17,27 @@
             "replications": 1,
             "units": [
                 {
-                    "attack": 1,
-                    "health": 15
-                },
-                {
-                    "name": "Rotmender",
+                    "name": "Sacrificial Soul",
                     "attack": 1,
                     "health": 1,
-                    "description": "Turn End:\napply Decay +1\nto random enemy",
-                    "house": "Witches",
+                    "description": "Battle Start:\ngain Martyr +1\nfor each enemy",
+                    "house": "Paladins",
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "ability": "Decay",
+                            "ability": "Martyr",
                             "target": {
-                                "type": "RandomUnit",
+                                "type": "Owner"
+                            },
+                            "charges": {
+                                "type": "Faction",
                                 "faction": {
                                     "type": "Opposite",
                                     "faction": {
                                         "type": "Owner"
                                     }
                                 }
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
                             }
                         }
                     },
@@ -50,30 +45,29 @@
                         "path": "shaders/vfx/rectangle.glsl",
                         "parameters": {
                             "uniforms": {
-                                "u_color": "#000000",
+                                "u_color": "#ffffff",
                                 "u_g_points": [
                                     -1.5,
                                     -0.7,
                                     -0.5,
                                     -0.3
                                 ],
-                                "u_fbm_sdf": 0.1,
-                                "u_fbm_sdf_speed": 0.0,
+                                "u_fbm_sdf": 0.4,
+                                "u_fbm_sdf_speed": 0.02,
                                 "u_fbm_sdf_size": 10.3,
                                 "u_warp_str": 0.1,
                                 "u_warp_speed": 5.0,
-                                "u_warp_size": 1.1,
                                 "u_rotation": 0.78,
                                 "u_g_alphas": [
-                                    -2.5,
+                                    0.0,
                                     1.5,
                                     0.5,
                                     0.0
                                 ],
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
-                                "u_g_color_4": "#000000",
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#ffffff",
+                                "u_g_color_3": "#ffffff",
+                                "u_g_color_4": "#ffffff",
                                 "u_normal_scaling": 1.0,
                                 "mapping": {
                                     "u_g_color_3": "u_house_color"
@@ -89,30 +83,7 @@
                 {
                     "attack": 1,
                     "health": 5,
-                    "damage": 3,
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Weakness",
-                                "force": true,
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
-                            }
-                        }
-                    }
+                    "damage": 3
                 }
             ]
         },

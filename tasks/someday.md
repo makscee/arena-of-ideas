@@ -6,9 +6,9 @@ First Build @content
         [Defense] Decrease incoming damage by X +Warriors {cm:2023-06-30T13:50:32}
         [Weakness] "-X" ATK +Witches {cm:2023-06-30T15:01:47}
         [Decay] reduce HP by X +Witches {cm:2023-06-30T15:15:01}
-        [Shield] Ignore next taken damage +Paladins
-        [Martyr] After death, give [Blessing](X) to all allies +Paladins
         [Blessing] "+X/+X" +Paladins
+        [Martyr] Before death, give [Blessing](X) to all allies +Paladins
+        [Shield] Ignore next taken damage +Paladins
         [Thorns] Deal X damage to attacker +Druids
         [Rebirth] After death, revive with X HP +Druids
         [Volatility] Deal X damage to all enemies after death +Elementals
@@ -50,6 +50,11 @@ First Build @content
             Drainspirit - [Weakness] also reduces HP {cm:2023-06-30T15:01:01}
         [Decay] {cm:2023-06-30T15:14:50}
             Rotmender - Turn End: apply [Decay] to random enemy {cm:2023-06-30T15:14:48}
+        [Martyr]
+            Suffering Soul - Battle Start: gain [Martyr] for each enemy {cm:2023-06-30T15:47:28}
+            Undying Martyr - Ally Died: gain [Martyr]
+            Searing Sacrifice - Before strike: gain [Martyr]
+            Killblessed - After Kill: gain [Martyr](2)
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind
@@ -58,11 +63,6 @@ First Build @content
             Reflective Guardian - [Shield] reflects damage back to attacker
             Shieldbearer - Battle Start: give [Shield] to adjacent allies
             Shield Slinger - After Kill: gain [Shield]
-        [Martyr]
-            Sacrificial Soul - Battle Start: gain [Martyr] for each enemy
-            Undying Martyr - Ally Died: gain [Martyr]
-            Searing Sacrifice - Before strike: gain [Martyr]
-            Killblessed - After Kill: gain [Martyr](2)
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to right ally
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy
