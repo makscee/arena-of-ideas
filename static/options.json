@@ -18,7 +18,7 @@
             "units": [
                 {
                     "attack": 5,
-                    "health": 5
+                    "health": 3
                 },
                 {
                     "attack": 1,
@@ -35,29 +35,36 @@
             "replications": 3,
             "units": [
                 {
-                    "name": "Wither",
-                    "attack": 4,
-                    "health": 3,
-                    "description": "After death\napply Decay +1\nto all enemies",
+                    "name": "Leech",
+                    "attack": 3,
+                    "health": 1,
+                    "description": "Enemy died:\ngain Vitality +2",
                     "house": "Enemy",
                     "trigger": {
-                        "type": "BeforeDeath",
+                        "type": "AnyDeath",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
+                            "type": "If",
+                            "condition": {
+                                "type": "EqualsFaction",
+                                "a": {
                                     "type": "Opposite",
                                     "faction": {
                                         "type": "Owner"
                                     }
+                                },
+                                "b": {
+                                    "type": "Target"
                                 }
-                            ],
-                            "effect": {
+                            },
+                            "then": {
                                 "type": "UseAbility",
-                                "ability": "Decay",
+                                "ability": "Vitality",
+                                "target": {
+                                    "type": "Owner"
+                                },
                                 "charges": {
                                     "type": "Const",
-                                    "value": 1
+                                    "value": 2
                                 }
                             }
                         }
@@ -74,37 +81,38 @@
                             "uniforms": {
                                 "u_g_color_1": "#8a8a8a",
                                 "u_g_color_2": "#000000",
-                                "u_g_color_3": "#005703",
-                                "u_g_color_4": "#aa3b08",
-                                "u_p_vel_center": 0.0,
-                                "u_p_vel_gravity": 0.5,
-                                "u_p_vel_circle": 0.1,
-                                "u_p_vel_circle_mul": 5.0,
-                                "u_p_vel_circle_shift": 50.0,
-                                "u_p_scale_start": 0.6,
+                                "u_g_color_3": "#aa0600",
+                                "u_g_color_4": "#000000",
+                                "u_p_vel_center": 1.0,
+                                "u_p_vel_gravity": 0.3,
+                                "u_p_vel_circle": 0.7,
+                                "u_p_vel_circle_mul": -9.0,
+                                "u_p_vel_circle_shift": 0.0,
+                                "u_p_scale_start": 0.5,
                                 "u_p_scale_end": 0.9,
-                                "u_p_scale": 0.05,
+                                "u_p_scale": 0.1,
                                 "u_p_offset": [
                                     0.0,
                                     0.0
                                 ],
                                 "u_g_points": [
+                                    0.2,
                                     0.3,
-                                    0.5,
-                                    0.6,
+                                    0.8,
                                     1.0
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.0,
+                                    0.5,
                                     1.0,
-                                    0.0
+                                    1.0
                                 ],
                                 "mapping": {
+                                    "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_house_color"
                                 }
                             },
-                            "instances": 500
+                            "instances": 300
                         }
                     }
                 }

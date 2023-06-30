@@ -1,0 +1,58 @@
+{
+    "name": "Snake",
+    "attack": 1,
+    "health": 1,
+    "description": "Kill\nafter dealing damage",
+    "house": "Enemy",
+    "trigger": {
+        "type": "AfterDamageDealt",
+        "effect": {
+            "type": "Kill"
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/particle_emitter.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    1.0,
+                    1.0
+                ]
+            },
+            "uniforms": {
+                "u_g_color_1": "#8a8a8a",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#4aff50",
+                "u_g_color_4": "#def4e1",
+                "u_p_vel_center": 1.0,
+                "u_p_vel_gravity": -0.0,
+                "u_p_vel_circle": 0.5,
+                "u_p_vel_circle_mul": -9.0,
+                "u_p_vel_circle_shift": 0.5,
+                "u_p_scale_start": 0.8,
+                "u_p_scale_end": 0.9,
+                "u_p_scale": 0.1,
+                "u_p_offset": [
+                    0.0,
+                    0.0
+                ],
+                "u_g_points": [
+                    0.3,
+                    0.5,
+                    0.6,
+                    1.0
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    0.5,
+                    1.0,
+                    1.0
+                ],
+                "mapping": {
+                    "u_g_color_2": "u_house_color"
+                }
+            },
+            "instances": 100
+        }
+    }
+}
