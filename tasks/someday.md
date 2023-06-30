@@ -97,7 +97,7 @@ First Build @content
         Havoc - Before Death, deal 1 DMG to all enemies {cm:2023-06-30T19:28:58}
         Hexer - Before Death, apply [Weakness] to killer {cm:2023-06-30T20:24:32}
         Vengeance - Before Death, deal 2 DMG to killer {cm:2023-06-30T20:35:05}
-        Sacrilege - Has [Martyr]
+        Sacrilege - Has [Martyr] {cm:2023-06-30T20:47:21}
         Wither - After death: apply [Decay] to all enemies
         Snake - Kill after dealing damage
         Leech - Enemy died: gain [Vitality](2)

@@ -35,62 +35,60 @@
             "replications": 3,
             "units": [
                 {
-                    "name": "Vengeance",
-                    "attack": 2,
-                    "health": 2,
-                    "description": "Before Death\ndeal ATK DMG\nto killer",
+                    "name": "Sacrilege",
+                    "attack": 1,
+                    "health": 1,
+                    "description": "Has Martyr",
                     "house": "Enemy",
-                    "trigger": {
-                        "type": "BeforeDeath",
-                        "effect": {
-                            "type": "Damage",
-                            "target": {
-                                "type": "Var",
-                                "var": "LastAttacker"
-                            }
-                        }
-                    },
+                    "statuses": [
+                        [
+                            "Martyr",
+                            1
+                        ]
+                    ],
                     "shader": {
                         "path": "shaders/vfx/particle_emitter.glsl",
                         "parameters": {
                             "box": {
                                 "size": [
                                     0.5,
-                                    1.0
+                                    0.5
                                 ]
                             },
                             "uniforms": {
-                                "u_g_color_1": "#ff0000",
-                                "u_g_color_2": "#cd0000",
-                                "u_g_color_3": "#d04200",
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#e677bb",
                                 "u_g_color_4": "#aa3b08",
-                                "u_p_vel_center": -0.7,
-                                "u_p_vel_gravity": -3.0,
-                                "u_p_scale_start": 0.8,
-                                "u_p_scale_end": 0.2,
-                                "u_p_scale": 0.1,
+                                "u_p_vel_center": 3.0,
+                                "u_p_vel_gravity": 0.0,
+                                "u_p_vel_circle": 1.0,
+                                "u_p_vel_circle_mul": 5.0,
+                                "u_p_vel_circle_shift": 50.0,
+                                "u_p_scale_start": 0.6,
+                                "u_p_scale_end": 0.9,
+                                "u_p_scale": 0.05,
                                 "u_p_offset": [
                                     0.0,
-                                    -1.0
+                                    0.0
                                 ],
                                 "u_g_points": [
-                                    0.0,
-                                    0.4,
+                                    0.3,
+                                    0.5,
                                     0.6,
                                     1.0
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    1.0,
+                                    0.0,
                                     1.0,
                                     0.0
                                 ],
                                 "mapping": {
-                                    "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_house_color"
                                 }
                             },
-                            "instances": 1000
+                            "instances": 500
                         }
                     }
                 }
