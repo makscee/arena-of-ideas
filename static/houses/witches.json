@@ -19,6 +19,24 @@
                 "Charges": 1,
                 "HpExtra": 0
             }
+        },
+        "Decay": {
+            "description": "-X HP",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Decay",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1,
+                "HpExtra": 1
+            }
         }
     },
     "statuses": {
@@ -65,6 +83,40 @@
                         }
                     }
                 ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        },
+        "Decay": {
+            "trigger": {
+                "type": "ChangeVarInt",
+                "var": "HpValue",
+                "delta": {
+                    "type": "Mul",
+                    "a": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "Var",
+                            "var": "Charges"
+                        },
+                        "b": {
+                            "type": "AbilityVar",
+                            "ability": "Decay",
+                            "var": "HpExtra"
+                        }
+                    },
+                    "b": {
+                        "type": "Const",
+                        "value": -1
+                    }
+                }
             },
             "shader": {
                 "path": "shaders/status/default_status.glsl",

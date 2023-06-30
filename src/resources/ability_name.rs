@@ -7,6 +7,7 @@ pub enum AbilityName {
     Strength,
     Defense,
     Weakness,
+    Decay,
 
     Grow,
     LifeSteal,

@@ -4,8 +4,8 @@ First Build @content
         [Mend] Heal X DMG +Medics {cm:2023-06-30T13:50:29}
         [Strength] "+X" ATK +Warriors {cm:2023-06-30T13:50:30}
         [Defense] Decrease incoming damage by X +Warriors {cm:2023-06-30T13:50:32}
-        [Weakness] "-X" ATK +Witches
-        [Decay] reduce HP by X +Witches
+        [Weakness] "-X" ATK +Witches {cm:2023-06-30T15:01:47}
+        [Decay] reduce HP by X +Witches {cm:2023-06-30T15:15:01}
         [Shield] Ignore next taken damage +Paladins
         [Martyr] After death, give [Blessing](X) to all allies +Paladins
         [Blessing] "+X/+X" +Paladins
@@ -26,28 +26,30 @@ First Build @content
             Lifegiver - Before death: give [Vitality](2) to all allies {cm:2023-06-29T13:19:46}
             Lifebloom - [Vitality] gives 1 more HP per charge {cm:2023-06-29T13:54:28}
             Vital Striker - After Kill: give [Vitality](3) to all allies {cm:2023-06-29T13:24:51}
-        [Mend]
+        [Mend] {cm:2023-06-30T15:14:56}
             Healing Hand - Turn End: [Mend](3) injured ally {cm:2023-06-29T14:14:36}
             Mourning Spirit - Ally Died: [Mend](5) all allies {cm:2023-06-29T14:25:32}
             Holy Priest - Turn End: [Mend] all allies {cm:2023-06-29T17:50:40}
             Lifetide Warrior - After Strike: [Mend](2) self {cm:2023-06-29T17:54:01}
             Overhealer - [Mend] heals 1 more DMG per charge {cm:2023-06-29T18:02:36}
             Life Reclaimer - After Kill: [Mend](5) all allies {cm:2023-06-29T18:13:44}
-        [Strength]
+        [Strength] {cm:2023-06-30T15:14:55}
             Empowerment Warrior - After Kill: give [Strength] to all allies {cm:2023-06-29T19:10:31}
             Warcry Barbarian - Battle Start: give [Strength] to all allies {cm:2023-06-29T19:30:44}
             Soldier - Before death: give [Strength](4) to random ally {cm:2023-06-29T19:36:04}
             Commander - Ally Died: give [Strength] to ally behind {cm:2023-06-29T19:42:40}
-        [Defense]
+        [Defense] {cm:2023-06-30T15:14:53}
             Stalwart Defender - Battle Start: gain [Defense](99) {cm:2023-06-29T19:49:55}
             Shieldsmith - After Strike: give [Defense] to random ally {cm:2023-06-29T19:52:07}
             Fortress Master - Battle Start: gain [Defense] per empty slot {cm:2023-06-29T19:59:37}
             Deflective Knight - After Kill: give [Defense] to all allies {cm:2023-06-29T20:04:23}
-        [Weakness]
+        [Weakness] {cm:2023-06-30T15:14:51}
             Cursed Seer - Ally Died: apply [Weakness] to killer {cm:2023-06-30T14:16:02}
             Harbinger of Despair - Before death: apply [Weakness] to all enemies {cm:2023-06-30T14:20:46}
             Potion Thrower - Battle Start: apply [Weakness] to 3 enemies {cm:2023-06-30T14:40:49}
             Drainspirit - [Weakness] also reduces HP {cm:2023-06-30T15:01:01}
+        [Decay] {cm:2023-06-30T15:14:50}
+            Rotmender - Turn End: apply [Decay] to random enemy {cm:2023-06-30T15:14:48}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind

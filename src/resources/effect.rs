@@ -642,7 +642,7 @@ impl EffectWrapped {
                 } else {
                     units.len()
                 };
-                units.split_off(limit);
+                units.split_off(limit).truncate(0);
                 for entity in units {
                     if *exclude_self && Some(entity) == context.owner() {
                         continue;
