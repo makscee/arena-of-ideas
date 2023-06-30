@@ -6,8 +6,8 @@ First Build @content
         [Defense] Decrease incoming damage by X +Warriors {cm:2023-06-30T13:50:32}
         [Weakness] "-X" ATK +Witches {cm:2023-06-30T15:01:47}
         [Decay] reduce HP by X +Witches {cm:2023-06-30T15:15:01}
-        [Blessing] "+X/+X" +Paladins
-        [Martyr] Before death, give [Blessing](X) to all allies +Paladins
+        [Blessing] "+X/+X" +Paladins {cm:2023-06-30T16:01:53}
+        [Martyr] Before death, give [Blessing](X) to all allies +Paladins {cm:2023-06-30T16:01:54}
         [Shield] Ignore next taken damage +Paladins
         [Thorns] Deal X damage to attacker +Druids
         [Rebirth] After death, revive with X HP +Druids
@@ -50,11 +50,11 @@ First Build @content
             Drainspirit - [Weakness] also reduces HP {cm:2023-06-30T15:01:01}
         [Decay] {cm:2023-06-30T15:14:50}
             Rotmender - Turn End: apply [Decay] to random enemy {cm:2023-06-30T15:14:48}
-        [Martyr]
+        [Martyr] {cm:2023-06-30T16:01:50}
             Suffering Soul - Battle Start: gain [Martyr] for each enemy {cm:2023-06-30T15:47:28}
             Mourning Martyr - Ally Died: gain [Martyr] {cm:2023-06-30T15:53:19}
             Searing Sacrifice - After Strike: gain [Martyr] {cm:2023-06-30T15:59:38}
-            Killblessed - After Kill: gain [Martyr](2)
+            Killblessed - After Kill: gain [Martyr](2) {cm:2023-06-30T16:01:43}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before death: give [Shield] to ally behind
