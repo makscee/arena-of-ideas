@@ -8,8 +8,8 @@ First Build @content
         [Decay] reduce HP by X +Witches {cm:2023-06-30T15:15:01}
         [Blessing] "+X/+X" +Paladins {cm:2023-06-30T16:01:53}
         [Martyr] Before Death, give [Blessing](X) to all allies +Paladins {cm:2023-06-30T16:01:54}
-        [Shield] Ignore next taken damage +Paladins
-        [Thorns] Deal X damage to attacker +Druids
+        [Shield] Ignore next taken damage +Paladins {cm:2023-07-01T15:37:38}
+        [Thorns] Deal X damage to attacker +Druids {cm:2023-07-01T15:37:37}
         [Rebirth] After death, revive with X HP +Druids
         [Volatility] Deal X damage to all enemies after death +Elementals
         [Splash] Deal X damage to all enemies after Strike +Elementals

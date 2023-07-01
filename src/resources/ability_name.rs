@@ -11,6 +11,7 @@ pub enum AbilityName {
     Blessing,
     Martyr,
     Shield,
+    Thorns,
 
     Grow,
     LifeSteal,

@@ -1,0 +1,52 @@
+{
+    "name": "Druids",
+    "color": "#c95a00ff",
+    "abilities": {
+        "Thorns": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Thorns",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Deal X damage\nto attacker",
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {
+        "Thorns": {
+            "trigger": {
+                "type": "AfterIncomingDamage",
+                "effect": {
+                    "type": "Damage",
+                    "target": {
+                        "type": "Caster"
+                    },
+                    "value": {
+                        "type": "Var",
+                        "var": "Charges"
+                    },
+                    "after": {
+                        "type": "ShowCurve"
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        }
+    }
+}

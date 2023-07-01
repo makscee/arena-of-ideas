@@ -1,6 +1,6 @@
 {
     "name": "Warriors",
-    "color": "#b17000ff",
+    "color": "#995701ff",
     "abilities": {
         "Strength": {
             "description": "+X ATK",
