@@ -12,6 +12,8 @@ pub enum AbilityName {
     Martyr,
     Shield,
     Thorns,
+    Rebirth,
+    Volatility,
 
     Grow,
     LifeSteal,
@@ -23,7 +25,6 @@ pub enum AbilityName {
     Reanimate,
     Swap,
     Poison,
-    Rebirth,
 }
 
 impl fmt::Display for AbilityName {

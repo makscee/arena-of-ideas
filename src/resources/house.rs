@@ -31,6 +31,7 @@ pub enum HouseName {
     Witches,
     Paladins,
     Druids,
+    Elementals,
 
     Enemy,
 

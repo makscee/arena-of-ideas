@@ -21,7 +21,7 @@
                     "health": 3,
                     "statuses": [
                         [
-                            "Rebirth",
+                            "Volatility",
                             2
                         ]
                     ]
@@ -38,7 +38,7 @@
             ]
         },
         "dark": {
-            "replications": 3,
+            "replications": 5,
             "units": [
                 {
                     "attack": 3,

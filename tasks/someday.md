@@ -11,7 +11,7 @@ First Build @content
         [Shield] Ignore next taken damage +Paladins {cm:2023-07-01T15:37:38}
         [Thorns] Deal X damage to attacker +Druids {cm:2023-07-01T15:37:37}
         [Rebirth] After Death, revive with X HP +Druids {cm:2023-07-01T15:45:11}
-        [Volatility] Deal X damage to all enemies after death +Elementals
+        [Volatility] Deal X damage to all enemies after death +Elementals {cm:2023-07-01T15:55:38}
         [Splash] Deal X damage to all enemies after Strike +Elementals
         [Marked] Taken damage increased by X +Hunters
         [Shoot] Deal ATK damage X times to random enemy +Hunters
