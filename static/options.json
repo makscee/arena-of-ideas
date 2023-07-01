@@ -18,10 +18,10 @@
             "units": [
                 {
                     "attack": 1,
-                    "health": 3,
+                    "health": 5,
                     "statuses": [
                         [
-                            "Volatility",
+                            "Splash",
                             2
                         ]
                     ]

@@ -14,6 +14,7 @@ pub enum AbilityName {
     Thorns,
     Rebirth,
     Volatility,
+    Splash,
 
     Grow,
     LifeSteal,

@@ -330,17 +330,6 @@
                 "layer": "Unit"
             }
         },
-        "Splash": {
-            "description": "+1 ATK",
-            "trigger": {
-                "type": "ChangeVarInt",
-                "var": "AttackValue",
-                "delta": {
-                    "type": "Var",
-                    "var": "Charges"
-                }
-            }
-        },
         "LifeStealGain": {
             "description": "+1 Health",
             "trigger": {

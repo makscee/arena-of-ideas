@@ -18,6 +18,23 @@
             "default_vars": {
                 "Charges": 1
             }
+        },
+        "Splash": {
+            "description": "Deal X damage\nto all enemies \nafter Strike",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Splash",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
         }
     },
     "statuses": {
@@ -34,7 +51,41 @@
                             }
                         }
                     ],
-                    "exclude_self": true,
+                    "effect": {
+                        "type": "Damage",
+                        "value": {
+                            "type": "Var",
+                            "var": "Charges"
+                        },
+                        "after": {
+                            "type": "ShowCurve"
+                        }
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        },
+        "Splash": {
+            "trigger": {
+                "type": "AfterStrike",
+                "effect": {
+                    "type": "Aoe",
+                    "factions": [
+                        {
+                            "type": "Opposite",
+                            "faction": {
+                                "type": "Owner"
+                            }
+                        }
+                    ],
                     "effect": {
                         "type": "Damage",
                         "value": {
