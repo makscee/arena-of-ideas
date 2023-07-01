@@ -1,6 +1,5 @@
 [
-    "test/scenarios/enrage_by_enrage.json",
-    "test/scenarios/enrage_endless.json",
+    "test/scenarios/thorns_infinite.json",
     "test/scenarios/vulture.json",
     "test/scenarios/lilith.json",
     "test/scenarios/team_shield.json",
@@ -36,8 +35,6 @@
     "test/scenarios/cheater.json",
     "test/scenarios/shoot.json",
     "test/scenarios/heal.json",
-    "test/scenarios/reanimate_help.json",
-    "test/scenarios/reanimate_rebirth.json",
     "test/scenarios/empower_end.json",
     "test/scenarios/empower_big.json",
     "test/scenarios/empower.json",

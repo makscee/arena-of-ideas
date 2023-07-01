@@ -27,7 +27,9 @@ impl ActionSystem {
             }
             ticks += 1;
             if ticks > 1000 {
-                panic!("Exceeded ticks limit")
+                let dark_name = TeamSystem::get_state(Faction::Dark, world).name.clone();
+                let light_name = TeamSystem::get_state(Faction::Light, world).name.clone();
+                panic!("Exceeded ticks limit {light_name} vs. {dark_name}")
             }
         }
     }

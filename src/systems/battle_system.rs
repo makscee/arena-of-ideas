@@ -346,6 +346,7 @@ impl BattleSystem {
                 Effect::Damage {
                     value: None,
                     on_hit: None,
+                    source: default(),
                 }
                 .wrap(),
             ));
@@ -355,6 +356,7 @@ impl BattleSystem {
                 Effect::Damage {
                     value: None,
                     on_hit: None,
+                    source: default(),
                 }
                 .wrap(),
             ));

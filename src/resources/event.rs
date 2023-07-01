@@ -36,26 +36,31 @@ pub enum Event {
         owner: legion::Entity,
         caster: legion::Entity,
         damage: usize,
+        source: String,
     },
     AfterIncomingDamage {
         owner: legion::Entity,
         caster: legion::Entity,
         damage: usize,
+        source: String,
     },
     BeforeOutgoingDamage {
         owner: legion::Entity,
         target: legion::Entity,
         damage: usize,
+        source: String,
     },
     AfterOutgoingDamage {
         owner: legion::Entity,
         target: legion::Entity,
         damage: usize,
+        source: String,
     },
     AfterDamageDealt {
         owner: legion::Entity,
         target: legion::Entity,
         damage: usize,
+        source: String,
     },
     AfterDeath {
         owner: legion::Entity,
@@ -135,15 +140,17 @@ impl Display for Event {
                 owner,
                 caster,
                 damage,
+                source,
             }
             | Event::AfterIncomingDamage {
                 owner,
                 caster,
                 damage,
+                source,
             } => {
                 write!(
                     f,
-                    "Event {} o:{owner:?} c:{caster:?} dmg:{damage}",
+                    "Event {} o:{owner:?} c:{caster:?} dmg:{damage} s:{source}",
                     self.as_ref(),
                 )
             }
@@ -152,20 +159,23 @@ impl Display for Event {
                 owner,
                 target,
                 damage,
+                source,
             }
             | Event::AfterOutgoingDamage {
                 owner,
                 target,
                 damage,
+                source,
             }
             | Event::AfterDamageDealt {
                 owner,
                 target,
                 damage,
+                source,
             } => {
                 write!(
                     f,
-                    "Event {} o:{owner:?} t:{target:?} dmg:{damage}",
+                    "Event {} o:{owner:?} t:{target:?} dmg:{damage} s:{source}",
                     self.as_ref(),
                 )
             }
@@ -297,13 +307,15 @@ impl Event {
                     owner,
                     caster,
                     damage,
+                    source,
                 }
                 | Event::AfterIncomingDamage {
                     owner,
                     caster,
                     damage,
+                    source,
                 } => {
-                    let context = context
+                    let mut context = context
                         .clone_stack(
                             ContextLayer::Var {
                                 var: VarName::Damage,
@@ -313,6 +325,7 @@ impl Event {
                             resources,
                         )
                         .set_caster(*caster);
+                    context.insert_string(VarName::Source, (0, source.clone()));
                     Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }
@@ -326,18 +339,21 @@ impl Event {
                     owner,
                     target,
                     damage,
+                    source,
                 }
                 | Event::BeforeOutgoingDamage {
                     owner,
                     target,
                     damage,
+                    source,
                 }
                 | Event::AfterDamageDealt {
                     owner,
                     target,
                     damage,
+                    source,
                 } => {
-                    let context = context
+                    let mut context = context
                         .clone_stack(
                             ContextLayer::Var {
                                 var: VarName::Damage,
@@ -347,6 +363,7 @@ impl Event {
                             resources,
                         )
                         .set_target(*target);
+                    context.insert_string(VarName::Source, (0, source.clone()));
                     Status::notify_one(self, *owner, &context, world, resources);
                     true
                 }

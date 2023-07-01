@@ -10,6 +10,8 @@ pub enum Effect {
     Damage {
         value: Option<ExpressionInt>,
         on_hit: Option<Box<EffectWrapped>>,
+        #[serde(default)]
+        source: String,
     },
     Heal {
         value: Box<ExpressionInt>,
@@ -214,6 +216,7 @@ impl EffectWrapped {
             Effect::Damage {
                 value,
                 on_hit: then,
+                source,
             } => {
                 let owner = context
                     .owner()
@@ -229,6 +232,7 @@ impl EffectWrapped {
                 };
 
                 context.insert_int(VarName::Damage, value);
+                context.insert_string(VarName::Source, (0, source.clone()));
 
                 Event::ModifyOutgoingDamage.calculate(&mut context, world, resources);
                 let initial_damage =
@@ -237,12 +241,14 @@ impl EffectWrapped {
                     owner,
                     target,
                     damage: initial_damage as usize,
+                    source: source.clone(),
                 }
                 .send(world, resources);
                 Event::BeforeIncomingDamage {
                     owner: target,
                     caster: owner,
                     damage: initial_damage as usize,
+                    source: source.clone(),
                 }
                 .send(world, resources);
                 let mut target_context = Context::new(
@@ -307,6 +313,7 @@ impl EffectWrapped {
                         owner,
                         target,
                         damage: value as usize,
+                        source: source.clone(),
                     }
                     .send(world, resources);
                 }
@@ -314,12 +321,14 @@ impl EffectWrapped {
                     owner,
                     target,
                     damage: initial_damage as usize,
+                    source: source.clone(),
                 }
                 .send(world, resources);
                 Event::AfterIncomingDamage {
                     owner: target,
                     caster: owner,
                     damage: initial_damage as usize,
+                    source: source.clone(),
                 }
                 .send(world, resources);
             }
@@ -441,11 +450,8 @@ impl EffectWrapped {
                     .owner()
                     .expect(&format!("Owner not found {context}"));
                 let house = &AbilityPool::get_house_origin(resources, ability);
-                let unit_house = ContextState::get(owner, world)
-                    .vars
-                    .try_get_house()
-                    .unwrap();
-                if !force && unit_house != HouseName::Enemy && unit_house != *house {
+                let unit_house = ContextState::get(owner, world).vars.try_get_house();
+                if !force && unit_house != Some(HouseName::Enemy) && unit_house != Some(*house) {
                     panic!(
                         "{} tried to use {} while not being a member of the {:?}",
                         ContextState::get(owner, world).name,

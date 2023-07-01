@@ -12,7 +12,7 @@
             {
                 "attack": 1,
                 "health": 6,
-                "house": "Test",
+                "house": "Warriors",
                 "trigger": {
                     "type": "BattleStart",
                     "effect": {

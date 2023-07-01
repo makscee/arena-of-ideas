@@ -57,6 +57,9 @@ pub enum Condition {
     HaveStatus {
         name: String,
     },
+    Source {
+        name: String,
+    },
 }
 
 impl Condition {
@@ -137,6 +140,9 @@ impl Condition {
                     world,
                     resources,
                 )? > 0),
+                Condition::Source { name } => {
+                    Ok(context.get_string(&VarName::Source, world).as_ref() == Some(name))
+                }
             };
         resources
             .logger

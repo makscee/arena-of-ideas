@@ -54,6 +54,7 @@ pub enum VarName {
     BackgroundDark,
     LastAttacker,
     LastHealer,
+    Source,
 }
 
 impl VarName {

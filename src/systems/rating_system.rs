@@ -274,6 +274,7 @@ impl RatingSystem {
                 .map(|x| x.parse::<usize>().unwrap())
                 .collect_vec();
             for ind in inds.into_iter().sorted().rev() {
+                println!("Remove team {}", &teams[ind].name);
                 teams.remove(ind);
             }
         }

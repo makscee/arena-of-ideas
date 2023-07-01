@@ -2,21 +2,26 @@
     "light": {
         "units": [
             {
-                "attack": 999,
-                "health": 3
+                "attack": 1,
+                "health": 5,
+                "statuses": [
+                    [
+                        "Thorns",
+                        1
+                    ]
+                ]
             }
         ]
     },
     "dark": {
         "units": [
             {
-                "attack": 1,
-                "health": 4,
-                "house": "Warriors",
+                "attack": 2,
+                "health": 5,
                 "statuses": [
                     [
-                        "Defense",
-                        1000
+                        "Thorns",
+                        1
                     ]
                 ]
             }

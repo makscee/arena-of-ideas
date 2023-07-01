@@ -42,16 +42,27 @@
             "trigger": {
                 "type": "AfterIncomingDamage",
                 "effect": {
-                    "type": "Damage",
-                    "target": {
-                        "type": "Caster"
+                    "type": "If",
+                    "condition": {
+                        "type": "Not",
+                        "condition": {
+                            "type": "Source",
+                            "name": "Thorns"
+                        }
                     },
-                    "value": {
-                        "type": "Var",
-                        "var": "Charges"
-                    },
-                    "after": {
-                        "type": "ShowCurve"
+                    "then": {
+                        "type": "Damage",
+                        "source": "Thorns",
+                        "target": {
+                            "type": "Caster"
+                        },
+                        "value": {
+                            "type": "Var",
+                            "var": "Charges"
+                        },
+                        "after": {
+                            "type": "ShowCurve"
+                        }
                     }
                 }
             },
@@ -71,7 +82,7 @@
                 "effect": {
                     "type": "If",
                     "target": {
-                        "type":"Owner"
+                        "type": "Owner"
                     },
                     "condition": {
                         "type": "IsCorpse",
