@@ -7,18 +7,30 @@
     "trigger": {
         "type": "AnyDeath",
         "effect": {
-            "type": "UseAbility",
-            "target": {
-                "type": "RandomUnit",
-                "faction": {
+            "type": "If",
+            "condition": {
+                "type": "EqualsFaction",
+                "a": {
                     "type": "Owner"
                 },
-                "exclude_self": true
+                "b": {
+                    "type": "Target"
+                }
             },
-            "ability": "Strength",
-            "charges": {
-                "type": "Const",
-                "value": 2
+            "then": {
+                "type": "UseAbility",
+                "ability": "Strength",
+                "target": {
+                    "type": "RandomUnit",
+                    "faction": {
+                        "type": "Owner"
+                    },
+                    "exclude_self": true
+                },
+                "charges": {
+                    "type": "Const",
+                    "value": 2
+                }
             }
         }
     },

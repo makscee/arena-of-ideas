@@ -93,7 +93,7 @@ First Build @content
             Arcane Gunner - Battle Start: use [MagicMissile](4)
             Magic Vendetta - Ally Died: use [MagicMissile](2)
             Arcane Punisher - After Kill: use [MagicMissile](6)
-    @enemies
+    @enemies {cm:2023-07-01T14:25:25}
         Havoc - Before Death, deal 1 DMG to all enemies {cm:2023-06-30T19:28:58}
         Hexer - Before Death, apply [Weakness] to killer {cm:2023-06-30T20:24:32}
         Vengeance - Before Death, deal 2 DMG to killer {cm:2023-06-30T20:35:05}
@@ -103,5 +103,5 @@ First Build @content
         Leech - Enemy died: gain [Vitality](2) {cm:2023-06-30T21:05:23}
         Fiend  - Enemy died: gain [Strength] {cm:2023-07-01T14:12:04}
         Gorge - Turn End: gain [Vitality] {cm:2023-07-01T14:16:45}
-        Bane - Ally Died: apply [Weakness] to random enemy
+        Bane - Ally Died: apply [Weakness] to random enemy {cm:2023-07-01T14:25:15}
 

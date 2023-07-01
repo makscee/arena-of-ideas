@@ -35,22 +35,40 @@
             "replications": 3,
             "units": [
                 {
-                    "name": "Gorge",
-                    "attack": 4,
-                    "health": 1,
-                    "description": "Turn End:\ngain Vitality +1",
+                    "name": "Bane",
+                    "attack": 2,
+                    "health": 4,
+                    "description": "Ally Died:\napply Weakness +1 \nto random enemy",
                     "house": "Enemy",
                     "trigger": {
-                        "type": "TurnEnd",
+                        "type": "AnyDeath",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Vitality",
-                            "target": {
-                                "type": "Owner"
+                            "type": "If",
+                            "condition": {
+                                "type": "EqualsFaction",
+                                "a": {
+                                    "type": "Owner"
+                                },
+                                "b": {
+                                    "type": "Target"
+                                }
                             },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
+                            "then": {
+                                "type": "UseAbility",
+                                "ability": "Weakness",
+                                "target": {
+                                    "type": "RandomUnit",
+                                    "faction": {
+                                        "type": "Opposite",
+                                        "faction": {
+                                            "type": "Owner"
+                                        }
+                                    }
+                                },
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
                             }
                         }
                     },
@@ -64,18 +82,18 @@
                                 ]
                             },
                             "uniforms": {
-                                "u_g_color_1": "#8a8a8a",
+                                "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#000000",
-                                "u_g_color_3": "#46ceff",
-                                "u_g_color_4": "#f10095",
-                                "u_p_vel_center": 0.0,
-                                "u_p_vel_gravity": 0.5,
-                                "u_p_vel_circle": -0.3,
-                                "u_p_vel_circle_mul": 2.0,
-                                "u_p_vel_circle_shift": 3.0,
-                                "u_p_scale_start": 0.4,
-                                "u_p_scale_end": 0.7,
-                                "u_p_scale": 0.1,
+                                "u_g_color_3": "#90005b",
+                                "u_g_color_4": "#000000",
+                                "u_p_vel_center": 1.5,
+                                "u_p_vel_gravity": 0.0,
+                                "u_p_vel_circle": 0.8,
+                                "u_p_vel_circle_mul": 1.0,
+                                "u_p_vel_circle_shift": 30.0,
+                                "u_p_scale_start": 0.5,
+                                "u_p_scale_end": 0.5,
+                                "u_p_scale": 0.3,
                                 "u_p_offset": [
                                     0.0,
                                     0.0
@@ -88,7 +106,7 @@
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.5,
+                                    1.5,
                                     1.0,
                                     1.0
                                 ],
@@ -96,7 +114,7 @@
                                     "u_g_color_2": "u_house_color"
                                 }
                             },
-                            "instances": 300
+                            "instances": 200
                         }
                     }
                 }
