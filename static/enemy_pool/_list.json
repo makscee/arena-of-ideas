@@ -1,4 +1,6 @@
 [
+    "enemy_pool/fiend.json",
+    "enemy_pool/leech.json",
     "enemy_pool/snake.json",
     "enemy_pool/wither.json",
     "enemy_pool/vengeance.json",

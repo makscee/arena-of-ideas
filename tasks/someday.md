@@ -100,8 +100,8 @@ First Build @content
         Sacrilege - Has [Martyr] {cm:2023-06-30T20:47:21}
         Wither - After death: apply [Decay] to all enemies {cm:2023-06-30T20:51:10}
         Snake - Kill after dealing damage {cm:2023-06-30T20:58:03}
-        Leech - Enemy died: gain [Vitality](2)
-        Fiend  - Enemy died: gain [Strength]
+        Leech - Enemy died: gain [Vitality](2) {cm:2023-06-30T21:05:23}
+        Fiend  - Enemy died: gain [Strength] {cm:2023-07-01T14:12:04}
         Gorge - Turn End: gain [Vitality]
         Bane - Ally Died: apply [Weakness] to random enemy
 

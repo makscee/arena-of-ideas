@@ -35,10 +35,10 @@
             "replications": 3,
             "units": [
                 {
-                    "name": "Leech",
+                    "name": "Fiend",
                     "attack": 3,
-                    "health": 1,
-                    "description": "Enemy died:\ngain Vitality +2",
+                    "health": 2,
+                    "description": "Enemy died:\ngain Strength +1",
                     "house": "Enemy",
                     "trigger": {
                         "type": "AnyDeath",
@@ -58,13 +58,13 @@
                             },
                             "then": {
                                 "type": "UseAbility",
-                                "ability": "Vitality",
+                                "ability": "Strength",
                                 "target": {
                                     "type": "Owner"
                                 },
                                 "charges": {
                                     "type": "Const",
-                                    "value": 2
+                                    "value": 1
                                 }
                             }
                         }
@@ -81,16 +81,16 @@
                             "uniforms": {
                                 "u_g_color_1": "#8a8a8a",
                                 "u_g_color_2": "#000000",
-                                "u_g_color_3": "#aa0600",
+                                "u_g_color_3": "#ff9d00",
                                 "u_g_color_4": "#000000",
-                                "u_p_vel_center": 1.0,
-                                "u_p_vel_gravity": 0.3,
-                                "u_p_vel_circle": 0.7,
-                                "u_p_vel_circle_mul": -9.0,
-                                "u_p_vel_circle_shift": 0.0,
-                                "u_p_scale_start": 0.5,
-                                "u_p_scale_end": 0.9,
-                                "u_p_scale": 0.1,
+                                "u_p_vel_center": 0.0,
+                                "u_p_vel_gravity": -0.7,
+                                "u_p_vel_circle": 0.5,
+                                "u_p_vel_circle_mul": 1.0,
+                                "u_p_vel_circle_shift": 2.0,
+                                "u_p_scale_start": 0.9,
+                                "u_p_scale_end": 0.1,
+                                "u_p_scale": 0.2,
                                 "u_p_offset": [
                                     0.0,
                                     0.0
@@ -108,7 +108,6 @@
                                     1.0
                                 ],
                                 "mapping": {
-                                    "u_g_color_1": "u_house_color",
                                     "u_g_color_2": "u_house_color"
                                 }
                             },
