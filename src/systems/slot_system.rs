@@ -2,7 +2,7 @@ use super::*;
 
 pub struct SlotSystem {}
 
-pub const MAX_SLOTS: usize = 8;
+pub const MAX_SLOTS: usize = 6;
 pub const PULL_FORCE: f32 = 7.0;
 pub const SHOP_POSITION: vec2<f32> = vec2(-30.0, 0.0);
 pub const BATTLEFIELD_POSITION: vec2<f32> = vec2(0.0, 0.0);

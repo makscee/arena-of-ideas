@@ -2,7 +2,7 @@
     "name": "Lifegiver",
     "attack": 1,
     "health": 1,
-    "description": "Before death:\ngive Vitality +2 to all allies",
+    "description": "Before Death:\ngive Vitality +2 to all allies",
     "house": "Medics",
     "trigger": {
         "type": "BeforeDeath",

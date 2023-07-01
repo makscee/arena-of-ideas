@@ -2,7 +2,7 @@
     "name": "Harbinger of Despair",
     "attack": 4,
     "health": 1,
-    "description": "Before death:\napply Weakness +1\nto all enemies",
+    "description": "Before Death:\napply Weakness +1\nto all enemies",
     "house": "Witches",
     "trigger": {
         "type": "BeforeDeath",

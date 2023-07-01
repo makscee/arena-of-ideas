@@ -2,7 +2,7 @@
     "name": "Transferrer",
     "attack": 3,
     "health": 1,
-    "description": "Before death,\ntransfer all [Vitality]\nally behind",
+    "description": "Before Death,\ntransfer all [Vitality]\nally behind",
     "house": "Medics",
     "statuses": [
         [

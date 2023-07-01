@@ -1,7 +1,7 @@
 {
     "name": "Fiend",
     "attack": 3,
-    "health": 2,
+    "health": 3,
     "description": "Enemy died:\ngain Strength +1",
     "house": "Enemy",
     "trigger": {

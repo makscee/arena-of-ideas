@@ -2,7 +2,7 @@
     "player_team_name": "Dorks",
     "initial_state": "Shop",
     "walkthrough": false,
-    "team_ratings": true,
+    "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_g": 6,

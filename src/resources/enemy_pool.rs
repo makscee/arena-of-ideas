@@ -22,10 +22,12 @@ impl EnemyPool {
         let rng = &mut thread_rng();
         while teams.len() < count {
             let unit = units.choose(rng).unwrap().clone();
-            let replications = thread_rng().gen_range(1..=MAX_SLOTS);
-            let mut team = PackedTeam::new(format!("{}s x{replications}", unit.name), vec![unit]);
-            let buff = BuffPool::get_random(1, resources).remove(0);
-            buff.apply_team_packed(&mut team);
+            let replications = thread_rng().gen_range(2..=MAX_SLOTS);
+            let mut team = PackedTeam::new(format!("{} x{replications}", unit.name), vec![unit]);
+            if rng.gen::<f32>() > 0.5 {
+                let buff = BuffPool::get_random(1, resources).remove(0);
+                buff.apply_team_packed(&mut team);
+            }
             let team: PackedTeam = ReplicatedTeam { team, replications }.into();
             if names.contains(&team.name) {
                 continue;
@@ -33,6 +35,13 @@ impl EnemyPool {
             names.insert(team.name.clone());
             teams.push(team);
         }
+        teams.sort_by_key(|x| {
+            let mut s = x.name.split(' ').map(|x| x.to_string()).collect_vec();
+            if s.len() == 2 {
+                s.insert(0, String::new());
+            }
+            (s[1].clone(), s[0].clone(), s[2].clone())
+        });
         println!(
             "Generated teams\n{}",
             teams

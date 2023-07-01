@@ -254,7 +254,7 @@ impl RatingSystem {
     ) {
         resources.logger.set_enabled(false);
 
-        println!("Enter teams count:");
+        println!("\nEnter teams count:");
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
         line = line.trim().to_owned();
@@ -262,7 +262,7 @@ impl RatingSystem {
         let mut teams = Vec::default();
         loop {
             EnemyPool::generate_teams(teams_cnt, &mut teams, resources);
-            println!("Enter indices to remove:");
+            println!("\nEnter indices to remove:");
             line.clear();
             std::io::stdin().read_line(&mut line).unwrap();
             line = line.trim().to_owned();
@@ -273,7 +273,7 @@ impl RatingSystem {
                 .split(' ')
                 .map(|x| x.parse::<usize>().unwrap())
                 .collect_vec();
-            for ind in inds {
+            for ind in inds.into_iter().sorted().rev() {
                 teams.remove(ind);
             }
         }

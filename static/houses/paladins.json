@@ -20,7 +20,7 @@
             }
         },
         "Martyr": {
-            "description": "Before death,\ngive Blessing +X\nto all allies ",
+            "description": "Before Death\ngive Blessing +X\nto all allies ",
             "effect": {
                 "type": "ChangeStatus",
                 "name": "Martyr",
@@ -33,6 +33,24 @@
                 }
             },
             "default_vars": {
+                "Charges": 1
+            }
+        },
+        "Shield": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Shield",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "Negate one instance\nof incoming damage",
+            "default_vars": {
+                "Reflection": 0,
                 "Charges": 1
             }
         }
@@ -87,6 +105,83 @@
                         "delta": {
                             "type": "Var",
                             "var": "Charges"
+                        }
+                    }
+                ]
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        },
+        "Shield": {
+            "trigger": {
+                "type": "List",
+                "items": [
+                    {
+                        "type": "ModifyIncomingDamage",
+                        "value": {
+                            "type": "Const",
+                            "value": 0
+                        }
+                    },
+                    {
+                        "type": "AfterIncomingDamage",
+                        "effect": {
+                            "type": "If",
+                            "condition": {
+                                "type": "MoreInt",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Damage"
+                                },
+                                "b": {
+                                    "type": "Const",
+                                    "value": 0
+                                }
+                            },
+                            "then": {
+                                "type": "List",
+                                "items": [
+                                    {
+                                        "type": "If",
+                                        "target": {
+                                            "type": "Caster"
+                                        },
+                                        "condition": {
+                                            "type": "MoreInt",
+                                            "a": {
+                                                "type": "AbilityVar",
+                                                "ability": "Shield",
+                                                "var": "Reflection"
+                                            },
+                                            "b": {
+                                                "type": "Const",
+                                                "value": 0
+                                            }
+                                        },
+                                        "then": {
+                                            "type": "Damage",
+                                            "value": {
+                                                "type": "Var",
+                                                "var": "Damage"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "RemoveStatus",
+                                        "name": "Shield"
+                                    }
+                                ]
+                            },
+                            "else": {
+                                "type": "Noop"
+                            }
                         }
                     }
                 ]

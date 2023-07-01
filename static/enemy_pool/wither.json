@@ -2,7 +2,7 @@
     "name": "Wither",
     "attack": 4,
     "health": 3,
-    "description": "After death\napply Decay +1\nto all enemies",
+    "description": "Before Death\napply Decay +1\nto all enemies",
     "house": "Enemy",
     "trigger": {
         "type": "BeforeDeath",

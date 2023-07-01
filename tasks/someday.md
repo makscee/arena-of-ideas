@@ -7,7 +7,7 @@ First Build @content
         [Weakness] "-X" ATK +Witches {cm:2023-06-30T15:01:47}
         [Decay] reduce HP by X +Witches {cm:2023-06-30T15:15:01}
         [Blessing] "+X/+X" +Paladins {cm:2023-06-30T16:01:53}
-        [Martyr] Before death, give [Blessing](X) to all allies +Paladins {cm:2023-06-30T16:01:54}
+        [Martyr] Before Death, give [Blessing](X) to all allies +Paladins {cm:2023-06-30T16:01:54}
         [Shield] Ignore next taken damage +Paladins
         [Thorns] Deal X damage to attacker +Druids
         [Rebirth] After death, revive with X HP +Druids
@@ -23,7 +23,7 @@ First Build @content
             Vitality Giver - Turn End: give [Vitality] to random ally {cm:2023-06-29T12:56:42}
             Vital Reclaimer - After Strike: give [Vitality] to all allies {cm:2023-06-28T13:00:01}
             Genesis Warden - Battle Start: give [Vitality](2) to all allies {cm:2023-06-28T12:48:50}
-            Lifegiver - Before death: give [Vitality](2) to all allies {cm:2023-06-29T13:19:46}
+            Lifegiver - Before Death: give [Vitality](2) to all allies {cm:2023-06-29T13:19:46}
             Lifebloom - [Vitality] gives 1 more HP per charge {cm:2023-06-29T13:54:28}
             Vital Striker - After Kill: give [Vitality](3) to all allies {cm:2023-06-29T13:24:51}
         [Mend] {cm:2023-06-30T15:14:56}
@@ -36,7 +36,7 @@ First Build @content
         [Strength] {cm:2023-06-30T15:14:55}
             Empowerment Warrior - After Kill: give [Strength] to all allies {cm:2023-06-29T19:10:31}
             Warcry Barbarian - Battle Start: give [Strength] to all allies {cm:2023-06-29T19:30:44}
-            Soldier - Before death: give [Strength](4) to random ally {cm:2023-06-29T19:36:04}
+            Soldier - Before Death: give [Strength](4) to random ally {cm:2023-06-29T19:36:04}
             Commander - Ally Died: give [Strength] to ally behind {cm:2023-06-29T19:42:40}
         [Defense] {cm:2023-06-30T15:14:53}
             Stalwart Defender - Battle Start: gain [Defense](99) {cm:2023-06-29T19:49:55}
@@ -45,7 +45,7 @@ First Build @content
             Deflective Knight - After Kill: give [Defense] to all allies {cm:2023-06-29T20:04:23}
         [Weakness] {cm:2023-06-30T15:14:51}
             Cursed Seer - Ally Died: apply [Weakness] to killer {cm:2023-06-30T14:16:02}
-            Harbinger of Despair - Before death: apply [Weakness] to all enemies {cm:2023-06-30T14:20:46}
+            Harbinger of Despair - Before Death: apply [Weakness] to all enemies {cm:2023-06-30T14:20:46}
             Potion Thrower - Battle Start: apply [Weakness] to 3 enemies {cm:2023-06-30T14:40:49}
             Drainspirit - [Weakness] also reduces HP {cm:2023-06-30T15:01:01}
         [Decay] {cm:2023-06-30T15:14:50}
@@ -57,7 +57,7 @@ First Build @content
             Killblessed - After Kill: gain [Martyr](2) {cm:2023-06-30T16:01:43}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
-            Safeguard - Before death: give [Shield] to ally behind
+            Safeguard - Before Death: give [Shield] to ally behind
             Resilience Warden - Ally Died: gain [Shield]
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP
             Reflective Guardian - [Shield] reflects damage back to attacker
@@ -75,7 +75,7 @@ First Build @content
         [Volatility]
             Firestorm Warlock - Battle Start: gain [Volatility](2)
             Volatile Slayer - After Kill: gain [Volatility]
-            Explosion Bringer - Before death: give [Volatility](3) to left ally
+            Explosion Bringer - Before Death: give [Volatility](3) to left ally
         [Splash]
             Rainmaker - Battle Start: gain [Splash]
             Wavecrusher - After Kill: gain [Splash]
