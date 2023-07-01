@@ -10,7 +10,7 @@ First Build @content
         [Martyr] Before Death, give [Blessing](X) to all allies +Paladins {cm:2023-06-30T16:01:54}
         [Shield] Ignore next taken damage +Paladins {cm:2023-07-01T15:37:38}
         [Thorns] Deal X damage to attacker +Druids {cm:2023-07-01T15:37:37}
-        [Rebirth] After death, revive with X HP +Druids
+        [Rebirth] After Death, revive with X HP +Druids {cm:2023-07-01T15:45:11}
         [Volatility] Deal X damage to all enemies after death +Elementals
         [Splash] Deal X damage to all enemies after Strike +Elementals
         [Marked] Taken damage increased by X +Hunters
@@ -98,7 +98,7 @@ First Build @content
         Hexer - Before Death, apply [Weakness] to killer {cm:2023-06-30T20:24:32}
         Vengeance - Before Death, deal 2 DMG to killer {cm:2023-06-30T20:35:05}
         Sacrilege - Has [Martyr] {cm:2023-06-30T20:47:21}
-        Wither - After death: apply [Decay] to all enemies {cm:2023-06-30T20:51:10}
+        Wither - After Death: apply [Decay] to all enemies {cm:2023-06-30T20:51:10}
         Snake - Kill after dealing damage {cm:2023-06-30T20:58:03}
         Leech - Enemy died: gain [Vitality](2) {cm:2023-06-30T21:05:23}
         Fiend  - Enemy died: gain [Strength] {cm:2023-07-01T14:12:04}

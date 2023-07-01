@@ -18,6 +18,23 @@
             "default_vars": {
                 "Charges": 1
             }
+        },
+        "Rebirth": {
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Rebirth",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "description": "After Death\nrevive with X HP",
+            "default_vars": {
+                "Charges": 1
+            }
         }
     },
     "statuses": {
@@ -35,6 +52,59 @@
                     },
                     "after": {
                         "type": "ShowCurve"
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        },
+        "Rebirth": {
+            "trigger": {
+                "type": "AfterDeath",
+                "effect": {
+                    "type": "If",
+                    "target": {
+                        "type":"Owner"
+                    },
+                    "condition": {
+                        "type": "IsCorpse",
+                        "entity": {
+                            "type": "Target"
+                        }
+                    },
+                    "then": {
+                        "type": "List",
+                        "items": [
+                            {
+                                "type": "ShowText",
+                                "text": "Rebirth"
+                            },
+                            {
+                                "type": "Revive",
+                                "slot": {
+                                    "type": "Var",
+                                    "var": "Slot"
+                                },
+                                "after": {
+                                    "type": "SetOwnerVarInt",
+                                    "var": "HpValue",
+                                    "value": {
+                                        "type": "Var",
+                                        "var": "Charges"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "else": {
+                        "type": "Noop"
                     }
                 }
             },

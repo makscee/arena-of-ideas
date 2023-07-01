@@ -18,10 +18,10 @@
             "units": [
                 {
                     "attack": 1,
-                    "health": 4,
+                    "health": 3,
                     "statuses": [
                         [
-                            "Thorns",
+                            "Rebirth",
                             2
                         ]
                     ]
@@ -41,7 +41,7 @@
             "replications": 3,
             "units": [
                 {
-                    "attack": 1,
+                    "attack": 3,
                     "health": 5
                 }
             ],

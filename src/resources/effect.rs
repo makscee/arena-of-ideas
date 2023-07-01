@@ -99,7 +99,7 @@ pub enum Effect {
         color: Option<Rgba<f32>>,
         #[serde(default)]
         entity: Option<ExpressionEntity>,
-        #[serde(default)]
+        #[serde(default = "default_font")]
         font: usize,
     },
     ShowCurve {
@@ -146,6 +146,10 @@ impl Effect {
             vars: default(),
         }
     }
+}
+
+fn default_font() -> usize {
+    1
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

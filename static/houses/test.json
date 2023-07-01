@@ -227,66 +227,9 @@
                     "type": "ShowCurve"
                 }
             }
-        },
-        "Rebirth": {
-            "effect": {
-                "type": "AddStatus",
-                "name": "Rebirth"
-            },
-            "description": "Revive after death"
         }
     },
     "statuses": {
-        "Rebirth": {
-            "trigger": {
-                "type": "AfterDeath",
-                "effect": {
-                    "type": "If",
-                    "condition": {
-                        "type": "IsCorpse",
-                        "entity": {
-                            "type": "Target"
-                        }
-                    },
-                    "then": {
-                        "type": "List",
-                        "items": [
-                            {
-                                "type": "ShowText",
-                                "text": "Rebirth"
-                            },
-                            {
-                                "type": "Revive",
-                                "slot": {
-                                    "type": "Var",
-                                    "var": "Slot"
-                                },
-                                "after": {
-                                    "type": "SetOwnerVarInt",
-                                    "var": "HpValue",
-                                    "value": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
-                                }
-                            }
-                        ]
-                    },
-                    "else": {
-                        "type": "Noop"
-                    }
-                }
-            },
-            "shader": {
-                "path": "shaders/status/default_status.glsl",
-                "parameters": {
-                    "uniforms": {
-                        "u_padding": 1.0
-                    }
-                },
-                "layer": "Unit"
-            }
-        },
         "Poison": {
             "trigger": {
                 "type": "AfterDamageDealt",

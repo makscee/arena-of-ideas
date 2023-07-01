@@ -4,7 +4,7 @@
     Annihilator [1/2]: Enemy killed: gain [Splash].
     Surge [2/1]: Turn start: gain [Splash].
     Impact [2/1]: [Splash] "+1" DMG.
-    Echo [1/2]: After death: give [Splash] (2) to all allies.
+    Echo [1/2]: After Death: give [Splash] (2) to all allies.
     Surgeon [2/1]: Turn end: give [Splash] to random ally.
 Next Iteration
     @abilities
