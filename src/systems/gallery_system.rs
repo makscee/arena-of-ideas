@@ -54,7 +54,7 @@ impl GallerySystem {
 
     pub fn next(resources: &mut Resources) {
         resources.gallery_data.current_house = (resources.gallery_data.current_house + 1)
-            % (enum_iterator::all::<HouseName>().count() - 1);
+            % (enum_iterator::all::<HouseName>().count() - 2);
         // todo: after Test house is removed, do not subtract 1
         Self::open(resources);
     }

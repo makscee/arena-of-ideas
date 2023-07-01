@@ -42,4 +42,9 @@ impl Buff {
         let target = TeamSystem::entity(faction, world).unwrap();
         self.apply_single(target, node, world, resources);
     }
+
+    pub fn apply_team_packed(&self, team: &mut PackedTeam) {
+        team.name = format!("{} {}", self.team_prefix.clone().unwrap(), team.name);
+        team.statuses.push((self.name.clone(), self.charges));
+    }
 }

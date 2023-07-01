@@ -6,7 +6,7 @@ use super::*;
 pub struct EnemyPool(Vec<PathBuf>);
 
 impl EnemyPool {
-    pub fn generate_teams(count: usize, resources: &Resources) -> Vec<PackedTeam> {
+    pub fn generate_teams(count: usize, teams: &mut Vec<PackedTeam>, resources: &Resources) {
         let pool = Self::load();
         let units: Vec<PackedUnit> = pool
             .0
@@ -18,23 +18,21 @@ impl EnemyPool {
                 unit
             })
             .collect_vec();
-        let mut teams: HashMap<String, PackedTeam> = default();
+        let mut names: HashSet<String> = HashSet::from_iter(teams.iter().map(|x| x.name.clone()));
         let rng = &mut thread_rng();
         while teams.len() < count {
             let unit = units.choose(rng).unwrap().clone();
             let replications = thread_rng().gen_range(1..=MAX_SLOTS);
             let mut team = PackedTeam::new(format!("{}s x{replications}", unit.name), vec![unit]);
-            // todo: add random buffs
-            // if rng.gen::<f32>() > 0.5 {
-            //     BuffPool::random_team_buff(resources).apply(&mut team);
-            // }
+            let buff = BuffPool::get_random(1, resources).remove(0);
+            buff.apply_team_packed(&mut team);
             let team: PackedTeam = ReplicatedTeam { team, replications }.into();
-            if teams.contains_key(&team.name) {
+            if names.contains(&team.name) {
                 continue;
             }
-            teams.insert(team.name.to_owned(), team);
+            names.insert(team.name.clone());
+            teams.push(team);
         }
-        let teams = teams.into_values().collect_vec();
         println!(
             "Generated teams\n{}",
             teams
@@ -43,7 +41,6 @@ impl EnemyPool {
                 .map(|(ind, team)| format!("{ind} {}", team.name))
                 .join("\n")
         );
-        teams
     }
 
     fn load() -> EnemyPool {

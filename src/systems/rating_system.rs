@@ -254,9 +254,29 @@ impl RatingSystem {
     ) {
         resources.logger.set_enabled(false);
 
-        const TEAMS: usize = 90;
-
-        let mut teams = EnemyPool::generate_teams(TEAMS, resources);
+        println!("Enter teams count:");
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        line = line.trim().to_owned();
+        let teams_cnt = line.parse::<usize>().unwrap();
+        let mut teams = Vec::default();
+        loop {
+            EnemyPool::generate_teams(teams_cnt, &mut teams, resources);
+            println!("Enter indices to remove:");
+            line.clear();
+            std::io::stdin().read_line(&mut line).unwrap();
+            line = line.trim().to_owned();
+            if line.is_empty() {
+                break;
+            }
+            let inds = line
+                .split(' ')
+                .map(|x| x.parse::<usize>().unwrap())
+                .collect_vec();
+            for ind in inds {
+                teams.remove(ind);
+            }
+        }
         let mut ratings = Ratings::default();
         let mut cnt = 0;
         let save_path = static_path().join("levels.json");
