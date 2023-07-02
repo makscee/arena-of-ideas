@@ -132,7 +132,8 @@ impl PackedUnit {
 
         shader.insert_string_ref("u_description".to_owned(), self.description.clone(), 0);
         shader.insert_float_ref("u_rank_1".to_owned(), (self.rank > 0) as i32 as f32);
-        shader.insert_float_ref("u_rank_2".to_owned(), (self.rank > 0) as i32 as f32);
+        shader.insert_float_ref("u_rank_2".to_owned(), (self.rank > 1) as i32 as f32);
+        shader.insert_float_ref("u_rank_3".to_owned(), (self.rank > 2) as i32 as f32);
 
         let hp_offset = options
             .shaders

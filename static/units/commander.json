@@ -2,7 +2,7 @@
     "name": "Commander",
     "attack": 4,
     "health": 4,
-    "description": "Ally Died: give Strength +2 to random ally",
+    "description": "Ally Died:\ngive Strength +2\nto random ally",
     "house": "Warriors",
     "trigger": {
         "type": "AnyDeath",

@@ -2,7 +2,7 @@
     "player_team_name": "Dorks",
     "initial_state": "Shop",
     "walkthrough": false,
-    "team_ratings": true,
+    "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_g": 6,
@@ -11,7 +11,7 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -19,6 +19,7 @@
                 {
                     "attack": 1,
                     "health": 5,
+                    "rank": 3,
                     "statuses": [
                         [
                             "Splash",
@@ -312,6 +313,7 @@
             },
             "request_vars": [
                 "Description",
+                "Rank3",
                 "Rank2",
                 "Rank1"
             ],
@@ -319,18 +321,12 @@
                 {
                     "path": "shaders/vfx/star.glsl",
                     "parameters": {
-                        "box": {
-                            "size": [
-                                1.0,
-                                1.0
-                            ]
-                        },
                         "uniforms": {
                             "u_size": 0.3,
                             "u_outline": 0.15,
                             "u_offset": [
                                 0.9,
-                                -0.2
+                                -0.25
                             ],
                             "u_color": "#FFD700",
                             "mapping": {
@@ -345,10 +341,30 @@
                                 "uniforms": {
                                     "u_offset": [
                                         0.9,
-                                        0.2
+                                        0.25
                                     ],
                                     "mapping": {
                                         "u_enabled": "u_rank_2"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "path": "shaders/vfx/star.glsl",
+                            "parameters": {
+                                "box": {
+                                    "size": [
+                                        1.1,
+                                        1.1
+                                    ]
+                                },
+                                "uniforms": {
+                                    "u_offset": [
+                                        1.0,
+                                        0.0
+                                    ],
+                                    "mapping": {
+                                        "u_enabled": "u_rank_3"
                                     }
                                 }
                             }
