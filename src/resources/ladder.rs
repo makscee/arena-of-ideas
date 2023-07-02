@@ -47,6 +47,10 @@ impl Ladder {
         self.current
     }
 
+    pub fn current_level(&self) -> usize {
+        self.current / 3
+    }
+
     pub fn reset(&mut self) {
         self.current = default();
     }

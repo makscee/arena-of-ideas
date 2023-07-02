@@ -160,7 +160,21 @@ impl BattleSystem {
             } else {
                 resources.transition_state = GameState::GameOver;
             }
-            ("Victory", format!("Battle Over\n{score} ranks defeated, +{score} g\n+{difficulty} g for enemy difficulty"), vec![PanelFooterButton::Close], resources.options.colors.victory)
+            let difficulty_text = match resources.battle_data.last_difficulty {
+                0 => "Easy",
+                1 => "Medium",
+                2 => "Hard",
+                _ => panic!(
+                    "Wrong difficulty index {}",
+                    resources.battle_data.last_difficulty
+                ),
+            };
+            (
+                "Victory",
+                format!("Battle Over\n{score} ranks defeated\n{difficulty_text} difficulty"),
+                vec![PanelFooterButton::Close],
+                resources.options.colors.victory,
+            )
         } else {
             resources.transition_state = GameState::GameOver;
             (
