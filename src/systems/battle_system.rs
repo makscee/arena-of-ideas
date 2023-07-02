@@ -145,35 +145,36 @@ impl BattleSystem {
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.last_round = resources.ladder.current_ind();
         resources.battle_data.total_score += resources.battle_data.last_score;
-        let (title, color) = if resources.battle_data.last_score > 0 {
+        let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
+            let score = resources.battle_data.last_score;
+            let difficulty = resources.battle_data.last_difficulty + 3;
             if resources.ladder.next() {
                 resources.transition_state = GameState::Sacrifice;
+                ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
+                ShopSystem::change_g(
+                    difficulty as i32,
+                    Some("Enemy Difficulty"),
+                    world,
+                    resources,
+                );
             } else {
                 resources.transition_state = GameState::GameOver;
             }
-            ("Victory", resources.options.colors.victory)
+            ("Victory", format!("Battle Over\n{score} ranks defeated, +{score} g\n+{difficulty} g for enemy difficulty"), vec![PanelFooterButton::Close], resources.options.colors.victory)
         } else {
             resources.transition_state = GameState::GameOver;
-            ("Defeat", resources.options.colors.defeat)
+            (
+                "Defeat",
+                format!(
+                    "Game Over\nTotal score: {}",
+                    resources.battle_data.total_score
+                ),
+                vec![PanelFooterButton::Restart],
+                resources.options.colors.defeat,
+            )
         };
         Self::clear_world(world, resources);
-        let score = resources.battle_data.last_score;
-        let difficulty = resources.battle_data.last_difficulty + 3;
-        ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
-        ShopSystem::change_g(
-            difficulty as i32,
-            Some("Enemy Difficulty"),
-            world,
-            resources,
-        );
-        PanelsSystem::add_alert(
-            color,
-            title,
-            &format!("Battle Over\n{score} ranks defeated, +{score} g\n+{difficulty} g for enemy difficulty"),
-            vec2::ZERO,
-            true,
-            resources,
-        )
+        PanelsSystem::add_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources)
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {

@@ -122,7 +122,7 @@ impl PackedTeam {
     }
 
     pub fn generate_name(&mut self) {
-        self.name = self.units.iter().map(|x| x.name.clone()).join(" ");
+        self.name = self.units.iter().map(|x| x.name.clone()).join(", ");
     }
 }
 

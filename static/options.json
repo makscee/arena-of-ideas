@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
     "initial_state": "Shop",
-    "walkthrough": true,
+    "walkthrough": false,
     "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
@@ -11,7 +11,7 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -72,7 +72,7 @@
         "pressed": "#7A7468",
         "add": "#6FCB8F",
         "subtract": "#E1586E",
-        "common": "#C4C0A8",
+        "common": "#c2c2c2",
         "rare": "#3070CA",
         "epic": "#BD20BD",
         "legendary": "#EB9428",

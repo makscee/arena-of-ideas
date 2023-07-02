@@ -334,7 +334,10 @@ impl ShopSystem {
         let units = resources
             .shop_data
             .pool
-            .choose_multiple(&mut thread_rng(), 3)
+            .choose_multiple_weighted(&mut thread_rng(), 3, |x| {
+                HeroPool::rarity_by_name(&x.name, resources).weight()
+            })
+            .unwrap()
             .cloned()
             .collect_vec();
         let choice = CardChoice::BuyHero { units };
@@ -493,16 +496,7 @@ impl ShopSystem {
             || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
     }
 
-    pub fn is_hero_affordable(world: &legion::World) -> bool {
-        Self::get_g(world) >= Self::buy_price(world)
-    }
-
     pub fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
-        if resources.ladder.current_ind() == 0
-            && UnitSystem::collect_faction(world, Faction::Team).len() == 0
-        {
-            return;
-        }
         let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {

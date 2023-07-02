@@ -71,13 +71,13 @@ impl PanelsSystem {
         title: &str,
         text: &str,
         pos: vec2<f32>,
-        footer: bool,
+        buttons: Vec<PanelFooterButton>,
         resources: &mut Resources,
     ) {
         let mut panel = Self::generate_text_shader(text, vec2(0.5, 0.1), &resources.options)
             .wrap_panel_header(title, &resources.options);
-        if footer {
-            panel = panel.wrap_panel_footer(vec![PanelFooterButton::Close], &resources.options);
+        if !buttons.is_empty() {
+            panel = panel.wrap_panel_footer(buttons, &resources.options);
         }
         let mut panel = panel.panel(PanelType::Alert, Some(color), resources);
         panel.need_pos = pos;
@@ -109,11 +109,12 @@ impl PanelsSystem {
             CardChoice::BuyHero { units } => units
                 .iter()
                 .map(|x| {
+                    let rarity = HeroPool::rarity_by_name(&x.name, resources);
                     (
-                        "Hero".to_owned(),
+                        rarity.to_string(),
                         1,
                         x.get_ui_shader(faction, true, resources),
-                        resources.options.colors.player,
+                        rarity.color(resources),
                     )
                 })
                 .collect_vec(),
@@ -626,6 +627,7 @@ pub enum PanelFooterButton {
     Select,
     Accept,
     Reroll,
+    Restart,
     Custom { name: String, handler: Handler },
 }
 
@@ -652,6 +654,7 @@ impl PanelFooterButton {
             PanelFooterButton::Select => "Select",
             PanelFooterButton::Accept => "Accept",
             PanelFooterButton::Reroll => "Reroll",
+            PanelFooterButton::Restart => "Restart",
             PanelFooterButton::Custom { name, .. } => &name,
         }
     }
@@ -687,30 +690,49 @@ impl PanelFooterButton {
                 ) {
                     match event {
                         HandleEvent::Click => {
-                            if let Some(entity) = shader.parent {
-                                PanelsSystem::close_alert(entity, resources);
-                                resources.panels_data.chosen_ind = None;
-                                let choice = resources.panels_data.choice_options.take().unwrap();
-                                ShopSystem::deduct_reroll_cost(world, resources);
-                                match choice {
-                                    CardChoice::BuyHero { .. } => {
-                                        ShopSystem::show_hero_buy_panel(resources)
+                            if ShopSystem::is_reroll_affordable(world) {
+                                if let Some(entity) = shader.parent {
+                                    PanelsSystem::close_alert(entity, resources);
+                                    resources.panels_data.chosen_ind = None;
+                                    let choice =
+                                        resources.panels_data.choice_options.take().unwrap();
+                                    ShopSystem::deduct_reroll_cost(world, resources);
+                                    match choice {
+                                        CardChoice::BuyHero { .. } => {
+                                            ShopSystem::show_hero_buy_panel(resources)
+                                        }
+                                        CardChoice::BuyBuff { target, .. } => match target {
+                                            BuffTarget::Single { .. } => {
+                                                ShopSystem::show_buff_buy_panel(resources)
+                                            }
+                                            BuffTarget::Aoe => {
+                                                ShopSystem::show_aoe_buff_buy_panel(resources)
+                                            }
+                                            BuffTarget::Team => {
+                                                ShopSystem::show_team_buff_buy_panel(resources)
+                                            }
+                                        },
+                                        _ => panic!("Can't reroll {choice:?}"),
                                     }
-                                    CardChoice::BuyBuff { target, .. } => match target {
-                                        BuffTarget::Single { .. } => {
-                                            ShopSystem::show_buff_buy_panel(resources)
-                                        }
-                                        BuffTarget::Aoe => {
-                                            ShopSystem::show_aoe_buff_buy_panel(resources)
-                                        }
-                                        BuffTarget::Team => {
-                                            ShopSystem::show_team_buff_buy_panel(resources)
-                                        }
-                                    },
-                                    _ => panic!("Can't reroll {choice:?}"),
                                 }
-                                debug!("reroll");
                             }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
+            PanelFooterButton::Restart => {
+                fn input_handler(
+                    event: HandleEvent,
+                    _: legion::Entity,
+                    _: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            Game::restart(world, resources);
                         }
                         _ => {}
                     }
@@ -781,6 +803,18 @@ impl PanelFooterButton {
                     resources: &mut Resources,
                 ) {
                     shader.set_active(resources.panels_data.chosen_ind.is_some());
+                }
+                Some(update_handler)
+            }
+            PanelFooterButton::Reroll => {
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    _: &mut Resources,
+                ) {
+                    shader.set_active(ShopSystem::is_reroll_affordable(world));
                 }
                 Some(update_handler)
             }
