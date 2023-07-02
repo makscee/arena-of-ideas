@@ -8,4 +8,5 @@ pub struct BattleData {
     pub last_score: usize,
     pub total_score: usize,
     pub team_queue: HashMap<Faction, VecDeque<PackedTeam>>,
+    pub turns: usize,
 }

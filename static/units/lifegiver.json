@@ -21,7 +21,7 @@
                     "value": 2
                 }
             },
-            "exclude_self": true
+            "skip_self": true
         }
     },
     "shader": {

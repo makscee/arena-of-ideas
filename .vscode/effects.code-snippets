@@ -145,7 +145,7 @@
 			"    \"faction\": {",
 			"        \"type\": \"Owner\"",
 			"    },",
-			"    \"exclude_self\": true",
+			"    \"skip_self\": true",
 			"}"
 		],
 		"description": "Random Ally"

@@ -1,6 +1,6 @@
 {
     "name": "Rotmender",
-    "attack": 1,
+    "attack": 2,
     "health": 1,
     "description": "Turn End:\napply Decay +1\nto random enemy",
     "house": "Witches",

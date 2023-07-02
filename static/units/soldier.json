@@ -1,7 +1,7 @@
 {
     "name": "Soldier",
-    "attack": 1,
-    "health": 2,
+    "attack": 2,
+    "health": 1,
     "description": "Before Death:\ngive Strength +4\nto random ally",
     "house": "Warriors",
     "trigger": {
@@ -13,7 +13,7 @@
                 "faction": {
                     "type": "Owner"
                 },
-                "exclude_self": true
+                "skip_self": true
             },
             "ability": "Strength",
             "charges": {

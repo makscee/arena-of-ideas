@@ -2,7 +2,7 @@
     "name": "Vital Striker",
     "attack": 2,
     "health": 2,
-    "description": "After Kill:\ngive Vitality +3\nto all other allies",
+    "description": "After Kill:\ngive Vitality +2\nto all other allies",
     "house": "Medics",
     "trigger": {
         "type": "AfterKill",
@@ -18,10 +18,10 @@
                 "ability": "Vitality",
                 "charges": {
                     "type": "Const",
-                    "value": 3
+                    "value": 2
                 }
             },
-            "exclude_self": true
+            "skip_self": true
         }
     },
     "shader": {

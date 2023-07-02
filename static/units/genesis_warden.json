@@ -2,7 +2,7 @@
     "name": "Genesis Warden",
     "attack": 1,
     "health": 1,
-    "description": "Start of battle\n give Vitality +2\nto all allies",
+    "description": "Start of battle\ngive Vitality +2\nto all allies",
     "house": "Medics",
     "trigger": {
         "type": "BattleStart",

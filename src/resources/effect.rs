@@ -111,7 +111,7 @@ pub enum Effect {
         factions: Vec<ExpressionFaction>,
         effect: Box<EffectWrapped>,
         #[serde(default)]
-        exclude_self: bool,
+        skip_self: bool,
         #[serde(default)]
         limit: Option<ExpressionInt>,
     },
@@ -125,7 +125,7 @@ pub enum Effect {
         condition: Condition,
         effect: Box<EffectWrapped>,
         #[serde(default)]
-        exclude_self: bool,
+        skip_self: bool,
     },
     AllTargets {
         faction: ExpressionFaction,
@@ -636,7 +636,7 @@ impl EffectWrapped {
             Effect::Aoe {
                 factions,
                 effect,
-                exclude_self,
+                skip_self,
                 limit,
             } => {
                 let mut faction_values: Vec<Faction> = default();
@@ -652,7 +652,7 @@ impl EffectWrapped {
                 };
                 units.split_off(limit).truncate(0);
                 for entity in units {
-                    if *exclude_self && Some(entity) == context.owner() {
+                    if *skip_self && Some(entity) == context.owner() {
                         continue;
                     }
                     effect.process(
@@ -704,14 +704,14 @@ impl EffectWrapped {
                 faction,
                 condition,
                 effect,
-                exclude_self,
+                skip_self,
             } => {
                 let faction = faction.calculate(&context, world, resources)?;
                 let owner = context.owner().unwrap();
                 let mut units = UnitSystem::collect_faction(world, faction);
                 units.shuffle(&mut thread_rng());
                 let target = units.into_iter().find(|entity| {
-                    if *exclude_self && owner == *entity {
+                    if *skip_self && owner == *entity {
                         return false;
                     }
                     match condition.calculate(

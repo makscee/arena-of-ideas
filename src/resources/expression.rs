@@ -161,7 +161,7 @@ pub enum ExpressionEntity {
     RandomUnit {
         faction: ExpressionFaction,
         #[serde(default)]
-        exclude_self: bool,
+        skip_self: bool,
     },
     SlotRelative {
         relation: Box<ExpressionInt>,
@@ -214,14 +214,11 @@ impl ExpressionEntity {
                 SlotSystem::find_unit_by_slot(slot, &faction, world)
                     .context(format!("No unit of {faction:?} found in {slot} slot"))
             }
-            ExpressionEntity::RandomUnit {
-                faction,
-                exclude_self,
-            } => {
+            ExpressionEntity::RandomUnit { faction, skip_self } => {
                 let faction = faction.calculate(context, world, resources)?;
                 UnitSystem::collect_faction(world, faction)
                     .into_iter()
-                    .filter(|x| !exclude_self || Some(*x) != context.owner())
+                    .filter(|x| !skip_self || Some(*x) != context.owner())
                     .choose(&mut thread_rng())
                     .context(format!("No units of {faction:?} found"))
             }

@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
     "initial_state": "Shop",
-    "walkthrough": false,
+    "walkthrough": true,
     "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
@@ -18,14 +18,7 @@
             "units": [
                 {
                     "attack": 1,
-                    "health": 5,
-                    "rank": 3,
-                    "statuses": [
-                        [
-                            "Splash",
-                            2
-                        ]
-                    ]
+                    "health": 20
                 },
                 {
                     "attack": 1,
@@ -42,8 +35,8 @@
             "replications": 5,
             "units": [
                 {
-                    "attack": 3,
-                    "health": 5
+                    "attack": 1,
+                    "health": 20
                 }
             ],
             "name": "Enemies"

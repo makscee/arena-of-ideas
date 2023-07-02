@@ -2,7 +2,7 @@
     "name": "Killblessed",
     "attack": 3,
     "health": 2,
-    "description": "After Kill:\ngain Martyr +2",
+    "description": "After Kill:\ngain Martyr +1",
     "house": "Paladins",
     "trigger": {
         "type": "AfterKill",
@@ -14,7 +14,7 @@
             },
             "charges": {
                 "type": "Const",
-                "value": 2
+                "value": 1
             }
         }
     },

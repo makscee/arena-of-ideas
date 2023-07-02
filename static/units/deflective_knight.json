@@ -13,7 +13,7 @@
                     "type": "Owner"
                 }
             ],
-            "exclude_self": true,
+            "skip_self": true,
             "effect": {
                 "type": "UseAbility",
                 "ability": "Defense",

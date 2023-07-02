@@ -24,18 +24,22 @@ impl BattleSystem {
         if let Some(tape) = tape {
             tape.push(cluster.unwrap());
         }
-        let mut ticks = 0;
+        let mut turns = 0;
         loop {
-            ticks += 1;
-            if ticks > 100 {
+            turns += 1;
+            resources.battle_data.turns = turns;
+            if turns > 100 {
                 error!(
-                    "Exceeded ticks limit: {ticks}, {} x {}",
+                    "Exceeded turns limit: {turns}, {} x {}",
                     TeamSystem::get_state(Faction::Light, world).name,
                     TeamSystem::get_state(Faction::Dark, world).name
                 );
                 return 0;
             }
-            let result = Self::tick(world, resources, tape);
+            if turns % 10 == 0 {
+                Self::promote_all(world);
+            }
+            let result = Self::turn(world, resources, tape);
             if !result {
                 let faction = if UnitSystem::collect_faction(world, Faction::Dark).is_empty() {
                     Some(Faction::Dark)
@@ -134,6 +138,7 @@ impl BattleSystem {
         Self::clear_world(world, resources);
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
+        resources.battle_data.turns = 0;
     }
 
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
@@ -184,7 +189,7 @@ impl BattleSystem {
             || UnitSystem::get_corpse(right, world).is_some()
     }
 
-    pub fn tick(
+    pub fn turn(
         world: &mut legion::World,
         resources: &mut Resources,
         tape: &mut Option<Tape>,
@@ -379,6 +384,16 @@ impl BattleSystem {
             }
             .send(world, resources);
             ActionSystem::spin(world, resources, cluster);
+        }
+    }
+
+    fn promote_all(world: &mut legion::World) {
+        for unit in UnitSystem::collect_factions(world, &Faction::battle()) {
+            let state = ContextState::get_mut(unit, world);
+            let rank = state.vars.get_int(&VarName::Rank);
+            if rank < 3 {
+                state.vars.change_int(&VarName::Rank, 1);
+            }
         }
     }
 

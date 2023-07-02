@@ -56,6 +56,7 @@ Build
     No sacrifice for single hero team @gameplay {cm:2023-06-26T15:27:47}
     Chain all actions @visual
     Max rank 3 @gameplay {cm:2023-06-26T15:27:50}
+    Rank up every 10 rounds {cm:2023-07-02T13:32:52}
     Rework enemy generation {start:2023-07-01T15:15:46}
     ~50 Total heroes @content
     ~20 Total enemies @content

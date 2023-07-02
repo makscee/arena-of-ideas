@@ -1,8 +1,8 @@
 {
     "name": "Vital Reclaimer",
     "attack": 1,
-    "health": 3,
-    "description": "After strike:\ngive Vitality +1\nto all allies",
+    "health": 2,
+    "description": "After Strike:\ngive Vitality +1\nto all allies",
     "house": "Medics",
     "trigger": {
         "type": "AfterStrike",
@@ -13,6 +13,7 @@
                     "type": "Owner"
                 }
             ],
+            "skip_self": true,
             "effect": {
                 "type": "UseAbility",
                 "ability": "Vitality",

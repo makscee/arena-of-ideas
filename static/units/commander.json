@@ -25,7 +25,7 @@
                     "faction": {
                         "type": "Owner"
                     },
-                    "exclude_self": true
+                    "skip_self": true
                 },
                 "charges": {
                     "type": "Const",

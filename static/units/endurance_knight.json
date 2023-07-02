@@ -1,6 +1,6 @@
 {
     "name": "Endurance Knight",
-    "attack": 1,
+    "attack": 3,
     "health": 1,
     "description": "Turn End:\ngain Vitality +1",
     "house": "Medics",

@@ -11,7 +11,7 @@
             "faction": {
                 "type": "Owner"
             },
-            "exclude_self": true,
+            "skip_self": true,
             "condition": {
                 "type": "MoreInt",
                 "a": {
