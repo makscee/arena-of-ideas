@@ -69,7 +69,7 @@ First Build @content
             Warden - Ally Died: gain [Shield] {cm:2023-07-04T15:28:46}
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP {cm:2023-07-04T15:42:07}
             Reflective Guardian - [Shield] reflects damage back to attacker {cm:2023-07-04T15:47:21}
-            Shieldbearer - Battle Start: give [Shield] to adjacent allies
+            Shieldbearer - Battle Start: give [Shield] to adjacent allies {cm:2023-07-04T16:02:07}
             Shield Slinger - After Kill: gain [Shield]
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to right ally

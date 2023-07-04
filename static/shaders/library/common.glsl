@@ -297,7 +297,7 @@ float to_segment(vec2 p, vec2 a, vec2 b) {
 }
 
 float triangle_sdf(vec2 uv, float box, float rotation) {
-    uv = rotate_cw(uv, rotation * PI * 2);
+    uv = rotate_cw(uv, rotation);
     vec2 p = uv;
     float angle = PI * 7 / 6;
     vec2 p1 = vec2(cos(angle), sin(angle)) * box;

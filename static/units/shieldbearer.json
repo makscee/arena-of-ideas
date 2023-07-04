@@ -1,0 +1,89 @@
+{
+    "name": "Shieldbearer",
+    "attack": 1,
+    "health": 1,
+    "description": "Battle Start:\ngive Shield +1\nto adjacent allies",
+    "house": "Paladins",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "List",
+            "items": [
+                {
+                    "type": "UseAbility",
+                    "ability": "Shield",
+                    "target": {
+                        "type": "SlotRelative",
+                        "relation": {
+                            "type": "Const",
+                            "value": -1
+                        }
+                    },
+                    "charges": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                },
+                {
+                    "type": "UseAbility",
+                    "ability": "Shield",
+                    "target": {
+                        "type": "SlotRelative",
+                        "relation": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    "charges": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                }
+            ]
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.8,
+                    0.8
+                ]
+            },
+            "uniforms": {
+                "u_g_points": [
+                    -1.0,
+                    -0.25,
+                    -0.25,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "u_warp_str": 0.02,
+                "u_warp_size": 50.0,
+                "u_warp_speed": 50.0,
+                "u_alpha": 1.0,
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "u_i_angle_offset": [
+                    0.5,
+                    0.0,
+                    0.0,
+                    0.755
+                ],
+                "mapping": {
+                    "u_g_color_3": "u_house_color",
+                    "u_g_color_4": "u_house_color"
+                }
+            },
+            "instances": 12
+        }
+    }
+}
