@@ -66,7 +66,7 @@ First Build @content
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield] {cm:2023-07-04T15:12:23}
             Safeguard - Before Death: give [Shield] to ally behind {cm:2023-07-04T15:21:07}
-            Resilience Warden - Ally Died: gain [Shield]
+            Resilience Warden - Ally Died: gain [Shield] {cm:2023-07-04T15:28:46}
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP
             Reflective Guardian - [Shield] reflects damage back to attacker
             Shieldbearer - Battle Start: give [Shield] to adjacent allies

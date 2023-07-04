@@ -1,0 +1,76 @@
+{
+    "name": "Warden",
+    "attack": 1,
+    "health": 1,
+    "description": "Ally Died\ngain [Shield]",
+    "house": "Paladins",
+    "trigger": {
+        "type": "AnyDeath",
+        "effect": {
+            "type": "If",
+            "condition": {
+                "type": "EqualsFaction",
+                "a": {
+                    "type": "Owner"
+                },
+                "b": {
+                    "type": "Target"
+                }
+            },
+            "then": {
+                "type": "UseAbility",
+                "ability": "Shield",
+                "target": {
+                    "type": "Owner"
+                },
+                "charges": {
+                    "type": "Const",
+                    "value": 1
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.8,
+                    0.8
+                ]
+            },
+            "uniforms": {
+                "u_g_points": [
+                    -2.0,
+                    -0.1,
+                    -0.1,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0
+                ],
+                "u_warp_str": 0.02,
+                "u_warp_size": 10.1,
+                "u_warp_speed": 10.0,
+                "u_alpha": 0.6,
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "u_i_angle_offset": [
+                    -0.3,
+                    -0.0,
+                    0.0,
+                    0.65
+                ],
+                "mapping": {
+                    "u_g_color_4": "u_house_color"
+                }
+            },
+            "instances": 25
+        }
+    }
+}
