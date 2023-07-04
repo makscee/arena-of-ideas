@@ -68,7 +68,7 @@ First Build @content
             Safeguard - Before Death: give [Shield] to ally behind {cm:2023-07-04T15:21:07}
             Warden - Ally Died: gain [Shield] {cm:2023-07-04T15:28:46}
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP {cm:2023-07-04T15:42:07}
-            Reflective Guardian - [Shield] reflects damage back to attacker
+            Reflective Guardian - [Shield] reflects damage back to attacker {cm:2023-07-04T15:47:21}
             Shieldbearer - Battle Start: give [Shield] to adjacent allies
             Shield Slinger - After Kill: gain [Shield]
         [Thorns]
