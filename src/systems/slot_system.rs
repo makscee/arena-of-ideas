@@ -59,7 +59,7 @@ impl SlotSystem {
     pub fn move_to_slots_animated(
         world: &mut legion::World,
         resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
+        cluster: Option<&mut NodeCluster>,
     ) {
         if let Some(cluster) = cluster {
             let mut node = Node::default();

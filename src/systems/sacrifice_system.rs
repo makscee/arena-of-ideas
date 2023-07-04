@@ -12,8 +12,8 @@ impl SacrificeSystem {
                 .set_target(*unit);
             sum += context.get_int(&VarName::Rank, world).unwrap();
             Effect::Kill.wrap().push(context, resources);
-            ActionSystem::spin(world, resources, &mut None);
-            ActionSystem::death_check(world, resources, &mut None);
+            ActionSystem::spin(world, resources, None);
+            ActionSystem::death_check(world, resources, None);
         }
         ShopSystem::change_g(sum, Some("Sacrifice"), world, resources);
         GameStateSystem::set_transition(GameState::Shop, resources);

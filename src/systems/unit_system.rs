@@ -187,7 +187,7 @@ impl UnitSystem {
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
+        cluster: Option<&mut NodeCluster>,
     ) -> bool {
         Event::BeforeDeath { owner: entity }.send(world, resources);
         ActionSystem::run_ticks(world, resources, cluster);

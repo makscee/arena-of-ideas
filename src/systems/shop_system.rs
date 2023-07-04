@@ -292,9 +292,9 @@ impl System for ShopSystem {
         Self::refresh_tape(world, resources);
         if !resources.action_queue.is_empty() {
             let mut cluster = Some(NodeCluster::default());
-            ActionSystem::run_ticks(world, resources, &mut cluster);
-            ActionSystem::death_check(world, resources, &mut cluster);
-            ActionSystem::run_ticks(world, resources, &mut cluster);
+            ActionSystem::run_ticks(world, resources, cluster.as_mut());
+            ActionSystem::death_check(world, resources, cluster.as_mut());
+            ActionSystem::run_ticks(world, resources, cluster.as_mut());
 
             resources
                 .tape_player

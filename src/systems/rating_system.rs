@@ -111,7 +111,7 @@ impl RatingSystem {
                         }
                     }
                     ShopSystem::do_buy(entity, slot, resources, world);
-                    ActionSystem::run_ticks(world, resources, &mut None);
+                    ActionSystem::run_ticks(world, resources, None);
                 }
                 let new_team = PackedTeam::pack(Faction::Team, world, resources);
                 UnitSystem::clear_faction(world, resources, Faction::Team);

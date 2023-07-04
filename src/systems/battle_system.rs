@@ -18,9 +18,9 @@ impl BattleSystem {
             Some(_) => Some(NodeCluster::default()),
             None => None,
         };
-        SlotSystem::move_to_slots_animated(world, resources, &mut cluster);
+        SlotSystem::move_to_slots_animated(world, resources, cluster.as_mut());
         Event::BattleStart.send(world, resources);
-        ActionSystem::spin(world, resources, &mut cluster);
+        ActionSystem::spin(world, resources, cluster.as_mut());
         if let Some(tape) = tape {
             tape.push(cluster.unwrap());
         }
@@ -216,11 +216,11 @@ impl BattleSystem {
             Some(_) => Some(NodeCluster::default()),
             None => None,
         };
-        ActionSystem::spin(world, resources, &mut cluster);
-        SlotSystem::move_to_slots_animated(world, resources, &mut cluster);
+        ActionSystem::spin(world, resources, cluster.as_mut());
+        SlotSystem::move_to_slots_animated(world, resources, cluster.as_mut());
         if let Some((left, right)) = Self::find_hitters(world) {
             Event::TurnStart.send(world, resources);
-            ActionSystem::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, cluster.as_mut());
             if Self::strickers_death_check(left, right, world) {
                 if let Some(tape) = tape {
                     tape.push(cluster.unwrap());
@@ -233,7 +233,7 @@ impl BattleSystem {
                 target: right,
             }
             .send(world, resources);
-            ActionSystem::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, cluster.as_mut());
             if Self::strickers_death_check(left, right, world) {
                 if let Some(tape) = tape {
                     tape.push(cluster.unwrap());
@@ -246,7 +246,7 @@ impl BattleSystem {
                 target: left,
             }
             .send(world, resources);
-            ActionSystem::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, cluster.as_mut());
             if Self::strickers_death_check(left, right, world) {
                 if let Some(tape) = tape {
                     tape.push(cluster.unwrap());
@@ -312,10 +312,10 @@ impl BattleSystem {
                 Self::add_strike_vfx(world, resources, &mut node);
                 cluster.push(node.lock(NodeLockType::Full { world, resources }));
             }
-            Self::hit(left, right, &mut cluster, world, resources);
-            ActionSystem::spin(world, resources, &mut cluster);
+            Self::hit(left, right, cluster.as_mut(), world, resources);
+            ActionSystem::spin(world, resources, cluster.as_mut());
             Event::TurnEnd.send(world, resources);
-            ActionSystem::spin(world, resources, &mut cluster);
+            ActionSystem::spin(world, resources, cluster.as_mut());
             if let Some(tape) = tape {
                 let mut cluster = cluster.unwrap();
                 cluster.set_duration(duration);
@@ -351,11 +351,11 @@ impl BattleSystem {
     pub fn hit(
         left: legion::Entity,
         right: legion::Entity,
-        cluster: &mut Option<NodeCluster>,
+        mut cluster: Option<&mut NodeCluster>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        ActionSystem::spin(world, resources, cluster);
+        ActionSystem::spin(world, resources, cluster.as_deref_mut());
 
         if UnitSystem::is_alive(left, world, resources)
             && UnitSystem::is_alive(right, world, resources)
@@ -380,7 +380,7 @@ impl BattleSystem {
                 }
                 .wrap(),
             ));
-            ActionSystem::spin(world, resources, cluster);
+            ActionSystem::spin(world, resources, cluster.as_deref_mut());
         }
 
         if UnitSystem::is_alive(left, world, resources) {
@@ -389,7 +389,7 @@ impl BattleSystem {
                 target: right,
             }
             .send(world, resources);
-            ActionSystem::spin(world, resources, cluster);
+            ActionSystem::spin(world, resources, cluster.as_deref_mut());
         }
 
         if UnitSystem::is_alive(right, world, resources) {
@@ -398,7 +398,7 @@ impl BattleSystem {
                 target: left,
             }
             .send(world, resources);
-            ActionSystem::spin(world, resources, cluster);
+            ActionSystem::spin(world, resources, cluster.as_deref_mut());
         }
     }
 

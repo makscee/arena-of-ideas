@@ -6,18 +6,19 @@ impl ActionSystem {
     pub fn run_ticks(
         world: &mut legion::World,
         resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
+        mut cluster: Option<&mut NodeCluster>,
     ) {
         let mut ticks = 0;
         loop {
-            let ticked = if let Some(cluster) = cluster {
+            let ticked = if let Some(node_cluster) = cluster {
                 let node = &mut Some(Node::default());
                 let result = Self::tick(world, resources, node);
-                cluster.push(
+                node_cluster.push(
                     node.take()
                         .unwrap()
                         .lock(NodeLockType::Full { world, resources }),
                 );
+                cluster = Some(node_cluster);
                 result
             } else {
                 Self::tick(world, resources, &mut None)
@@ -76,16 +77,16 @@ impl ActionSystem {
     pub fn spin(
         world: &mut legion::World,
         resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
+        mut cluster: Option<&mut NodeCluster>,
     ) {
-        Self::run_ticks(world, resources, cluster);
+        Self::run_ticks(world, resources, cluster.as_deref_mut());
         Self::death_check(world, resources, cluster);
     }
 
     pub fn death_check(
         world: &mut legion::World,
         resources: &mut Resources,
-        cluster: &mut Option<NodeCluster>,
+        mut cluster: Option<&mut NodeCluster>,
     ) {
         let mut corpses = Vec::default();
         while let Some(dead_unit) = <&EntityComponent>::query()
@@ -103,7 +104,7 @@ impl ActionSystem {
                 || format!("{:?} dead", dead_unit),
                 &LogContext::UnitCreation,
             );
-            if UnitSystem::process_death(dead_unit, world, resources, cluster) {
+            if UnitSystem::process_death(dead_unit, world, resources, cluster.as_deref_mut()) {
                 resources.logger.log(
                     || format!("{:?} removed", dead_unit),
                     &LogContext::UnitCreation,
