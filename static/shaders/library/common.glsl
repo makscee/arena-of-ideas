@@ -94,11 +94,11 @@ float fbm(vec2 p) {
 vec2 warp(vec2 uv, float t) {
     t *= u_warp_speed;
     t += u_warp_pos;
-    uv /= u_warp_size;
-    vec2 q = vec2(fbm(uv), fbm(uv + vec2(1)));
+    vec2 wuv = uv * u_warp_size;
+    vec2 q = vec2(fbm(wuv), fbm(wuv + vec2(1)));
     vec2 r = vec2(0);
-    r.x = fbm(uv + q + vec2(1.1, 4.3) + t * 0.15);
-    r.y = fbm(uv + q + vec2(8.3, 2.1) + t * 0.125);
+    r.x = fbm(wuv + q + vec2(1.1, 4.3) + t * 0.15);
+    r.y = fbm(wuv + q + vec2(8.3, 2.1) + t * 0.125);
     return uv + r * u_warp_str;
 }
 
