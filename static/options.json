@@ -17,13 +17,13 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Wavecrusher",
-                    "attack": 2,
-                    "health": 2,
-                    "description": "After Kill\ngain Splash +1",
+                    "name": "Tidebringer",
+                    "attack": 1,
+                    "health": 3,
+                    "description": "Battle Start:\ngain Splash +1\nfor each empty slot",
                     "house": "Elementals",
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Splash",
@@ -31,8 +31,17 @@
                                 "type": "Owner"
                             },
                             "charges": {
-                                "type": "Const",
-                                "value": 1
+                                "type": "Sub",
+                                "a": {
+                                    "type": "Var",
+                                    "var": "Slots"
+                                },
+                                "b": {
+                                    "type": "Faction",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
                             }
                         }
                     },
@@ -41,22 +50,18 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.1,
-                                    0.1
+                                    0.5,
+                                    0.5
                                 ]
                             },
                             "uniforms": {
                                 "u_color": "#000000",
-                                "u_i_offset": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "u_alpha": 1.0,
+                                "u_alpha": 0.5,
                                 "u_g_points": [
-                                    -1.5,
-                                    -0.5,
-                                    -0.0,
-                                    0.1
+                                    -1.9,
+                                    -0.8,
+                                    -0.4,
+                                    -0.4
                                 ],
                                 "u_g_alphas": [
                                     1.0,
@@ -65,22 +70,23 @@
                                     1.0
                                 ],
                                 "u_warp_str": 1.0,
+                                "u_warp_speed": 5.3,
                                 "u_g_color_1": "#000000",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#000000",
                                 "u_i_angle_offset": [
+                                    1.0,
                                     0.0,
                                     0.0,
-                                    0.06,
-                                    0.509
+                                    0.03
                                 ],
                                 "mapping": {
-                                    "u_g_color_3": "u_house_color",
+                                    "u_g_color_2": "u_house_color",
                                     "u_warp_str": "u_cos"
                                 }
                             },
-                            "instances": 200
+                            "instances": 100
                         }
                     }
                 },

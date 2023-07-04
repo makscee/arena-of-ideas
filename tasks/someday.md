@@ -62,7 +62,7 @@ First Build @content
         [Splash]
             Rainmaker - Battle Start: gain [Splash] {cm:2023-07-04T13:43:23}
             Wavecrusher - After Kill: gain [Splash] {cm:2023-07-04T14:02:04}
-            Tidebringer - Battle Start: gain [Splash] for each empty slot
+            Tidebringer - Battle Start: gain [Splash] for each empty slot {cm:2023-07-04T14:12:31}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before Death: give [Shield] to ally behind
