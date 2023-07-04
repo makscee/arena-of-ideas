@@ -103,7 +103,8 @@ vec2 warp(vec2 uv, float t) {
 }
 
 vec2 rotate_cw(vec2 p, float a) {
-    mat2 m = mat2(cos(a), sin(a), -sin(a), cos(a));
+    float angle = a * PI;
+    mat2 m = mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
     return p * m;
 }
 

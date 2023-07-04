@@ -17,13 +17,13 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Rainmaker",
-                    "attack": 1,
-                    "health": 1,
-                    "description": "Battle Start:\ngain Splash +1",
+                    "name": "Wavecrusher",
+                    "attack": 2,
+                    "health": 2,
+                    "description": "After Kill\ngain Splash +1",
                     "house": "Elementals",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AfterKill",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Splash",
@@ -41,8 +41,8 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.3,
-                                    0.3
+                                    0.1,
+                                    0.1
                                 ]
                             },
                             "uniforms": {
@@ -51,12 +51,18 @@
                                     0.0,
                                     0.0
                                 ],
-                                "u_alpha": 0.5,
+                                "u_alpha": 1.0,
                                 "u_g_points": [
-                                    -0.2,
-                                    -0.2,
-                                    0.0,
-                                    0.0
+                                    -1.5,
+                                    -0.5,
+                                    -0.0,
+                                    0.1
+                                ],
+                                "u_g_alphas": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
                                 ],
                                 "u_warp_str": 1.0,
                                 "u_g_color_1": "#000000",
@@ -66,15 +72,15 @@
                                 "u_i_angle_offset": [
                                     0.0,
                                     0.0,
-                                    0.03,
-                                    0.2
+                                    0.06,
+                                    0.509
                                 ],
                                 "mapping": {
-                                    "u_color": "u_house_color",
-                                    "u_warp_str": "u_sin"
+                                    "u_g_color_3": "u_house_color",
+                                    "u_warp_str": "u_cos"
                                 }
                             },
-                            "instances": 100
+                            "instances": 200
                         }
                     }
                 },
@@ -94,7 +100,7 @@
             "units": [
                 {
                     "attack": 1,
-                    "health": 20
+                    "health": 2
                 }
             ],
             "name": "Enemies"

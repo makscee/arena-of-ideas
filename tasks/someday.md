@@ -60,8 +60,8 @@ First Build @content
             Volatile Slayer - After Kill: gain [Volatility]
             Explosion Bringer - Before Death: give [Volatility](3) to left ally
         [Splash]
-            Rainmaker - Battle Start: gain [Splash]
-            Wavecrusher - After Kill: gain [Splash]
+            Rainmaker - Battle Start: gain [Splash] {cm:2023-07-04T13:43:23}
+            Wavecrusher - After Kill: gain [Splash] {cm:2023-07-04T14:02:04}
             Tidebringer - Battle Start: gain [Splash] for each empty slot
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
