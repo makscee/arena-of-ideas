@@ -54,8 +54,14 @@
                 "u_rotation": 0.0,
                 "u_t_multiplier": 0.15,
                 "mapping": {
-                    "u_g_color_3": "u_house_color",
-                    "u_rotation": "u_sin"
+                    "u_g_color_3": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_rotation": {
+                        "type": "Uniform",
+                        "key": "u_sin"
+                    }
                 }
             }
         }

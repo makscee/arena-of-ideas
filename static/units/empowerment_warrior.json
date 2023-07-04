@@ -53,10 +53,22 @@
                 "u_g_color_4": "#000000",
                 "u_normal_scaling": 1.0,
                 "mapping": {
-                    "u_color": "u_house_color",
-                    "u_g_color_1": "u_faction_color",
-                    "u_g_color_2": "u_faction_color",
-                    "u_g_color_3": "u_house_color"
+                    "u_color": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_1": {
+                        "type": "Uniform",
+                        "key": "u_faction_color"
+                    },
+                    "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_faction_color"
+                    },
+                    "u_g_color_3": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    }
                 }
             }
         }

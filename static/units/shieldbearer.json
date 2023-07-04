@@ -79,8 +79,14 @@
                     0.755
                 ],
                 "mapping": {
-                    "u_g_color_3": "u_house_color",
-                    "u_g_color_4": "u_house_color"
+                    "u_g_color_3": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_4": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    }
                 }
             },
             "instances": 12

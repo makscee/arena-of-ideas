@@ -323,3 +323,75 @@ impl ExpressionFaction {
         result
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, Display)]
+#[serde(tag = "type", deny_unknown_fields)]
+pub enum ExpressionUniform {
+    Uniform {
+        key: String,
+    },
+    Float {
+        value: f32,
+    },
+    GlobalTime,
+    Vec2 {
+        x: Box<ExpressionUniform>,
+        y: Box<ExpressionUniform>,
+    },
+    Vec4 {
+        x: Box<ExpressionUniform>,
+        y: Box<ExpressionUniform>,
+        z: Box<ExpressionUniform>,
+        w: Box<ExpressionUniform>,
+    },
+    Color {
+        r: Box<ExpressionUniform>,
+        g: Box<ExpressionUniform>,
+        b: Box<ExpressionUniform>,
+        a: Box<ExpressionUniform>,
+    },
+    Sum {
+        a: Box<ExpressionUniform>,
+        b: Box<ExpressionUniform>,
+    },
+    Mul {
+        a: Box<ExpressionUniform>,
+        b: Box<ExpressionUniform>,
+    },
+    Sin {
+        x: Box<ExpressionUniform>,
+    },
+}
+
+impl ExpressionUniform {
+    pub fn calculate(&self, uniforms: &ShaderUniforms) -> ShaderUniform {
+        match self {
+            ExpressionUniform::Uniform { key } => uniforms.get(key).expect(&format!(
+                "Failed to get Uniform expression for key {key} {uniforms:?}"
+            )),
+            ExpressionUniform::Sum { a, b } => a.calculate(uniforms).sum(&b.calculate(uniforms)),
+            ExpressionUniform::Mul { a, b } => a.calculate(uniforms).mul(&b.calculate(uniforms)),
+            ExpressionUniform::Float { value } => ShaderUniform::Float(*value),
+            ExpressionUniform::Sin { x } => {
+                ShaderUniform::Float(x.calculate(uniforms).unpack_float().sin())
+            }
+            ExpressionUniform::GlobalTime => ShaderUniform::Float(global_time()),
+            ExpressionUniform::Vec2 { x, y } => ShaderUniform::Vec2(vec2(
+                x.calculate(uniforms).unpack_float(),
+                y.calculate(uniforms).unpack_float(),
+            )),
+            ExpressionUniform::Vec4 { x, y, z, w } => ShaderUniform::Vec4(vec4(
+                x.calculate(uniforms).unpack_float(),
+                y.calculate(uniforms).unpack_float(),
+                z.calculate(uniforms).unpack_float(),
+                w.calculate(uniforms).unpack_float(),
+            )),
+            ExpressionUniform::Color { r, g, b, a } => ShaderUniform::Color(Rgba::new(
+                r.calculate(uniforms).unpack_float(),
+                g.calculate(uniforms).unpack_float(),
+                b.calculate(uniforms).unpack_float(),
+                a.calculate(uniforms).unpack_float(),
+            )),
+        }
+    }
+}

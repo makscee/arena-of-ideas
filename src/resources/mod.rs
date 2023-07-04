@@ -86,6 +86,8 @@ pub use timed_effect::*;
 pub use trigger::*;
 pub use widget::*;
 
+use std::cell::RefCell;
+thread_local!(pub static GLOBAL_TIME: RefCell<Time> = RefCell::new(0.0));
 pub struct Resources {
     pub logger: Logger,
     pub options: Options,

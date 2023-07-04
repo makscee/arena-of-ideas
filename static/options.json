@@ -11,7 +11,7 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "name": "Player",
             "replications": 1,
@@ -61,6 +61,58 @@
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "box": {
+                                "size": [
+                                    0.7,
+                                    0.7
+                                ]
+                            },
+                            "uniforms": {
+                                "u_g_points": [
+                                    -2.0,
+                                    -0.3,
+                                    -0.3,
+                                    0.0
+                                ],
+                                "u_g_alphas": [
+                                    0.0,
+                                    0.0,
+                                    1.0,
+                                    0.0
+                                ],
+                                "u_warp_str": 0.02,
+                                "u_warp_size": 50.0,
+                                "u_warp_speed": 50.0,
+                                "u_alpha": 1.0,
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#000000",
+                                "u_g_color_4": "#000000",
+                                "u_i_angle_offset": [
+                                    0.5,
+                                    0.0,
+                                    0.0,
+                                    0.25
+                                ],
+                                "mapping": {
+                                    "u_g_color_4": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_alpha": {
+                                        "type": "Sin",
+                                        "x": {
+                                            "type": "GlobalTime"
+                                        }
+                                    }
+                                }
+                            },
+                            "instances": 10
                         }
                     }
                 },
@@ -155,7 +207,10 @@
                     "u_ui": 1,
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "u_panel_color"
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "u_panel_color"
+                        }
                     }
                 }
             },
@@ -195,8 +250,14 @@
                                 "Empty Title"
                             ],
                             "mapping": {
-                                "u_text": "u_title_text",
-                                "u_outline_color": "c_outline"
+                                "u_text": {
+                                    "type": "Uniform",
+                                    "key": "u_title_text"
+                                },
+                                "u_outline_color": {
+                                    "type": "Uniform",
+                                    "key": "c_outline"
+                                }
                             }
                         }
                     }
@@ -226,7 +287,10 @@
                     "u_ui": 1,
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "u_panel_color"
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "u_panel_color"
+                        }
                     }
                 }
             },
@@ -274,7 +338,10 @@
                 "uniforms": {
                     "u_color": "#ffffff",
                     "mapping": {
-                        "u_text": "u_panel_text"
+                        "u_text": {
+                            "type": "Uniform",
+                            "key": "u_panel_text"
+                        }
                     }
                 }
             }
@@ -317,7 +384,10 @@
                     "u_g_color_4": "#000000",
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "c_button"
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "c_button"
+                        }
                     }
                 }
             },
@@ -336,8 +406,14 @@
                             "u_text_border": 0.3,
                             "u_outline_color": "#000000",
                             "mapping": {
-                                "u_color": "c_text",
-                                "u_outline_color": "c_outline"
+                                "u_color": {
+                                    "type": "Uniform",
+                                    "key": "c_text"
+                                },
+                                "u_outline_color": {
+                                    "type": "Uniform",
+                                    "key": "c_outline"
+                                }
                             }
                         }
                     }
@@ -371,7 +447,10 @@
                             ],
                             "u_color": "#FFD700",
                             "mapping": {
-                                "u_enabled": "u_rank_1"
+                                "u_enabled": {
+                                    "type": "Uniform",
+                                    "key": "u_rank_1"
+                                }
                             }
                         }
                     },
@@ -385,7 +464,10 @@
                                         0.25
                                     ],
                                     "mapping": {
-                                        "u_enabled": "u_rank_2"
+                                        "u_enabled": {
+                                            "type": "Uniform",
+                                            "key": "u_rank_2"
+                                        }
                                     }
                                 }
                             }
@@ -405,7 +487,10 @@
                                         0.0
                                     ],
                                     "mapping": {
-                                        "u_enabled": "u_rank_3"
+                                        "u_enabled": {
+                                            "type": "Uniform",
+                                            "key": "u_rank_3"
+                                        }
                                     }
                                 }
                             }
@@ -446,6 +531,7 @@
                     "u_circle_fbm": 0.15,
                     "u_circle_fbm_speed": 2.0,
                     "u_card_size": 0.0,
+                    "u_damage_taken": 0.0,
                     "u_text_color": "#ffffff",
                     "u_padding": 0.5,
                     "u_g_points": [
@@ -471,8 +557,14 @@
                         -0.9
                     ],
                     "mapping": {
-                        "u_g_color_1": "u_color",
-                        "u_g_color_2": "u_color"
+                        "u_g_color_1": {
+                            "type": "Uniform",
+                            "key": "u_color"
+                        },
+                        "u_g_color_2": {
+                            "type": "Uniform",
+                            "key": "u_color"
+                        }
                     }
                 }
             },
@@ -486,11 +578,21 @@
                             "u_text_border": 0.3,
                             "u_size": 0.5,
                             "u_extra_size_multiplier": 0.3,
+                            "u_text_extra_size": 0.0,
                             "u_outline_color": "#000000",
                             "mapping": {
-                                "u_color": "u_text_color",
-                                "u_extra_size": "u_text_extra_size",
-                                "u_outline_color": "c_outline"
+                                "u_color": {
+                                    "type": "Uniform",
+                                    "key": "u_text_color"
+                                },
+                                "u_extra_size": {
+                                    "type": "Uniform",
+                                    "key": "u_text_extra_size"
+                                },
+                                "u_outline_color": {
+                                    "type": "Uniform",
+                                    "key": "c_outline"
+                                }
                             }
                         }
                     }
@@ -527,7 +629,10 @@
                     ],
                     "u_padding": 0.0,
                     "mapping": {
-                        "u_outline_color": "u_house_color"
+                        "u_outline_color": {
+                            "type": "Uniform",
+                            "key": "u_house_color"
+                        }
                     }
                 }
             },
@@ -594,7 +699,10 @@
                 "uniforms": {
                     "u_mid_border": 0.03,
                     "mapping": {
-                        "u_outline_color": "c_outline"
+                        "u_outline_color": {
+                            "type": "Uniform",
+                            "key": "c_outline"
+                        }
                     }
                 }
             },
@@ -611,7 +719,10 @@
                     "u_color": "#ffffff",
                     "u_size": 0.7,
                     "mapping": {
-                        "u_outline_color": "c_outline"
+                        "u_outline_color": {
+                            "type": "Uniform",
+                            "key": "c_outline"
+                        }
                     }
                 }
             },
@@ -655,8 +766,14 @@
                     "u_text_inside": 0.45,
                     "u_text_border": 0.35,
                     "mapping": {
-                        "u_enabled": "u_filled",
-                        "u_outline_color": "c_outline"
+                        "u_enabled": {
+                            "type": "Uniform",
+                            "key": "u_filled"
+                        },
+                        "u_outline_color": {
+                            "type": "Uniform",
+                            "key": "c_outline"
+                        }
                     }
                 }
             },
@@ -709,10 +826,22 @@
                                 "no_text"
                             ],
                             "mapping": {
-                                "u_text": "u_g_text",
-                                "u_outline_color": "c_shop",
-                                "u_mid_border_color": "c_outline",
-                                "u_color": "c_text"
+                                "u_text": {
+                                    "type": "Uniform",
+                                    "key": "u_g_text"
+                                },
+                                "u_outline_color": {
+                                    "type": "Uniform",
+                                    "key": "c_shop"
+                                },
+                                "u_mid_border_color": {
+                                    "type": "Uniform",
+                                    "key": "c_outline"
+                                },
+                                "u_color": {
+                                    "type": "Uniform",
+                                    "key": "c_text"
+                                }
                             }
                         }
                     }
@@ -750,7 +879,10 @@
                     "u_g_color_4": "#000000",
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "c_button"
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "c_button"
+                        }
                     }
                 }
             },
@@ -769,8 +901,14 @@
                             "u_text_border": 0.3,
                             "u_outline_color": "#000000",
                             "mapping": {
-                                "u_color": "c_text",
-                                "u_outline_color": "c_outline"
+                                "u_color": {
+                                    "type": "Uniform",
+                                    "key": "c_text"
+                                },
+                                "u_outline_color": {
+                                    "type": "Uniform",
+                                    "key": "c_outline"
+                                }
                             }
                         }
                     }
@@ -807,7 +945,10 @@
                     "u_g_color_4": "#000000",
                     "u_color": "#6495ED",
                     "mapping": {
-                        "u_color": "c_button"
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "c_button"
+                        }
                     }
                 }
             },
@@ -827,8 +968,14 @@
                             "u_text_color": "#ffffff",
                             "u_outline_color": "#000000",
                             "mapping": {
-                                "u_color": "u_text_color",
-                                "u_outline_color": "c_outline"
+                                "u_color": {
+                                    "type": "Uniform",
+                                    "key": "u_text_color"
+                                },
+                                "u_outline_color": {
+                                    "type": "Uniform",
+                                    "key": "c_outline"
+                                }
                             }
                         }
                     }

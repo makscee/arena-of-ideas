@@ -43,9 +43,6 @@ impl AnimatedShaderUniforms {
                 for (key, value) in frame.uniforms.iter_data() {
                     uniforms.insert_ref(key, value.clone());
                 }
-                for (key, mapping) in frame.uniforms.iter_mappings() {
-                    uniforms.insert_ref(key.to_owned(), uniforms.get(mapping).unwrap().clone());
-                }
             } else {
                 t = (t - prev_t) / (frame.t - prev_t);
                 t = frame.easing.f(t);

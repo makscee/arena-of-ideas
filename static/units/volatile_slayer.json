@@ -57,9 +57,18 @@
                 ],
                 "u_t_multiplier": 0.7,
                 "mapping": {
-                    "u_g_color_1": "u_house_color",
-                    "u_g_color_2": "u_house_color",
-                    "u_warp_str": "u_cos"
+                    "u_g_color_1": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_warp_str": {
+                        "type": "Uniform",
+                        "key": "u_cos"
+                    }
                 }
             },
             "instances": 50

@@ -7,7 +7,7 @@ pub struct ShaderUniforms {
     #[serde(default)]
     local: HashMap<String, ShaderUniform>,
     #[serde(default)]
-    mapping: HashMap<String, String>,
+    mapping: HashMap<String, ExpressionUniform>,
 }
 
 impl ShaderUniforms {
@@ -41,12 +41,12 @@ impl ShaderUniforms {
         let keys: HashSet<&String> = HashSet::from_iter(a.data.keys().chain(a.mapping.keys()));
         for key in keys {
             let a = a.get(key).unwrap_or_else(|| {
-                defaults.get(a.map(key)).expect(&format!(
+                defaults.get(key).expect(&format!(
                     "Failed to mix key {key} a: {a:?} defaults: {defaults:?}"
                 ))
             });
             let b = b.get(key).unwrap_or_else(|| {
-                defaults.get(b.map(key)).expect(&format!(
+                defaults.get(key).expect(&format!(
                     "Failed to mix key {key} b: {b:?} defaults: {defaults:?}"
                 ))
             });
@@ -160,18 +160,16 @@ impl ShaderUniforms {
     }
 
     pub fn get(&self, key: &str) -> Option<ShaderUniform> {
-        let key = self.map(key);
+        // let key = self.map(key);
         if key.starts_with("c_") {
             return Some(ShaderUniform::Color(options_color(key)));
         }
-        self.local.get(key).or(self.data.get(key)).cloned()
-    }
-
-    pub fn map<'a>(&'a self, mut key: &'a str) -> &'a str {
-        while let Some(map) = self.mapping.get(key) {
-            key = map.as_str()
+        // self.local.get(key).or(self.data.get(key)).cloned()
+        if let Some(mapping) = self.mapping.get(key) {
+            Some(mapping.calculate(self))
+        } else {
+            self.data.get(key).cloned()
         }
-        key
     }
 
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {
@@ -203,21 +201,9 @@ impl ShaderUniforms {
     }
 
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, ShaderUniform)> + 'a {
-        self.data.keys().map(|key| {
-            (
-                key,
-                self.get(key).unwrap_or_else(|| {
-                    self.data
-                        .get(key)
-                        .expect(&format!("Key not found {key}"))
-                        .clone()
-                }),
-            )
-        })
-    }
-
-    pub fn iter_mappings<'a>(&'a self) -> impl Iterator<Item = (&String, &String)> + 'a {
-        self.mapping.iter()
+        HashSet::<&String>::from_iter(self.data.keys().chain(self.mapping.keys()))
+            .into_iter()
+            .map(|key| (key, self.get(key).expect(&format!("Key not found {key}"))))
     }
 
     pub fn iter_data<'a>(&'a self) -> impl Iterator<Item = (String, ShaderUniform)> + 'a {
@@ -231,7 +217,10 @@ impl ShaderUniforms {
     }
 
     pub fn add_mapping(&mut self, from: &str, to: &str) -> &mut Self {
-        self.mapping.insert(from.to_string(), to.to_string());
+        self.mapping.insert(
+            from.to_string(),
+            ExpressionUniform::Uniform { key: to.to_owned() },
+        );
         self
     }
 
@@ -276,6 +265,48 @@ pub enum ShaderUniform {
     Color(Rgba<f32>),
     String((usize, String)),
     Texture(Image),
+}
+
+impl ShaderUniform {
+    pub fn sum(self, other: &Self) -> Self {
+        match (self, other) {
+            (ShaderUniform::Int(a), ShaderUniform::Int(b)) => ShaderUniform::Int(a + b),
+            (ShaderUniform::Float(a), ShaderUniform::Float(b)) => ShaderUniform::Float(a + b),
+            (ShaderUniform::Vec2(a), ShaderUniform::Vec2(b)) => ShaderUniform::Vec2(a + *b),
+            (ShaderUniform::Vec3(a), ShaderUniform::Vec3(b)) => ShaderUniform::Vec3(a + *b),
+            (ShaderUniform::Vec4(a), ShaderUniform::Vec4(b)) => ShaderUniform::Vec4(a + *b),
+            (ShaderUniform::Color(a), ShaderUniform::Color(b)) => ShaderUniform::Color(Rgba {
+                r: a.r + b.r,
+                g: a.g + b.g,
+                b: a.b + b.b,
+                a: a.a + b.a,
+            }),
+            _ => panic!("Types don't match {other:?}"),
+        }
+    }
+    pub fn mul(self, other: &Self) -> Self {
+        match (self, other) {
+            (ShaderUniform::Int(a), ShaderUniform::Int(b)) => ShaderUniform::Int(a * b),
+            (ShaderUniform::Float(a), ShaderUniform::Float(b)) => ShaderUniform::Float(a * b),
+            (ShaderUniform::Vec2(a), ShaderUniform::Vec2(b)) => ShaderUniform::Vec2(a * *b),
+            (ShaderUniform::Vec3(a), ShaderUniform::Vec3(b)) => ShaderUniform::Vec3(a * *b),
+            (ShaderUniform::Vec4(a), ShaderUniform::Vec4(b)) => ShaderUniform::Vec4(a * *b),
+            (ShaderUniform::Color(a), ShaderUniform::Color(b)) => ShaderUniform::Color(Rgba {
+                r: a.r * b.r,
+                g: a.g * b.g,
+                b: a.b * b.b,
+                a: a.a * b.a,
+            }),
+            _ => panic!("Types don't match {other:?}"),
+        }
+    }
+
+    pub fn unpack_float(&self) -> f32 {
+        match self {
+            ShaderUniform::Float(v) => *v,
+            _ => panic!("Wrong type"),
+        }
+    }
 }
 
 impl ugli::Uniform for ShaderUniform {

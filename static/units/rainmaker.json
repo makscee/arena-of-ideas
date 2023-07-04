@@ -52,8 +52,14 @@
                     0.2
                 ],
                 "mapping": {
-                    "u_color": "u_house_color",
-                    "u_warp_str": "u_sin"
+                    "u_color": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_warp_str": {
+                        "type": "Uniform",
+                        "key": "u_sin"
+                    }
                 }
             },
             "instances": 100

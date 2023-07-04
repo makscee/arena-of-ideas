@@ -130,16 +130,25 @@ impl UnitSystem {
                 format!("+{rank}/+{rank}"),
             ));
         }
+        shader.insert_color_ref(
+            "u_hp_color".to_owned(),
+            if damage > 0 {
+                resources.options.colors.damage
+            } else if hp > original_hp {
+                resources.options.colors.add
+            } else {
+                resources.options.colors.text
+            },
+        );
 
-        if damage > 0 {
-            shader.insert_color_ref("u_hp_color".to_owned(), resources.options.colors.damage);
-        } else if hp > original_hp {
-            shader.insert_color_ref("u_hp_color".to_owned(), resources.options.colors.add);
-        }
-
-        if original_atk < atk {
-            shader.insert_color_ref("u_attack_color".to_owned(), resources.options.colors.add);
-        }
+        shader.insert_color_ref(
+            "u_attack_color".to_owned(),
+            if original_atk < atk {
+                resources.options.colors.add
+            } else {
+                resources.options.colors.text
+            },
+        );
 
         shader.entity = Some(entity);
 
@@ -151,7 +160,7 @@ impl UnitSystem {
         if !statuses.is_empty() {
             let hint_text = statuses
                 .iter()
-                .map(|(name, charges)| format!("{name} ({charges})"))
+                .map(|(name, charges)| format!("{name} +{charges}"))
                 .join("\n");
             shader.hover_hints.push((
                 resources.options.colors.secondary,

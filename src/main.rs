@@ -63,6 +63,9 @@ fn options_color(key: &str) -> Rgba<f32> {
             .clone()
     })
 }
+fn global_time() -> Time {
+    GLOBAL_TIME.with(|value| *value.borrow())
+}
 fn main() {
     let timer = Instant::now();
     logger::init();
