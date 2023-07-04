@@ -65,7 +65,7 @@ First Build @content
             Tidebringer - Battle Start: gain [Splash] for each empty slot {cm:2023-07-04T14:12:31}
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield] {cm:2023-07-04T15:12:23}
-            Safeguard - Before Death: give [Shield] to ally behind
+            Safeguard - Before Death: give [Shield] to ally behind {cm:2023-07-04T15:21:07}
             Resilience Warden - Ally Died: gain [Shield]
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP
             Reflective Guardian - [Shield] reflects damage back to attacker
