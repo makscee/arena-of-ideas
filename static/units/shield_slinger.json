@@ -1,0 +1,64 @@
+{
+    "name": "Shield Slinger",
+    "attack": 2,
+    "health": 1,
+    "description": "After Kill:\ngain Shield +1",
+    "house": "Paladins",
+    "trigger": {
+        "type": "AfterKill",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Shield",
+            "target": {
+                "type": "Owner"
+            },
+            "charges": {
+                "type": "Const",
+                "value": 1
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.7,
+                    0.7
+                ]
+            },
+            "uniforms": {
+                "u_g_points": [
+                    -2.0,
+                    -0.3,
+                    -0.3,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "u_warp_str": 0.02,
+                "u_warp_size": 50.0,
+                "u_warp_speed": 50.0,
+                "u_alpha": 1.0,
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "u_i_angle_offset": [
+                    0.5,
+                    0.0,
+                    0.0,
+                    0.25
+                ],
+                "mapping": {
+                    "u_g_color_4": "u_house_color"
+                }
+            },
+            "instances": 10
+        }
+    }
+}

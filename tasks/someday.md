@@ -63,14 +63,14 @@ First Build @content
             Rainmaker - Battle Start: gain [Splash] {cm:2023-07-04T13:43:23}
             Wavecrusher - After Kill: gain [Splash] {cm:2023-07-04T14:02:04}
             Tidebringer - Battle Start: gain [Splash] for each empty slot {cm:2023-07-04T14:12:31}
-        [Shield]
+        [Shield] {cm:2023-07-04T16:07:08}
             Bulwark Champion - Battle Start: gain [Shield] {cm:2023-07-04T15:12:23}
             Safeguard - Before Death: give [Shield] to ally behind {cm:2023-07-04T15:21:07}
             Warden - Ally Died: gain [Shield] {cm:2023-07-04T15:28:46}
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP {cm:2023-07-04T15:42:07}
             Reflective Guardian - [Shield] reflects damage back to attacker {cm:2023-07-04T15:47:21}
             Shieldbearer - Battle Start: give [Shield] to adjacent allies {cm:2023-07-04T16:02:07}
-            Shield Slinger - After Kill: gain [Shield]
+            Shield Slinger - After Kill: gain [Shield] {cm:2023-07-04T16:07:06}
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to right ally
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy
