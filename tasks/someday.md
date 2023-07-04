@@ -57,7 +57,7 @@ First Build @content
             Killblessed - After Kill: gain [Martyr](2) {cm:2023-06-30T16:01:43}
         [Volatility]
             Firestorm Warlock - Battle Start: gain [Volatility](2) {cm:2023-07-04T14:21:59}
-            Volatile Slayer - After Kill: gain [Volatility]
+            Volatile Slayer - After Kill: gain [Volatility] {cm:2023-07-04T14:32:39}
             Explosion Bringer - Before Death: give [Volatility](3) to left ally
         [Splash]
             Rainmaker - Battle Start: gain [Splash] {cm:2023-07-04T13:43:23}
