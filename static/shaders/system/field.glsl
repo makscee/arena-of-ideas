@@ -13,10 +13,11 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
+uniform vec4 u_background_light;
+uniform vec4 u_background_dark;
 
 void main() {
-    init_fields();
-    float t = get_field_value(uv);
+    float t = float(uv.x * 3. < uv.y);
     vec4 color = mix(u_background_dark, u_background_light, t);
     gl_FragColor = color;
 }

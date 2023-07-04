@@ -5,11 +5,6 @@ uniform float u_global_time;
 uniform vec2 u_field_position;
 uniform float u_t = 0;
 
-uniform vec4 u_background_light;
-uniform vec4 u_background_dark;
-vec3 base_color;
-vec3 field_color;
-
 uniform mat3 u_projection_matrix;
 uniform mat3 u_view_matrix;
 
@@ -48,6 +43,9 @@ uniform float u_warp_size = 1;
 uniform float u_fbm_sdf = 0;
 uniform float u_fbm_sdf_size = 1.0;
 uniform float u_fbm_sdf_speed = 1;
+
+uniform vec2 u_i_offset;
+uniform vec4 u_i_angle_offset; // radius, angle, per i radius, per i angle
 
 vec4 sdf_gradient(float x) {
     float oob = 1. - float(x > u_g_points[3]);
@@ -117,17 +115,21 @@ float get_field_value(vec2 uv) {
     vec2 position = position + uv + u_field_position;
     return smoothstep(-0.1, 0.1, position.y * .4 - position.x + (fbm(position.yy + vec2(u_game_time * 0.3, 0)) - .5) * 2.);
 }
+#ifdef VERTEX_SHADER
+vec2 instance_shift(vec2 pos) {
+    vec2 offset = u_i_offset * box * gl_InstanceID;
+    vec2 angle_offset = rotate_cw(vec2(u_i_angle_offset[0] + u_i_angle_offset[2] * gl_InstanceID, 0), u_i_angle_offset[1] + u_i_angle_offset[3] * gl_InstanceID) * box;
+    return pos + offset + angle_offset;
+}
 
 void init_fields() {
     card = u_card;
-    position = u_position;
     box = u_box;
+    position = instance_shift(u_position);
     rotation = u_rotation;
     padding = u_padding;
-    float field = get_field_value(position);
-    base_color = mix(u_background_light.rgb, u_background_dark.rgb, field);
-    field_color = mix(u_background_light.rgb, u_background_dark.rgb, 1 - field);
 }
+#endif
 
 vec2 get_uv(vec2 a_pos) {
     return a_pos * (1.0 + padding);

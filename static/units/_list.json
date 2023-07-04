@@ -1,4 +1,6 @@
 [
+    "units/rainmaker.json",
+    "units/rotmender.json",
     "units/killblessed.json",
     "units/searing_sacrifice.json",
     "units/mourning_martyr.json",

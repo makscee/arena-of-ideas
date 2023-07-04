@@ -1,0 +1,62 @@
+{
+    "name": "Rainmaker",
+    "attack": 1,
+    "health": 1,
+    "description": "Battle Start:\ngain Splash +1",
+    "house": "Elementals",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Splash",
+            "target": {
+                "type": "Owner"
+            },
+            "charges": {
+                "type": "Const",
+                "value": 1
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.3,
+                    0.3
+                ]
+            },
+            "uniforms": {
+                "u_color": "#000000",
+                "u_i_offset": [
+                    0.0,
+                    0.0
+                ],
+                "u_alpha": 0.5,
+                "u_g_points": [
+                    -0.2,
+                    -0.2,
+                    0.0,
+                    0.0
+                ],
+                "u_warp_str": 1.0,
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "u_i_angle_offset": [
+                    0.0,
+                    0.0,
+                    0.03,
+                    0.2
+                ],
+                "mapping": {
+                    "u_color": "u_house_color",
+                    "u_warp_str": "u_sin"
+                }
+            },
+            "instances": 100
+        }
+    }
+}

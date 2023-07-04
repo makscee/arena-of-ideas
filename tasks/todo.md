@@ -49,9 +49,9 @@ Build
         buy aoe status {cm:2023-06-23T15:50:05}
         buy team status {cm:2023-06-23T15:36:23}
         buy slot {start:2023-06-23T15:50:07} {cm:2023-06-23T15:54:23} {duration:04m}
-    Game over screen @ui
-        restart
-        score
+    Game over screen @ui {cm:2023-07-04T13:12:56} {c}
+        restart {cm:2023-07-04T13:12:54}
+        score {cm:2023-07-04T13:12:55}
     Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay {start:2023-06-23T18:36:22} {cm:2023-06-26T15:27:58} {duration:2d_20h51m}
     No sacrifice for single hero team @gameplay {cm:2023-06-26T15:27:47}
     Chain all actions @visual

@@ -24,11 +24,10 @@ uniform vec4 u_faction_color;
 uniform int u_rank;
 
 void main() {
-    init_fields();
     float len = length(uv) - 1.;
     len += sin(vec_angle(uv) * 20 + u_game_time * 3) * (0.01 + 0.05 * (u_rank));
     float dmg_t = u_damage_taken;
-    vec4 color = vec4(field_color, 0);
+    vec4 color = vec4(0);
     float thickness = THICKNESS;
     float alpha = max(smoothstep(thickness, thickness * .5, abs(len)), GLOW * smoothstep(thickness + SPREAD, thickness, abs(len)));
     color = alpha_blend(color, vec4(u_faction_color.rgb * (1. - u_rank * 0.2), alpha));

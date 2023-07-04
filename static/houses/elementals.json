@@ -20,7 +20,7 @@
             }
         },
         "Splash": {
-            "description": "Deal X damage\nto all enemies \nafter Strike",
+            "description": "Deal X damage\nto all enemies \nbefore Strike",
             "effect": {
                 "type": "ChangeStatus",
                 "name": "Splash",
@@ -75,7 +75,7 @@
         },
         "Splash": {
             "trigger": {
-                "type": "AfterStrike",
+                "type": "BeforeStrike",
                 "effect": {
                     "type": "Aoe",
                     "factions": [

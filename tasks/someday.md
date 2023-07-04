@@ -55,6 +55,14 @@ First Build @content
             Mourning Martyr - Ally Died: gain [Martyr] {cm:2023-06-30T15:53:19}
             Searing Sacrifice - After Strike: gain [Martyr] {cm:2023-06-30T15:59:38}
             Killblessed - After Kill: gain [Martyr](2) {cm:2023-06-30T16:01:43}
+        [Volatility]
+            Firestorm Warlock - Battle Start: gain [Volatility](2)
+            Volatile Slayer - After Kill: gain [Volatility]
+            Explosion Bringer - Before Death: give [Volatility](3) to left ally
+        [Splash]
+            Rainmaker - Battle Start: gain [Splash]
+            Wavecrusher - After Kill: gain [Splash]
+            Tidebringer - Battle Start: gain [Splash] for each empty slot
         [Shield]
             Bulwark Champion - Battle Start: gain [Shield]
             Safeguard - Before Death: give [Shield] to ally behind
@@ -72,14 +80,6 @@ First Build @content
             Phoenix Mage - Battle Start: gain [Rebirth]
             Soulclaimer - After Kill: gain [Rebirth]
             Rebirth Ritualist - Battle Start: give [Rebirth] to first ally
-        [Volatility]
-            Firestorm Warlock - Battle Start: gain [Volatility](2)
-            Volatile Slayer - After Kill: gain [Volatility]
-            Explosion Bringer - Before Death: give [Volatility](3) to left ally
-        [Splash]
-            Rainmaker - Battle Start: gain [Splash]
-            Wavecrusher - After Kill: gain [Splash]
-            Splashtide Warrior - Battle Start: gain [Splash] for each enemy
         [Marked]
             Marking Hand - Before Strike: apply [Marked]
             Sheriff - Battle Start: apply [Marked] to all enemies

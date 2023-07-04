@@ -26,7 +26,6 @@ uniform vec2 u_description_size;
 uniform vec4 u_faction_color;
 
 void main() {
-    init_fields();
     vec2 uv = uv / mix(3, 1, u_card);
     float card_sdf = rectangle_sdf(uv * CARD_SIZE.y / CARD_SIZE.x, CARD_SIZE, 0);
     if(card_sdf > CARD_BORDER) {
@@ -41,9 +40,9 @@ void main() {
     float text_sdf = get_text_sdf(text_uv, u_description);
     vec3 text_base_color = vec3(1);
     vec3 outline_color = vec3(0);
-    vec4 text_bg = vec4(field_color, uv.y < 0);
+    vec4 text_bg = vec4(vec3(0), uv.y < 0);
     vec4 text_color = get_text_color(text_sdf, vec4(text_base_color, 1), vec4(outline_color, .7), TEXT_BORDER, TEXT_INSIDE);
-    vec4 color = vec4(field_color, 0);
+    vec4 color = vec4(vec3(0), 0);
     color = alpha_blend(color, text_bg);
     color = alpha_blend(color, border_color);
     color = alpha_blend(color, text_color);
