@@ -55,11 +55,11 @@ First Build @content
             Mourning Martyr - Ally Died: gain [Martyr] {cm:2023-06-30T15:53:19}
             Searing Sacrifice - After Strike: gain [Martyr] {cm:2023-06-30T15:59:38}
             Killblessed - After Kill: gain [Martyr](2) {cm:2023-06-30T16:01:43}
-        [Volatility]
+        [Volatility] {cm:2023-07-04T14:55:57}
             Firestorm Warlock - Battle Start: gain [Volatility](2) {cm:2023-07-04T14:21:59}
             Volatile Slayer - After Kill: gain [Volatility] {cm:2023-07-04T14:32:39}
-            Explosion Bringer - Before Death: give [Volatility](3) to left ally
-        [Splash]
+            Explosion Bringer - Before Death: give [Volatility](3) to left ally {cm:2023-07-04T14:55:56}
+        [Splash] {cm:2023-07-04T14:55:59}
             Rainmaker - Battle Start: gain [Splash] {cm:2023-07-04T13:43:23}
             Wavecrusher - After Kill: gain [Splash] {cm:2023-07-04T14:02:04}
             Tidebringer - Battle Start: gain [Splash] for each empty slot {cm:2023-07-04T14:12:31}

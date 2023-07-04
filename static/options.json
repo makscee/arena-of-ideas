@@ -18,21 +18,25 @@
             "units": [
                 {
                     "name": "Explosion Bringer",
-                    "attack": 3,
-                    "health": 2,
-                    "description": "Before Death:\ngive Volatility +3 to closest ally",
+                    "attack": 1,
+                    "health": 1,
+                    "description": "Before Death:\ngive Volatility +3\nto ally behind",
                     "house": "Elementals",
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "BeforeDeath",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Volatility",
                             "target": {
-                                "type": "Owner"
+                                "type": "SlotRelative",
+                                "relation": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
                             },
                             "charges": {
                                 "type": "Const",
-                                "value": 2
+                                "value": 3
                             }
                         }
                     },
@@ -41,8 +45,8 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.4,
-                                    0.4
+                                    0.7,
+                                    0.7
                                 ]
                             },
                             "uniforms": {
@@ -56,22 +60,22 @@
                                 ],
                                 "u_g_alphas": [
                                     0.0,
-                                    1.0,
+                                    0.0,
                                     1.0,
                                     0.0
                                 ],
                                 "u_warp_str": 1.0,
-                                "u_warp_size": 5.5,
-                                "u_warp_speed": 5.3,
+                                "u_warp_size": 0.5,
+                                "u_warp_speed": 0.3,
                                 "u_g_color_1": "#000000",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#000000",
                                 "u_i_angle_offset": [
-                                    0.5,
-                                    0.0,
-                                    0.04,
-                                    0.76
+                                    0.2,
+                                    1.1,
+                                    0.02,
+                                    0.1
                                 ],
                                 "u_t_multiplier": 0.7,
                                 "mapping": {
@@ -80,7 +84,7 @@
                                     "u_warp_str": "u_cos"
                                 }
                             },
-                            "instances": 50
+                            "instances": 40
                         }
                     }
                 },
