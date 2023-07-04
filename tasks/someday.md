@@ -64,7 +64,7 @@ First Build @content
             Wavecrusher - After Kill: gain [Splash] {cm:2023-07-04T14:02:04}
             Tidebringer - Battle Start: gain [Splash] for each empty slot {cm:2023-07-04T14:12:31}
         [Shield]
-            Bulwark Champion - Battle Start: gain [Shield]
+            Bulwark Champion - Battle Start: gain [Shield] {cm:2023-07-04T15:12:23}
             Safeguard - Before Death: give [Shield] to ally behind
             Resilience Warden - Ally Died: gain [Shield]
             Aegis Bearer - Battle Start: give [Shield] to allies with 10+ HP

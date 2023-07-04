@@ -17,26 +17,22 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Explosion Bringer",
-                    "attack": 1,
+                    "name": "Bulwark Champion",
+                    "attack": 3,
                     "health": 1,
-                    "description": "Before Death:\ngive Volatility +3\nto ally behind",
-                    "house": "Elementals",
+                    "description": "Battle Start:\ngain Shield +1",
+                    "house": "Paladins",
                     "trigger": {
-                        "type": "BeforeDeath",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
-                            "ability": "Volatility",
+                            "ability": "Shield",
                             "target": {
-                                "type": "SlotRelative",
-                                "relation": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
+                                "type": "Owner"
                             },
                             "charges": {
                                 "type": "Const",
-                                "value": 3
+                                "value": 1
                             }
                         }
                     },
@@ -45,46 +41,42 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.7,
-                                    0.7
+                                    0.8,
+                                    0.8
                                 ]
                             },
                             "uniforms": {
-                                "u_color": "#000000",
-                                "u_alpha": 1.0,
                                 "u_g_points": [
-                                    -1.1,
-                                    -0.6,
-                                    -0.4,
-                                    -0.4
+                                    -2.0,
+                                    -0.06,
+                                    -0.06,
+                                    0.0
                                 ],
                                 "u_g_alphas": [
                                     0.0,
                                     0.0,
                                     1.0,
-                                    0.0
+                                    1.0
                                 ],
-                                "u_warp_str": 1.0,
-                                "u_warp_size": 0.5,
-                                "u_warp_speed": 0.3,
+                                "u_warp_str": 0.02,
+                                "u_warp_size": 10.1,
+                                "u_warp_speed": 10.0,
                                 "u_g_color_1": "#000000",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#000000",
                                 "u_i_angle_offset": [
-                                    0.2,
-                                    1.1,
-                                    0.02,
-                                    0.1
+                                    0.5,
+                                    0.0,
+                                    0.0,
+                                    1.75
                                 ],
-                                "u_t_multiplier": 0.7,
                                 "mapping": {
-                                    "u_g_color_1": "u_house_color",
-                                    "u_g_color_2": "u_house_color",
-                                    "u_warp_str": "u_cos"
+                                    "u_g_color_3": "u_house_color",
+                                    "u_g_color_4": "u_house_color"
                                 }
                             },
-                            "instances": 40
+                            "instances": 10
                         }
                     }
                 },
