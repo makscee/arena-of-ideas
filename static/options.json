@@ -26,6 +26,17 @@
                             "type": "List",
                             "items": [
                                 {
+                                    "type": "UseAbility",
+                                    "ability": "Vitality",
+                                    "target": {
+                                        "type": "Owner"
+                                    },
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 3
+                                    }
+                                },
+                                {
                                     "type": "Aoe",
                                     "factions": [
                                         {
@@ -37,7 +48,7 @@
                                         "ability": "Shield",
                                         "charges": {
                                             "type": "Const",
-                                            "value": 1
+                                            "value": 2
                                         }
                                     }
                                 },
@@ -69,7 +80,7 @@
             ]
         },
         "dark": {
-            "replications": 5,
+            "replications": 2,
             "units": [
                 {
                     "attack": 1,

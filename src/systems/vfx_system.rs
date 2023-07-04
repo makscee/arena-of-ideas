@@ -1,5 +1,7 @@
 use super::*;
 
+const TEXT_KEY: &str = "text";
+const TEXT_DELAY_PER: Time = 0.2;
 pub struct VfxSystem {}
 
 /// Logic
@@ -51,15 +53,16 @@ impl VfxSystem {
     }
 
     pub fn vfx_show_text(
-        resources: &Resources,
+        node: &mut Node,
         text: &str,
         color: Rgba<f32>,
         outline_color: Rgba<f32>,
         position: vec2<f32>,
         font: usize,
-        delay: Time,
-    ) -> TimedEffect {
-        TimedEffect::new_delayed(
+        resources: &Resources,
+    ) {
+        let delay = TEXT_DELAY_PER * node.key_effects_count(TEXT_KEY) as f32;
+        let effect = TimedEffect::new_delayed(
             Some(1.0),
             delay,
             Animation::ShaderAnimation {
@@ -68,19 +71,21 @@ impl VfxSystem {
                 animation: AnimatedShaderUniforms::empty(),
             },
             0,
-        )
+        );
+        node.add_effect_by_key(TEXT_KEY.to_owned(), effect);
     }
 
     pub fn vfx_show_parent_text(
-        resources: &Resources,
+        node: &mut Node,
         text: &str,
         color: Rgba<f32>,
         outline_color: Rgba<f32>,
         parent: legion::Entity,
         font: usize,
-        delay: Time,
-    ) -> TimedEffect {
-        TimedEffect::new_delayed(
+        resources: &Resources,
+    ) {
+        let delay = TEXT_DELAY_PER * node.key_effects_count(TEXT_KEY) as f32;
+        let effect = TimedEffect::new_delayed(
             Some(1.0),
             delay,
             Animation::EntityExtraShaderAnimation {
@@ -89,7 +94,8 @@ impl VfxSystem {
                 animation: AnimatedShaderUniforms::empty(),
             },
             0,
-        )
+        );
+        node.add_effect_by_key(TEXT_KEY.to_owned(), effect);
     }
 
     fn get_show_text_shader(

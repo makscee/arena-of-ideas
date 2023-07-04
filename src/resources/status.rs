@@ -156,9 +156,6 @@ impl Status {
             .send(world, resources),
             _ => {}
         }
-        let max_delay = 1.5;
-        let delay_per_charge = max_delay / (delta as f32).abs();
-        let mut cnt = 1;
         for _ in 0..delta.abs() {
             let (text, color) = if delta > 0 {
                 ("+", resources.options.colors.add)
@@ -169,16 +166,15 @@ impl Status {
             if let Some(node) = node.as_mut() {
                 let text = format!("{}{}", text, &name);
                 let outline_color = StatusLibrary::get(name, resources).color;
-                node.add_effect(VfxSystem::vfx_show_parent_text(
-                    resources,
+                VfxSystem::vfx_show_parent_text(
+                    node,
                     &text,
                     color,
                     outline_color,
                     entity,
                     1,
-                    delay_per_charge * cnt as f32,
-                ));
-                cnt += 1;
+                    resources,
+                );
             }
         }
         if before <= 0 && after > 0 {

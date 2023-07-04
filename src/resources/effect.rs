@@ -267,15 +267,15 @@ impl EffectWrapped {
                     .max(0);
                 let text = format!("-{}", value);
                 if let Some(node) = node.as_mut() {
-                    node.add_effect(VfxSystem::vfx_show_parent_text(
-                        resources,
+                    VfxSystem::vfx_show_parent_text(
+                        node,
                         &text,
                         resources.options.colors.damage,
                         resources.options.colors.subtract,
                         target,
                         1,
-                        0.0,
-                    ));
+                        resources,
+                    );
                 }
                 if value > 0 {
                     UnitSystem::deal_damage(owner, target, value as usize, world);
@@ -350,15 +350,15 @@ impl EffectWrapped {
                     let color = context
                         .get_color(&VarName::Color, world)
                         .expect(&format!("Color not found {context}"));
-                    node.add_effect(VfxSystem::vfx_show_parent_text(
-                        resources,
+                    VfxSystem::vfx_show_parent_text(
+                        node,
                         &text,
                         resources.options.colors.healing,
                         color,
                         target,
                         1,
-                        0.0,
-                    ));
+                        resources,
+                    );
                 }
             }
             Effect::Repeat { count, effect } => {
@@ -517,15 +517,15 @@ impl EffectWrapped {
 
                 if let Some(node) = node.as_mut() {
                     let text = format!("+{ability}/{var}");
-                    node.add_effect(VfxSystem::vfx_show_parent_text(
-                        resources,
+                    VfxSystem::vfx_show_parent_text(
+                        node,
                         &text,
                         resources.options.colors.text,
                         AbilityPool::get_house_origin(resources, &ability).get_color(&resources),
                         context.owner().unwrap(),
                         1,
-                        0.0,
-                    ));
+                        resources,
+                    );
                 }
             }
             Effect::If {
@@ -560,33 +560,33 @@ impl EffectWrapped {
                             })
                     });
 
-                    let mut effect = None;
+                    let mut added = false;
                     if let Some(entity) = entity {
                         let entity = entity.calculate(&context, world, resources)?;
                         if UnitSystem::get_corpse(entity, world).is_none() {
-                            effect = Some(VfxSystem::vfx_show_parent_text(
-                                resources,
+                            added = true;
+                            VfxSystem::vfx_show_parent_text(
+                                node,
                                 &text,
                                 Rgba::WHITE,
                                 color,
                                 entity,
                                 *font,
-                                0.0,
-                            ));
+                                resources,
+                            );
                         }
                     }
-                    if effect.is_none() {
-                        effect = Some(VfxSystem::vfx_show_text(
-                            resources,
+                    if !added {
+                        VfxSystem::vfx_show_text(
+                            node,
                             &text,
                             Rgba::WHITE,
                             color,
                             context.get_vec2(&VarName::Position, world).unwrap(),
                             *font,
-                            0.0,
-                        ));
+                            resources,
+                        );
                     }
-                    node.add_effect(effect.unwrap());
                 }
             }
             Effect::ShowCurve { color } => {

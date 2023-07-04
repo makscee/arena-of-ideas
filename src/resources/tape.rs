@@ -65,7 +65,9 @@ impl Tape {
         let mut extra_shaders: Vec<Shader> = default();
         for effect in node.all_effects() {
             let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
-            extra_shaders.extend(effect.animation.generate_shaders(t, &entity_shaders));
+            if t > 0.0 {
+                extra_shaders.extend(effect.animation.generate_shaders(t, &entity_shaders));
+            }
         }
         entity_shaders
             .into_values()
@@ -171,7 +173,7 @@ impl NodeCluster {
         }
     }
 
-    /// ts: [0.0 -> duration]
+    /// ts: 0.0 -> duration
     pub fn generate_node(&self, ts: Time) -> Node {
         let mut result: Node = default();
         let mut cur_ts = 0.0;
@@ -281,9 +283,7 @@ impl Node {
     }
 
     pub fn add_effects_by_key(&mut self, key: String, effects: Vec<TimedEffect>) {
-        let mut key_effects = self.key_effects.remove(&key).unwrap_or_default();
-        key_effects.extend(effects);
-        self.key_effects.insert(key, key_effects);
+        self.key_effects.entry(key).or_default().extend(effects)
     }
 
     pub fn add_effect(&mut self, effect: TimedEffect) {
@@ -317,7 +317,17 @@ impl Node {
             }));
         for (key, effects) in other.key_effects.iter() {
             if force || !self.key_effects.contains_key(key) {
-                self.key_effects.insert(key.clone(), effects.clone());
+                self.key_effects.insert(
+                    key.clone(),
+                    effects
+                        .iter()
+                        .cloned()
+                        .map(|mut x| {
+                            x.delay += add_delay;
+                            x
+                        })
+                        .collect_vec(),
+                );
             }
         }
         self
@@ -337,6 +347,13 @@ impl Node {
                 .iter()
                 .map(|(entity, shader)| (*entity, shader.clone())),
         )
+    }
+
+    pub fn key_effects_count(&self, key: &str) -> usize {
+        match self.key_effects.get(key) {
+            Some(v) => v.len(),
+            None => 0,
+        }
     }
 
     pub fn all_effects(&self) -> impl Iterator<Item = &TimedEffect> {
@@ -361,8 +378,8 @@ impl Node {
             .chain(self.key_effects.values_mut().flatten())
         {
             effect.delay *= mul;
-            if let Some(mut duration) = effect.duration {
-                duration *= mul;
+            if let Some(duration) = effect.duration.as_mut() {
+                *duration *= mul;
             }
         }
         self.duration = Some(duration);

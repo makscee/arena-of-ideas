@@ -54,7 +54,7 @@ Build
         score {cm:2023-07-04T13:12:55}
     Core loop: spend g on statuses & heroes -> battle & get g -> sacrifice 1+ & get g -> restart @gameplay {start:2023-06-23T18:36:22} {cm:2023-06-26T15:27:58} {duration:2d_20h51m}
     No sacrifice for single hero team @gameplay {cm:2023-06-26T15:27:47}
-    Chain all actions @visual
+    Chain all actions @visual {cm:2023-07-04T21:08:01}
     Max rank 3 @gameplay {cm:2023-06-26T15:27:50}
     Rank up every 10 rounds {cm:2023-07-02T13:32:52}
     Rework enemy generation {start:2023-07-01T15:15:46}

@@ -256,7 +256,7 @@ impl BattleSystem {
             if let Some(tape) = tape {
                 tape.push({
                     let mut cluster = cluster.unwrap();
-                    cluster.set_duration(1.0);
+                    // cluster.set_duration(1.0);
                     cluster
                 });
                 cluster = Some(NodeCluster::default());
