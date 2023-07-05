@@ -17,19 +17,35 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Archon Marksman",
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "Avenger",
                     "attack": 1,
                     "health": 1,
-                    "description": "Before Strike:\nShoot +1",
+                    "description": "Ally Died:\nShoot +1",
                     "house": "Hunters",
                     "trigger": {
-                        "type": "BeforeStrike",
+                        "type": "AnyDeath",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Shoot",
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "If",
+                            "condition": {
+                                "type": "EqualsFaction",
+                                "a": {
+                                    "type": "Owner"
+                                },
+                                "b": {
+                                    "type": "Target"
+                                }
+                            },
+                            "then": {
+                                "type": "UseAbility",
+                                "ability": "Shoot",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
                             }
                         }
                     },
@@ -51,7 +67,7 @@
                                     0.0
                                 ],
                                 "u_g_alphas": [
-                                    0.0,
+                                    1.0,
                                     0.0,
                                     1.0,
                                     0.0
@@ -62,11 +78,11 @@
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#080404",
                                 "mapping": {
-                                    "u_g_color_3": {
+                                    "u_g_color_1": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
                                     },
-                                    "u_g_color_4": {
+                                    "u_g_color_2": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
                                     },

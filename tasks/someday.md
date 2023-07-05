@@ -86,7 +86,7 @@ First Build @content
             Dark Sigil - After Kill: apply [Mark](3) to next enemy {cm:2023-07-05T21:39:50}
         [Shoot]
             Archon Marksman - Before Strike: [Shoot] {cm:2023-07-05T21:44:06}
-            Avenger - Ally Died: [Shoot]
+            Avenger - Ally Died: [Shoot] {cm:2023-07-05T21:46:26}
             Last Arrow - Last ally Died: [Shoot](3)
             Sharpshooter - Battle Start: [Shoot](2)
         [MagicMissile]
