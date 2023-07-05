@@ -71,12 +71,12 @@ First Build @content
             Reflective Guardian - [Shield] reflects damage back to attacker {cm:2023-07-04T15:47:21}
             Shieldbearer - Battle Start: give [Shield] to adjacent allies {cm:2023-07-04T16:02:07}
             Shield Slinger - After Kill: gain [Shield] {cm:2023-07-04T16:07:06}
-        [Rebirth]
+        [Rebirth] {cm:2023-07-05T15:18:50}
             Solar Druid - Battle Start: gain [Rebirth] {cm:2023-07-05T15:00:33}
             Soulclaimer - After Kill: gain [Rebirth] {cm:2023-07-05T15:09:21}
             Ritualist - Battle Start: give [Rebirth] to first ally {cm:2023-07-05T15:18:38}
         [Thorns]
-            Bramble Knight - Battle Start: apply [Thorns] to right ally
+            Bramble Knight - Battle Start: apply [Thorns] to adjacent allies {cm:2023-07-05T15:33:33}
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy
             Thorned Protector - [Thorns] deal 1 more DMG per charge
             Thornwreath - Ally Died: give [Thorns] to all allies

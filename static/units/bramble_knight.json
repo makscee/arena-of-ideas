@@ -1,0 +1,161 @@
+{
+    "name": "Bramble Knight",
+    "attack": 1,
+    "health": 2,
+    "description": "Battle Start:\napply Thorns +1\nto adjacent allies",
+    "house": "Druids",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "List",
+            "items": [
+                {
+                    "type": "UseAbility",
+                    "ability": "Thorns",
+                    "target": {
+                        "type": "SlotRelative",
+                        "relation": {
+                            "type": "Const",
+                            "value": -1
+                        }
+                    },
+                    "charges": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                },
+                {
+                    "type": "UseAbility",
+                    "ability": "Thorns",
+                    "target": {
+                        "type": "SlotRelative",
+                        "relation": {
+                            "type": "Const",
+                            "value": 1
+                        }
+                    },
+                    "charges": {
+                        "type": "Const",
+                        "value": 1
+                    }
+                }
+            ]
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/rectangle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.2,
+                    0.2
+                ]
+            },
+            "uniforms": {
+                "u_alpha": 0.8,
+                "u_normal_scaling": 1.0,
+                "u_i_angle_offset": [
+                    3.0,
+                    0.0,
+                    0.0,
+                    0.11
+                ],
+                "u_g_points": [
+                    -1.5,
+                    -0.2,
+                    -0.2,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0
+                ],
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#080404",
+                "mapping": {
+                    "u_g_color_3": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_4": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_fbm_sdf": {
+                        "type": "Mul",
+                        "a": {
+                            "type": "Sin",
+                            "x": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "GlobalTime"
+                                },
+                                "b": {
+                                    "type": "Float",
+                                    "value": 0.5
+                                }
+                            }
+                        },
+                        "b": {
+                            "type": "Float",
+                            "value": 0.4
+                        }
+                    },
+                    "u_i_angle_offset": {
+                        "type": "Vec4",
+                        "x": {
+                            "type": "Float",
+                            "value": 4.0
+                        },
+                        "y": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "GlobalTime"
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": 0.1
+                            }
+                        },
+                        "z": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Sin",
+                                    "x": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "GlobalTime"
+                                        },
+                                        "b": {
+                                            "type": "Float",
+                                            "value": 0.7
+                                        }
+                                    }
+                                },
+                                "b": {
+                                    "type": "Float",
+                                    "value": 0.05
+                                }
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": -0.03
+                            }
+                        },
+                        "w": {
+                            "type": "Float",
+                            "value": 0.55
+                        }
+                    }
+                }
+            },
+            "instances": 30
+        }
+    }
+}

@@ -21,43 +21,61 @@
                     "health": 1
                 },
                 {
-                    "name": "Ritualist",
+                    "name": "Bramble Knight",
                     "attack": 1,
                     "health": 2,
-                    "description": "Battle Start:\ngive Rebirth +1\nto first ally",
+                    "description": "Battle Start:\napply Thorns +1\nto adjacent allies",
                     "house": "Druids",
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Rebirth",
-                            "target": {
-                                "type": "FindUnit",
-                                "slot": {
-                                    "type": "Const",
-                                    "value": 1
+                            "type": "List",
+                            "items": [
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Thorns",
+                                    "target": {
+                                        "type": "SlotRelative",
+                                        "relation": {
+                                            "type": "Const",
+                                            "value": -1
+                                        }
+                                    },
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
                                 },
-                                "faction": {
-                                    "type": "Owner"
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Thorns",
+                                    "target": {
+                                        "type": "SlotRelative",
+                                        "relation": {
+                                            "type": "Const",
+                                            "value": 1
+                                        }
+                                    },
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
                                 }
-                            },
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
-                            }
+                            ]
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/circle.glsl",
+                        "path": "shaders/vfx/rectangle.glsl",
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.1,
-                                    0.1
+                                    0.2,
+                                    0.2
                                 ]
                             },
                             "uniforms": {
                                 "u_alpha": 0.8,
+                                "u_normal_scaling": 1.0,
                                 "u_i_angle_offset": [
                                     3.0,
                                     0.0,
@@ -65,25 +83,55 @@
                                     0.11
                                 ],
                                 "u_g_points": [
-                                    -1.0,
+                                    -1.5,
                                     -0.2,
-                                    0.0,
+                                    -0.2,
                                     0.0
+                                ],
+                                "u_g_alphas": [
+                                    0.0,
+                                    0.0,
+                                    1.0,
+                                    1.0
                                 ],
                                 "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#080404",
                                 "mapping": {
-                                    "u_g_color_2": {
+                                    "u_g_color_3": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
+                                    },
+                                    "u_g_color_4": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_fbm_sdf": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "Sin",
+                                            "x": {
+                                                "type": "Mul",
+                                                "a": {
+                                                    "type": "GlobalTime"
+                                                },
+                                                "b": {
+                                                    "type": "Float",
+                                                    "value": 0.5
+                                                }
+                                            }
+                                        },
+                                        "b": {
+                                            "type": "Float",
+                                            "value": 0.4
+                                        }
                                     },
                                     "u_i_angle_offset": {
                                         "type": "Vec4",
                                         "x": {
                                             "type": "Float",
-                                            "value": 9.0
+                                            "value": 4.0
                                         },
                                         "y": {
                                             "type": "Mul",
@@ -92,7 +140,7 @@
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": 0.03
+                                                "value": 0.1
                                             }
                                         },
                                         "z": {
@@ -129,7 +177,7 @@
                                     }
                                 }
                             },
-                            "instances": 90
+                            "instances": 30
                         }
                     }
                 },
