@@ -17,51 +17,28 @@
             "replications": 1,
             "units": [
                 {
-                    "attack": 1,
-                    "health": 1
-                },
-                {
-                    "name": "Bramble Knight",
-                    "attack": 1,
-                    "health": 2,
-                    "description": "Battle Start:\napply Thorns +1\nto adjacent allies",
+                    "name": "Thornwall Sentinel",
+                    "attack": 0,
+                    "health": 4,
+                    "description": "Battle Start:\ngain Thorns +1\nfor each enemy",
                     "house": "Druids",
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "List",
-                            "items": [
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Thorns",
-                                    "target": {
-                                        "type": "SlotRelative",
-                                        "relation": {
-                                            "type": "Const",
-                                            "value": -1
-                                        }
-                                    },
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
-                                },
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Thorns",
-                                    "target": {
-                                        "type": "SlotRelative",
-                                        "relation": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    },
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
+                            "type": "UseAbility",
+                            "ability": "Thorns",
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "charges": {
+                                "type": "Faction",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
                                     }
                                 }
-                            ]
+                            }
                         }
                     },
                     "shader": {
@@ -69,8 +46,8 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.2,
-                                    0.2
+                                    0.1,
+                                    0.1
                                 ]
                             },
                             "uniforms": {
@@ -107,26 +84,6 @@
                                         "type": "Uniform",
                                         "key": "u_house_color"
                                     },
-                                    "u_fbm_sdf": {
-                                        "type": "Mul",
-                                        "a": {
-                                            "type": "Sin",
-                                            "x": {
-                                                "type": "Mul",
-                                                "a": {
-                                                    "type": "GlobalTime"
-                                                },
-                                                "b": {
-                                                    "type": "Float",
-                                                    "value": 0.5
-                                                }
-                                            }
-                                        },
-                                        "b": {
-                                            "type": "Float",
-                                            "value": 0.4
-                                        }
-                                    },
                                     "u_i_angle_offset": {
                                         "type": "Vec4",
                                         "x": {
@@ -162,22 +119,22 @@
                                                 },
                                                 "b": {
                                                     "type": "Float",
-                                                    "value": 0.05
+                                                    "value": 0.03
                                                 }
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": -0.03
+                                                "value": -0.05
                                             }
                                         },
                                         "w": {
                                             "type": "Float",
-                                            "value": 0.55
+                                            "value": 0.03
                                         }
                                     }
                                 }
                             },
-                            "instances": 30
+                            "instances": 200
                         }
                     }
                 },

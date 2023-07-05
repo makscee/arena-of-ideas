@@ -77,7 +77,7 @@ First Build @content
             Ritualist - Battle Start: give [Rebirth] to first ally {cm:2023-07-05T15:18:38}
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to adjacent allies {cm:2023-07-05T15:33:33}
-            Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy
+            Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy {cm:2023-07-05T15:42:17}
             Thorned Protector - [Thorns] deal 1 more DMG per charge
             Thornwreath - Ally Died: give [Thorns] to all allies
         [Marked]

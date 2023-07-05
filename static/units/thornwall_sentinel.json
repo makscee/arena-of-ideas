@@ -1,0 +1,122 @@
+{
+    "name": "Thornwall Sentinel",
+    "attack": 0,
+    "health": 4,
+    "description": "Battle Start:\ngain Thorns +1\nfor each enemy",
+    "house": "Druids",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Thorns",
+            "target": {
+                "type": "Owner"
+            },
+            "charges": {
+                "type": "Faction",
+                "faction": {
+                    "type": "Opposite",
+                    "faction": {
+                        "type": "Owner"
+                    }
+                }
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/rectangle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.1,
+                    0.1
+                ]
+            },
+            "uniforms": {
+                "u_alpha": 0.8,
+                "u_normal_scaling": 1.0,
+                "u_i_angle_offset": [
+                    3.0,
+                    0.0,
+                    0.0,
+                    0.11
+                ],
+                "u_g_points": [
+                    -1.5,
+                    -0.2,
+                    -0.2,
+                    0.0
+                ],
+                "u_g_alphas": [
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0
+                ],
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#080404",
+                "mapping": {
+                    "u_g_color_3": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_4": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_i_angle_offset": {
+                        "type": "Vec4",
+                        "x": {
+                            "type": "Float",
+                            "value": 4.0
+                        },
+                        "y": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "GlobalTime"
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": 0.1
+                            }
+                        },
+                        "z": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Sin",
+                                    "x": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "GlobalTime"
+                                        },
+                                        "b": {
+                                            "type": "Float",
+                                            "value": 0.7
+                                        }
+                                    }
+                                },
+                                "b": {
+                                    "type": "Float",
+                                    "value": 0.03
+                                }
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": -0.05
+                            }
+                        },
+                        "w": {
+                            "type": "Float",
+                            "value": 0.03
+                        }
+                    }
+                }
+            },
+            "instances": 200
+        }
+    }
+}
