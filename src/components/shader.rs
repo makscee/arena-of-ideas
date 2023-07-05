@@ -72,19 +72,12 @@ impl Shader {
         self.parameters.uniforms.insert_ref(key, value);
         self
     }
-    pub fn insert_uniform_local_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
-        self.parameters.uniforms.insert_local_ref(key, value);
-        self
-    }
 
     pub fn insert_color(self, key: String, value: Rgba<f32>) -> Self {
         self.insert_uniform(key, ShaderUniform::Color(value))
     }
     pub fn insert_color_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
         self.insert_uniform_ref(key, ShaderUniform::Color(value))
-    }
-    pub fn insert_color_local_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
-        self.insert_uniform_local_ref(key, ShaderUniform::Color(value))
     }
 
     pub fn insert_int(self, key: String, value: i32) -> Self {
@@ -131,8 +124,13 @@ impl Shader {
         self.parameters.uniforms.try_get_string(key).unwrap()
     }
 
-    pub fn add_mapping(mut self, from: &str, to: &str) -> Self {
-        self.parameters.uniforms.add_mapping(from, to);
+    pub fn map_key_to_key(mut self, from: &str, to: &str) -> Self {
+        self.parameters.uniforms.map_key_to_key(from, to);
+        self
+    }
+
+    pub fn add_mapping(&mut self, key: &str, expr: ExpressionUniform) -> &mut Self {
+        self.parameters.uniforms.add_mapping(key, expr);
         self
     }
 
@@ -326,9 +324,6 @@ impl ugli::Uniforms for ShaderParameters {
     {
         for (name, value) in self.uniforms.iter() {
             visitor.visit(name, &value);
-        }
-        for (name, value) in self.uniforms.iter_local() {
-            visitor.visit(name, value);
         }
     }
 }

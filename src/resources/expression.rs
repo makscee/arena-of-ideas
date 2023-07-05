@@ -361,6 +361,9 @@ pub enum ExpressionUniform {
     Sin {
         x: Box<ExpressionUniform>,
     },
+    OptionColor {
+        key: String,
+    },
 }
 
 impl ExpressionUniform {
@@ -369,6 +372,7 @@ impl ExpressionUniform {
             ExpressionUniform::Uniform { key } => uniforms.get(key).context(format!(
                 "Failed to get Uniform expression for key {key} {uniforms:?}"
             )),
+            ExpressionUniform::OptionColor { key } => Ok(ShaderUniform::Color(options_color(key))),
             ExpressionUniform::Sum { a, b } => {
                 Ok(a.calculate(uniforms)?.sum(&b.calculate(uniforms)?))
             }

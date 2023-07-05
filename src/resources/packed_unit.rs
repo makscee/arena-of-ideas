@@ -165,9 +165,9 @@ impl PackedUnit {
                 ShaderUniform::Color(options.colors.stat_hp),
             )
             .insert_string("u_text".to_owned(), self.health.to_string(), 1)
-            .add_mapping("u_text", "u_hp_str")
-            .add_mapping("u_text_extra_size", "u_damage_taken")
-            .add_mapping("u_text_color", "u_hp_color");
+            .map_key_to_key("u_text", "u_hp_str")
+            .map_key_to_key("u_text_extra_size", "u_damage_taken")
+            .map_key_to_key("u_text_color", "u_hp_color");
         shader.chain_after.push(hp_shader);
 
         let attack_shader = options
@@ -179,8 +179,8 @@ impl PackedUnit {
                 ShaderUniform::Color(options.colors.stat_atk),
             )
             .insert_string("u_text".to_owned(), self.attack.to_string(), 1)
-            .add_mapping("u_text", "u_attack_str")
-            .add_mapping("u_text_color", "u_attack_color");
+            .map_key_to_key("u_text", "u_attack_str")
+            .map_key_to_key("u_text_color", "u_attack_color");
         shader.chain_after.push(attack_shader);
         shader
             .chain_after

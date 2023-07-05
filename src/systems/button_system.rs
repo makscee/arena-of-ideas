@@ -61,21 +61,30 @@ impl ButtonSystem {
         if shader.is_active() {
             if let Some(pressed) = shader.parameters.uniforms.try_get_float("u_pressed") {
                 if pressed == 1.0 {
-                    shader.insert_color_local_ref(
-                        "u_color".to_owned(),
-                        resources.options.colors.pressed,
+                    shader.add_mapping(
+                        "u_color",
+                        ExpressionUniform::OptionColor {
+                            key: "pressed".to_owned(),
+                        },
                     );
                 }
             } else if let Some(hovered) = shader.parameters.uniforms.try_get_float("u_hovered") {
                 if hovered == 1.0 {
-                    shader.insert_color_local_ref(
-                        "u_color".to_owned(),
-                        resources.options.colors.hovered,
+                    shader.add_mapping(
+                        "u_color",
+                        ExpressionUniform::OptionColor {
+                            key: "hovered".to_owned(),
+                        },
                     );
                 }
             }
         } else {
-            shader.insert_color_local_ref("u_color".to_owned(), resources.options.colors.inactive);
+            shader.add_mapping(
+                "u_color",
+                ExpressionUniform::OptionColor {
+                    key: "inactive".to_owned(),
+                },
+            );
         }
     }
 

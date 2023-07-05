@@ -242,10 +242,10 @@ impl SlotSystem {
         );
 
         if let Some(key) = enable_key {
-            button.parameters.uniforms.add_mapping("u_enabled", key);
+            button.parameters.uniforms.map_key_to_key("u_enabled", key);
         }
         if let Some(key) = activate_key {
-            button.parameters.uniforms.add_mapping("u_active", key);
+            button.parameters.uniforms.map_key_to_key("u_active", key);
         }
         shader.chain_after.push(button.insert_uniform(
             "u_offset".to_owned(),

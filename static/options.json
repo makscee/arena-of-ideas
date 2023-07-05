@@ -255,8 +255,8 @@
                                     "key": "u_title_text"
                                 },
                                 "u_outline_color": {
-                                    "type": "Uniform",
-                                    "key": "c_outline"
+                                    "type": "OptionColor",
+                                    "key": "outline"
                                 }
                             }
                         }
@@ -389,8 +389,8 @@
                     "u_color": "#6495ED",
                     "mapping": {
                         "u_color": {
-                            "type": "Uniform",
-                            "key": "c_button"
+                            "type": "OptionColor",
+                            "key": "button"
                         }
                     }
                 }
@@ -411,12 +411,12 @@
                             "u_outline_color": "#000000",
                             "mapping": {
                                 "u_color": {
-                                    "type": "Uniform",
-                                    "key": "c_text"
+                                    "type": "OptionColor",
+                                    "key": "text"
                                 },
                                 "u_outline_color": {
-                                    "type": "Uniform",
-                                    "key": "c_outline"
+                                    "type": "OptionColor",
+                                    "key": "outline"
                                 }
                             }
                         }
@@ -594,8 +594,8 @@
                                     "key": "u_text_extra_size"
                                 },
                                 "u_outline_color": {
-                                    "type": "Uniform",
-                                    "key": "c_outline"
+                                    "type": "OptionColor",
+                                    "key": "outline"
                                 }
                             }
                         }
@@ -704,8 +704,8 @@
                     "u_mid_border": 0.03,
                     "mapping": {
                         "u_outline_color": {
-                            "type": "Uniform",
-                            "key": "c_outline"
+                            "type": "OptionColor",
+                            "key": "outline"
                         }
                     }
                 }
@@ -724,8 +724,8 @@
                     "u_size": 0.7,
                     "mapping": {
                         "u_outline_color": {
-                            "type": "Uniform",
-                            "key": "c_outline"
+                            "type": "OptionColor",
+                            "key": "outline"
                         }
                     }
                 }
@@ -775,8 +775,8 @@
                             "key": "u_filled"
                         },
                         "u_outline_color": {
-                            "type": "Uniform",
-                            "key": "c_outline"
+                            "type": "OptionColor",
+                            "key": "outline"
                         }
                     }
                 }
@@ -835,16 +835,16 @@
                                     "key": "u_g_text"
                                 },
                                 "u_outline_color": {
-                                    "type": "Uniform",
-                                    "key": "c_shop"
+                                    "type": "OptionColor",
+                                    "key": "shop"
                                 },
                                 "u_mid_border_color": {
-                                    "type": "Uniform",
-                                    "key": "c_outline"
+                                    "type": "OptionColor",
+                                    "key": "outline"
                                 },
                                 "u_color": {
-                                    "type": "Uniform",
-                                    "key": "c_text"
+                                    "type": "OptionColor",
+                                    "key": "text"
                                 }
                             }
                         }
@@ -884,8 +884,8 @@
                     "u_color": "#6495ED",
                     "mapping": {
                         "u_color": {
-                            "type": "Uniform",
-                            "key": "c_button"
+                            "type": "OptionColor",
+                            "key": "button"
                         }
                     }
                 }
@@ -906,12 +906,12 @@
                             "u_outline_color": "#000000",
                             "mapping": {
                                 "u_color": {
-                                    "type": "Uniform",
-                                    "key": "c_text"
+                                    "type": "OptionColor",
+                                    "key": "text"
                                 },
                                 "u_outline_color": {
-                                    "type": "Uniform",
-                                    "key": "c_outline"
+                                    "type": "OptionColor",
+                                    "key": "outline"
                                 }
                             }
                         }
@@ -950,8 +950,8 @@
                     "u_color": "#6495ED",
                     "mapping": {
                         "u_color": {
-                            "type": "Uniform",
-                            "key": "c_button"
+                            "type": "OptionColor",
+                            "key": "button"
                         }
                     }
                 }
@@ -977,8 +977,8 @@
                                     "key": "u_text_color"
                                 },
                                 "u_outline_color": {
-                                    "type": "Uniform",
-                                    "key": "c_outline"
+                                    "type": "OptionColor",
+                                    "key": "outline"
                                 }
                             }
                         }

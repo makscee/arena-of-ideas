@@ -5,8 +5,6 @@ pub struct ShaderUniforms {
     #[serde(flatten)]
     data: HashMap<String, ShaderUniform>,
     #[serde(default)]
-    local: HashMap<String, ShaderUniform>,
-    #[serde(default)]
     mapping: HashMap<String, ExpressionUniform>,
 }
 
@@ -14,7 +12,6 @@ impl ShaderUniforms {
     pub fn single(key: &str, value: ShaderUniform) -> Self {
         Self {
             data: hashmap! {key.to_owned() => value},
-            local: default(),
             mapping: default(),
         }
     }
@@ -150,21 +147,7 @@ impl ShaderUniforms {
         self
     }
 
-    pub fn insert_local_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
-        self.local.insert(key.to_owned(), value);
-        self
-    }
-
-    pub fn insert_color_local_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
-        self.insert_local_ref(key, ShaderUniform::Color(value))
-    }
-
     pub fn get(&self, key: &str) -> Option<ShaderUniform> {
-        // let key = self.map(key);
-        if key.starts_with("c_") {
-            return Some(ShaderUniform::Color(options_color(key)));
-        }
-        // self.local.get(key).or(self.data.get(key)).cloned()
         let mut result = None;
         if let Some(mapping) = self.mapping.get(key) {
             result = mapping.calculate(self).ok();
@@ -215,15 +198,16 @@ impl ShaderUniforms {
             .map(|(key, value)| (key.clone(), value.clone()))
     }
 
-    pub fn iter_local<'a>(&'a self) -> impl Iterator<Item = (&String, &ShaderUniform)> + 'a {
-        self.local.iter()
-    }
-
-    pub fn add_mapping(&mut self, from: &str, to: &str) -> &mut Self {
+    pub fn map_key_to_key(&mut self, from: &str, to: &str) -> &mut Self {
         self.mapping.insert(
             from.to_string(),
             ExpressionUniform::Uniform { key: to.to_owned() },
         );
+        self
+    }
+
+    pub fn add_mapping(&mut self, key: &str, expr: ExpressionUniform) -> &mut Self {
+        self.mapping.insert(key.to_owned(), expr);
         self
     }
 
@@ -241,7 +225,6 @@ impl From<HashMap<&str, ShaderUniform>> for ShaderUniforms {
                     .into_iter()
                     .map(|(key, value)| (key.to_string(), value)),
             ),
-            local: default(),
             mapping: default(),
         }
     }
@@ -251,7 +234,6 @@ impl From<HashMap<String, ShaderUniform>> for ShaderUniforms {
     fn from(value: HashMap<String, ShaderUniform>) -> Self {
         Self {
             data: value,
-            local: default(),
             mapping: default(),
         }
     }

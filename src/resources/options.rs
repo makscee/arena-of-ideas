@@ -55,7 +55,7 @@ impl Options {
         for (key, value) in map {
             if let Some(value) = value.as_str() {
                 if let Ok(value) = Rgba::try_from(value) {
-                    colors.insert(format!("c_{key}"), value);
+                    colors.insert(key, value);
                 }
             }
         }

@@ -74,3 +74,4 @@ Fix battle choice panel {cm:2023-05-30T14:00:59}
 Uniform referencing options @shaders {start:2023-06-19T18:40:46} {cm:2023-06-19T20:53:44} {duration:02h12m}
 Gallery card-unit switch {cm:2023-07-01T14:25:50}
 Shader mapping animation @shader {start:2023-07-04T23:09:09} {cm:2023-07-05T02:15:38} {duration:03h06m}
+Uniform mapping into Options {start:2023-07-05T13:52:51} {cm:2023-07-05T14:04:59} {duration:12m}
