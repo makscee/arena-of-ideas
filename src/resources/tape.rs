@@ -316,19 +316,13 @@ impl Node {
                 x
             }));
         for (key, effects) in other.key_effects.iter() {
-            if force || !self.key_effects.contains_key(key) {
-                self.key_effects.insert(
-                    key.clone(),
-                    effects
-                        .iter()
-                        .cloned()
-                        .map(|mut x| {
-                            x.delay += add_delay;
-                            x
-                        })
-                        .collect_vec(),
-                );
-            }
+            self.key_effects
+                .entry(key.clone())
+                .or_default()
+                .extend(effects.iter().cloned().map(|mut x| {
+                    x.delay += add_delay;
+                    x
+                }));
         }
         self
     }
