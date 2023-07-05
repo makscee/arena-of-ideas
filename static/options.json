@@ -17,63 +17,33 @@
             "replications": 1,
             "units": [
                 {
+                    "name": "Marking Hand",
                     "attack": 1,
-                    "health": 1
-                },
-                {
-                    "name": "Thornwreath",
-                    "attack": 0,
                     "health": 2,
-                    "description": "Ally Died:\ngive Thorns +1\nto all allies",
-                    "house": "Druids",
+                    "description": "Before Strike\napply Marked +1",
+                    "house": "Hunters",
                     "trigger": {
-                        "type": "AnyDeath",
+                        "type": "BeforeStrike",
                         "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "EqualsFaction",
-                                "a": {
-                                    "type": "Owner"
-                                },
-                                "b": {
-                                    "type": "Target"
-                                }
-                            },
-                            "then": {
-                                "type": "Aoe",
-                                "factions": [
-                                    {
-                                        "type": "Owner"
-                                    }
-                                ],
-                                "effect": {
-                                    "type": "UseAbility",
-                                    "ability": "Thorns",
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
-                                }
+                            "type": "UseAbility",
+                            "ability": "Mark",
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
                             }
                         }
                     },
                     "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
+                        "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.2,
-                                    0.2
+                                    0.3,
+                                    0.3
                                 ]
                             },
                             "uniforms": {
                                 "u_normal_scaling": 1.0,
-                                "u_i_angle_offset": [
-                                    3.0,
-                                    0.0,
-                                    0.0,
-                                    0.11
-                                ],
                                 "u_g_points": [
                                     -1.5,
                                     -0.2,
@@ -84,7 +54,7 @@
                                     1.0,
                                     1.0,
                                     1.0,
-                                    1.0
+                                    0.0
                                 ],
                                 "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#ffffff",
@@ -102,31 +72,99 @@
                                     "u_i_angle_offset": {
                                         "type": "Vec4",
                                         "x": {
-                                            "type": "Float",
-                                            "value": 0.0
-                                        },
-                                        "y": {
-                                            "type": "Mul",
+                                            "type": "Sum",
                                             "a": {
-                                                "type": "GlobalTime"
+                                                "type": "Mul",
+                                                "a": {
+                                                    "type": "Float",
+                                                    "value": 0.5
+                                                },
+                                                "b": {
+                                                    "type": "Sin",
+                                                    "x": {
+                                                        "type": "Mul",
+                                                        "a": {
+                                                            "type": "GlobalTime"
+                                                        },
+                                                        "b": {
+                                                            "type": "Float",
+                                                            "value": 0.4
+                                                        }
+                                                    }
+                                                }
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": 0.2
+                                                "value": 1.5
                                             }
+                                        },
+                                        "y": {
+                                            "type": "Float",
+                                            "value": 0.0
                                         },
                                         "z": {
                                             "type": "Float",
-                                            "value": 0.08
+                                            "value": 0.0
                                         },
                                         "w": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Float",
+                                                "value": 0.5
+                                            },
+                                            "b": {
+                                                "type": "Mul",
+                                                "a": {
+                                                    "type": "Sin",
+                                                    "x": {
+                                                        "type": "Mul",
+                                                        "a": {
+                                                            "type": "GlobalTime"
+                                                        },
+                                                        "b": {
+                                                            "type": "Float",
+                                                            "value": 0.63
+                                                        }
+                                                    }
+                                                },
+                                                "b": {
+                                                    "type": "Float",
+                                                    "value": 0.03
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "u_g_points": {
+                                        "type": "Vec4",
+                                        "x": {
                                             "type": "Float",
-                                            "value": 0.05
+                                            "value": -2.0
+                                        },
+                                        "y": {
+                                            "type": "Float",
+                                            "value": -0.2
+                                        },
+                                        "z": {
+                                            "type": "Float",
+                                            "value": -0.2
+                                        },
+                                        "w": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "Sin",
+                                                "x": {
+                                                    "type": "GlobalTime"
+                                                }
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": 0.1
+                                            }
                                         }
                                     }
                                 }
                             },
-                            "instances": 50
+                            "instances": 20
                         }
                     }
                 },

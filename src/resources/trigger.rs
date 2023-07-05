@@ -107,7 +107,7 @@ pub enum Trigger {
     ChangeVarInt {
         var: VarName,
         delta: ExpressionInt,
-    }, // Preferred for stat changes
+    },
     Noop,
     AnyDeath {
         effect: EffectWrapped,

@@ -81,7 +81,7 @@ First Build @content
             Thorned Protector - [Thorns] deal 1 more DMG per charge {cm:2023-07-05T15:50:11}
             Thornwreath - Ally Died: give [Thorns] to all allies {cm:2023-07-05T15:56:16}
         [Marked]
-            Marking Hand - Before Strike: apply [Marked]
+            Marking Hand - Before Strike: apply [Marked] {cm:2023-07-05T21:27:48}
             Sheriff - Battle Start: apply [Marked] to all enemies
             Dark Sigil - After Kill: apply [Marked](3) to next enemy
         [Shoot]

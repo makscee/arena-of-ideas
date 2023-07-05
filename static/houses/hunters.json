@@ -1,0 +1,50 @@
+{
+    "name": "Hunters",
+    "color": "#027200ff",
+    "abilities": {
+        "Mark": {
+            "description": "Add X\nto taken damage",
+            "effect": {
+                "type": "ChangeStatus",
+                "name": "Mark",
+                "charges": {
+                    "type": "Var",
+                    "var": "Charges"
+                },
+                "after": {
+                    "type": "ShowCurve"
+                }
+            },
+            "default_vars": {
+                "Charges": 1
+            }
+        }
+    },
+    "statuses": {
+        "Mark": {
+            "trigger": {
+                "type": "ModifyIncomingDamage",
+                "value": {
+                    "type": "Sum",
+                    "a": {
+                        "type": "Var",
+                        "var": "Damage"
+                    },
+                    "b": {
+                        "type": "Var",
+                        "var": "Charges"
+                    }
+                }
+            },
+            "shader": {
+                "path": "shaders/status/default_status.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_padding": 1.0
+                    }
+                },
+                "layer": "Unit"
+            }
+        }
+    }
+}
