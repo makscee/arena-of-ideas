@@ -165,11 +165,14 @@ impl ShaderUniforms {
             return Some(ShaderUniform::Color(options_color(key)));
         }
         // self.local.get(key).or(self.data.get(key)).cloned()
+        let mut result = None;
         if let Some(mapping) = self.mapping.get(key) {
-            Some(mapping.calculate(self))
-        } else {
-            self.data.get(key).cloned()
+            result = mapping.calculate(self).ok();
         }
+        if result.is_none() {
+            result = self.data.get(key).cloned()
+        }
+        result
     }
 
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {

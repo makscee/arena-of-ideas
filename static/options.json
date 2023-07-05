@@ -337,6 +337,10 @@
                 },
                 "uniforms": {
                     "u_color": "#ffffff",
+                    "u_text": [
+                        0,
+                        "no_text"
+                    ],
                     "mapping": {
                         "u_text": {
                             "type": "Uniform",

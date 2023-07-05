@@ -27,7 +27,7 @@ impl HeroPool {
     }
 
     pub fn rarity_by_name(name: &str, resources: &Resources) -> Rarity {
-        let ind = *resources.hero_pool.power.get(name).unwrap();
+        let ind = *resources.hero_pool.power.get(name).unwrap_or(&0);
         let perc = ind as f32 / resources.hero_pool.power.len() as f32;
         if perc > 0.9 {
             Rarity::Legendary

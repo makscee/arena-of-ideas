@@ -364,34 +364,38 @@ pub enum ExpressionUniform {
 }
 
 impl ExpressionUniform {
-    pub fn calculate(&self, uniforms: &ShaderUniforms) -> ShaderUniform {
+    pub fn calculate(&self, uniforms: &ShaderUniforms) -> Result<ShaderUniform> {
         match self {
-            ExpressionUniform::Uniform { key } => uniforms.get(key).expect(&format!(
+            ExpressionUniform::Uniform { key } => uniforms.get(key).context(format!(
                 "Failed to get Uniform expression for key {key} {uniforms:?}"
             )),
-            ExpressionUniform::Sum { a, b } => a.calculate(uniforms).sum(&b.calculate(uniforms)),
-            ExpressionUniform::Mul { a, b } => a.calculate(uniforms).mul(&b.calculate(uniforms)),
-            ExpressionUniform::Float { value } => ShaderUniform::Float(*value),
-            ExpressionUniform::Sin { x } => {
-                ShaderUniform::Float(x.calculate(uniforms).unpack_float().sin())
+            ExpressionUniform::Sum { a, b } => {
+                Ok(a.calculate(uniforms)?.sum(&b.calculate(uniforms)?))
             }
-            ExpressionUniform::GlobalTime => ShaderUniform::Float(global_time()),
-            ExpressionUniform::Vec2 { x, y } => ShaderUniform::Vec2(vec2(
-                x.calculate(uniforms).unpack_float(),
-                y.calculate(uniforms).unpack_float(),
+            ExpressionUniform::Mul { a, b } => {
+                Ok(a.calculate(uniforms)?.mul(&b.calculate(uniforms)?))
+            }
+            ExpressionUniform::Float { value } => Ok(ShaderUniform::Float(*value)),
+            ExpressionUniform::Sin { x } => Ok(ShaderUniform::Float(
+                x.calculate(uniforms)?.unpack_float().sin(),
             )),
-            ExpressionUniform::Vec4 { x, y, z, w } => ShaderUniform::Vec4(vec4(
-                x.calculate(uniforms).unpack_float(),
-                y.calculate(uniforms).unpack_float(),
-                z.calculate(uniforms).unpack_float(),
-                w.calculate(uniforms).unpack_float(),
-            )),
-            ExpressionUniform::Color { r, g, b, a } => ShaderUniform::Color(Rgba::new(
-                r.calculate(uniforms).unpack_float(),
-                g.calculate(uniforms).unpack_float(),
-                b.calculate(uniforms).unpack_float(),
-                a.calculate(uniforms).unpack_float(),
-            )),
+            ExpressionUniform::GlobalTime => Ok(ShaderUniform::Float(global_time())),
+            ExpressionUniform::Vec2 { x, y } => Ok(ShaderUniform::Vec2(vec2(
+                x.calculate(uniforms)?.unpack_float(),
+                y.calculate(uniforms)?.unpack_float(),
+            ))),
+            ExpressionUniform::Vec4 { x, y, z, w } => Ok(ShaderUniform::Vec4(vec4(
+                x.calculate(uniforms)?.unpack_float(),
+                y.calculate(uniforms)?.unpack_float(),
+                z.calculate(uniforms)?.unpack_float(),
+                w.calculate(uniforms)?.unpack_float(),
+            ))),
+            ExpressionUniform::Color { r, g, b, a } => Ok(ShaderUniform::Color(Rgba::new(
+                r.calculate(uniforms)?.unpack_float(),
+                g.calculate(uniforms)?.unpack_float(),
+                b.calculate(uniforms)?.unpack_float(),
+                a.calculate(uniforms)?.unpack_float(),
+            ))),
         }
     }
 }
