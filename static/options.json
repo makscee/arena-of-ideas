@@ -17,51 +17,19 @@
             "replications": 1,
             "units": [
                 {
-                    "attack": 1,
-                    "health": 1
-                },
-                {
-                    "name": "Last Arrow",
-                    "attack": 1,
+                    "name": "Sharpshooter",
+                    "attack": 2,
                     "health": 1,
-                    "description": "Last ally Died:\nShoot +3",
+                    "description": "Battle Start:\nShoot +2",
                     "house": "Hunters",
                     "trigger": {
-                        "type": "AnyDeath",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "And",
-                                "a": {
-                                    "type": "EqualsFaction",
-                                    "a": {
-                                        "type": "Owner"
-                                    },
-                                    "b": {
-                                        "type": "Target"
-                                    }
-                                },
-                                "b": {
-                                    "type": "Not",
-                                    "condition": {
-                                        "type": "SlotOccupied",
-                                        "slot": {
-                                            "type": "Const",
-                                            "value": 3
-                                        },
-                                        "faction": {
-                                            "type": "Owner"
-                                        }
-                                    }
-                                }
-                            },
-                            "then": {
-                                "type": "UseAbility",
-                                "ability": "Shoot",
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 3
-                                }
+                            "type": "UseAbility",
+                            "ability": "Shoot",
+                            "charges": {
+                                "type": "Const",
+                                "value": 2
                             }
                         }
                     },
@@ -84,7 +52,7 @@
                                 ],
                                 "u_g_alphas": [
                                     0.0,
-                                    0.2,
+                                    -0.2,
                                     1.0,
                                     0.0
                                 ],
@@ -115,41 +83,12 @@
                                     "u_i_angle_offset": {
                                         "type": "Vec4",
                                         "x": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Mul",
-                                                "a": {
-                                                    "type": "Float",
-                                                    "value": 0.5
-                                                },
-                                                "b": {
-                                                    "type": "Sin",
-                                                    "x": {
-                                                        "type": "Mul",
-                                                        "a": {
-                                                            "type": "GlobalTime"
-                                                        },
-                                                        "b": {
-                                                            "type": "Float",
-                                                            "value": 0.4
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 2.0
-                                            }
+                                            "type": "Float",
+                                            "value": 2.0
                                         },
                                         "y": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "GlobalTime"
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 0.2
-                                            }
+                                            "type": "Float",
+                                            "value": 0.0
                                         },
                                         "z": {
                                             "type": "Float",
@@ -162,7 +101,7 @@
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": 0.005
+                                                "value": 0.004
                                             }
                                         }
                                     },
@@ -196,7 +135,7 @@
                                     }
                                 }
                             },
-                            "instances": 60
+                            "instances": 25
                         }
                     }
                 },

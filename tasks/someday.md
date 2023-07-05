@@ -84,11 +84,11 @@ First Build @content
             Marking Hand - Before Strike: apply [Mark] {cm:2023-07-05T21:27:48}
             Sheriff - Battle Start: apply [Mark] to all enemies {cm:2023-07-05T21:31:02}
             Dark Sigil - After Kill: apply [Mark](3) to next enemy {cm:2023-07-05T21:39:50}
-        [Shoot]
+        [Shoot] {cm:2023-07-05T21:57:17}
             Archon Marksman - Before Strike: [Shoot] {cm:2023-07-05T21:44:06}
             Avenger - Ally Died: [Shoot] {cm:2023-07-05T21:46:26}
             Last Arrow - Last ally Died: [Shoot](3) {cm:2023-07-05T21:54:11}
-            Sharpshooter - Battle Start: [Shoot](2)
+            Sharpshooter - Battle Start: [Shoot](2) {cm:2023-07-05T21:57:15}
         [MagicMissile]
             Arcane Gunner - Battle Start: use [MagicMissile](4)
             Magic Vendetta - Ally Died: use [MagicMissile](2)
