@@ -21,22 +21,38 @@
                     "health": 1
                 },
                 {
-                    "name": "Avenger",
+                    "name": "Last Arrow",
                     "attack": 1,
                     "health": 1,
-                    "description": "Ally Died:\nShoot +1",
+                    "description": "Last ally Died:\nShoot +3",
                     "house": "Hunters",
                     "trigger": {
                         "type": "AnyDeath",
                         "effect": {
                             "type": "If",
                             "condition": {
-                                "type": "EqualsFaction",
+                                "type": "And",
                                 "a": {
-                                    "type": "Owner"
+                                    "type": "EqualsFaction",
+                                    "a": {
+                                        "type": "Owner"
+                                    },
+                                    "b": {
+                                        "type": "Target"
+                                    }
                                 },
                                 "b": {
-                                    "type": "Target"
+                                    "type": "Not",
+                                    "condition": {
+                                        "type": "SlotOccupied",
+                                        "slot": {
+                                            "type": "Const",
+                                            "value": 3
+                                        },
+                                        "faction": {
+                                            "type": "Owner"
+                                        }
+                                    }
                                 }
                             },
                             "then": {
@@ -44,7 +60,7 @@
                                 "ability": "Shoot",
                                 "charges": {
                                     "type": "Const",
-                                    "value": 1
+                                    "value": 3
                                 }
                             }
                         }
@@ -67,8 +83,8 @@
                                     0.0
                                 ],
                                 "u_g_alphas": [
-                                    1.0,
                                     0.0,
+                                    0.2,
                                     1.0,
                                     0.0
                                 ],
@@ -76,15 +92,25 @@
                                 "u_g_color_1": "#000000",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
-                                "u_g_color_4": "#080404",
+                                "u_g_color_4": "#000000",
                                 "mapping": {
-                                    "u_g_color_1": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
                                     "u_g_color_2": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
+                                    },
+                                    "u_g_color_3": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_rotation": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "GlobalTime"
+                                        },
+                                        "b": {
+                                            "type": "Float",
+                                            "value": 0.3
+                                        }
                                     },
                                     "u_i_angle_offset": {
                                         "type": "Vec4",
@@ -116,8 +142,14 @@
                                             }
                                         },
                                         "y": {
-                                            "type": "Float",
-                                            "value": 0.0
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "GlobalTime"
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": 0.2
+                                            }
                                         },
                                         "z": {
                                             "type": "Float",
@@ -164,7 +196,7 @@
                                     }
                                 }
                             },
-                            "instances": 20
+                            "instances": 60
                         }
                     }
                 },

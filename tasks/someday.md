@@ -87,7 +87,7 @@ First Build @content
         [Shoot]
             Archon Marksman - Before Strike: [Shoot] {cm:2023-07-05T21:44:06}
             Avenger - Ally Died: [Shoot] {cm:2023-07-05T21:46:26}
-            Last Arrow - Last ally Died: [Shoot](3)
+            Last Arrow - Last ally Died: [Shoot](3) {cm:2023-07-05T21:54:11}
             Sharpshooter - Battle Start: [Shoot](2)
         [MagicMissile]
             Arcane Gunner - Battle Start: use [MagicMissile](4)

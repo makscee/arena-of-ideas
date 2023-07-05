@@ -28,7 +28,7 @@ pub enum Condition {
     },
     SlotOccupied {
         slot: ExpressionInt,
-        faction: Faction,
+        faction: ExpressionFaction,
     },
     Same {
         a: ExpressionEntity,
@@ -96,7 +96,7 @@ impl Condition {
                     == 0),
                 Condition::SlotOccupied { slot, faction } => Ok(SlotSystem::find_unit_by_slot(
                     slot.calculate(context, world, resources)? as usize,
-                    faction,
+                    &faction.calculate(context, world, resources)?,
                     world,
                 )
                 .is_some()),
