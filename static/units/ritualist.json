@@ -1,0 +1,113 @@
+{
+    "name": "Ritualist",
+    "attack": 1,
+    "health": 2,
+    "description": "Battle Start:\ngive Rebirth +1\nto first ally",
+    "house": "Druids",
+    "trigger": {
+        "type": "BattleStart",
+        "effect": {
+            "type": "UseAbility",
+            "ability": "Rebirth",
+            "target": {
+                "type": "FindUnit",
+                "slot": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "faction": {
+                    "type": "Owner"
+                }
+            },
+            "charges": {
+                "type": "Const",
+                "value": 1
+            }
+        }
+    },
+    "shader": {
+        "path": "shaders/vfx/circle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.1,
+                    0.1
+                ]
+            },
+            "uniforms": {
+                "u_alpha": 0.8,
+                "u_i_angle_offset": [
+                    3.0,
+                    0.0,
+                    0.0,
+                    0.11
+                ],
+                "u_g_points": [
+                    -1.0,
+                    -0.2,
+                    0.0,
+                    0.0
+                ],
+                "u_g_color_1": "#ffffff",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#080404",
+                "mapping": {
+                    "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_i_angle_offset": {
+                        "type": "Vec4",
+                        "x": {
+                            "type": "Float",
+                            "value": 9.0
+                        },
+                        "y": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "GlobalTime"
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": 0.03
+                            }
+                        },
+                        "z": {
+                            "type": "Sum",
+                            "a": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Sin",
+                                    "x": {
+                                        "type": "Mul",
+                                        "a": {
+                                            "type": "GlobalTime"
+                                        },
+                                        "b": {
+                                            "type": "Float",
+                                            "value": 0.7
+                                        }
+                                    }
+                                },
+                                "b": {
+                                    "type": "Float",
+                                    "value": 0.05
+                                }
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": -0.03
+                            }
+                        },
+                        "w": {
+                            "type": "Float",
+                            "value": 0.55
+                        }
+                    }
+                }
+            },
+            "instances": 90
+        }
+    }
+}

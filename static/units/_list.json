@@ -1,4 +1,6 @@
 [
+    "units/ritualist.json",
+    "units/soulclaimer.json",
     "units/solar_druid.json",
     "units/shield_slinger.json",
     "units/shieldbearer.json",

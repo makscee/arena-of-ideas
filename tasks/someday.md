@@ -74,7 +74,7 @@ First Build @content
         [Rebirth]
             Solar Druid - Battle Start: gain [Rebirth] {cm:2023-07-05T15:00:33}
             Soulclaimer - After Kill: gain [Rebirth] {cm:2023-07-05T15:09:21}
-            Ritualist - Battle Start: give [Rebirth] to first ally
+            Ritualist - Battle Start: give [Rebirth] to first ally {cm:2023-07-05T15:18:38}
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to right ally
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy

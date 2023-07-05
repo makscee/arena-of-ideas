@@ -17,18 +17,29 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Soulclaimer",
-                    "attack": 3,
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "Ritualist",
+                    "attack": 1,
                     "health": 2,
-                    "description": "After Kill\ngain Rebirth +1",
+                    "description": "Battle Start:\ngive Rebirth +1\nto first ally",
                     "house": "Druids",
                     "trigger": {
-                        "type": "AfterKill",
+                        "type": "BattleStart",
                         "effect": {
                             "type": "UseAbility",
                             "ability": "Rebirth",
                             "target": {
-                                "type": "Owner"
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
+                                "faction": {
+                                    "type": "Owner"
+                                }
                             },
                             "charges": {
                                 "type": "Const",
@@ -41,8 +52,8 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.2,
-                                    0.2
+                                    0.1,
+                                    0.1
                                 ]
                             },
                             "uniforms": {
@@ -59,10 +70,10 @@
                                     0.0,
                                     0.0
                                 ],
-                                "u_g_color_1": "#000000",
+                                "u_g_color_1": "#ffffff",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
-                                "u_g_color_4": "#000000",
+                                "u_g_color_4": "#080404",
                                 "mapping": {
                                     "u_g_color_2": {
                                         "type": "Uniform",
@@ -72,56 +83,53 @@
                                         "type": "Vec4",
                                         "x": {
                                             "type": "Float",
-                                            "value": 0.5
+                                            "value": 9.0
                                         },
                                         "y": {
-                                            "type": "Float",
-                                            "value": 0.0
-                                        },
-                                        "z": {
                                             "type": "Mul",
                                             "a": {
-                                                "type": "Sin",
-                                                "x": {
-                                                    "type": "Mul",
-                                                    "a": {
-                                                        "type": "GlobalTime"
-                                                    },
-                                                    "b": {
-                                                        "type": "Float",
-                                                        "value": 0.3
-                                                    }
-                                                }
+                                                "type": "GlobalTime"
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": 0.1
+                                                "value": 0.03
                                             }
                                         },
-                                        "w": {
+                                        "z": {
                                             "type": "Sum",
                                             "a": {
-                                                "type": "Float",
-                                                "value": 0.71
-                                            },
-                                            "b": {
                                                 "type": "Mul",
                                                 "a": {
                                                     "type": "Sin",
                                                     "x": {
-                                                        "type": "GlobalTime"
+                                                        "type": "Mul",
+                                                        "a": {
+                                                            "type": "GlobalTime"
+                                                        },
+                                                        "b": {
+                                                            "type": "Float",
+                                                            "value": 0.7
+                                                        }
                                                     }
                                                 },
                                                 "b": {
                                                     "type": "Float",
-                                                    "value": 0.005
+                                                    "value": 0.05
                                                 }
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": -0.03
                                             }
+                                        },
+                                        "w": {
+                                            "type": "Float",
+                                            "value": 0.55
                                         }
                                     }
                                 }
                             },
-                            "instances": 50
+                            "instances": 90
                         }
                     }
                 },
