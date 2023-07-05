@@ -17,19 +17,30 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Marking Hand",
-                    "attack": 1,
-                    "health": 2,
-                    "description": "Before Strike\napply Marked +1",
+                    "name": "Sheriff",
+                    "attack": 3,
+                    "health": 4,
+                    "description": "Battle Start\napply Marked +1\nto all enemies",
                     "house": "Hunters",
                     "trigger": {
-                        "type": "BeforeStrike",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Mark",
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Mark",
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
                             }
                         }
                     },
@@ -52,12 +63,12 @@
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    1.0,
+                                    0.0,
                                     1.0,
                                     0.0
                                 ],
-                                "u_g_color_1": "#ffffff",
-                                "u_g_color_2": "#ffffff",
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#080404",
                                 "mapping": {
@@ -95,7 +106,7 @@
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": 1.5
+                                                "value": 2.0
                                             }
                                         },
                                         "y": {
@@ -110,7 +121,7 @@
                                             "type": "Sum",
                                             "a": {
                                                 "type": "Float",
-                                                "value": 0.5
+                                                "value": 0.75
                                             },
                                             "b": {
                                                 "type": "Mul",
@@ -129,7 +140,7 @@
                                                 },
                                                 "b": {
                                                     "type": "Float",
-                                                    "value": 0.03
+                                                    "value": 0.01
                                                 }
                                             }
                                         }
@@ -142,11 +153,11 @@
                                         },
                                         "y": {
                                             "type": "Float",
-                                            "value": -0.2
+                                            "value": -0.4
                                         },
                                         "z": {
                                             "type": "Float",
-                                            "value": -0.2
+                                            "value": -0.4
                                         },
                                         "w": {
                                             "type": "Mul",
@@ -164,7 +175,7 @@
                                     }
                                 }
                             },
-                            "instances": 20
+                            "instances": 50
                         }
                     }
                 },
