@@ -113,11 +113,13 @@ impl ActionSystem {
             }
         }
         for entity in corpses {
-            Event::UnitDeath {
-                target: entity,
-                killer: UnitSystem::get_corpse_killer(entity, world).unwrap(),
+            if let Ok(killer) = UnitSystem::get_corpse_killer(entity, world) {
+                Event::UnitDeath {
+                    target: entity,
+                    killer,
+                }
+                .send(world, resources);
             }
-            .send(world, resources);
         }
     }
 }

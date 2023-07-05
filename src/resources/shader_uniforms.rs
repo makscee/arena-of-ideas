@@ -158,6 +158,10 @@ impl ShaderUniforms {
         result
     }
 
+    pub fn get_from_data(&self, key: &str) -> Option<ShaderUniform> {
+        self.data.get(key).cloned()
+    }
+
     pub fn try_get_vec2(&self, key: &str) -> Option<vec2<f32>> {
         self.get(key).and_then(|v| match v {
             ShaderUniform::Vec2(v) => Some(v),

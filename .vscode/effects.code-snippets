@@ -302,5 +302,14 @@
 			"}"
 		],
 		"description": "Faction Owner"
+	},
+	"Target Owner": {
+		"prefix": "target_owner",
+		"body": [
+			"\"target\": {",
+			"    \"type\":\"Owner\"",
+			"},"
+		],
+		"description": "Target Owner"
 	}
 }

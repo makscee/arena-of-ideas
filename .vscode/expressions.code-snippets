@@ -97,5 +97,34 @@
             "}"
         ],
         "description": "Expression Entity Var"
+    },
+    "Expression Float": {
+        "prefix": "float_expression",
+        "body": [
+            "{",
+            "    \"type\": \"Float\",",
+            "    \"value\": ${1:0.0}",
+            "}"
+        ],
+        "description": "Expression Float"
+    },
+    "Expression Global Time": {
+        "prefix": "global_time_expression",
+        "body": [
+            "{",
+            "    \"type\": \"GlobalTime\"",
+            "}"
+        ],
+        "description": "Expression Global Time"
+    },
+    "Expression Sin": {
+        "prefix": "sin_expression",
+        "body": [
+            "{",
+            "    \"type\": \"Sin\",",
+            "    \"x\": $TM_SELECTED_TEXT$1",
+            "}"
+        ],
+        "description": "Expression Sin"
     }
 }

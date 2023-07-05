@@ -202,7 +202,7 @@ impl UnitSystem {
         ActionSystem::run_ticks(world, resources, cluster);
         if !UnitSystem::is_alive(entity, world, resources) {
             Self::turn_unit_into_corpse(entity, world, resources);
-            return true;
+            return UnitSystem::get_corpse(entity, world).is_some();
         }
         false
     }

@@ -95,7 +95,8 @@
                         "items": [
                             {
                                 "type": "ShowText",
-                                "text": "Rebirth"
+                                "text": "Rebirth",
+                                "font": 2
                             },
                             {
                                 "type": "Revive",

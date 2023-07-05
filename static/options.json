@@ -17,50 +17,23 @@
             "replications": 1,
             "units": [
                 {
-                    "attack": 1,
-                    "health": 15,
-                    "house": "Enemy",
+                    "name": "Solar Druid",
+                    "attack": 4,
+                    "health": 1,
+                    "description": "Battle Start:\ngain Rebirth +1",
+                    "house": "Druids",
                     "trigger": {
-                        "type": "BeforeStrike",
+                        "type": "BattleStart",
                         "effect": {
-                            "type": "List",
-                            "items": [
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Vitality",
-                                    "target": {
-                                        "type": "Owner"
-                                    },
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 3
-                                    }
-                                },
-                                {
-                                    "type": "Aoe",
-                                    "factions": [
-                                        {
-                                            "type": "Owner"
-                                        }
-                                    ],
-                                    "effect": {
-                                        "type": "UseAbility",
-                                        "ability": "Shield",
-                                        "charges": {
-                                            "type": "Const",
-                                            "value": 2
-                                        }
-                                    }
-                                },
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Shoot",
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    }
-                                }
-                            ]
+                            "type": "UseAbility",
+                            "ability": "Rebirth",
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
+                            }
                         }
                     },
                     "shader": {
@@ -68,61 +41,84 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.7,
-                                    0.7
+                                    0.2,
+                                    0.2
                                 ]
                             },
                             "uniforms": {
-                                "u_g_points": [
-                                    -2.0,
-                                    -0.3,
-                                    -0.3,
-                                    0.0
-                                ],
-                                "u_g_alphas": [
-                                    0.0,
-                                    0.0,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_warp_str": 0.02,
-                                "u_warp_size": 50.0,
-                                "u_warp_speed": 50.0,
-                                "u_alpha": 1.0,
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
-                                "u_g_color_4": "#000000",
+                                "u_alpha": 0.5,
                                 "u_i_angle_offset": [
-                                    0.5,
+                                    3.0,
                                     0.0,
                                     0.0,
-                                    0.25
+                                    0.11
                                 ],
+                                "u_g_points": [
+                                    -1.0,
+                                    -0.4,
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#ffffff",
+                                "u_g_color_4": "#000000",
                                 "mapping": {
-                                    "u_g_color_4": {
+                                    "u_g_color_2": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
                                     },
-                                    "u_alpha": {
-                                        "type": "Sin",
+                                    "u_i_angle_offset": {
+                                        "type": "Vec4",
                                         "x": {
-                                            "type": "GlobalTime"
+                                            "type": "Float",
+                                            "value": 0.5
+                                        },
+                                        "y": {
+                                            "type": "Float",
+                                            "value": 0.0
+                                        },
+                                        "z": {
+                                            "type": "Float",
+                                            "value": 0.04
+                                        },
+                                        "w": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Mul",
+                                                "a": {
+                                                    "type": "Sin",
+                                                    "x": {
+                                                        "type": "Mul",
+                                                        "a": {
+                                                            "type": "GlobalTime"
+                                                        },
+                                                        "b": {
+                                                            "type": "Float",
+                                                            "value": 0.1
+                                                        }
+                                                    }
+                                                },
+                                                "b": {
+                                                    "type": "Float",
+                                                    "value": 0.05
+                                                }
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": 0.25
+                                            }
                                         }
                                     }
                                 }
                             },
-                            "instances": 10
+                            "instances": 100
                         }
                     }
                 },
                 {
                     "attack": 1,
-                    "health": 9
-                },
-                {
-                    "attack": 1,
-                    "health": 30
+                    "health": 12
                 },
                 {
                     "attack": 1,
@@ -132,11 +128,11 @@
             ]
         },
         "dark": {
-            "replications": 2,
+            "replications": 3,
             "units": [
                 {
                     "attack": 1,
-                    "health": 2
+                    "health": 3
                 }
             ],
             "name": "Enemies"
