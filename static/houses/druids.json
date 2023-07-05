@@ -16,7 +16,8 @@
             },
             "description": "Deal X damage\nto attacker",
             "default_vars": {
-                "Charges": 1
+                "Charges": 1,
+                "AttackExtra": 0
             }
         },
         "Rebirth": {
@@ -57,8 +58,16 @@
                             "type": "Caster"
                         },
                         "value": {
-                            "type": "Var",
-                            "var": "Charges"
+                            "type": "Sum",
+                            "a": {
+                                "type": "Var",
+                                "var": "Charges"
+                            },
+                            "b": {
+                                "type": "AbilityVar",
+                                "ability": "Thorns",
+                                "var": "AttackExtra"
+                            }
                         },
                         "after": {
                             "type": "ShowCurve"

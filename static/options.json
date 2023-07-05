@@ -17,27 +17,20 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Thornwall Sentinel",
+                    "name": "Thorned Protector",
                     "attack": 0,
                     "health": 4,
-                    "description": "Battle Start:\ngain Thorns +1\nfor each enemy",
+                    "description": "Thorns deal\n+1 DMG per charge",
                     "house": "Druids",
                     "trigger": {
                         "type": "BattleStart",
                         "effect": {
-                            "type": "UseAbility",
+                            "type": "ChangeAbilityVarInt",
                             "ability": "Thorns",
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "charges": {
-                                "type": "Faction",
-                                "faction": {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
+                            "var": "AttackExtra",
+                            "delta": {
+                                "type": "Const",
+                                "value": 1
                             }
                         }
                     },
@@ -46,12 +39,11 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.1,
-                                    0.1
+                                    0.3,
+                                    0.2
                                 ]
                             },
                             "uniforms": {
-                                "u_alpha": 0.8,
                                 "u_normal_scaling": 1.0,
                                 "u_i_angle_offset": [
                                     3.0,
@@ -66,12 +58,12 @@
                                     0.0
                                 ],
                                 "u_g_alphas": [
-                                    0.0,
-                                    0.0,
+                                    1.0,
+                                    1.0,
                                     1.0,
                                     1.0
                                 ],
-                                "u_g_color_1": "#ffffff",
+                                "u_g_color_1": "#000000",
                                 "u_g_color_2": "#000000",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#080404",
@@ -88,7 +80,7 @@
                                         "type": "Vec4",
                                         "x": {
                                             "type": "Float",
-                                            "value": 4.0
+                                            "value": 2.5
                                         },
                                         "y": {
                                             "type": "Mul",
@@ -97,44 +89,21 @@
                                             },
                                             "b": {
                                                 "type": "Float",
-                                                "value": 0.1
+                                                "value": 0.2
                                             }
                                         },
                                         "z": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Mul",
-                                                "a": {
-                                                    "type": "Sin",
-                                                    "x": {
-                                                        "type": "Mul",
-                                                        "a": {
-                                                            "type": "GlobalTime"
-                                                        },
-                                                        "b": {
-                                                            "type": "Float",
-                                                            "value": 0.7
-                                                        }
-                                                    }
-                                                },
-                                                "b": {
-                                                    "type": "Float",
-                                                    "value": 0.03
-                                                }
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": -0.05
-                                            }
+                                            "type": "Float",
+                                            "value": 0.0
                                         },
                                         "w": {
                                             "type": "Float",
-                                            "value": 0.03
+                                            "value": 0.05
                                         }
                                     }
                                 }
                             },
-                            "instances": 200
+                            "instances": 30
                         }
                     }
                 },
