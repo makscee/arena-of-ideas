@@ -134,53 +134,6 @@
                 "Charges": 1
             }
         },
-        "Shoot": {
-            "description": "Deal attack damage\nto random enemy",
-            "effect": {
-                "type": "Repeat",
-                "effect": {
-                    "target": {
-                        "type": "RandomUnit",
-                        "faction": {
-                            "type": "Opposite",
-                            "faction": {
-                                "type": "Owner"
-                            }
-                        }
-                    },
-                    "type": "If",
-                    "condition": {
-                        "type": "Not",
-                        "condition": {
-                            "type": "IsCorpse",
-                            "entity": {
-                                "type": "Target"
-                            }
-                        }
-                    },
-                    "then": {
-                        "type": "Damage",
-                        "value": {
-                            "type": "Var",
-                            "var": "AttackValue"
-                        },
-                        "after": {
-                            "type": "ShowCurve"
-                        }
-                    },
-                    "else": {
-                        "type": "Noop"
-                    }
-                },
-                "count": {
-                    "type": "Var",
-                    "var": "Charges"
-                }
-            },
-            "default_vars": {
-                "Charges": 1
-            }
-        },
         "Empower": {
             "effect": {
                 "type": "ChangeStatus",

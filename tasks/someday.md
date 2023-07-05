@@ -80,12 +80,12 @@ First Build @content
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy {cm:2023-07-05T15:42:17}
             Thorned Protector - [Thorns] deal 1 more DMG per charge {cm:2023-07-05T15:50:11}
             Thornwreath - Ally Died: give [Thorns] to all allies {cm:2023-07-05T15:56:16}
-        [Mark]
+        [Mark] {cm:2023-07-05T21:44:08}
             Marking Hand - Before Strike: apply [Mark] {cm:2023-07-05T21:27:48}
             Sheriff - Battle Start: apply [Mark] to all enemies {cm:2023-07-05T21:31:02}
             Dark Sigil - After Kill: apply [Mark](3) to next enemy {cm:2023-07-05T21:39:50}
         [Shoot]
-            Archon Marksman - Before Strike: [Shoot]
+            Archon Marksman - Before Strike: [Shoot] {cm:2023-07-05T21:44:06}
             Avenger - Ally Died: [Shoot]
             Last Arrow - Last ally Died: [Shoot](3)
             Sharpshooter - Battle Start: [Shoot](2)
