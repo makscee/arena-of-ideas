@@ -2,7 +2,7 @@
     "name": "Marking Hand",
     "attack": 1,
     "health": 2,
-    "description": "Before Strike\napply Marked +1",
+    "description": "Before Strike\napply Mark +1",
     "house": "Hunters",
     "trigger": {
         "type": "BeforeStrike",

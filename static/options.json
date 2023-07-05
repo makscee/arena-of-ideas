@@ -17,30 +17,32 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Sheriff",
-                    "attack": 3,
-                    "health": 4,
-                    "description": "Battle Start\napply Marked +1\nto all enemies",
+                    "name": "Dark Sigil",
+                    "attack": 4,
+                    "health": 2,
+                    "description": "After Kill:\napply Mark +3\nto next enemy",
                     "house": "Hunters",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AfterKill",
                         "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
+                            "type": "UseAbility",
+                            "ability": "Mark",
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Const",
+                                    "value": 2
+                                },
+                                "faction": {
                                     "type": "Opposite",
                                     "faction": {
                                         "type": "Owner"
                                     }
                                 }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Mark",
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
+                            },
+                            "charges": {
+                                "type": "Const",
+                                "value": 3
                             }
                         }
                     },
@@ -72,11 +74,11 @@
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#080404",
                                 "mapping": {
-                                    "u_g_color_3": {
+                                    "u_g_color_1": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
                                     },
-                                    "u_g_color_4": {
+                                    "u_g_color_2": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
                                     },
@@ -118,30 +120,13 @@
                                             "value": 0.0
                                         },
                                         "w": {
-                                            "type": "Sum",
+                                            "type": "Mul",
                                             "a": {
-                                                "type": "Float",
-                                                "value": 0.75
+                                                "type": "GlobalTime"
                                             },
                                             "b": {
-                                                "type": "Mul",
-                                                "a": {
-                                                    "type": "Sin",
-                                                    "x": {
-                                                        "type": "Mul",
-                                                        "a": {
-                                                            "type": "GlobalTime"
-                                                        },
-                                                        "b": {
-                                                            "type": "Float",
-                                                            "value": 0.63
-                                                        }
-                                                    }
-                                                },
-                                                "b": {
-                                                    "type": "Float",
-                                                    "value": 0.01
-                                                }
+                                                "type": "Float",
+                                                "value": 0.005
                                             }
                                         }
                                     },
@@ -175,7 +160,7 @@
                                     }
                                 }
                             },
-                            "instances": 50
+                            "instances": 80
                         }
                     }
                 },

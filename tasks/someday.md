@@ -13,7 +13,7 @@ First Build @content
         [Rebirth] After Death, revive with X HP +Druids {cm:2023-07-01T15:45:11}
         [Volatility] Deal X damage to all enemies after death +Elementals {cm:2023-07-01T15:55:38}
         [Splash] Deal X damage to all enemies after Strike +Elementals {cm:2023-07-01T15:58:09}
-        [Marked] Taken damage increased by X +Hunters
+        [Mark] Taken damage increased by X +Hunters
         [Shoot] Deal ATK damage X times to random enemy +Hunters
         [MagicMissile] Deal X damage to random enemy +Wizards
     @heroes
@@ -80,10 +80,10 @@ First Build @content
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy {cm:2023-07-05T15:42:17}
             Thorned Protector - [Thorns] deal 1 more DMG per charge {cm:2023-07-05T15:50:11}
             Thornwreath - Ally Died: give [Thorns] to all allies {cm:2023-07-05T15:56:16}
-        [Marked]
-            Marking Hand - Before Strike: apply [Marked] {cm:2023-07-05T21:27:48}
-            Sheriff - Battle Start: apply [Marked] to all enemies {cm:2023-07-05T21:31:02}
-            Dark Sigil - After Kill: apply [Marked](3) to next enemy
+        [Mark]
+            Marking Hand - Before Strike: apply [Mark] {cm:2023-07-05T21:27:48}
+            Sheriff - Battle Start: apply [Mark] to all enemies {cm:2023-07-05T21:31:02}
+            Dark Sigil - After Kill: apply [Mark](3) to next enemy {cm:2023-07-05T21:39:50}
         [Shoot]
             Archon Marksman - Before Strike: [Shoot]
             Avenger - Ally Died: [Shoot]
