@@ -17,20 +17,43 @@
             "replications": 1,
             "units": [
                 {
-                    "name": "Thorned Protector",
+                    "attack": 1,
+                    "health": 1
+                },
+                {
+                    "name": "Thornwreath",
                     "attack": 0,
-                    "health": 4,
-                    "description": "Thorns deal\n+1 DMG per charge",
+                    "health": 2,
+                    "description": "Ally Died:\ngive Thorns +1\nto all allies",
                     "house": "Druids",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AnyDeath",
                         "effect": {
-                            "type": "ChangeAbilityVarInt",
-                            "ability": "Thorns",
-                            "var": "AttackExtra",
-                            "delta": {
-                                "type": "Const",
-                                "value": 1
+                            "type": "If",
+                            "condition": {
+                                "type": "EqualsFaction",
+                                "a": {
+                                    "type": "Owner"
+                                },
+                                "b": {
+                                    "type": "Target"
+                                }
+                            },
+                            "then": {
+                                "type": "Aoe",
+                                "factions": [
+                                    {
+                                        "type": "Owner"
+                                    }
+                                ],
+                                "effect": {
+                                    "type": "UseAbility",
+                                    "ability": "Thorns",
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    }
+                                }
                             }
                         }
                     },
@@ -39,7 +62,7 @@
                         "parameters": {
                             "box": {
                                 "size": [
-                                    0.3,
+                                    0.2,
                                     0.2
                                 ]
                             },
@@ -63,8 +86,8 @@
                                     1.0,
                                     1.0
                                 ],
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#ffffff",
                                 "u_g_color_3": "#000000",
                                 "u_g_color_4": "#080404",
                                 "mapping": {
@@ -80,7 +103,7 @@
                                         "type": "Vec4",
                                         "x": {
                                             "type": "Float",
-                                            "value": 2.5
+                                            "value": 0.0
                                         },
                                         "y": {
                                             "type": "Mul",
@@ -94,7 +117,7 @@
                                         },
                                         "z": {
                                             "type": "Float",
-                                            "value": 0.0
+                                            "value": 0.08
                                         },
                                         "w": {
                                             "type": "Float",
@@ -103,7 +126,7 @@
                                     }
                                 }
                             },
-                            "instances": 30
+                            "instances": 50
                         }
                     }
                 },

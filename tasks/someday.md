@@ -75,11 +75,11 @@ First Build @content
             Solar Druid - Battle Start: gain [Rebirth] {cm:2023-07-05T15:00:33}
             Soulclaimer - After Kill: gain [Rebirth] {cm:2023-07-05T15:09:21}
             Ritualist - Battle Start: give [Rebirth] to first ally {cm:2023-07-05T15:18:38}
-        [Thorns]
+        [Thorns] {cm:2023-07-05T15:56:19}
             Bramble Knight - Battle Start: apply [Thorns] to adjacent allies {cm:2023-07-05T15:33:33}
             Thornwall Sentinel - Battle Start: gain [Thorns] for each enemy {cm:2023-07-05T15:42:17}
             Thorned Protector - [Thorns] deal 1 more DMG per charge {cm:2023-07-05T15:50:11}
-            Thornwreath - Ally Died: give [Thorns] to all allies
+            Thornwreath - Ally Died: give [Thorns] to all allies {cm:2023-07-05T15:56:16}
         [Marked]
             Marking Hand - Before Strike: apply [Marked]
             Sheriff - Battle Start: apply [Marked] to all enemies

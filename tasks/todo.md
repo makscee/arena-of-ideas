@@ -3,6 +3,7 @@ Text shader constant scale, size depending on lines @ui
 Move u_scale into box
 Shader visitor instead of flattening
 Status get ability vars from caster instead of owner
+Fix damage text after strike
 Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
