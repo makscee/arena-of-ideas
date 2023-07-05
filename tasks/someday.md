@@ -73,7 +73,7 @@ First Build @content
             Shield Slinger - After Kill: gain [Shield] {cm:2023-07-04T16:07:06}
         [Rebirth]
             Solar Druid - Battle Start: gain [Rebirth] {cm:2023-07-05T15:00:33}
-            Soulclaimer - After Kill: gain [Rebirth]
+            Soulclaimer - After Kill: gain [Rebirth] {cm:2023-07-05T15:09:21}
             Ritualist - Battle Start: give [Rebirth] to first ally
         [Thorns]
             Bramble Knight - Battle Start: apply [Thorns] to right ally
