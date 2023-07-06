@@ -13,8 +13,8 @@ First Build @content
         [Rebirth] After Death, revive with X HP +Druids {cm:2023-07-01T15:45:11}
         [Volatility] Deal X damage to all enemies after death +Elementals {cm:2023-07-01T15:55:38}
         [Splash] Deal X damage to all enemies after Strike +Elementals {cm:2023-07-01T15:58:09}
-        [Mark] Taken damage increased by X +Hunters
-        [Shoot] Deal ATK damage X times to random enemy +Hunters
+        [Mark] Taken damage increased by X +Hunters {cm:2023-07-05T22:02:21}
+        [Shoot] Deal ATK damage X times to random enemy +Hunters {cm:2023-07-05T22:02:22}
         [MagicMissile] Deal X damage to random enemy +Wizards
     @heroes
         [Vitality] {cm:2023-06-29T13:54:33}

@@ -155,12 +155,21 @@ impl RatingSystem {
         )
     }
 
+    fn generate_team(size: usize, heroes: &Vec<PackedUnit>) -> PackedTeam {
+        let mut units: Vec<PackedUnit> = default();
+        for _ in 0..size {
+            let unit = heroes.choose(&mut thread_rng()).unwrap().clone();
+            units.push(unit);
+        }
+        PackedTeam::from_units(units)
+    }
+
     pub fn simulate_hero_ratings_calculation(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
 
         let heroes = HeroPool::all(&resources);
         let mut teams: Vec<PackedTeam> = default();
-        let mut team_ratings = Ratings::default();
+        let mut team_ratings;
 
         // fill teams with random max size teams
         // each team X random matches against other
@@ -168,20 +177,15 @@ impl RatingSystem {
         // sum end place of each hero
         // fill 2/3 with mutations
         // repeat
-        const TEAMS: usize = 30;
+        const TEAMS: usize = 80;
+        const TOP: usize = 5;
         const SIZE: usize = 5;
         const MATCHES: usize = 20;
-        for _ in 0..TEAMS * 3 {
-            let mut units: Vec<PackedUnit> = default();
-            for _ in 0..SIZE {
-                let unit = heroes.choose(&mut thread_rng()).unwrap().clone();
-                units.push(unit);
-            }
-            let team = PackedTeam::from_units(units);
-            teams.push(team);
+        for _ in 0..TEAMS {
+            teams.push(Self::generate_team(SIZE, &heroes));
         }
-        let mut heroes_rating: HashMap<String, (usize, usize)> = default();
-        let mut top_teams: HashSet<String> = default();
+        let mut top_heroes: HashMap<String, usize> =
+            HashMap::from_iter(heroes.iter().map(|x| (x.name.clone(), 0)));
         loop {
             team_ratings = default();
             Self::rate_teams(&teams, &mut team_ratings, MATCHES, world, resources);
@@ -191,48 +195,41 @@ impl RatingSystem {
                     .get_rating(&a.name)
                     .total_cmp(&team_ratings.get_rating(&b.name))
             });
-            top_teams.insert(teams[0].name.to_owned());
-            let old_teams = teams;
-            teams = default();
-            for (_, (score, _)) in heroes_rating.iter_mut() {
-                *score = 0;
-            }
-            for (i, team) in old_teams.into_iter().rev().enumerate() {
-                if i >= TEAMS {
-                    debug!("-{i} {}", team.name);
-                    continue;
-                }
-                for (i, unit) in team.units.iter().enumerate() {
-                    let (score, count) = heroes_rating.entry(unit.name.to_owned()).or_default();
-                    *score += TEAMS - i;
-                    *count += 1;
-                }
-                let mut t1 = team.clone();
-                Self::mutate(&mut t1, &heroes);
-                let mut t2 = team.clone();
-                Self::mutate(&mut t2, &heroes);
-                Self::mutate(&mut t2, &heroes);
-                teams.push(team);
-                teams.push(t1);
-                teams.push(t2);
-            }
-            let heroes_rating = heroes_rating
+            teams.split_off(TOP).truncate(0);
+            teams
                 .iter()
-                .sorted_by_key(|(_, (score, count))| (*score, *count))
-                .map(|(name, (score, count))| (name, score, count))
-                .collect_vec();
-            let ratings_json = heroes_rating
+                .map(|x| x.name.split(", ").collect_vec())
+                .flatten()
+                .unique()
+                .for_each(|x| *top_heroes.entry(x.to_owned()).or_default() += 1);
+
+            let teams_len = teams.len();
+            for muts in 1..=2 {
+                for i in 0..teams_len {
+                    let mut team = teams[i].clone();
+                    for _ in 0..muts {
+                        Self::mutate(&mut team, &heroes);
+                    }
+                    teams.push(team);
+                }
+            }
+            while teams.len() < TEAMS {
+                teams.push(Self::generate_team(SIZE, &heroes));
+            }
+            let ratings_json = top_heroes
                 .iter()
-                .enumerate()
-                .map(|(ind, (name, _, _))| format!("\"{name}\":{ind}"))
+                .sorted_by_key(|x| x.1)
+                .map(|(name, score)| format!("\"{name}\":{score}"))
                 .join(",");
             println!("Ratings json:\n{{{ratings_json}}}");
-            println!("\nTop teams:\n{}", top_teams.iter().join("\n"));
-            let heroes_rating = heroes_rating
-                .iter()
-                .map(|(name, score, count)| format!("{score}/{count}  {name}"))
-                .join("\n");
-            println!("\nHeroes rating:\n{heroes_rating}");
+            println!(
+                "\nTop heroes:\n{}",
+                top_heroes
+                    .iter()
+                    .sorted_by_key(|x| x.1)
+                    .map(|(name, cnt)| format!("{cnt} {name}"))
+                    .join("\n")
+            );
         }
     }
 
@@ -401,13 +398,13 @@ impl Ratings {
 
 impl Display for Ratings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let spaces = ".............................................";
+        let dots = ".......................................................................................................................................................";
         let mut result: String = default();
         for (name, (score, ratings)) in self.data.iter().sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
         {
             let mut name = name.clone();
-            name.push_str(spaces);
-            let (name, _) = name.split_at(50);
+            name.push_str(dots);
+            let (name, _) = name.split_at(150);
             result += &format!(
                 "\n{name} {score} [{}]",
                 ratings

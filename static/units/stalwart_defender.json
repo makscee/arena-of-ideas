@@ -1,7 +1,7 @@
 {
     "name": "Stalwart Defender",
     "attack": 1,
-    "health": 3,
+    "health": 1,
     "description": "Battle Start:\ngain Defense +10",
     "house": "Warriors",
     "trigger": {

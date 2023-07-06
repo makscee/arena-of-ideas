@@ -104,7 +104,6 @@ impl ExpressionInt {
                         resources,
                     );
                     let value = context.get_int(var, world);
-                    dbg!(&value);
                     value.context(format!("Var not found {var}"))
                 }
                 ExpressionInt::AbilityVar { ability, var } => {

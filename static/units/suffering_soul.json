@@ -2,7 +2,7 @@
     "name": "Suffering Soul",
     "attack": 0,
     "health": 1,
-    "description": "Battle Start:\ngain Martyr +1\nfor each enemy",
+    "description": "Battle Start:\ngain Martyr +1\nper empty slot",
     "house": "Paladins",
     "trigger": {
         "type": "BattleStart",
@@ -13,9 +13,13 @@
                 "type": "Owner"
             },
             "charges": {
-                "type": "Faction",
-                "faction": {
-                    "type": "Opposite",
+                "type": "Sub",
+                "a": {
+                    "type": "Var",
+                    "var": "Slots"
+                },
+                "b": {
+                    "type": "Faction",
                     "faction": {
                         "type": "Owner"
                     }

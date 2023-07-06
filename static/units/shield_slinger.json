@@ -1,7 +1,7 @@
 {
     "name": "Shield Slinger",
     "attack": 2,
-    "health": 1,
+    "health": 2,
     "description": "After Kill:\ngain Shield +1",
     "house": "Paladins",
     "trigger": {
