@@ -89,5 +89,14 @@ impl FileWatcherLoader for HeroPool {
         path.set_file_name("_rating.json");
         watcher.watch_file(&path, Box::new(Self::load));
         resources.hero_pool.power = futures::executor::block_on(load_json(path)).unwrap();
+        for (ind, (_, power)) in resources
+            .hero_pool
+            .power
+            .iter_mut()
+            .sorted_by_key(|(_, rating)| **rating)
+            .enumerate()
+        {
+            *power = ind;
+        }
     }
 }

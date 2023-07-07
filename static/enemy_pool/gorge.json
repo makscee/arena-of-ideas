@@ -1,7 +1,7 @@
 {
     "name": "Gorge",
-    "attack": 4,
-    "health": 1,
+    "attack": 5,
+    "health": 2,
     "description": "Turn End:\ngain Vitality +1",
     "house": "Enemy",
     "trigger": {
@@ -59,7 +59,8 @@
                 "mapping": {
                     "u_g_color_2": {
                         "type": "Uniform",
-                        "key": "u_house_color"}
+                        "key": "u_house_color"
+                    }
                 }
             },
             "instances": 300

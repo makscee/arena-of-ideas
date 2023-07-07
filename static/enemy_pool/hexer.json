@@ -1,7 +1,7 @@
 {
     "name": "Hexer",
-    "attack": 3,
-    "health": 1,
+    "attack": 4,
+    "health": 4,
     "description": "Before Death\napply Weakness +1\n to killer",
     "house": "Enemy",
     "trigger": {

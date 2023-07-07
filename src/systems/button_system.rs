@@ -56,7 +56,7 @@ impl ButtonSystem {
         _: legion::Entity,
         shader: &mut Shader,
         _: &mut legion::World,
-        resources: &mut Resources,
+        _: &mut Resources,
     ) {
         if shader.is_active() {
             if let Some(pressed) = shader.parameters.uniforms.try_get_float("u_pressed") {

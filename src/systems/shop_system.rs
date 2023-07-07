@@ -166,7 +166,13 @@ impl Product {
                             {
                                 ShopSystem::change_g(-price, Some("Buy Slot"), world, resources);
                                 TeamSystem::change_slots(1, Faction::Team, world);
-                                Product::Slot.create_button(resources);
+                                if TeamSystem::get_state(Faction::Team, world)
+                                    .vars
+                                    .get_int(&VarName::Slots)
+                                    < MAX_SLOTS as i32
+                                {
+                                    Product::Slot.create_button(resources);
+                                }
                                 PanelsSystem::open_push(
                                     resources.options.colors.add,
                                     "Add Slot",

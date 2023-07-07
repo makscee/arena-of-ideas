@@ -67,7 +67,7 @@ impl Fonts {
     pub fn load_textures(&mut self, texts: Vec<(usize, &String)>) {
         for (font, text) in texts {
             if !self.texture_cache[font].contains_key(text) {
-                let texture = self.fonts[font].create_text_sdf(text, geng::TextAlign::CENTER, 64.0);
+                let texture = self.fonts[font].create_text_sdf(text, geng::TextAlign::LEFT, 64.0);
                 if let Some(texture) = texture {
                     self.texture_cache[font].insert(text.clone(), texture);
                 }

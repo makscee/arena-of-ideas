@@ -102,10 +102,10 @@ impl PanelsSystem {
         }
         let padding = resources.options.floats.panel_row_padding;
         let faction = match &choice {
-            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => Faction::Shop,
+            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => Faction::Team,
             CardChoice::SelectEnemy { .. } => Faction::Dark,
         };
-        let cards: Vec<(String, usize, Shader, Rgba<f32>)> = match &choice {
+        let cards: Vec<(String, usize, Shader, Rgba<f32>, Rgba<f32>)> = match &choice {
             CardChoice::BuyHero { units } => units
                 .iter()
                 .map(|x| {
@@ -115,6 +115,7 @@ impl PanelsSystem {
                         1,
                         x.get_ui_shader(faction, true, resources),
                         rarity.color(resources),
+                        resources.options.colors.light,
                     )
                 })
                 .collect_vec(),
@@ -132,6 +133,7 @@ impl PanelsSystem {
                             2 => resources.options.colors.epic,
                             _ => panic!(),
                         },
+                        resources.options.colors.dark,
                     )
                 })
                 .collect_vec(),
@@ -147,6 +149,7 @@ impl PanelsSystem {
                         buff.charges as usize,
                         status.generate_card_shader(&buff.name, resources),
                         buff.rarity.color(resources),
+                        resources.options.colors.light,
                     )
                 })
                 .collect_vec(),
@@ -169,12 +172,13 @@ impl PanelsSystem {
         let shaders = cards
             .into_iter()
             .enumerate()
-            .map(|(ind, (name, count, shader, color))| {
-                let mut shader = Self::generate_card_shader(shader, &resources.options)
+            .map(|(ind, (name, count, shader, panel_color, body_color))| {
+                let mut shader = Self::generate_card_panel(shader, &resources.options)
                     .wrap_panel_header(&name, &resources.options)
                     .wrap_panel_footer(vec![PanelFooterButton::Select], &resources.options)
                     .insert_int("u_index".to_owned(), ind as i32)
-                    .set_panel_color(color);
+                    .set_panel_color(panel_color)
+                    .set_panel_body_color(body_color);
 
                 fn update_handler(
                     _: HandleEvent,
@@ -188,7 +192,7 @@ impl PanelsSystem {
                             == chosen as i32
                         {
                             shader.insert_color_ref(
-                                "u_color".to_owned(),
+                                "u_panel_body_color".to_owned(),
                                 resources.options.colors.active,
                             );
                         }
@@ -289,7 +293,7 @@ impl PanelsSystem {
 
     pub fn open_stats(world: &legion::World, resources: &mut Resources) {
         let text = Self::get_stats_text(world, resources);
-        let panel = Self::generate_text_shader(&text, vec2(0.15, 0.0), &resources.options);
+        let panel = Self::generate_text_shader(&text, vec2(0.0, 0.0), &resources.options);
         let panel = panel.wrap_panel_header("Stats", &resources.options).panel(
             PanelType::Stats,
             Some(resources.options.colors.primary),
@@ -301,7 +305,7 @@ impl PanelsSystem {
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
         let mut texts = Vec::default();
         texts.push(format!("g: {}", ShopSystem::get_g(world)));
-        texts.push(format!("level: {}", resources.ladder.current_level()));
+        texts.push(format!("level: {}", resources.ladder.current_level() + 1));
         let mut team_status = TeamSystem::get_state(Faction::Team, world)
             .statuses
             .iter()
@@ -311,6 +315,7 @@ impl PanelsSystem {
             team_status = "none".to_owned();
         }
         texts.push(format!("team status: {team_status}"));
+        texts.push(format!("score: {}", resources.battle_data.total_score));
         texts.join("\n")
     }
 
@@ -362,7 +367,7 @@ impl PanelsSystem {
         shader
     }
 
-    pub fn generate_card_shader(mut card: Shader, options: &Options) -> Shader {
+    pub fn generate_card_panel(mut card: Shader, options: &Options) -> Shader {
         card.parameters.merge(&options.parameters.panel_card, true);
         let padding = options.floats.panel_card_padding;
         let card = card.wrap_panel_body(padding, options);
@@ -566,6 +571,10 @@ impl Shader {
 
     pub fn set_panel_color(self, color: Rgba<f32>) -> Self {
         self.insert_color("u_panel_color".to_owned(), color)
+    }
+
+    pub fn set_panel_body_color(self, color: Rgba<f32>) -> Self {
+        self.insert_color("u_panel_body_color".to_owned(), color)
     }
 
     pub fn panel(

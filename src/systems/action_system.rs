@@ -104,22 +104,22 @@ impl ActionSystem {
                 || format!("{:?} dead", dead_unit),
                 &LogContext::UnitCreation,
             );
-            if UnitSystem::process_death(dead_unit, world, resources, cluster.as_deref_mut()) {
+            if let Some(killer) =
+                UnitSystem::process_death(dead_unit, world, resources, cluster.as_deref_mut())
+            {
                 resources.logger.log(
                     || format!("{:?} removed", dead_unit),
                     &LogContext::UnitCreation,
                 );
-                corpses.push(dead_unit);
+                corpses.push((dead_unit, killer));
             }
         }
-        for entity in corpses {
-            if let Ok(killer) = UnitSystem::get_corpse_killer(entity, world) {
-                Event::UnitDeath {
-                    target: entity,
-                    killer,
-                }
-                .send(world, resources);
+        for (entity, killer) in corpses {
+            Event::UnitDeath {
+                target: entity,
+                killer,
             }
+            .send(world, resources);
         }
     }
 }

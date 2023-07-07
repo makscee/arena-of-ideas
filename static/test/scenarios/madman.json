@@ -36,6 +36,8 @@
             "type": "Const",
             "value": 1
         },
-        "faction": "Light"
+        "faction": {
+            "type": "Light"
+        }
     }
 }

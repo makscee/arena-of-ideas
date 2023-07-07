@@ -33,7 +33,7 @@
                 "damage": 5,
                 "statuses": [
                     [
-                        "LifeStealGain",
+                        "Vitality",
                         3
                     ]
                 ]
@@ -44,7 +44,7 @@
         "units": [
             {
                 "attack": 0,
-                "health": 10,
+                "health": 5,
                 "statuses": [
                     [
                         "Empower",
@@ -54,7 +54,7 @@
             },
             {
                 "attack": 0,
-                "health": 10,
+                "health": 1,
                 "statuses": [
                     [
                         "Shield",
@@ -72,7 +72,9 @@
                 "type": "Const",
                 "value": 1
             },
-            "faction": "Light"
+            "faction": {
+                "type": "Light"
+            }
         },
         "b": {
             "type": "Not",
@@ -82,7 +84,9 @@
                     "type": "Const",
                     "value": 2
                 },
-                "faction": "Light"
+                "faction": {
+                    "type": "Light"
+                }
             }
         }
     }

@@ -3,7 +3,7 @@
         "units": [
             {
                 "attack": 1,
-                "health": 50
+                "health": 6
             }
         ]
     },
@@ -52,6 +52,8 @@
             "type": "Const",
             "value": 1
         },
-        "faction": "Dark"
+        "faction": {
+            "type": "Dark"
+        }
     }
 }

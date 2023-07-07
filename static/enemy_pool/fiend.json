@@ -1,7 +1,7 @@
 {
     "name": "Fiend",
     "attack": 3,
-    "health": 3,
+    "health": 6,
     "description": "Enemy died:\ngain Strength +1",
     "house": "Enemy",
     "trigger": {
@@ -74,7 +74,8 @@
                 "mapping": {
                     "u_g_color_2": {
                         "type": "Uniform",
-                        "key": "u_house_color"}
+                        "key": "u_house_color"
+                    }
                 }
             },
             "instances": 300

@@ -3,20 +3,21 @@ Text shader constant scale, size depending on lines @ui
 Move u_scale into box
 Shader visitor instead of flattening
 Status get ability vars from caster instead of owner
+Show stats after status on card
+Parallel hero ratings run with discrepancy test
+API for data structs: clear()
 Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
     Statuses pool {start:2023-06-26T13:16:42} {c} {cm:2023-06-26T14:55:03} {duration:01h38m}
         pool take {cm:2023-06-26T14:51:31}
         rarity display {cm:2023-06-26T14:51:25}
-    Show stats after status on card
     Shop reroll {start:2023-06-28T13:10:37} {cm:2023-06-28T13:34:04} {duration:23m}
     Gallery {start:2023-06-26T19:43:22} {cm:2023-06-27T17:10:03} {duration:21h26m}
-    Push text @ui
+    Push text @ui {cm:2023-07-07T16:46:19}
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change {cm:2023-06-21T15:25:50}
         gain team status {cm:2023-06-23T15:35:57}
-        var change
     Stats info panel @ui
         panel working {start:2023-06-19T14:47:43} {cm:2023-06-19T15:17:25} {duration:29m}
         g {cm:2023-06-19T15:55:08}
@@ -31,11 +32,8 @@ Build
         shop buy btns {cm:2023-06-22T21:26:24}
         start battle btn {cm:2023-06-22T21:26:24}
         definitions {cm:2023-06-21T15:25:41}
-    Alert text @ui
-        battle start
+    Alert text @ui {cm:2023-07-07T16:45:44}
         battle end {start:2023-06-23T18:37:12} {cm:2023-06-23T19:09:45} {duration:32m}
-        sacrifice start
-        shop start
     Alert cards @ui {start:2023-06-20T13:59:26} {cm:2023-06-23T16:45:35} {duration:3d_02h46m} {c}
         panel working {cm:2023-06-20T16:34:39}
         hero buy {cm:2023-06-20T16:34:41}
@@ -57,7 +55,8 @@ Build
     Chain all actions @visual {cm:2023-07-04T21:08:01}
     Max rank 3 @gameplay {cm:2023-06-26T15:27:50}
     Rank up every 10 rounds {cm:2023-07-02T13:32:52}
-    Rework enemy generation {start:2023-07-01T15:15:46}
+    Rework enemy generation {start:2023-07-01T15:15:46} {cm:2023-07-07T16:45:50} {duration:6d_01h30m}
     ~50 Total heroes @content {cm:2023-07-05T22:02:35}
     ~20 Total enemies @content {cm:2023-07-05T22:02:40}
+    Limit slots buying {cm:2023-07-07T16:43:29}
     15 (45) balanced levels @content

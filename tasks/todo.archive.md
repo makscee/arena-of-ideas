@@ -76,3 +76,4 @@ Gallery card-unit switch {cm:2023-07-01T14:25:50}
 Shader mapping animation @shader {start:2023-07-04T23:09:09} {cm:2023-07-05T02:15:38} {duration:03h06m}
 Uniform mapping into Options {start:2023-07-05T13:52:51} {cm:2023-07-05T14:04:59} {duration:12m}
 Fix damage text after strike {cm:2023-07-05T21:33:40}
+Status triggered by slot order {cm:2023-07-07T15:51:56}

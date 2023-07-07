@@ -69,7 +69,9 @@
                     "type": "Const",
                     "value": 1
                 },
-                "faction": "Light"
+                "faction": {
+                    "type": "Light"
+                }
             },
             "b": {
                 "type": "SlotOccupied",
@@ -77,7 +79,9 @@
                     "type": "Const",
                     "value": 1
                 },
-                "faction": "Dark"
+                "faction": {
+                    "type": "Dark"
+                }
             }
         }
     }

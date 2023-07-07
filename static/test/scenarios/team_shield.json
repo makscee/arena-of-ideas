@@ -43,7 +43,9 @@
                 "type": "Const",
                 "value": 1
             },
-            "faction": "Light"
+            "faction": {
+                "type": "Light"
+            }
         },
         "b": {
             "type": "Not",
@@ -53,7 +55,9 @@
                     "type": "Const",
                     "value": 2
                 },
-                "faction": "Light"
+                "faction": {
+                    "type": "Light"
+                }
             }
         }
     }

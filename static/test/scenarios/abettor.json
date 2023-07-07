@@ -8,7 +8,7 @@
             {
                 "attack": 1,
                 "health": 3,
-                "house": "Test",
+                "house": "Hunters",
                 "trigger": {
                     "type": "TurnStart",
                     "effect": {
@@ -45,6 +45,8 @@
             "type": "Const",
             "value": 1
         },
-        "faction": "Light"
+        "faction": {
+            "type": "Light"
+        }
     }
 }

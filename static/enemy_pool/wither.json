@@ -1,7 +1,7 @@
 {
     "name": "Wither",
-    "attack": 4,
-    "health": 3,
+    "attack": 6,
+    "health": 6,
     "description": "Before Death\napply Decay +1\nto all enemies",
     "house": "Enemy",
     "trigger": {

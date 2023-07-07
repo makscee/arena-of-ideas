@@ -16,7 +16,7 @@
             {
                 "health": 1,
                 "attack": 1,
-                "house": "Test",
+                "house": "Hunters",
                 "trigger": {
                     "type": "TurnEnd",
                     "effect": {
@@ -37,6 +37,8 @@
             "type": "Const",
             "value": 1
         },
-        "faction": "Dark"
+        "faction": {
+            "type": "Dark"
+        }
     }
 }

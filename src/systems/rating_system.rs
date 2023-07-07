@@ -245,6 +245,36 @@ impl RatingSystem {
         debug!("mutate: {before} -> {}", team.name);
     }
 
+    fn ask_remove_indices(teams: &mut Vec<PackedTeam>) -> bool {
+        println!("\nEnter indices to remove:");
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        line = line.trim().to_owned();
+        if line.is_empty() {
+            return false;
+        }
+        let inds = line
+            .split(' ')
+            .map(|x| x.parse::<usize>().unwrap())
+            .collect_vec();
+        for ind in inds.into_iter().sorted().rev() {
+            println!("Remove team {}", &teams[ind].name);
+            teams.remove(ind);
+        }
+        true
+    }
+
+    fn print_teams(teams: &Vec<PackedTeam>) {
+        println!(
+            "Generated teams\n{}",
+            teams
+                .iter()
+                .enumerate()
+                .map(|(ind, team)| format!("{ind} {}", team.name))
+                .join("\n")
+        );
+    }
+
     pub fn simulate_enemy_ratings_calculation(
         world: &mut legion::World,
         resources: &mut Resources,
@@ -259,20 +289,9 @@ impl RatingSystem {
         let mut teams = Vec::default();
         loop {
             EnemyPool::generate_teams(teams_cnt, &mut teams, resources);
-            println!("\nEnter indices to remove:");
-            line.clear();
-            std::io::stdin().read_line(&mut line).unwrap();
-            line = line.trim().to_owned();
-            if line.is_empty() {
+            Self::print_teams(&teams);
+            if !Self::ask_remove_indices(&mut teams) {
                 break;
-            }
-            let inds = line
-                .split(' ')
-                .map(|x| x.parse::<usize>().unwrap())
-                .collect_vec();
-            for ind in inds.into_iter().sorted().rev() {
-                println!("Remove team {}", &teams[ind].name);
-                teams.remove(ind);
             }
         }
         let mut ratings = Ratings::default();
@@ -293,6 +312,12 @@ impl RatingSystem {
                 Err(error) => error!("Can't save levels: {}", error),
             }
             println!("\nRun#{cnt}{ratings}");
+            if cnt % 5 == 0 {
+                if Self::ask_remove_indices(&mut teams) {
+                    ratings = Ratings::default();
+                    EnemyPool::generate_teams(teams_cnt, &mut teams, resources);
+                }
+            }
         }
     }
 
@@ -400,13 +425,18 @@ impl Display for Ratings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let dots = ".......................................................................................................................................................";
         let mut result: String = default();
-        for (name, (score, ratings)) in self.data.iter().sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
+        let max_len = self.data.iter().map(|(name, _)| name.len()).max().unwrap();
+        for (ind, (name, (score, ratings))) in self
+            .data
+            .iter()
+            .sorted_by(|a, b| a.1 .0.total_cmp(&b.1 .0))
+            .enumerate()
         {
             let mut name = name.clone();
             name.push_str(dots);
-            let (name, _) = name.split_at(150);
+            let (name, _) = name.split_at((max_len + 10).max(30));
             result += &format!(
-                "\n{name} {score} [{}]",
+                "\n{ind}. {name} {score} [{}]",
                 ratings
                     .iter()
                     .sorted_by_key(|x| x.0)

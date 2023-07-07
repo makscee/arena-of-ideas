@@ -33,10 +33,10 @@ impl Rarity {
 
     pub fn weight(&self) -> i32 {
         match self {
-            Rarity::Common => 100,
-            Rarity::Rare => 15,
-            Rarity::Epic => 7,
-            Rarity::Legendary => 3,
+            Rarity::Common => 128,
+            Rarity::Rare => 32,
+            Rarity::Epic => 16,
+            Rarity::Legendary => 8,
         }
     }
 }

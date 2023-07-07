@@ -91,6 +91,8 @@
             "type": "Const",
             "value": 1
         },
-        "faction": "Dark"
+        "faction": {
+            "type": "Dark"
+        }
     }
 }

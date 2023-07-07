@@ -42,14 +42,6 @@ impl EnemyPool {
             }
             (s[1].clone(), s[0].clone(), s[2].clone())
         });
-        println!(
-            "Generated teams\n{}",
-            teams
-                .iter()
-                .enumerate()
-                .map(|(ind, team)| format!("{ind} {}", team.name))
-                .join("\n")
-        );
     }
 
     fn load() -> EnemyPool {

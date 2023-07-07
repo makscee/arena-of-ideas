@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
     "initial_state": "Shop",
-    "walkthrough": true,
+    "walkthrough": false,
     "team_ratings": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
@@ -13,152 +13,61 @@
     "custom_game": {
         "enable": false,
         "light": {
-            "name": "Player",
-            "replications": 1,
             "units": [
                 {
-                    "name": "Sharpshooter",
-                    "attack": 2,
+                    "attack": 1,
                     "health": 1,
-                    "description": "Battle Start:\nShoot +2",
-                    "house": "Hunters",
+                    "statuses": [
+                        [
+                            "Rebirth",
+                            1
+                        ]
+                    ]
+                },
+                {
+                    "attack": 1,
+                    "health": 1,
+                    "house": "Test",
                     "trigger": {
-                        "type": "BattleStart",
+                        "type": "AnyDeath",
                         "effect": {
-                            "type": "UseAbility",
-                            "ability": "Shoot",
-                            "charges": {
-                                "type": "Const",
-                                "value": 2
-                            }
-                        }
-                    },
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "box": {
-                                "size": [
-                                    0.3,
-                                    0.3
-                                ]
-                            },
-                            "uniforms": {
-                                "u_normal_scaling": 1.0,
-                                "u_g_points": [
-                                    -1.5,
-                                    -0.2,
-                                    -0.2,
-                                    0.0
-                                ],
-                                "u_g_alphas": [
-                                    0.0,
-                                    -0.2,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_rotation": 0.25,
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
-                                "u_g_color_4": "#000000",
-                                "mapping": {
-                                    "u_g_color_2": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
-                                    "u_g_color_3": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
-                                    "u_rotation": {
-                                        "type": "Mul",
-                                        "a": {
-                                            "type": "GlobalTime"
-                                        },
-                                        "b": {
-                                            "type": "Float",
-                                            "value": 0.3
-                                        }
-                                    },
-                                    "u_i_angle_offset": {
-                                        "type": "Vec4",
-                                        "x": {
-                                            "type": "Float",
-                                            "value": 2.0
-                                        },
-                                        "y": {
-                                            "type": "Float",
-                                            "value": 0.0
-                                        },
-                                        "z": {
-                                            "type": "Float",
-                                            "value": 0.0
-                                        },
-                                        "w": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "GlobalTime"
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 0.004
-                                            }
-                                        }
-                                    },
-                                    "u_g_points": {
-                                        "type": "Vec4",
-                                        "x": {
-                                            "type": "Float",
-                                            "value": -2.0
-                                        },
-                                        "y": {
-                                            "type": "Float",
-                                            "value": -0.4
-                                        },
-                                        "z": {
-                                            "type": "Float",
-                                            "value": -0.4
-                                        },
-                                        "w": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "Sin",
-                                                "x": {
-                                                    "type": "GlobalTime"
-                                                }
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 0.1
-                                            }
-                                        }
-                                    }
+                            "type": "If",
+                            "condition": {
+                                "type": "EqualsFaction",
+                                "a": {
+                                    "type": "Owner"
+                                },
+                                "b": {
+                                    "type": "Target"
                                 }
                             },
-                            "instances": 25
+                            "then": {
+                                "type": "UseAbility",
+                                "ability": "Shield",
+                                "target": {
+                                    "type": "Owner"
+                                },
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
+                                }
+                            }
                         }
                     }
-                },
-                {
-                    "attack": 1,
-                    "health": 12
-                },
-                {
-                    "attack": 1,
-                    "health": 10,
-                    "damage": 3
                 }
             ]
         },
         "dark": {
-            "replications": 3,
             "units": [
                 {
                     "attack": 1,
-                    "health": 3
+                    "health": 1
+                },
+                {
+                    "attack": 1,
+                    "health": 4
                 }
-            ],
-            "name": "Enemies"
+            ]
         }
     },
     "fov": 16.0,
@@ -173,19 +82,19 @@
         "Event": true,
         "UnitCreation": true,
         "Measurement": false,
-        "Test": true
+        "Test": false
     },
     "colors": {
-        "shop": "#E8A87C",
-        "player": "#2A89B3",
-        "enemy": "#A37CD3",
+        "shop": "#e7cb14",
+        "player": "#383838",
+        "enemy": "#a500c2",
         "text": "#F0F0F0",
         "sacrifice": "#B82750",
         "primary": "#E58220",
         "secondary": "#36D2E2",
         "button": "#8ec5df",
         "outline": "#595560",
-        "active": "#8A689A",
+        "active": "#DCE986",
         "inactive": "#AB9BA4",
         "hovered": "#DCE986",
         "pressed": "#7A7468",
@@ -322,7 +231,8 @@
                 "uniforms": {
                     "u_ui": 1,
                     "u_rounding": 0.04,
-                    "u_color": "#3F3F3F",
+                    "u_panel_body_color": "#3F3F3F",
+                    "u_color": "#af0000",
                     "u_panel_color": "#6495ED",
                     "u_g_points": [
                         -0.01,
@@ -339,7 +249,13 @@
                     "u_g_color_1": "#000000",
                     "u_g_color_2": "#000000",
                     "u_g_color_3": "#000000",
-                    "u_g_color_4": "#000000"
+                    "u_g_color_4": "#000000",
+                    "mapping": {
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "u_panel_body_color"
+                        }
+                    }
                 }
             },
             "layer": "UI",
@@ -816,7 +732,7 @@
                     "u_gradient": 0.3,
                     "u_sdf_cut": 0.2,
                     "u_sdf_border": -0.1,
-                    "u_rotation": 1.0
+                    "u_rotation": 0.25
                 }
             },
             "chain_after": [
@@ -830,7 +746,7 @@
                             ]
                         },
                         "uniforms": {
-                            "u_rotation": -1.0
+                            "u_rotation": -0.25
                         }
                     }
                 },

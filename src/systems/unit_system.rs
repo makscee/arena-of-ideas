@@ -197,21 +197,20 @@ impl UnitSystem {
         world: &mut legion::World,
         resources: &mut Resources,
         cluster: Option<&mut NodeCluster>,
-    ) -> bool {
+    ) -> Option<legion::Entity> {
         Event::BeforeDeath { owner: entity }.send(world, resources);
         ActionSystem::run_ticks(world, resources, cluster);
         if !UnitSystem::is_alive(entity, world, resources) {
-            Self::turn_unit_into_corpse(entity, world, resources);
-            return UnitSystem::get_corpse(entity, world).is_some();
+            return Some(Self::turn_unit_into_corpse(entity, world, resources));
         }
-        false
+        None
     }
 
     pub fn turn_unit_into_corpse(
         entity: legion::Entity,
         world: &mut legion::World,
         resources: &mut Resources,
-    ) {
+    ) -> legion::Entity {
         let state = ContextState::get(entity, world);
         let killer = state.vars.try_get_entity(&VarName::LastAttacker);
         let faction = state.get_faction(&VarName::Faction, world);
@@ -235,8 +234,10 @@ impl UnitSystem {
             .send(world, resources);
         }
         if faction == Faction::Team {
+            //todo: bug on rebirth?
             Event::RemoveFromTeam { owner: entity }.send(world, resources);
         }
+        killer.unwrap_or(entity)
     }
 
     pub fn get_corpse_killer(

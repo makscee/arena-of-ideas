@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -21,8 +23,11 @@ impl Status {
         world: &legion::World,
         resources: &mut Resources,
     ) {
-        let units = UnitSystem::collect_factions(world, factions);
-        for unit in units {
+        let units = UnitSystem::collect_factions_states(world, factions);
+        for (unit, _) in units
+            .into_iter()
+            .sorted_by_key(|(_, state)| state.get_int(&VarName::Slot, world))
+        {
             Self::notify_one(event, unit, context, world, resources);
         }
     }
