@@ -194,8 +194,8 @@ impl PackedUnit {
 
     pub fn get_ui_shader(&self, faction: Faction, set_card: bool, resources: &Resources) -> Shader {
         let house_color = self.house_color(resources);
-        let mut unit_shader = self.generate_shader(house_color, &resources.options);
-        unit_shader
+        let mut shader = self.generate_shader(house_color, &resources.options);
+        shader
             .parameters
             .uniforms
             .insert_color_ref(
@@ -204,15 +204,20 @@ impl PackedUnit {
             )
             .insert_vec2_ref("u_align".to_owned(), vec2::ZERO);
         if set_card {
-            unit_shader.insert_float_ref("u_card".to_owned(), 1.0);
+            shader.insert_float_ref("u_card".to_owned(), 1.0);
         }
         if let Some(house) = self.house {
-            unit_shader.parameters.uniforms.insert_color_ref(
+            shader.parameters.uniforms.insert_color_ref(
                 "u_house_color".to_owned(),
                 HousePool::get_color(&house, resources),
             );
         }
-        unit_shader
+        let mut definitions = UnitSystem::extract_definitions(&self.description, resources);
+        definitions.extend(self.statuses.iter().map(|(name, _)| name.clone()));
+        StatusSystem::add_active_statuses_hint(&mut shader, &self.statuses, resources);
+        Definitions::add_hints(&mut shader, definitions, resources);
+        shader.entity = Some(new_entity());
+        shader
     }
 }
 

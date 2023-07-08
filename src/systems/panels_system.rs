@@ -35,11 +35,11 @@ impl System for PanelsSystem {
         let global_time = resources.global_time;
         for panel in resources
             .panels_data
-            .alert
+            .push
             .iter_mut()
-            .chain(resources.panels_data.push.iter_mut())
             .chain(resources.panels_data.stats.iter_mut())
             .chain(resources.panels_data.hint.iter_mut())
+            .chain(resources.panels_data.alert.iter_mut())
         {
             panel.update(delta_time, global_time)
         }
@@ -51,11 +51,11 @@ impl System for PanelsSystem {
         resources.frame_shaders.extend(
             resources
                 .panels_data
-                .alert
-                .iter()
-                .chain(resources.panels_data.push.iter())
-                .chain(resources.panels_data.stats.iter())
-                .chain(resources.panels_data.hint.iter())
+                .push
+                .iter_mut()
+                .chain(resources.panels_data.stats.iter_mut())
+                .chain(resources.panels_data.hint.iter_mut())
+                .chain(resources.panels_data.alert.iter_mut())
                 .map(|x| x.shader.clone()),
         );
     }
@@ -209,9 +209,10 @@ impl PanelsSystem {
             CardChoice::SelectEnemy { .. } => vec![PanelFooterButton::Accept],
         };
         resources.panels_data.choice_options = Some(choice);
-        let panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
+        let mut panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header(title, &resources.options)
             .wrap_panel_footer(buttons, &resources.options);
+        panel.parameters.r#box.pos.y += 0.3;
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
             Some(panel_color),

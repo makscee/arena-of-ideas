@@ -157,26 +157,10 @@ impl UnitSystem {
             .into_iter()
             .for_each(|x| shader.chain_after.insert(0, x));
         let statuses = context.collect_statuses(world);
-        if !statuses.is_empty() {
-            let hint_text = statuses
-                .iter()
-                .map(|(name, charges)| format!("{name} +{charges}"))
-                .join("\n");
-            shader.hover_hints.push((
-                resources.options.colors.secondary,
-                "Statuses".to_owned(),
-                hint_text,
-            ));
-        }
-        let mut definitions = UnitSystem::extract_definition_names(entity, world, resources);
+        StatusSystem::add_active_statuses_hint(&mut shader, &statuses, resources);
+        let mut definitions = UnitSystem::extract_definitions_from_unit(entity, world, resources);
         definitions.extend(statuses.into_iter().map(|(name, _)| name));
-        if !definitions.is_empty() {
-            for title in definitions.into_iter() {
-                let data = resources.definitions.get(&title).unwrap();
-                let (color, text) = (data.color.clone(), data.description.clone());
-                shader.hover_hints.push((color, title, text));
-            }
-        }
+        Definitions::add_hints(&mut shader, definitions, resources);
         node.add_entity_shader(entity, shader);
     }
 
@@ -415,7 +399,7 @@ impl UnitSystem {
         }
     }
 
-    pub fn extract_definition_names(
+    pub fn extract_definitions_from_unit(
         entity: legion::Entity,
         world: &legion::World,
         resources: &Resources,
@@ -424,15 +408,19 @@ impl UnitSystem {
             .vars
             .try_get_string(&VarName::Description)
         {
-            let mut definitions: HashSet<String> = default();
-            for definition in resources.definitions_regex.captures_iter(&description) {
-                let definition = definition.index(0);
-                if resources.definitions.contains(definition) {
-                    definitions.insert(definition.to_string());
-                }
-            }
-            return definitions;
+            return Self::extract_definitions(&description, resources);
         }
         return default();
+    }
+
+    pub fn extract_definitions(text: &str, resources: &Resources) -> HashSet<String> {
+        let mut definitions: HashSet<String> = default();
+        for definition in resources.definitions_regex.captures_iter(text) {
+            let definition = definition.index(0);
+            if resources.definitions.contains(definition) {
+                definitions.insert(definition.to_string());
+            }
+        }
+        return definitions;
     }
 }

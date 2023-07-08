@@ -20,4 +20,22 @@ impl StatusSystem {
                 .sorted_by_key(|(name, _)| state.status_change_t.get(name).unwrap_or(&0)),
         )
     }
+
+    pub fn add_active_statuses_hint(
+        shader: &mut Shader,
+        statuses: &Vec<(String, i32)>,
+        resources: &Resources,
+    ) {
+        if !statuses.is_empty() {
+            let hint_text = statuses
+                .iter()
+                .map(|(name, charges)| format!("{name} +{charges}"))
+                .join("\n");
+            shader.hover_hints.push((
+                resources.options.colors.secondary,
+                "Statuses".to_owned(),
+                hint_text,
+            ));
+        }
+    }
 }

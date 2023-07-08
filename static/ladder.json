@@ -3,12 +3,12 @@
         "teams": [
             {
                 "enemy_name": "Bane",
-                "count": 2,
+                "count": 1,
                 "buff": null
             },
             {
                 "enemy_name": "Hexer",
-                "count": 3,
+                "count": 2,
                 "buff": null
             },
             {

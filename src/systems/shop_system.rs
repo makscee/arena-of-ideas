@@ -315,20 +315,6 @@ impl ShopSystem {
         default()
     }
 
-    pub fn reroll_hero_panel(world: &mut legion::World, resources: &mut Resources) {
-        Self::return_showed_heroes(resources);
-        Self::show_hero_buy_panel(resources);
-        Self::deduct_reroll_cost(world, resources);
-    }
-
-    fn return_showed_heroes(resources: &mut Resources) {
-        resources
-            .shop_data
-            .offered
-            .drain(..)
-            .for_each(|x| resources.shop_data.pool.push(x));
-    }
-
     pub fn show_hero_buy_panel(resources: &mut Resources) {
         // let mut units = Vec::default();
         // for _ in 0..3 {
@@ -422,6 +408,11 @@ impl ShopSystem {
             .get_int(&VarName::G)
     }
 
+    pub fn is_just_started(world: &legion::World, resources: &Resources) -> bool {
+        Ladder::current_level(resources) == 0
+            && UnitSystem::collect_faction(world, Faction::Team).is_empty()
+    }
+
     pub fn change_g(
         delta: i32,
         reason: Option<&str>,
@@ -459,6 +450,9 @@ impl ShopSystem {
     }
 
     pub fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
+        if Self::is_just_started(world, resources) {
+            return;
+        }
         let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
