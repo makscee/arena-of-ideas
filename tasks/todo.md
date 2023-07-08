@@ -1,11 +1,12 @@
 Screen box anchoring @ui
 Text shader constant scale, size depending on lines @ui
-Move u_scale into box
-Shader visitor instead of flattening
-Status get ability vars from caster instead of owner
+Move u_scale into box @shaders
+Shader visitor instead of flattening @shaders
+Status get ability vars from caster instead of owner @gameplay
 Show stats after status on card
-Parallel hero ratings run with discrepancy test
+Parallel hero ratings run with discrepancy test @content
 API for data structs: clear()
+Stats panel working in battle (?) @ui
 Build
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
@@ -18,12 +19,11 @@ Build
         panel working {start:2023-06-19T13:49:25} {cm:2023-06-19T14:47:17} {duration:57m}
         g change {cm:2023-06-21T15:25:50}
         gain team status {cm:2023-06-23T15:35:57}
-    Stats info panel @ui
+    Stats info panel @ui {cm:2023-07-08T15:18:51}
         panel working {start:2023-06-19T14:47:43} {cm:2023-06-19T15:17:25} {duration:29m}
         g {cm:2023-06-19T15:55:08}
-        total score
+        total score {cm:2023-07-08T15:05:55}
         team status {cm:2023-06-23T17:07:51}
-        team vars
         level {cm:2023-06-19T15:55:11}
     Hover hint @ui {cm:2023-06-22T21:26:28} {c}
         panel working {start:2023-06-19T15:42:09} {cm:2023-06-19T15:55:22} {duration:13m}

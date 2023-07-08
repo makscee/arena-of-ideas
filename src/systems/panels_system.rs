@@ -147,7 +147,7 @@ impl PanelsSystem {
                     (
                         buff.rarity.to_string(),
                         buff.charges as usize,
-                        status.generate_card_shader(&buff.name, resources),
+                        status.generate_card_shader(&buff.name, Some(buff.charges), resources),
                         buff.rarity.color(resources),
                         resources.options.colors.light,
                     )

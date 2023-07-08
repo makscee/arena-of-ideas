@@ -207,7 +207,12 @@ impl Status {
         }
     }
 
-    pub fn generate_card_shader(&self, name: &str, resources: &Resources) -> Shader {
+    pub fn generate_card_shader(
+        &self,
+        name: &str,
+        charges: Option<i32>,
+        resources: &Resources,
+    ) -> Shader {
         let mut shader = resources.options.shaders.unit_card.clone();
         if let Some(self_shader) = self.shader.as_ref() {
             shader.chain_before.push(
@@ -231,11 +236,15 @@ impl Status {
         {
             shader.insert_string_ref("u_description".to_owned(), description.clone(), 0);
         }
+        let charges_str = match charges {
+            Some(v) => format!("+{v}"),
+            None => String::default(),
+        };
         shader
             .chain_after
             .push(resources.options.shaders.name.clone().insert_uniform(
                 "u_text".to_owned(),
-                ShaderUniform::String((0, name.to_string())),
+                ShaderUniform::String((1, format!("{name} {charges_str}"))),
             ));
 
         shader
