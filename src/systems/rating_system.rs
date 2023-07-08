@@ -3,158 +3,6 @@ use super::*;
 pub struct RatingSystem {}
 
 impl RatingSystem {
-    pub fn simulate_walkthrough(world: &mut legion::World, resources: &mut Resources) {
-        resources.logger.set_enabled(false);
-        let mut i: usize = 0;
-        let mut ratings: Ratings = default();
-        let mut levels: Vec<usize> = vec![0; resources.ladder.count() + 1];
-        loop {
-            i += 1;
-            let run_timer = Instant::now();
-            let (level_reached, total_score, team, pick_data, score_data) =
-                Self::simulate_run(world, resources);
-            *levels.get_mut(level_reached).unwrap() += 1;
-            for (name, data) in score_data {
-                ratings.add_rating(&name, RatingType::Score, data.0, data.1);
-            }
-            for (name, data) in pick_data {
-                ratings.add_rating(&name, RatingType::PickRate, data.0, data.1);
-            }
-
-            ratings.calculate();
-            println!("{ratings}");
-
-            for (i, name) in resources
-                .ladder
-                .teams
-                .iter()
-                .map(|x| x.name.clone())
-                .chain(Some("Game Over".to_string()))
-                .enumerate()
-            {
-                println!("{} {} = {}", i, name, levels.get(i).unwrap());
-            }
-            println!(
-                "Run #{} took {:?} reached {} {}",
-                i,
-                run_timer.elapsed(),
-                level_reached,
-                team
-            );
-        }
-    }
-
-    fn simulate_run(
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) -> (
-        usize,
-        usize,
-        PackedTeam,
-        HashMap<String, (usize, usize)>,
-        HashMap<String, (usize, usize)>,
-    ) {
-        let pool: HashMap<String, PackedUnit> = HashMap::from_iter(
-            HeroPool::all(&resources)
-                .into_iter()
-                .map(|x| (x.name.clone(), x)),
-        );
-
-        let mut team = PackedTeam::new("light".to_string(), vec![]);
-        ShopSystem::init_game(world, resources);
-        let buy_price = ShopSystem::buy_price(world);
-        let sell_price = ShopSystem::sell_price(world);
-        const MAX_ARRANGE_TRIES: usize = 5;
-        let mut pick_show_count = HashMap::default();
-        let mut score_games_count = HashMap::default();
-        let mut total_result = 0;
-        loop {
-            let extra_units = {
-                let mut value = 10;
-                value += value * sell_price / buy_price;
-                value
-            } as usize;
-            let dark = Ladder::load_team(resources);
-            let max_slots = (resources.ladder.current_ind() + resources.options.initial_team_slots)
-                .min(MAX_SLOTS);
-            team.slots = max_slots;
-
-            let shop_case = pool
-                .values()
-                .choose_multiple(&mut thread_rng(), MAX_SLOTS * extra_units);
-            for shop_unit in shop_case.iter() {
-                let (pick, show) = pick_show_count.remove(&shop_unit.name).unwrap_or_default();
-                pick_show_count.insert(shop_unit.name.clone(), (pick, show + 1));
-            }
-            let mut battle_result = 0;
-            let mut candidate = None;
-            let mut picked = Vec::default();
-            for _ in 0..MAX_ARRANGE_TRIES {
-                let mut new_units = vec![];
-                for _ in 0..extra_units {
-                    new_units.push(*shop_case.choose(&mut thread_rng()).unwrap());
-                }
-                let team_entity = team.unpack(&Faction::Team, world, resources);
-                Event::ShopEnd.send(world, resources);
-                Event::ShopStart.send(world, resources);
-                let slots = (1..=max_slots).choose_multiple(&mut thread_rng(), extra_units);
-                for (i, unit) in new_units.iter().enumerate() {
-                    let slot = *slots.get(i).unwrap();
-                    let entity = unit.unpack(world, resources, slot, None, Some(team_entity));
-                    if team.units.len() + i < max_slots {
-                        SlotSystem::make_gap(Faction::Team, slot, world, None);
-                    } else {
-                        if let Some(entity) =
-                            SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
-                        {
-                            ShopSystem::do_sell(entity, resources, world);
-                        }
-                    }
-                    ShopSystem::do_buy(entity, slot, resources, world);
-                    ActionSystem::run_ticks(world, resources, None);
-                }
-                let new_team = PackedTeam::pack(Faction::Team, world, resources);
-                UnitSystem::clear_faction(world, resources, Faction::Team);
-                let (_, result) =
-                    SimulationSystem::run_battle(&new_team, &dark, world, resources, None);
-                resources.action_queue.clear();
-                if result > battle_result {
-                    candidate = Some(new_team);
-                    picked = new_units.iter().map(|x| x.name.clone()).collect_vec();
-                    battle_result = result;
-                }
-                if result == 3 {
-                    break;
-                }
-            }
-            if battle_result == 0 || !resources.ladder.next() {
-                break;
-            } else {
-                team = candidate.unwrap();
-                picked
-                    .iter()
-                    .for_each(|name| pick_show_count.get_mut(name).unwrap().0 += 1);
-                for unit in team.units.iter() {
-                    let mut data: (usize, usize) =
-                        score_games_count.remove(&unit.name).unwrap_or_default();
-                    data.0 += battle_result;
-                    data.1 += 1;
-                    score_games_count.insert(unit.name.clone(), data);
-                }
-                total_result += battle_result;
-            }
-        }
-        let level_reached = resources.ladder.current_ind();
-        resources.ladder.reset();
-        (
-            level_reached,
-            total_result,
-            team,
-            pick_show_count,
-            score_games_count,
-        )
-    }
-
     fn generate_team(size: usize, heroes: &Vec<PackedUnit>) -> PackedTeam {
         let mut units: Vec<PackedUnit> = default();
         for _ in 0..size {
@@ -188,7 +36,7 @@ impl RatingSystem {
             HashMap::from_iter(heroes.iter().map(|x| (x.name.clone(), 0)));
         loop {
             team_ratings = default();
-            Self::rate_teams(&teams, &mut team_ratings, MATCHES, world, resources);
+            Self::rate_teams_random(&teams, &mut team_ratings, MATCHES, world, resources);
             println!("{team_ratings}");
             teams.sort_by(|a, b| {
                 team_ratings
@@ -245,11 +93,15 @@ impl RatingSystem {
         debug!("mutate: {before} -> {}", team.name);
     }
 
-    fn ask_remove_indices(teams: &mut Vec<PackedTeam>) -> bool {
-        println!("\nEnter indices to remove:");
+    fn read_line() -> String {
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
-        line = line.trim().to_owned();
+        line.trim().to_owned()
+    }
+
+    fn ask_remove_indices(teams: &mut Vec<PackedTeam>) -> bool {
+        println!("\nEnter indices to remove:");
+        let mut line = Self::read_line();
         if line.is_empty() {
             return false;
         }
@@ -262,6 +114,11 @@ impl RatingSystem {
             teams.remove(ind);
         }
         true
+    }
+
+    fn ask_y_no(q: &str) -> bool {
+        println!("\n{q} [y]/n");
+        Self::read_line() != "n"
     }
 
     fn print_teams(teams: &Vec<PackedTeam>) {
@@ -280,15 +137,20 @@ impl RatingSystem {
         resources: &mut Resources,
     ) {
         resources.logger.set_enabled(false);
+        const LEVELS: usize = 15;
 
-        println!("\nEnter teams count:");
-        let mut line = String::new();
-        std::io::stdin().read_line(&mut line).unwrap();
-        line = line.trim().to_owned();
-        let teams_cnt = line.parse::<usize>().unwrap();
-        let mut teams = Vec::default();
+        let mut teams = Ladder::all_teams(resources);
+        if !teams.is_empty() {
+            println!(
+                "Current ladder:\n{}",
+                teams.iter().map(|x| x.name.clone()).join("\n")
+            );
+            if Self::ask_y_no("Clear teams?") {
+                teams.clear();
+            }
+        }
         loop {
-            EnemyPool::generate_teams(teams_cnt, &mut teams, resources);
+            EnemyPool::fill_teams_vec(LEVELS * 3, &mut teams, resources);
             Self::print_teams(&teams);
             if !Self::ask_remove_indices(&mut teams) {
                 break;
@@ -296,32 +158,46 @@ impl RatingSystem {
         }
         let mut ratings = Ratings::default();
         let mut cnt = 0;
-        let save_path = static_path().join("levels.json");
         loop {
-            Self::rate_teams(&teams, &mut ratings, 10, world, resources);
+            Self::rate_teams_full(&teams, &mut ratings, world, resources);
             cnt += 1;
             teams.sort_by(|a, b| {
                 ratings
                     .get_rating(&a.name)
                     .total_cmp(&ratings.get_rating(&b.name))
             });
-            let save = serde_json::to_string_pretty(&teams).unwrap();
-
-            match std::fs::write(&save_path, save) {
-                Ok(_) => debug!("Save levels to {:?}", &save_path),
-                Err(error) => error!("Can't save levels: {}", error),
-            }
+            Ladder::set_teams(&teams, resources);
+            Ladder::save(resources);
             println!("\nRun#{cnt}{ratings}");
-            if cnt % 5 == 0 {
-                if Self::ask_remove_indices(&mut teams) {
-                    ratings = Ratings::default();
-                    EnemyPool::generate_teams(teams_cnt, &mut teams, resources);
-                }
+            if Self::ask_remove_indices(&mut teams) {
+                ratings = Ratings::default();
+                EnemyPool::fill_teams_vec(LEVELS * 3, &mut teams, resources);
             }
         }
     }
 
-    pub fn rate_teams(
+    pub fn rate_teams_full(
+        teams: &Vec<PackedTeam>,
+        ratings: &mut Ratings,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        for i in 0..teams.len() {
+            for j in 0..teams.len() {
+                if i == j {
+                    continue;
+                }
+                let light = &teams[i];
+                let dark = &teams[j];
+                let result =
+                    SimulationSystem::run_ranked_battle(light, dark, world, resources, None);
+                ratings.add_rating(&light.name, RatingType::WinRate, result, 3);
+            }
+        }
+        ratings.calculate();
+    }
+
+    pub fn rate_teams_random(
         teams: &Vec<PackedTeam>,
         ratings: &mut Ratings,
         match_count: usize,

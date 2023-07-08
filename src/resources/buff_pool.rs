@@ -16,6 +16,16 @@ impl BuffPool {
             .cloned()
             .collect_vec()
     }
+
+    pub fn get_by_name(name: &str, resources: &Resources) -> Buff {
+        resources
+            .buff_pool
+            .pool
+            .iter()
+            .find(|x| x.name == name)
+            .unwrap()
+            .clone()
+    }
 }
 
 impl FileWatcherLoader for BuffPool {

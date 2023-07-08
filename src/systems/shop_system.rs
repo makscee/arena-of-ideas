@@ -375,7 +375,7 @@ impl ShopSystem {
     }
 
     pub fn show_battle_choice_panel(resources: &mut Resources) {
-        let teams = Ladder::get_current_teams(resources)
+        let teams = Ladder::generate_current_teams(resources)
             .into_iter()
             .map(|x| x.clone())
             .collect_vec();
@@ -406,26 +406,6 @@ impl ShopSystem {
 
         Event::Buy { owner: entity }.send(world, resources);
         Event::AddToTeam { owner: entity }.send(world, resources);
-    }
-
-    pub fn try_sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
-        let price = Self::sell_price(world);
-        let color = Faction::Shop.color(&resources.options);
-        let position = Context::new(ContextLayer::Entity { entity }, world, resources)
-            .get_vec2(&VarName::Position, world)
-            .unwrap();
-        VfxSystem::add_show_text_effect(&format!("+{price} g"), color, position, world, resources);
-        Self::change_g(price, Some("Sell hero"), world, resources);
-        resources
-            .shop_data
-            .pool
-            .push(PackedUnit::pack(entity, world, resources));
-        Self::do_sell(entity, resources, world);
-    }
-
-    pub fn do_sell(entity: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
-        Event::Sell { owner: entity }.send(world, resources);
-        UnitSystem::turn_unit_into_corpse(entity, world, resources);
     }
 
     fn refresh_tape(world: &mut legion::World, resources: &mut Resources) {
@@ -472,30 +452,6 @@ impl ShopSystem {
             .set_int(&VarName::G, 0);
     }
 
-    pub fn sell_price(world: &legion::World) -> i32 {
-        TeamSystem::get_state(Faction::Team, world)
-            .vars
-            .get_int(&VarName::SellPrice)
-    }
-
-    pub fn buy_price(world: &legion::World) -> i32 {
-        TeamSystem::get_state(Faction::Team, world)
-            .vars
-            .get_int(&VarName::BuyPrice)
-    }
-
-    pub fn reroll_price(world: &legion::World, resources: &Resources) -> i32 {
-        if resources.ladder.current_ind() == 0 {
-            return 0;
-        }
-        let vars = &TeamSystem::get_state(Faction::Team, world).vars;
-        if vars.get_int(&VarName::FreeRerolls) > 0 {
-            0
-        } else {
-            vars.get_int(&VarName::RerollPrice)
-        }
-    }
-
     pub fn is_reroll_affordable(world: &legion::World) -> bool {
         let vars = &TeamSystem::get_state(Faction::Team, world).vars;
         vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default() > 0
@@ -517,11 +473,6 @@ impl ShopSystem {
         }
     }
 
-    pub fn deduct_hero_price(world: &mut legion::World, resources: &mut Resources) {
-        let price = Self::buy_price(world);
-        Self::change_g(-price, Some("Buy hero"), world, resources);
-    }
-
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
         ShopData::load_pool_full(resources);
         PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
@@ -538,14 +489,14 @@ impl ShopSystem {
     }
 
     pub fn enter(world: &mut legion::World, resources: &mut Resources) {
-        let current_floor = resources.ladder.current_ind();
-        if current_floor == 0 {
+        let current_level = Ladder::current_level(resources);
+        if current_level == 0 {
             Self::change_g(resources.options.initial_shop_g, None, world, resources);
         }
-        ShopData::load_floor(resources, current_floor);
+        ShopData::load_floor(resources, current_level);
         WorldSystem::get_state_mut(world)
             .vars
-            .set_int(&VarName::Level, current_floor as i32);
+            .set_int(&VarName::Level, current_level as i32);
         Self::create_battle_button(resources);
 
         for product in enum_iterator::all::<Product>() {

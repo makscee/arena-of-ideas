@@ -305,7 +305,7 @@ impl PanelsSystem {
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
         let mut texts = Vec::default();
         texts.push(format!("g: {}", ShopSystem::get_g(world)));
-        texts.push(format!("level: {}", resources.ladder.current_level() + 1));
+        texts.push(format!("level: {}", Ladder::current_level(resources) + 1));
         let mut team_status = TeamSystem::get_state(Faction::Team, world)
             .statuses
             .iter()
@@ -529,6 +529,8 @@ impl Shader {
             .try_get_float("u_scale")
             .unwrap_or(1.0);
         shader.parameters.r#box = self.parameters.r#box;
+        shader.parameters.r#box.anchor = vec2::ZERO;
+        shader.parameters.r#box.center = vec2::ZERO;
         shader.parameters.r#box.size += vec2(padding, padding);
         shader.parameters.r#box.size *= scale;
         shader.chain_after.push(self);

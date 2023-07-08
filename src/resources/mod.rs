@@ -111,6 +111,7 @@ pub struct Resources {
     pub gallery_data: GalleryData,
 
     pub hero_pool: HeroPool,
+    pub enemy_pool: EnemyPool,
     pub house_pool: HousePool,
     pub ability_pool: AbilityPool,
     pub buff_pool: BuffPool,
@@ -152,6 +153,7 @@ impl Resources {
             ladder: default(),
             reload_triggered: default(),
             hero_pool: default(),
+            enemy_pool: default(),
             transition_state: GameState::MainMenu,
             current_state: GameState::MainMenu,
             options,
@@ -170,7 +172,8 @@ impl Resources {
         watcher.watch_file(&static_path().join("options.json"), Box::new(Options::load));
         HousePool::load(self, &static_path(), watcher);
         HeroPool::load(self, &static_path().join("units/_list.json"), watcher);
-        Ladder::load(self, &static_path().join("levels.json"), watcher);
+        EnemyPool::load(self, &static_path().join("enemy_pool/_list.json"), watcher);
+        Ladder::load(self, &static_path().join("ladder.json"), watcher);
         BuffPool::load(self, &static_path().join("buffs.json"), watcher);
 
         self.logger.load(&self.options);

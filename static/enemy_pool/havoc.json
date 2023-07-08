@@ -1,8 +1,8 @@
 {
     "name": "Havoc",
-    "attack": 3,
+    "attack": 2,
     "health": 1,
-    "description": "Before Death\ndeal 1 DMG\nto all enemies",
+    "description": "Before Death\ndeal 2 DMG\nto all enemies",
     "house": "Enemy",
     "trigger": {
         "type": "BeforeDeath",
@@ -20,7 +20,7 @@
                 "type": "Damage",
                 "value": {
                     "type": "Const",
-                    "value": 1
+                    "value": 2
                 },
                 "after": {
                     "type": "ShowCurve"

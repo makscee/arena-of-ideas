@@ -41,7 +41,7 @@ impl Game {
 
     pub fn reset(world: &mut legion::World, resources: &mut Resources) {
         UnitSystem::clear_factions(world, &Faction::all());
-        resources.ladder.reset();
+        Ladder::reset(resources);
         resources.action_queue.clear();
         resources.prepared_shaders.clear();
         resources.battle_data.total_score = default();

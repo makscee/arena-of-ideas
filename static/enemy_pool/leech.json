@@ -1,7 +1,7 @@
 {
     "name": "Leech",
-    "attack": 4,
-    "health": 2,
+    "attack": 5,
+    "health": 1,
     "description": "Enemy died:\ngain Vitality +2",
     "house": "Enemy",
     "trigger": {

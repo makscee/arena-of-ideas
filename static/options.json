@@ -1,8 +1,8 @@
 {
     "player_team_name": "Dorks",
     "initial_state": "Shop",
-    "walkthrough": false,
-    "team_ratings": false,
+    "rate_heroes": false,
+    "generate_ladder": false,
     "rewind_speed": 10.0,
     "rewind_add_speed": 10.0,
     "initial_shop_g": 6,
@@ -232,7 +232,6 @@
                     "u_ui": 1,
                     "u_rounding": 0.04,
                     "u_panel_body_color": "#3F3F3F",
-                    "u_color": "#af0000",
                     "u_panel_color": "#6495ED",
                     "u_g_points": [
                         -0.01,
@@ -268,6 +267,14 @@
                     "size": [
                         0.2,
                         0.03
+                    ],
+                    "anchor": [
+                        -1.0,
+                        0.0
+                    ],
+                    "center": [
+                        -1.1,
+                        0.0
                     ]
                 },
                 "uniforms": {

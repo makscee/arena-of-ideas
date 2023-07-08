@@ -1,8 +1,8 @@
 {
     "name": "Fiend",
-    "attack": 3,
+    "attack": 2,
     "health": 6,
-    "description": "Enemy died:\ngain Strength +1",
+    "description": "Enemy died:\ngain Strength +2",
     "house": "Enemy",
     "trigger": {
         "type": "AnyDeath",
@@ -28,7 +28,7 @@
                 },
                 "charges": {
                     "type": "Const",
-                    "value": 1
+                    "value": 2
                 }
             }
         }

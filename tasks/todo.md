@@ -59,4 +59,5 @@ Build
     ~50 Total heroes @content {cm:2023-07-05T22:02:35}
     ~20 Total enemies @content {cm:2023-07-05T22:02:40}
     Limit slots buying {cm:2023-07-07T16:43:29}
+    Simplified ladder format {start:2023-07-08T15:59:35} {cm:2023-07-08T18:06:38} {duration:02h07m}
     15 (45) balanced levels @content

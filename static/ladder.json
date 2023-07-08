@@ -1,0 +1,287 @@
+[
+    {
+        "teams": [
+            {
+                "enemy_name": "Bane",
+                "count": 2,
+                "buff": null
+            },
+            {
+                "enemy_name": "Hexer",
+                "count": 3,
+                "buff": null
+            },
+            {
+                "enemy_name": "Fiend",
+                "count": 2,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Leech",
+                "count": 3,
+                "buff": null
+            },
+            {
+                "enemy_name": "Bane",
+                "count": 3,
+                "buff": "Vitality"
+            },
+            {
+                "enemy_name": "Sacrilege",
+                "count": 4,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Gorge",
+                "count": 2,
+                "buff": "Martyr"
+            },
+            {
+                "enemy_name": "Fiend",
+                "count": 2,
+                "buff": "Thorns"
+            },
+            {
+                "enemy_name": "Fiend",
+                "count": 2,
+                "buff": "Vitality"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Hexer",
+                "count": 5,
+                "buff": null
+            },
+            {
+                "enemy_name": "Snake",
+                "count": 2,
+                "buff": null
+            },
+            {
+                "enemy_name": "Bane",
+                "count": 4,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Vengeance",
+                "count": 2,
+                "buff": null
+            },
+            {
+                "enemy_name": "Sacrilege",
+                "count": 4,
+                "buff": "Shield"
+            },
+            {
+                "enemy_name": "Sacrilege",
+                "count": 5,
+                "buff": "Thorns"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Fiend",
+                "count": 4,
+                "buff": null
+            },
+            {
+                "enemy_name": "Havoc",
+                "count": 2,
+                "buff": null
+            },
+            {
+                "enemy_name": "Gorge",
+                "count": 4,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Sacrilege",
+                "count": 6,
+                "buff": null
+            },
+            {
+                "enemy_name": "Havoc",
+                "count": 2,
+                "buff": "Thorns"
+            },
+            {
+                "enemy_name": "Bane",
+                "count": 4,
+                "buff": "Volatility"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Vengeance",
+                "count": 4,
+                "buff": null
+            },
+            {
+                "enemy_name": "Snake",
+                "count": 5,
+                "buff": null
+            },
+            {
+                "enemy_name": "Leech",
+                "count": 6,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Wither",
+                "count": 3,
+                "buff": null
+            },
+            {
+                "enemy_name": "Fiend",
+                "count": 6,
+                "buff": null
+            },
+            {
+                "enemy_name": "Wither",
+                "count": 3,
+                "buff": "Strength"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Fiend",
+                "count": 4,
+                "buff": "Volatility"
+            },
+            {
+                "enemy_name": "Leech",
+                "count": 4,
+                "buff": "Volatility"
+            },
+            {
+                "enemy_name": "Snake",
+                "count": 4,
+                "buff": "Martyr"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Vengeance",
+                "count": 6,
+                "buff": null
+            },
+            {
+                "enemy_name": "Snake",
+                "count": 6,
+                "buff": "Thorns"
+            },
+            {
+                "enemy_name": "Gorge",
+                "count": 6,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Fiend",
+                "count": 6,
+                "buff": "Thorns"
+            },
+            {
+                "enemy_name": "Wither",
+                "count": 3,
+                "buff": "Volatility"
+            },
+            {
+                "enemy_name": "Leech",
+                "count": 6,
+                "buff": "Volatility"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Wither",
+                "count": 4,
+                "buff": "Thorns"
+            },
+            {
+                "enemy_name": "Vengeance",
+                "count": 6,
+                "buff": "Volatility"
+            },
+            {
+                "enemy_name": "Wither",
+                "count": 5,
+                "buff": null
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Havoc",
+                "count": 4,
+                "buff": null
+            },
+            {
+                "enemy_name": "Wither",
+                "count": 6,
+                "buff": "Vitality"
+            },
+            {
+                "enemy_name": "Wither",
+                "count": 6,
+                "buff": "Thorns"
+            }
+        ]
+    },
+    {
+        "teams": [
+            {
+                "enemy_name": "Hexer",
+                "count": 4,
+                "buff": "Rebirth"
+            },
+            {
+                "enemy_name": "Wither",
+                "count": 6,
+                "buff": "Volatility"
+            },
+            {
+                "enemy_name": "Snake",
+                "count": 4,
+                "buff": "Volatility"
+            }
+        ]
+    }
+]

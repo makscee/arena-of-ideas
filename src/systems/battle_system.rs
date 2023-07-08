@@ -113,7 +113,7 @@ impl BattleSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        let mut dark = Ladder::generate_teams(dark);
+        let mut dark = Ladder::generate_promoted_teams(dark);
         Self::init_battle(&light, &dark.remove(0), world, resources);
         for team in dark {
             Self::queue_team(Faction::Dark, team, resources);
@@ -143,12 +143,11 @@ impl BattleSystem {
 
     pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.battle_data.last_score = Ladder::get_score(world);
-        resources.battle_data.last_round = resources.ladder.current_ind();
         resources.battle_data.total_score += resources.battle_data.last_score;
         let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
             let score = resources.battle_data.last_score;
             let difficulty = resources.battle_data.last_difficulty + 3;
-            if resources.ladder.next() {
+            if Ladder::next(resources) {
                 resources.transition_state = GameState::Sacrifice;
                 ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
                 ShopSystem::change_g(
@@ -418,23 +417,4 @@ impl BattleSystem {
     }
 }
 
-impl System for BattleSystem {
-    fn ui<'a>(
-        &'a mut self,
-        _: &'a ui::Controller,
-        _: &'a legion::World,
-        resources: &'a Resources,
-    ) -> Box<dyn ui::Widget + 'a> {
-        Box::new(
-            (Text::new(
-                format!("Level #{}", resources.ladder.current_ind()),
-                resources.fonts.get_font(1),
-                70.0,
-                Rgba::WHITE,
-            ),)
-                .column()
-                .flex_align(vec2(Some(1.0), None), vec2(1.0, 1.0))
-                .uniform_padding(32.0),
-        )
-    }
-}
+impl System for BattleSystem {}

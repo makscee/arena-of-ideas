@@ -84,10 +84,10 @@ fn main() {
     theme.font = resources.fonts.get_font(0);
     theme.hover_color = Rgba::BLACK;
     geng.set_ui_theme(theme);
-    if resources.options.walkthrough {
+    if resources.options.rate_heroes {
         // RatingSystem::simulate_walkthrough(&mut world, &mut resources);
         RatingSystem::simulate_hero_ratings_calculation(&mut world, &mut resources);
-    } else if resources.options.team_ratings {
+    } else if resources.options.generate_ladder {
         RatingSystem::simulate_enemy_ratings_calculation(&mut world, &mut resources);
     } else {
         let game = Game::new(world, resources, watcher);
