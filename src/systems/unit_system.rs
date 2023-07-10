@@ -67,12 +67,6 @@ impl UnitSystem {
         state.vars.change_int(&VarName::HpDamage, -amount);
     }
 
-    pub fn pack_shader(shader: &mut Shader, options: &Options) {
-        let chain_shader = mem::replace(shader, options.shaders.unit.clone());
-        shader.ts = chain_shader.ts;
-        shader.chain_before.push(chain_shader);
-    }
-
     pub fn draw_unit_to_node(
         entity: legion::Entity,
         node: &mut Node,
@@ -87,11 +81,9 @@ impl UnitSystem {
         let faction = context.get_faction(&VarName::Faction, world).unwrap();
         let slot = context.get_int(&VarName::Slot, world).unwrap() as usize;
         if faction == Faction::Shop || faction == Faction::Team {
-            shader.input_handlers.push(Self::unit_input_handler);
+            shader.middle.input_handlers.push(Self::unit_input_handler);
         }
         shader
-            .parameters
-            .uniforms
             .insert_float_ref(
                 "u_card".to_owned(),
                 match faction {
@@ -114,17 +106,16 @@ impl UnitSystem {
             .unwrap_or_default();
         let atk = context.get_int(&VarName::AttackValue, world).unwrap();
         shader
-            .parameters
-            .uniforms
             .insert_string_ref("u_hp_str".to_owned(), (hp - damage).to_string(), 1)
             .insert_string_ref("u_attack_str".to_owned(), atk.to_string(), 1);
         let rank = context.get_int(&VarName::Rank, world).unwrap();
         if rank > 0 {
-            shader.insert_float_ref("u_rank_1".to_owned(), 1.0);
-            shader.insert_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32);
-            shader.insert_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
+            shader
+                .insert_float_ref("u_rank_1".to_owned(), 1.0)
+                .insert_float_ref("u_rank_2".to_owned(), (rank > 1) as i32 as f32)
+                .insert_float_ref("u_rank_3".to_owned(), (rank > 2) as i32 as f32);
 
-            shader.hover_hints.push((
+            shader.middle.hover_hints.push((
                 resources.options.colors.primary,
                 format!("Rank {rank}"),
                 format!("+{rank}/+{rank}"),
@@ -150,17 +141,17 @@ impl UnitSystem {
             },
         );
 
-        shader.entity = Some(entity);
+        shader.middle.entity = Some(entity);
 
         let status_shaders = StatusLibrary::get_context_shaders(&context, world, resources);
         status_shaders
             .into_iter()
-            .for_each(|x| shader.chain_after.insert(0, x));
+            .for_each(|x| shader.after.insert(0, x));
         let statuses = context.collect_statuses(world);
-        StatusSystem::add_active_statuses_hint(&mut shader, &statuses, resources);
+        StatusSystem::add_active_statuses_hint(&mut shader.middle, &statuses, resources);
         let mut definitions = UnitSystem::extract_definitions_from_unit(entity, world, resources);
         definitions.extend(statuses.into_iter().map(|(name, _)| name));
-        Definitions::add_hints(&mut shader, definitions, resources);
+        Definitions::add_hints(&mut shader.middle, definitions, resources);
         node.add_entity_shader(entity, shader);
     }
 
@@ -224,28 +215,12 @@ impl UnitSystem {
         killer.unwrap_or(entity)
     }
 
-    pub fn get_corpse_killer(
-        unit: legion::Entity,
-        world: &legion::World,
-    ) -> Result<legion::Entity> {
-        Ok(world
-            .entry_ref(unit)?
-            .get_component::<CorpseComponent>()?
-            .killer)
-    }
-
-    pub fn revive_corpse(
-        entity: legion::Entity,
-        slot: Option<usize>,
-        world: &mut legion::World,
-        logger: &Logger,
-    ) {
+    pub fn revive_corpse(entity: legion::Entity, world: &mut legion::World, logger: &Logger) {
         let mut entry = world.entry(entity).unwrap();
         entry.remove_component::<CorpseComponent>();
         entry.add_component(UnitComponent {});
-        ContextState::get_mut(entity, world)
-            .vars
-            .set_int(&VarName::HpDamage, 0);
+        let vars = &mut ContextState::get_mut(entity, world).vars;
+        vars.set_int(&VarName::HpDamage, 0);
         logger.log(
             || format!("Corpse revived {entity:?}"),
             &LogContext::UnitCreation,
@@ -335,11 +310,12 @@ impl UnitSystem {
     }
 
     pub fn inject_entity_shaders_uniforms(
-        entity_shaders: &mut HashMap<legion::Entity, Shader>,
+        entity_shaders: &mut HashMap<legion::Entity, ShaderChain>,
         resources: &Resources,
     ) {
         for (entity, shader) in entity_shaders.iter_mut() {
             if let Some(mut card_value) = shader
+                .middle
                 .parameters
                 .uniforms
                 .try_get_float(&VarName::Card.uniform())
@@ -363,14 +339,8 @@ impl UnitSystem {
                     (resources.input_data.dragged_entity == Some(*entity)) as i32 as f32;
                 card_value = (card_value.max(hover_value) - dragged_value).max(0.0);
 
-                shader
-                    .parameters
-                    .uniforms
-                    .insert_ref("u_card".to_owned(), ShaderUniform::Float(card_value));
-                shader.parameters.uniforms.insert_ref(
-                    "u_zoom".to_owned(),
-                    ShaderUniform::Float(1.0 + hover_value * 1.4),
-                );
+                shader.insert_float_ref("u_card".to_owned(), card_value);
+                shader.insert_float_ref("u_zoom".to_owned(), 1.0 + hover_value * 1.4);
             }
         }
     }

@@ -69,38 +69,29 @@ impl Options {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Shaders {
-    pub panel_header: Shader,
-    pub panel_footer: Shader,
-    pub panel_body: Shader,
-    pub panel_button: Shader,
-    pub panel_text: Shader,
-    pub unit: Shader,
-    pub unit_card: Shader,
-    pub field: Shader,
-    pub stats: Shader,
-    pub strike: Shader,
-    pub text: Shader,
-    pub battle_timer: Shader,
-    pub curve: Shader,
-    pub name: Shader,
-    pub slot: Shader,
-    pub slot_price: Shader,
-    pub slot_sacrifice_marker: Shader,
-    pub button: Shader,
-    pub slot_button: Shader,
-    pub button_icon: Shader,
-    pub icon: Shader,
-    pub team_name: Shader,
-    pub team_name_intro: Shader,
-    pub tape_indicator: Shader,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct AnimatedShader {
-    pub shader: Shader,
-    pub animation: AnimatedShaderUniforms,
-    pub duration: Time,
+    pub panel_header: ShaderChain,
+    pub panel_footer: ShaderChain,
+    pub panel_body: ShaderChain,
+    pub panel_button: ShaderChain,
+    pub panel_text: ShaderChain,
+    pub unit: ShaderChain,
+    pub unit_card: ShaderChain,
+    pub field: ShaderChain,
+    pub stats: ShaderChain,
+    pub strike: ShaderChain,
+    pub text: ShaderChain,
+    pub battle_timer: ShaderChain,
+    pub curve: ShaderChain,
+    pub name: ShaderChain,
+    pub slot: ShaderChain,
+    pub slot_sacrifice_marker: ShaderChain,
+    pub button: ShaderChain,
+    pub slot_button: ShaderChain,
+    pub button_icon: ShaderChain,
+    pub icon: ShaderChain,
+    pub team_name: ShaderChain,
+    pub team_name_intro: ShaderChain,
+    pub tape_indicator: ShaderChain,
 }
 
 #[derive(Deserialize, Debug)]

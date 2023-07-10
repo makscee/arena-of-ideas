@@ -58,9 +58,9 @@ impl System for TapePlayerSystem {
 
 impl TapePlayerSystem {
     pub fn get_shaders(
-        entity_shaders: HashMap<legion::Entity, Shader>,
+        entity_shaders: HashMap<legion::Entity, ShaderChain>,
         resources: &mut Resources,
-    ) -> Vec<Shader> {
+    ) -> Vec<ShaderChain> {
         let ts = resources.tape_player.head;
         let mut tape = Tape::default();
         mem::swap(&mut tape, &mut resources.tape_player.tape);

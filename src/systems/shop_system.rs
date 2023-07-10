@@ -379,21 +379,6 @@ impl ShopSystem {
         SlotSystem::fill_gaps(Faction::Team, world);
     }
 
-    pub fn do_buy(
-        entity: legion::Entity,
-        slot: usize,
-        resources: &mut Resources,
-        world: &mut legion::World,
-    ) {
-        let team = TeamSystem::entity(Faction::Team, world);
-        let state = ContextState::get_mut(entity, world);
-        state.parent = team;
-        state.vars.set_int(&VarName::Slot, slot as i32);
-
-        Event::Buy { owner: entity }.send(world, resources);
-        Event::AddToTeam { owner: entity }.send(world, resources);
-    }
-
     fn refresh_tape(world: &mut legion::World, resources: &mut Resources) {
         resources.tape_player.tape.persistent_node = Node::default().lock(NodeLockType::Factions {
             factions: Faction::all(),

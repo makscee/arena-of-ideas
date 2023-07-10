@@ -104,7 +104,7 @@ impl VfxSystem {
         font: usize,
         color: Rgba<f32>,
         outline_color: Rgba<f32>,
-    ) -> Shader {
+    ) -> ShaderChain {
         resources
             .options
             .shaders
@@ -193,7 +193,10 @@ impl VfxSystem {
         )
     }
 
-    pub fn vfx_battle_team_names(world: &legion::World, resources: &Resources) -> (Shader, Shader) {
+    pub fn vfx_battle_team_names(
+        world: &legion::World,
+        resources: &Resources,
+    ) -> (ShaderChain, ShaderChain) {
         let light = TeamSystem::get_state(Faction::Light, world).name.clone();
         let dark = TeamSystem::get_state(Faction::Dark, world).name.clone();
         let shader = &resources.options.shaders.team_name;
@@ -201,6 +204,7 @@ impl VfxSystem {
             .clone()
             .insert_uniform("u_text".to_owned(), ShaderUniform::String((2, dark)));
         let light_pos = shader
+            .middle
             .parameters
             .uniforms
             .try_get_vec2(&VarName::Position.uniform())

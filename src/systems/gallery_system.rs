@@ -20,7 +20,7 @@ impl GallerySystem {
         let house =
             enum_iterator::all::<HouseName>().collect_vec()[resources.gallery_data.current_house];
 
-        let mut shaders: Vec<Shader> = default();
+        let mut shaders: Vec<ShaderChain> = default();
         for unit in HeroPool::all(resources) {
             let unit_house = unit.house.unwrap();
             if unit_house == house {

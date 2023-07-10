@@ -14,17 +14,23 @@ impl System for PanelsSystem {
         for panel in resources.panels_data.push.iter_mut() {
             panel.need_pos = bot_left_corner + offset;
             if panel.t == 0.0 && panel.state == PanelState::Open {
-                panel.shader.parameters.r#box.pos = panel.need_pos;
+                panel.shader.middle.parameters.r#box.pos = panel.need_pos;
             }
-            offset += vec2(0.0, PADDING + panel.shader.parameters.r#box.size.y * 2.0);
+            offset += vec2(
+                0.0,
+                PADDING + panel.shader.middle.parameters.r#box.size.y * 2.0,
+            );
         }
         let mut offset = vec2::ZERO;
         for panel in resources.panels_data.hint.iter_mut() {
             panel.need_pos = bot_right_corner + offset;
             if panel.t == 0.0 && panel.state == PanelState::Open {
-                panel.shader.parameters.r#box.pos = panel.need_pos;
+                panel.shader.middle.parameters.r#box.pos = panel.need_pos;
             }
-            offset += vec2(0.0, PADDING + panel.shader.parameters.r#box.size.y * 2.0);
+            offset += vec2(
+                0.0,
+                PADDING + panel.shader.middle.parameters.r#box.size.y * 2.0,
+            );
         }
 
         if let Some(panel) = resources.panels_data.stats.as_mut() {
@@ -93,7 +99,7 @@ impl PanelsSystem {
             .panels_data
             .alert
             .iter_mut()
-            .find(|x| x.shader.entity == Some(entity))
+            .find(|x| x.shader.middle.entity == Some(entity))
     }
 
     pub fn open_card_choice(choice: CardChoice, resources: &mut Resources) {
@@ -105,7 +111,7 @@ impl PanelsSystem {
             CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => Faction::Team,
             CardChoice::SelectEnemy { .. } => Faction::Dark,
         };
-        let cards: Vec<(String, usize, Shader, Rgba<f32>, Rgba<f32>)> = match &choice {
+        let cards: Vec<(String, usize, ShaderChain, Rgba<f32>, Rgba<f32>)> = match &choice {
             CardChoice::BuyHero { units } => units
                 .iter()
                 .map(|x| {
@@ -198,7 +204,7 @@ impl PanelsSystem {
                         }
                     }
                 }
-                shader.update_handlers.push(update_handler);
+                shader.middle.post_update_handlers.push(update_handler);
                 shader
             })
             .collect_vec();
@@ -209,10 +215,10 @@ impl PanelsSystem {
             CardChoice::SelectEnemy { .. } => vec![PanelFooterButton::Accept],
         };
         resources.panels_data.choice_options = Some(choice);
-        let mut panel = Shader::wrap_panel_body_row(shaders, padding, &resources.options)
+        let mut panel = ShaderChain::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header(title, &resources.options)
             .wrap_panel_footer(buttons, &resources.options);
-        panel.parameters.r#box.pos.y += 0.3;
+        panel.middle.parameters.r#box.pos.y += 0.3;
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
             Some(panel_color),
@@ -221,7 +227,7 @@ impl PanelsSystem {
     }
 
     pub fn open_card_list(
-        mut shaders: Vec<Shader>,
+        mut shaders: Vec<ShaderChain>,
         title: &str,
         color: Rgba<f32>,
         pos: vec2<f32>,
@@ -232,6 +238,7 @@ impl PanelsSystem {
     ) -> Option<legion::Entity> {
         for shader in shaders.iter_mut() {
             shader
+                .middle
                 .parameters
                 .merge(&resources.options.parameters.panel_card, true);
         }
@@ -242,11 +249,11 @@ impl PanelsSystem {
             row_limit
         };
 
-        let mut rows: Vec<Shader> = default();
+        let mut rows: Vec<ShaderChain> = default();
         while !shaders.is_empty() {
             let limit = row_limit.min(shaders.len());
             let shaders = shaders.drain(0..limit).collect_vec();
-            let mut row = Shader::wrap_panel_body_row(
+            let mut row = ShaderChain::wrap_panel_body_row(
                 shaders,
                 resources.options.floats.panel_row_padding,
                 &resources.options,
@@ -254,7 +261,7 @@ impl PanelsSystem {
 
             rows.push(row);
         }
-        let shader = Shader::wrap_panel_body_column(
+        let shader = ShaderChain::wrap_panel_body_column(
             rows,
             resources.options.floats.panel_column_padding,
             &resources.options,
@@ -271,7 +278,7 @@ impl PanelsSystem {
             )
             .panel(PanelType::Alert, Some(color), resources);
         panel.need_pos = pos;
-        let entity = panel.shader.entity;
+        let entity = panel.shader.middle.entity;
         resources.panels_data.alert.push(panel);
         entity
     }
@@ -332,7 +339,9 @@ impl PanelsSystem {
 
     pub fn close_alert(entity: legion::Entity, resources: &mut Resources) {
         for panel in resources.panels_data.alert.iter_mut() {
-            if panel.shader.entity == Some(entity) || panel.shader.parent == Some(entity) {
+            if panel.shader.middle.entity == Some(entity)
+                || panel.shader.middle.parent == Some(entity)
+            {
                 panel.state = PanelState::Closed;
             }
         }
@@ -353,23 +362,29 @@ impl PanelsSystem {
         resources.panels_data.chosen_ind = None;
     }
 
-    pub fn generate_text_shader(text: &str, extra_size: vec2<f32>, options: &Options) -> Shader {
+    pub fn generate_text_shader(
+        text: &str,
+        extra_size: vec2<f32>,
+        options: &Options,
+    ) -> ShaderChain {
         let mut shader = options.shaders.panel_text.clone().insert_string(
             "u_text".to_owned(),
             text.to_owned(),
             0,
         );
-        shader.parameters.r#box.size += extra_size;
+        shader.middle.parameters.r#box.size += extra_size;
         let lines = text.chars().map(|x| (x == '\n') as i32).sum::<i32>() + 1;
-        let per_line = shader.parameters.r#box.size.y;
-        shader.parameters.r#box.size.y = lines as f32 * per_line;
+        let per_line = shader.middle.parameters.r#box.size.y;
+        shader.middle.parameters.r#box.size.y = lines as f32 * per_line;
         let padding = options.floats.panel_text_padding;
         shader = shader.wrap_panel_body(padding, options);
         shader
     }
 
-    pub fn generate_card_panel(mut card: Shader, options: &Options) -> Shader {
-        card.parameters.merge(&options.parameters.panel_card, true);
+    pub fn generate_card_panel(mut card: ShaderChain, options: &Options) -> ShaderChain {
+        card.middle
+            .parameters
+            .merge(&options.parameters.panel_card, true);
         let padding = options.floats.panel_card_padding;
         let card = card.wrap_panel_body(padding, options);
         card
@@ -432,7 +447,7 @@ impl CardChoice {
 
 #[derive(Debug)]
 pub struct Panel {
-    pub shader: Shader,
+    pub shader: ShaderChain,
     pub need_pos: vec2<f32>,
     pub state: PanelState,
     pub r#type: PanelType,
@@ -444,8 +459,8 @@ impl Panel {
     pub fn update(&mut self, delta_time: Time, global_time: Time) {
         const SPEED: f32 = 10.0;
 
-        self.shader.parameters.r#box.pos +=
-            (self.need_pos - self.shader.parameters.r#box.pos) * SPEED * delta_time;
+        self.shader.middle.parameters.r#box.pos +=
+            (self.need_pos - self.shader.middle.parameters.r#box.pos) * SPEED * delta_time;
         if self.state == PanelState::Open {
             let duration = self.r#type.duration();
             if duration > 0.0 && self.ts + duration < global_time {
@@ -465,12 +480,17 @@ impl Panel {
     }
 }
 
-impl Shader {
-    pub fn wrap_panel_body_row(mut shaders: Vec<Shader>, padding: f32, options: &Options) -> Self {
+impl ShaderChain {
+    pub fn wrap_panel_body_row(
+        mut shaders: Vec<ShaderChain>,
+        padding: f32,
+        options: &Options,
+    ) -> Self {
         let size = {
             let shader = &shaders[0];
-            shader.parameters.r#box.size
+            shader.middle.parameters.r#box.size
                 * shader
+                    .middle
                     .parameters
                     .uniforms
                     .try_get_float("u_scale")
@@ -478,29 +498,30 @@ impl Shader {
         };
         let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
         let count = shaders.len() as f32;
-        shader.parameters.r#box.size.x += count * size.x;
-        shader.parameters.r#box.size +=
+        shader.middle.parameters.r#box.size.x += count * size.x;
+        shader.middle.parameters.r#box.size +=
             vec2(options.floats.panel_row_spacing * (count + 1.0), padding);
 
-        shader.chain_after.extend(shaders.drain(..));
-        let spacing = 2.0 / shader.chain_after.len() as f32;
+        shader.after.extend(shaders.drain(..));
+        let spacing = 2.0 / shader.after.len() as f32;
         let mut anchor_position = -1.0 + spacing * 0.5;
-        for shader in shader.chain_after.iter_mut() {
-            shader.parameters.r#box.anchor.x = anchor_position;
+        for shader in shader.after.iter_mut() {
+            shader.middle.parameters.r#box.anchor.x = anchor_position;
             anchor_position += spacing;
         }
 
         shader
     }
     pub fn wrap_panel_body_column(
-        mut shaders: Vec<Shader>,
+        mut shaders: Vec<ShaderChain>,
         padding: f32,
         options: &Options,
     ) -> Self {
         let size = {
             let shader = &shaders[0];
-            shader.parameters.r#box.size
+            shader.middle.parameters.r#box.size
                 * shader
+                    .middle
                     .parameters
                     .uniforms
                     .try_get_float("u_scale")
@@ -508,14 +529,15 @@ impl Shader {
         };
         let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
         let count = shaders.len() as f32;
-        shader.parameters.r#box.size.y += count * size.y;
-        shader.parameters.r#box.size += vec2(0.0, options.floats.panel_column_spacing * count);
+        shader.middle.parameters.r#box.size.y += count * size.y;
+        shader.middle.parameters.r#box.size +=
+            vec2(0.0, options.floats.panel_column_spacing * count);
 
-        shader.chain_after.extend(shaders.drain(..));
-        let spacing = 2.0 / shader.chain_after.len() as f32;
+        shader.after.extend(shaders.drain(..));
+        let spacing = 2.0 / shader.after.len() as f32;
         let mut anchor_position = 1.0 - spacing * 0.5;
-        for shader in shader.chain_after.iter_mut() {
-            shader.parameters.r#box.anchor.y = anchor_position;
+        for shader in shader.after.iter_mut() {
+            shader.middle.parameters.r#box.anchor.y = anchor_position;
             anchor_position -= spacing;
         }
 
@@ -525,17 +547,18 @@ impl Shader {
     pub fn wrap_panel_body(self, padding: f32, options: &Options) -> Self {
         let mut shader = options.shaders.panel_body.clone();
         let scale = self
+            .middle
             .parameters
             .uniforms
             .try_get_float("u_scale")
             .unwrap_or(1.0);
-        shader.parameters.r#box = self.parameters.r#box;
-        shader.parameters.r#box.anchor = vec2::ZERO;
-        shader.parameters.r#box.center = vec2::ZERO;
-        shader.parameters.r#box.size += vec2(padding, padding);
-        shader.parameters.r#box.size *= scale;
-        shader.chain_after.push(self);
-        shader.entity = Some(new_entity());
+        shader.middle.parameters.r#box = self.middle.parameters.r#box;
+        shader.middle.parameters.r#box.anchor = vec2::ZERO;
+        shader.middle.parameters.r#box.center = vec2::ZERO;
+        shader.middle.parameters.r#box.size += vec2(padding, padding);
+        shader.middle.parameters.r#box.size *= scale;
+        shader.after.push(self);
+        shader.middle.entity = Some(new_entity());
         shader
     }
 
@@ -545,30 +568,30 @@ impl Shader {
             title.to_owned(),
             1,
         );
-        shader.parameters.r#box.size.x = self.parameters.r#box.size.x;
-        for child in shader.chain_after.iter_mut() {
-            child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
+        shader.middle.parameters.r#box.size.x = self.middle.parameters.r#box.size.x;
+        for child in shader.after.iter_mut() {
+            child.middle.parameters.r#box.size.x = shader.middle.parameters.r#box.size.x;
         }
-        self.chain_after.push(shader);
+        self.after.push(shader);
         self
     }
 
     pub fn wrap_panel_footer(mut self, buttons: Vec<PanelFooterButton>, options: &Options) -> Self {
         let mut shader = options.shaders.panel_footer.clone();
-        shader.parameters.r#box.size.x = self.parameters.r#box.size.x;
-        for child in shader.chain_after.iter_mut() {
-            child.parameters.r#box.size.x = shader.parameters.r#box.size.x;
+        shader.middle.parameters.r#box.size.x = self.middle.parameters.r#box.size.x;
+        for child in shader.after.iter_mut() {
+            child.middle.parameters.r#box.size.x = shader.middle.parameters.r#box.size.x;
         }
         let mut buttons = buttons
             .into_iter()
-            .map(|x| x.get_button(self.entity, options))
+            .map(|x| x.get_button(self.middle.entity, options))
             .collect_vec();
         if buttons.len() == 2 {
-            buttons[0].parameters.r#box.anchor = vec2(-0.5, 0.0);
-            buttons[1].parameters.r#box.anchor = vec2(0.5, 0.0);
+            buttons[0].middle.parameters.r#box.anchor = vec2(-0.5, 0.0);
+            buttons[1].middle.parameters.r#box.anchor = vec2(0.5, 0.0);
         }
-        shader.chain_after.extend(buttons.into_iter());
-        self.chain_after.push(shader);
+        shader.after.extend(buttons.into_iter());
+        self.after.push(shader);
         self
     }
 
@@ -588,21 +611,21 @@ impl Shader {
     ) -> Panel {
         match r#type {
             PanelType::Push => {
-                self.parameters.r#box.center = vec2(-1.0, -1.0);
+                self.middle.parameters.r#box.center = vec2(-1.0, -1.0);
             }
             PanelType::Alert => {}
             PanelType::Hint => {
-                self.parameters.r#box.center = vec2(1.0, -1.0);
+                self.middle.parameters.r#box.center = vec2(1.0, -1.0);
             }
             PanelType::Stats => {
-                self.parameters.r#box.center = vec2(-1.0, 1.0);
+                self.middle.parameters.r#box.center = vec2(-1.0, 1.0);
             }
         }
         if let Some(color) = color {
             self = self.set_panel_color(color);
         }
         Panel {
-            need_pos: self.parameters.r#box.pos,
+            need_pos: self.middle.parameters.r#box.pos,
             shader: self,
             state: PanelState::Open,
             r#type,
@@ -644,18 +667,24 @@ pub enum PanelFooterButton {
 }
 
 impl PanelFooterButton {
-    pub fn get_button(&self, entity: Option<legion::Entity>, options: &Options) -> Shader {
+    pub fn get_button(&self, entity: Option<legion::Entity>, options: &Options) -> ShaderChain {
         let mut button_shader = options.shaders.panel_button.clone().insert_string(
             "u_text".to_owned(),
             self.get_text().to_owned(),
             1,
         );
-        button_shader.parent = entity;
-        button_shader.entity = Some(new_entity());
-        ButtonSystem::add_button_handlers(&mut button_shader);
-        button_shader.input_handlers.push(self.get_input_handler());
+        button_shader.middle.parent = entity;
+        button_shader.middle.entity = Some(new_entity());
+        ButtonSystem::add_button_handlers(&mut button_shader.middle);
+        button_shader
+            .middle
+            .input_handlers
+            .push(self.get_input_handler());
         if let Some(update_handler) = self.get_update_handler() {
-            button_shader.update_handlers.insert(0, update_handler);
+            button_shader
+                .middle
+                .post_update_handlers
+                .insert(0, update_handler);
         }
         button_shader
     }

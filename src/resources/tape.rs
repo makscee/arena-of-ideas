@@ -30,7 +30,7 @@ pub struct NodeCluster {
 
 #[derive(Default, Clone, Debug)]
 pub struct Node {
-    entities: HashMap<legion::Entity, Shader>,
+    entities: HashMap<legion::Entity, ShaderChain>,
     key_effects: HashMap<String, Vec<TimedEffect>>,
     effects: Vec<TimedEffect>,
     duration: Option<Time>,
@@ -40,9 +40,9 @@ impl Tape {
     pub fn get_shaders(
         &mut self,
         ts: Time,
-        mut entity_shaders: HashMap<legion::Entity, Shader>,
+        mut entity_shaders: HashMap<legion::Entity, ShaderChain>,
         resources: &mut Resources,
-    ) -> Vec<Shader> {
+    ) -> Vec<ShaderChain> {
         let mut node = self.persistent_node.clone();
         if let Some((start_ts, cluster)) = self.try_get_cluster(ts) {
             let cluster_node = cluster.generate_node(ts - start_ts);
@@ -62,7 +62,7 @@ impl Tape {
         }
         UnitSystem::inject_entity_shaders_uniforms(&mut entity_shaders, resources);
 
-        let mut extra_shaders: Vec<Shader> = default();
+        let mut extra_shaders: Vec<ShaderChain> = default();
         for effect in node.all_effects() {
             let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
             if t > 0.0 {
@@ -255,7 +255,7 @@ impl ClusterQueue {
 }
 
 impl Node {
-    pub fn new_panel_scaled(shader: Shader) -> Node {
+    pub fn new_panel_scaled(shader: ShaderChain) -> Node {
         let animation = AnimatedShaderUniforms::empty()
             .add_key_frame(
                 0.0,
@@ -327,7 +327,7 @@ impl Node {
         self
     }
 
-    pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: Shader) {
+    pub fn add_entity_shader(&mut self, entity: legion::Entity, shader: ShaderChain) {
         if let Some(data) = self.entities.get_mut(&entity) {
             *data = shader;
         } else {
@@ -335,7 +335,7 @@ impl Node {
         }
     }
 
-    pub fn get_entity_shaders(&self) -> HashMap<legion::Entity, Shader> {
+    pub fn get_entity_shaders(&self) -> HashMap<legion::Entity, ShaderChain> {
         HashMap::from_iter(
             self.entities
                 .iter()
@@ -416,7 +416,7 @@ impl Node {
     }
 
     fn draw_all_tape_entities_to_node(node: &mut Node, world: &legion::World) {
-        <(&EntityComponent, &Shader)>::query()
+        <(&EntityComponent, &ShaderChain)>::query()
             .filter(component::<TapeEntityComponent>())
             .iter(world)
             .for_each(|(entity, shader)| {

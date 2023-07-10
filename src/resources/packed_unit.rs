@@ -17,7 +17,7 @@ pub struct PackedUnit {
     pub trigger: Trigger,
     #[serde(default)]
     pub statuses: Vec<(String, i32)>,
-    pub shader: Option<Shader>,
+    pub shader: Option<ShaderChain>,
     #[serde(default)]
     pub rank: u8,
 }
@@ -43,7 +43,7 @@ impl PackedUnit {
             .cloned()
             .unwrap_or(Trigger::Noop);
         let statuses = StatusSystem::pack_state_into_vec(state);
-        let shader = entry.get_component::<Shader>().ok().cloned();
+        let shader = entry.get_component::<ShaderChain>().ok().cloned();
         let rank = state.vars.try_get_int(&VarName::Rank).unwrap_or_default() as u8;
         let result = Self {
             name,
@@ -122,13 +122,13 @@ impl PackedUnit {
         }
     }
 
-    pub fn generate_shader(&self, house_color: Rgba<f32>, options: &Options) -> Shader {
+    pub fn generate_shader(&self, house_color: Rgba<f32>, options: &Options) -> ShaderChain {
         let mut shader = options.shaders.unit.clone();
         if let Some(self_shader) = self.shader.as_ref() {
-            shader.chain_before.push(self_shader.clone());
+            shader.before.push(self_shader.clone());
         }
         shader.insert_color_ref("u_house_color".to_owned(), house_color);
-        shader.chain_after.push(options.shaders.unit_card.clone());
+        shader.after.push(options.shaders.unit_card.clone());
 
         shader.insert_string_ref("u_description".to_owned(), self.description.clone(), 0);
         shader.insert_float_ref("u_rank_1".to_owned(), (self.rank > 0) as i32 as f32);
@@ -138,6 +138,7 @@ impl PackedUnit {
         let hp_offset = options
             .shaders
             .stats
+            .middle
             .parameters
             .uniforms
             .try_get_vec2("u_offset")
@@ -146,6 +147,7 @@ impl PackedUnit {
         let hp_card_offset = options
             .shaders
             .stats
+            .middle
             .parameters
             .uniforms
             .try_get_vec2("u_card_offset")
@@ -168,7 +170,7 @@ impl PackedUnit {
             .map_key_to_key("u_text", "u_hp_str")
             .map_key_to_key("u_text_extra_size", "u_damage_taken")
             .map_key_to_key("u_text_color", "u_hp_color");
-        shader.chain_after.push(hp_shader);
+        shader.after.push(hp_shader);
 
         let attack_shader = options
             .shaders
@@ -181,9 +183,9 @@ impl PackedUnit {
             .insert_string("u_text".to_owned(), self.attack.to_string(), 1)
             .map_key_to_key("u_text", "u_attack_str")
             .map_key_to_key("u_text_color", "u_attack_color");
-        shader.chain_after.push(attack_shader);
+        shader.after.push(attack_shader);
         shader
-            .chain_after
+            .after
             .push(options.shaders.name.clone().insert_uniform(
                 "u_text".to_owned(),
                 ShaderUniform::String((1, self.name.clone())),
@@ -192,10 +194,16 @@ impl PackedUnit {
         shader
     }
 
-    pub fn get_ui_shader(&self, faction: Faction, set_card: bool, resources: &Resources) -> Shader {
+    pub fn get_ui_shader(
+        &self,
+        faction: Faction,
+        set_card: bool,
+        resources: &Resources,
+    ) -> ShaderChain {
         let house_color = self.house_color(resources);
         let mut shader = self.generate_shader(house_color, &resources.options);
         shader
+            .middle
             .parameters
             .uniforms
             .insert_color_ref(
@@ -204,19 +212,19 @@ impl PackedUnit {
             )
             .insert_vec2_ref("u_align".to_owned(), vec2::ZERO);
         if set_card {
-            shader.insert_float_ref("u_card".to_owned(), 1.0);
+            shader.middle.insert_float_ref("u_card".to_owned(), 1.0);
         }
         if let Some(house) = self.house {
-            shader.parameters.uniforms.insert_color_ref(
+            shader.middle.parameters.uniforms.insert_color_ref(
                 "u_house_color".to_owned(),
                 HousePool::get_color(&house, resources),
             );
         }
         let mut definitions = UnitSystem::extract_definitions(&self.description, resources);
         definitions.extend(self.statuses.iter().map(|(name, _)| name.clone()));
-        StatusSystem::add_active_statuses_hint(&mut shader, &self.statuses, resources);
-        Definitions::add_hints(&mut shader, definitions, resources);
-        shader.entity = Some(new_entity());
+        StatusSystem::add_active_statuses_hint(&mut shader.middle, &self.statuses, resources);
+        Definitions::add_hints(&mut shader.middle, definitions, resources);
+        shader.middle.entity = Some(new_entity());
         shader
     }
 }

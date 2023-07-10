@@ -8,7 +8,7 @@ pub struct Status {
     pub description: Option<String>,
     #[serde(default = "default_color")]
     pub color: Rgba<f32>,
-    pub shader: Option<Shader>,
+    pub shader: Option<ShaderChain>,
 }
 
 fn default_color() -> Rgba<f32> {
@@ -212,10 +212,10 @@ impl Status {
         name: &str,
         charges: Option<i32>,
         resources: &Resources,
-    ) -> Shader {
+    ) -> ShaderChain {
         let mut shader = resources.options.shaders.unit_card.clone();
         if let Some(self_shader) = self.shader.as_ref() {
-            shader.chain_before.push(
+            shader.before.push(
                 self_shader
                     .clone()
                     .insert_int("u_index".to_owned(), 0)
@@ -241,7 +241,7 @@ impl Status {
             None => String::default(),
         };
         shader
-            .chain_after
+            .after
             .push(resources.options.shaders.name.clone().insert_uniform(
                 "u_text".to_owned(),
                 ShaderUniform::String((1, format!("{name} {charges_str}"))),

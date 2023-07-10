@@ -9,7 +9,7 @@ impl InputSystem {
     }
 
     pub fn process_shaders(
-        shaders: &mut Vec<Shader>,
+        shaders: &mut Vec<ShaderChain>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
@@ -17,7 +17,7 @@ impl InputSystem {
         Self::handle_events(shaders, world, resources)
     }
 
-    pub fn update_frame_data(shaders: &mut Vec<Shader>, resources: &mut Resources) {
+    pub fn update_frame_data(shaders: &mut Vec<ShaderChain>, resources: &mut Resources) {
         let (prev, cur) = &mut resources.input_data.frame_data;
         mem::swap(prev, cur);
         cur.mouse = resources.input_data.mouse_world_pos;
@@ -74,8 +74,8 @@ impl InputSystem {
 
         let mut hovered = None;
         for shader in shaders.iter().rev() {
-            if shader.entity.is_some() {
-                if shader.is_hovered(
+            if shader.middle.entity.is_some() {
+                if shader.middle.is_hovered(
                     resources.input_data.mouse_screen_pos,
                     resources.input_data.mouse_world_pos,
                 ) {
@@ -86,13 +86,13 @@ impl InputSystem {
         }
 
         if let Some(hovered) = hovered {
-            cur.attention = hovered.entity;
+            cur.attention = hovered.middle.entity;
             cur.state = InputState::Hover;
         }
     }
 
     pub fn handle_events(
-        shaders: &mut Vec<Shader>,
+        shaders: &mut Vec<ShaderChain>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
@@ -101,7 +101,7 @@ impl InputSystem {
         let mut cur_shader = None;
         if cur.attention.is_some() || prev.attention.is_some() {
             for (ind, shader) in shaders.iter_mut().enumerate() {
-                if let Some(entity) = shader.entity.as_ref() {
+                if let Some(entity) = shader.middle.entity.as_ref() {
                     if let Some(prev) = prev.attention {
                         if prev == *entity {
                             prev_shader = Some(ind);
@@ -200,13 +200,13 @@ impl InputSystem {
     fn send_event(
         event: HandleEvent,
         ind: Option<usize>,
-        shaders: &mut Vec<Shader>,
+        shaders: &mut Vec<ShaderChain>,
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
         if let Some(ind) = ind {
             let mut shader = shaders.remove(ind);
-            let entity = shader.entity.unwrap();
+            let entity = shader.middle.entity.unwrap();
             match &event {
                 HandleEvent::HoverStart
                 | HandleEvent::HoverStop
@@ -222,13 +222,13 @@ impl InputSystem {
                 }
                 _ => {}
             }
-            for f in shader.input_handlers.clone() {
-                (f)(event, entity, &mut shader, world, resources);
+            for f in shader.middle.input_handlers.clone() {
+                (f)(event, entity, &mut shader.middle, world, resources);
             }
             match &event {
                 HandleEvent::HoverStart => {
                     resources.input_data.hovered_entity = Some(entity);
-                    for (color, title, text) in shader.hover_hints.iter() {
+                    for (color, title, text) in shader.middle.hover_hints.iter() {
                         PanelsSystem::open_hint(color.clone(), title, text, resources);
                     }
                 }

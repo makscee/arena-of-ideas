@@ -142,7 +142,7 @@
                     }
                 }
             },
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {
@@ -337,7 +337,7 @@
                     }
                 }
             },
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {
@@ -380,7 +380,7 @@
                 "Rank2",
                 "Rank1"
             ],
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/star.glsl",
                     "parameters": {
@@ -400,7 +400,7 @@
                             }
                         }
                     },
-                    "chain_after": [
+                    "after": [
                         {
                             "path": "shaders/vfx/star.glsl",
                             "parameters": {
@@ -514,7 +514,7 @@
                     }
                 }
             },
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {
@@ -696,35 +696,6 @@
             },
             "layer": "Background"
         },
-        "slot_price": {
-            "path": "shaders/vfx/text.glsl",
-            "parameters": {
-                "uniforms": {
-                    "u_size": 0.5,
-                    "u_offset": [
-                        0.0,
-                        -2.0
-                    ],
-                    "u_text": [
-                        0,
-                        "3 g"
-                    ],
-                    "u_text_inside": 0.45,
-                    "u_text_border": 0.35,
-                    "mapping": {
-                        "u_enabled": {
-                            "type": "Uniform",
-                            "key": "u_filled"
-                        },
-                        "u_outline_color": {
-                            "type": "OptionColor",
-                            "key": "outline"
-                        }
-                    }
-                }
-            },
-            "layer": "UI"
-        },
         "slot_sacrifice_marker": {
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
@@ -742,7 +713,7 @@
                     "u_rotation": 0.25
                 }
             },
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/rectangle.glsl",
                     "parameters": {
@@ -806,6 +777,7 @@
                 },
                 "uniforms": {
                     "u_active": 1.0,
+                    "u_enabled": 1.0,
                     "u_rounding": 0.02,
                     "u_g_points": [
                         -0.01,
@@ -832,7 +804,7 @@
                     }
                 }
             },
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {
@@ -898,7 +870,7 @@
                     }
                 }
             },
-            "chain_after": [
+            "after": [
                 {
                     "path": "shaders/vfx/text.glsl",
                     "parameters": {

@@ -84,7 +84,7 @@ impl BattleSystem {
         resources.battle_data.team_names_entitities = Some(names);
     }
 
-    fn push_tape_shader_entity(shader: Shader, world: &mut legion::World) -> legion::Entity {
+    fn push_tape_shader_entity(shader: ShaderChain, world: &mut legion::World) -> legion::Entity {
         let entity = world.push((shader, TapeEntityComponent {}));
         world
             .entry(entity)

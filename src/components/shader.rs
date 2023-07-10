@@ -14,10 +14,6 @@ pub struct Shader {
     #[serde(default)]
     pub order: i32,
     #[serde(default)]
-    pub chain_before: Box<Vec<Shader>>,
-    #[serde(default)]
-    pub chain_after: Box<Vec<Shader>>,
-    #[serde(default)]
     request_vars: Vec<VarName>,
     #[serde(skip)]
     pub ts: i64,
@@ -28,9 +24,22 @@ pub struct Shader {
     #[serde(skip)]
     pub input_handlers: Vec<Handler>,
     #[serde(skip)]
-    pub update_handlers: Vec<Handler>,
+    pub pre_update_handlers: Vec<Handler>,
+    #[serde(skip)]
+    pub post_update_handlers: Vec<Handler>,
     #[serde(skip)]
     pub hover_hints: Vec<(Rgba<f32>, String, String)>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ShaderChain {
+    #[serde(flatten)]
+    pub middle: Shader,
+    #[serde(default)]
+    pub before: Box<Vec<ShaderChain>>,
+    #[serde(default)]
+    pub after: Box<Vec<ShaderChain>>,
 }
 
 const DEFAULT_REQUEST_VARS: [VarName; 12] = [
@@ -55,8 +64,6 @@ impl Debug for Shader {
             .field("parameters", &self.parameters)
             .field("layer", &self.layer)
             .field("order", &self.order)
-            .field("chain_before", &self.chain_before)
-            .field("chain_after", &self.chain_after)
             .field("ts", &self.ts)
             .field("entity", &self.entity)
             .finish()
@@ -173,22 +180,6 @@ impl Shader {
         }
     }
 
-    pub fn add_context_ref(&mut self, context: &Context, world: &legion::World) -> &mut Self {
-        let mut vars: Vars = default();
-        for var in self.request_vars() {
-            if let Some(value) = context.get_var(var, world) {
-                vars.insert(*var, value);
-            }
-        }
-        self.parameters.uniforms.merge_mut(&vars.into(), true);
-        self
-    }
-
-    pub fn add_context(mut self, context: &Context, world: &legion::World) -> Self {
-        self.add_context_ref(context, world);
-        self
-    }
-
     pub fn is_hovered(&self, mouse_screen: vec2<f32>, mouse_world: vec2<f32>) -> bool {
         if !self.is_enabled() {
             return false;
@@ -207,7 +198,7 @@ impl Shader {
         aabb.contains(position)
     }
 
-    pub fn inject_uniforms(mut self, resources: &Resources) -> Self {
+    pub fn inject_uniforms(&mut self, resources: &Resources) -> &mut Self {
         let uniforms = &mut self.parameters.uniforms;
 
         let rand = uniforms.try_get_float("u_rand").unwrap_or_default();
@@ -252,16 +243,117 @@ impl Shader {
 
         self
     }
+}
+
+impl ShaderChain {
+    pub fn add_context_ref(&mut self, context: &Context, world: &legion::World) -> &mut Self {
+        let mut vars: Vars = default();
+        for var in self.request_vars() {
+            if let Some(value) = context.get_var(var, world) {
+                vars.insert(*var, value);
+            }
+        }
+        self.middle
+            .parameters
+            .uniforms
+            .merge_mut(&vars.into(), true);
+        self
+    }
+
+    pub fn add_context(mut self, context: &Context, world: &legion::World) -> Self {
+        self.add_context_ref(context, world);
+        self
+    }
 
     pub fn request_vars(&self) -> HashSet<&VarName> {
         let mut result = HashSet::from_iter(DEFAULT_REQUEST_VARS.iter());
         let mut queue = VecDeque::from_iter(Some(self));
-        while let Some(shader) = queue.pop_front() {
-            result.extend(shader.request_vars.iter());
-            queue.extend(shader.chain_before.iter());
-            queue.extend(shader.chain_after.iter());
+        while let Some(chain) = queue.pop_front() {
+            result.extend(chain.middle.request_vars.iter());
+            queue.extend(chain.before.iter());
+            queue.extend(chain.after.iter());
         }
         result
+    }
+
+    pub fn insert_uniform(mut self, key: String, value: ShaderUniform) -> Self {
+        self.middle.parameters.uniforms.insert_ref(key, value);
+        self
+    }
+    pub fn insert_uniform_ref(&mut self, key: String, value: ShaderUniform) -> &mut Self {
+        self.middle.parameters.uniforms.insert_ref(key, value);
+        self
+    }
+
+    pub fn insert_color(self, key: String, value: Rgba<f32>) -> Self {
+        self.insert_uniform(key, ShaderUniform::Color(value))
+    }
+    pub fn insert_color_ref(&mut self, key: String, value: Rgba<f32>) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Color(value))
+    }
+
+    pub fn insert_int(self, key: String, value: i32) -> Self {
+        self.insert_uniform(key, ShaderUniform::Int(value))
+    }
+    pub fn insert_int_ref(&mut self, key: String, value: i32) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Int(value))
+    }
+
+    pub fn insert_float(self, key: String, value: f32) -> Self {
+        self.insert_uniform(key, ShaderUniform::Float(value))
+    }
+    pub fn insert_float_ref(&mut self, key: String, value: f32) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Float(value))
+    }
+
+    pub fn insert_vec2(self, key: String, value: vec2<f32>) -> Self {
+        self.insert_uniform(key, ShaderUniform::Vec2(value))
+    }
+    pub fn insert_vec2_ref(&mut self, key: String, value: vec2<f32>) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::Vec2(value))
+    }
+
+    pub fn insert_string(self, key: String, value: String, font: usize) -> Self {
+        self.insert_uniform(key, ShaderUniform::String((font, value)))
+    }
+    pub fn insert_string_ref(&mut self, key: String, value: String, font: usize) -> &mut Self {
+        self.insert_uniform_ref(key, ShaderUniform::String((font, value)))
+    }
+
+    pub fn get_int(&self, key: &str) -> i32 {
+        self.middle.parameters.uniforms.try_get_int(key).unwrap()
+    }
+
+    pub fn get_float(&self, key: &str) -> f32 {
+        self.middle.parameters.uniforms.try_get_float(key).unwrap()
+    }
+
+    pub fn get_vec2(&self, key: &str) -> vec2<f32> {
+        self.middle.parameters.uniforms.try_get_vec2(key).unwrap()
+    }
+
+    pub fn get_string(&self, key: &str) -> String {
+        self.middle.parameters.uniforms.try_get_string(key).unwrap()
+    }
+
+    pub fn map_key_to_key(mut self, from: &str, to: &str) -> Self {
+        self.middle.parameters.uniforms.map_key_to_key(from, to);
+        self
+    }
+
+    pub fn remove_mapping(mut self, key: &str) -> Self {
+        self.middle.parameters.uniforms.remove_mapping(key);
+        self
+    }
+
+    pub fn merge_uniforms(mut self, uniforms: &ShaderUniforms, force: bool) -> Self {
+        self.merge_uniforms_ref(uniforms, force);
+        self
+    }
+
+    pub fn merge_uniforms_ref(&mut self, uniforms: &ShaderUniforms, force: bool) -> &mut Self {
+        self.middle.parameters.uniforms.merge_mut(uniforms, force);
+        self
     }
 }
 

@@ -3,6 +3,10 @@ use legion::EntityStore;
 
 use super::*;
 
+/// Shader processing:
+/// depth first visit, inherit uniforms
+/// find upper most hovered shader
+///
 pub struct ShaderSystem;
 
 impl System for ShaderSystem {
@@ -22,9 +26,15 @@ impl System for ShaderSystem {
     fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let mut shaders = mem::take(&mut resources.prepared_shaders);
         for shader in shaders.iter_mut() {
-            if let Some(entity) = shader.entity {
-                for handler in shader.update_handlers.drain(..).collect_vec() {
-                    handler(HandleEvent::Update, entity, shader, world, resources);
+            if let Some(entity) = shader.middle.entity {
+                for handler in shader.middle.post_update_handlers.drain(..).collect_vec() {
+                    handler(
+                        HandleEvent::Update,
+                        entity,
+                        &mut shader.middle,
+                        world,
+                        resources,
+                    );
                 }
             }
         }
@@ -37,15 +47,15 @@ impl ShaderSystem {
         Self {}
     }
 
-    pub fn get_entity_shader(entity: legion::Entity, world: &legion::World) -> Option<Shader> {
+    pub fn get_entity_shader(entity: legion::Entity, world: &legion::World) -> Option<ShaderChain> {
         match world.entry_ref(entity).ok().and_then(|x| {
-            x.get_component::<Shader>()
+            x.get_component::<ShaderChain>()
                 .ok()
                 .cloned()
                 .and_then(|shader| Some((x.get_component::<EntityComponent>().unwrap().ts, shader)))
         }) {
             Some((ts, mut shader)) => Some({
-                shader.ts = ts;
+                shader.middle.ts = ts;
                 shader
             }),
             None => None,
@@ -54,13 +64,13 @@ impl ShaderSystem {
 
     pub fn prepare_shaders(world: &mut legion::World, resources: &mut Resources) {
         // Get all Shader components from World for drawing
-        let world_shaders: HashMap<legion::Entity, Shader> = HashMap::from_iter(
+        let world_shaders: HashMap<legion::Entity, ShaderChain> = HashMap::from_iter(
             <&EntityComponent>::query()
                 .filter(
                     !component::<UnitComponent>()
                         & !component::<CorpseComponent>()
                         & !component::<TapeEntityComponent>()
-                        & component::<Shader>(),
+                        & component::<ShaderChain>(),
                 )
                 .iter(world)
                 .map(|entity| {
@@ -89,15 +99,18 @@ impl ShaderSystem {
             .chain(resources.frame_shaders.drain(..))
             .sorted_by_key(|x| {
                 (
-                    dragged.is_some() && x.entity == dragged,
-                    x.layer.index(),
-                    x.order + (x.entity == hovered) as i32,
-                    x.ts,
+                    dragged.is_some() && x.middle.entity == dragged,
+                    x.middle.layer.index(),
+                    x.middle.order + (x.middle.entity == hovered) as i32,
+                    x.middle.ts,
                 )
             })
             .map(|x| Self::flatten_shader_chain(x))
             .flatten()
-            .map(|x| x.inject_uniforms(resources))
+            .map(|mut x| {
+                x.middle.inject_uniforms(resources);
+                x
+            })
             .collect_vec();
 
         resources.prepared_shaders = shaders;
@@ -113,7 +126,7 @@ impl ShaderSystem {
             u_global_time: resources.global_time,
         );
         for shader in mem::take(&mut resources.prepared_shaders) {
-            Self::draw_shader(&shader, framebuffer, resources, uniforms.clone());
+            Self::draw_shader(&shader.middle, framebuffer, resources, uniforms.clone());
         }
     }
 
@@ -220,31 +233,40 @@ impl ShaderSystem {
         );
     }
 
-    pub fn flatten_shader_chain(mut shader: Shader) -> Vec<Shader> {
-        if !shader.is_enabled() {
+    pub fn flatten_shader_chain(mut shader: ShaderChain) -> Vec<ShaderChain> {
+        if !shader.middle.is_enabled() {
             return default();
         }
         let mut rng: rand_pcg::Pcg64 =
-            rand_seeder::Seeder::from(format!("{:?}", shader.entity)).make_rng();
+            rand_seeder::Seeder::from(format!("{:?}", shader.middle.entity)).make_rng();
         shader
+            .middle
             .parameters
             .uniforms
             .insert_float_ref("u_rand".to_owned(), rng.gen_range(0.0..1.0));
         let mut before = default();
-        mem::swap(&mut before, shader.chain_before.deref_mut());
+        mem::swap(&mut before, shader.before.deref_mut());
         before.iter_mut().for_each(|x| {
-            x.parameters
+            x.middle
+                .parameters
                 .uniforms
-                .merge_mut(&shader.parameters.uniforms, false);
-            x.parameters.r#box.consider_parent(&shader.parameters.r#box);
+                .merge_mut(&shader.middle.parameters.uniforms, false);
+            x.middle
+                .parameters
+                .r#box
+                .consider_parent(&shader.middle.parameters.r#box);
         });
         let mut after = default();
-        mem::swap(&mut after, shader.chain_after.deref_mut());
+        mem::swap(&mut after, shader.after.deref_mut());
         after.iter_mut().for_each(|x| {
-            x.parameters
+            x.middle
+                .parameters
                 .uniforms
-                .merge_mut(&shader.parameters.uniforms, false);
-            x.parameters.r#box.consider_parent(&shader.parameters.r#box);
+                .merge_mut(&shader.middle.parameters.uniforms, false);
+            x.middle
+                .parameters
+                .r#box
+                .consider_parent(&shader.middle.parameters.r#box);
         });
 
         let mut result = [before, vec![shader], after].concat();

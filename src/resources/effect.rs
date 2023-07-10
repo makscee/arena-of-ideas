@@ -115,9 +115,7 @@ pub enum Effect {
         #[serde(default)]
         limit: Option<ExpressionInt>,
     },
-    Revive {
-        slot: Option<ExpressionInt>,
-    },
+    Revive,
     RemoveTrigger,
     /// Do effect if a unit matches condition
     FindTarget {
@@ -623,16 +621,11 @@ impl EffectWrapped {
                     world,
                 );
             }
-            Effect::Revive { slot } => {
-                let slot = slot
-                    .as_ref()
-                    .and_then(|x| Some(x.calculate(&context, world, resources).ok()?))
-                    .unwrap_or_default() as usize;
+            Effect::Revive => {
                 UnitSystem::revive_corpse(
                     context
                         .target()
                         .expect(&format!("Target not found {context}")),
-                    Some(slot),
                     world,
                     &resources.logger,
                 );
@@ -885,14 +878,14 @@ impl Display for Effect {
             Effect::ChangeTeamVarInt {
                 var,
                 delta,
-                faction,
+                faction: _,
             } => {
                 write!(f, "{} {} -> {}", self.as_ref(), var, delta)
             }
             Effect::SetTeamVarInt {
                 var,
                 value,
-                faction,
+                faction: _,
             } => {
                 write!(f, "{} {} -> {}", self.as_ref(), var, value)
             }

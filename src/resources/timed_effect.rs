@@ -35,11 +35,11 @@ impl TimedEffect {
 #[serde(tag = "type")]
 pub enum Animation {
     ShaderAnimation {
-        shader: Shader,
+        shader: ShaderChain,
         animation: AnimatedShaderUniforms,
     },
     ShaderConst {
-        shader: Shader,
+        shader: ShaderChain,
     },
     EntityShaderAnimation {
         entity: legion::Entity,
@@ -52,24 +52,28 @@ pub enum Animation {
     /// Draw extra shader using and animating uniforms of existing Shader of Entity
     EntityExtraShaderAnimation {
         entity: legion::Entity,
-        shader: Shader,
+        shader: ShaderChain,
         animation: AnimatedShaderUniforms,
     },
     EntityPairExtraShaderAnimation {
         entity_from: legion::Entity,
         entity_to: legion::Entity,
-        shader: Shader,
+        shader: ShaderChain,
         animation: AnimatedShaderUniforms,
     },
     /// Draw extra shader using uniforms of existing Shader of Entity
     EntityExtraShaderConst {
         entity: legion::Entity,
-        shader: Shader,
+        shader: ShaderChain,
     },
 }
 
 impl Animation {
-    pub fn update_entities(&self, t: Time, entity_shaders: &mut HashMap<legion::Entity, Shader>) {
+    pub fn update_entities(
+        &self,
+        t: Time,
+        entity_shaders: &mut HashMap<legion::Entity, ShaderChain>,
+    ) {
         match self {
             Animation::EntityShaderAnimation { entity, animation } => {
                 if let Some(shader) = entity_shaders.get_mut(entity) {
@@ -88,8 +92,8 @@ impl Animation {
     pub fn generate_shaders(
         &self,
         t: Time,
-        entity_shaders: &HashMap<legion::Entity, Shader>,
-    ) -> Option<Shader> {
+        entity_shaders: &HashMap<legion::Entity, ShaderChain>,
+    ) -> Option<ShaderChain> {
         match self {
             Animation::ShaderAnimation { shader, animation } => {
                 Some(shader.clone().merge_uniforms(&animation.get_mixed(t), true))
@@ -102,7 +106,7 @@ impl Animation {
                 Some(entity_shader) => Some(
                     shader
                         .clone()
-                        .merge_uniforms(&entity_shader.parameters.uniforms, false)
+                        .merge_uniforms(&entity_shader.middle.parameters.uniforms, false)
                         .merge_uniforms(&animation.get_mixed(t), true),
                 ),
                 _ => None,
@@ -117,19 +121,30 @@ impl Animation {
                     if let Some(to_shader) = entity_shaders.get(entity_to) {
                         let mut shader = shader.clone();
                         let mut uniforms = from_shader
+                            .middle
                             .parameters
                             .uniforms
-                            .merge(&shader.parameters.uniforms)
+                            .merge(&shader.middle.parameters.uniforms)
                             .merge(&animation.get_mixed(t));
                         uniforms.insert_ref(
                             "u_from".to_owned(),
-                            from_shader.parameters.uniforms.get("u_position").unwrap(),
+                            from_shader
+                                .middle
+                                .parameters
+                                .uniforms
+                                .get("u_position")
+                                .unwrap(),
                         );
                         uniforms.insert_ref(
                             "u_to".to_owned(),
-                            to_shader.parameters.uniforms.get("u_position").unwrap(),
+                            to_shader
+                                .middle
+                                .parameters
+                                .uniforms
+                                .get("u_position")
+                                .unwrap(),
                         );
-                        shader.parameters.uniforms = uniforms;
+                        shader.middle.parameters.uniforms = uniforms;
                         return Some(shader);
                     }
                 }
@@ -140,7 +155,7 @@ impl Animation {
                     Some(entity_shader) => Some(
                         shader
                             .clone()
-                            .merge_uniforms(&entity_shader.parameters.uniforms, false),
+                            .merge_uniforms(&entity_shader.middle.parameters.uniforms, false),
                     ),
                     _ => None,
                 }

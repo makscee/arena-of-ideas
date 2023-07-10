@@ -46,7 +46,7 @@ impl StatusLibrary {
         context: &Context,
         world: &legion::World,
         resources: &Resources,
-    ) -> Vec<Shader> {
+    ) -> Vec<ShaderChain> {
         let mut index = -1;
         let statuses = context.collect_statuses(world);
         statuses

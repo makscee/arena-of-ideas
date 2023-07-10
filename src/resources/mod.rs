@@ -100,8 +100,8 @@ pub struct Resources {
     pub delta_time: Time,
     pub action_queue: VecDeque<Action>,
     pub tape_player: TapePlayer,
-    pub frame_shaders: Vec<Shader>,
-    pub prepared_shaders: Vec<Shader>,
+    pub frame_shaders: Vec<ShaderChain>,
+    pub prepared_shaders: Vec<ShaderChain>,
 
     pub shop_data: ShopData,
     pub battle_data: BattleData,

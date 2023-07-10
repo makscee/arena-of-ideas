@@ -178,8 +178,6 @@ impl SlotSystem {
         let scale = Self::get_scale(slot, faction, resources);
         let mut shader = resources.options.shaders.slot.clone();
         shader
-            .parameters
-            .uniforms
             .insert_color_ref("u_color".to_owned(), color)
             .insert_vec2_ref("u_position".to_owned(), position)
             .insert_float_ref("u_scale".to_owned(), scale);
@@ -190,11 +188,11 @@ impl SlotSystem {
     }
 
     pub fn clear_slots_buttons(faction: Faction, world: &mut legion::World) {
-        for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
+        for (slot, shader) in <(&SlotComponent, &mut ShaderChain)>::query().iter_mut(world) {
             if slot.faction != faction {
                 continue;
             }
-            shader.chain_after.clear();
+            shader.after.clear();
         }
     }
 
@@ -207,7 +205,7 @@ impl SlotSystem {
         resources: &Resources,
     ) {
         for (slot, entity, shader) in
-            <(&SlotComponent, &EntityComponent, &mut Shader)>::query().iter_mut(world)
+            <(&SlotComponent, &EntityComponent, &mut ShaderChain)>::query().iter_mut(world)
         {
             if slot.faction != faction {
                 continue;
@@ -224,7 +222,7 @@ impl SlotSystem {
     }
 
     fn add_slot_activation_btn(
-        shader: &mut Shader,
+        shader: &mut ShaderChain,
         text: &str,
         enable_key: Option<&str>,
         activate_key: Option<&str>,
@@ -242,12 +240,20 @@ impl SlotSystem {
         );
 
         if let Some(key) = enable_key {
-            button.parameters.uniforms.map_key_to_key("u_enabled", key);
+            button
+                .middle
+                .parameters
+                .uniforms
+                .map_key_to_key("u_enabled", key);
         }
         if let Some(key) = activate_key {
-            button.parameters.uniforms.map_key_to_key("u_active", key);
+            button
+                .middle
+                .parameters
+                .uniforms
+                .map_key_to_key("u_active", key);
         }
-        shader.chain_after.push(button.insert_uniform(
+        shader.after.push(button.insert_uniform(
             "u_offset".to_owned(),
             ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
         ));
@@ -275,8 +281,8 @@ impl SlotSystem {
     }
 
     pub fn handle_state_enter(state: GameState, world: &mut legion::World) {
-        for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
-            shader.chain_after.clear();
+        for (slot, shader) in <(&SlotComponent, &mut ShaderChain)>::query().iter_mut(world) {
+            shader.after.clear();
             let faction = slot.faction;
             let enabled = match state {
                 GameState::Battle => faction == Faction::Dark || faction == Faction::Light,
@@ -459,7 +465,7 @@ impl SlotSystem {
                 Self::get_hovered_slot(resources.input_data.mouse_world_pos, world, resources);
         }
         let factions = Self::get_factions_slots(factions, world);
-        for (slot, shader) in <(&SlotComponent, &mut Shader)>::query().iter_mut(world) {
+        for (slot, shader) in <(&SlotComponent, &mut ShaderChain)>::query().iter_mut(world) {
             if !factions.contains_key(&slot.faction) {
                 continue;
             }
@@ -473,6 +479,7 @@ impl SlotSystem {
             };
 
             shader
+                .middle
                 .parameters
                 .uniforms
                 .insert_float_ref("u_filled".to_owned(), filled)

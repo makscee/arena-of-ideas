@@ -8,25 +8,25 @@ impl ButtonSystem {
         input_handler: Handler,
         update_handler: Option<Handler>,
         entity: legion::Entity,
-        shader: Option<Shader>,
+        shader: Option<ShaderChain>,
         hover_hints: Vec<(Rgba<f32>, String, String)>,
         options: &Options,
-    ) -> Shader {
+    ) -> ShaderChain {
         let mut button = if let Some(shader) = shader {
             shader
         } else {
             options.shaders.button.clone()
         };
-        button.input_handlers.push(input_handler);
+        button.middle.input_handlers.push(input_handler);
         if let Some(update_handler) = update_handler {
-            button.update_handlers.push(update_handler);
+            button.middle.post_update_handlers.push(update_handler);
         }
-        Self::add_button_handlers(&mut button);
+        Self::add_button_handlers(&mut button.middle);
         if let Some(text) = text {
             button.insert_string_ref("u_text".to_owned(), text.to_owned(), 1);
         }
-        button.entity = Some(entity);
-        button.hover_hints = hover_hints;
+        button.middle.entity = Some(entity);
+        button.middle.hover_hints = hover_hints;
 
         button
     }
@@ -91,6 +91,8 @@ impl ButtonSystem {
     pub fn add_button_handlers(shader: &mut Shader) {
         shader.set_active(true);
         shader.input_handlers.push(Self::button_input_handler);
-        shader.update_handlers.push(Self::button_update_handler);
+        shader
+            .post_update_handlers
+            .push(Self::button_update_handler);
     }
 }

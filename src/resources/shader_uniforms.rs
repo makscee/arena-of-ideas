@@ -193,7 +193,17 @@ impl ShaderUniforms {
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&String, ShaderUniform)> + 'a {
         HashSet::<&String>::from_iter(self.data.keys().chain(self.mapping.keys()))
             .into_iter()
-            .map(|key| (key, self.get(key).expect(&format!("Key not found {key}"))))
+            .map(|key| {
+                (
+                    key,
+                    self.get(key).unwrap_or_else(|| {
+                        panic!(
+                            "Key not found {key}\ndata:\n{:?}\nmappings:\n{:?}",
+                            self.data, self.mapping
+                        )
+                    }),
+                )
+            })
     }
 
     pub fn iter_data<'a>(&'a self) -> impl Iterator<Item = (String, ShaderUniform)> + 'a {

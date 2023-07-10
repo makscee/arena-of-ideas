@@ -7,7 +7,7 @@ pub enum Widget<'a> {
         update_handler: Option<Handler>,
         options: &'a Options,
         uniforms: ShaderUniforms,
-        shader: Option<Shader>,
+        shader: Option<ShaderChain>,
         hover_hints: Vec<(Rgba<f32>, String, String)>,
         entity: legion::Entity,
     },

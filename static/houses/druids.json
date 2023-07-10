@@ -109,10 +109,6 @@
                             },
                             {
                                 "type": "Revive",
-                                "slot": {
-                                    "type": "Var",
-                                    "var": "Slot"
-                                },
                                 "after": {
                                     "type": "SetOwnerVarInt",
                                     "var": "HpValue",

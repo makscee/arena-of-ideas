@@ -101,7 +101,7 @@ impl RatingSystem {
 
     fn ask_remove_indices(teams: &mut Vec<PackedTeam>) -> bool {
         println!("\nEnter indices to remove:");
-        let mut line = Self::read_line();
+        let line = Self::read_line();
         if line.is_empty() {
             return false;
         }
