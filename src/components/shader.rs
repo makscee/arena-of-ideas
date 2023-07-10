@@ -355,6 +355,41 @@ impl ShaderChain {
         self.middle.parameters.uniforms.merge_mut(uniforms, force);
         self
     }
+
+    pub fn depth_visit(&mut self, parent: Option<&Shader>) {
+        if let Some(parent) = parent {
+            for shader in self.before.iter_mut().chain(self.after.iter_mut()) {
+                shader
+                    .middle
+                    .parameters
+                    .r#box
+                    .consider_parent(&parent.parameters.r#box);
+                shader.middle.parameters.merge(&parent.parameters, false);
+            }
+        }
+        for shader in self.before.iter_mut() {
+            shader.depth_visit(Some(&self.middle));
+        }
+        for shader in self.after.iter_mut() {
+            shader.depth_visit(Some(&self.middle));
+        }
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = &mut Shader> + 'a {
+        let mut vec: Vec<&mut Shader> = default();
+        self.fill_vec_mut(&mut vec);
+        vec.into_iter()
+    }
+
+    pub fn fill_vec_mut<'a>(&'a mut self, result: &mut Vec<&'a mut Shader>) {
+        for shader in self.before.iter_mut() {
+            shader.fill_vec_mut(result);
+        }
+        result.push(&mut self.middle);
+        for shader in self.after.iter_mut() {
+            shader.fill_vec_mut(result);
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
