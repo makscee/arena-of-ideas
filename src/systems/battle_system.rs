@@ -170,7 +170,9 @@ impl BattleSystem {
             };
             (
                 "Victory",
-                format!("Battle Over\n{score} ranks defeated\n{difficulty_text} difficulty"),
+                format!(
+                    "+{score} g: {score} ranks defeated\n+{difficulty} g: {difficulty_text} enemy difficulty"
+                ),
                 vec![PanelFooterButton::Close],
                 resources.options.colors.victory,
             )

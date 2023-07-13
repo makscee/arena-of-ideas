@@ -25,12 +25,12 @@ impl SimulationSystem {
         let mut dark = dark.clone();
         let mut score = 0;
         for _ in 0..3 {
-            for unit in dark.units.iter_mut() {
-                unit.rank += 1;
-            }
             let (result, _) = Self::run_battle(light, &dark, world, resources, assert);
             if !result {
                 break;
+            }
+            for unit in dark.units.iter_mut() {
+                unit.rank += 1;
             }
             score += 1;
         }

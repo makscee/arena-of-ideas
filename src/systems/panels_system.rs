@@ -80,7 +80,7 @@ impl PanelsSystem {
         buttons: Vec<PanelFooterButton>,
         resources: &mut Resources,
     ) {
-        let mut panel = Self::generate_text_shader(text, vec2(0.5, 0.1), &resources.options)
+        let mut panel = Self::generate_text_shader(text, vec2(0.3, 0.1), &resources.options)
             .wrap_panel_header(title, &resources.options);
         if !buttons.is_empty() {
             panel = panel.wrap_panel_footer(buttons, &resources.options);

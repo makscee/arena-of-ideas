@@ -11,7 +11,7 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "units": [
                 {

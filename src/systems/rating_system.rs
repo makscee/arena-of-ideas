@@ -146,7 +146,10 @@ impl RatingSystem {
                 teams.iter().map(|x| x.name.clone()).join("\n")
             );
             if Self::ask_y_no("Clear teams?") {
+                println!("Teams cleared");
                 teams.clear();
+            } else {
+                println!("Teams kept");
             }
         }
         loop {

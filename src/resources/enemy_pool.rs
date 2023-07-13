@@ -21,6 +21,9 @@ impl EnemyPool {
     }
 
     pub fn fill_teams_vec(count: usize, teams: &mut Vec<PackedTeam>, resources: &Resources) {
+        if count == teams.len() {
+            return;
+        }
         let mut names: HashSet<String> = HashSet::from_iter(teams.iter().map(|x| x.name.clone()));
         let rng = &mut thread_rng();
         while teams.len() < count {
