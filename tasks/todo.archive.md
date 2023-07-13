@@ -77,3 +77,4 @@ Shader mapping animation @shaders {start:2023-07-04T23:09:09} {cm:2023-07-05T02:
 Uniform mapping into Options {start:2023-07-05T13:52:51} {cm:2023-07-05T14:04:59} {duration:12m}
 Fix damage text after strike {cm:2023-07-05T21:33:40}
 Status triggered by slot order {cm:2023-07-07T15:51:56}
+Hover hint on card choice panel {cm:2023-07-13T16:16:36}
