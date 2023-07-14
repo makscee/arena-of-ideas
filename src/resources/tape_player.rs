@@ -8,6 +8,7 @@ pub struct TapePlayer {
     pub tape: Tape,
 }
 
+#[derive(Eq, PartialEq)]
 pub enum TapePlayMode {
     Play,
     Stop,

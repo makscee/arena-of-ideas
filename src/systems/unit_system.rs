@@ -315,6 +315,11 @@ impl UnitSystem {
         entity_shaders: &mut HashMap<legion::Entity, ShaderChain>,
         resources: &Resources,
     ) {
+        if resources.current_state == GameState::Battle
+            && resources.tape_player.mode == TapePlayMode::Play
+        {
+            return;
+        }
         for (entity, shader) in entity_shaders.iter_mut() {
             if let Some(mut card_value) = shader
                 .middle
