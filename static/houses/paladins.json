@@ -70,6 +70,7 @@
                     "effect": {
                         "type": "UseAbility",
                         "ability": "Blessing",
+                        "force": true,
                         "charges": {
                             "type": "StatusCharges",
                             "name": "Martyr"

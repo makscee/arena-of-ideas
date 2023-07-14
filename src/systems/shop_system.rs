@@ -5,7 +5,7 @@ use super::*;
 #[derive(Default)]
 pub struct ShopSystem;
 
-#[derive(enum_iterator::Sequence, Clone, Copy)]
+#[derive(enum_iterator::Sequence, Clone, Copy, Eq, PartialEq)]
 pub enum Product {
     Hero,
     Buff,
@@ -191,7 +191,7 @@ impl Product {
 
     pub fn update_handler(&self) -> Handler {
         match self {
-            Product::Hero | Product::TeamBuff | Product::Slot => {
+            Product::Hero | Product::TeamBuff => {
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
@@ -206,7 +206,7 @@ impl Product {
                 }
                 update_handler
             }
-            Product::Buff | Product::AoeBuff => {
+            Product::Buff | Product::AoeBuff | Product::Slot => {
                 fn update_handler(
                     _: HandleEvent,
                     _: legion::Entity,
@@ -479,8 +479,18 @@ impl ShopSystem {
         Self::create_battle_button(resources);
 
         for product in enum_iterator::all::<Product>() {
+            if product == Product::Slot && Self::is_max_slots(world) {
+                continue;
+            }
             product.create_button(resources);
         }
+    }
+
+    fn is_max_slots(world: &legion::World) -> bool {
+        TeamSystem::get_state(Faction::Team, world)
+            .vars
+            .get_int(&VarName::Slots)
+            >= MAX_SLOTS as i32
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {

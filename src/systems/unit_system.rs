@@ -202,11 +202,13 @@ impl UnitSystem {
         Event::AfterDeath { owner: entity }.send(world, resources);
         ContextState::get_mut(entity, world).statuses.clear();
         if let Some(killer) = killer {
-            Event::AfterKill {
-                owner: killer,
-                target: entity,
+            if killer != entity {
+                Event::AfterKill {
+                    owner: killer,
+                    target: entity,
+                }
+                .send(world, resources);
             }
-            .send(world, resources);
         }
         if faction == Faction::Team {
             //todo: bug on rebirth?
