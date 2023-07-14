@@ -397,13 +397,17 @@ impl GameStateSystem {
                 fn input_handler(
                     event: HandleEvent,
                     _: legion::Entity,
-                    _: &mut Shader,
+                    shader: &mut Shader,
                     world: &mut legion::World,
                     resources: &mut Resources,
                 ) {
                     match event {
                         HandleEvent::Click => {
-                            SacrificeSystem::sacrifice_marked(world, resources);
+                            if !resources.sacrifice_data.marked_units.is_empty()
+                                || shader.get_int("u_team_size") == 1
+                            {
+                                SacrificeSystem::sacrifice_marked(world, resources);
+                            }
                         }
                         _ => {}
                     };
