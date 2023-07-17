@@ -61,9 +61,14 @@ impl PackedTeam {
         }
     }
 
-    pub fn from_units(units: Vec<PackedUnit>) -> Self {
+    pub fn from_units(units: Vec<PackedUnit>, slots: Option<usize>) -> Self {
         let mut team = Self::new("".to_owned(), units);
         team.generate_name();
+        let slots = match slots {
+            Some(v) => v,
+            None => team.units.len(),
+        };
+        team.slots = slots;
         team
     }
 

@@ -8,7 +8,7 @@ pub const INITIAL_POOL_COUNT_PER_HERO: usize = 5;
 pub struct ShopData {
     pub pool: Vec<PackedUnit>,
     pub offered: Vec<PackedUnit>,
-    pub floor_extensions: Vec<Vec<PackedUnit>>,
+    pub level_extensions: Vec<Vec<PackedUnit>>,
     pub load_new_hero: bool,
     pub status_apply: Option<(String, i32, BuffTarget)>,
 }
@@ -19,11 +19,11 @@ impl ShopData {
         let mut sorted_by_rating = VecDeque::from_iter(HeroPool::all_sorted(&resources));
         let heroes_per_extension = (sorted_by_rating.len() as f32 / (6.0)).ceil() as usize;
         let mut cur_level = 0;
-        resources.shop_data.floor_extensions = vec![default()];
+        resources.shop_data.level_extensions = vec![default()];
         while let Some(unit) = sorted_by_rating.pop_front() {
             if resources
                 .shop_data
-                .floor_extensions
+                .level_extensions
                 .get(cur_level)
                 .unwrap()
                 .len()
@@ -31,18 +31,18 @@ impl ShopData {
                     + (cur_level == 0) as usize * resources.options.initial_shop_fill
             {
                 cur_level += 1;
-                resources.shop_data.floor_extensions.push(default());
+                resources.shop_data.level_extensions.push(default());
             }
             resources
                 .shop_data
-                .floor_extensions
+                .level_extensions
                 .get_mut(cur_level)
                 .unwrap()
                 .push(unit);
         }
         resources
             .shop_data
-            .floor_extensions
+            .level_extensions
             .iter()
             .for_each(|x| debug!("{}", x.iter().map(|x| x.to_string()).join("\n")));
     }
@@ -51,8 +51,8 @@ impl ShopData {
         resources.shop_data.pool = HeroPool::all(&resources);
     }
 
-    pub fn load_floor(resources: &mut Resources, floor: usize) {
-        if let Some(new_units) = resources.shop_data.floor_extensions.get(floor) {
+    pub fn load_level(resources: &mut Resources, level: usize) {
+        if let Some(new_units) = resources.shop_data.level_extensions.get(level) {
             resources.shop_data.pool.extend(
                 new_units
                     .iter()

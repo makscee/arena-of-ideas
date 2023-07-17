@@ -24,7 +24,7 @@ impl Product {
             Product::Hero => 3,
             Product::Buff => 2,
             Product::AoeBuff => 5,
-            Product::TeamBuff => 9,
+            Product::TeamBuff => 8,
             Product::Slot => 4,
         }
     }
@@ -246,12 +246,14 @@ impl Product {
             Product::TeamBuff => vec![(
                 options.colors.shop,
                 "Buy Team Buff".to_owned(),
-                format!("Add buff that is always\napplied to whole team\n-{cost} g"),
+                format!(
+                    "Add buff that is always\napplied to whole team\nOnly 1 at a time\n-{cost} g"
+                ),
             )],
             Product::Slot => vec![(
                 options.colors.shop,
                 "Buy Slot".to_owned(),
-                format!("+1 team slot\n-{cost} g"),
+                format!("+1 team slot\nMax {}\n-{cost} g", MAX_SLOTS),
             )],
         }
     }
@@ -467,15 +469,22 @@ impl ShopSystem {
         vars.set_int(&VarName::Slots, resources.options.initial_team_slots as i32);
     }
 
+    pub fn level_g(resources: &Resources) -> usize {
+        (resources.options.start_g + Ladder::current_level(resources)).min(resources.options.max_g)
+    }
+
     pub fn enter(world: &mut legion::World, resources: &mut Resources) {
-        let current_level = Ladder::current_level(resources);
-        if current_level == 0 {
-            Self::change_g(resources.options.initial_shop_g, None, world, resources);
-        }
-        ShopData::load_floor(resources, current_level);
+        let level = Ladder::current_level(resources);
+        ShopData::load_level(resources, level);
+        Self::change_g(
+            Self::level_g(resources) as i32,
+            Some(&format!("Level {level} start")),
+            world,
+            resources,
+        );
         WorldSystem::get_state_mut(world)
             .vars
-            .set_int(&VarName::Level, current_level as i32);
+            .set_int(&VarName::Level, level as i32);
         Self::create_battle_button(resources);
 
         for product in enum_iterator::all::<Product>() {

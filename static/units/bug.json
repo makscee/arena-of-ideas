@@ -1,0 +1,89 @@
+{
+    "name": "Bug",
+    "attack": 1,
+    "health": 1,
+    "house": "Beasts",
+    "shader": {
+        "path": "shaders/vfx/triangle.glsl",
+        "parameters": {
+            "box": {
+                "size": [
+                    0.4,
+                    0.4
+                ]
+            },
+            "uniforms": {
+                "u_rotation": 1.0,
+                "u_g_points": [
+                    -0.5,
+                    -0.3,
+                    0.3,
+                    0.3
+                ],
+                "u_g_alphas": [
+                    1.0,
+                    1.0,
+                    0.0,
+                    1.0
+                ],
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_color_3": "#000000",
+                "u_g_color_4": "#000000",
+                "mapping": {
+                    "u_g_color_1": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                    },
+                    "u_g_color_4": {
+                        "type": "Uniform",
+                        "key": "u_faction_color"
+                    }
+                }
+            }
+        },
+        "before": [
+            {
+                "path": "shaders/vfx/particle_emitter.glsl",
+                "parameters": {
+                    "uniforms": {
+                        "u_g_color_1": "#000000",
+                        "u_g_color_2": "#ffffff",
+                        "u_g_color_3": "#ffffff",
+                        "u_g_color_4": "#aa3b08",
+                        "u_p_vel_center": 1.5,
+                        "u_p_scale_start": 0.6,
+                        "u_p_scale_end": 0.2,
+                        "u_g_points": [
+                            0.0,
+                            0.2,
+                            0.2,
+                            1.0
+                        ],
+                        "u_g_alphas": [
+                            0.0,
+                            1.0,
+                            1.0,
+                            0.0
+                        ],
+                        "mapping": {
+                            "u_g_color_2": {
+                                "type": "Uniform",
+                                "key": "u_faction_color"
+                            },
+                            "u_g_color_3": {
+                                "type": "Uniform",
+                                "key": "u_house_color"
+                            }
+                        }
+                    },
+                    "instances": 300
+                }
+            }
+        ]
+    }
+}

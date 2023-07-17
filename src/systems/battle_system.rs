@@ -36,9 +36,9 @@ impl BattleSystem {
                 );
                 return 0;
             }
-            if turns % 10 == 0 {
-                Self::promote_all(world);
-            }
+            // if turns % 10 == 0 {
+            //     Self::promote_all(world);
+            // }
             let result = Self::turn(world, resources, tape);
             if !result {
                 let faction = if UnitSystem::collect_faction(world, Faction::Dark).is_empty() {

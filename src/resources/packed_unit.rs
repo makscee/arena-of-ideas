@@ -1,3 +1,5 @@
+use geng::prelude::itertools::Itertools;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -240,15 +242,20 @@ impl FileWatcherLoader for PackedUnit {
 
 impl fmt::Display for PackedUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let statuses = self
+            .statuses
+            .iter()
+            .map(|(name, charges)| format!("{name} +{charges}"))
+            .join(", ");
         write!(
             f,
-            "[{} {}/{}-{} r:{} h:{}]",
-            self.name.as_str(),
+            "[{} {}/{}-{} h:{} s:{statuses} r:{}]",
+            self.name,
             self.attack,
             self.health,
             self.damage,
-            self.rank,
             self.house.map(|x| x.to_string()).unwrap_or("_".to_owned()),
+            self.rank,
         )
     }
 }

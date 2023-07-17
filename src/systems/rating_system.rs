@@ -1,6 +1,6 @@
 use super::*;
 
-pub struct RatingSystem {}
+pub struct RatingSystem;
 
 impl RatingSystem {
     fn generate_team(size: usize, heroes: &Vec<PackedUnit>) -> PackedTeam {
@@ -9,22 +9,83 @@ impl RatingSystem {
             let unit = heroes.choose(&mut thread_rng()).unwrap().clone();
             units.push(unit);
         }
-        PackedTeam::from_units(units)
+        PackedTeam::from_units(units, None)
     }
 
-    pub fn simulate_hero_ratings_calculation(world: &mut legion::World, resources: &mut Resources) {
+    pub fn generate_hero_ladder(world: &mut legion::World, resources: &mut Resources) {
+        const AMOUNT: usize = 45;
+        const CANDIDATES: usize = 10;
+
+        resources.logger.set_enabled(false);
+
+        let mut ladder: Vec<PackedTeam> = default();
+        ladder.push(PackedTeam::from_units(
+            vec![HeroPool::find_by_name("Bug", resources).unwrap().clone()],
+            None,
+        ));
+        while ladder.len() < AMOUNT {
+            let mut candidates = (0..CANDIDATES)
+                .map(|_| PackedTeam::from_units(vec![HeroPool::random(resources)], Some(MAX_SLOTS)))
+                .collect_vec();
+            for team in candidates.iter_mut() {
+                let mut cnt = 0;
+                loop {
+                    // let beat = ladder.iter().all(|x| {
+                    //     let (_, beat, _) =
+                    //         SimulationSystem::run_battle(&team, x, world, resources, None);
+                    //     beat
+                    // });
+                    let (_, beat, _) = SimulationSystem::run_battle(
+                        team,
+                        ladder.last().unwrap(),
+                        world,
+                        resources,
+                        None,
+                    );
+                    if beat {
+                        println!("Winner {team}");
+                        break;
+                    }
+                    cnt += 1;
+                    if cnt > 100 {
+                        error!("Too many strengthen iterations: {cnt}");
+                        break;
+                    }
+                    Self::strengthen(team, resources);
+                    println!("Strengthened {team}");
+                }
+            }
+            let mut ratings = Ratings::default();
+            Self::rate_teams_full(&candidates, &mut ratings, world, resources);
+            candidates.sort_by(|a, b| {
+                ratings
+                    .get_rating(&a.name)
+                    .total_cmp(&ratings.get_rating(&b.name))
+            });
+            ladder.push(candidates.remove(0));
+            println!("\nNew ladder team {}\n", ladder.last().unwrap());
+        }
+        println!("Ladder generated:");
+        for team in ladder.iter() {
+            println!("{team}");
+        }
+        Ladder::set_teams(&ladder, resources);
+        Ladder::save(resources);
+    }
+
+    pub fn calculate_hero_ratings(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
 
         let heroes = HeroPool::all(&resources);
         let mut teams: Vec<PackedTeam> = default();
         let mut team_ratings;
 
-        // fill teams with random max size teams
-        // each team X random matches against other
-        // retain top 1/3
-        // sum end place of each hero
-        // fill 2/3 with mutations
-        // repeat
+        // fill teams vec with random max size teams
+        // each team MATCHES random matches against other
+        // retain TOP amount of best teams
+        // count each hero that that is in top teams
+        // fill add 1 & 2 times mutations of top teams
+        // fill teams vec to full with new random teams
         const TEAMS: usize = 80;
         const TOP: usize = 5;
         const SIZE: usize = 5;
@@ -91,6 +152,17 @@ impl RatingSystem {
         );
         team.generate_name();
         debug!("mutate: {before} -> {}", team.name);
+    }
+
+    fn strengthen(team: &mut PackedTeam, resources: &Resources) {
+        const BUFF_CHANCE: f64 = 0.2;
+        if team.units.len() < team.slots && (&mut thread_rng()).gen_bool(1.0 - BUFF_CHANCE) {
+            let unit = HeroPool::random(resources);
+            team.units.push(unit);
+        } else {
+            let buff = BuffPool::get_random(1, resources).remove(0);
+            buff.apply_single_packed(team, None);
+        }
     }
 
     fn read_line() -> String {

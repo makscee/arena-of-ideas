@@ -33,10 +33,10 @@ impl LadderLevel {
 impl LadderTeam {
     pub fn generate_team(&self, resources: &Resources) -> PackedTeam {
         let mut team: PackedTeam = ReplicatedTeam {
-            team: PackedTeam::from_units(vec![EnemyPool::get_unit_by_name(
-                &self.enemy_name,
-                resources,
-            )]),
+            team: PackedTeam::from_units(
+                vec![EnemyPool::get_unit_by_name(&self.enemy_name, resources)],
+                None,
+            ),
             replications: self.count,
         }
         .into();

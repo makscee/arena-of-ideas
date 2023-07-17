@@ -11,7 +11,7 @@ impl SimulationSystem {
         assert: Option<&Condition>,
     ) -> usize {
         BattleSystem::init_ladder_battle(light, dark.clone(), world, resources);
-        let (result, score) = Self::run_battle(light, dark, world, resources, assert);
+        let (result, _, score) = Self::run_battle(light, dark, world, resources, assert);
         score
     }
 
@@ -25,7 +25,7 @@ impl SimulationSystem {
         let mut dark = dark.clone();
         let mut score = 0;
         for _ in 0..3 {
-            let (result, _) = Self::run_battle(light, &dark, world, resources, assert);
+            let (result, _, _) = Self::run_battle(light, &dark, world, resources, assert);
             if !result {
                 break;
             }
@@ -43,7 +43,7 @@ impl SimulationSystem {
         world: &mut legion::World,
         resources: &mut Resources,
         assert: Option<&Condition>,
-    ) -> (bool, usize) {
+    ) -> (bool, bool, usize) {
         light.unpack(&Faction::Light, world, resources);
         dark.unpack(&Faction::Dark, world, resources);
         resources.logger.log(
@@ -79,9 +79,10 @@ impl SimulationSystem {
             None => Ladder::get_score(world),
         };
         let win = UnitSystem::collect_faction(world, Faction::Dark).is_empty();
+        let beat = !UnitSystem::collect_faction(world, Faction::Light).is_empty();
         BattleSystem::clear_world(world, resources);
         resources.action_queue.clear();
-        (win, result)
+        (win, beat, result)
     }
 }
 
@@ -128,7 +129,7 @@ mod tests {
             rank: default(),
         };
         let light = PackedTeam::new(String::from("light"), vec![unit.clone()]);
-        let (result, _) =
+        let (result, _, _) =
             SimulationSystem::run_battle(&light, &light, &mut world, &mut resources, None);
         assert!(result)
     }
@@ -155,7 +156,7 @@ mod tests {
         for (path, scenario) in scenarios.iter() {
             let text = format!("Run scenario: {:?}...", path.file_name().unwrap()).on_blue();
             println!("\n{text}\n");
-            let (_, result) = SimulationSystem::run_battle(
+            let (_, _, result) = SimulationSystem::run_battle(
                 &scenario.light,
                 &scenario.dark,
                 &mut world,

@@ -74,6 +74,16 @@ impl HeroPool {
             .map(|x| x.0)
             .collect_vec()
     }
+
+    pub fn random(resources: &Resources) -> PackedUnit {
+        resources
+            .hero_pool
+            .heroes
+            .values()
+            .choose(&mut thread_rng())
+            .unwrap()
+            .clone()
+    }
 }
 
 impl FileWatcherLoader for HeroPool {

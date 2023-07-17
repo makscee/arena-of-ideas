@@ -20,6 +20,15 @@ impl Buff {
         Status::change_charges(target, self.charges, &self.name, node, world, resources)
     }
 
+    pub fn apply_single_packed(&self, team: &mut PackedTeam, slot: Option<usize>) {
+        let slot = match slot {
+            Some(v) => v,
+            None => (&mut thread_rng()).gen_range(0..team.units.len()),
+        };
+        let unit = team.units.get_mut(slot).unwrap();
+        unit.statuses.push((self.name.to_owned(), self.charges));
+    }
+
     pub fn apply_aoe(
         &self,
         faction: Faction,
