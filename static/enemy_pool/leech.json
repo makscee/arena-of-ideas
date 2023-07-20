@@ -1,8 +1,8 @@
 {
     "name": "Leech",
-    "attack": 5,
-    "health": 1,
-    "description": "Enemy died:\ngain Vitality +2",
+    "attack": 6,
+    "health": 2,
+    "description": "Enemy died:\ngain Vitality +3",
     "house": "Enemy",
     "trigger": {
         "type": "AnyDeath",
@@ -28,7 +28,7 @@
                 },
                 "charges": {
                     "type": "Const",
-                    "value": 2
+                    "value": 3
                 }
             }
         }

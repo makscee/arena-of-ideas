@@ -88,8 +88,9 @@ fn main() {
         // RatingSystem::simulate_walkthrough(&mut world, &mut resources);
         RatingSystem::calculate_hero_ratings(&mut world, &mut resources);
     } else if resources.options.generate_ladder {
+        panic!();
         // RatingSystem::simulate_enemy_ratings_calculation(&mut world, &mut resources);
-        RatingSystem::generate_hero_ladder(&mut world, &mut resources);
+        // RatingSystem::generate_hero_ladder(&mut world, &mut resources);
     } else {
         let game = Game::new(world, resources, watcher);
         debug!("Game load in: {:?}", timer.elapsed());

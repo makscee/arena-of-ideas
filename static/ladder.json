@@ -1,286 +1,596 @@
 [
   {
-    "teams": [
+    "units": [
       {
-        "enemy_name": "Bug",
-        "count": 3,
-        "buff": null
-      },
-      {
-        "enemy_name": "Bug",
-        "count": 5,
-        "buff": null
-      },
-      {
-        "enemy_name": "Bane",
-        "count": 2,
-        "buff": null
+        "name": "Bug",
+        "attack": 1,
+        "health": 1,
+        "house": "Enemy",
+        "shader": {
+          "path": "shaders/vfx/triangle.glsl",
+          "parameters": {
+            "box": {
+              "size": [
+                0.4,
+                0.4
+              ]
+            },
+            "uniforms": {
+              "u_rotation": 1.0,
+              "u_g_points": [
+                -0.5,
+                -0.3,
+                0.3,
+                0.3
+              ],
+              "u_g_alphas": [
+                1.0,
+                1.0,
+                0.0,
+                1.0
+              ],
+              "u_g_color_1": "#000000",
+              "u_g_color_2": "#000000",
+              "u_g_color_3": "#000000",
+              "u_g_color_4": "#000000",
+              "mapping": {
+                "u_g_color_1": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                },
+                "u_g_color_2": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                },
+                "u_g_color_4": {
+                  "type": "Uniform",
+                  "key": "u_faction_color"
+                }
+              }
+            }
+          },
+          "before": [
+            {
+              "path": "shaders/vfx/particle_emitter.glsl",
+              "parameters": {
+                "uniforms": {
+                  "u_g_color_1": "#000000",
+                  "u_g_color_2": "#ffffff",
+                  "u_g_color_3": "#ffffff",
+                  "u_g_color_4": "#aa3b08",
+                  "u_p_vel_center": 1.5,
+                  "u_p_scale_start": 0.6,
+                  "u_p_scale_end": 0.2,
+                  "u_g_points": [
+                    0.0,
+                    0.2,
+                    0.2,
+                    1.0
+                  ],
+                  "u_g_alphas": [
+                    0.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ],
+                  "mapping": {
+                    "u_g_color_2": {
+                      "type": "Uniform",
+                      "key": "u_faction_color"
+                    },
+                    "u_g_color_3": {
+                      "type": "Uniform",
+                      "key": "u_house_color"
+                    }
+                  }
+                },
+                "instances": 300
+              }
+            }
+          ]
+        }
       }
     ]
   },
   {
-    "teams": [
+    "replications": 2,
+    "units": [
       {
-        "enemy_name": "Hexer",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Rat",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Rat",
-        "count": 2,
-        "buff": "Thorns"
+        "name": "Rat",
+        "attack": 3,
+        "health": 3,
+        "house": "Enemy",
+        "shader": {
+          "path": "shaders/vfx/triangle.glsl",
+          "parameters": {
+            "box": {
+              "size": [
+                0.55,
+                0.55
+              ]
+            },
+            "uniforms": {
+              "u_rotation": 1.0,
+              "u_g_points": [
+                -0.5,
+                -0.3,
+                0.3,
+                0.3
+              ],
+              "u_g_alphas": [
+                1.0,
+                1.0,
+                0.0,
+                1.0
+              ],
+              "u_g_color_1": "#000000",
+              "u_g_color_2": "#000000",
+              "u_g_color_3": "#000000",
+              "u_g_color_4": "#000000",
+              "mapping": {
+                "u_g_color_1": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                },
+                "u_g_color_4": {
+                  "type": "Uniform",
+                  "key": "u_faction_color"
+                }
+              }
+            }
+          },
+          "before": [
+            {
+              "path": "shaders/vfx/particle_emitter.glsl",
+              "parameters": {
+                "uniforms": {
+                  "u_g_color_1": "#000000",
+                  "u_g_color_2": "#ffffff",
+                  "u_g_color_3": "#ffffff",
+                  "u_g_color_4": "#aa3b08",
+                  "u_p_vel_center": 1.5,
+                  "u_p_vel_circle": 0.5,
+                  "u_p_vel_circle_shift": 20.0,
+                  "u_p_scale_start": 0.6,
+                  "u_p_scale_end": 0.2,
+                  "u_g_points": [
+                    0.0,
+                    0.2,
+                    0.2,
+                    1.0
+                  ],
+                  "u_g_alphas": [
+                    0.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ],
+                  "mapping": {
+                    "u_g_color_2": {
+                      "type": "Uniform",
+                      "key": "u_faction_color"
+                    },
+                    "u_g_color_3": {
+                      "type": "Uniform",
+                      "key": "u_house_color"
+                    }
+                  }
+                },
+                "instances": 400
+              }
+            }
+          ]
+        }
       }
     ]
   },
   {
-    "teams": [
+    "replications": 3,
+    "units": [
       {
-        "enemy_name": "Gorge",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Leech",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Rat",
-        "count": 4,
-        "buff": null
+        "name": "Havoc",
+        "attack": 2,
+        "health": 1,
+        "description": "Before Death\ndeal 2 DMG\nto all enemies",
+        "house": "Enemy",
+        "trigger": {
+          "type": "BeforeDeath",
+          "effect": {
+            "type": "Aoe",
+            "factions": [
+              {
+                "type": "Opposite",
+                "faction": {
+                  "type": "Owner"
+                }
+              }
+            ],
+            "effect": {
+              "type": "Damage",
+              "value": {
+                "type": "Const",
+                "value": 2
+              },
+              "after": {
+                "type": "ShowCurve"
+              }
+            }
+          }
+        },
+        "shader": {
+          "path": "shaders/vfx/particle_emitter.glsl",
+          "parameters": {
+            "uniforms": {
+              "u_g_color_1": "#ffffff",
+              "u_g_color_2": "#000000",
+              "u_g_color_3": "#ffffff",
+              "u_g_color_4": "#aa3b08",
+              "u_p_vel_gravity": -1.5,
+              "u_p_vel_center": 1.5,
+              "u_g_points": [
+                0.0,
+                0.3,
+                0.6,
+                1.0
+              ],
+              "u_g_alphas": [
+                1.0,
+                0.0,
+                1.0,
+                0.0
+              ],
+              "mapping": {
+                "u_g_color_2": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                },
+                "u_g_color_3": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                }
+              }
+            },
+            "instances": 1000
+          }
+        }
       }
     ]
   },
   {
-    "teams": [
+    "replications": 4,
+    "units": [
       {
-        "enemy_name": "Wolf",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Vengeance",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Gorge",
-        "count": 2,
-        "buff": "Thorns"
+        "name": "Wolf",
+        "attack": 5,
+        "health": 5,
+        "house": "Enemy",
+        "shader": {
+          "path": "shaders/vfx/triangle.glsl",
+          "parameters": {
+            "box": {
+              "size": [
+                0.65,
+                0.65
+              ]
+            },
+            "uniforms": {
+              "u_rotation": 1.0,
+              "u_g_points": [
+                -0.5,
+                -0.4,
+                -0.3,
+                0.2
+              ],
+              "u_g_alphas": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+              ],
+              "u_g_color_1": "#000000",
+              "u_g_color_2": "#8c8c8c",
+              "u_g_color_3": "#000000",
+              "u_g_color_4": "#000000",
+              "mapping": {
+                "u_g_color_1": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                },
+                "u_g_color_4": {
+                  "type": "Uniform",
+                  "key": "u_faction_color"
+                }
+              }
+            }
+          },
+          "before": [
+            {
+              "path": "shaders/vfx/particle_emitter.glsl",
+              "parameters": {
+                "uniforms": {
+                  "u_g_color_1": "#8c8c8c",
+                  "u_g_color_2": "#8c8c8c",
+                  "u_g_color_3": "#8c8c8c",
+                  "u_g_color_4": "#8c8c8c",
+                  "u_p_vel_center": 2.5,
+                  "u_p_vel_circle": 1.0,
+                  "u_p_vel_circle_shift": 20.0,
+                  "u_p_scale_start": 0.6,
+                  "u_p_scale_end": 0.2,
+                  "u_g_points": [
+                    0.0,
+                    0.2,
+                    0.2,
+                    1.0
+                  ],
+                  "u_g_alphas": [
+                    0.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ],
+                  "mapping": {}
+                },
+                "instances": 600
+              }
+            }
+          ]
+        }
       }
     ]
   },
   {
-    "teams": [
+    "replications": 4,
+    "units": [
       {
-        "enemy_name": "Bane",
-        "count": 4,
-        "buff": null
-      },
-      {
-        "enemy_name": "Sacrilege",
-        "count": 5,
-        "buff": null
-      },
-      {
-        "enemy_name": "Snake",
-        "count": 3,
-        "buff": null
+        "name": "Bear",
+        "attack": 8,
+        "health": 8,
+        "house": "Enemy",
+        "shader": {
+          "path": "shaders/vfx/triangle.glsl",
+          "parameters": {
+            "box": {
+              "size": [
+                0.9,
+                0.9
+              ]
+            },
+            "uniforms": {
+              "u_rotation": 1.0,
+              "u_g_points": [
+                -0.5,
+                -0.4,
+                -0.3,
+                0.2
+              ],
+              "u_g_alphas": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+              ],
+              "u_g_color_1": "#000000",
+              "u_g_color_2": "#9c5800",
+              "u_g_color_3": "#000000",
+              "u_g_color_4": "#000000",
+              "mapping": {
+                "u_g_color_1": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                }
+              }
+            }
+          },
+          "before": [
+            {
+              "path": "shaders/vfx/particle_emitter.glsl",
+              "parameters": {
+                "uniforms": {
+                  "u_g_color_1": "#9c5800",
+                  "u_g_color_2": "#9c5800",
+                  "u_g_color_3": "#9c5800",
+                  "u_g_color_4": "#9c5800",
+                  "u_p_vel_center": 2.0,
+                  "u_p_vel_circle": 1.0,
+                  "u_p_vel_circle_shift": 20.0,
+                  "u_p_scale_start": 0.6,
+                  "u_p_scale_end": 0.2,
+                  "u_p_scale": 0.2,
+                  "u_g_points": [
+                    0.0,
+                    0.2,
+                    0.2,
+                    1.0
+                  ],
+                  "u_g_alphas": [
+                    0.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ],
+                  "mapping": {}
+                },
+                "instances": 800
+              }
+            }
+          ]
+        }
       }
     ]
   },
   {
-    "teams": [
+    "replications": 6,
+    "units": [
       {
-        "enemy_name": "Snake",
-        "count": 3,
-        "buff": "Vitality"
-      },
-      {
-        "enemy_name": "Rat",
-        "count": 6,
-        "buff": null
-      },
-      {
-        "enemy_name": "Hexer",
-        "count": 3,
-        "buff": "Martyr"
+        "name": "Leech",
+        "attack": 6,
+        "health": 2,
+        "description": "Enemy died:\ngain Vitality +3",
+        "house": "Enemy",
+        "trigger": {
+          "type": "AnyDeath",
+          "effect": {
+            "type": "If",
+            "condition": {
+              "type": "EqualsFaction",
+              "a": {
+                "type": "Opposite",
+                "faction": {
+                  "type": "Owner"
+                }
+              },
+              "b": {
+                "type": "Target"
+              }
+            },
+            "then": {
+              "type": "UseAbility",
+              "ability": "Vitality",
+              "target": {
+                "type": "Owner"
+              },
+              "charges": {
+                "type": "Const",
+                "value": 3
+              }
+            }
+          }
+        },
+        "shader": {
+          "path": "shaders/vfx/particle_emitter.glsl",
+          "parameters": {
+            "box": {
+              "size": [
+                1.0,
+                1.0
+              ]
+            },
+            "uniforms": {
+              "u_g_color_1": "#8a8a8a",
+              "u_g_color_2": "#000000",
+              "u_g_color_3": "#aa0600",
+              "u_g_color_4": "#000000",
+              "u_p_vel_center": 1.0,
+              "u_p_vel_gravity": 0.3,
+              "u_p_vel_circle": 0.7,
+              "u_p_vel_circle_mul": -9.0,
+              "u_p_vel_circle_shift": 0.0,
+              "u_p_scale_start": 0.5,
+              "u_p_scale_end": 0.9,
+              "u_p_scale": 0.1,
+              "u_p_offset": [
+                0.0,
+                0.0
+              ],
+              "u_g_points": [
+                0.2,
+                0.3,
+                0.8,
+                1.0
+              ],
+              "u_g_alphas": [
+                1.0,
+                0.5,
+                1.0,
+                1.0
+              ],
+              "mapping": {
+                "u_g_color_1": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                },
+                "u_g_color_2": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                }
+              }
+            },
+            "instances": 300
+          }
+        }
       }
     ]
   },
   {
-    "teams": [
+    "replications": 5,
+    "units": [
       {
-        "enemy_name": "Hexer",
-        "count": 6,
-        "buff": null
-      },
-      {
-        "enemy_name": "Wither",
-        "count": 2,
-        "buff": null
-      },
-      {
-        "enemy_name": "Bear",
-        "count": 2,
-        "buff": null
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Vengeance",
-        "count": 4,
-        "buff": null
-      },
-      {
-        "enemy_name": "Rat",
-        "count": 6,
-        "buff": "Thorns"
-      },
-      {
-        "enemy_name": "Wolf",
-        "count": 4,
-        "buff": null
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Bane",
-        "count": 5,
-        "buff": "Thorns"
-      },
-      {
-        "enemy_name": "Wolf",
-        "count": 4,
-        "buff": "Thorns"
-      },
-      {
-        "enemy_name": "Fiend",
-        "count": 5,
-        "buff": null
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Bane",
-        "count": 4,
-        "buff": "Volatility"
-      },
-      {
-        "enemy_name": "Sacrilege",
-        "count": 6,
-        "buff": "Vitality"
-      },
-      {
-        "enemy_name": "Leech",
-        "count": 6,
-        "buff": null
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Wolf",
-        "count": 6,
-        "buff": null
-      },
-      {
-        "enemy_name": "Gorge",
-        "count": 5,
-        "buff": null
-      },
-      {
-        "enemy_name": "Vengeance",
-        "count": 6,
-        "buff": null
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Snake",
-        "count": 6,
-        "buff": null
-      },
-      {
-        "enemy_name": "Wolf",
-        "count": 6,
-        "buff": "Vitality"
-      },
-      {
-        "enemy_name": "Wither",
-        "count": 3,
-        "buff": "Martyr"
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Leech",
-        "count": 5,
-        "buff": "Volatility"
-      },
-      {
-        "enemy_name": "Wither",
-        "count": 5,
-        "buff": null
-      },
-      {
-        "enemy_name": "Wither",
-        "count": 5,
-        "buff": "Thorns"
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Gorge",
-        "count": 5,
-        "buff": "Volatility"
-      },
-      {
-        "enemy_name": "Havoc",
-        "count": 4,
-        "buff": null
-      },
-      {
-        "enemy_name": "Bear",
-        "count": 6,
-        "buff": null
-      }
-    ]
-  },
-  {
-    "teams": [
-      {
-        "enemy_name": "Havoc",
-        "count": 3,
-        "buff": "Volatility"
-      },
-      {
-        "enemy_name": "Sacrilege",
-        "count": 6,
-        "buff": "Martyr"
-      },
-      {
-        "enemy_name": "Snake",
-        "count": 4,
-        "buff": "Splash"
+        "name": "Wither",
+        "attack": 6,
+        "health": 6,
+        "description": "Before Death\napply Decay +1\nto all enemies",
+        "house": "Enemy",
+        "trigger": {
+          "type": "BeforeDeath",
+          "effect": {
+            "type": "Aoe",
+            "factions": [
+              {
+                "type": "Opposite",
+                "faction": {
+                  "type": "Owner"
+                }
+              }
+            ],
+            "effect": {
+              "type": "UseAbility",
+              "ability": "Decay",
+              "charges": {
+                "type": "Const",
+                "value": 1
+              }
+            }
+          }
+        },
+        "shader": {
+          "path": "shaders/vfx/particle_emitter.glsl",
+          "parameters": {
+            "box": {
+              "size": [
+                1.0,
+                1.0
+              ]
+            },
+            "uniforms": {
+              "u_g_color_1": "#8a8a8a",
+              "u_g_color_2": "#000000",
+              "u_g_color_3": "#005703",
+              "u_g_color_4": "#aa3b08",
+              "u_p_vel_center": 0.0,
+              "u_p_vel_gravity": 0.5,
+              "u_p_vel_circle": 0.1,
+              "u_p_vel_circle_mul": 5.0,
+              "u_p_vel_circle_shift": 50.0,
+              "u_p_scale_start": 0.6,
+              "u_p_scale_end": 0.9,
+              "u_p_scale": 0.05,
+              "u_p_offset": [
+                0.0,
+                0.0
+              ],
+              "u_g_points": [
+                0.3,
+                0.5,
+                0.6,
+                1.0
+              ],
+              "u_g_alphas": [
+                1.0,
+                0.0,
+                1.0,
+                0.0
+              ],
+              "mapping": {
+                "u_g_color_2": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                }
+              }
+            },
+            "instances": 500
+          }
+        }
       }
     ]
   }

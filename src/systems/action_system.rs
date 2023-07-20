@@ -120,6 +120,13 @@ impl ActionSystem {
                 killer,
             }
             .send(world, resources);
+            if killer != entity && UnitSystem::is_alive(killer, world, resources) {
+                Event::AfterKill {
+                    owner: killer,
+                    target: entity,
+                }
+                .send(world, resources);
+            }
         }
     }
 }

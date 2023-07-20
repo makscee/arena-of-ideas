@@ -3,18 +3,6 @@ use super::*;
 pub struct SimulationSystem {}
 
 impl SimulationSystem {
-    pub fn run_ladder_battle(
-        light: &PackedTeam,
-        dark: &PackedTeam,
-        world: &mut legion::World,
-        resources: &mut Resources,
-        assert: Option<&Condition>,
-    ) -> usize {
-        BattleSystem::init_ladder_battle(light, dark.clone(), world, resources);
-        let (result, _, score) = Self::run_battle(light, dark, world, resources, assert);
-        score
-    }
-
     pub fn run_ranked_battle(
         light: &PackedTeam,
         dark: &PackedTeam,

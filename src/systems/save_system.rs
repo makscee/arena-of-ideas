@@ -15,7 +15,7 @@ impl SaveSystem {
         let team = PackedTeam::pack(Faction::Team, world, resources);
         let save = SaveData {
             team,
-            floor: Ladder::current_level(resources),
+            level: Ladder::current_level(resources),
         };
         let save = serde_json::to_string_pretty(&save).unwrap();
         match write(path(), save) {
@@ -30,8 +30,8 @@ impl SaveSystem {
             Ok(save) => {
                 Game::reset(world, resources);
                 save.team.unpack(&Faction::Team, world, resources);
-                resources.ladder.set_level(save.floor);
-                for level in 0..save.floor {
+                resources.ladder.set_level(save.level);
+                for level in 0..save.level {
                     ShopData::load_level(resources, level);
                 }
                 ShopSystem::enter(world, resources);
@@ -47,5 +47,5 @@ impl SaveSystem {
 #[derive(Serialize, Deserialize, Debug)]
 struct SaveData {
     pub team: PackedTeam,
-    pub floor: usize,
+    pub level: usize,
 }

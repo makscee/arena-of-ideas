@@ -362,15 +362,6 @@ impl ShopSystem {
         PanelsSystem::open_card_choice(choice, resources);
     }
 
-    pub fn show_battle_choice_panel(resources: &mut Resources) {
-        let teams = Ladder::generate_current_teams(resources)
-            .into_iter()
-            .map(|x| x.clone())
-            .collect_vec();
-        let choice = CardChoice::SelectEnemy { teams };
-        PanelsSystem::open_card_choice(choice, resources);
-    }
-
     pub fn add_unit_to_team(
         unit: PackedUnit,
         world: &mut legion::World,
@@ -524,7 +515,7 @@ impl ShopSystem {
                             .tape
                             .close_panels(entity, resources.tape_player.head)
                     {
-                        ShopSystem::show_battle_choice_panel(resources);
+                        Ladder::start_next_battle(world, resources);
                     }
                 }
                 _ => {}

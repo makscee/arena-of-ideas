@@ -2,7 +2,7 @@
     "name": "Bug",
     "attack": 1,
     "health": 1,
-    "house": "Beasts",
+    "house": "Enemy",
     "shader": {
         "path": "shaders/vfx/triangle.glsl",
         "parameters": {

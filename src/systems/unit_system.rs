@@ -19,6 +19,11 @@ impl UnitSystem {
     }
 
     pub fn is_alive(entity: legion::Entity, world: &legion::World, resources: &Resources) -> bool {
+        if let Ok(entry) = world.entry_ref(entity) {
+            if entry.get_component::<CorpseComponent>().is_ok() {
+                return false;
+            }
+        }
         let context = Context::new(ContextLayer::Unit { entity }, world, resources);
         context.get_int(&VarName::HpValue, world) > context.get_int(&VarName::HpDamage, world)
     }
@@ -201,15 +206,6 @@ impl UnitSystem {
         );
         Event::AfterDeath { owner: entity }.send(world, resources);
         ContextState::get_mut(entity, world).statuses.clear();
-        if let Some(killer) = killer {
-            if killer != entity {
-                Event::AfterKill {
-                    owner: killer,
-                    target: entity,
-                }
-                .send(world, resources);
-            }
-        }
         if faction == Faction::Team {
             //todo: bug on rebirth?
             Event::RemoveFromTeam { owner: entity }.send(world, resources);

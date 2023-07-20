@@ -45,7 +45,11 @@ impl PackedUnit {
             .cloned()
             .unwrap_or(Trigger::Noop);
         let statuses = StatusSystem::pack_state_into_vec(state);
-        let shader = entry.get_component::<ShaderChain>().ok().cloned();
+        let shader = if let Ok(chain) = entry.get_component::<ShaderChain>() {
+            chain.before.get(0).cloned()
+        } else {
+            None
+        };
         let rank = state.vars.try_get_int(&VarName::Rank).unwrap_or_default() as u8;
         let result = Self {
             name,
@@ -127,7 +131,7 @@ impl PackedUnit {
     pub fn generate_shader(&self, house_color: Rgba<f32>, options: &Options) -> ShaderChain {
         let mut shader = options.shaders.unit.clone();
         if let Some(self_shader) = self.shader.as_ref() {
-            shader.before.push(self_shader.clone());
+            shader.before.insert(0, self_shader.clone());
         }
         shader.insert_color_ref("u_house_color".to_owned(), house_color);
         shader.after.push(options.shaders.unit_card.clone());

@@ -434,7 +434,8 @@ impl CardChoice {
                 let dark = teams.remove(ind);
                 let light = PackedTeam::pack(Faction::Team, world, resources);
                 resources.battle_data.last_difficulty = ind;
-                BattleSystem::init_ladder_battle(&light, dark, world, resources);
+                // BattleSystem::init_ladder_battle(&light, dark, world, resources);
+                BattleSystem::init_battle(&light, &dark, world, resources);
                 GameStateSystem::set_transition(GameState::Battle, resources);
             }
             CardChoice::BuyBuff { mut buffs, target } => {

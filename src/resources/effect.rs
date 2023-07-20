@@ -450,6 +450,7 @@ impl EffectWrapped {
                 let house = &AbilityPool::get_house_origin(resources, ability);
                 let unit_house = ContextState::get(owner, world).vars.try_get_house();
                 if !force
+                    && unit_house.is_some()
                     && unit_house != Some(HouseName::Enemy)
                     && unit_house != Some(HouseName::Test)
                     && unit_house != Some(*house)

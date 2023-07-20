@@ -10,7 +10,7 @@ impl SacrificeSystem {
         for unit in units.iter() {
             let context = Context::new(ContextLayer::Unit { entity: *unit }, world, resources)
                 .set_target(*unit);
-            sum += context.get_int(&VarName::Rank, world).unwrap();
+            sum += context.get_int(&VarName::Rank, world).unwrap() + 1;
             Effect::Kill.wrap().push(context, resources);
             ActionSystem::spin(world, resources, None);
             ActionSystem::death_check(world, resources, None);

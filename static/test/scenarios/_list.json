@@ -1,4 +1,5 @@
 [
+    "test/scenarios/kill_death.json",
     "test/scenarios/rebirth_death_trigger.json",
     "test/scenarios/thorns_infinite.json",
     "test/scenarios/vulture.json",

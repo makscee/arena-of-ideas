@@ -33,7 +33,6 @@ pub enum HouseName {
     Elementals,
     Druids,
     Hunters,
-    Beasts,
 
     Enemy,
 

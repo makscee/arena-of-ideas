@@ -33,16 +33,16 @@ impl System for GameStateSystem {
             }
             GameState::Battle => {
                 if resources.input_data.down_keys.contains(&Escape) {
-                    resources.tape_player.head = resources.tape_player.tape.length() - 3.0;
+                    resources.tape_player.head = resources.tape_player.tape.length() - 0.5;
                 }
                 if resources.tape_player.tape.length() < resources.tape_player.head {
-                    BattleSystem::finish_floor_battle(world, resources);
+                    BattleSystem::finish_ladder_battle(world, resources);
                 }
             }
             GameState::Shop => {
                 if resources.input_data.down_keys.contains(&Space) {
                     match resources.camera.focus == Focus::Shop {
-                        true => ShopSystem::show_battle_choice_panel(resources),
+                        true => Ladder::start_next_battle(world, resources),
                         false => resources.transition_state = GameState::Battle,
                     }
                 }
@@ -376,7 +376,7 @@ impl GameStateSystem {
                         .unpack(world, resources, 1, None, team);
                 }
                 let team_size = UnitSystem::collect_faction(world, Faction::Team).len() as i32;
-                if team_size > 1 {
+                if team_size > 2 {
                     SlotSystem::add_slots_buttons(
                         Faction::Team,
                         "Sacrifice",
@@ -385,11 +385,6 @@ impl GameStateSystem {
                         world,
                         resources,
                     );
-                }
-                for entity in UnitSystem::collect_faction(world, Faction::Team) {
-                    let vars = &mut ContextState::get_mut(entity, world).vars;
-                    let rank = (vars.try_get_int(&VarName::Rank).unwrap_or_default() + 1).min(3);
-                    vars.set_int(&VarName::Rank, rank);
                 }
 
                 resources.camera.focus = Focus::Shop;
@@ -404,7 +399,7 @@ impl GameStateSystem {
                     match event {
                         HandleEvent::Click => {
                             if !resources.sacrifice_data.marked_units.is_empty()
-                                || shader.get_int("u_team_size") == 1
+                                || shader.get_int("u_team_size") < 3
                             {
                                 SacrificeSystem::sacrifice_marked(world, resources);
                             }
@@ -421,7 +416,7 @@ impl GameStateSystem {
                 ) {
                     shader.set_active(
                         !resources.sacrifice_data.marked_units.is_empty()
-                            || shader.get_int("u_team_size") == 1,
+                            || shader.get_int("u_team_size") < 3,
                     );
                 }
                 let entity = new_entity();
@@ -437,7 +432,7 @@ impl GameStateSystem {
                         (
                             resources.options.colors.subtract,
                             "Accept Sacrifice".to_owned(),
-                            "Sacrifice selected heroes,\nremoving them from team.\nNo sacrifice needed for\nteam of 1 hero.".to_owned()
+                            "Sacrifice selected heroes,\nremoving them from team.\nNo sacrifice needed for\nteam of 2 heroes.".to_owned()
                         )
                     ],
                 }

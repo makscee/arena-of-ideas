@@ -107,19 +107,6 @@ impl BattleSystem {
         }
     }
 
-    pub fn init_ladder_battle(
-        light: &PackedTeam,
-        dark: PackedTeam,
-        world: &mut legion::World,
-        resources: &mut Resources,
-    ) {
-        let mut dark = Ladder::generate_promoted_teams(dark);
-        Self::init_battle(&light, &dark.remove(0), world, resources);
-        for team in dark {
-            Self::queue_team(Faction::Dark, team, resources);
-        }
-    }
-
     pub fn queue_team(faction: Faction, team: PackedTeam, resources: &mut Resources) {
         resources
             .battle_data
@@ -141,21 +128,22 @@ impl BattleSystem {
         resources.battle_data.turns = 0;
     }
 
-    pub fn finish_floor_battle(world: &mut legion::World, resources: &mut Resources) {
+    pub fn finish_ladder_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.total_score += resources.battle_data.last_score;
+        let level = Ladder::current_level(resources) + 1;
         let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
             let score = resources.battle_data.last_score;
             let difficulty = resources.battle_data.last_difficulty + 3;
             if Ladder::next(resources) {
                 resources.transition_state = GameState::Sacrifice;
-                ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
-                ShopSystem::change_g(
-                    difficulty as i32,
-                    Some("Enemy Difficulty"),
-                    world,
-                    resources,
-                );
+                // ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
+                // ShopSystem::change_g(
+                //     difficulty as i32,
+                //     Some("Enemy Difficulty"),
+                //     world,
+                //     resources,
+                // );
             } else {
                 resources.transition_state = GameState::GameOver;
             }
@@ -170,9 +158,7 @@ impl BattleSystem {
             };
             (
                 "Victory",
-                format!(
-                    "+{score} g: {score} ranks defeated\n+{difficulty} g: {difficulty_text} enemy difficulty"
-                ),
+                format!("Level {level} complete"),
                 vec![PanelFooterButton::Close],
                 resources.options.colors.victory,
             )
@@ -189,7 +175,8 @@ impl BattleSystem {
             )
         };
         Self::clear_world(world, resources);
-        PanelsSystem::add_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources)
+        PanelsSystem::add_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources);
+        SaveSystem::save(world, resources);
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {
