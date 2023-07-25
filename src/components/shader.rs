@@ -358,20 +358,31 @@ impl ShaderChain {
 
     pub fn depth_visit(&mut self, parent: Option<&Shader>) {
         if let Some(parent) = parent {
-            for shader in self.before.iter_mut().chain(self.after.iter_mut()) {
-                shader
-                    .middle
-                    .parameters
-                    .r#box
-                    .consider_parent(&parent.parameters.r#box);
-                shader.middle.parameters.merge(&parent.parameters, false);
-            }
+            self.middle.parameters.merge(&parent.parameters, false);
+            self.middle
+                .parameters
+                .r#box
+                .consider_parent(&parent.parameters.r#box);
         }
         for shader in self.before.iter_mut() {
             shader.depth_visit(Some(&self.middle));
         }
         for shader in self.after.iter_mut() {
             shader.depth_visit(Some(&self.middle));
+        }
+    }
+
+    pub fn cut_disabled(&mut self) {
+        if !self.middle.is_enabled() {
+            self.before.clear();
+            self.after.clear();
+            return;
+        }
+        for shader in self.before.iter_mut() {
+            shader.cut_disabled();
+        }
+        for shader in self.after.iter_mut() {
+            shader.cut_disabled();
         }
     }
 
@@ -388,6 +399,21 @@ impl ShaderChain {
         result.push(&mut self.middle);
         for shader in self.after.iter_mut() {
             shader.fill_vec_mut(result);
+        }
+    }
+    pub fn iter<'a>(&'a self) -> impl DoubleEndedIterator<Item = &Shader> + 'a {
+        let mut vec: Vec<&Shader> = default();
+        self.fill_vec(&mut vec);
+        vec.into_iter()
+    }
+
+    pub fn fill_vec<'a>(&'a self, result: &mut Vec<&'a Shader>) {
+        for shader in self.before.iter() {
+            shader.fill_vec(result);
+        }
+        result.push(&self.middle);
+        for shader in self.after.iter() {
+            shader.fill_vec(result);
         }
     }
 }
