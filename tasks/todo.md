@@ -62,8 +62,9 @@ Build
     Simplified ladder format {start:2023-07-08T15:59:35} {cm:2023-07-08T18:06:38} {duration:02h07m}
     Ladder @content
         ladder generation from heroes {cm:2023-07-17T21:36:10}
-        single team ladder
-        iterative ladder generation
+        single team ladder {cm:2023-07-25T14:59:37}
+        iterative ladder generation {cm:2023-07-25T14:59:38}
+    Unnified Shop offers {cm:2023-07-25T22:31:03}
     Curses
         rank up enemies, no sacrifice
         buff enemies

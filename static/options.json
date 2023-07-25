@@ -7,11 +7,11 @@
     "rewind_add_speed": 10.0,
     "start_g": 4,
     "max_g": 8,
-    "initial_team_slots": 4,
+    "initial_team_slots": 6,
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": true,
+        "enable": false,
         "light": {
             "units": [
                 {
@@ -1705,9 +1705,12 @@
     },
     "floats": {
         "panel_text_padding": 0.05,
-        "panel_card_padding": 0.8,
-        "panel_row_padding": 0.1,
-        "panel_row_spacing": 0.1,
+        "panel_card_padding": [
+            0.5,
+            0.8
+        ],
+        "panel_row_padding": 0.07,
+        "panel_row_spacing": 0.01,
         "panel_column_padding": 0.1,
         "panel_column_spacing": -0.03,
         "panel_row_index_offset": [
@@ -1716,7 +1719,7 @@
         ],
         "slots_shop_team_position": [
             6.0,
-            4.0
+            5.0
         ],
         "slots_striker_position": [
             7.0,

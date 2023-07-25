@@ -155,7 +155,7 @@ pub struct Floats {
     pub slots_striker_scale: f32,
     pub slot_info_offset: f32,
     pub panel_text_padding: f32,
-    pub panel_card_padding: f32,
+    pub panel_card_padding: vec2<f32>,
     pub panel_row_padding: f32,
     pub panel_row_spacing: f32,
     pub panel_row_index_offset: vec2<f32>,

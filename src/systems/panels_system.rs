@@ -60,8 +60,8 @@ impl System for PanelsSystem {
                 .push
                 .iter_mut()
                 .chain(resources.panels_data.stats.iter_mut())
-                .chain(resources.panels_data.hint.iter_mut())
                 .chain(resources.panels_data.alert.iter_mut())
+                .chain(resources.panels_data.hint.iter_mut())
                 .map(|x| x.shader.clone()),
         );
     }
@@ -108,80 +108,43 @@ impl PanelsSystem {
         }
         let padding = resources.options.floats.panel_row_padding;
         let faction = match &choice {
-            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => Faction::Team,
+            CardChoice::BuyBuff { .. }
+            | CardChoice::BuyHero { .. }
+            | CardChoice::ShopOffers { .. } => Faction::Team,
             CardChoice::SelectEnemy { .. } => Faction::Dark,
         };
-        let cards: Vec<(String, usize, ShaderChain, Rgba<f32>, Rgba<f32>)> = match &choice {
-            CardChoice::BuyHero { units } => units
-                .iter()
-                .map(|x| {
-                    let rarity = HeroPool::rarity_by_name(&x.name, resources);
-                    (
-                        rarity.to_string(),
-                        1,
-                        x.get_ui_shader(faction, true, resources),
-                        rarity.color(resources),
-                        resources.options.colors.light,
-                    )
-                })
-                .collect_vec(),
-            CardChoice::SelectEnemy { teams } => teams
-                .iter()
-                .enumerate()
-                .map(|(ind, team)| {
-                    (
-                        team.name.clone(),
-                        team.units.len(),
-                        team.units[0].get_ui_shader(faction, true, resources),
-                        match ind {
-                            0 => resources.options.colors.common,
-                            1 => resources.options.colors.rare,
-                            2 => resources.options.colors.epic,
-                            _ => panic!(),
-                        },
-                        resources.options.colors.dark,
-                    )
-                })
-                .collect_vec(),
-            CardChoice::BuyBuff {
-                buffs: statuses,
-                target,
-            } => statuses
-                .iter()
-                .map(|buff| {
+        let cards: Vec<(String, ShaderChain, usize, Rgba<f32>, Rgba<f32>)> = match &choice {
+            CardChoice::ShopOffers { units, buffs } => {
+                let mut result: Vec<(String, ShaderChain, usize, Rgba<f32>, Rgba<f32>)> = default();
+                let body_color = resources.options.colors.light;
+                for unit in units {
+                    let rarity = HeroPool::rarity_by_name(&unit.name, resources);
+                    let name = format!("{} Hero", rarity);
+                    let shader = unit.get_ui_shader(faction, true, resources);
+                    let panel_color = rarity.color(resources);
+                    result.push((name, shader, 3, panel_color, body_color));
+                }
+                for (buff, target) in buffs {
+                    let name = target.name();
                     let status = StatusLibrary::get(&buff.name, resources);
-                    (
-                        buff.rarity.to_string(),
-                        buff.charges as usize,
-                        status.generate_card_shader(&buff.name, Some(buff.charges), resources),
-                        buff.rarity.color(resources),
-                        resources.options.colors.light,
-                    )
-                })
-                .collect_vec(),
-        };
-        let title = match &choice {
-            CardChoice::BuyHero { .. } => "Choose new hero",
-            CardChoice::SelectEnemy { .. } => "Choose enemy team",
-            CardChoice::BuyBuff { target, .. } => match target {
-                BuffTarget::Single { .. } => "Choose buff for one hero",
-                BuffTarget::Aoe => "Choose buff for all heroes",
-                BuffTarget::Team => "Choose team buff",
-            },
-        };
-        let panel_color = match &choice {
-            CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => {
-                resources.options.colors.shop
+                    let shader =
+                        status.generate_card_shader(&buff.name, Some(buff.charges), resources);
+                    let panel_color = buff.rarity.color(resources);
+                    result.push((name, shader, target.cost(), panel_color, body_color));
+                }
+                result
             }
-            CardChoice::SelectEnemy { .. } => resources.options.colors.enemy,
+            _ => panic!(),
         };
+        let title = "Shop";
+        let panel_color = resources.options.colors.shop;
         let shaders = cards
             .into_iter()
             .enumerate()
-            .map(|(ind, (name, count, shader, panel_color, body_color))| {
+            .map(|(ind, (name, mut shader, cost, panel_color, body_color))| {
                 let mut shader = Self::generate_card_panel(shader, &resources.options)
                     .wrap_panel_header(&name, &resources.options)
-                    .wrap_panel_footer(vec![PanelFooterButton::Select], &resources.options)
+                    .wrap_panel_footer(vec![PanelFooterButton::Buy { cost }], &resources.options)
                     .insert_int("u_index".to_owned(), ind as i32)
                     .set_panel_color(panel_color)
                     .set_panel_body_color(body_color);
@@ -203,8 +166,12 @@ impl PanelsSystem {
                             );
                         }
                     }
+                    let index = shader.get_int("u_index") as usize;
+                    if resources.panels_data.removed_inds.contains(&index) {
+                        shader.set_enabled(false);
+                    }
                 }
-                shader.middle.post_update_handlers.push(update_handler);
+                shader.middle.pre_update_handlers.push(update_handler);
                 shader
             })
             .collect_vec();
@@ -213,12 +180,13 @@ impl PanelsSystem {
                 vec![PanelFooterButton::Reroll, PanelFooterButton::Accept]
             }
             CardChoice::SelectEnemy { .. } => vec![PanelFooterButton::Accept],
+            CardChoice::ShopOffers { .. } => vec![PanelFooterButton::Reroll],
         };
         resources.panels_data.choice_options = Some(choice);
         let mut panel = ShaderChain::wrap_panel_body_row(shaders, padding, &resources.options)
             .wrap_panel_header(title, &resources.options)
             .wrap_panel_footer(buttons, &resources.options);
-        panel.middle.parameters.r#box.pos.y += 0.3;
+        panel.middle.parameters.r#box.pos.y += 0.1;
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
             Some(panel_color),
@@ -347,6 +315,12 @@ impl PanelsSystem {
         }
     }
 
+    pub fn close_all_alerts(resources: &mut Resources) {
+        for panel in resources.panels_data.alert.iter_mut() {
+            panel.state = PanelState::Closed;
+        }
+    }
+
     pub fn close_hints(resources: &mut Resources) {
         for panel in resources.panels_data.hint.iter_mut() {
             panel.state = PanelState::Closed;
@@ -377,7 +351,7 @@ impl PanelsSystem {
         let per_line = shader.middle.parameters.r#box.size.y;
         shader.middle.parameters.r#box.size.y = lines as f32 * per_line;
         let padding = options.floats.panel_text_padding;
-        shader = shader.wrap_panel_body(padding, options);
+        shader = shader.wrap_panel_body(vec2(padding, padding), options);
         shader
     }
 
@@ -399,9 +373,10 @@ pub struct PanelsData {
     pub stats: Option<Panel>,
     pub choice_options: Option<CardChoice>,
     pub chosen_ind: Option<usize>,
+    pub removed_inds: HashSet<usize>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CardChoice {
     BuyHero {
         units: Vec<PackedUnit>,
@@ -413,6 +388,10 @@ pub enum CardChoice {
         buffs: Vec<Buff>,
         target: BuffTarget,
     },
+    ShopOffers {
+        units: Vec<PackedUnit>,
+        buffs: Vec<(Buff, BuffTarget)>,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -422,25 +401,78 @@ pub enum BuffTarget {
     Team,
 }
 
-impl CardChoice {
-    pub fn do_choose(self, ind: usize, world: &mut legion::World, resources: &mut Resources) {
+impl BuffTarget {
+    pub fn name(&self) -> String {
         match self {
-            CardChoice::BuyHero { mut units } => {
-                let unit = units.remove(ind);
+            BuffTarget::Single { .. } => "Hero Buff".to_owned(),
+            BuffTarget::Aoe => "Aoe Buff".to_owned(),
+            BuffTarget::Team => "Team Buff".to_owned(),
+        }
+    }
+
+    pub fn random() -> BuffTarget {
+        let rand: f32 = (&mut thread_rng()).gen_range(0.0..1.0);
+        if rand < 0.6 {
+            BuffTarget::Single { slot: None }
+        } else if rand < 0.9 {
+            BuffTarget::Aoe
+        } else {
+            BuffTarget::Team
+        }
+    }
+
+    pub fn cost(&self) -> usize {
+        match self {
+            BuffTarget::Single { .. } => 2,
+            BuffTarget::Aoe => 4,
+            BuffTarget::Team => 5,
+        }
+    }
+}
+
+impl CardChoice {
+    pub fn do_choose(&self, ind: usize, world: &mut legion::World, resources: &mut Resources) {
+        match self {
+            CardChoice::BuyHero { units } => {
+                let unit = units.get(ind).cloned().unwrap();
                 ShopSystem::add_unit_to_team(unit, world, resources);
-                Product::Hero.create_button(resources);
             }
-            CardChoice::SelectEnemy { mut teams } => {
-                let dark = teams.remove(ind);
+            CardChoice::SelectEnemy { teams } => {
+                let dark = teams.get(ind).cloned().unwrap();
                 let light = PackedTeam::pack(Faction::Team, world, resources);
                 resources.battle_data.last_difficulty = ind;
-                // BattleSystem::init_ladder_battle(&light, dark, world, resources);
                 BattleSystem::init_battle(&light, &dark, world, resources);
                 GameStateSystem::set_transition(GameState::Battle, resources);
             }
-            CardChoice::BuyBuff { mut buffs, target } => {
-                let buff = { buffs.remove(ind) };
-                ShopSystem::start_buff_apply(buff.name, buff.charges, target, world, resources)
+            CardChoice::BuyBuff { buffs, target } => {
+                let buff = { buffs.get(ind).cloned().unwrap() };
+                ShopSystem::start_buff_apply(
+                    buff.name,
+                    buff.charges,
+                    target.clone(),
+                    world,
+                    resources,
+                )
+            }
+            CardChoice::ShopOffers { units, buffs } => {
+                resources.panels_data.removed_inds.insert(ind);
+                if ind < units.len() {
+                    let unit = units.get(ind).cloned().unwrap();
+                    ShopSystem::add_unit_to_team(unit, world, resources);
+                    ShopSystem::change_g(-3, Some("Buy Hero"), world, resources);
+                } else if ind - units.len() < buffs.len() {
+                    let buff = { buffs.get(ind - units.len()).cloned().unwrap() };
+                    let (buff, target) = buff;
+                    ShopSystem::start_buff_apply(buff.name, buff.charges, target, world, resources);
+                    ShopSystem::change_g(
+                        -(target.cost() as i32),
+                        Some(&target.name()),
+                        world,
+                        resources,
+                    );
+                } else {
+                    panic!("Wrong shop offer index: {ind}")
+                }
             }
         }
     }
@@ -497,7 +529,9 @@ impl ShaderChain {
                     .try_get_float("u_scale")
                     .unwrap_or(1.0)
         };
-        let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
+        let mut shader = shaders
+            .remove(0)
+            .wrap_panel_body(vec2(padding, padding), options);
         let count = shaders.len() as f32;
         shader.middle.parameters.r#box.size.x += count * size.x;
         shader.middle.parameters.r#box.size +=
@@ -528,7 +562,9 @@ impl ShaderChain {
                     .try_get_float("u_scale")
                     .unwrap_or(1.0)
         };
-        let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
+        let mut shader = shaders
+            .remove(0)
+            .wrap_panel_body(vec2(padding, padding), options);
         let count = shaders.len() as f32;
         shader.middle.parameters.r#box.size.y += count * size.y;
         shader.middle.parameters.r#box.size +=
@@ -545,7 +581,7 @@ impl ShaderChain {
         shader
     }
 
-    pub fn wrap_panel_body(self, padding: f32, options: &Options) -> Self {
+    pub fn wrap_panel_body(self, padding: vec2<f32>, options: &Options) -> Self {
         let mut shader = options.shaders.panel_body.clone();
         let scale = self
             .middle
@@ -556,7 +592,7 @@ impl ShaderChain {
         shader.middle.parameters.r#box = self.middle.parameters.r#box;
         shader.middle.parameters.r#box.anchor = vec2::ZERO;
         shader.middle.parameters.r#box.center = vec2::ZERO;
-        shader.middle.parameters.r#box.size += vec2(padding, padding);
+        shader.middle.parameters.r#box.size += padding;
         shader.middle.parameters.r#box.size *= scale;
         shader.after.push(self);
         shader.middle.entity = Some(new_entity());
@@ -664,6 +700,7 @@ pub enum PanelFooterButton {
     Accept,
     Reroll,
     Restart,
+    Buy { cost: usize },
     Custom { name: String, handler: Handler },
 }
 
@@ -687,22 +724,56 @@ impl PanelFooterButton {
                 .post_update_handlers
                 .insert(0, update_handler);
         }
+        match self {
+            PanelFooterButton::Buy { cost } => {
+                button_shader
+                    .middle
+                    .insert_int_ref("u_cost".to_owned(), *cost as i32);
+            }
+            _ => {}
+        }
         button_shader
     }
 
-    pub fn get_text(&self) -> &str {
+    pub fn get_text(&self) -> String {
         match self {
-            PanelFooterButton::Close => "Close",
-            PanelFooterButton::Select => "Select",
-            PanelFooterButton::Accept => "Accept",
-            PanelFooterButton::Reroll => "Reroll",
-            PanelFooterButton::Restart => "Restart",
-            PanelFooterButton::Custom { name, .. } => &name,
+            PanelFooterButton::Close => "Close".to_owned(),
+            PanelFooterButton::Select => "Select".to_owned(),
+            PanelFooterButton::Accept => "Accept".to_owned(),
+            PanelFooterButton::Reroll => "Reroll".to_owned(),
+            PanelFooterButton::Restart => "Restart".to_owned(),
+            PanelFooterButton::Buy { cost } => format!("-{}g", cost),
+            PanelFooterButton::Custom { name, .. } => name.to_owned(),
         }
     }
 
     pub fn get_input_handler(&self) -> Handler {
         match self {
+            PanelFooterButton::Buy { cost } => {
+                fn input_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            let cost = shader.get_int("u_cost");
+                            let index = shader.get_int("u_index") as usize;
+                            if ShopSystem::get_g(world) >= cost
+                                && !resources.panels_data.removed_inds.contains(&index)
+                            {
+                                if let Some(choice) = resources.panels_data.choice_options.clone() {
+                                    choice.do_choose(index, world, resources);
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
             PanelFooterButton::Close => {
                 fn input_handler(
                     event: HandleEvent,
@@ -754,6 +825,9 @@ impl PanelFooterButton {
                                                 ShopSystem::show_team_buff_buy_panel(resources)
                                             }
                                         },
+                                        CardChoice::ShopOffers { .. } => {
+                                            ShopSystem::show_offers_panel(resources)
+                                        }
                                         _ => panic!("Can't reroll {choice:?}"),
                                     }
                                 }
@@ -813,7 +887,6 @@ impl PanelFooterButton {
                     match event {
                         HandleEvent::Click => {
                             if let Some(chosen) = resources.panels_data.chosen_ind {
-                                debug!("Chosen {chosen}");
                                 if let Some(entity) = shader.parent {
                                     PanelsSystem::close_alert(entity, resources);
                                     if let Some(choice) =
@@ -857,6 +930,23 @@ impl PanelFooterButton {
                     _: &mut Resources,
                 ) {
                     shader.set_active(ShopSystem::is_reroll_affordable(world));
+                }
+                Some(update_handler)
+            }
+            PanelFooterButton::Buy { .. } => {
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    let cost = shader.get_int("u_cost");
+                    let index = shader.get_int("u_index") as usize;
+                    shader.set_active(
+                        ShopSystem::get_g(world) >= cost
+                            && !resources.panels_data.removed_inds.contains(&index),
+                    );
                 }
                 Some(update_handler)
             }

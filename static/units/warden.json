@@ -2,7 +2,7 @@
     "name": "Warden",
     "attack": 1,
     "health": 1,
-    "description": "Ally Died\ngain [Shield]",
+    "description": "Ally Died\ngain Shield +1",
     "house": "Paladins",
     "trigger": {
         "type": "AnyDeath",

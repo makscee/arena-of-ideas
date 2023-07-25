@@ -94,9 +94,21 @@ impl ShaderSystem {
 
         let dragged = resources.input_data.dragged_entity;
         let hovered = resources.input_data.hovered_entity;
-        let shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
+        let mut shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
+            .collect_vec();
+        for shader in shaders.iter_mut() {
+            for shader in shader.iter_mut() {
+                if let Some(entity) = shader.entity {
+                    for handler in shader.pre_update_handlers.drain(..).collect_vec() {
+                        handler(HandleEvent::Update, entity, shader, world, resources);
+                    }
+                }
+            }
+        }
+        let shaders = shaders
+            .into_iter()
             .sorted_by_key(|x| {
                 (
                     dragged.is_some() && x.middle.entity == dragged,
