@@ -25,6 +25,14 @@
 			"command": "sudo cargo flamegraph --dev"
 		},
 		{
+			"label": "Flamegraph Run Release",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "sudo cargo flamegraph"
+		},
+		{
 			"type": "cargo",
 			"command": "test",
 			"args": [
