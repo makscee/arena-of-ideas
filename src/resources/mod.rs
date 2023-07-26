@@ -14,6 +14,7 @@ mod buff_pool;
 mod camera;
 mod condition;
 mod context;
+mod curse;
 mod definitions;
 mod effect;
 mod enemy_pool;
@@ -55,6 +56,7 @@ pub use buff_pool::*;
 pub use camera::*;
 pub use condition::*;
 pub use context::*;
+pub use curse::*;
 pub use definitions::*;
 pub use effect::*;
 pub use enemy_pool::*;
@@ -115,6 +117,7 @@ pub struct Resources {
     pub house_pool: HousePool,
     pub ability_pool: AbilityPool,
     pub buff_pool: BuffPool,
+    pub curse_pool: CursePool,
     pub status_library: StatusLibrary,
 
     pub ladder: Ladder,
@@ -162,6 +165,7 @@ impl Resources {
             definitions_regex: Regex::new(r"\b[A-Z][a-zA-Z]*\b").unwrap(),
             status_library: default(),
             buff_pool: default(),
+            curse_pool: default(),
             sacrifice_data: default(),
             panels_data: default(),
             gallery_data: default(),
@@ -175,6 +179,7 @@ impl Resources {
         EnemyPool::load(self, &static_path().join("enemy_pool/_list.json"), watcher);
         Ladder::load(self, &static_path().join("ladder.json"), watcher);
         BuffPool::load(self, &static_path().join("buffs.json"), watcher);
+        CursePool::load(self, &static_path().join("curses.json"), watcher);
 
         self.logger.load(&self.options);
     }

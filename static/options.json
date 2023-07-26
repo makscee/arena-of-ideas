@@ -868,6 +868,93 @@
         "dark": "#1f1f1f"
     },
     "shaders": {
+        "battle_curse": {
+            "path": "shaders/vfx/rectangle.glsl",
+            "parameters": {
+                "box": {
+                    "size": [
+                        0.2,
+                        0.2
+                    ]
+                },
+                "uniforms": {
+                    "u_color": "#434343",
+                    "u_ui": 1
+                }
+            },
+            "after": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "box": {
+                            "size": [
+                                0.15,
+                                0.05
+                            ],
+                            "anchor": [
+                                0.0,
+                                0.4
+                            ]
+                        },
+                        "uniforms": {
+                            "u_text": [
+                                0,
+                                "Curse"
+                            ],
+                            "u_text_inside": 0.5,
+                            "u_text_border": 0.3,
+                            "u_outline_color": "#000000",
+                            "u_color": "#ffffff",
+                            "mapping": {
+                                "u_outline_color": {
+                                    "type": "OptionColor",
+                                    "key": "sacrifice"
+                                },
+                                "u_text": {
+                                    "type": "Uniform",
+                                    "key": "u_negative_text"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "box": {
+                            "size": [
+                                0.15,
+                                0.05
+                            ],
+                            "anchor": [
+                                0.0,
+                                -0.4
+                            ]
+                        },
+                        "uniforms": {
+                            "u_text": [
+                                0,
+                                "Curse"
+                            ],
+                            "u_text_inside": 0.5,
+                            "u_text_border": 0.3,
+                            "u_outline_color": "#000000",
+                            "u_color": "#ffffff",
+                            "mapping": {
+                                "u_outline_color": {
+                                    "type": "OptionColor",
+                                    "key": "healing"
+                                },
+                                "u_text": {
+                                    "type": "Uniform",
+                                    "key": "u_positive_text"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
         "panel_header": {
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {
@@ -1051,7 +1138,7 @@
             "parameters": {
                 "box": {
                     "size": [
-                        0.2,
+                        0.15,
                         0.035
                     ],
                     "anchor": [

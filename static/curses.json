@@ -1,0 +1,36 @@
+{
+    "curses": [
+        {
+            "positive_effect": {
+                "type": "ChangeG",
+                "delta": {
+                    "type": "Const",
+                    "value": 1
+                },
+                "reason": "Curse Bonus"
+            },
+            "negative_effect": {
+                "type": "Aoe",
+                "factions": [
+                    {
+                        "type": "Dark"
+                    }
+                ],
+                "effect": {
+                    "type": "UseAbility",
+                    "ability": "Vitality",
+                    "force": true,
+                    "charges": {
+                        "type": "Const",
+                        "value": 1
+                    },
+                    "owner": {
+                        "type": "Target"
+                    }
+                }
+            },
+            "positive_text": "+1g",
+            "negative_text": "+1 HP all enemies"
+        }
+    ]
+}

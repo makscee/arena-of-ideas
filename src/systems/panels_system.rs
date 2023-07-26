@@ -72,7 +72,7 @@ impl PanelsSystem {
         Self {}
     }
 
-    pub fn add_alert(
+    pub fn add_text_alert(
         color: Rgba<f32>,
         title: &str,
         text: &str,
@@ -80,8 +80,25 @@ impl PanelsSystem {
         buttons: Vec<PanelFooterButton>,
         resources: &mut Resources,
     ) {
-        let mut panel = Self::generate_text_shader(text, vec2(0.3, 0.1), &resources.options)
-            .wrap_panel_header(title, &resources.options);
+        Self::add_alert(
+            color,
+            title,
+            Self::generate_text_shader(text, vec2(0.3, 0.1), &resources.options),
+            pos,
+            buttons,
+            resources,
+        )
+    }
+
+    pub fn add_alert(
+        color: Rgba<f32>,
+        title: &str,
+        body: ShaderChain,
+        pos: vec2<f32>,
+        buttons: Vec<PanelFooterButton>,
+        resources: &mut Resources,
+    ) {
+        let mut panel = body.wrap_panel_header(title, &resources.options);
         if !buttons.is_empty() {
             panel = panel.wrap_panel_footer(buttons, &resources.options);
         }
@@ -136,7 +153,7 @@ impl PanelsSystem {
         let shaders = cards
             .into_iter()
             .enumerate()
-            .map(|(ind, (name, mut shader, cost, panel_color, body_color))| {
+            .map(|(ind, (name, shader, cost, panel_color, body_color))| {
                 let mut shader = Self::generate_card_panel(shader, &resources.options)
                     .wrap_panel_header(&name, &resources.options)
                     .wrap_panel_footer(vec![PanelFooterButton::Buy { cost }], &resources.options)
@@ -177,9 +194,10 @@ impl PanelsSystem {
             CardChoice::ShopOffers { .. } => vec![PanelFooterButton::Reroll],
         };
         resources.panels_data.choice_options = Some(choice);
-        let mut panel = ShaderChain::wrap_panel_body_row(shaders, padding, &resources.options)
-            .wrap_panel_header(title, &resources.options)
-            .wrap_panel_footer(buttons, &resources.options);
+        let mut panel =
+            ShaderChain::wrap_panel_body_row(shaders, vec2(padding, padding), &resources.options)
+                .wrap_panel_header(title, &resources.options)
+                .wrap_panel_footer(buttons, &resources.options);
         panel.middle.parameters.r#box.pos.y += 0.1;
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
@@ -212,12 +230,13 @@ impl PanelsSystem {
         };
 
         let mut rows: Vec<ShaderChain> = default();
+        let padding = resources.options.floats.panel_row_padding;
         while !shaders.is_empty() {
             let limit = row_limit.min(shaders.len());
             let shaders = shaders.drain(0..limit).collect_vec();
-            let mut row = ShaderChain::wrap_panel_body_row(
+            let row = ShaderChain::wrap_panel_body_row(
                 shaders,
-                resources.options.floats.panel_row_padding,
+                vec2(padding, padding),
                 &resources.options,
             );
 
@@ -500,7 +519,7 @@ impl Panel {
 impl ShaderChain {
     pub fn wrap_panel_body_row(
         mut shaders: Vec<ShaderChain>,
-        padding: f32,
+        padding: vec2<f32>,
         options: &Options,
     ) -> Self {
         let size = {
@@ -513,13 +532,11 @@ impl ShaderChain {
                     .try_get_float("u_scale")
                     .unwrap_or(1.0)
         };
-        let mut shader = shaders
-            .remove(0)
-            .wrap_panel_body(vec2(padding, padding), options);
+        let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
         let count = shaders.len() as f32;
         shader.middle.parameters.r#box.size.x += count * size.x;
         shader.middle.parameters.r#box.size +=
-            vec2(options.floats.panel_row_spacing * (count + 1.0), padding);
+            vec2(options.floats.panel_row_spacing * (count + 1.0), padding.y);
 
         shader.after.extend(shaders.drain(..));
         let spacing = 2.0 / shader.after.len() as f32;
@@ -678,6 +695,7 @@ pub enum PanelState {
     Open,
     Closed,
 }
+#[derive(Clone)]
 pub enum PanelFooterButton {
     Close,
     Select,

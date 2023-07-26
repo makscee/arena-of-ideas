@@ -134,6 +134,10 @@ pub enum Effect {
         unit: Box<PackedUnit>,
         slot: Option<ExpressionInt>,
     },
+    ChangeG {
+        delta: ExpressionInt,
+        reason: Option<String>,
+    },
 }
 
 impl Effect {
@@ -562,7 +566,6 @@ impl EffectWrapped {
                                 context.get_color(&VarName::HouseColor, world).unwrap()
                             })
                     });
-
                     let mut added = false;
                     if let Some(entity) = entity {
                         let entity = entity.calculate(&context, world, resources)?;
@@ -845,6 +848,12 @@ impl EffectWrapped {
                     &LogContext::Effect,
                 );
             }
+            Effect::ChangeG { delta, reason } => ShopSystem::change_g(
+                delta.calculate(&context, world, resources)?,
+                reason.as_ref().map(|x| x.as_str()),
+                world,
+                resources,
+            ),
         }
         Ok(match self.after.as_deref() {
             Some(after) => {

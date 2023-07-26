@@ -39,28 +39,9 @@ impl BattleSystem {
             // }
             let result = Self::turn(world, resources, tape);
             if !result {
-                let faction = if UnitSystem::collect_faction(world, Faction::Dark).is_empty() {
-                    Some(Faction::Dark)
-                } else {
-                    if UnitSystem::collect_faction(world, Faction::Light).is_empty() {
-                        Some(Faction::Light)
-                    } else {
-                        None
-                    }
-                };
-                if let Some(faction) = faction {
-                    if let Some(queue) = resources.battle_data.team_queue.get_mut(&faction) {
-                        let team = queue.pop_front();
-                        if let Some(team) = team {
-                            team.unpack(&faction, world, resources);
-                            continue;
-                        }
-                    }
-                }
                 break;
             }
         }
-        resources.battle_data.team_queue.clear();
         Ladder::get_score(world)
     }
 
@@ -79,11 +60,91 @@ impl BattleSystem {
     pub fn enter_state(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         resources.tape_player.clear();
-        resources.tape_player.mode = TapePlayMode::Stop;
+        Self::open_curses_panel(resources);
+    }
+
+    pub fn open_curses_panel(resources: &mut Resources) {
+        resources
+            .battle_data
+            .curse_choice
+            .push(CursePool::get_random(resources));
+        resources
+            .battle_data
+            .curse_choice
+            .push(CursePool::get_random(resources));
+
+        fn update_curse(
+            event: HandleEvent,
+            entity: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            let ind = shader.get_int("u_index") as usize;
+            if resources.battle_data.applied_curses.contains(&ind) {
+                shader.set_enabled(false);
+            }
+        }
+
+        fn apply_curse(
+            event: HandleEvent,
+            entity: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    let ind = shader.get_int("u_index") as usize;
+                    resources.action_queue.push_front(Action::new(
+                        Context::new_empty("Apply Curse"),
+                        resources.battle_data.curse_choice[ind]
+                            .positive_effect
+                            .clone(),
+                    ));
+                    resources.action_queue.push_front(Action::new(
+                        Context::new_empty("Apply Curse"),
+                        resources.battle_data.curse_choice[ind]
+                            .negative_effect
+                            .clone(),
+                    ));
+                    resources.battle_data.applied_curses.insert(ind);
+                }
+                _ => {}
+            }
+        }
+        let button = PanelFooterButton::Custom {
+            name: "Apply".to_owned(),
+            handler: apply_curse,
+        };
+        let shaders = (0..2)
+            .into_iter()
+            .map(|ind| {
+                let curse = &resources.battle_data.curse_choice[ind];
+                let pos_text = curse.positive_text.clone();
+                let neg_text = curse.negative_text.clone();
+                let mut shader = resources
+                    .options
+                    .shaders
+                    .battle_curse
+                    .clone()
+                    .wrap_panel_body(vec2::ZERO, &resources.options)
+                    .insert_int("u_index".to_owned(), ind as i32)
+                    .insert_string("u_positive_text".to_owned(), pos_text, 1)
+                    .insert_string("u_negative_text".to_owned(), neg_text, 1)
+                    .wrap_panel_header("Curse", &resources.options)
+                    .wrap_panel_footer(vec![button.clone()], &resources.options);
+                shader.middle.pre_update_handlers.push(update_curse);
+                shader
+            })
+            .collect_vec();
+        let padding = resources.options.floats.panel_row_padding;
+        let shader =
+            ShaderChain::wrap_panel_body_row(shaders, vec2(padding, padding), &resources.options);
         PanelsSystem::add_alert(
             resources.options.colors.enemy,
-            &format!("Level {}", Ladder::current_level(resources)),
-            "Select Curses",
+            &format!("Level {}", Ladder::current_level(resources) + 1),
+            shader,
             vec2::ZERO,
             vec![PanelFooterButton::Start],
             resources,
@@ -145,7 +206,7 @@ impl BattleSystem {
             )
         };
         Self::clear_world(world, resources);
-        PanelsSystem::add_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources);
+        PanelsSystem::add_text_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources);
         SaveSystem::save(world, resources);
     }
 
@@ -376,4 +437,17 @@ impl BattleSystem {
     }
 }
 
-impl System for BattleSystem {}
+impl System for BattleSystem {
+    fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
+        if !resources.action_queue.is_empty() {
+            let mut cluster = Some(NodeCluster::default());
+            ActionSystem::run_ticks(world, resources, cluster.as_mut());
+            ActionSystem::death_check(world, resources, cluster.as_mut());
+            ActionSystem::run_ticks(world, resources, cluster.as_mut());
+            resources
+                .tape_player
+                .tape
+                .push_to_queue(cluster.unwrap(), resources.tape_player.head);
+        }
+    }
+}

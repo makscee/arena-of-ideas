@@ -67,9 +67,11 @@ Build
     Unnified Shop offers {cm:2023-07-25T22:31:03}
     Curses
         rank up enemies, no sacrifice
-        buff enemies
-        get g
+        buff enemies {cm:2023-07-26T20:21:26}
+        get g {cm:2023-07-26T20:21:23}
         rank up one
         rank up enemies
+    Occasional sacrifice
+    Reroll price
     Tape navigation buttons
     Game rule hint panels

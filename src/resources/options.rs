@@ -74,6 +74,7 @@ pub struct Shaders {
     pub panel_body: ShaderChain,
     pub panel_button: ShaderChain,
     pub panel_text: ShaderChain,
+    pub battle_curse: ShaderChain,
     pub unit: ShaderChain,
     pub unit_card: ShaderChain,
     pub field: ShaderChain,

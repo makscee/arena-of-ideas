@@ -8,4 +8,6 @@ pub struct BattleData {
     pub total_score: usize,
     pub team_queue: HashMap<Faction, VecDeque<PackedTeam>>,
     pub turns: usize,
+    pub curse_choice: Vec<Curse>,
+    pub applied_curses: HashSet<usize>,
 }
