@@ -32,11 +32,20 @@ impl System for GameStateSystem {
                 }
             }
             GameState::Battle => {
-                if resources.input_data.down_keys.contains(&Escape) {
-                    resources.tape_player.head = resources.tape_player.tape.length() - 0.5;
-                }
-                if resources.tape_player.tape.length() < resources.tape_player.head {
-                    BattleSystem::finish_ladder_battle(world, resources);
+                if resources.tape_player.tape.length() == 0.0 {
+                    resources.tape_player.tape.persistent_node =
+                        Node::default().lock(NodeLockType::Factions {
+                            factions: Faction::battle(),
+                            world,
+                            resources,
+                        });
+                } else {
+                    if resources.input_data.down_keys.contains(&Escape) {
+                        resources.tape_player.head = resources.tape_player.tape.length() - 0.5;
+                    }
+                    if resources.tape_player.tape.length() < resources.tape_player.head {
+                        BattleSystem::finish_ladder_battle(world, resources);
+                    }
                 }
             }
             GameState::Shop => {
@@ -355,12 +364,7 @@ impl GameStateSystem {
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {
-                resources.camera.focus = Focus::Battle;
-                let mut tape = Some(Tape::default());
-                resources.battle_data.last_score =
-                    BattleSystem::run_battle(world, resources, &mut tape);
-                resources.tape_player.clear();
-                resources.tape_player.tape = tape.unwrap();
+                BattleSystem::enter_state(world, resources);
             }
             GameState::Gallery => {
                 GallerySystem::enter_state(resources);

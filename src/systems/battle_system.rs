@@ -76,6 +76,28 @@ impl BattleSystem {
         resources.battle_data.turns = 0;
     }
 
+    pub fn enter_state(world: &mut legion::World, resources: &mut Resources) {
+        resources.camera.focus = Focus::Battle;
+        resources.tape_player.clear();
+        resources.tape_player.mode = TapePlayMode::Stop;
+        PanelsSystem::add_alert(
+            resources.options.colors.enemy,
+            &format!("Level {}", Ladder::current_level(resources)),
+            "Select Curses",
+            vec2::ZERO,
+            vec![PanelFooterButton::Start],
+            resources,
+        );
+    }
+
+    pub fn play_battle(world: &mut legion::World, resources: &mut Resources) {
+        let mut tape = Some(Tape::default());
+        resources.battle_data.last_score = BattleSystem::run_battle(world, resources, &mut tape);
+        resources.tape_player.clear();
+        resources.tape_player.tape = tape.unwrap();
+        resources.tape_player.mode = TapePlayMode::Play;
+    }
+
     pub fn finish_ladder_battle(world: &mut legion::World, resources: &mut Resources) {
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.total_score += resources.battle_data.last_score;

@@ -107,12 +107,7 @@ impl PanelsSystem {
             return;
         }
         let padding = resources.options.floats.panel_row_padding;
-        let faction = match &choice {
-            CardChoice::BuyBuff { .. }
-            | CardChoice::BuyHero { .. }
-            | CardChoice::ShopOffers { .. } => Faction::Team,
-            CardChoice::SelectEnemy { .. } => Faction::Dark,
-        };
+        let faction = Faction::Team;
         let cards: Vec<(String, ShaderChain, usize, Rgba<f32>, Rgba<f32>)> = match &choice {
             CardChoice::ShopOffers { units, buffs } => {
                 let mut result: Vec<(String, ShaderChain, usize, Rgba<f32>, Rgba<f32>)> = default();
@@ -179,7 +174,6 @@ impl PanelsSystem {
             CardChoice::BuyBuff { .. } | CardChoice::BuyHero { .. } => {
                 vec![PanelFooterButton::Reroll, PanelFooterButton::Accept]
             }
-            CardChoice::SelectEnemy { .. } => vec![PanelFooterButton::Accept],
             CardChoice::ShopOffers { .. } => vec![PanelFooterButton::Reroll],
         };
         resources.panels_data.choice_options = Some(choice);
@@ -381,9 +375,6 @@ pub enum CardChoice {
     BuyHero {
         units: Vec<PackedUnit>,
     },
-    SelectEnemy {
-        teams: Vec<PackedTeam>,
-    },
     BuyBuff {
         buffs: Vec<Buff>,
         target: BuffTarget,
@@ -436,13 +427,6 @@ impl CardChoice {
             CardChoice::BuyHero { units } => {
                 let unit = units.get(ind).cloned().unwrap();
                 ShopSystem::add_unit_to_team(unit, world, resources);
-            }
-            CardChoice::SelectEnemy { teams } => {
-                let dark = teams.get(ind).cloned().unwrap();
-                let light = PackedTeam::pack(Faction::Team, world, resources);
-                resources.battle_data.last_difficulty = ind;
-                BattleSystem::init_battle(&light, &dark, world, resources);
-                GameStateSystem::set_transition(GameState::Battle, resources);
             }
             CardChoice::BuyBuff { buffs, target } => {
                 let buff = { buffs.get(ind).cloned().unwrap() };
@@ -702,6 +686,7 @@ pub enum PanelFooterButton {
     Restart,
     Buy { cost: usize },
     Custom { name: String, handler: Handler },
+    Start,
 }
 
 impl PanelFooterButton {
@@ -742,6 +727,7 @@ impl PanelFooterButton {
             PanelFooterButton::Accept => "Accept".to_owned(),
             PanelFooterButton::Reroll => "Reroll".to_owned(),
             PanelFooterButton::Restart => "Restart".to_owned(),
+            PanelFooterButton::Start => "Start".to_owned(),
             PanelFooterButton::Buy { cost } => format!("-{}g", cost),
             PanelFooterButton::Custom { name, .. } => name.to_owned(),
         }
@@ -774,12 +760,32 @@ impl PanelFooterButton {
                 }
                 input_handler
             }
+            PanelFooterButton::Start => {
+                fn input_handler(
+                    event: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if let Some(entity) = shader.parent {
+                                PanelsSystem::close_alert(entity, resources);
+                                BattleSystem::play_battle(world, resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                input_handler
+            }
             PanelFooterButton::Close => {
                 fn input_handler(
                     event: HandleEvent,
-                    entity: legion::Entity,
+                    _: legion::Entity,
                     shader: &mut Shader,
-                    world: &mut legion::World,
+                    _: &mut legion::World,
                     resources: &mut Resources,
                 ) {
                     match event {

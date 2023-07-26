@@ -1,5 +1,3 @@
-use geng::prelude::itertools::Itertools;
-
 use super::*;
 
 #[derive(Debug, Default)]
