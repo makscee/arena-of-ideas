@@ -74,19 +74,21 @@ impl InputSystem {
 
         let mut hovered = None;
         for shader in shaders.iter().rev() {
-            if shader.middle.entity.is_some() {
-                if shader.middle.is_hovered(
-                    resources.input_data.mouse_screen_pos,
-                    resources.input_data.mouse_world_pos,
-                ) {
-                    hovered = Some(shader);
-                    break;
+            for shader in shader.iter().rev() {
+                if shader.entity.is_some() {
+                    if shader.is_hovered(
+                        resources.input_data.mouse_screen_pos,
+                        resources.input_data.mouse_world_pos,
+                    ) {
+                        hovered = Some(shader);
+                        break;
+                    }
                 }
             }
         }
 
         if let Some(hovered) = hovered {
-            cur.attention = hovered.middle.entity;
+            cur.attention = hovered.entity;
             cur.state = InputState::Hover;
         }
     }
@@ -97,150 +99,144 @@ impl InputSystem {
         resources: &mut Resources,
     ) {
         let (prev, cur) = &resources.input_data.frame_data.clone();
-        let mut prev_shader = None;
-        let mut cur_shader = None;
-        if cur.attention.is_some() || prev.attention.is_some() {
-            for (ind, shader) in shaders.iter_mut().enumerate() {
-                if let Some(entity) = shader.middle.entity.as_ref() {
-                    if let Some(prev) = prev.attention {
-                        if prev == *entity {
-                            prev_shader = Some(ind);
-                        }
-                    }
-                    if let Some(cur) = cur.attention {
-                        if cur == *entity {
-                            cur_shader = Some(ind);
-                        }
-                    }
-                }
-            }
-        }
 
-        match cur.state {
-            InputState::None => {}
-            InputState::Hover => {
-                Self::send_event(HandleEvent::Hover, cur_shader, shaders, resources, world)
-            }
-            InputState::Press => {
-                Self::send_event(HandleEvent::Press, cur_shader, shaders, resources, world)
-            }
-            InputState::Click => {
-                Self::send_event(HandleEvent::Click, cur_shader, shaders, resources, world)
-            }
-            InputState::Drag => {
-                if cur.mouse != prev.mouse {
-                    Self::send_event(
-                        HandleEvent::Drag {
-                            delta: cur.mouse - prev.mouse,
-                        },
-                        cur_shader,
-                        shaders,
-                        resources,
-                        world,
-                    );
+        if let Some(shader_entity) = cur.attention {
+            match cur.state {
+                InputState::None => {}
+                InputState::Hover => {
+                    Self::send_event(HandleEvent::Hover, shader_entity, shaders, resources, world)
+                }
+                InputState::Press => {
+                    Self::send_event(HandleEvent::Press, shader_entity, shaders, resources, world)
+                }
+                InputState::Click => {
+                    Self::send_event(HandleEvent::Click, shader_entity, shaders, resources, world)
+                }
+                InputState::Drag => {
+                    if cur.mouse != prev.mouse {
+                        Self::send_event(
+                            HandleEvent::Drag {
+                                delta: cur.mouse - prev.mouse,
+                            },
+                            shader_entity,
+                            shaders,
+                            resources,
+                            world,
+                        );
+                    }
                 }
             }
         }
 
         if cur.state != prev.state || cur.attention != prev.attention {
-            match prev.state {
-                InputState::None | InputState::Click => {}
-                InputState::Hover => {
-                    Self::send_event(
-                        HandleEvent::HoverStop,
-                        prev_shader,
+            if let Some(shader_entity) = prev.attention {
+                match prev.state {
+                    InputState::None | InputState::Click => {}
+                    InputState::Hover => {
+                        Self::send_event(
+                            HandleEvent::HoverStop,
+                            shader_entity,
+                            shaders,
+                            resources,
+                            world,
+                        );
+                    }
+                    InputState::Press => Self::send_event(
+                        HandleEvent::PressStop,
+                        shader_entity,
                         shaders,
                         resources,
                         world,
-                    );
+                    ),
+                    InputState::Drag => Self::send_event(
+                        HandleEvent::DragStop,
+                        shader_entity,
+                        shaders,
+                        resources,
+                        world,
+                    ),
                 }
-                InputState::Press => Self::send_event(
-                    HandleEvent::PressStop,
-                    prev_shader,
-                    shaders,
-                    resources,
-                    world,
-                ),
-                InputState::Drag => Self::send_event(
-                    HandleEvent::DragStop,
-                    prev_shader,
-                    shaders,
-                    resources,
-                    world,
-                ),
             }
 
-            match cur.state {
-                InputState::None | InputState::Click => {}
-                InputState::Hover => Self::send_event(
-                    HandleEvent::HoverStart,
-                    cur_shader,
-                    shaders,
-                    resources,
-                    world,
-                ),
-                InputState::Press => Self::send_event(
-                    HandleEvent::PressStart,
-                    cur_shader,
-                    shaders,
-                    resources,
-                    world,
-                ),
-                InputState::Drag => Self::send_event(
-                    HandleEvent::DragStart,
-                    cur_shader,
-                    shaders,
-                    resources,
-                    world,
-                ),
-            };
+            if let Some(shader_entity) = cur.attention {
+                match cur.state {
+                    InputState::None | InputState::Click => {}
+                    InputState::Hover => Self::send_event(
+                        HandleEvent::HoverStart,
+                        shader_entity,
+                        shaders,
+                        resources,
+                        world,
+                    ),
+                    InputState::Press => Self::send_event(
+                        HandleEvent::PressStart,
+                        shader_entity,
+                        shaders,
+                        resources,
+                        world,
+                    ),
+                    InputState::Drag => Self::send_event(
+                        HandleEvent::DragStart,
+                        shader_entity,
+                        shaders,
+                        resources,
+                        world,
+                    ),
+                };
+            }
         }
     }
 
     fn send_event(
         event: HandleEvent,
-        ind: Option<usize>,
+        shader_entity: legion::Entity,
         shaders: &mut Vec<ShaderChain>,
         resources: &mut Resources,
         world: &mut legion::World,
     ) {
-        if let Some(ind) = ind {
-            let mut shader = shaders.remove(ind);
-            let entity = shader.middle.entity.unwrap();
-            match &event {
-                HandleEvent::HoverStart
-                | HandleEvent::HoverStop
-                | HandleEvent::DragStart
-                | HandleEvent::DragStop
-                | HandleEvent::PressStart
-                | HandleEvent::PressStop
-                | HandleEvent::Click => {
-                    resources
-                        .input_data
-                        .input_events
-                        .insert(entity, (event.clone(), resources.global_time));
-                }
-                _ => {}
-            }
-            for f in shader.middle.input_handlers.clone() {
-                (f)(event, entity, &mut shader.middle, world, resources);
-            }
-            match &event {
-                HandleEvent::HoverStart => {
-                    resources.input_data.hovered_entity = Some(entity);
-                    for (color, title, text) in shader.middle.hover_hints.iter() {
-                        PanelsSystem::open_hint(color.clone(), title, text, resources);
+        for shader in shaders.iter_mut() {
+            for shader in shader.iter_mut() {
+                if let Some(entity) = shader.entity {
+                    if entity != shader_entity {
+                        continue;
+                    }
+                    match &event {
+                        HandleEvent::HoverStart
+                        | HandleEvent::HoverStop
+                        | HandleEvent::DragStart
+                        | HandleEvent::DragStop
+                        | HandleEvent::PressStart
+                        | HandleEvent::PressStop
+                        | HandleEvent::Click => {
+                            resources
+                                .input_data
+                                .input_events
+                                .insert(entity, (event.clone(), resources.global_time));
+                        }
+                        _ => {}
+                    }
+                    for f in shader.input_handlers.clone() {
+                        (f)(event, entity, shader, world, resources);
+                    }
+                    match &event {
+                        HandleEvent::HoverStart => {
+                            resources.input_data.hovered_entity = Some(entity);
+                            for (color, title, text) in shader.hover_hints.iter() {
+                                PanelsSystem::open_hint(color.clone(), title, text, resources);
+                            }
+                        }
+                        HandleEvent::HoverStop => {
+                            resources.input_data.hovered_entity = None;
+                            PanelsSystem::close_hints(resources);
+                        }
+                        HandleEvent::DragStart => {
+                            resources.input_data.dragged_entity = Some(entity)
+                        }
+                        HandleEvent::DragStop => resources.input_data.dragged_entity = None,
+                        _ => {}
                     }
                 }
-                HandleEvent::HoverStop => {
-                    resources.input_data.hovered_entity = None;
-                    PanelsSystem::close_hints(resources);
-                }
-                HandleEvent::DragStart => resources.input_data.dragged_entity = Some(entity),
-                HandleEvent::DragStop => resources.input_data.dragged_entity = None,
-                _ => {}
             }
-            shaders.insert(ind, shader);
         }
     }
 }

@@ -3,10 +3,6 @@ use legion::EntityStore;
 
 use super::*;
 
-/// Shader processing:
-/// depth first visit, inherit uniforms
-/// find upper most hovered shader
-///
 pub struct ShaderSystem;
 
 impl System for ShaderSystem {
@@ -26,15 +22,11 @@ impl System for ShaderSystem {
     fn post_update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         let mut shaders = mem::take(&mut resources.prepared_shaders);
         for shader in shaders.iter_mut() {
-            if let Some(entity) = shader.middle.entity {
-                for handler in shader.middle.post_update_handlers.drain(..).collect_vec() {
-                    handler(
-                        HandleEvent::Update,
-                        entity,
-                        &mut shader.middle,
-                        world,
-                        resources,
-                    );
+            for shader in shader.iter_mut() {
+                if let Some(entity) = shader.entity {
+                    for handler in shader.post_update_handlers.drain(..).collect_vec() {
+                        handler(HandleEvent::Update, entity, shader, world, resources);
+                    }
                 }
             }
         }
@@ -94,10 +86,27 @@ impl ShaderSystem {
 
         let dragged = resources.input_data.dragged_entity;
         let hovered = resources.input_data.hovered_entity;
+
+        // Unite frame shaders with world & tape shaders, sort by layer + order
         let mut shaders = TapePlayerSystem::get_shaders(world_shaders, resources)
             .into_iter()
             .chain(resources.frame_shaders.drain(..))
+            .sorted_by_key(|x| {
+                (
+                    dragged.is_some() && x.middle.entity == dragged,
+                    x.middle.layer.index(),
+                    x.middle.order + (x.middle.entity == hovered) as i32,
+                    x.middle.ts,
+                )
+            })
             .collect_vec();
+
+        // Extend uniforms map by inheritance
+        for shader in shaders.iter_mut() {
+            shader.depth_visit(None);
+        }
+
+        // Pre-input update
         for shader in shaders.iter_mut() {
             for shader in shader.iter_mut() {
                 if let Some(entity) = shader.entity {
@@ -107,23 +116,18 @@ impl ShaderSystem {
                 }
             }
         }
-        let shaders = shaders
-            .into_iter()
-            .sorted_by_key(|x| {
-                (
-                    dragged.is_some() && x.middle.entity == dragged,
-                    x.middle.layer.index(),
-                    x.middle.order + (x.middle.entity == hovered) as i32,
-                    x.middle.ts,
-                )
-            })
-            .map(|x| Self::flatten_shader_chain(x))
-            .flatten()
-            .map(|mut x| {
-                x.middle.inject_uniforms(resources);
-                x
-            })
-            .collect_vec();
+
+        // Extend uniforms map by inheritance
+        for shader in shaders.iter_mut() {
+            shader.cut_disabled();
+        }
+
+        // Inject box parameters and other extra uniforms
+        for shader in shaders.iter_mut() {
+            for shader in shader.iter_mut() {
+                shader.inject_uniforms(resources);
+            }
+        }
 
         resources.prepared_shaders = shaders;
     }
@@ -138,7 +142,9 @@ impl ShaderSystem {
             u_global_time: resources.global_time,
         );
         for shader in mem::take(&mut resources.prepared_shaders) {
-            Self::draw_shader(&shader.middle, framebuffer, resources, uniforms.clone());
+            for shader in shader.iter() {
+                Self::draw_shader(&shader, framebuffer, resources, uniforms.clone());
+            }
         }
     }
 
