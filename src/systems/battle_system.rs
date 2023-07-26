@@ -1,5 +1,4 @@
 use super::*;
-use geng::ui::*;
 
 pub struct BattleSystem {}
 
@@ -13,7 +12,6 @@ impl BattleSystem {
         resources: &mut Resources,
         tape: &mut Option<Tape>,
     ) -> usize {
-        Self::create_tape_entities(world, resources, tape);
         let mut cluster = match tape {
             Some(_) => Some(NodeCluster::default()),
             None => None,
@@ -62,58 +60,8 @@ impl BattleSystem {
                 break;
             }
         }
-        Self::clear_tape_entities(world, resources, tape);
         resources.battle_data.team_queue.clear();
         Ladder::get_score(world)
-    }
-
-    fn create_tape_entities(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        tape: &mut Option<Tape>,
-    ) {
-        if tape.is_none() {
-            return;
-        }
-
-        let (left, right) = VfxSystem::vfx_battle_team_names(world, resources);
-        let names = (
-            Self::push_tape_shader_entity(left, world),
-            Self::push_tape_shader_entity(right, world),
-        );
-        resources.battle_data.team_names_entitities = Some(names);
-    }
-
-    fn push_tape_shader_entity(shader: ShaderChain, world: &mut legion::World) -> legion::Entity {
-        let entity = world.push((shader, TapeEntityComponent {}));
-        world
-            .entry(entity)
-            .unwrap()
-            .add_component(EntityComponent::new(entity));
-        entity
-    }
-
-    fn clear_tape_entities(
-        world: &mut legion::World,
-        resources: &mut Resources,
-        tape: &mut Option<Tape>,
-    ) {
-        if tape.is_none() {
-            return;
-        }
-        if let Some((left, right)) = resources.battle_data.team_names_entitities {
-            world.remove(left);
-            world.remove(right);
-        }
-    }
-
-    pub fn queue_team(faction: Faction, team: PackedTeam, resources: &mut Resources) {
-        resources
-            .battle_data
-            .team_queue
-            .entry(faction)
-            .or_default()
-            .push_back(team);
     }
 
     pub fn init_battle(
