@@ -201,6 +201,7 @@ impl SlotSystem {
         text: &str,
         enable_key: Option<&str>,
         activate_key: Option<&str>,
+        color: Option<Rgba<f32>>,
         world: &mut legion::World,
         resources: &Resources,
     ) {
@@ -214,6 +215,7 @@ impl SlotSystem {
             Self::add_slot_activation_btn(
                 shader,
                 text,
+                color,
                 enable_key,
                 activate_key,
                 entity.entity,
@@ -225,6 +227,7 @@ impl SlotSystem {
     fn add_slot_activation_btn(
         shader: &mut ShaderChain,
         text: &str,
+        color: Option<Rgba<f32>>,
         enable_key: Option<&str>,
         activate_key: Option<&str>,
         entity: legion::Entity,
@@ -239,6 +242,11 @@ impl SlotSystem {
             default(),
             &resources.options,
         );
+        if let Some(color) = color {
+            button = button
+                .remove_mapping("u_color")
+                .insert_color("u_color".to_owned(), color);
+        }
 
         if let Some(key) = enable_key {
             button

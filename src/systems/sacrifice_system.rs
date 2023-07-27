@@ -67,6 +67,7 @@ impl SacrificePhase {
                     "Promote",
                     Some("u_filled"),
                     None,
+                    None,
                     world,
                     resources,
                 );
@@ -77,6 +78,7 @@ impl SacrificePhase {
                     "Sacrifice",
                     Some("u_filled"),
                     None,
+                    Some(resources.options.colors.sacrifice),
                     world,
                     resources,
                 );
