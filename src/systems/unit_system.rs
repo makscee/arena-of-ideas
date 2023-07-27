@@ -313,6 +313,7 @@ impl UnitSystem {
     ) {
         if resources.current_state == GameState::Battle
             && resources.tape_player.mode == TapePlayMode::Play
+            && resources.tape_player.tape.cluster_len() > 0
         {
             return;
         }

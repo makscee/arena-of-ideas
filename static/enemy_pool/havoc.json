@@ -1,7 +1,7 @@
 {
     "name": "Havoc",
-    "attack": 2,
-    "health": 1,
+    "attack": 1,
+    "health": 4,
     "description": "Before Death\ndeal 2 DMG\nto all enemies",
     "house": "Enemy",
     "trigger": {

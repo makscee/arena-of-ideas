@@ -121,6 +121,10 @@ impl Tape {
     pub fn push_panel(&mut self, entity: legion::Entity, panel: NodePanel) {
         self.panels.push((entity, panel));
     }
+
+    pub fn cluster_len(&self) -> usize {
+        self.cluster_chain.len()
+    }
 }
 
 impl NodePanel {

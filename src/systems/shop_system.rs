@@ -228,7 +228,6 @@ impl ShopSystem {
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
         resources.tape_player.clear();
         Event::ShopEnd.send(world, resources);
-        ShopSystem::reset_g(world);
     }
 
     fn create_battle_button(resources: &mut Resources) {

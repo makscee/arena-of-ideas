@@ -1,7 +1,7 @@
 {
     "name": "Wolf",
-    "attack": 5,
-    "health": 5,
+    "attack": 12,
+    "health": 12,
     "house": "Enemy",
     "shader": {
         "path": "shaders/vfx/triangle.glsl",

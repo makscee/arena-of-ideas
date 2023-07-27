@@ -15,6 +15,650 @@
         "light": {
             "units": [
                 {
+                    "name": "Lifegiver",
+                    "description": "Before Death:\ngive Vitality +2\nto all allies",
+                    "health": 1,
+                    "damage": 0,
+                    "attack": 1,
+                    "house": "Medics",
+                    "trigger": {
+                        "type": "BeforeDeath",
+                        "effect": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Vitality",
+                                "force": false,
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 2
+                                },
+                                "target": null,
+                                "owner": null,
+                                "after": null,
+                                "vars": null
+                            },
+                            "skip_self": true,
+                            "limit": null,
+                            "target": null,
+                            "owner": null,
+                            "after": null,
+                            "vars": null
+                        }
+                    },
+                    "statuses": [
+                        [
+                            "Volatility",
+                            1
+                        ]
+                    ],
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "vertices": 3,
+                            "instances": 1,
+                            "uniforms": {
+                                "u_g_color_4": "#000000",
+                                "u_g_points": [
+                                    -0.5,
+                                    -0.3,
+                                    0.3,
+                                    0.3
+                                ],
+                                "u_color": "#000000",
+                                "u_g_color_3": "#000000",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_1": "#000000",
+                                "u_g_alphas": [
+                                    1.0,
+                                    1.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "mapping": {
+                                    "u_color": {
+                                        "type": "Uniform",
+                                        "key": "u_faction_color"
+                                    },
+                                    "u_g_color_3": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_g_color_2": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_g_color_4": {
+                                        "type": "Uniform",
+                                        "key": "u_faction_color"
+                                    },
+                                    "u_g_color_1": {
+                                        "type": "Uniform",
+                                        "key": "u_faction_color"
+                                    }
+                                }
+                            },
+                            "box": {
+                                "pos": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    1.0,
+                                    1.0
+                                ],
+                                "center": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "anchor": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "request_vars": [],
+                        "before": [],
+                        "after": []
+                    },
+                    "rank": 0
+                },
+                {
+                    "name": "Ritualist",
+                    "description": "Battle Start:\ngive Rebirth +1\nto first ally",
+                    "health": 2,
+                    "damage": 0,
+                    "attack": 1,
+                    "house": "Druids",
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "ability": "Rebirth",
+                            "force": false,
+                            "charges": {
+                                "type": "Const",
+                                "value": 1
+                            },
+                            "target": {
+                                "type": "FindUnit",
+                                "slot": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
+                                "faction": {
+                                    "type": "Owner"
+                                }
+                            },
+                            "owner": null,
+                            "after": null,
+                            "vars": null
+                        }
+                    },
+                    "statuses": [],
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "vertices": 3,
+                            "instances": 90,
+                            "uniforms": {
+                                "u_i_angle_offset": [
+                                    3.0,
+                                    0.0,
+                                    0.0,
+                                    0.11
+                                ],
+                                "u_g_color_3": "#000000",
+                                "u_alpha": 0.8,
+                                "u_g_points": [
+                                    -1.0,
+                                    -0.2,
+                                    0.0,
+                                    0.0
+                                ],
+                                "u_g_color_1": "#ffffff",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_4": "#080404",
+                                "mapping": {
+                                    "u_g_color_2": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_i_angle_offset": {
+                                        "type": "Vec4",
+                                        "x": {
+                                            "type": "Float",
+                                            "value": 9.0
+                                        },
+                                        "y": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "GlobalTime"
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": 0.03
+                                            }
+                                        },
+                                        "z": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Mul",
+                                                "a": {
+                                                    "type": "Sin",
+                                                    "x": {
+                                                        "type": "Mul",
+                                                        "a": {
+                                                            "type": "GlobalTime"
+                                                        },
+                                                        "b": {
+                                                            "type": "Float",
+                                                            "value": 0.7
+                                                        }
+                                                    }
+                                                },
+                                                "b": {
+                                                    "type": "Float",
+                                                    "value": 0.05
+                                                }
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": -0.03
+                                            }
+                                        },
+                                        "w": {
+                                            "type": "Float",
+                                            "value": 0.55
+                                        }
+                                    }
+                                }
+                            },
+                            "box": {
+                                "pos": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    0.1,
+                                    0.1
+                                ],
+                                "center": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "anchor": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "request_vars": [],
+                        "before": [],
+                        "after": []
+                    },
+                    "rank": 0
+                },
+                {
+                    "name": "Thornwall Sentinel",
+                    "description": "Battle Start:\ngain Thorns +1\nfor each enemy",
+                    "health": 4,
+                    "damage": 0,
+                    "attack": 0,
+                    "house": "Druids",
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "UseAbility",
+                            "ability": "Thorns",
+                            "force": false,
+                            "charges": {
+                                "type": "Faction",
+                                "faction": {
+                                    "type": "Opposite",
+                                    "faction": {
+                                        "type": "Owner"
+                                    }
+                                }
+                            },
+                            "target": {
+                                "type": "Owner"
+                            },
+                            "owner": null,
+                            "after": null,
+                            "vars": null
+                        }
+                    },
+                    "statuses": [],
+                    "shader": {
+                        "path": "shaders/vfx/rectangle.glsl",
+                        "parameters": {
+                            "vertices": 3,
+                            "instances": 200,
+                            "uniforms": {
+                                "u_g_color_2": "#000000",
+                                "u_normal_scaling": 1.0,
+                                "u_alpha": 0.8,
+                                "u_i_angle_offset": [
+                                    3.0,
+                                    0.0,
+                                    0.0,
+                                    0.11
+                                ],
+                                "u_g_alphas": [
+                                    0.0,
+                                    0.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "u_g_color_4": "#080404",
+                                "u_g_color_3": "#000000",
+                                "u_g_color_1": "#ffffff",
+                                "u_g_points": [
+                                    -1.5,
+                                    -0.2,
+                                    -0.2,
+                                    0.0
+                                ],
+                                "mapping": {
+                                    "u_i_angle_offset": {
+                                        "type": "Vec4",
+                                        "x": {
+                                            "type": "Float",
+                                            "value": 4.0
+                                        },
+                                        "y": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "GlobalTime"
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": 0.1
+                                            }
+                                        },
+                                        "z": {
+                                            "type": "Sum",
+                                            "a": {
+                                                "type": "Mul",
+                                                "a": {
+                                                    "type": "Sin",
+                                                    "x": {
+                                                        "type": "Mul",
+                                                        "a": {
+                                                            "type": "GlobalTime"
+                                                        },
+                                                        "b": {
+                                                            "type": "Float",
+                                                            "value": 0.7
+                                                        }
+                                                    }
+                                                },
+                                                "b": {
+                                                    "type": "Float",
+                                                    "value": 0.03
+                                                }
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": -0.05
+                                            }
+                                        },
+                                        "w": {
+                                            "type": "Float",
+                                            "value": 0.03
+                                        }
+                                    },
+                                    "u_g_color_4": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_g_color_3": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    }
+                                }
+                            },
+                            "box": {
+                                "pos": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    0.1,
+                                    0.1
+                                ],
+                                "center": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "anchor": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "request_vars": [],
+                        "before": [],
+                        "after": []
+                    },
+                    "rank": 1
+                },
+                {
+                    "name": "Shieldbearer",
+                    "description": "Battle Start:\ngive Shield +1\nto adjacent allies",
+                    "health": 1,
+                    "damage": 0,
+                    "attack": 1,
+                    "house": "Paladins",
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "List",
+                            "items": [
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Shield",
+                                    "force": false,
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    },
+                                    "target": {
+                                        "type": "SlotRelative",
+                                        "relation": {
+                                            "type": "Const",
+                                            "value": -1
+                                        }
+                                    },
+                                    "owner": null,
+                                    "after": null,
+                                    "vars": null
+                                },
+                                {
+                                    "type": "UseAbility",
+                                    "ability": "Shield",
+                                    "force": false,
+                                    "charges": {
+                                        "type": "Const",
+                                        "value": 1
+                                    },
+                                    "target": {
+                                        "type": "SlotRelative",
+                                        "relation": {
+                                            "type": "Const",
+                                            "value": 1
+                                        }
+                                    },
+                                    "owner": null,
+                                    "after": null,
+                                    "vars": null
+                                }
+                            ],
+                            "target": null,
+                            "owner": null,
+                            "after": null,
+                            "vars": null
+                        }
+                    },
+                    "statuses": [],
+                    "shader": {
+                        "path": "shaders/vfx/circle.glsl",
+                        "parameters": {
+                            "vertices": 3,
+                            "instances": 12,
+                            "uniforms": {
+                                "u_warp_str": 0.02,
+                                "u_i_angle_offset": [
+                                    0.5,
+                                    0.0,
+                                    0.0,
+                                    0.755
+                                ],
+                                "u_g_color_3": "#000000",
+                                "u_g_color_1": "#000000",
+                                "u_g_points": [
+                                    -1.0,
+                                    -0.25,
+                                    -0.25,
+                                    0.0
+                                ],
+                                "u_g_alphas": [
+                                    0.0,
+                                    0.0,
+                                    1.0,
+                                    0.0
+                                ],
+                                "u_g_color_2": "#000000",
+                                "u_g_color_4": "#000000",
+                                "u_warp_size": 50.0,
+                                "u_alpha": 1.0,
+                                "u_warp_speed": 50.0,
+                                "mapping": {
+                                    "u_g_color_3": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_g_color_4": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    }
+                                }
+                            },
+                            "box": {
+                                "pos": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    0.8,
+                                    0.8
+                                ],
+                                "center": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "anchor": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "request_vars": [],
+                        "before": [],
+                        "after": []
+                    },
+                    "rank": 0
+                },
+                {
+                    "name": "Warcry Barbarian",
+                    "description": "Battle Start:\ngive Strength +1\nto all allies",
+                    "health": 3,
+                    "damage": 0,
+                    "attack": 3,
+                    "house": "Warriors",
+                    "trigger": {
+                        "type": "BattleStart",
+                        "effect": {
+                            "type": "Aoe",
+                            "factions": [
+                                {
+                                    "type": "Owner"
+                                }
+                            ],
+                            "effect": {
+                                "type": "UseAbility",
+                                "ability": "Strength",
+                                "force": false,
+                                "charges": {
+                                    "type": "Const",
+                                    "value": 1
+                                },
+                                "target": null,
+                                "owner": null,
+                                "after": null,
+                                "vars": null
+                            },
+                            "skip_self": false,
+                            "limit": null,
+                            "target": null,
+                            "owner": null,
+                            "after": null,
+                            "vars": null
+                        }
+                    },
+                    "statuses": [
+                        [
+                            "Vitality",
+                            2
+                        ]
+                    ],
+                    "shader": {
+                        "path": "shaders/vfx/rectangle.glsl",
+                        "parameters": {
+                            "vertices": 3,
+                            "instances": 1,
+                            "uniforms": {
+                                "u_normal_scaling": 1.0,
+                                "u_g_color_1": "#000000",
+                                "u_g_alphas": [
+                                    0.0,
+                                    1.0,
+                                    1.0,
+                                    0.0
+                                ],
+                                "u_g_color_2": "#000000",
+                                "u_rotation": 0.78,
+                                "u_g_points": [
+                                    -1.0,
+                                    -0.4,
+                                    -0.3,
+                                    0.2
+                                ],
+                                "u_g_color_3": "#000000",
+                                "u_color": "#000000",
+                                "u_rounding": 0.5,
+                                "u_g_color_4": "#000000",
+                                "mapping": {
+                                    "u_g_color_1": {
+                                        "type": "Uniform",
+                                        "key": "u_faction_color"
+                                    },
+                                    "u_g_color_2": {
+                                        "type": "Uniform",
+                                        "key": "u_faction_color"
+                                    },
+                                    "u_g_color_3": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    },
+                                    "u_color": {
+                                        "type": "Uniform",
+                                        "key": "u_house_color"
+                                    }
+                                }
+                            },
+                            "box": {
+                                "pos": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    0.8,
+                                    0.8
+                                ],
+                                "center": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "anchor": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        "layer": "Unit",
+                        "order": 0,
+                        "request_vars": [],
+                        "before": [],
+                        "after": []
+                    },
+                    "rank": 2
+                },
+                {
                     "name": "Sheriff",
                     "description": "Battle Start\napply Mark +1\nto all enemies",
                     "health": 4,
@@ -54,39 +698,58 @@
                             "vars": null
                         }
                     },
-                    "statuses": [
-                        [
-                            "Martyr",
-                            1
-                        ]
-                    ],
+                    "statuses": [],
                     "shader": {
                         "path": "shaders/vfx/circle.glsl",
                         "parameters": {
                             "vertices": 3,
                             "instances": 50,
                             "uniforms": {
-                                "u_g_color_1": "#000000",
                                 "u_normal_scaling": 1.0,
-                                "u_g_alphas": [
-                                    1.0,
-                                    0.0,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_g_color_2": "#000000",
                                 "u_g_points": [
                                     -1.5,
                                     -0.2,
                                     -0.2,
                                     0.0
                                 ],
-                                "u_g_color_3": "#000000",
+                                "u_g_alphas": [
+                                    1.0,
+                                    0.0,
+                                    1.0,
+                                    0.0
+                                ],
                                 "u_g_color_4": "#080404",
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#000000",
+                                "u_g_color_3": "#000000",
                                 "mapping": {
-                                    "u_g_color_3": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
+                                    "u_g_points": {
+                                        "type": "Vec4",
+                                        "x": {
+                                            "type": "Float",
+                                            "value": -2.0
+                                        },
+                                        "y": {
+                                            "type": "Float",
+                                            "value": -0.4
+                                        },
+                                        "z": {
+                                            "type": "Float",
+                                            "value": -0.4
+                                        },
+                                        "w": {
+                                            "type": "Mul",
+                                            "a": {
+                                                "type": "Sin",
+                                                "x": {
+                                                    "type": "GlobalTime"
+                                                }
+                                            },
+                                            "b": {
+                                                "type": "Float",
+                                                "value": 0.1
+                                            }
+                                        }
                                     },
                                     "u_g_color_4": {
                                         "type": "Uniform",
@@ -157,325 +820,6 @@
                                             }
                                         }
                                     },
-                                    "u_g_points": {
-                                        "type": "Vec4",
-                                        "x": {
-                                            "type": "Float",
-                                            "value": -2.0
-                                        },
-                                        "y": {
-                                            "type": "Float",
-                                            "value": -0.4
-                                        },
-                                        "z": {
-                                            "type": "Float",
-                                            "value": -0.4
-                                        },
-                                        "w": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "Sin",
-                                                "x": {
-                                                    "type": "GlobalTime"
-                                                }
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 0.1
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "box": {
-                                "pos": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "size": [
-                                    0.3,
-                                    0.3
-                                ],
-                                "center": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "anchor": [
-                                    0.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        "layer": "Unit",
-                        "order": 0,
-                        "request_vars": [],
-                        "before": [],
-                        "after": []
-                    },
-                    "rank": 0
-                },
-                {
-                    "name": "Shieldbearer",
-                    "description": "Battle Start:\ngive Shield +1\nto adjacent allies",
-                    "health": 1,
-                    "damage": 0,
-                    "attack": 1,
-                    "house": "Paladins",
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "List",
-                            "items": [
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Shield",
-                                    "force": false,
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    },
-                                    "target": {
-                                        "type": "SlotRelative",
-                                        "relation": {
-                                            "type": "Const",
-                                            "value": -1
-                                        }
-                                    },
-                                    "owner": null,
-                                    "after": null,
-                                    "vars": null
-                                },
-                                {
-                                    "type": "UseAbility",
-                                    "ability": "Shield",
-                                    "force": false,
-                                    "charges": {
-                                        "type": "Const",
-                                        "value": 1
-                                    },
-                                    "target": {
-                                        "type": "SlotRelative",
-                                        "relation": {
-                                            "type": "Const",
-                                            "value": 1
-                                        }
-                                    },
-                                    "owner": null,
-                                    "after": null,
-                                    "vars": null
-                                }
-                            ],
-                            "target": null,
-                            "owner": null,
-                            "after": null,
-                            "vars": null
-                        }
-                    },
-                    "statuses": [],
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "vertices": 3,
-                            "instances": 12,
-                            "uniforms": {
-                                "u_g_points": [
-                                    -1.0,
-                                    -0.25,
-                                    -0.25,
-                                    0.0
-                                ],
-                                "u_g_color_3": "#000000",
-                                "u_g_alphas": [
-                                    0.0,
-                                    0.0,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_g_color_4": "#000000",
-                                "u_i_angle_offset": [
-                                    0.5,
-                                    0.0,
-                                    0.0,
-                                    0.755
-                                ],
-                                "u_warp_speed": 50.0,
-                                "u_alpha": 1.0,
-                                "u_warp_str": 0.02,
-                                "u_warp_size": 50.0,
-                                "u_g_color_1": "#000000",
-                                "u_g_color_2": "#000000",
-                                "mapping": {
-                                    "u_g_color_3": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
-                                    "u_g_color_4": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    }
-                                }
-                            },
-                            "box": {
-                                "pos": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "size": [
-                                    0.8,
-                                    0.8
-                                ],
-                                "center": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "anchor": [
-                                    0.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        "layer": "Unit",
-                        "order": 0,
-                        "request_vars": [],
-                        "before": [],
-                        "after": []
-                    },
-                    "rank": 0
-                },
-                {
-                    "name": "Archon Marksman",
-                    "description": "Before Strike:\nShoot +1",
-                    "health": 1,
-                    "damage": 0,
-                    "attack": 1,
-                    "house": "Hunters",
-                    "trigger": {
-                        "type": "BeforeStrike",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Shoot",
-                            "force": false,
-                            "charges": {
-                                "type": "Const",
-                                "value": 1
-                            },
-                            "target": null,
-                            "owner": null,
-                            "after": null,
-                            "vars": null
-                        }
-                    },
-                    "statuses": [
-                        [
-                            "Strength",
-                            2
-                        ]
-                    ],
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "vertices": 3,
-                            "instances": 20,
-                            "uniforms": {
-                                "u_normal_scaling": 1.0,
-                                "u_rotation": 0.25,
-                                "u_g_color_1": "#000000",
-                                "u_g_color_4": "#080404",
-                                "u_g_points": [
-                                    -1.5,
-                                    -0.2,
-                                    -0.2,
-                                    0.0
-                                ],
-                                "u_g_alphas": [
-                                    0.0,
-                                    0.0,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#000000",
-                                "mapping": {
-                                    "u_g_color_4": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
-                                    "u_g_points": {
-                                        "type": "Vec4",
-                                        "x": {
-                                            "type": "Float",
-                                            "value": -2.0
-                                        },
-                                        "y": {
-                                            "type": "Float",
-                                            "value": -0.4
-                                        },
-                                        "z": {
-                                            "type": "Float",
-                                            "value": -0.4
-                                        },
-                                        "w": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "Sin",
-                                                "x": {
-                                                    "type": "GlobalTime"
-                                                }
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 0.1
-                                            }
-                                        }
-                                    },
-                                    "u_i_angle_offset": {
-                                        "type": "Vec4",
-                                        "x": {
-                                            "type": "Sum",
-                                            "a": {
-                                                "type": "Mul",
-                                                "a": {
-                                                    "type": "Float",
-                                                    "value": 0.5
-                                                },
-                                                "b": {
-                                                    "type": "Sin",
-                                                    "x": {
-                                                        "type": "Mul",
-                                                        "a": {
-                                                            "type": "GlobalTime"
-                                                        },
-                                                        "b": {
-                                                            "type": "Float",
-                                                            "value": 0.4
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 2.0
-                                            }
-                                        },
-                                        "y": {
-                                            "type": "Float",
-                                            "value": 0.0
-                                        },
-                                        "z": {
-                                            "type": "Float",
-                                            "value": 0.0
-                                        },
-                                        "w": {
-                                            "type": "Mul",
-                                            "a": {
-                                                "type": "GlobalTime"
-                                            },
-                                            "b": {
-                                                "type": "Float",
-                                                "value": 0.005
-                                            }
-                                        }
-                                    },
                                     "u_g_color_3": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
@@ -490,223 +834,6 @@
                                 "size": [
                                     0.3,
                                     0.3
-                                ],
-                                "center": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "anchor": [
-                                    0.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        "layer": "Unit",
-                        "order": 0,
-                        "request_vars": [],
-                        "before": [],
-                        "after": []
-                    },
-                    "rank": 0
-                },
-                {
-                    "name": "Commander",
-                    "description": "Ally Died:\ngive Strength +2\nto random ally",
-                    "health": 4,
-                    "damage": 0,
-                    "attack": 4,
-                    "house": "Warriors",
-                    "trigger": {
-                        "type": "AnyDeath",
-                        "effect": {
-                            "type": "If",
-                            "condition": {
-                                "type": "EqualsFaction",
-                                "a": {
-                                    "type": "Owner"
-                                },
-                                "b": {
-                                    "type": "Target"
-                                }
-                            },
-                            "then": {
-                                "type": "UseAbility",
-                                "ability": "Strength",
-                                "force": false,
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 2
-                                },
-                                "target": {
-                                    "type": "RandomUnit",
-                                    "faction": {
-                                        "type": "Owner"
-                                    },
-                                    "skip_self": true
-                                },
-                                "owner": null,
-                                "after": null,
-                                "vars": null
-                            },
-                            "else": null,
-                            "target": null,
-                            "owner": null,
-                            "after": null,
-                            "vars": null
-                        }
-                    },
-                    "statuses": [],
-                    "shader": {
-                        "path": "shaders/vfx/rectangle.glsl",
-                        "parameters": {
-                            "vertices": 3,
-                            "instances": 1,
-                            "uniforms": {
-                                "u_g_color_1": "#000000",
-                                "u_g_points": [
-                                    -1.0,
-                                    -0.5,
-                                    -0.3,
-                                    0.2
-                                ],
-                                "u_rounding": 0.4,
-                                "u_g_color_2": "#000000",
-                                "u_color": "#000000",
-                                "u_fbm_sdf_size": 3.1,
-                                "u_warp_pos": 3000.0,
-                                "u_g_color_3": "#000000",
-                                "u_warp_str": 1.0,
-                                "u_normal_scaling": 1.0,
-                                "u_warp_speed": 0.0,
-                                "u_g_alphas": [
-                                    1.0,
-                                    0.0,
-                                    0.5,
-                                    0.0
-                                ],
-                                "u_g_color_4": "#000000",
-                                "u_fbm_sdf": 0.3,
-                                "u_fbm_sdf_speed": 0.5,
-                                "mapping": {
-                                    "u_color": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
-                                    "u_g_color_1": {
-                                        "type": "Uniform",
-                                        "key": "u_faction_color"
-                                    },
-                                    "u_g_color_2": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    },
-                                    "u_g_color_3": {
-                                        "type": "Uniform",
-                                        "key": "u_faction_color"
-                                    }
-                                }
-                            },
-                            "box": {
-                                "pos": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "size": [
-                                    0.8,
-                                    0.8
-                                ],
-                                "center": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "anchor": [
-                                    0.0,
-                                    0.0
-                                ]
-                            }
-                        },
-                        "layer": "Unit",
-                        "order": 0,
-                        "request_vars": [],
-                        "before": [],
-                        "after": []
-                    },
-                    "rank": 0
-                },
-                {
-                    "name": "Lifebringer",
-                    "description": "Battle Start:\ngain Vitality +1\nfor each unit in battle",
-                    "health": 1,
-                    "damage": 0,
-                    "attack": 1,
-                    "house": "Medics",
-                    "trigger": {
-                        "type": "BattleStart",
-                        "effect": {
-                            "type": "UseAbility",
-                            "ability": "Vitality",
-                            "force": false,
-                            "charges": {
-                                "type": "Sum",
-                                "a": {
-                                    "type": "Faction",
-                                    "faction": {
-                                        "type": "Dark"
-                                    }
-                                },
-                                "b": {
-                                    "type": "Faction",
-                                    "faction": {
-                                        "type": "Light"
-                                    }
-                                }
-                            },
-                            "target": {
-                                "type": "Owner"
-                            },
-                            "owner": null,
-                            "after": null,
-                            "vars": null
-                        }
-                    },
-                    "statuses": [],
-                    "shader": {
-                        "path": "shaders/vfx/circle.glsl",
-                        "parameters": {
-                            "vertices": 3,
-                            "instances": 1,
-                            "uniforms": {
-                                "u_g_color_1": "#ffffff",
-                                "u_g_points": [
-                                    -1.1,
-                                    -0.2,
-                                    -0.0,
-                                    0.0
-                                ],
-                                "u_g_alphas": [
-                                    0.0,
-                                    1.5,
-                                    1.0,
-                                    0.0
-                                ],
-                                "u_color": "#000000",
-                                "u_g_color_2": "#ffffff",
-                                "u_g_color_3": "#000000",
-                                "mapping": {
-                                    "u_g_color_2": {
-                                        "type": "Uniform",
-                                        "key": "u_house_color"
-                                    }
-                                }
-                            },
-                            "box": {
-                                "pos": [
-                                    0.0,
-                                    0.0
-                                ],
-                                "size": [
-                                    1.0,
-                                    1.0
                                 ],
                                 "center": [
                                     0.0,
@@ -729,96 +856,97 @@
             ],
             "name": "Team",
             "vars": {
-                "SellPrice": 1,
-                "FreeRerolls": 0,
-                "G": 0,
                 "Slots": 6,
+                "G": 1,
+                "FreeRerolls": 0,
                 "Faction": "Team",
-                "BuyPrice": 3,
-                "RerollPrice": 1
+                "RerollPrice": 1,
+                "SellPrice": 1,
+                "BuyPrice": 3
             },
             "ability_vars": {},
             "statuses": [],
             "slots": 6
         },
         "dark": {
-            "replications": 5,
+            "replications": 6,
             "units": [
                 {
-                    "name": "Wither",
-                    "attack": 6,
-                    "health": 6,
-                    "description": "Before Death\napply Decay +1\nto all enemies",
+                    "name": "Wolf",
+                    "attack": 10,
+                    "health": 10,
                     "house": "Enemy",
-                    "trigger": {
-                        "type": "BeforeDeath",
-                        "effect": {
-                            "type": "Aoe",
-                            "factions": [
-                                {
-                                    "type": "Opposite",
-                                    "faction": {
-                                        "type": "Owner"
-                                    }
-                                }
-                            ],
-                            "effect": {
-                                "type": "UseAbility",
-                                "ability": "Decay",
-                                "charges": {
-                                    "type": "Const",
-                                    "value": 1
-                                }
-                            }
-                        }
-                    },
                     "shader": {
-                        "path": "shaders/vfx/particle_emitter.glsl",
+                        "path": "shaders/vfx/triangle.glsl",
                         "parameters": {
                             "box": {
                                 "size": [
-                                    1.0,
-                                    1.0
+                                    0.65,
+                                    0.65
                                 ]
                             },
                             "uniforms": {
-                                "u_g_color_1": "#8a8a8a",
-                                "u_g_color_2": "#000000",
-                                "u_g_color_3": "#005703",
-                                "u_g_color_4": "#aa3b08",
-                                "u_p_vel_center": 0.0,
-                                "u_p_vel_gravity": 0.5,
-                                "u_p_vel_circle": 0.1,
-                                "u_p_vel_circle_mul": 5.0,
-                                "u_p_vel_circle_shift": 50.0,
-                                "u_p_scale_start": 0.6,
-                                "u_p_scale_end": 0.9,
-                                "u_p_scale": 0.05,
-                                "u_p_offset": [
-                                    0.0,
-                                    0.0
-                                ],
+                                "u_rotation": 1.0,
                                 "u_g_points": [
-                                    0.3,
-                                    0.5,
-                                    0.6,
-                                    1.0
+                                    -0.5,
+                                    -0.4,
+                                    -0.3,
+                                    0.2
                                 ],
                                 "u_g_alphas": [
                                     1.0,
-                                    0.0,
+                                    1.0,
                                     1.0,
                                     0.0
                                 ],
+                                "u_g_color_1": "#000000",
+                                "u_g_color_2": "#8c8c8c",
+                                "u_g_color_3": "#000000",
+                                "u_g_color_4": "#000000",
                                 "mapping": {
-                                    "u_g_color_2": {
+                                    "u_g_color_1": {
                                         "type": "Uniform",
                                         "key": "u_house_color"
+                                    },
+                                    "u_g_color_4": {
+                                        "type": "Uniform",
+                                        "key": "u_faction_color"
                                     }
                                 }
-                            },
-                            "instances": 500
-                        }
+                            }
+                        },
+                        "before": [
+                            {
+                                "path": "shaders/vfx/particle_emitter.glsl",
+                                "parameters": {
+                                    "uniforms": {
+                                        "u_g_color_1": "#8c8c8c",
+                                        "u_g_color_2": "#8c8c8c",
+                                        "u_g_color_3": "#8c8c8c",
+                                        "u_g_color_4": "#8c8c8c",
+                                        "u_p_vel_center": 2.5,
+                                        "u_p_vel_circle": 1.0,
+                                        "u_p_vel_circle_shift": 20.0,
+                                        "u_p_scale_start": 0.6,
+                                        "u_p_scale_end": 0.2,
+                                        "u_g_points": [
+                                            0.0,
+                                            0.2,
+                                            0.2,
+                                            1.0
+                                        ],
+                                        "u_g_alphas": [
+                                            0.0,
+                                            1.0,
+                                            1.0,
+                                            0.0
+                                        ],
+                                        "mapping": {}
+                                    },
+                                    "instances": 600
+                                }
+                            }
+                        ]
                     }
                 }
             ]

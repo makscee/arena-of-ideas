@@ -403,9 +403,10 @@ impl GameStateSystem {
                     .into();
                 BattleSystem::init_battle(&light, &dark, world, resources);
                 let mut tape = Some(Tape::default());
-                BattleSystem::run_battle(world, resources, &mut tape);
+                let result = BattleSystem::run_battle(world, resources, &mut tape);
                 let tape = tape.unwrap();
                 dbg!(tape.length());
+                debug!("Battle result: {result}");
                 resources.tape_player.tape = tape;
             }
         }
