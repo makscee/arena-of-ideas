@@ -204,6 +204,7 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &Resources,
     ) {
+        Self::clear_slots_buttons(faction, world);
         for (slot, entity, shader) in
             <(&SlotComponent, &EntityComponent, &mut ShaderChain)>::query().iter_mut(world)
         {
@@ -299,7 +300,7 @@ impl SlotSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
-        if let Some(entity) = Self::find_unit_by_slot(slot, &faction, world) {
+        if Self::find_unit_by_slot(slot, &faction, world).is_some() {
             match faction {
                 Faction::Team => match resources.current_state {
                     GameState::Shop => {
@@ -309,35 +310,9 @@ impl SlotSystem {
                         ShopSystem::finish_buff_apply(world, resources);
                     }
                     GameState::Sacrifice => {
-                        if !resources.sacrifice_data.marked_units.contains(&entity) {
-                            resources.sacrifice_data.marked_units.insert(entity);
-                            let position = Self::get_position(slot, &faction, resources);
-                            let text = format!(
-                                "+{} g",
-                                ContextState::get(entity, world).get_int(&VarName::Rank, world)
-                            );
-                            Node::new_panel_scaled(
-                                resources
-                                    .options
-                                    .shaders
-                                    .slot_sacrifice_marker
-                                    .clone()
-                                    .insert_vec2("u_position".to_owned(), position)
-                                    .insert_color(
-                                        "u_color".to_owned(),
-                                        resources.options.colors.subtract,
-                                    )
-                                    .insert_string("u_g_text".to_owned(), text, 1),
-                            )
-                            .lock(NodeLockType::Empty)
-                            .push_as_panel(entity, resources);
-                        } else {
-                            resources
-                                .tape_player
-                                .tape
-                                .close_panels(entity, resources.tape_player.head);
-                            resources.sacrifice_data.marked_units.remove(&entity);
-                        }
+                        let phase = mem::take(&mut resources.sacrifice_data.phase);
+                        debug!("Phase: {phase:?}");
+                        resources.sacrifice_data.phase = phase.select_slot(slot, world, resources);
                     }
                     _ => {}
                 },

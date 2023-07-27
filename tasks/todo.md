@@ -71,7 +71,8 @@ Build
         get g {cm:2023-07-26T20:21:23}
         rank up one
         rank up enemies
-    Occasional sacrifice
-    Reroll price
+    Rank up after battle {cm:2023-07-27T17:19:53}
+    Occasional sacrifice {cm:2023-07-27T17:19:54}
+    Reroll price {cm:2023-07-27T17:19:55}
     Tape navigation buttons
     Game rule hint panels

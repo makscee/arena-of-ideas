@@ -157,6 +157,7 @@ impl BattleSystem {
         resources.tape_player.clear();
         resources.tape_player.tape = tape.unwrap();
         resources.tape_player.mode = TapePlayMode::Play;
+        resources.battle_data.applied_curses.clear();
     }
 
     pub fn finish_ladder_battle(world: &mut legion::World, resources: &mut Resources) {

@@ -379,70 +379,7 @@ impl GameStateSystem {
                         .clone()
                         .unpack(world, resources, 1, None, team);
                 }
-                let team_size = UnitSystem::collect_faction(world, Faction::Team).len() as i32;
-                if team_size > 2 {
-                    SlotSystem::add_slots_buttons(
-                        Faction::Team,
-                        "Sacrifice",
-                        Some("u_filled"),
-                        None,
-                        world,
-                        resources,
-                    );
-                }
-
-                resources.camera.focus = Focus::Shop;
-
-                fn input_handler(
-                    event: HandleEvent,
-                    _: legion::Entity,
-                    shader: &mut Shader,
-                    world: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    match event {
-                        HandleEvent::Click => {
-                            if !resources.sacrifice_data.marked_units.is_empty()
-                                || shader.get_int("u_team_size") < 3
-                            {
-                                SacrificeSystem::sacrifice_marked(world, resources);
-                            }
-                        }
-                        _ => {}
-                    };
-                }
-                fn update_handler(
-                    _: HandleEvent,
-                    _: legion::Entity,
-                    shader: &mut Shader,
-                    _: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    shader.set_active(
-                        !resources.sacrifice_data.marked_units.is_empty()
-                            || shader.get_int("u_team_size") < 3,
-                    );
-                }
-                let entity = new_entity();
-                Widget::Button {
-                    text: "Accept".to_owned(),
-                    input_handler,
-                    update_handler: Some(update_handler),
-                    options: &resources.options,
-                    uniforms: resources.options.uniforms.ui_button.clone().insert_int("u_team_size".to_owned(), team_size),
-                    shader: None,
-                    entity,
-                    hover_hints: vec![
-                        (
-                            resources.options.colors.subtract,
-                            "Accept Sacrifice".to_owned(),
-                            "Sacrifice selected heroes,\nremoving them from team.\nNo sacrifice needed for\nteam of 2 heroes.".to_owned()
-                        )
-                    ],
-                }
-                .generate_node()
-                .lock(NodeLockType::Empty)
-                .push_as_panel(entity, resources);
+                SacrificeSystem::enter_state(world, resources);
             }
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;

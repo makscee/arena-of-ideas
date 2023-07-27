@@ -157,21 +157,29 @@ impl ShopSystem {
             || vars.get_int(&VarName::RerollPrice) <= vars.get_int(&VarName::G)
     }
 
-    pub fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
+    pub fn reroll_cost(world: &legion::World, resources: &Resources) -> usize {
         if Self::is_just_started(world, resources) {
-            return;
+            return 0;
         }
-        let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
+        let vars = &TeamSystem::get_state(Faction::Team, world).vars;
         let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
         if free_rerolls > 0 {
-            vars.change_int(&VarName::FreeRerolls, -1);
+            return 0;
         } else {
-            Self::change_g(
-                -vars.get_int(&VarName::RerollPrice),
-                Some("Reroll"),
-                world,
-                resources,
-            );
+            return vars.get_int(&VarName::RerollPrice) as usize;
+        }
+    }
+
+    pub fn deduct_reroll_cost(world: &mut legion::World, resources: &mut Resources) {
+        let cost = Self::reroll_cost(world, resources);
+        if cost > 0 {
+            Self::change_g(-(cost as i32), Some("Reroll"), world, resources);
+        } else {
+            let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
+            let free_rerolls = vars.try_get_int(&VarName::FreeRerolls).unwrap_or_default();
+            if free_rerolls > 0 {
+                vars.change_int(&VarName::FreeRerolls, -1);
+            }
         }
     }
 
@@ -199,7 +207,7 @@ impl ShopSystem {
         ShopData::load_level(resources, level);
         Self::change_g(
             Self::level_g(resources) as i32,
-            Some(&format!("Level {level} start")),
+            Some(&format!("Level {} start", level + 1)),
             world,
             resources,
         );

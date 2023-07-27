@@ -55,6 +55,7 @@ pub enum VarName {
     LastAttacker,
     LastHealer,
     Source,
+    Promotions,
 }
 
 impl VarName {

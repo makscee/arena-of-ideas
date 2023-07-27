@@ -83,7 +83,7 @@ impl PanelsSystem {
         Self::add_alert(
             color,
             title,
-            Self::generate_text_shader(text, vec2(0.3, 0.1), &resources.options),
+            Self::generate_text_shader(text, vec2(0.15, 0.05), &resources.options),
             pos,
             buttons,
             resources,
@@ -727,6 +727,12 @@ impl PanelFooterButton {
                 .post_update_handlers
                 .insert(0, update_handler);
         }
+        if let Some(update_handler) = self.get_pre_update_handler() {
+            button_shader
+                .middle
+                .pre_update_handlers
+                .push(update_handler);
+        }
         match self {
             PanelFooterButton::Buy { cost } => {
                 button_shader
@@ -951,7 +957,7 @@ impl PanelFooterButton {
                     _: legion::Entity,
                     shader: &mut Shader,
                     world: &mut legion::World,
-                    _: &mut Resources,
+                    resources: &mut Resources,
                 ) {
                     shader.set_active(ShopSystem::is_reroll_affordable(world));
                 }
@@ -970,6 +976,29 @@ impl PanelFooterButton {
                     shader.set_active(
                         ShopSystem::get_g(world) >= cost
                             && !resources.panels_data.removed_inds.contains(&index),
+                    );
+                }
+                Some(update_handler)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_pre_update_handler(&self) -> Option<Handler> {
+        match self {
+            PanelFooterButton::Reroll => {
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    let cost = ShopSystem::reroll_cost(world, resources);
+                    shader.parameters.uniforms.insert_string_ref(
+                        "u_text".to_owned(),
+                        format!("Reroll -{}g", cost),
+                        1,
                     );
                 }
                 Some(update_handler)

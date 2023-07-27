@@ -101,11 +101,6 @@ impl ShaderSystem {
             })
             .collect_vec();
 
-        // Extend uniforms map by inheritance
-        for shader in shaders.iter_mut() {
-            shader.depth_visit(None);
-        }
-
         // Pre-input update
         for shader in shaders.iter_mut() {
             for shader in shader.iter_mut() {
@@ -118,6 +113,11 @@ impl ShaderSystem {
         }
 
         // Extend uniforms map by inheritance
+        for shader in shaders.iter_mut() {
+            shader.depth_visit(None);
+        }
+
+        // Remove any non enabled shaders
         for shader in shaders.iter_mut() {
             shader.cut_disabled();
         }
