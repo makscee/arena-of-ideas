@@ -20,7 +20,9 @@ impl SacrificeSystem {
         ) {
             match event {
                 HandleEvent::Click => {
-                    mem::take(&mut resources.sacrifice_data.phase).accept(world, resources);
+                    if resources.sacrifice_data.phase.can_accept() {
+                        mem::take(&mut resources.sacrifice_data.phase).accept(world, resources);
+                    }
                 }
                 _ => {}
             };
