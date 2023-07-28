@@ -143,7 +143,11 @@ impl BattleSystem {
             ShaderChain::wrap_panel_body_row(shaders, vec2(padding, padding), &resources.options);
         PanelsSystem::add_alert(
             resources.options.colors.enemy,
-            &format!("Level {}", Ladder::current_level(resources) + 1),
+            &format!(
+                "Level {}/{}",
+                Ladder::current_level(resources) + 1,
+                Ladder::count(resources)
+            ),
             shader,
             vec2::ZERO,
             vec![PanelFooterButton::Start],

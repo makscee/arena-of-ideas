@@ -294,7 +294,11 @@ impl PanelsSystem {
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
         let mut texts = Vec::default();
         texts.push(format!("g: {}", ShopSystem::get_g(world)));
-        texts.push(format!("level: {}", Ladder::current_level(resources) + 1));
+        texts.push(format!(
+            "level: {}/{}",
+            Ladder::current_level(resources) + 1,
+            Ladder::count(resources)
+        ));
         let mut team_status = TeamSystem::get_state(Faction::Team, world)
             .statuses
             .iter()

@@ -46,11 +46,11 @@ impl Ladder {
 
     pub fn next(resources: &mut Resources) -> bool {
         resources.ladder.current += 1;
-        resources.ladder.current < resources.ladder.count()
+        resources.ladder.current < resources.ladder.levels.len()
     }
 
-    pub fn count(&self) -> usize {
-        self.levels.len()
+    pub fn count(resources: &Resources) -> usize {
+        resources.ladder.levels.len()
     }
 
     pub fn set_level(&mut self, ind: usize) {
