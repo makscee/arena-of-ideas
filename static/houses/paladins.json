@@ -20,7 +20,7 @@
             }
         },
         "Martyr": {
-            "description": "Before Death\ngive Blessing +X\nto all allies ",
+            "description": "Before Death\ngive +X/+X\nto all allies ",
             "effect": {
                 "type": "ChangeStatus",
                 "name": "Martyr",
