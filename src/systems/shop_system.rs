@@ -82,14 +82,16 @@ impl ShopSystem {
             .unwrap()
             .cloned()
             .collect_vec();
-        let buffs = BuffPool::get_random(2, resources)
+        let mut buffs = BuffPool::get_random(2, resources)
             .into_iter()
             .map(|x| (x, BuffTarget::random()))
             .collect_vec();
+        if Ladder::current_level(resources) == 0 {
+            buffs.clear();
+        }
         let choice = CardChoice::ShopOffers { units, buffs };
         PanelsSystem::open_card_choice(choice, resources);
         resources.panels_data.removed_inds = default();
-        debug!("Show offers");
     }
 
     pub fn add_unit_to_team(
@@ -267,7 +269,7 @@ impl ShopSystem {
         let hover_hints = vec![(
             resources.options.colors.enemy,
             "Start Battle".to_owned(),
-            format!("Choose enemy by difficulty\nand send copy of team\ninto battle"),
+            format!("Send copies for your team\ninto battle"),
         )];
         let uniforms = resources
             .options
