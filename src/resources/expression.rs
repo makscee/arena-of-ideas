@@ -353,6 +353,10 @@ pub enum ExpressionUniform {
         a: Box<ExpressionUniform>,
         b: Box<ExpressionUniform>,
     },
+    Sub {
+        a: Box<ExpressionUniform>,
+        b: Box<ExpressionUniform>,
+    },
     Mul {
         a: Box<ExpressionUniform>,
         b: Box<ExpressionUniform>,
@@ -374,6 +378,9 @@ impl ExpressionUniform {
             ExpressionUniform::OptionColor { key } => Ok(ShaderUniform::Color(options_color(key))),
             ExpressionUniform::Sum { a, b } => {
                 Ok(a.calculate(uniforms)?.sum(&b.calculate(uniforms)?))
+            }
+            ExpressionUniform::Sub { a, b } => {
+                Ok(a.calculate(uniforms)?.sub(&b.calculate(uniforms)?))
             }
             ExpressionUniform::Mul { a, b } => {
                 Ok(a.calculate(uniforms)?.mul(&b.calculate(uniforms)?))

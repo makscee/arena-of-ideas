@@ -281,6 +281,7 @@ impl ShopSystem {
             text: "Start Battle".to_owned(),
             input_handler,
             update_handler: Some(update_handler),
+            pre_update_handler: None,
             options: &resources.options,
             uniforms,
             shader: None,

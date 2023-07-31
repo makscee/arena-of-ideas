@@ -279,6 +279,22 @@ impl ShaderUniform {
             _ => panic!("Types don't match {other:?}"),
         }
     }
+    pub fn sub(self, other: &Self) -> Self {
+        match (self, other) {
+            (ShaderUniform::Int(a), ShaderUniform::Int(b)) => ShaderUniform::Int(a - b),
+            (ShaderUniform::Float(a), ShaderUniform::Float(b)) => ShaderUniform::Float(a - b),
+            (ShaderUniform::Vec2(a), ShaderUniform::Vec2(b)) => ShaderUniform::Vec2(a - *b),
+            (ShaderUniform::Vec3(a), ShaderUniform::Vec3(b)) => ShaderUniform::Vec3(a - *b),
+            (ShaderUniform::Vec4(a), ShaderUniform::Vec4(b)) => ShaderUniform::Vec4(a - *b),
+            (ShaderUniform::Color(a), ShaderUniform::Color(b)) => ShaderUniform::Color(Rgba {
+                r: a.r - b.r,
+                g: a.g - b.g,
+                b: a.b - b.b,
+                a: a.a - b.a,
+            }),
+            _ => panic!("Types don't match {other:?}"),
+        }
+    }
     pub fn mul(self, other: &Self) -> Self {
         match (self, other) {
             (ShaderUniform::Int(a), ShaderUniform::Int(b)) => ShaderUniform::Int(a * b),

@@ -180,7 +180,8 @@ impl SlotSystem {
         shader
             .insert_color_ref("u_color".to_owned(), color)
             .insert_vec2_ref("u_position".to_owned(), position)
-            .insert_float_ref("u_scale".to_owned(), scale);
+            .insert_float_ref("u_scale".to_owned(), scale)
+            .insert_string_ref("u_slot_text".to_owned(), slot.to_string(), 1);
 
         let mut entry = world.entry(entity).unwrap();
         entry.add_component(EntityComponent::new(entity));
@@ -237,6 +238,7 @@ impl SlotSystem {
             Some(text),
             Self::activation_handler,
             None,
+            None,
             entity,
             Some(resources.options.shaders.slot_button.clone()),
             default(),
@@ -264,7 +266,7 @@ impl SlotSystem {
         }
         shader.after.push(button.insert_uniform(
             "u_offset".to_owned(),
-            ShaderUniform::Vec2(vec2(0.0, -resources.options.floats.slot_info_offset)),
+            ShaderUniform::Vec2(vec2(0.0, resources.options.floats.slot_info_offset)),
         ));
     }
 

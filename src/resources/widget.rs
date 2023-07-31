@@ -5,6 +5,7 @@ pub enum Widget<'a> {
         text: String,
         input_handler: Handler,
         update_handler: Option<Handler>,
+        pre_update_handler: Option<Handler>,
         options: &'a Options,
         uniforms: ShaderUniforms,
         shader: Option<ShaderChain>,
@@ -25,11 +26,13 @@ impl<'a> Widget<'_> {
                 shader,
                 entity,
                 hover_hints,
+                pre_update_handler,
             } => {
                 let button = ButtonSystem::create_button(
                     Some(&text),
                     input_handler,
                     update_handler,
+                    pre_update_handler,
                     entity,
                     shader,
                     hover_hints,

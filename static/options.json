@@ -1663,6 +1663,44 @@
                     ]
                 }
             },
+            "before": [
+                {
+                    "path": "shaders/vfx/text.glsl",
+                    "parameters": {
+                        "box": {
+                            "size": [
+                                0.8,
+                                0.8
+                            ]
+                        },
+                        "uniforms": {
+                            "u_color": "#ffffff",
+                            "u_mid_border": 0.05,
+                            "mapping": {
+                                "u_text": {
+                                    "type": "Uniform",
+                                    "key": "u_slot_text"
+                                },
+                                "u_color": {
+                                    "type": "OptionColor",
+                                    "key": "light"
+                                },
+                                "u_enabled": {
+                                    "type": "Sub",
+                                    "a": {
+                                        "type": "Float",
+                                        "value": 1
+                                    },
+                                    "b": {
+                                        "type": "Uniform",
+                                        "key": "u_filled"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
             "layer": "Background"
         },
         "slot_sacrifice_marker": {

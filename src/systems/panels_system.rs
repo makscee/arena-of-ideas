@@ -198,7 +198,7 @@ impl PanelsSystem {
             ShaderChain::wrap_panel_body_row(shaders, vec2(padding, padding), &resources.options)
                 .wrap_panel_header(title, &resources.options)
                 .wrap_panel_footer(buttons, &resources.options);
-        panel.middle.parameters.r#box.pos.y += 0.1;
+        panel.middle.parameters.r#box.pos.y += 0.3;
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
             Some(panel_color),

@@ -34,13 +34,14 @@ impl SacrificeSystem {
             _: &mut legion::World,
             resources: &mut Resources,
         ) {
-            shader.set_active(resources.sacrifice_data.phase.can_accept());
+            shader.set_enabled(resources.sacrifice_data.phase.can_accept());
         }
         let entity = new_entity();
         Widget::Button {
             text: "Accept".to_owned(),
             input_handler,
-            update_handler: Some(update_handler),
+            update_handler: None,
+            pre_update_handler: Some(update_handler),
             options: &resources.options,
             uniforms: resources.options.uniforms.ui_button.clone(),
             shader: None,
@@ -114,9 +115,7 @@ impl SacrificePhase {
                     .vars
                     .change_int(&VarName::Rank, 1);
                 if *count == 0 {
-                    if Ladder::current_level(resources) % 3 == 0
-                        || UnitSystem::collect_faction(world, Faction::Team).len() == MAX_SLOTS
-                    {
+                    if UnitSystem::collect_faction(world, Faction::Team).len() == MAX_SLOTS {
                         self = SacrificePhase::Sacrifice {
                             candidates: default(),
                         };

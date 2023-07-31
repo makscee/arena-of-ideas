@@ -76,3 +76,5 @@ Build
     Reroll price {cm:2023-07-27T17:19:55}
     Tape navigation buttons
     Game rule hint panels
+    Buff apply focused
+    Slot number indicator {cm:2023-07-31T17:03:08}

@@ -7,6 +7,7 @@ impl ButtonSystem {
         text: Option<&str>,
         input_handler: Handler,
         update_handler: Option<Handler>,
+        pre_update_handler: Option<Handler>,
         entity: legion::Entity,
         shader: Option<ShaderChain>,
         hover_hints: Vec<(Rgba<f32>, String, String)>,
@@ -20,6 +21,9 @@ impl ButtonSystem {
         button.middle.input_handlers.push(input_handler);
         if let Some(update_handler) = update_handler {
             button.middle.post_update_handlers.push(update_handler);
+        }
+        if let Some(update_handler) = pre_update_handler {
+            button.middle.pre_update_handlers.push(update_handler);
         }
         Self::add_button_handlers(&mut button.middle);
         if let Some(text) = text {
