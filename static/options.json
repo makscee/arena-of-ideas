@@ -1661,6 +1661,14 @@
                         1.2,
                         1.3
                     ]
+                },
+                "uniforms": {
+                    "mapping": {
+                        "u_color": {
+                            "type": "Uniform",
+                            "key": "u_slot_color"
+                        }
+                    }
                 }
             },
             "before": [
@@ -1674,16 +1682,16 @@
                             ]
                         },
                         "uniforms": {
-                            "u_color": "#ffffff",
                             "u_mid_border": 0.05,
+                            "u_color": "#00000000",
                             "mapping": {
                                 "u_text": {
                                     "type": "Uniform",
                                     "key": "u_slot_text"
                                 },
-                                "u_color": {
-                                    "type": "OptionColor",
-                                    "key": "light"
+                                "u_mid_border_color": {
+                                    "type": "Uniform",
+                                    "key": "u_slot_color"
                                 },
                                 "u_enabled": {
                                     "type": "Sub",

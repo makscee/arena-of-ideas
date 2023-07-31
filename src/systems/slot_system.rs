@@ -178,7 +178,7 @@ impl SlotSystem {
         let scale = Self::get_scale(slot, faction, resources);
         let mut shader = resources.options.shaders.slot.clone();
         shader
-            .insert_color_ref("u_color".to_owned(), color)
+            .insert_color_ref("u_slot_color".to_owned(), color)
             .insert_vec2_ref("u_position".to_owned(), position)
             .insert_float_ref("u_scale".to_owned(), scale)
             .insert_string_ref("u_slot_text".to_owned(), slot.to_string(), 1);
