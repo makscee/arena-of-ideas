@@ -1,7 +1,6 @@
 Screen box anchoring @ui
 Text shader constant scale, size depending on lines @ui
 Move u_scale into box @shaders
-Shader visitor instead of flattening @shaders
 Status get ability vars from caster instead of owner @gameplay
 Show stats after status on card
 Parallel hero ratings run with discrepancy test @content
@@ -64,6 +63,9 @@ Build
         ladder generation from heroes {cm:2023-07-17T21:36:10}
         single team ladder {cm:2023-07-25T14:59:37}
         iterative ladder generation {cm:2023-07-25T14:59:38}
+        automatic ladder generation
+        8-10 levels
+        Sacrifice to get slots?
     Unnified Shop offers {cm:2023-07-25T22:31:03}
     Curses
         rank up enemies, no sacrifice
@@ -76,5 +78,15 @@ Build
     Reroll price {cm:2023-07-27T17:19:55}
     Tape navigation buttons
     Game rule hint panels
-    Buff apply focused
+        ATK & HP
+        Buffs
     Slot number indicator {cm:2023-07-31T17:03:08}
+    UI/UX
+        Buff apply focused
+        Rank Up alert
+    Balance buffs
+Socials
+    Build on itch.io
+    Build post on reddit
+    Build post on tg
+    Build devlog on yt

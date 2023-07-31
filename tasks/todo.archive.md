@@ -78,3 +78,4 @@ Uniform mapping into Options {start:2023-07-05T13:52:51} {cm:2023-07-05T14:04:59
 Fix damage text after strike {cm:2023-07-05T21:33:40}
 Status triggered by slot order {cm:2023-07-07T15:51:56}
 Hover hint on card choice panel {cm:2023-07-13T16:16:36}
+Shader visitor instead of flattening @shaders {cm:2023-07-31T17:24:46}

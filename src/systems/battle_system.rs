@@ -64,20 +64,17 @@ impl BattleSystem {
     }
 
     pub fn open_curses_panel(resources: &mut Resources) {
-        resources
-            .battle_data
-            .curse_choice
-            .push(CursePool::get_random(resources));
-        resources
-            .battle_data
-            .curse_choice
-            .push(CursePool::get_random(resources));
+        resources.battle_data.curse_choice = vec![
+            CursePool::get_random(resources),
+            CursePool::get_random(resources),
+        ];
+        resources.battle_data.applied_curses.clear();
 
         fn update_curse(
-            event: HandleEvent,
-            entity: legion::Entity,
+            _: HandleEvent,
+            _: legion::Entity,
             shader: &mut Shader,
-            world: &mut legion::World,
+            _: &mut legion::World,
             resources: &mut Resources,
         ) {
             let ind = shader.get_int("u_index") as usize;
@@ -88,9 +85,9 @@ impl BattleSystem {
 
         fn apply_curse(
             event: HandleEvent,
-            entity: legion::Entity,
+            _: legion::Entity,
             shader: &mut Shader,
-            world: &mut legion::World,
+            _: &mut legion::World,
             resources: &mut Resources,
         ) {
             match event {
@@ -161,7 +158,6 @@ impl BattleSystem {
         resources.tape_player.clear();
         resources.tape_player.tape = tape.unwrap();
         resources.tape_player.mode = TapePlayMode::Play;
-        resources.battle_data.applied_curses.clear();
     }
 
     pub fn finish_ladder_battle(world: &mut legion::World, resources: &mut Resources) {
