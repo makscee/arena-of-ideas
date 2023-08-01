@@ -2006,12 +2006,12 @@
         "ui_button": {
             "u_scale": 0.35,
             "u_index_offset": [
-                0.0,
-                -0.5
+                1.2,
+                0.0
             ],
             "u_position": [
                 0.0,
-                0.7
+                0.9
             ],
             "u_ui": 1
         }

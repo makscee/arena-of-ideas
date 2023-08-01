@@ -183,7 +183,7 @@ impl BattleSystem {
         SaveSystem::save(world, resources);
         let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
             if Ladder::next(resources) {
-                resources.transition_state = GameState::Sacrifice;
+                resources.transition_state = GameState::Shop;
             } else {
                 resources.transition_state = GameState::Victory;
                 return;

@@ -5,6 +5,7 @@ pub struct ButtonSystem;
 impl ButtonSystem {
     pub fn create_button(
         text: Option<&str>,
+        color: Option<Rgba<f32>>,
         input_handler: Handler,
         update_handler: Option<Handler>,
         pre_update_handler: Option<Handler>,
@@ -28,6 +29,10 @@ impl ButtonSystem {
         Self::add_button_handlers(&mut button.middle);
         if let Some(text) = text {
             button.insert_string_ref("u_text".to_owned(), text.to_owned(), 1);
+        }
+        if let Some(color) = color {
+            button = button.remove_mapping("u_color");
+            button.insert_color_ref("u_color".to_owned(), color);
         }
         button.middle.entity = Some(entity);
         button.middle.hover_hints = hover_hints;

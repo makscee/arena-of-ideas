@@ -236,6 +236,7 @@ impl SlotSystem {
     ) {
         let mut button = ButtonSystem::create_button(
             Some(text),
+            None,
             Self::activation_handler,
             None,
             None,
@@ -316,13 +317,18 @@ impl SlotSystem {
                     GameState::Shop => {
                         if let Some(data) = resources.shop_data.status_apply.as_mut() {
                             data.2 = BuffTarget::Single { slot: Some(slot) };
+                            ShopSystem::finish_buff_apply(world, resources);
+                        } else {
+                            let unit = SlotSystem::find_unit_by_slot(slot, &Faction::Team, world)
+                                .expect("Tried to rank up empty slot");
+                            ContextState::get_mut(unit, world)
+                                .vars
+                                .change_int(&VarName::Rank, 1);
+                            Self::clear_slots_buttons(faction, world);
                         }
-                        ShopSystem::finish_buff_apply(world, resources);
                     }
                     GameState::Sacrifice => {
-                        let phase = mem::take(&mut resources.sacrifice_data.phase);
-                        debug!("Phase: {phase:?}");
-                        resources.sacrifice_data.phase = phase.select_slot(slot, world, resources);
+                        SacrificeSystem::handle_slot_activation(slot, world, resources);
                     }
                     _ => {}
                 },

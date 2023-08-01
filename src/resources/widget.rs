@@ -3,6 +3,7 @@ use super::*;
 pub enum Widget<'a> {
     Button {
         text: String,
+        color: Option<Rgba<f32>>,
         input_handler: Handler,
         update_handler: Option<Handler>,
         pre_update_handler: Option<Handler>,
@@ -19,6 +20,7 @@ impl<'a> Widget<'_> {
         match self {
             Self::Button {
                 text,
+                color,
                 input_handler,
                 update_handler,
                 options,
@@ -30,6 +32,7 @@ impl<'a> Widget<'_> {
             } => {
                 let button = ButtonSystem::create_button(
                     Some(&text),
+                    color,
                     input_handler,
                     update_handler,
                     pre_update_handler,

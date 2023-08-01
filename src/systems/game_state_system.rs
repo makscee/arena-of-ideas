@@ -288,7 +288,7 @@ impl GameStateSystem {
                         resources,
                     );
                 }
-                ShopSystem::enter(world, resources);
+                ShopSystem::enter(from, world, resources);
                 PanelsSystem::open_stats(world, resources);
                 resources.camera.focus = Focus::Shop;
             }

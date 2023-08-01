@@ -28,25 +28,30 @@ impl ShopSystem {
     }
 
     pub fn show_offers_panel(resources: &mut Resources) {
-        let units = resources
-            .shop_data
-            .pool
-            .choose_multiple_weighted(&mut thread_rng(), 3, |x| {
-                HeroPool::rarity_by_name(&x.name, resources).weight()
-            })
-            .unwrap()
-            .cloned()
-            .collect_vec();
-        let mut buffs = BuffPool::get_random(2, resources)
-            .into_iter()
-            .map(|x| (x, BuffTarget::random()))
-            .collect_vec();
-        if Ladder::current_level(resources) == 0 {
-            buffs.clear();
-        }
-        let choice = CardChoice::ShopOffers { units, buffs };
+        let choice = if let Some(choice) = resources.panels_data.choice_options.take() {
+            choice
+        } else {
+            let units = resources
+                .shop_data
+                .pool
+                .choose_multiple_weighted(&mut thread_rng(), 3, |x| {
+                    HeroPool::rarity_by_name(&x.name, resources).weight()
+                })
+                .unwrap()
+                .cloned()
+                .collect_vec();
+            let mut buffs = BuffPool::get_random(2, resources)
+                .into_iter()
+                .map(|x| (x, BuffTarget::random()))
+                .collect_vec();
+            if Ladder::current_level(resources) == 0 {
+                buffs.clear();
+            }
+            resources.panels_data.removed_inds = default();
+            CardChoice::ShopOffers { units, buffs }
+        };
+
         PanelsSystem::open_card_choice(choice, resources);
-        resources.panels_data.removed_inds = default();
     }
 
     pub fn add_unit_to_team(
@@ -159,27 +164,36 @@ impl ShopSystem {
         (resources.options.start_g + Ladder::current_level(resources)).min(resources.options.max_g)
     }
 
-    pub fn enter(world: &mut legion::World, resources: &mut Resources) {
+    pub fn enter(from: GameState, world: &mut legion::World, resources: &mut Resources) {
         let level = Ladder::current_level(resources);
-        ShopData::load_level(resources, level);
-        Self::change_g(
-            Self::level_g(resources) as i32,
-            Some(&format!("Level {} start", level + 1)),
-            world,
-            resources,
-        );
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, level as i32);
         Self::create_battle_button(resources);
+        if from == GameState::Battle {
+            if Ladder::current_level(resources) > 0 {
+                Self::create_sacrifice_button(resources);
+                SlotSystem::add_slots_buttons(
+                    Faction::Team,
+                    "Rank Up",
+                    Some("u_filled"),
+                    None,
+                    None,
+                    world,
+                    resources,
+                );
+            }
+            ShopData::load_level(resources, level);
+        }
+        if from != GameState::Sacrifice {
+            Self::change_g(
+                Self::level_g(resources) as i32,
+                Some(&format!("Level {} start", level + 1)),
+                world,
+                resources,
+            );
+        }
         Self::show_offers_panel(resources);
-    }
-
-    fn is_max_slots(world: &legion::World) -> bool {
-        TeamSystem::get_state(Faction::Team, world)
-            .vars
-            .get_int(&VarName::Slots)
-            >= MAX_SLOTS as i32
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
@@ -191,13 +205,13 @@ impl ShopSystem {
         fn input_handler(
             event: HandleEvent,
             entity: legion::Entity,
-            _: &mut Shader,
+            shader: &mut Shader,
             world: &mut legion::World,
             resources: &mut Resources,
         ) {
             match event {
                 HandleEvent::Click => {
-                    if !UnitSystem::collect_faction(world, Faction::Team).is_empty()
+                    if shader.is_active()
                         && resources
                             .tape_player
                             .tape
@@ -216,9 +230,11 @@ impl ShopSystem {
             _: legion::Entity,
             shader: &mut Shader,
             world: &mut legion::World,
-            _: &mut Resources,
+            resources: &mut Resources,
         ) {
-            shader.set_active(!UnitSystem::collect_faction(world, Faction::Team).is_empty());
+            let active = !UnitSystem::collect_faction(world, Faction::Team).is_empty()
+                && resources.shop_data.status_apply.is_none();
+            shader.set_active(active);
         }
         let entity = new_entity();
         let hover_hints = vec![(
@@ -231,9 +247,72 @@ impl ShopSystem {
             .uniforms
             .ui_button
             .clone()
-            .insert_int("u_index".to_owned(), -1);
+            .insert_int("u_index".to_owned(), 1);
         Widget::Button {
             text: "Start Battle".to_owned(),
+            color: None,
+            input_handler,
+            update_handler: None,
+            pre_update_handler: Some(update_handler),
+            options: &resources.options,
+            uniforms,
+            shader: None,
+            hover_hints,
+            entity,
+        }
+        .generate_node()
+        .lock(NodeLockType::Empty)
+        .push_as_panel(entity, resources);
+    }
+
+    fn create_sacrifice_button(resources: &mut Resources) {
+        fn input_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            shader: &mut Shader,
+            _: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if shader.is_active()
+                        && resources
+                            .tape_player
+                            .tape
+                            .close_panels(entity, resources.tape_player.head)
+                    {
+                        GameStateSystem::set_transition(GameState::Sacrifice, resources);
+                    }
+                }
+                _ => {}
+            }
+        }
+        fn update_handler(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            let active = !UnitSystem::collect_faction(world, Faction::Team).is_empty()
+                && resources.shop_data.status_apply.is_none();
+            shader.set_active(active);
+        }
+        let entity = new_entity();
+        let hover_hints = vec![(
+            resources.options.colors.sacrifice,
+            "Sacrifice".to_owned(),
+            format!("Remove any number of heroes from the team.\nGet exponential rewards"),
+        )];
+        let uniforms = resources
+            .options
+            .uniforms
+            .ui_button
+            .clone()
+            .insert_int("u_index".to_owned(), -1);
+        Widget::Button {
+            text: "Sacrifice".to_owned(),
+            color: Some(resources.options.colors.sacrifice),
             input_handler,
             update_handler: Some(update_handler),
             pre_update_handler: None,

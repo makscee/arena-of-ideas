@@ -34,7 +34,7 @@ impl SaveSystem {
                 for level in 0..save.level {
                     ShopData::load_level(resources, level);
                 }
-                ShopSystem::enter(world, resources);
+                ShopSystem::enter(GameState::MainMenu, world, resources);
                 debug!("Loaded {}", save.team);
             }
             Err(error) => {
