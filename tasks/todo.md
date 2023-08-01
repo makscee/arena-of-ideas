@@ -83,7 +83,7 @@ Build
     UI/UX
         Buff apply focused
         Rank Up alert
-    Balance buffs
+    Balance buffs {cm:2023-08-01T17:25:04}
     Next enemy panel top-right
     Sacrifice on demand
 Socials

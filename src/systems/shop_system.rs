@@ -27,51 +27,6 @@ impl ShopSystem {
         default()
     }
 
-    pub fn show_hero_buy_panel(resources: &mut Resources) {
-        // let mut units = Vec::default();
-        // for _ in 0..3 {
-        //     let pool = &mut resources.shop_data.pool;
-        //     let unit = (0..pool.len()).choose(&mut thread_rng()).unwrap();
-        //     let unit = pool.swap_remove(unit);
-        //     units.push(unit);
-        // }
-        let units = resources
-            .shop_data
-            .pool
-            .choose_multiple_weighted(&mut thread_rng(), 3, |x| {
-                HeroPool::rarity_by_name(&x.name, resources).weight()
-            })
-            .unwrap()
-            .cloned()
-            .collect_vec();
-        let choice = CardChoice::BuyHero { units };
-        PanelsSystem::open_card_choice(choice, resources);
-    }
-
-    pub fn show_buff_buy_panel(resources: &mut Resources) {
-        let choice = CardChoice::BuyBuff {
-            buffs: BuffPool::get_random(3, resources),
-            target: BuffTarget::Single { slot: None },
-        };
-        PanelsSystem::open_card_choice(choice, resources);
-    }
-
-    pub fn show_team_buff_buy_panel(resources: &mut Resources) {
-        let choice = CardChoice::BuyBuff {
-            buffs: BuffPool::get_random(3, resources),
-            target: BuffTarget::Team,
-        };
-        PanelsSystem::open_card_choice(choice, resources);
-    }
-
-    pub fn show_aoe_buff_buy_panel(resources: &mut Resources) {
-        let choice = CardChoice::BuyBuff {
-            buffs: BuffPool::get_random(3, resources),
-            target: BuffTarget::Aoe,
-        };
-        PanelsSystem::open_card_choice(choice, resources);
-    }
-
     pub fn show_offers_panel(resources: &mut Resources) {
         let units = resources
             .shop_data
@@ -313,7 +268,7 @@ impl ShopSystem {
                     resources,
                 );
             }
-            BuffTarget::Aoe | BuffTarget::Team => Self::finish_buff_apply(world, resources),
+            BuffTarget::Aoe => Self::finish_buff_apply(world, resources),
         }
     }
 
@@ -336,15 +291,6 @@ impl ShopSystem {
                 for unit in UnitSystem::collect_faction(world, Faction::Team) {
                     entities.push(unit);
                 }
-            }
-            BuffTarget::Team => {
-                entities.push(TeamSystem::entity(Faction::Team, world).unwrap());
-                PanelsSystem::open_push(
-                    resources.options.colors.player,
-                    "New Team Status",
-                    &format!("{name} +{charges}"),
-                    resources,
-                );
             }
         };
         for entity in entities {
