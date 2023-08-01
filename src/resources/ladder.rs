@@ -27,14 +27,14 @@ impl Ladder {
     //     resources.ladder.levels = teams.into_iter().map(|x| x.into()).collect_vec();
     // }
 
-    // pub fn save(resources: &Resources) {
-    //     let path = static_path().join("ladder.json");
-    //     let data = serde_json::to_string_pretty(&resources.ladder.levels).unwrap();
-    //     match std::fs::write(&path, data) {
-    //         Ok(_) => debug!("Save ladder to {:?}", &path),
-    //         Err(error) => error!("Can't save ladder: {}", error),
-    //     }
-    // }
+    pub fn save(resources: &Resources) {
+        let path = static_path().join("ladder.json");
+        let data = serde_json::to_string_pretty(&resources.ladder.levels).unwrap();
+        match std::fs::write(&path, data) {
+            Ok(_) => debug!("Save ladder to {:?}", &path),
+            Err(error) => error!("Can't save ladder: {}", error),
+        }
+    }
 
     pub fn current_level(resources: &Resources) -> usize {
         resources.ladder.current
@@ -42,6 +42,10 @@ impl Ladder {
 
     pub fn reset(resources: &mut Resources) {
         resources.ladder.current = default();
+    }
+
+    pub fn is_last_level(resources: &Resources) -> bool {
+        resources.ladder.current + 1 == resources.ladder.levels.len()
     }
 
     pub fn next(resources: &mut Resources) -> bool {
@@ -55,6 +59,10 @@ impl Ladder {
 
     pub fn set_level(&mut self, ind: usize) {
         self.current = ind;
+    }
+
+    pub fn push_level(team: ReplicatedTeam, resources: &mut Resources) {
+        resources.ladder.levels.push(team);
     }
 }
 

@@ -26,7 +26,7 @@ fn default_team_slots() -> usize {
     3
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ReplicatedTeam {
     #[serde(flatten)]

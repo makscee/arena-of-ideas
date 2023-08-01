@@ -60,7 +60,22 @@ impl BattleSystem {
     pub fn enter_state(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         resources.tape_player.clear();
-        Self::open_curses_panel(resources);
+        if Ladder::is_last_level(resources) {
+            PanelsSystem::add_text_alert(
+                resources.options.colors.enemy,
+                &format!(
+                    "Level {}/{}",
+                    Ladder::current_level(resources) + 1,
+                    Ladder::count(resources)
+                ),
+                "Final Level!",
+                vec2::ZERO,
+                vec![PanelFooterButton::Start],
+                resources,
+            );
+        } else {
+            Self::open_curses_panel(resources);
+        }
     }
 
     pub fn open_curses_panel(resources: &mut Resources) {
@@ -164,33 +179,18 @@ impl BattleSystem {
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.total_score += resources.battle_data.last_score;
         let level = Ladder::current_level(resources) + 1;
+        Self::clear_world(world, resources);
+        SaveSystem::save(world, resources);
         let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
-            let score = resources.battle_data.last_score;
-            let difficulty = resources.battle_data.last_difficulty + 3;
             if Ladder::next(resources) {
                 resources.transition_state = GameState::Sacrifice;
-                // ShopSystem::change_g(score as i32, Some("Battle Score"), world, resources);
-                // ShopSystem::change_g(
-                //     difficulty as i32,
-                //     Some("Enemy Difficulty"),
-                //     world,
-                //     resources,
-                // );
             } else {
-                resources.transition_state = GameState::GameOver;
+                resources.transition_state = GameState::Victory;
+                return;
             }
-            let difficulty_text = match resources.battle_data.last_difficulty {
-                0 => "Easy",
-                1 => "Medium",
-                2 => "Hard",
-                _ => panic!(
-                    "Wrong difficulty index {}",
-                    resources.battle_data.last_difficulty
-                ),
-            };
             (
                 "Victory",
-                format!("Level {level} complete"),
+                format!("{level} levels complete!"),
                 vec![PanelFooterButton::Close],
                 resources.options.colors.victory,
             )
@@ -199,16 +199,14 @@ impl BattleSystem {
             (
                 "Defeat",
                 format!(
-                    "Game Over\nTotal score: {}",
+                    "Game Over\n{} levels complete",
                     resources.battle_data.total_score
                 ),
                 vec![PanelFooterButton::Restart],
                 resources.options.colors.defeat,
             )
         };
-        Self::clear_world(world, resources);
         PanelsSystem::add_text_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources);
-        SaveSystem::save(world, resources);
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {

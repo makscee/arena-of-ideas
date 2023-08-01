@@ -59,14 +59,13 @@ Build
     ~20 Total enemies @content {cm:2023-07-05T22:02:40}
     Limit slots buying {cm:2023-07-07T16:43:29}
     Simplified ladder format {start:2023-07-08T15:59:35} {cm:2023-07-08T18:06:38} {duration:02h07m}
+    Unnified Shop offers {cm:2023-07-25T22:31:03}
     Ladder @content
         ladder generation from heroes {cm:2023-07-17T21:36:10}
         single team ladder {cm:2023-07-25T14:59:37}
         iterative ladder generation {cm:2023-07-25T14:59:38}
-        automatic ladder generation
-        8-10 levels
-        Sacrifice to get slots?
-    Unnified Shop offers {cm:2023-07-25T22:31:03}
+        auto-ladder play mode {cm:2023-08-01T17:18:59}
+        alert "new enemy added" {cm:2023-08-01T17:19:03}
     Curses
         rank up enemies, no sacrifice
         buff enemies {cm:2023-07-26T20:21:26}
@@ -85,6 +84,8 @@ Build
         Buff apply focused
         Rank Up alert
     Balance buffs
+    Next enemy panel top-right
+    Sacrifice on demand
 Socials
     Build on itch.io
     Build post on reddit

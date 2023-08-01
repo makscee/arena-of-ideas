@@ -14,6 +14,7 @@ pub enum GameState {
     Gallery,
     Sacrifice,
     GameOver,
+    Victory,
     CustomGame,
 }
 
@@ -103,7 +104,7 @@ impl System for GameStateSystem {
                         .insert_float_ref("u_card".to_owned(), value);
                 }
             }
-            GameState::GameOver => {
+            GameState::GameOver | GameState::Victory => {
                 if resources.input_data.down_keys.contains(&Enter) {
                     resources.transition_state = GameState::Shop;
                 }
@@ -252,7 +253,10 @@ impl GameStateSystem {
             GameState::Gallery => {
                 GallerySystem::leave_state(resources);
             }
-            GameState::Sacrifice | GameState::MainMenu | GameState::CustomGame => {}
+            GameState::Sacrifice
+            | GameState::MainMenu
+            | GameState::CustomGame
+            | GameState::Victory => {}
         }
     }
 
@@ -286,81 +290,6 @@ impl GameStateSystem {
                 }
                 ShopSystem::enter(world, resources);
                 PanelsSystem::open_stats(world, resources);
-
-                // ShopSystem::show_buff_buy_panel(resources);
-
-                // let entity = resources
-                //     .hero_pool
-                //     .find_by_name("Havoc")
-                //     .unwrap()
-                //     .clone()
-                //     .unpack(
-                //         world,
-                //         resources,
-                //         0,
-                //         None,
-                //         TeamSystem::entity(&Faction::Team, world),
-                //     );
-                // SlotSystem::fill_gaps(Faction::Team, world);
-                // let mut node = Some(Node::default());
-                // Status::change_charges(entity, 2, "Vitality", &mut node, world, resources);
-                // resources.tape_player.tape.push_to_queue(
-                //     NodeCluster::new(node.unwrap().lock(NodeLockType::Empty)),
-                //     resources.tape_player.head,
-                // );
-
-                // ShopSystem::start_status_apply("Vitality".to_owned(), 3, world, resources);
-
-                // PanelsSystem::add_alert(
-                //     "Test no footer alert",
-                //     "This is a multiline\ntest no footer alert",
-                //     vec2::ZERO,
-                //     false,
-                //     resources,
-                // );
-                // PanelsSystem::add_alert(
-                //     "Test footer alert",
-                //     "This is a multiline\ntest footer\nalert",
-                //     vec2(-0.5, -0.5),
-                //     true,
-                //     resources,
-                // );
-                // PanelsSystem::add_alert(
-                //     "Test footer alert",
-                //     "This is a multiline\ntest footer\nalert",
-                //     vec2(-0.5, -0.5),
-                //     true,
-                //     resources,
-                // );
-                // PanelsSystem::add_alert(
-                //     "Test footer alert",
-                //     "This is a multiline\ntest footer\nalert",
-                //     vec2(-0.5, -0.5),
-                //     true,
-                //     resources,
-                // );
-                // PanelsSystem::add_alert(
-                //     "Test footer alert",
-                //     "This is a multiline\ntest footer\nalert",
-                //     vec2(-0.5, -0.5),
-                //     true,
-                //     resources,
-                // );
-
-                // let entity = UnitSystem::collect_faction(world, Faction::Shop)[0];
-                // ShopSystem::do_buy(entity, 1, resources, world);
-                // BonusEffectPool::load_widget(6, world, resources);
-                // ShopSystem::show_hero_buy_panel(resources);
-                // ShopSystem::show_battle_choice_widget(resources);
-
-                // let team = TeamSystem::entity(Faction::Team, world);
-                // resources
-                //     .hero_pool
-                //     .find_by_name("Berserker")
-                //     .unwrap()
-                //     .clone()
-                //     .unpack(world, resources, 1, None, team);
-
                 resources.camera.focus = Focus::Shop;
             }
             GameState::Battle => {
@@ -384,6 +313,31 @@ impl GameStateSystem {
             GameState::GameOver => {
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
+            }
+            GameState::Victory => {
+                resources.camera.focus = Focus::Shop;
+                GameOverSystem::init(world, resources);
+                let team = PackedTeam::pack(Faction::Team, world, resources);
+                let mut templates = vec![];
+                for _ in 0..10 {
+                    templates.push(EnemyPool::get_random_unit(resources));
+                }
+                let new_enemy =
+                    RatingSystem::generate_weakest_opponent(&team, templates, world, resources);
+                dbg!(&new_enemy);
+                PanelsSystem::add_text_alert(
+                    resources.options.colors.victory,
+                    "Victory",
+                    &format!(
+                        "All levels complete!\nNew enemy team added: {}",
+                        new_enemy.team.name
+                    ),
+                    vec2::ZERO,
+                    vec![PanelFooterButton::Restart],
+                    resources,
+                );
+                Ladder::push_level(new_enemy, resources);
+                Ladder::save(resources);
             }
             GameState::CustomGame => {
                 resources.camera.focus = Focus::Battle;

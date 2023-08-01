@@ -3,19 +3,30 @@
     "units": [
       {
         "name": "Bug",
-        "attack": 1,
+        "description": "",
         "health": 1,
+        "damage": 0,
+        "attack": 1,
         "house": "Enemy",
+        "trigger": {
+          "type": "Noop"
+        },
+        "statuses": [],
         "shader": {
           "path": "shaders/vfx/triangle.glsl",
           "parameters": {
-            "box": {
-              "size": [
-                0.4,
-                0.4
-              ]
-            },
+            "vertices": 3,
+            "instances": 1,
             "uniforms": {
+              "u_g_color_3": "#000000",
+              "u_g_alphas": [
+                1.0,
+                1.0,
+                0.0,
+                1.0
+              ],
+              "u_g_color_4": "#000000",
+              "u_g_color_2": "#000000",
               "u_rotation": 1.0,
               "u_g_points": [
                 -0.5,
@@ -23,115 +34,156 @@
                 0.3,
                 0.3
               ],
-              "u_g_alphas": [
-                1.0,
-                1.0,
-                0.0,
-                1.0
-              ],
               "u_g_color_1": "#000000",
-              "u_g_color_2": "#000000",
-              "u_g_color_3": "#000000",
-              "u_g_color_4": "#000000",
               "mapping": {
-                "u_g_color_1": {
+                "u_g_color_4": {
                   "type": "Uniform",
-                  "key": "u_house_color"
+                  "key": "u_faction_color"
                 },
                 "u_g_color_2": {
                   "type": "Uniform",
                   "key": "u_house_color"
                 },
-                "u_g_color_4": {
+                "u_g_color_1": {
                   "type": "Uniform",
-                  "key": "u_faction_color"
+                  "key": "u_house_color"
                 }
               }
+            },
+            "box": {
+              "pos": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                0.4,
+                0.4
+              ],
+              "center": [
+                0.0,
+                0.0
+              ],
+              "anchor": [
+                0.0,
+                0.0
+              ]
             }
           },
+          "layer": "Unit",
+          "order": 0,
+          "request_vars": [],
           "before": [
             {
               "path": "shaders/vfx/particle_emitter.glsl",
               "parameters": {
+                "vertices": 3,
+                "instances": 300,
                 "uniforms": {
-                  "u_g_color_1": "#000000",
-                  "u_g_color_2": "#ffffff",
-                  "u_g_color_3": "#ffffff",
-                  "u_g_color_4": "#aa3b08",
-                  "u_p_vel_center": 1.5,
-                  "u_p_scale_start": 0.6,
                   "u_p_scale_end": 0.2,
-                  "u_g_points": [
-                    0.0,
-                    0.2,
-                    0.2,
-                    1.0
-                  ],
                   "u_g_alphas": [
                     0.0,
                     1.0,
                     1.0,
                     0.0
                   ],
+                  "u_g_color_3": "#ffffff",
+                  "u_p_vel_center": 1.5,
+                  "u_g_points": [
+                    0.0,
+                    0.2,
+                    0.2,
+                    1.0
+                  ],
+                  "u_g_color_1": "#000000",
+                  "u_g_color_4": "#aa3b08",
+                  "u_g_color_2": "#ffffff",
+                  "u_p_scale_start": 0.6,
                   "mapping": {
-                    "u_g_color_2": {
-                      "type": "Uniform",
-                      "key": "u_faction_color"
-                    },
                     "u_g_color_3": {
                       "type": "Uniform",
                       "key": "u_house_color"
+                    },
+                    "u_g_color_2": {
+                      "type": "Uniform",
+                      "key": "u_faction_color"
                     }
                   }
                 },
-                "instances": 300
-              }
+                "box": {
+                  "pos": [
+                    0.0,
+                    0.0
+                  ],
+                  "size": [
+                    1.0,
+                    1.0
+                  ],
+                  "center": [
+                    0.0,
+                    0.0
+                  ],
+                  "anchor": [
+                    0.0,
+                    0.0
+                  ]
+                }
+              },
+              "layer": "Unit",
+              "order": 0,
+              "request_vars": [],
+              "before": [],
+              "after": []
             }
-          ]
-        }
+          ],
+          "after": []
+        },
+        "rank": 0
       }
-    ]
+    ],
+    "name": "unnamed",
+    "vars": {},
+    "ability_vars": {},
+    "statuses": [],
+    "slots": 3,
+    "replications": 0
   },
   {
-    "replications": 5,
     "units": [
       {
         "name": "Bug",
-        "attack": 1,
+        "description": "",
         "health": 1,
+        "damage": 0,
+        "attack": 1,
         "house": "Enemy",
+        "trigger": {
+          "type": "Noop"
+        },
+        "statuses": [],
         "shader": {
           "path": "shaders/vfx/triangle.glsl",
           "parameters": {
-            "box": {
-              "size": [
-                0.4,
-                0.4
-              ]
-            },
+            "vertices": 3,
+            "instances": 1,
             "uniforms": {
               "u_rotation": 1.0,
+              "u_g_color_1": "#000000",
+              "u_g_color_3": "#000000",
+              "u_g_color_4": "#000000",
               "u_g_points": [
                 -0.5,
                 -0.3,
                 0.3,
                 0.3
               ],
+              "u_g_color_2": "#000000",
               "u_g_alphas": [
                 1.0,
                 1.0,
                 0.0,
                 1.0
               ],
-              "u_g_color_1": "#000000",
-              "u_g_color_2": "#000000",
-              "u_g_color_3": "#000000",
-              "u_g_color_4": "#000000",
               "mapping": {
-                "u_g_color_1": {
-                  "type": "Uniform",
-                  "key": "u_house_color"
-                },
                 "u_g_color_2": {
                   "type": "Uniform",
                   "key": "u_house_color"
@@ -139,100 +191,158 @@
                 "u_g_color_4": {
                   "type": "Uniform",
                   "key": "u_faction_color"
+                },
+                "u_g_color_1": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
                 }
               }
+            },
+            "box": {
+              "pos": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                0.4,
+                0.4
+              ],
+              "center": [
+                0.0,
+                0.0
+              ],
+              "anchor": [
+                0.0,
+                0.0
+              ]
             }
           },
+          "layer": "Unit",
+          "order": 0,
+          "request_vars": [],
           "before": [
             {
               "path": "shaders/vfx/particle_emitter.glsl",
               "parameters": {
+                "vertices": 3,
+                "instances": 300,
                 "uniforms": {
-                  "u_g_color_1": "#000000",
-                  "u_g_color_2": "#ffffff",
                   "u_g_color_3": "#ffffff",
-                  "u_g_color_4": "#aa3b08",
-                  "u_p_vel_center": 1.5,
-                  "u_p_scale_start": 0.6,
-                  "u_p_scale_end": 0.2,
-                  "u_g_points": [
-                    0.0,
-                    0.2,
-                    0.2,
-                    1.0
-                  ],
                   "u_g_alphas": [
                     0.0,
                     1.0,
                     1.0,
                     0.0
                   ],
+                  "u_g_color_4": "#aa3b08",
+                  "u_p_scale_start": 0.6,
+                  "u_g_points": [
+                    0.0,
+                    0.2,
+                    0.2,
+                    1.0
+                  ],
+                  "u_g_color_1": "#000000",
+                  "u_g_color_2": "#ffffff",
+                  "u_p_scale_end": 0.2,
+                  "u_p_vel_center": 1.5,
                   "mapping": {
-                    "u_g_color_2": {
-                      "type": "Uniform",
-                      "key": "u_faction_color"
-                    },
                     "u_g_color_3": {
                       "type": "Uniform",
                       "key": "u_house_color"
+                    },
+                    "u_g_color_2": {
+                      "type": "Uniform",
+                      "key": "u_faction_color"
                     }
                   }
                 },
-                "instances": 300
-              }
+                "box": {
+                  "pos": [
+                    0.0,
+                    0.0
+                  ],
+                  "size": [
+                    1.0,
+                    1.0
+                  ],
+                  "center": [
+                    0.0,
+                    0.0
+                  ],
+                  "anchor": [
+                    0.0,
+                    0.0
+                  ]
+                }
+              },
+              "layer": "Unit",
+              "order": 0,
+              "request_vars": [],
+              "before": [],
+              "after": []
             }
-          ]
-        }
+          ],
+          "after": []
+        },
+        "rank": 0
       }
-    ]
+    ],
+    "name": "unnamed",
+    "vars": {},
+    "ability_vars": {},
+    "statuses": [],
+    "slots": 3,
+    "replications": 5
   },
   {
-    "replications": 4,
     "units": [
       {
         "name": "Snake",
-        "attack": 1,
-        "health": 1,
         "description": "Kill\nafter dealing\nany damage",
+        "health": 1,
+        "damage": 0,
+        "attack": 1,
         "house": "Enemy",
         "trigger": {
           "type": "AfterDamageDealt",
           "effect": {
-            "type": "Kill"
+            "type": "Kill",
+            "target": null,
+            "owner": null,
+            "after": null,
+            "vars": null
           }
         },
+        "statuses": [],
         "shader": {
           "path": "shaders/vfx/particle_emitter.glsl",
           "parameters": {
-            "box": {
-              "size": [
-                1.0,
-                1.0
-              ]
-            },
+            "vertices": 3,
+            "instances": 100,
             "uniforms": {
-              "u_g_color_1": "#8a8a8a",
               "u_g_color_2": "#000000",
+              "u_p_scale_start": 0.8,
+              "u_p_vel_circle_shift": 0.5,
+              "u_p_scale_end": 0.9,
+              "u_p_vel_gravity": -0.0,
               "u_g_color_3": "#4aff50",
               "u_g_color_4": "#def4e1",
-              "u_p_vel_center": 1.0,
-              "u_p_vel_gravity": -0.0,
-              "u_p_vel_circle": 0.5,
-              "u_p_vel_circle_mul": -9.0,
-              "u_p_vel_circle_shift": 0.5,
-              "u_p_scale_start": 0.8,
-              "u_p_scale_end": 0.9,
               "u_p_scale": 0.1,
-              "u_p_offset": [
-                0.0,
-                0.0
-              ],
               "u_g_points": [
                 0.3,
                 0.5,
                 0.6,
                 1.0
               ],
+              "u_p_offset": [
+                0.0,
+                0.0
+              ],
+              "u_p_vel_circle": 0.5,
+              "u_p_vel_center": 1.0,
+              "u_p_vel_circle_mul": -9.0,
+              "u_g_color_1": "#8a8a8a",
               "u_g_alphas": [
                 1.0,
                 0.5,
@@ -246,20 +356,177 @@
                 }
               }
             },
-            "instances": 100
-          }
-        }
+            "box": {
+              "pos": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                1.0,
+                1.0
+              ],
+              "center": [
+                0.0,
+                0.0
+              ],
+              "anchor": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "layer": "Unit",
+          "order": 0,
+          "request_vars": [],
+          "before": [],
+          "after": []
+        },
+        "rank": 0
       }
-    ]
+    ],
+    "name": "unnamed",
+    "vars": {},
+    "ability_vars": {},
+    "statuses": [],
+    "slots": 3,
+    "replications": 4
   },
   {
-    "replications": 4,
+    "units": [
+      {
+        "name": "Bane",
+        "description": "Ally Died:\napply Weakness +1 \nto random enemy",
+        "health": 4,
+        "damage": 0,
+        "attack": 2,
+        "house": "Enemy",
+        "trigger": {
+          "type": "AnyDeath",
+          "effect": {
+            "type": "If",
+            "condition": {
+              "type": "EqualsFaction",
+              "a": {
+                "type": "Owner"
+              },
+              "b": {
+                "type": "Target"
+              }
+            },
+            "then": {
+              "type": "UseAbility",
+              "ability": "Weakness",
+              "force": false,
+              "charges": {
+                "type": "Const",
+                "value": 1
+              },
+              "target": {
+                "type": "RandomUnit",
+                "faction": {
+                  "type": "Opposite",
+                  "faction": {
+                    "type": "Owner"
+                  }
+                },
+                "skip_self": false
+              },
+              "owner": null,
+              "after": null,
+              "vars": null
+            },
+            "else": null,
+            "target": null,
+            "owner": null,
+            "after": null,
+            "vars": null
+          }
+        },
+        "statuses": [],
+        "shader": {
+          "path": "shaders/vfx/particle_emitter.glsl",
+          "parameters": {
+            "vertices": 3,
+            "instances": 200,
+            "uniforms": {
+              "u_p_vel_circle_mul": 1.0,
+              "u_p_scale_start": 0.5,
+              "u_p_offset": [
+                0.0,
+                0.0
+              ],
+              "u_p_scale": 0.3,
+              "u_p_vel_center": 1.5,
+              "u_g_color_3": "#90005b",
+              "u_g_points": [
+                0.2,
+                0.3,
+                0.6,
+                1.0
+              ],
+              "u_p_vel_circle": 0.8,
+              "u_g_color_1": "#ffffff",
+              "u_p_vel_circle_shift": 30.0,
+              "u_p_scale_end": 0.5,
+              "u_g_color_2": "#000000",
+              "u_g_alphas": [
+                1.0,
+                1.5,
+                1.0,
+                1.0
+              ],
+              "u_p_vel_gravity": 0.0,
+              "u_g_color_4": "#000000",
+              "mapping": {
+                "u_g_color_2": {
+                  "type": "Uniform",
+                  "key": "u_house_color"
+                }
+              }
+            },
+            "box": {
+              "pos": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                1.0,
+                1.0
+              ],
+              "center": [
+                0.0,
+                0.0
+              ],
+              "anchor": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "layer": "Unit",
+          "order": 0,
+          "request_vars": [],
+          "before": [],
+          "after": []
+        },
+        "rank": 0
+      }
+    ],
+    "name": "Bane x9",
+    "vars": {},
+    "ability_vars": {},
+    "statuses": [],
+    "slots": 10,
+    "replications": 9
+  },
+  {
     "units": [
       {
         "name": "Havoc",
-        "attack": 1,
-        "health": 4,
         "description": "Before Death\ndeal 2 DMG\nto all enemies",
+        "health": 4,
+        "damage": 0,
+        "attack": 1,
         "house": "Enemy",
         "trigger": {
           "type": "BeforeDeath",
@@ -279,34 +546,58 @@
                 "type": "Const",
                 "value": 2
               },
+              "on_hit": null,
+              "source": "",
+              "target": null,
+              "owner": null,
               "after": {
-                "type": "ShowCurve"
-              }
-            }
+                "type": "ShowCurve",
+                "color": null,
+                "target": null,
+                "owner": null,
+                "after": null,
+                "vars": null
+              },
+              "vars": null
+            },
+            "skip_self": false,
+            "limit": null,
+            "target": null,
+            "owner": null,
+            "after": null,
+            "vars": null
           }
         },
+        "statuses": [
+          [
+            "Rebirth",
+            2
+          ]
+        ],
         "shader": {
           "path": "shaders/vfx/particle_emitter.glsl",
           "parameters": {
+            "vertices": 3,
+            "instances": 1000,
             "uniforms": {
-              "u_g_color_1": "#ffffff",
-              "u_g_color_2": "#000000",
-              "u_g_color_3": "#ffffff",
-              "u_g_color_4": "#aa3b08",
-              "u_p_vel_gravity": -1.5,
-              "u_p_vel_center": 1.5,
-              "u_g_points": [
-                0.0,
-                0.3,
-                0.6,
-                1.0
-              ],
               "u_g_alphas": [
                 1.0,
                 0.0,
                 1.0,
                 0.0
               ],
+              "u_g_color_4": "#aa3b08",
+              "u_g_color_3": "#ffffff",
+              "u_g_color_2": "#000000",
+              "u_g_color_1": "#ffffff",
+              "u_p_vel_gravity": -1.5,
+              "u_g_points": [
+                0.0,
+                0.3,
+                0.6,
+                1.0
+              ],
+              "u_p_vel_center": 1.5,
               "mapping": {
                 "u_g_color_2": {
                   "type": "Uniform",
@@ -318,93 +609,39 @@
                 }
               }
             },
-            "instances": 1000
-          }
-        }
-      }
-    ]
-  },
-  {
-    "replications": 6,
-    "units": [
-      {
-        "name": "Wolf",
-        "attack": 10,
-        "health": 10,
-        "house": "Enemy",
-        "shader": {
-          "path": "shaders/vfx/triangle.glsl",
-          "parameters": {
             "box": {
-              "size": [
-                0.65,
-                0.65
-              ]
-            },
-            "uniforms": {
-              "u_rotation": 1.0,
-              "u_g_points": [
-                -0.5,
-                -0.4,
-                -0.3,
-                0.2
-              ],
-              "u_g_alphas": [
-                1.0,
-                1.0,
-                1.0,
+              "pos": [
+                0.0,
                 0.0
               ],
-              "u_g_color_1": "#000000",
-              "u_g_color_2": "#8c8c8c",
-              "u_g_color_3": "#000000",
-              "u_g_color_4": "#000000",
-              "mapping": {
-                "u_g_color_1": {
-                  "type": "Uniform",
-                  "key": "u_house_color"
-                },
-                "u_g_color_4": {
-                  "type": "Uniform",
-                  "key": "u_faction_color"
-                }
-              }
+              "size": [
+                1.0,
+                1.0
+              ],
+              "center": [
+                0.0,
+                0.0
+              ],
+              "anchor": [
+                0.0,
+                0.0
+              ]
             }
           },
-          "before": [
-            {
-              "path": "shaders/vfx/particle_emitter.glsl",
-              "parameters": {
-                "uniforms": {
-                  "u_g_color_1": "#8c8c8c",
-                  "u_g_color_2": "#8c8c8c",
-                  "u_g_color_3": "#8c8c8c",
-                  "u_g_color_4": "#8c8c8c",
-                  "u_p_vel_center": 2.5,
-                  "u_p_vel_circle": 1.0,
-                  "u_p_vel_circle_shift": 20.0,
-                  "u_p_scale_start": 0.6,
-                  "u_p_scale_end": 0.2,
-                  "u_g_points": [
-                    0.0,
-                    0.2,
-                    0.2,
-                    1.0
-                  ],
-                  "u_g_alphas": [
-                    0.0,
-                    1.0,
-                    1.0,
-                    0.0
-                  ],
-                  "mapping": {}
-                },
-                "instances": 600
-              }
-            }
-          ]
-        }
+          "layer": "Unit",
+          "order": 0,
+          "request_vars": [],
+          "before": [],
+          "after": []
+        },
+        "rank": 0
       }
-    ]
+    ],
+    "name": "Havoc x5",
+    "vars": {},
+    "ability_vars": {},
+    "statuses": [],
+    "slots": 10,
+    "replications": 5
   }
 ]

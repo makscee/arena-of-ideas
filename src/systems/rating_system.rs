@@ -12,67 +12,6 @@ impl RatingSystem {
         PackedTeam::from_units(units, None)
     }
 
-    // pub fn generate_hero_ladder(world: &mut legion::World, resources: &mut Resources) {
-    //     const AMOUNT: usize = 45;
-    //     const CANDIDATES: usize = 10;
-
-    //     resources.logger.set_enabled(false);
-
-    //     let mut ladder: Vec<PackedTeam> = default();
-    //     ladder.push(PackedTeam::from_units(
-    //         vec![HeroPool::find_by_name("Bug", resources).unwrap().clone()],
-    //         None,
-    //     ));
-    //     while ladder.len() < AMOUNT {
-    //         let mut candidates = (0..CANDIDATES)
-    //             .map(|_| PackedTeam::from_units(vec![HeroPool::random(resources)], Some(MAX_SLOTS)))
-    //             .collect_vec();
-    //         for team in candidates.iter_mut() {
-    //             let mut cnt = 0;
-    //             loop {
-    //                 // let beat = ladder.iter().all(|x| {
-    //                 //     let (_, beat, _) =
-    //                 //         SimulationSystem::run_battle(&team, x, world, resources, None);
-    //                 //     beat
-    //                 // });
-    //                 let (_, beat, _) = SimulationSystem::run_battle(
-    //                     team,
-    //                     ladder.last().unwrap(),
-    //                     world,
-    //                     resources,
-    //                     None,
-    //                 );
-    //                 if beat {
-    //                     println!("Winner {team}");
-    //                     break;
-    //                 }
-    //                 cnt += 1;
-    //                 if cnt > 100 {
-    //                     error!("Too many strengthen iterations: {cnt}");
-    //                     break;
-    //                 }
-    //                 Self::strengthen(team, resources);
-    //                 println!("Strengthened {team}");
-    //             }
-    //         }
-    //         let mut ratings = Ratings::default();
-    //         Self::rate_teams_full(&candidates, &mut ratings, world, resources);
-    //         candidates.sort_by(|a, b| {
-    //             ratings
-    //                 .get_rating(&a.name)
-    //                 .total_cmp(&ratings.get_rating(&b.name))
-    //         });
-    //         ladder.push(candidates.remove(0));
-    //         println!("\nNew ladder team {}\n", ladder.last().unwrap());
-    //     }
-    //     println!("Ladder generated:");
-    //     for team in ladder.iter() {
-    //         println!("{team}");
-    //     }
-    //     Ladder::set_teams(ladder, resources);
-    //     Ladder::save(resources);
-    // }
-
     pub fn calculate_hero_ratings(world: &mut legion::World, resources: &mut Resources) {
         resources.logger.set_enabled(false);
 
@@ -142,6 +81,47 @@ impl RatingSystem {
         }
     }
 
+    pub fn generate_weakest_opponent(
+        team: &PackedTeam,
+        templates: Vec<PackedUnit>,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> ReplicatedTeam {
+        let mut teams = templates
+            .into_iter()
+            .map(|x| PackedTeam::from_units(vec![x], Some(10)))
+            .collect_vec();
+        let mut candidates: Vec<PackedTeam> = default();
+        while candidates.len() < 5 {
+            let mut candidate = Self::choose(&mut teams).unwrap();
+            let mut passed = false;
+            for _ in 0..3 {
+                let (_, beat) =
+                    SimulationSystem::run_battle(&candidate, &team, world, resources, None);
+                if beat {
+                    passed = true;
+                    break;
+                }
+                Self::strengthen(&mut candidate, resources);
+            }
+            if passed {
+                candidates.push(candidate);
+            } else {
+                teams.push(candidate);
+            }
+        }
+        let mut team = Self::choose(&mut candidates).unwrap();
+        let replications = team.units.len();
+        team.units = vec![team.units[0].clone()];
+        team.name = format!("{} x{replications}", team.name);
+        ReplicatedTeam { team, replications }
+    }
+
+    fn choose(teams: &mut Vec<PackedTeam>) -> Option<PackedTeam> {
+        let i = (0..teams.len()).choose(&mut thread_rng())?;
+        Some(teams.swap_remove(i))
+    }
+
     fn mutate(team: &mut PackedTeam, heroes: &Vec<PackedUnit>) {
         let before = team.name.clone();
         let rng = &mut thread_rng();
@@ -155,7 +135,7 @@ impl RatingSystem {
     }
 
     fn strengthen(team: &mut PackedTeam, resources: &Resources) {
-        const BUFF_CHANCE: f64 = 0.2;
+        const BUFF_CHANCE: f64 = 0.1;
         if team.units.len() < team.slots && (&mut thread_rng()).gen_bool(1.0 - BUFF_CHANCE) {
             let unit = HeroPool::random(resources);
             team.units.push(unit);
