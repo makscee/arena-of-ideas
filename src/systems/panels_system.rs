@@ -299,15 +299,6 @@ impl PanelsSystem {
             Ladder::current_level(resources) + 1,
             Ladder::count(resources)
         ));
-        let mut team_status = TeamSystem::get_state(Faction::Team, world)
-            .statuses
-            .iter()
-            .map(|(name, charges)| format!("{name} +{charges}"))
-            .join(" | ");
-        if team_status.is_empty() {
-            team_status = "none".to_owned();
-        }
-        texts.push(format!("team status: {team_status}"));
         texts.push(format!("score: {}", resources.battle_data.total_score));
         texts.join("\n")
     }
@@ -412,7 +403,6 @@ pub enum CardChoice {
 pub enum BuffTarget {
     Single { slot: Option<usize> },
     Aoe,
-    Team,
 }
 
 impl BuffTarget {
@@ -420,26 +410,22 @@ impl BuffTarget {
         match self {
             BuffTarget::Single { .. } => "Hero Buff".to_owned(),
             BuffTarget::Aoe => "Aoe Buff".to_owned(),
-            BuffTarget::Team => "Team Buff".to_owned(),
         }
     }
 
     pub fn random() -> BuffTarget {
         let rand: f32 = (&mut thread_rng()).gen_range(0.0..1.0);
-        if rand < 0.6 {
+        if rand < 0.8 {
             BuffTarget::Single { slot: None }
-        } else if rand < 0.9 {
-            BuffTarget::Aoe
         } else {
-            BuffTarget::Team
+            BuffTarget::Aoe
         }
     }
 
     pub fn cost(&self) -> usize {
         match self {
             BuffTarget::Single { .. } => 2,
-            BuffTarget::Aoe => 4,
-            BuffTarget::Team => 5,
+            BuffTarget::Aoe => 6,
         }
     }
 }
@@ -844,26 +830,7 @@ impl PanelFooterButton {
                                     let choice =
                                         resources.panels_data.choice_options.take().unwrap();
                                     ShopSystem::deduct_reroll_cost(world, resources);
-                                    match choice {
-                                        CardChoice::BuyHero { .. } => {
-                                            ShopSystem::show_hero_buy_panel(resources)
-                                        }
-                                        CardChoice::BuyBuff { target, .. } => match target {
-                                            BuffTarget::Single { .. } => {
-                                                ShopSystem::show_buff_buy_panel(resources)
-                                            }
-                                            BuffTarget::Aoe => {
-                                                ShopSystem::show_aoe_buff_buy_panel(resources)
-                                            }
-                                            BuffTarget::Team => {
-                                                ShopSystem::show_team_buff_buy_panel(resources)
-                                            }
-                                        },
-                                        CardChoice::ShopOffers { .. } => {
-                                            ShopSystem::show_offers_panel(resources)
-                                        }
-                                        _ => panic!("Can't reroll {choice:?}"),
-                                    }
+                                    ShopSystem::show_offers_panel(resources)
                                 }
                             }
                         }

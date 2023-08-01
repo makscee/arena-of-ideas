@@ -13,28 +13,22 @@
             "team_prefix": "Prickly"
         },
         {
-            "name": "Volatility",
-            "charges": 1,
-            "rarity": "Common",
-            "team_prefix": "Volatile"
-        },
-        {
             "name": "Strength",
             "charges": 1,
             "rarity": "Rare",
             "team_prefix": "Strong"
         },
         {
-            "name": "Martyr",
-            "charges": 1,
-            "rarity": "Rare",
-            "team_prefix": "Holy"
-        },
-        {
             "name": "Defense",
             "charges": 1,
-            "rarity": "Epic",
+            "rarity": "Rare",
             "team_prefix": "Hard"
+        },
+        {
+            "name": "Volatility",
+            "charges": 1,
+            "rarity": "Epic",
+            "team_prefix": "Volatile"
         },
         {
             "name": "Shield",
@@ -47,6 +41,12 @@
             "charges": 1,
             "rarity": "Legendary",
             "team_prefix": "Splashing"
+        },
+        {
+            "name": "Martyr",
+            "charges": 1,
+            "rarity": "Legendary",
+            "team_prefix": "Holy"
         },
         {
             "name": "Rebirth",
