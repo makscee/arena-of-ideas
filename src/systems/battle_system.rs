@@ -60,22 +60,7 @@ impl BattleSystem {
     pub fn enter_state(world: &mut legion::World, resources: &mut Resources) {
         resources.camera.focus = Focus::Battle;
         resources.tape_player.clear();
-        if Ladder::is_last_level(resources) {
-            PanelsSystem::add_text_alert(
-                resources.options.colors.enemy,
-                &format!(
-                    "Level {}/{}",
-                    Ladder::current_level(resources) + 1,
-                    Ladder::count(resources)
-                ),
-                "Final Level!",
-                vec2::ZERO,
-                vec![PanelFooterButton::Start],
-                resources,
-            );
-        } else {
-            Self::open_curses_panel(resources);
-        }
+        Self::open_curses_panel(resources);
     }
 
     pub fn open_curses_panel(resources: &mut Resources) {
@@ -157,7 +142,7 @@ impl BattleSystem {
             resources.options.colors.enemy,
             &format!(
                 "Level {}/{}",
-                Ladder::current_level(resources) + 1,
+                Ladder::current_ind(resources) + 1,
                 Ladder::count(resources)
             ),
             shader,
@@ -176,26 +161,46 @@ impl BattleSystem {
     }
 
     pub fn finish_ladder_battle(world: &mut legion::World, resources: &mut Resources) {
+        resources.tape_player.clear();
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.total_score += resources.battle_data.last_score;
-        let level = Ladder::current_level(resources) + 1;
-        Self::clear_world(world, resources);
+        let level = Ladder::current_ind(resources) + 1;
         SaveSystem::save(world, resources);
         let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
-            if Ladder::next(resources) {
-                resources.transition_state = GameState::Shop;
-            } else {
-                resources.transition_state = GameState::Victory;
-                return;
+            fn input_handler(
+                event: HandleEvent,
+                _: legion::Entity,
+                _: &mut Shader,
+                _: &mut legion::World,
+                resources: &mut Resources,
+            ) {
+                match event {
+                    HandleEvent::Click => {
+                        resources.transition_state = GameState::Shop;
+                    }
+                    _ => {}
+                }
             }
-            (
-                "Victory",
-                format!("{level} levels complete!"),
-                vec![PanelFooterButton::Close],
-                resources.options.colors.victory,
-            )
+            let buttons = vec![PanelFooterButton::Custom {
+                name: "Continue".to_owned(),
+                handler: input_handler,
+            }];
+            if Ladder::next(resources) {
+                (
+                    "Victory",
+                    format!("Level {level} complete!"),
+                    buttons,
+                    resources.options.colors.victory,
+                )
+            } else {
+                (
+                    "Victory",
+                    format!("All {level} levels complete!\nNew level will be added to ladder.\nThis may take time..."),
+                    buttons,
+                    resources.options.colors.victory,
+                )
+            }
         } else {
-            resources.transition_state = GameState::GameOver;
             (
                 "Defeat",
                 format!(

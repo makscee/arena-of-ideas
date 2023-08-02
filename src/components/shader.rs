@@ -116,19 +116,19 @@ impl Shader {
     }
 
     pub fn get_int(&self, key: &str) -> i32 {
-        self.parameters.uniforms.try_get_int(key).unwrap()
+        self.parameters.uniforms.try_get_int(key).expect(key)
     }
 
     pub fn get_float(&self, key: &str) -> f32 {
-        self.parameters.uniforms.try_get_float(key).unwrap()
+        self.parameters.uniforms.try_get_float(key).expect(key)
     }
 
     pub fn get_vec2(&self, key: &str) -> vec2<f32> {
-        self.parameters.uniforms.try_get_vec2(key).unwrap()
+        self.parameters.uniforms.try_get_vec2(key).expect(key)
     }
 
     pub fn get_string(&self, key: &str) -> String {
-        self.parameters.uniforms.try_get_string(key).unwrap()
+        self.parameters.uniforms.try_get_string(key).expect(key)
     }
 
     pub fn map_key_to_key(mut self, from: &str, to: &str) -> Self {

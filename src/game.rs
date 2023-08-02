@@ -49,6 +49,7 @@ impl Game {
         ShopData::load_pool_full(resources);
         world.clear();
         PanelsSystem::clear(resources);
+        resources.camera.focus = Focus::Shop;
     }
 
     pub fn restart(world: &mut legion::World, resources: &mut Resources) {

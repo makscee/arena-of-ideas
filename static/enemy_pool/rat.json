@@ -1,7 +1,7 @@
 {
     "name": "Rat",
-    "attack": 3,
-    "health": 3,
+    "attack": 5,
+    "health": 5,
     "house": "Enemy",
     "shader": {
         "path": "shaders/vfx/triangle.glsl",

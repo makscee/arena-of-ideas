@@ -15,7 +15,7 @@ impl SaveSystem {
         let team = PackedTeam::pack(Faction::Team, world, resources);
         let save = SaveData {
             team,
-            level: Ladder::current_level(resources),
+            level: Ladder::current_ind(resources),
         };
         let save = serde_json::to_string_pretty(&save).unwrap();
         match write(path(), save) {

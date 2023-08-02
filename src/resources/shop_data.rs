@@ -11,6 +11,7 @@ pub struct ShopData {
     pub level_extensions: Vec<Vec<PackedUnit>>,
     pub load_new_hero: bool,
     pub status_apply: Option<(String, i32, BuffTarget)>,
+    pub current_team_size: usize,
 }
 
 impl ShopData {

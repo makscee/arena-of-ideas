@@ -34,7 +34,7 @@ thread_local!(pub static OPTIONS_COLORS: RefCell<HashMap<String, Rgba<f32>>> = R
 impl FileWatcherLoader for Options {
     fn load(resources: &mut Resources, _: &PathBuf, _: &mut FileWatcherSystem) {
         resources.options = Self::do_load();
-        resources.transition_state = GameState::MainMenu;
+        resources.transition_state = GameState::Intro;
     }
 }
 
@@ -166,7 +166,8 @@ pub struct Floats {
 
 #[derive(Deserialize, Debug)]
 pub struct Uniforms {
-    pub ui_button: ShaderUniforms,
+    pub shop_top_button: ShaderUniforms,
+    pub main_menu_button: ShaderUniforms,
 }
 
 #[derive(Deserialize, Debug)]

@@ -1,6 +1,6 @@
 {
     "player_team_name": "Dorks",
-    "initial_state": "Shop",
+    "initial_state": "MainMenu",
     "rate_heroes": false,
     "generate_ladder": false,
     "rewind_speed": 10.0,
@@ -2003,7 +2003,7 @@
         "slot_info_offset": 2.0
     },
     "uniforms": {
-        "ui_button": {
+        "shop_top_button": {
             "u_scale": 0.35,
             "u_index_offset": [
                 1.2,
@@ -2012,6 +2012,18 @@
             "u_position": [
                 0.0,
                 0.9
+            ],
+            "u_ui": 1
+        },
+        "main_menu_button": {
+            "u_scale": 0.35,
+            "u_index_offset": [
+                0.0,
+                -0.5
+            ],
+            "u_position": [
+                0.0,
+                0.0
             ],
             "u_ui": 1
         }

@@ -1,22 +1,34 @@
 use super::*;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Ladder {
+    #[serde(skip)]
     current: usize,
+    pub base: Vec<ReplicatedTeam>,
     pub levels: Vec<ReplicatedTeam>,
 }
 
 impl Ladder {
     pub fn start_next_battle(world: &mut legion::World, resources: &mut Resources) {
         let light = PackedTeam::pack(Faction::Team, world, resources);
-        let dark = resources
-            .ladder
-            .levels
-            .get(Self::current_level(resources))
-            .unwrap()
-            .clone();
+        let dark = Self::current_team(resources);
         BattleSystem::init_battle(&light, &dark.into(), world, resources);
         GameStateSystem::set_transition(GameState::Battle, resources);
+    }
+
+    pub fn generate_next_level(
+        team: &PackedTeam,
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) {
+        let mut templates = vec![];
+        for _ in 0..10 {
+            templates.push(EnemyPool::get_random_unit(resources));
+        }
+        let new_enemy = RatingSystem::generate_weakest_opponent(team, templates, world, resources);
+        dbg!(&new_enemy);
+        Ladder::push_level(new_enemy, resources);
+        Ladder::save(resources);
     }
 
     pub fn get_score(world: &legion::World) -> usize {
@@ -29,14 +41,28 @@ impl Ladder {
 
     pub fn save(resources: &Resources) {
         let path = static_path().join("ladder.json");
-        let data = serde_json::to_string_pretty(&resources.ladder.levels).unwrap();
+        let data = serde_json::to_string_pretty(&resources.ladder).unwrap();
         match std::fs::write(&path, data) {
             Ok(_) => debug!("Save ladder to {:?}", &path),
             Err(error) => error!("Can't save ladder: {}", error),
         }
     }
 
-    pub fn current_level(resources: &Resources) -> usize {
+    pub fn current_team(resources: &Resources) -> PackedTeam {
+        let ind = Self::current_ind(resources);
+        resources
+            .ladder
+            .base
+            .iter()
+            .chain(resources.ladder.levels.iter())
+            .skip(ind)
+            .next()
+            .unwrap()
+            .clone()
+            .into()
+    }
+
+    pub fn current_ind(resources: &Resources) -> usize {
         resources.ladder.current
     }
 
@@ -45,16 +71,20 @@ impl Ladder {
     }
 
     pub fn is_last_level(resources: &Resources) -> bool {
-        resources.ladder.current + 1 == resources.ladder.levels.len()
+        resources.ladder.current + 1 == Self::count(resources)
     }
 
     pub fn next(resources: &mut Resources) -> bool {
         resources.ladder.current += 1;
-        resources.ladder.current < resources.ladder.levels.len()
+        resources.ladder.current < Self::count(resources)
+    }
+
+    pub fn need_new_level(resources: &Resources) -> bool {
+        resources.ladder.current == Self::count(resources)
     }
 
     pub fn count(resources: &Resources) -> usize {
-        resources.ladder.levels.len()
+        resources.ladder.levels.len() + resources.ladder.base.len()
     }
 
     pub fn set_level(&mut self, ind: usize) {
@@ -71,7 +101,7 @@ impl FileWatcherLoader for Ladder {
         watcher.watch_file(path, Box::new(Self::load));
         debug!("Load ladder {path:?}");
         let prev_current = resources.ladder.current;
-        resources.ladder.levels = futures::executor::block_on(load_json(path)).unwrap();
+        resources.ladder = futures::executor::block_on(load_json(path)).unwrap();
         resources.ladder.current = prev_current;
         debug!(
             "Loaded {} levels, current level {prev_current}",

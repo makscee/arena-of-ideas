@@ -44,7 +44,7 @@ impl ShopSystem {
                 .into_iter()
                 .map(|x| (x, BuffTarget::random()))
                 .collect_vec();
-            if Ladder::current_level(resources) == 0 {
+            if Ladder::current_ind(resources) == 0 {
                 buffs.clear();
             }
             resources.panels_data.removed_inds = default();
@@ -62,6 +62,8 @@ impl ShopSystem {
         let team = TeamSystem::entity(Faction::Team, world);
         unit.unpack(world, resources, 0, None, team);
         SlotSystem::fill_gaps(Faction::Team, world);
+        resources.shop_data.current_team_size =
+            UnitSystem::collect_faction(world, Faction::Team).len();
     }
 
     fn refresh_tape(world: &mut legion::World, resources: &mut Resources) {
@@ -79,7 +81,7 @@ impl ShopSystem {
     }
 
     pub fn is_just_started(world: &legion::World, resources: &Resources) -> bool {
-        Ladder::current_level(resources) == 0
+        Ladder::current_ind(resources) == 0
             && UnitSystem::collect_faction(world, Faction::Team).is_empty()
     }
 
@@ -161,27 +163,33 @@ impl ShopSystem {
     }
 
     pub fn level_g(resources: &Resources) -> usize {
-        (resources.options.start_g + Ladder::current_level(resources)).min(resources.options.max_g)
+        (resources.options.start_g + Ladder::current_ind(resources)).min(resources.options.max_g)
     }
 
     pub fn enter(from: GameState, world: &mut legion::World, resources: &mut Resources) {
-        let level = Ladder::current_level(resources);
+        if Ladder::need_new_level(resources) {
+            let team = PackedTeam::pack(Faction::Team, world, resources);
+            Ladder::generate_next_level(&team, world, resources);
+        }
+        resources.shop_data.current_team_size =
+            UnitSystem::collect_faction(world, Faction::Team).len();
+        let level = Ladder::current_ind(resources);
         WorldSystem::get_state_mut(world)
             .vars
             .set_int(&VarName::Level, level as i32);
         Self::create_battle_button(resources);
         if from == GameState::Battle {
-            if Ladder::current_level(resources) > 0 {
+            if Ladder::current_ind(resources) > 0 {
                 Self::create_sacrifice_button(resources);
-                SlotSystem::add_slots_buttons(
-                    Faction::Team,
-                    "Rank Up",
-                    Some("u_filled"),
-                    None,
-                    None,
-                    world,
-                    resources,
-                );
+                // SlotSystem::add_slots_buttons(
+                //     Faction::Team,
+                //     "Rank Up",
+                //     Some("u_filled"),
+                //     None,
+                //     None,
+                //     world,
+                //     resources,
+                // );
             }
             ShopData::load_level(resources, level);
         }
@@ -245,7 +253,7 @@ impl ShopSystem {
         let uniforms = resources
             .options
             .uniforms
-            .ui_button
+            .shop_top_button
             .clone()
             .insert_int("u_index".to_owned(), 1);
         Widget::Button {
@@ -307,7 +315,7 @@ impl ShopSystem {
         let uniforms = resources
             .options
             .uniforms
-            .ui_button
+            .shop_top_button
             .clone()
             .insert_int("u_index".to_owned(), -1);
         Widget::Button {

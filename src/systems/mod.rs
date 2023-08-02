@@ -86,6 +86,7 @@ impl Game {
     pub fn create_systems(_: &mut Resources) -> Vec<Box<dyn System>> {
         let mut global_systems: Vec<Box<dyn System>> = Vec::default();
         let mut game_state = GameStateSystem::new();
+        game_state.add_systems(GameState::Intro, vec![]);
         game_state.add_systems(GameState::MainMenu, vec![]);
         game_state.add_systems(GameState::Battle, vec![Box::new(BattleSystem::new())]);
         game_state.add_systems(GameState::CustomGame, vec![]);

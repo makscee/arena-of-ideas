@@ -47,7 +47,7 @@ impl SacrificeSystem {
             update_handler: None,
             pre_update_handler: Some(update_handler),
             options: &resources.options,
-            uniforms: resources.options.uniforms.ui_button.clone(),
+            uniforms: resources.options.uniforms.shop_top_button.clone(),
             shader: None,
             entity,
             hover_hints: vec![],

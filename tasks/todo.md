@@ -66,7 +66,7 @@ Build
         iterative ladder generation {cm:2023-07-25T14:59:38}
         auto-ladder play mode {cm:2023-08-01T17:18:59}
         alert "new enemy added" {cm:2023-08-01T17:19:03}
-        separate initial from generated
+        separate initial from generated {cm:2023-08-02T19:02:04}
     Curses
         rank up enemies, no sacrifice
         buff enemies {cm:2023-07-26T20:21:26}
@@ -83,10 +83,13 @@ Build
     Slot number indicator {cm:2023-07-31T17:03:08}
     UI/UX
         Buff apply focused
-        Rank Up alert
         Next enemy panel top-right
     Balance buffs {cm:2023-08-01T17:25:04}
     Sacrifice on demand {cm:2023-08-01T18:29:22}
+    Main Menu {cm:2023-08-02T19:01:37}
+        resume ladder {cm:2023-08-02T19:01:40}
+        new ladder {cm:2023-08-02T19:01:41}
+    Continuous ladder generation {cm:2023-08-02T19:01:27}
 Socials
     Build on itch.io
     Build post on reddit

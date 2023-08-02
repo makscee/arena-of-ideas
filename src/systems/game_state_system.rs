@@ -16,22 +16,23 @@ pub enum GameState {
     GameOver,
     Victory,
     CustomGame,
+    Intro,
 }
 
 impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if resources.input_data.down_keys.contains(&R) {
-            resources.transition_state = GameState::MainMenu;
-            resources.tape_player.head = 0.0;
+            Game::restart(world, resources);
         }
         match resources.current_state {
-            GameState::MainMenu => {
+            GameState::Intro => {
                 if resources.options.custom_game.enable {
                     resources.transition_state = GameState::CustomGame;
                 } else {
                     resources.transition_state = resources.options.initial_state;
                 }
             }
+            GameState::MainMenu => {}
             GameState::Battle => {
                 if resources.tape_player.tape.length() == 0.0 {
                     resources.tape_player.tape.persistent_node =
@@ -44,7 +45,9 @@ impl System for GameStateSystem {
                     if resources.input_data.down_keys.contains(&Escape) {
                         resources.tape_player.head = resources.tape_player.tape.length() - 0.5;
                     }
-                    if resources.tape_player.tape.length() < resources.tape_player.head {
+                    if resources.tape_player.tape.length() > 0.0
+                        && resources.tape_player.tape.length() < resources.tape_player.head
+                    {
                         BattleSystem::finish_ladder_battle(world, resources);
                     }
                 }
@@ -242,6 +245,7 @@ impl GameStateSystem {
                 ShopSystem::leave(world, resources);
             }
             GameState::Battle => {
+                BattleSystem::clear_world(world, resources);
                 resources.tape_player.clear();
                 Event::BattleEnd.send(world, resources);
                 Event::ShopStart.send(world, resources);
@@ -256,7 +260,8 @@ impl GameStateSystem {
             GameState::Sacrifice
             | GameState::MainMenu
             | GameState::CustomGame
-            | GameState::Victory => {}
+            | GameState::Victory
+            | GameState::Intro => {}
         }
     }
 
@@ -270,9 +275,107 @@ impl GameStateSystem {
         SlotSystem::handle_state_enter(to, world);
         match to {
             GameState::MainMenu => {
-                Game::restart(world, resources);
+                PanelsSystem::close_stats(resources);
+                fn new_solo_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    _: &mut Shader,
+                    _: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if resources
+                                .tape_player
+                                .tape
+                                .close_panels(entity, resources.tape_player.head)
+                            {
+                                GameStateSystem::set_transition(GameState::Shop, resources);
+                                resources.ladder.levels.clear();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                fn resume_solo_handler(
+                    event: HandleEvent,
+                    entity: legion::Entity,
+                    shader: &mut Shader,
+                    _: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    match event {
+                        HandleEvent::Click => {
+                            if shader.is_active()
+                                && resources
+                                    .tape_player
+                                    .tape
+                                    .close_panels(entity, resources.tape_player.head)
+                            {
+                                GameStateSystem::set_transition(GameState::Shop, resources);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                fn resume_pre_update(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    _: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    shader.set_active(!resources.ladder.levels.is_empty());
+                }
+
+                let entity = new_entity();
+                let uniforms = resources
+                    .options
+                    .uniforms
+                    .main_menu_button
+                    .clone()
+                    .insert_int("u_index".to_owned(), 0);
+                Widget::Button {
+                    text: format!("Resume Ladder ({})", Ladder::count(resources)),
+                    color: None,
+                    input_handler: resume_solo_handler,
+                    update_handler: None,
+                    pre_update_handler: Some(resume_pre_update),
+                    options: &resources.options,
+                    uniforms,
+                    shader: None,
+                    hover_hints: default(),
+                    entity,
+                }
+                .generate_node()
+                .lock(NodeLockType::Empty)
+                .push_as_panel(entity, resources);
+
+                let entity = new_entity();
+                let uniforms = resources
+                    .options
+                    .uniforms
+                    .main_menu_button
+                    .clone()
+                    .insert_int("u_index".to_owned(), 1);
+                Widget::Button {
+                    text: "New Ladder".to_owned(),
+                    color: None,
+                    input_handler: new_solo_handler,
+                    update_handler: None,
+                    pre_update_handler: None,
+                    options: &resources.options,
+                    uniforms,
+                    shader: None,
+                    hover_hints: default(),
+                    entity,
+                }
+                .generate_node()
+                .lock(NodeLockType::Empty)
+                .push_as_panel(entity, resources);
             }
             GameState::Shop => {
+                PanelsSystem::close_all_alerts(resources);
                 if from == GameState::MainMenu {
                     ShopSystem::init_game(world, resources);
                     SlotSystem::create_entries(world, resources);
@@ -317,27 +420,6 @@ impl GameStateSystem {
             GameState::Victory => {
                 resources.camera.focus = Focus::Shop;
                 GameOverSystem::init(world, resources);
-                let team = PackedTeam::pack(Faction::Team, world, resources);
-                let mut templates = vec![];
-                for _ in 0..10 {
-                    templates.push(EnemyPool::get_random_unit(resources));
-                }
-                let new_enemy =
-                    RatingSystem::generate_weakest_opponent(&team, templates, world, resources);
-                dbg!(&new_enemy);
-                PanelsSystem::add_text_alert(
-                    resources.options.colors.victory,
-                    "Victory",
-                    &format!(
-                        "All levels complete!\nNew enemy team added: {}",
-                        new_enemy.team.name
-                    ),
-                    vec2::ZERO,
-                    vec![PanelFooterButton::Restart],
-                    resources,
-                );
-                Ladder::push_level(new_enemy, resources);
-                Ladder::save(resources);
             }
             GameState::CustomGame => {
                 resources.camera.focus = Focus::Battle;
@@ -363,6 +445,7 @@ impl GameStateSystem {
                 debug!("Battle result: {result}");
                 resources.tape_player.tape = tape;
             }
+            GameState::Intro => {}
         }
     }
 

@@ -291,12 +291,16 @@ impl PanelsSystem {
         resources.panels_data.stats = Some(panel);
     }
 
+    pub fn close_stats(resources: &mut Resources) {
+        resources.panels_data.stats = None;
+    }
+
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
         let mut texts = Vec::default();
         texts.push(format!("g: {}", ShopSystem::get_g(world)));
         texts.push(format!(
             "level: {}/{}",
-            Ladder::current_level(resources) + 1,
+            Ladder::current_ind(resources) + 1,
             Ladder::count(resources)
         ));
         texts.push(format!("score: {}", resources.battle_data.total_score));
@@ -339,6 +343,7 @@ impl PanelsSystem {
         resources.panels_data.alert.clear();
         resources.panels_data.push.clear();
         resources.panels_data.hint.clear();
+        resources.panels_data.removed_inds.clear();
         resources.panels_data.stats = None;
         resources.panels_data.choice_options = None;
         resources.panels_data.chosen_ind = None;
@@ -759,12 +764,9 @@ impl PanelFooterButton {
                 ) {
                     match event {
                         HandleEvent::Click => {
-                            let cost = shader.get_int("u_cost");
-                            let index = shader.get_int("u_index") as usize;
-                            if ShopSystem::get_g(world) >= cost
-                                && !resources.panels_data.removed_inds.contains(&index)
-                            {
+                            if PanelFooterButton::buy_check(shader, world, resources) {
                                 if let Some(choice) = resources.panels_data.choice_options.clone() {
+                                    let index = shader.get_int("u_index") as usize;
                                     choice.do_choose(index, world, resources);
                                 }
                             }
@@ -908,8 +910,41 @@ impl PanelFooterButton {
         }
     }
 
+    fn buy_check(shader: &Shader, world: &legion::World, resources: &Resources) -> bool {
+        let cost = shader.get_int("u_cost");
+        let index = shader.get_int("u_index") as usize;
+        let check = if let Some(choice) = resources.panels_data.choice_options.clone() {
+            match &choice {
+                CardChoice::ShopOffers { units, .. } => {
+                    index < units.len()
+                        && TeamSystem::get_state(Faction::Team, world)
+                            .get_int(&VarName::Slots, world) as usize
+                            > resources.shop_data.current_team_size
+                }
+                _ => true,
+            }
+        } else {
+            true
+        };
+        check
+            && ShopSystem::get_g(world) >= cost
+            && !resources.panels_data.removed_inds.contains(&index)
+    }
+
     pub fn get_update_handler(&self) -> Option<Handler> {
         match self {
+            PanelFooterButton::Buy { .. } => {
+                fn update_handler(
+                    _: HandleEvent,
+                    _: legion::Entity,
+                    shader: &mut Shader,
+                    world: &mut legion::World,
+                    resources: &mut Resources,
+                ) {
+                    shader.set_active(PanelFooterButton::buy_check(shader, world, resources));
+                }
+                Some(update_handler)
+            }
             PanelFooterButton::Accept => {
                 fn update_handler(
                     _: HandleEvent,
@@ -928,26 +963,9 @@ impl PanelFooterButton {
                     _: legion::Entity,
                     shader: &mut Shader,
                     world: &mut legion::World,
-                    resources: &mut Resources,
+                    _: &mut Resources,
                 ) {
                     shader.set_active(ShopSystem::is_reroll_affordable(world));
-                }
-                Some(update_handler)
-            }
-            PanelFooterButton::Buy { .. } => {
-                fn update_handler(
-                    _: HandleEvent,
-                    _: legion::Entity,
-                    shader: &mut Shader,
-                    world: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    let cost = shader.get_int("u_cost");
-                    let index = shader.get_int("u_index") as usize;
-                    shader.set_active(
-                        ShopSystem::get_g(world) >= cost
-                            && !resources.panels_data.removed_inds.contains(&index),
-                    );
                 }
                 Some(update_handler)
             }
