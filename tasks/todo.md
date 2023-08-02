@@ -90,6 +90,7 @@ Build
         resume ladder {cm:2023-08-02T19:01:40}
         new ladder {cm:2023-08-02T19:01:41}
     Continuous ladder generation {cm:2023-08-02T19:01:27}
+    Move extra ldder into save
 Socials
     Build on itch.io
     Build post on reddit

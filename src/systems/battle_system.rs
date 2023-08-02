@@ -195,7 +195,7 @@ impl BattleSystem {
             } else {
                 (
                     "Victory",
-                    format!("All {level} levels complete!\nNew level will be added to ladder.\nThis may take time..."),
+                    format!("All {level} levels complete!\nNew level will be added to ladder."),
                     buttons,
                     resources.options.colors.victory,
                 )

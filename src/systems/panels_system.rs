@@ -916,8 +916,8 @@ impl PanelFooterButton {
         let check = if let Some(choice) = resources.panels_data.choice_options.clone() {
             match &choice {
                 CardChoice::ShopOffers { units, .. } => {
-                    index < units.len()
-                        && TeamSystem::get_state(Faction::Team, world)
+                    index >= units.len()
+                        || TeamSystem::get_state(Faction::Team, world)
                             .get_int(&VarName::Slots, world) as usize
                             > resources.shop_data.current_team_size
                 }
