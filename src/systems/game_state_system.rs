@@ -73,9 +73,6 @@ impl System for GameStateSystem {
                 if resources.input_data.down_keys.contains(&L) {
                     SaveSystem::load(world, resources);
                 }
-                if resources.input_data.down_keys.contains(&S) {
-                    SaveSystem::save(world, resources);
-                }
                 if resources.input_data.down_keys.contains(&X) {
                     GameStateSystem::set_transition(GameState::Sacrifice, resources);
                 }
@@ -275,118 +272,18 @@ impl GameStateSystem {
         SlotSystem::handle_state_enter(to, world);
         match to {
             GameState::MainMenu => {
-                PanelsSystem::close_stats(resources);
-                fn new_solo_handler(
-                    event: HandleEvent,
-                    entity: legion::Entity,
-                    _: &mut Shader,
-                    _: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    match event {
-                        HandleEvent::Click => {
-                            if resources
-                                .tape_player
-                                .tape
-                                .close_panels(entity, resources.tape_player.head)
-                            {
-                                GameStateSystem::set_transition(GameState::Shop, resources);
-                                resources.ladder.levels.clear();
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                fn resume_solo_handler(
-                    event: HandleEvent,
-                    entity: legion::Entity,
-                    shader: &mut Shader,
-                    _: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    match event {
-                        HandleEvent::Click => {
-                            if shader.is_active()
-                                && resources
-                                    .tape_player
-                                    .tape
-                                    .close_panels(entity, resources.tape_player.head)
-                            {
-                                GameStateSystem::set_transition(GameState::Shop, resources);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                fn resume_pre_update(
-                    _: HandleEvent,
-                    _: legion::Entity,
-                    shader: &mut Shader,
-                    _: &mut legion::World,
-                    resources: &mut Resources,
-                ) {
-                    shader.set_active(!resources.ladder.levels.is_empty());
-                }
-
-                let entity = new_entity();
-                let uniforms = resources
-                    .options
-                    .uniforms
-                    .main_menu_button
-                    .clone()
-                    .insert_int("u_index".to_owned(), 0);
-                Widget::Button {
-                    text: format!("Resume Ladder ({})", Ladder::count(resources)),
-                    color: None,
-                    input_handler: resume_solo_handler,
-                    update_handler: None,
-                    pre_update_handler: Some(resume_pre_update),
-                    options: &resources.options,
-                    uniforms,
-                    shader: None,
-                    hover_hints: default(),
-                    entity,
-                }
-                .generate_node()
-                .lock(NodeLockType::Empty)
-                .push_as_panel(entity, resources);
-
-                let entity = new_entity();
-                let uniforms = resources
-                    .options
-                    .uniforms
-                    .main_menu_button
-                    .clone()
-                    .insert_int("u_index".to_owned(), 1);
-                Widget::Button {
-                    text: "New Ladder".to_owned(),
-                    color: None,
-                    input_handler: new_solo_handler,
-                    update_handler: None,
-                    pre_update_handler: None,
-                    options: &resources.options,
-                    uniforms,
-                    shader: None,
-                    hover_hints: default(),
-                    entity,
-                }
-                .generate_node()
-                .lock(NodeLockType::Empty)
-                .push_as_panel(entity, resources);
+                MainMenuSystem::enter(from, resources);
             }
             GameState::Shop => {
                 PanelsSystem::close_all_alerts(resources);
-                if from == GameState::MainMenu {
-                    ShopSystem::init_game(world, resources);
-                    SlotSystem::create_entries(world, resources);
-                } else if from == GameState::Sacrifice {
+                if from == GameState::Sacrifice {
                     PackedTeam::new("Dark".to_owned(), default()).unpack(
-                        &Faction::Dark,
+                        Faction::Dark,
                         world,
                         resources,
                     );
                     PackedTeam::new("Light".to_owned(), default()).unpack(
-                        &Faction::Light,
+                        Faction::Light,
                         world,
                         resources,
                     );

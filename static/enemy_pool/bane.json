@@ -1,7 +1,7 @@
 {
     "name": "Bane",
-    "attack": 2,
-    "health": 4,
+    "attack": 4,
+    "health": 5,
     "description": "Ally Died:\napply Weakness +1 \nto random enemy",
     "house": "Enemy",
     "trigger": {

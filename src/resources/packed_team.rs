@@ -74,17 +74,18 @@ impl PackedTeam {
 
     pub fn unpack(
         &self,
-        faction: &Faction,
+        faction: Faction,
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> legion::Entity {
+        TeamSystem::delete_team(faction, world, resources);
         let mut entities = vec![];
         let mut state = ContextState::new(self.name.clone(), Some(WorldSystem::entity(world)));
         state.ability_vars = self.ability_vars.clone();
         state.vars = self.vars.clone();
         StatusSystem::unpack_into_state(&mut state, &self.statuses);
         state.vars.set_int(&VarName::Slots, self.slots as i32);
-        state.vars.set_faction(&VarName::Faction, *faction);
+        state.vars.set_faction(&VarName::Faction, faction);
         let team = world.push((TeamComponent {},));
         resources.logger.log(
             || {

@@ -148,10 +148,11 @@ impl ShopSystem {
     }
 
     pub fn init_game(world: &mut legion::World, resources: &mut Resources) {
+        debug!("Shop init");
         ShopData::load_pool_full(resources);
-        PackedTeam::new("Dark".to_owned(), default()).unpack(&Faction::Dark, world, resources);
-        PackedTeam::new("Light".to_owned(), default()).unpack(&Faction::Light, world, resources);
-        PackedTeam::new("Team".to_owned(), default()).unpack(&Faction::Team, world, resources);
+        PackedTeam::new("Dark".to_owned(), default()).unpack(Faction::Dark, world, resources);
+        PackedTeam::new("Light".to_owned(), default()).unpack(Faction::Light, world, resources);
+        PackedTeam::new("Team".to_owned(), default()).unpack(Faction::Team, world, resources);
 
         let vars = &mut TeamSystem::get_state_mut(Faction::Team, world).vars;
         vars.set_int(&VarName::G, 0);
@@ -178,9 +179,13 @@ impl ShopSystem {
             .vars
             .set_int(&VarName::Level, level as i32);
         Self::create_battle_button(resources);
-        if from == GameState::Battle {
+        let loaded = mem::take(&mut resources.shop_data.loaded);
+        if from != GameState::Sacrifice {
             if Ladder::current_ind(resources) > 0 {
                 Self::create_sacrifice_button(resources);
+                if !loaded {
+                    SaveSystem::save(world, resources);
+                }
                 // SlotSystem::add_slots_buttons(
                 //     Faction::Team,
                 //     "Rank Up",
@@ -192,8 +197,6 @@ impl ShopSystem {
                 // );
             }
             ShopData::load_level(resources, level);
-        }
-        if from != GameState::Sacrifice {
             Self::change_g(
                 Self::level_g(resources) as i32,
                 Some(&format!("Level {} start", level + 1)),

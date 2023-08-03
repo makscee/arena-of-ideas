@@ -1,8 +1,8 @@
 {
     "name": "Hexer",
-    "attack": 3,
-    "health": 3,
-    "description": "Before Death\napply Weakness +1\n to killer",
+    "attack": 4,
+    "health": 4,
+    "description": "Before Death\napply Weakness +2\n to killer",
     "house": "Enemy",
     "trigger": {
         "type": "BeforeDeath",
@@ -15,7 +15,7 @@
             },
             "charges": {
                 "type": "Const",
-                "value": 1
+                "value": 2
             }
         }
     },

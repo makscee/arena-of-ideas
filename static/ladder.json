@@ -19,31 +19,31 @@
               "vertices": 3,
               "instances": 1,
               "uniforms": {
-                "u_g_color_1": "#000000",
                 "u_g_points": [
                   -0.5,
                   -0.3,
                   0.3,
                   0.3
                 ],
-                "u_g_color_2": "#000000",
-                "u_g_color_3": "#000000",
-                "u_rotation": 1.0,
                 "u_g_alphas": [
                   1.0,
                   1.0,
                   0.0,
                   1.0
                 ],
+                "u_g_color_2": "#000000",
                 "u_g_color_4": "#000000",
+                "u_g_color_1": "#000000",
+                "u_g_color_3": "#000000",
+                "u_rotation": 1.0,
                 "mapping": {
-                  "u_g_color_1": {
-                    "type": "Uniform",
-                    "key": "u_house_color"
-                  },
                   "u_g_color_4": {
                     "type": "Uniform",
                     "key": "u_faction_color"
+                  },
+                  "u_g_color_1": {
+                    "type": "Uniform",
+                    "key": "u_house_color"
                   },
                   "u_g_color_2": {
                     "type": "Uniform",
@@ -80,33 +80,33 @@
                   "vertices": 3,
                   "instances": 300,
                   "uniforms": {
-                    "u_p_scale_end": 0.2,
-                    "u_g_color_4": "#aa3b08",
-                    "u_g_color_3": "#ffffff",
-                    "u_g_color_2": "#ffffff",
-                    "u_p_scale_start": 0.6,
-                    "u_g_alphas": [
-                      0.0,
-                      1.0,
-                      1.0,
-                      0.0
-                    ],
                     "u_g_points": [
                       0.0,
                       0.2,
                       0.2,
                       1.0
                     ],
+                    "u_g_alphas": [
+                      0.0,
+                      1.0,
+                      1.0,
+                      0.0
+                    ],
                     "u_g_color_1": "#000000",
+                    "u_g_color_4": "#aa3b08",
                     "u_p_vel_center": 1.5,
+                    "u_g_color_3": "#ffffff",
+                    "u_p_scale_start": 0.6,
+                    "u_p_scale_end": 0.2,
+                    "u_g_color_2": "#ffffff",
                     "mapping": {
-                      "u_g_color_2": {
-                        "type": "Uniform",
-                        "key": "u_faction_color"
-                      },
                       "u_g_color_3": {
                         "type": "Uniform",
                         "key": "u_house_color"
+                      },
+                      "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_faction_color"
                       }
                     }
                   },
@@ -168,23 +168,27 @@
               "instances": 1,
               "uniforms": {
                 "u_g_color_1": "#000000",
-                "u_rotation": 1.0,
+                "u_g_color_2": "#000000",
                 "u_g_color_3": "#000000",
-                "u_g_color_4": "#000000",
                 "u_g_alphas": [
                   1.0,
                   1.0,
                   0.0,
                   1.0
                 ],
+                "u_rotation": 1.0,
+                "u_g_color_4": "#000000",
                 "u_g_points": [
                   -0.5,
                   -0.3,
                   0.3,
                   0.3
                 ],
-                "u_g_color_2": "#000000",
                 "mapping": {
+                  "u_g_color_1": {
+                    "type": "Uniform",
+                    "key": "u_house_color"
+                  },
                   "u_g_color_2": {
                     "type": "Uniform",
                     "key": "u_house_color"
@@ -192,10 +196,6 @@
                   "u_g_color_4": {
                     "type": "Uniform",
                     "key": "u_faction_color"
-                  },
-                  "u_g_color_1": {
-                    "type": "Uniform",
-                    "key": "u_house_color"
                   }
                 }
               },
@@ -228,33 +228,33 @@
                   "vertices": 3,
                   "instances": 300,
                   "uniforms": {
-                    "u_g_color_2": "#ffffff",
-                    "u_g_points": [
-                      0.0,
-                      0.2,
-                      0.2,
-                      1.0
-                    ],
-                    "u_g_color_3": "#ffffff",
-                    "u_g_color_4": "#aa3b08",
                     "u_p_scale_end": 0.2,
+                    "u_p_vel_center": 1.5,
                     "u_g_alphas": [
                       0.0,
                       1.0,
                       1.0,
                       0.0
                     ],
-                    "u_p_scale_start": 0.6,
                     "u_g_color_1": "#000000",
-                    "u_p_vel_center": 1.5,
+                    "u_g_color_3": "#ffffff",
+                    "u_g_points": [
+                      0.0,
+                      0.2,
+                      0.2,
+                      1.0
+                    ],
+                    "u_g_color_2": "#ffffff",
+                    "u_p_scale_start": 0.6,
+                    "u_g_color_4": "#aa3b08",
                     "mapping": {
-                      "u_g_color_2": {
-                        "type": "Uniform",
-                        "key": "u_faction_color"
-                      },
                       "u_g_color_3": {
                         "type": "Uniform",
                         "key": "u_house_color"
+                      },
+                      "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_faction_color"
                       }
                     }
                   },
@@ -322,34 +322,34 @@
               "vertices": 3,
               "instances": 100,
               "uniforms": {
-                "u_p_scale_end": 0.9,
-                "u_g_alphas": [
-                  1.0,
-                  0.5,
-                  1.0,
-                  1.0
-                ],
-                "u_p_offset": [
-                  0.0,
-                  0.0
-                ],
                 "u_p_scale_start": 0.8,
-                "u_g_color_1": "#8a8a8a",
                 "u_g_points": [
                   0.3,
                   0.5,
                   0.6,
                   1.0
                 ],
-                "u_p_vel_gravity": -0.0,
-                "u_g_color_2": "#000000",
-                "u_p_vel_circle_mul": -9.0,
                 "u_g_color_3": "#4aff50",
-                "u_p_scale": 0.1,
-                "u_p_vel_circle_shift": 0.5,
+                "u_p_vel_circle": 0.5,
+                "u_g_color_2": "#000000",
                 "u_p_vel_center": 1.0,
                 "u_g_color_4": "#def4e1",
-                "u_p_vel_circle": 0.5,
+                "u_p_vel_circle_shift": 0.5,
+                "u_p_vel_gravity": -0.0,
+                "u_g_alphas": [
+                  1.0,
+                  0.5,
+                  1.0,
+                  1.0
+                ],
+                "u_p_vel_circle_mul": -9.0,
+                "u_g_color_1": "#8a8a8a",
+                "u_p_scale": 0.1,
+                "u_p_offset": [
+                  0.0,
+                  0.0
+                ],
+                "u_p_scale_end": 0.9,
                 "mapping": {
                   "u_g_color_2": {
                     "type": "Uniform",
@@ -393,5 +393,350 @@
       "replications": 4
     }
   ],
-  "levels": []
+  "levels": [
+    {
+      "units": [
+        {
+          "name": "Rat",
+          "description": "",
+          "health": 5,
+          "damage": 0,
+          "attack": 5,
+          "house": "Enemy",
+          "trigger": {
+            "type": "Noop"
+          },
+          "statuses": [],
+          "shader": {
+            "path": "shaders/vfx/triangle.glsl",
+            "parameters": {
+              "vertices": 3,
+              "instances": 1,
+              "uniforms": {
+                "u_rotation": 1.0,
+                "u_g_color_1": "#000000",
+                "u_g_color_2": "#000000",
+                "u_g_alphas": [
+                  1.0,
+                  1.0,
+                  0.0,
+                  1.0
+                ],
+                "u_g_color_3": "#000000",
+                "u_g_points": [
+                  -0.5,
+                  -0.3,
+                  0.3,
+                  0.3
+                ],
+                "u_g_color_4": "#000000",
+                "mapping": {
+                  "u_g_color_1": {
+                    "type": "Uniform",
+                    "key": "u_house_color"
+                  },
+                  "u_g_color_4": {
+                    "type": "Uniform",
+                    "key": "u_faction_color"
+                  }
+                }
+              },
+              "box": {
+                "pos": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  0.55,
+                  0.55
+                ],
+                "center": [
+                  0.0,
+                  0.0
+                ],
+                "anchor": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "layer": "Unit",
+            "order": 0,
+            "request_vars": [],
+            "before": [
+              {
+                "path": "shaders/vfx/particle_emitter.glsl",
+                "parameters": {
+                  "vertices": 3,
+                  "instances": 400,
+                  "uniforms": {
+                    "u_p_vel_center": 1.5,
+                    "u_g_points": [
+                      0.0,
+                      0.2,
+                      0.2,
+                      1.0
+                    ],
+                    "u_p_scale_start": 0.6,
+                    "u_g_color_4": "#aa3b08",
+                    "u_g_color_1": "#000000",
+                    "u_p_scale_end": 0.2,
+                    "u_g_alphas": [
+                      0.0,
+                      1.0,
+                      1.0,
+                      0.0
+                    ],
+                    "u_p_vel_circle_shift": 20.0,
+                    "u_g_color_2": "#ffffff",
+                    "u_g_color_3": "#ffffff",
+                    "u_p_vel_circle": 0.5,
+                    "mapping": {
+                      "u_g_color_3": {
+                        "type": "Uniform",
+                        "key": "u_house_color"
+                      },
+                      "u_g_color_2": {
+                        "type": "Uniform",
+                        "key": "u_faction_color"
+                      }
+                    }
+                  },
+                  "box": {
+                    "pos": [
+                      0.0,
+                      0.0
+                    ],
+                    "size": [
+                      1.0,
+                      1.0
+                    ],
+                    "center": [
+                      0.0,
+                      0.0
+                    ],
+                    "anchor": [
+                      0.0,
+                      0.0
+                    ]
+                  }
+                },
+                "layer": "Unit",
+                "order": 0,
+                "request_vars": [],
+                "before": [],
+                "after": []
+              }
+            ],
+            "after": []
+          },
+          "rank": 0
+        }
+      ],
+      "name": "Rat x4",
+      "vars": {},
+      "ability_vars": {},
+      "statuses": [],
+      "slots": 10,
+      "replications": 5
+    },
+    {
+      "units": [
+        {
+          "name": "Gorge",
+          "description": "Turn End:\ngain Vitality +3",
+          "health": 1,
+          "damage": 0,
+          "attack": 4,
+          "house": "Enemy",
+          "trigger": {
+            "type": "TurnEnd",
+            "effect": {
+              "type": "UseAbility",
+              "ability": "Vitality",
+              "force": false,
+              "charges": {
+                "type": "Const",
+                "value": 3
+              },
+              "target": {
+                "type": "Owner"
+              },
+              "owner": null,
+              "after": null,
+              "vars": null
+            }
+          },
+          "statuses": [],
+          "shader": {
+            "path": "shaders/vfx/particle_emitter.glsl",
+            "parameters": {
+              "vertices": 3,
+              "instances": 300,
+              "uniforms": {
+                "u_g_color_3": "#46ceff",
+                "u_p_vel_gravity": 0.5,
+                "u_g_points": [
+                  0.2,
+                  0.3,
+                  0.6,
+                  1.0
+                ],
+                "u_p_vel_circle_shift": 3.0,
+                "u_p_vel_circle_mul": 2.0,
+                "u_p_scale_end": 0.7,
+                "u_g_color_2": "#000000",
+                "u_g_color_1": "#8a8a8a",
+                "u_p_vel_circle": -0.3,
+                "u_p_scale": 0.1,
+                "u_p_scale_start": 0.4,
+                "u_p_offset": [
+                  0.0,
+                  0.0
+                ],
+                "u_g_alphas": [
+                  1.0,
+                  0.5,
+                  1.0,
+                  1.0
+                ],
+                "u_g_color_4": "#f10095",
+                "u_p_vel_center": 0.0,
+                "mapping": {
+                  "u_g_color_2": {
+                    "type": "Uniform",
+                    "key": "u_house_color"
+                  }
+                }
+              },
+              "box": {
+                "pos": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  1.0,
+                  1.0
+                ],
+                "center": [
+                  0.0,
+                  0.0
+                ],
+                "anchor": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "layer": "Unit",
+            "order": 0,
+            "request_vars": [],
+            "before": [],
+            "after": []
+          },
+          "rank": 0
+        }
+      ],
+      "name": "Gorge x4",
+      "vars": {},
+      "ability_vars": {},
+      "statuses": [],
+      "slots": 10,
+      "replications": 6
+    },
+    {
+      "units": [
+        {
+          "name": "Sacrilege",
+          "description": "Has Martyr",
+          "health": 1,
+          "damage": 0,
+          "attack": 1,
+          "house": "Enemy",
+          "trigger": {
+            "type": "Noop"
+          },
+          "statuses": [
+            [
+              "Martyr",
+              1
+            ]
+          ],
+          "shader": {
+            "path": "shaders/vfx/particle_emitter.glsl",
+            "parameters": {
+              "vertices": 3,
+              "instances": 500,
+              "uniforms": {
+                "u_g_color_1": "#ffffff",
+                "u_g_points": [
+                  0.3,
+                  0.5,
+                  0.6,
+                  1.0
+                ],
+                "u_p_vel_circle": 1.0,
+                "u_p_vel_center": 3.0,
+                "u_g_color_2": "#000000",
+                "u_p_scale": 0.05,
+                "u_p_scale_end": 0.9,
+                "u_p_vel_circle_shift": 50.0,
+                "u_p_offset": [
+                  0.0,
+                  0.0
+                ],
+                "u_g_color_4": "#aa3b08",
+                "u_p_vel_circle_mul": 5.0,
+                "u_g_color_3": "#e677bb",
+                "u_p_scale_start": 0.6,
+                "u_p_vel_gravity": 0.0,
+                "u_g_alphas": [
+                  1.0,
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "mapping": {
+                  "u_g_color_2": {
+                    "type": "Uniform",
+                    "key": "u_house_color"
+                  }
+                }
+              },
+              "box": {
+                "pos": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  0.5,
+                  0.5
+                ],
+                "center": [
+                  0.0,
+                  0.0
+                ],
+                "anchor": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "layer": "Unit",
+            "order": 0,
+            "request_vars": [],
+            "before": [],
+            "after": []
+          },
+          "rank": 0
+        }
+      ],
+      "name": "Sacrilege x4 x7",
+      "vars": {},
+      "ability_vars": {},
+      "statuses": [],
+      "slots": 10,
+      "replications": 8
+    }
+  ]
 }

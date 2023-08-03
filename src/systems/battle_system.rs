@@ -52,8 +52,8 @@ impl BattleSystem {
         resources: &mut Resources,
     ) {
         Self::clear_world(world, resources);
-        light.unpack(&Faction::Light, world, resources);
-        dark.unpack(&Faction::Dark, world, resources);
+        light.unpack(Faction::Light, world, resources);
+        dark.unpack(Faction::Dark, world, resources);
         resources.battle_data.turns = 0;
     }
 
@@ -165,7 +165,6 @@ impl BattleSystem {
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.total_score += resources.battle_data.last_score;
         let level = Ladder::current_ind(resources) + 1;
-        SaveSystem::save(world, resources);
         let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
             fn input_handler(
                 event: HandleEvent,
@@ -215,7 +214,7 @@ impl BattleSystem {
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {
-        UnitSystem::clear_factions(world, &Faction::battle());
+        UnitSystem::clear_factions(&Faction::battle(), world);
     }
 
     fn strickers_death_check(

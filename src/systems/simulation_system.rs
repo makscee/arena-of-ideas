@@ -32,8 +32,8 @@ impl SimulationSystem {
         resources: &mut Resources,
         assert: Option<&Condition>,
     ) -> (bool, bool) {
-        light.unpack(&Faction::Light, world, resources);
-        dark.unpack(&Faction::Dark, world, resources);
+        light.unpack(Faction::Light, world, resources);
+        dark.unpack(Faction::Dark, world, resources);
         resources.logger.log(
             || format!("Run simulation: {light} {dark}"),
             &LogContext::Test,

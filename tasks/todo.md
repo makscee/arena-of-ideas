@@ -67,6 +67,7 @@ Build
         auto-ladder play mode {cm:2023-08-01T17:18:59}
         alert "new enemy added" {cm:2023-08-01T17:19:03}
         separate initial from generated {cm:2023-08-02T19:02:04}
+        weakest enemy generation
     Curses
         rank up enemies, no sacrifice
         buff enemies {cm:2023-07-26T20:21:26}

@@ -29,6 +29,8 @@ impl Game {
         let world_entity = WorldSystem::init_world_entity(world, &resources.options);
         Self::init_field(world_entity, resources, world);
         AbilityPool::init_world(world, resources);
+        ShopSystem::init_game(world, resources);
+        SlotSystem::create_entries(world, resources);
     }
 
     fn init_field(parent: legion::Entity, resources: &mut Resources, world: &mut legion::World) {
@@ -40,12 +42,12 @@ impl Game {
     }
 
     pub fn reset(world: &mut legion::World, resources: &mut Resources) {
-        UnitSystem::clear_factions(world, &Faction::all());
+        UnitSystem::clear_factions(&Faction::all(), world);
         Ladder::reset(resources);
         resources.action_queue.clear();
         resources.prepared_shaders.clear();
         resources.battle_data.total_score = default();
-        resources.transition_state = GameState::MainMenu;
+        resources.transition_state = GameState::Intro;
         ShopData::load_pool_full(resources);
         world.clear();
         PanelsSystem::clear(resources);

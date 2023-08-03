@@ -38,6 +38,13 @@ impl TeamSystem {
             .map(|x| x.0.entity)
     }
 
+    pub fn delete_team(faction: Faction, world: &mut legion::World, resources: &mut Resources) {
+        UnitSystem::clear_faction(faction, world);
+        if let Some(entity) = Self::entity(faction, world) {
+            world.remove(entity);
+        }
+    }
+
     pub fn change_slots(delta: i32, faction: Faction, world: &mut legion::World) {
         Self::get_state_mut(faction, world)
             .vars

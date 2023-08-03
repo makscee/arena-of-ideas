@@ -10,6 +10,10 @@ fn path() -> PathBuf {
     save_path().join("save.json")
 }
 impl SaveSystem {
+    pub fn have_saved_game() -> bool {
+        path().exists()
+    }
+
     pub fn save(world: &legion::World, resources: &Resources) {
         debug!("Saving...");
         let team = PackedTeam::pack(Faction::Team, world, resources);
@@ -28,14 +32,11 @@ impl SaveSystem {
         debug!("Loading save from {:?}", path());
         match futures::executor::block_on(load_json::<SaveData>(path())) {
             Ok(save) => {
-                Game::reset(world, resources);
-                save.team.unpack(&Faction::Team, world, resources);
-                resources.ladder.set_level(save.level);
-                for level in 0..save.level {
-                    ShopData::load_level(resources, level);
-                }
-                ShopSystem::enter(GameState::MainMenu, world, resources);
-                debug!("Loaded {}", save.team);
+                Game::restart(world, resources);
+                save.team.unpack(Faction::Team, world, resources);
+                Ladder::set_level(save.level, resources);
+                GameStateSystem::set_transition(GameState::Shop, resources);
+                resources.shop_data.loaded = true;
             }
             Err(error) => {
                 error!("Can't load save: {}", error)

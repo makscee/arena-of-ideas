@@ -87,12 +87,13 @@ impl RatingSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> ReplicatedTeam {
+        resources.logger.set_enabled(false);
         let mut teams = templates
             .into_iter()
-            .map(|x| PackedTeam::from_units(vec![x], Some(10)))
+            .map(|x| PackedTeam::from_units(vec![x], Some(MAX_SLOTS)))
             .collect_vec();
         let mut candidates: Vec<PackedTeam> = default();
-        while candidates.len() < 5 {
+        while candidates.len() < 6 {
             let mut candidate = Self::choose(&mut teams).unwrap();
             let mut passed = false;
             for _ in 0..3 {
@@ -105,15 +106,19 @@ impl RatingSystem {
                 Self::strengthen(&mut candidate, resources);
             }
             if passed {
+                candidate.name = format!("{} x{}", candidate.name, candidate.units.len());
                 candidates.push(candidate);
             } else {
                 teams.push(candidate);
             }
         }
-        let mut team = Self::choose(&mut candidates).unwrap();
+        Self::rate_teams_full(&mut candidates, world, resources);
+        debug!("Generated candidates:\n{}", candidates.iter().join("\n"));
+        let mut team = candidates.remove(0);
         let replications = team.units.len();
         team.units = vec![team.units[0].clone()];
-        team.name = format!("{} x{replications}", team.name);
+        debug!("New level: {team}");
+        resources.logger.set_enabled(true);
         ReplicatedTeam { team, replications }
     }
 
@@ -185,11 +190,11 @@ impl RatingSystem {
     }
 
     pub fn rate_teams_full(
-        teams: &Vec<PackedTeam>,
-        ratings: &mut Ratings,
+        teams: &mut Vec<PackedTeam>,
         world: &mut legion::World,
         resources: &mut Resources,
     ) {
+        let mut ratings = Ratings::default();
         for i in 0..teams.len() {
             for j in 0..teams.len() {
                 if i == j {
@@ -203,6 +208,11 @@ impl RatingSystem {
             }
         }
         ratings.calculate();
+        teams.sort_by(|a, b| {
+            ratings
+                .get_rating(&a.name)
+                .total_cmp(&ratings.get_rating(&b.name))
+        });
     }
 
     pub fn rate_teams_random(

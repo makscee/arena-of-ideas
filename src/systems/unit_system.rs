@@ -225,13 +225,13 @@ impl UnitSystem {
         );
     }
 
-    pub fn clear_faction(world: &mut legion::World, resources: &mut Resources, faction: Faction) {
-        Self::clear_factions(world, &hashset! {faction});
+    pub fn clear_faction(faction: Faction, world: &mut legion::World) {
+        Self::clear_factions(&hashset! {faction}, world);
     }
 
     pub fn clear_factions(
-        world: &mut legion::World,
         factions: &HashSet<Faction>,
+        world: &mut legion::World,
     ) -> Vec<legion::Entity> {
         let entities = Self::collect_entities(factions, world);
         for entity in entities.iter() {

@@ -22,7 +22,7 @@ impl Ladder {
         resources: &mut Resources,
     ) {
         let mut templates = vec![];
-        for _ in 0..10 {
+        for _ in 0..20 {
             templates.push(EnemyPool::get_random_unit(resources));
         }
         let new_enemy = RatingSystem::generate_weakest_opponent(team, templates, world, resources);
@@ -87,8 +87,8 @@ impl Ladder {
         resources.ladder.levels.len() + resources.ladder.base.len()
     }
 
-    pub fn set_level(&mut self, ind: usize) {
-        self.current = ind;
+    pub fn set_level(ind: usize, resources: &mut Resources) {
+        resources.ladder.current = ind;
     }
 
     pub fn push_level(team: ReplicatedTeam, resources: &mut Resources) {
