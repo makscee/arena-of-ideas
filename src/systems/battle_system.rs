@@ -204,7 +204,7 @@ impl BattleSystem {
                 "Defeat",
                 format!(
                     "Game Over\n{} levels complete",
-                    resources.battle_data.total_score
+                    Ladder::current_ind(resources)
                 ),
                 vec![PanelFooterButton::Restart],
                 resources.options.colors.defeat,

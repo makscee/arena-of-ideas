@@ -5,7 +5,7 @@ pub struct MainMenuSystem;
 impl MainMenuSystem {
     pub fn enter(from: GameState, resources: &mut Resources) {
         PanelsSystem::close_stats(resources);
-        fn new_solo_handler(
+        fn new_ladder_handler(
             event: HandleEvent,
             entity: legion::Entity,
             _: &mut Shader,
@@ -26,7 +26,7 @@ impl MainMenuSystem {
                 _ => {}
             }
         }
-        fn resume_solo_handler(
+        fn resume_ladder_handler(
             event: HandleEvent,
             entity: legion::Entity,
             shader: &mut Shader,
@@ -41,6 +41,7 @@ impl MainMenuSystem {
                             .tape
                             .close_panels(entity, resources.tape_player.head)
                     {
+                        SaveSystem::load_ladder(resources);
                         GameStateSystem::set_transition(GameState::Shop, resources);
                     }
                 }
@@ -54,7 +55,7 @@ impl MainMenuSystem {
             _: &mut legion::World,
             resources: &mut Resources,
         ) {
-            shader.set_active(!resources.ladder.levels.is_empty());
+            shader.set_active(SaveSystem::have_saved_game());
         }
         fn resume_game_pre_update(
             _: HandleEvent,
@@ -79,7 +80,37 @@ impl MainMenuSystem {
                         .tape
                         .close_panels(entity, resources.tape_player.head)
                     {
-                        SaveSystem::load(world, resources);
+                        SaveSystem::load_game(world, resources);
+                        SaveSystem::load_ladder(resources);
+                    }
+                }
+                _ => {}
+            }
+        }
+        fn clear_save_pre_update(
+            _: HandleEvent,
+            _: legion::Entity,
+            shader: &mut Shader,
+            _: &mut legion::World,
+            _: &mut Resources,
+        ) {
+            shader.set_active(SaveSystem::have_saved_game());
+        }
+        fn clear_save_handler(
+            event: HandleEvent,
+            entity: legion::Entity,
+            shader: &mut Shader,
+            world: &mut legion::World,
+            resources: &mut Resources,
+        ) {
+            match event {
+                HandleEvent::Click => {
+                    if resources
+                        .tape_player
+                        .tape
+                        .close_panels(entity, resources.tape_player.head)
+                    {
+                        SaveSystem::clear_save();
                     }
                 }
                 _ => {}
@@ -109,19 +140,47 @@ impl MainMenuSystem {
         .lock(NodeLockType::Empty)
         .push_as_panel(entity, resources);
 
+        let ladder_count = SaveSystem::load_data()
+            .and_then(|x| Ok(x.ladder.len()))
+            .unwrap_or(0);
+        if ladder_count > 0 {
+            let entity = new_entity();
+            let uniforms = resources
+                .options
+                .uniforms
+                .main_menu_button
+                .clone()
+                .insert_int("u_index".to_owned(), 0);
+            Widget::Button {
+                text: format!("Resume Ladder ({ladder_count})"),
+                color: None,
+                input_handler: resume_ladder_handler,
+                update_handler: None,
+                pre_update_handler: Some(resume_pre_update),
+                options: &resources.options,
+                uniforms,
+                shader: None,
+                hover_hints: default(),
+                entity,
+            }
+            .generate_node()
+            .lock(NodeLockType::Empty)
+            .push_as_panel(entity, resources);
+        }
+
         let entity = new_entity();
         let uniforms = resources
             .options
             .uniforms
             .main_menu_button
             .clone()
-            .insert_int("u_index".to_owned(), 0);
+            .insert_int("u_index".to_owned(), 1);
         Widget::Button {
-            text: format!("Resume Ladder ({})", Ladder::count(resources)),
+            text: "New Ladder".to_owned(),
             color: None,
-            input_handler: resume_solo_handler,
+            input_handler: new_ladder_handler,
             update_handler: None,
-            pre_update_handler: Some(resume_pre_update),
+            pre_update_handler: None,
             options: &resources.options,
             uniforms,
             shader: None,
@@ -138,13 +197,13 @@ impl MainMenuSystem {
             .uniforms
             .main_menu_button
             .clone()
-            .insert_int("u_index".to_owned(), 1);
+            .insert_int("u_index".to_owned(), 2);
         Widget::Button {
-            text: "New Ladder".to_owned(),
+            text: "Delete Save".to_owned(),
             color: None,
-            input_handler: new_solo_handler,
+            input_handler: clear_save_handler,
             update_handler: None,
-            pre_update_handler: None,
+            pre_update_handler: Some(clear_save_pre_update),
             options: &resources.options,
             uniforms,
             shader: None,

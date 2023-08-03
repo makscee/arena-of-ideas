@@ -184,7 +184,7 @@ impl ShopSystem {
             if Ladder::current_ind(resources) > 0 {
                 Self::create_sacrifice_button(resources);
                 if !loaded {
-                    SaveSystem::save(world, resources);
+                    SaveSystem::save_game(world, resources);
                 }
                 // SlotSystem::add_slots_buttons(
                 //     Faction::Team,

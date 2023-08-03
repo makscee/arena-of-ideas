@@ -29,6 +29,12 @@ impl Buff {
         unit.statuses.push((self.name.to_owned(), self.charges));
     }
 
+    pub fn apply_aoe_packed(&self, team: &mut PackedTeam) {
+        for unit in team.units.iter_mut() {
+            unit.statuses.push((self.name.to_owned(), self.charges));
+        }
+    }
+
     pub fn apply_aoe(
         &self,
         faction: Faction,

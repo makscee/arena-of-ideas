@@ -93,19 +93,21 @@ impl RatingSystem {
             .map(|x| PackedTeam::from_units(vec![x], Some(MAX_SLOTS)))
             .collect_vec();
         let mut candidates: Vec<PackedTeam> = default();
+        debug!("Player team:\n{team}");
         while candidates.len() < 6 {
             let mut candidate = Self::choose(&mut teams).unwrap();
             let mut passed = false;
             for _ in 0..3 {
-                let (_, beat) =
-                    SimulationSystem::run_battle(&candidate, &team, world, resources, None);
-                if beat {
+                let (win, _) =
+                    SimulationSystem::run_battle(&team, &candidate, world, resources, None);
+                if !win {
                     passed = true;
                     break;
                 }
                 Self::strengthen(&mut candidate, resources);
             }
             if passed {
+                debug!("New candidate:\n{candidate}");
                 candidate.name = format!("{} x{}", candidate.name, candidate.units.len());
                 candidates.push(candidate);
             } else {
@@ -142,11 +144,10 @@ impl RatingSystem {
     fn strengthen(team: &mut PackedTeam, resources: &Resources) {
         const BUFF_CHANCE: f64 = 0.1;
         if team.units.len() < team.slots && (&mut thread_rng()).gen_bool(1.0 - BUFF_CHANCE) {
-            let unit = HeroPool::random(resources);
-            team.units.push(unit);
+            team.units.push(team.units[0].clone());
         } else {
             let buff = BuffPool::get_random(1, resources).remove(0);
-            buff.apply_single_packed(team, None);
+            buff.apply_aoe_packed(team);
         }
     }
 

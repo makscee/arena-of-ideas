@@ -71,7 +71,7 @@ impl System for GameStateSystem {
                     ShopSystem::change_g(100, Some("Cheat"), world, resources);
                 }
                 if resources.input_data.down_keys.contains(&L) {
-                    SaveSystem::load(world, resources);
+                    SaveSystem::load_game(world, resources);
                 }
                 if resources.input_data.down_keys.contains(&X) {
                     GameStateSystem::set_transition(GameState::Sacrifice, resources);

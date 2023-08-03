@@ -37,9 +37,6 @@ fn setup_geng() -> Geng {
 fn static_path() -> PathBuf {
     run_dir().join("static")
 }
-fn save_path() -> PathBuf {
-    run_dir().join("save")
-}
 fn ratings_path() -> PathBuf {
     run_dir().join("ratings")
 }

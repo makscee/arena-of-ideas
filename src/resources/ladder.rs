@@ -5,6 +5,7 @@ pub struct Ladder {
     #[serde(skip)]
     current: usize,
     pub base: Vec<ReplicatedTeam>,
+    #[serde(skip)]
     pub levels: Vec<ReplicatedTeam>,
 }
 
@@ -40,12 +41,7 @@ impl Ladder {
     // }
 
     pub fn save(resources: &Resources) {
-        let path = static_path().join("ladder.json");
-        let data = serde_json::to_string_pretty(&resources.ladder).unwrap();
-        match std::fs::write(&path, data) {
-            Ok(_) => debug!("Save ladder to {:?}", &path),
-            Err(error) => error!("Can't save ladder: {}", error),
-        }
+        SaveSystem::save_ladder(resources);
     }
 
     pub fn current_team(resources: &Resources) -> PackedTeam {
@@ -60,6 +56,14 @@ impl Ladder {
             .unwrap()
             .clone()
             .into()
+    }
+
+    pub fn set_levels(teams: Vec<ReplicatedTeam>, resources: &mut Resources) {
+        resources.ladder.levels = teams;
+    }
+
+    pub fn get_levels(resources: &Resources) -> Vec<ReplicatedTeam> {
+        resources.ladder.levels.clone()
     }
 
     pub fn current_ind(resources: &Resources) -> usize {
@@ -100,12 +104,6 @@ impl FileWatcherLoader for Ladder {
     fn load(resources: &mut Resources, path: &PathBuf, watcher: &mut FileWatcherSystem) {
         watcher.watch_file(path, Box::new(Self::load));
         debug!("Load ladder {path:?}");
-        let prev_current = resources.ladder.current;
         resources.ladder = futures::executor::block_on(load_json(path)).unwrap();
-        resources.ladder.current = prev_current;
-        debug!(
-            "Loaded {} levels, current level {prev_current}",
-            resources.ladder.levels.len()
-        );
     }
 }
