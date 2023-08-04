@@ -67,17 +67,37 @@ impl SacrificeSystem {
         let candidates = &mut resources.sacrifice_data.candidates;
         if candidates.contains(&unit) {
             candidates.remove(&unit);
+        } else {
+            candidates.insert(unit);
+        }
+        Self::refresh_sacrifice_markers(world, resources);
+    }
+
+    fn refresh_sacrifice_markers(world: &mut legion::World, resources: &mut Resources) {
+        for unit in UnitSystem::collect_faction(world, Faction::Team) {
             resources
                 .tape_player
                 .tape
                 .close_panels(unit, resources.tape_player.head);
-        } else {
-            candidates.insert(unit);
+        }
+        for (i, (unit, slot)) in resources
+            .sacrifice_data
+            .candidates
+            .clone()
+            .into_iter()
+            .map(|unit| {
+                (
+                    unit,
+                    ContextState::get(unit, world).get_int(&VarName::Slot, world) as usize,
+                )
+            })
+            .sorted_by_key(|(_, slot)| -(*slot as i32))
+            .enumerate()
+        {
             let position = SlotSystem::get_position(slot, &Faction::Team, resources);
-            let text = format!(
-                "+{} g",
-                ContextState::get(unit, world).get_int(&VarName::Rank, world) + 1
-            );
+
+            let g = 2 * (i + 1);
+            let text = format!("+{g} g");
             Node::new_panel_scaled(
                 resources
                     .options
@@ -100,10 +120,10 @@ impl SacrificeSystem {
     ) {
         debug!("Sacrifice {candidates:?}");
         let mut sum = 0;
-        for unit in candidates.iter() {
-            let context = Context::new(ContextLayer::Unit { entity: *unit }, world, resources)
-                .set_target(*unit);
-            sum += context.get_int(&VarName::Rank, world).unwrap() + 1;
+        for (ind, unit) in candidates.into_iter().enumerate() {
+            let context = Context::new(ContextLayer::Unit { entity: unit }, world, resources)
+                .set_target(unit);
+            sum += 2 * (ind as i32 + 1);
             Effect::Kill.wrap().push(context, resources);
             ActionSystem::spin(world, resources, None);
             ActionSystem::death_check(world, resources, None);
