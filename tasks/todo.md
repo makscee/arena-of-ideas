@@ -67,7 +67,7 @@ Build
         auto-ladder play mode {cm:2023-08-01T17:18:59}
         alert "new enemy added" {cm:2023-08-01T17:19:03}
         separate initial from generated {cm:2023-08-02T19:02:04}
-        weakest enemy generation
+        weakest enemy generation {cm:2023-08-03T18:35:32}
     Curses
         rank up enemies, no sacrifice
         buff enemies {cm:2023-07-26T20:21:26}
@@ -82,16 +82,17 @@ Build
         ATK & HP
         Buffs
     Slot number indicator {cm:2023-07-31T17:03:08}
-    UI/UX
-        Buff apply focused
-        Next enemy panel top-right
+    UI/UX {cm:2023-08-04T17:04:39}
+        Buff apply focused {cm:2023-08-04T17:04:33}
+        Next enemy panel top-right {cm:2023-08-04T17:04:35}
     Balance buffs {cm:2023-08-01T17:25:04}
     Sacrifice on demand {cm:2023-08-01T18:29:22}
     Main Menu {cm:2023-08-02T19:01:37}
         resume ladder {cm:2023-08-02T19:01:40}
         new ladder {cm:2023-08-02T19:01:41}
     Continuous ladder generation {cm:2023-08-02T19:01:27}
-    Move extra ldder into save
+    Move extra ldder into save {cm:2023-08-03T18:35:25}
+    Sacrifice fix reward
 Socials
     Build on itch.io
     Build post on reddit

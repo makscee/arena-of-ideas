@@ -1,6 +1,7 @@
 {
     "player_team_name": "Dorks",
-    "initial_state": "MainMenu",
+    "initial_state": "Shop",
+    "initial_level": 2,
     "rate_heroes": false,
     "generate_ladder": false,
     "rewind_speed": 10.0,
@@ -1786,14 +1787,14 @@
             "parameters": {
                 "box": {
                     "size": [
-                        1.0,
-                        0.2
+                        1.1,
+                        0.25
                     ]
                 },
                 "uniforms": {
                     "u_active": 1.0,
                     "u_enabled": 1.0,
-                    "u_rounding": 0.02,
+                    "u_rounding": 0.03,
                     "u_g_points": [
                         -0.01,
                         -0.01,
@@ -1968,7 +1969,7 @@
         "panel_text_padding": 0.05,
         "panel_card_padding": [
             0.5,
-            0.8
+            0.5
         ],
         "panel_row_padding": 0.07,
         "panel_row_spacing": 0.01,
@@ -1977,10 +1978,6 @@
         "panel_row_index_offset": [
             0.5,
             0.0
-        ],
-        "slots_shop_team_position": [
-            7.0,
-            5.0
         ],
         "slots_striker_position": [
             7.0,
@@ -1994,24 +1991,28 @@
             0.45,
             2.0
         ],
+        "slots_shop_team_position": [
+            7.0,
+            5.0
+        ],
         "slots_shop_spacing": [
             -3.0,
             0.0
         ],
         "slots_battle_team_scale": 0.7,
         "slots_striker_scale": 1.5,
-        "slot_info_offset": 2.0
+        "slot_info_offset": 1.6
     },
     "uniforms": {
         "shop_top_button": {
             "u_scale": 0.35,
             "u_index_offset": [
-                1.2,
-                0.0
+                0.0,
+                0.3
             ],
             "u_position": [
-                0.0,
-                0.9
+                1.2,
+                0.0
             ],
             "u_ui": 1
         },

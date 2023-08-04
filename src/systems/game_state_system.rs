@@ -30,6 +30,7 @@ impl System for GameStateSystem {
                     resources.transition_state = GameState::CustomGame;
                 } else {
                     resources.transition_state = resources.options.initial_state;
+                    Ladder::set_level(resources.options.initial_level, resources);
                 }
             }
             GameState::MainMenu => {}
@@ -342,7 +343,9 @@ impl GameStateSystem {
                 debug!("Battle result: {result}");
                 resources.tape_player.tape = tape;
             }
-            GameState::Intro => {}
+            GameState::Intro => {
+                Game::restart(world, resources);
+            }
         }
     }
 

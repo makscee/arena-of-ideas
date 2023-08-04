@@ -25,6 +25,7 @@ pub struct Options {
     pub max_g: usize,
     pub initial_team_slots: usize,
     pub initial_state: GameState,
+    pub initial_level: usize,
     pub shop_max_slots: usize,
 }
 
@@ -34,7 +35,7 @@ thread_local!(pub static OPTIONS_COLORS: RefCell<HashMap<String, Rgba<f32>>> = R
 impl FileWatcherLoader for Options {
     fn load(resources: &mut Resources, _: &PathBuf, _: &mut FileWatcherSystem) {
         resources.options = Self::do_load();
-        resources.transition_state = GameState::Intro;
+        GameStateSystem::set_transition(GameState::Intro, resources);
     }
 }
 

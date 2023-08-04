@@ -9,6 +9,8 @@ impl System for PanelsSystem {
         let bot_right_corner = vec2(resources.camera.aspect_ratio, -1.0) + vec2(-PADDING, PADDING);
         let top_left_corner =
             vec2(-resources.camera.aspect_ratio, 1.0) + vec2(PADDING, -PADDING * 2.0);
+        let top_right_corner =
+            vec2(resources.camera.aspect_ratio, 1.0) + vec2(-PADDING, -PADDING * 2.0);
 
         let mut offset = vec2::ZERO;
         for panel in resources.panels_data.push.iter_mut() {
@@ -36,6 +38,9 @@ impl System for PanelsSystem {
         if let Some(panel) = resources.panels_data.stats.as_mut() {
             panel.need_pos = top_left_corner;
         }
+        if let Some(panel) = resources.panels_data.enemy_preview.as_mut() {
+            panel.need_pos = top_right_corner;
+        }
 
         let delta_time = resources.delta_time;
         let global_time = resources.global_time;
@@ -44,6 +49,7 @@ impl System for PanelsSystem {
             .push
             .iter_mut()
             .chain(resources.panels_data.stats.iter_mut())
+            .chain(resources.panels_data.enemy_preview.iter_mut())
             .chain(resources.panels_data.hint.iter_mut())
             .chain(resources.panels_data.alert.iter_mut())
         {
@@ -53,6 +59,11 @@ impl System for PanelsSystem {
         resources.panels_data.alert.retain(|x| !x.is_closed());
         resources.panels_data.push.retain(|x| !x.is_closed());
         resources.panels_data.hint.retain(|x| !x.is_closed());
+        if let Some(panel) = resources.panels_data.enemy_preview.take() {
+            if !panel.is_closed() {
+                resources.panels_data.enemy_preview = Some(panel);
+            }
+        }
 
         resources.frame_shaders.extend(
             resources
@@ -60,6 +71,7 @@ impl System for PanelsSystem {
                 .push
                 .iter_mut()
                 .chain(resources.panels_data.stats.iter_mut())
+                .chain(resources.panels_data.enemy_preview.iter_mut())
                 .chain(resources.panels_data.alert.iter_mut())
                 .chain(resources.panels_data.hint.iter_mut())
                 .map(|x| x.shader.clone()),
@@ -123,7 +135,6 @@ impl PanelsSystem {
         if resources.panels_data.choice_options.is_some() {
             return;
         }
-        let padding = resources.options.floats.panel_row_padding;
         let faction = Faction::Team;
         let cards: Vec<(String, ShaderChain, usize, Rgba<f32>, Rgba<f32>)> = match &choice {
             CardChoice::ShopOffers { units, buffs } => {
@@ -194,10 +205,22 @@ impl PanelsSystem {
             CardChoice::ShopOffers { .. } => vec![PanelFooterButton::Reroll],
         };
         resources.panels_data.choice_options = Some(choice);
-        let mut panel =
-            ShaderChain::wrap_panel_body_row(shaders, vec2(padding, padding), &resources.options)
-                .wrap_panel_header(title, &resources.options)
-                .wrap_panel_footer(buttons, &resources.options);
+
+        let padding = resources.options.floats.panel_row_padding;
+        let padding = vec2(padding, padding);
+        let panel = if shaders.len() > 3 {
+            let (row1, row2) = (shaders[0..3].to_vec(), shaders[3..].to_vec());
+            let shaders = vec![
+                ShaderChain::wrap_panel_body_row(row1, padding * 0.75, &resources.options),
+                ShaderChain::wrap_panel_body_row(row2, padding * 0.75, &resources.options),
+            ];
+            ShaderChain::wrap_panel_body_column(shaders, vec2::ZERO, &resources.options)
+        } else {
+            ShaderChain::wrap_panel_body_row(shaders, padding, &resources.options)
+        };
+        let mut panel = panel
+            .wrap_panel_header(title, &resources.options)
+            .wrap_panel_footer(buttons, &resources.options);
         panel.middle.parameters.r#box.pos.y += 0.3;
         resources.panels_data.alert.push(panel.panel(
             PanelType::Alert,
@@ -244,7 +267,10 @@ impl PanelsSystem {
         }
         let shader = ShaderChain::wrap_panel_body_column(
             rows,
-            resources.options.floats.panel_column_padding,
+            vec2(
+                resources.options.floats.panel_column_padding,
+                resources.options.floats.panel_column_padding,
+            ),
             &resources.options,
         );
 
@@ -291,8 +317,26 @@ impl PanelsSystem {
         resources.panels_data.stats = Some(panel);
     }
 
+    pub fn open_enemy_preview(world: &mut legion::World, resources: &mut Resources) {
+        let panel = Self::get_next_enemy_card_panel(world, resources);
+        let panel = panel
+            .wrap_panel_header("Next Enemy", &resources.options)
+            .panel(
+                PanelType::EnemyPreview,
+                Some(resources.options.colors.enemy),
+                resources,
+            );
+        resources.panels_data.enemy_preview = Some(panel);
+    }
+
     pub fn close_stats(resources: &mut Resources) {
         resources.panels_data.stats = None;
+    }
+
+    pub fn close_enemy_preview(resources: &mut Resources) {
+        if let Some(panel) = resources.panels_data.enemy_preview.as_mut() {
+            panel.state = PanelState::Closed;
+        }
     }
 
     pub fn get_stats_text(world: &legion::World, resources: &mut Resources) -> String {
@@ -305,6 +349,21 @@ impl PanelsSystem {
         ));
         texts.push(format!("score: {}", resources.battle_data.total_score));
         texts.join("\n")
+    }
+
+    pub fn get_next_enemy_card_panel(
+        world: &mut legion::World,
+        resources: &mut Resources,
+    ) -> ShaderChain {
+        // let mut card =
+        //     Ladder::current_team(resources).units[0].get_ui_shader(Faction::Dark, true, resources);
+        let team = TeamSystem::entity(Faction::Dark, world);
+        let unit = Ladder::current_team(resources).units[0].unpack(world, resources, 0, None, team);
+        let shader = UnitSystem::generate_unit_shader(unit, world, resources)
+            .insert_float("u_card".to_owned(), 1.0)
+            .insert_color("u_faction_color".to_owned(), resources.options.colors.light);
+        UnitSystem::clear_faction(Faction::Dark, world);
+        Self::generate_card_panel(shader, &resources.options)
     }
 
     pub fn refresh_stats(world: &legion::World, resources: &mut Resources) {
@@ -345,6 +404,7 @@ impl PanelsSystem {
         resources.panels_data.hint.clear();
         resources.panels_data.removed_inds.clear();
         resources.panels_data.stats = None;
+        resources.panels_data.enemy_preview = None;
         resources.panels_data.choice_options = None;
         resources.panels_data.chosen_ind = None;
     }
@@ -373,6 +433,7 @@ impl PanelsSystem {
             .parameters
             .merge(&options.parameters.panel_card, true);
         let padding = options.floats.panel_card_padding;
+        card.middle.parameters.r#box.anchor = vec2(0.0, 0.2);
         let card = card.wrap_panel_body(padding, options);
         card
     }
@@ -384,6 +445,7 @@ pub struct PanelsData {
     pub push: Vec<Panel>,
     pub hint: Vec<Panel>,
     pub stats: Option<Panel>,
+    pub enemy_preview: Option<Panel>,
     pub choice_options: Option<CardChoice>,
     pub chosen_ind: Option<usize>,
     pub removed_inds: HashSet<usize>,
@@ -545,7 +607,7 @@ impl ShaderChain {
     }
     pub fn wrap_panel_body_column(
         mut shaders: Vec<ShaderChain>,
-        padding: f32,
+        padding: vec2<f32>,
         options: &Options,
     ) -> Self {
         let size = {
@@ -558,9 +620,7 @@ impl ShaderChain {
                     .try_get_float("u_scale")
                     .unwrap_or(1.0)
         };
-        let mut shader = shaders
-            .remove(0)
-            .wrap_panel_body(vec2(padding, padding), options);
+        let mut shader = shaders.remove(0).wrap_panel_body(padding, options);
         let count = shaders.len() as f32;
         shader.middle.parameters.r#box.size.y += count * size.y;
         shader.middle.parameters.r#box.size +=
@@ -653,6 +713,9 @@ impl ShaderChain {
             PanelType::Stats => {
                 self.middle.parameters.r#box.center = vec2(-1.0, 1.0);
             }
+            PanelType::EnemyPreview => {
+                self.middle.parameters.r#box.center = vec2(1.0, 1.0);
+            }
         }
         if let Some(color) = color {
             self = self.set_panel_color(color);
@@ -674,6 +737,7 @@ pub enum PanelType {
     Alert,
     Hint,
     Stats,
+    EnemyPreview,
 }
 
 impl PanelType {

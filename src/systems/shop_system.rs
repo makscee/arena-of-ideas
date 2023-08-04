@@ -205,11 +205,13 @@ impl ShopSystem {
             );
         }
         Self::show_offers_panel(resources);
+        PanelsSystem::open_enemy_preview(world, resources);
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
         resources.tape_player.clear();
         Event::ShopEnd.send(world, resources);
+        PanelsSystem::close_enemy_preview(resources);
     }
 
     fn create_battle_button(resources: &mut Resources) {

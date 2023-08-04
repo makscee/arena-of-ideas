@@ -72,12 +72,11 @@ impl UnitSystem {
         state.vars.change_int(&VarName::HpDamage, -amount);
     }
 
-    pub fn draw_unit_to_node(
+    pub fn generate_unit_shader(
         entity: legion::Entity,
-        node: &mut Node,
         world: &legion::World,
         resources: &Resources,
-    ) {
+    ) -> ShaderChain {
         let options = &resources.options;
         let context = Context::new(ContextLayer::Unit { entity }, world, resources);
         let mut shader = ShaderSystem::get_entity_shader(entity, world)
@@ -157,6 +156,16 @@ impl UnitSystem {
         let mut definitions = UnitSystem::extract_definitions_from_unit(entity, world, resources);
         definitions.extend(statuses.into_iter().map(|(name, _)| name));
         Definitions::add_hints(&mut shader.middle, definitions, resources);
+        shader
+    }
+
+    pub fn draw_unit_to_node(
+        entity: legion::Entity,
+        node: &mut Node,
+        world: &legion::World,
+        resources: &Resources,
+    ) {
+        let shader = Self::generate_unit_shader(entity, world, resources);
         node.add_entity_shader(entity, shader);
     }
 

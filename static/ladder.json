@@ -315,7 +315,12 @@
               "vars": null
             }
           },
-          "statuses": [],
+          "statuses": [
+            [
+              "Vitality",
+              3
+            ]
+          ],
           "shader": {
             "path": "shaders/vfx/particle_emitter.glsl",
             "parameters": {
