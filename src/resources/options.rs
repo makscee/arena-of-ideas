@@ -78,6 +78,7 @@ pub struct Shaders {
     pub battle_curse: ShaderChain,
     pub unit: ShaderChain,
     pub unit_card: ShaderChain,
+    pub unit_count: ShaderChain,
     pub field: ShaderChain,
     pub stats: ShaderChain,
     pub strike: ShaderChain,

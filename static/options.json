@@ -1,7 +1,7 @@
 {
     "player_team_name": "Dorks",
-    "initial_state": "Shop",
-    "initial_level": 2,
+    "initial_state": "MainMenu",
+    "initial_level": 0,
     "rate_heroes": false,
     "generate_ladder": false,
     "rewind_speed": 10.0,
@@ -997,6 +997,31 @@
         "dark": "#1f1f1f"
     },
     "shaders": {
+        "unit_count": {
+            "path": "shaders/vfx/text.glsl",
+            "parameters": {
+                "box": {
+                    "size": [
+                        1.0,
+                        0.11
+                    ],
+                    "anchor": [
+                        0.8,
+                        0.5
+                    ]
+                },
+                "uniforms": {
+                    "u_text": [
+                        1,
+                        "x3"
+                    ],
+                    "u_color": "#ffffff",
+                    "u_outline_color": "#000000",
+                    "u_mid_border": 0.05,
+                    "u_outline_fade": 1.0
+                }
+            }
+        },
         "battle_curse": {
             "path": "shaders/vfx/rectangle.glsl",
             "parameters": {

@@ -13,8 +13,16 @@ fn file_path() -> PathBuf {
     dir_path().join("save.json")
 }
 impl SaveSystem {
-    pub fn have_saved_game() -> bool {
+    pub fn have_saved_data() -> bool {
         file_path().exists()
+    }
+
+    pub fn have_saved_game() -> bool {
+        if let Ok(data) = Self::load_data() {
+            data.team.is_some()
+        } else {
+            false
+        }
     }
 
     pub fn save_game(world: &legion::World, resources: &Resources) {

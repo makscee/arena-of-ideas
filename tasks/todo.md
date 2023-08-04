@@ -92,7 +92,8 @@ Build
         new ladder {cm:2023-08-02T19:01:41}
     Continuous ladder generation {cm:2023-08-02T19:01:27}
     Move extra ldder into save {cm:2023-08-03T18:35:25}
-    Sacrifice fix reward
+    Sacrifice fix reward {cm:2023-08-04T17:33:54}
+    Main Menu simplify {cm:2023-08-04T17:57:22}
 Socials
     Build on itch.io
     Build post on reddit

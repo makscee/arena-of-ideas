@@ -355,15 +355,21 @@ impl PanelsSystem {
         world: &mut legion::World,
         resources: &mut Resources,
     ) -> ShaderChain {
-        // let mut card =
-        //     Ladder::current_team(resources).units[0].get_ui_shader(Faction::Dark, true, resources);
-        let team = TeamSystem::entity(Faction::Dark, world);
-        let unit = Ladder::current_team(resources).units[0].unpack(world, resources, 0, None, team);
+        let team = Ladder::current_team(resources);
+        let unit = team.units[0].unpack(world, resources, 0, None, None);
+        ContextState::get_mut(unit, world)
+            .vars
+            .set_faction(&VarName::Faction, Faction::Dark);
         let shader = UnitSystem::generate_unit_shader(unit, world, resources)
-            .insert_float("u_card".to_owned(), 1.0)
-            .insert_color("u_faction_color".to_owned(), resources.options.colors.light);
-        UnitSystem::clear_faction(Faction::Dark, world);
-        Self::generate_card_panel(shader, &resources.options)
+            .insert_float("u_card".to_owned(), 1.0);
+        world.remove(unit);
+        let mut shader = Self::generate_card_panel(shader, &resources.options);
+        let mut count = resources.options.shaders.unit_count.clone();
+        count
+            .middle
+            .insert_string_ref("u_text".to_owned(), format!("x{}", team.units.len()), 1);
+        shader.after.push(count);
+        shader
     }
 
     pub fn refresh_stats(world: &legion::World, resources: &mut Resources) {
