@@ -126,5 +126,25 @@
             "}"
         ],
         "description": "Expression Sin"
+    },
+    "Expression Uniform": {
+        "prefix": "uniform_expression",
+        "body": [
+            "{",
+            "    \"type\": \"Uniform\",",
+            "    \"key\": \"${1:u_text}\"",
+            "}"
+        ],
+        "description": "Expression Uniform"
+    },
+    "Expression Data": {
+        "prefix": "data_expression",
+        "body": [
+            "{",
+            "    \"type\": \"Data\",",
+            "    \"key\": \"${1:u_text}\"",
+            "}"
+        ],
+        "description": "Expression Data"
     }
 }

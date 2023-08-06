@@ -173,6 +173,7 @@ impl PackedUnit {
                 ShaderUniform::Color(options.colors.stat_hp),
             )
             .insert_string("u_text".to_owned(), self.health.to_string(), 1)
+            .insert_string("u_stat_name".to_owned(), "Health".to_owned(), 1)
             .map_key_to_key("u_text", "u_hp_str")
             .map_key_to_key("u_text_extra_size", "u_damage_taken")
             .map_key_to_key("u_text_color", "u_hp_color");
@@ -187,6 +188,7 @@ impl PackedUnit {
                 ShaderUniform::Color(options.colors.stat_atk),
             )
             .insert_string("u_text".to_owned(), self.attack.to_string(), 1)
+            .insert_string("u_stat_name".to_owned(), "Attack".to_owned(), 1)
             .map_key_to_key("u_text", "u_attack_str")
             .map_key_to_key("u_text_color", "u_attack_color");
         shader.after.push(attack_shader);

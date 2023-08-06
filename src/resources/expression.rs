@@ -329,6 +329,9 @@ pub enum ExpressionUniform {
     Uniform {
         key: String,
     },
+    Data {
+        key: String,
+    },
     Float {
         value: f32,
     },
@@ -372,9 +375,12 @@ pub enum ExpressionUniform {
 impl ExpressionUniform {
     pub fn calculate(&self, uniforms: &ShaderUniforms) -> Result<ShaderUniform> {
         match self {
-            ExpressionUniform::Uniform { key } => uniforms.get(key).context(format!(
-                "Failed to get Uniform expression for key {key} {uniforms:?}"
-            )),
+            ExpressionUniform::Uniform { key } => uniforms
+                .get(key)
+                .context("Failed to get Uniform expression"),
+            ExpressionUniform::Data { key } => uniforms
+                .get_from_data(key)
+                .context("Failed to get Data expression"),
             ExpressionUniform::OptionColor { key } => Ok(ShaderUniform::Color(options_color(key))),
             ExpressionUniform::Sum { a, b } => {
                 Ok(a.calculate(uniforms)?.sum(&b.calculate(uniforms)?))

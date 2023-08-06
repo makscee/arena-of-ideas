@@ -352,6 +352,7 @@ impl UnitSystem {
                     (resources.input_data.dragged_entity == Some(*entity)) as i32 as f32;
                 card_value = (card_value.max(hover_value) - dragged_value).max(0.0);
 
+                shader.insert_float_ref("u_hovered".to_owned(), hover_value);
                 shader.insert_float_ref("u_card".to_owned(), card_value);
                 shader.insert_float_ref("u_zoom".to_owned(), 1.0 + hover_value * 1.4);
             }
