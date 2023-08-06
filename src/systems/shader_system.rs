@@ -133,12 +133,12 @@ impl ShaderSystem {
     }
 
     fn draw_prepared_shaders(framebuffer: &mut ugli::Framebuffer, resources: &mut Resources) {
-        let game_time = match resources.tape_player.mode {
-            TapePlayMode::Play => resources.tape_player.head,
-            TapePlayMode::Stop { .. } => resources.global_time,
-        };
+        // let game_time = match resources.tape_player.mode {
+        //     TapePlayMode::Play => resources.tape_player.head,
+        //     TapePlayMode::Stop { .. } => resources.global_time,
+        // };
         let uniforms = ugli::uniforms!(
-            u_game_time: game_time,
+            u_game_time: resources.tape_player.head,
             u_global_time: resources.global_time,
         );
         for shader in mem::take(&mut resources.prepared_shaders) {

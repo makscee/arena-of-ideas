@@ -95,6 +95,7 @@ pub struct Shaders {
     pub team_name: ShaderChain,
     pub team_name_intro: ShaderChain,
     pub tape_indicator: ShaderChain,
+    pub tape_rewind_button: ShaderChain,
 }
 
 #[derive(Deserialize, Debug)]

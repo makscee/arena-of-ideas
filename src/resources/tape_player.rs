@@ -4,6 +4,7 @@ use super::*;
 pub struct TapePlayer {
     pub head: Time,
     pub velocity: Time,
+    pub need_velocity: Time,
     pub mode: TapePlayMode,
     pub tape: Tape,
 }

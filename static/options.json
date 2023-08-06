@@ -12,7 +12,7 @@
     "initial_shop_fill": 0,
     "shop_max_slots": 4,
     "custom_game": {
-        "enable": false,
+        "enable": true,
         "light": {
             "units": [
                 {
@@ -1609,11 +1609,60 @@
                         0.0,
                         -4.0
                     ],
-                    "u_color": "#9266CC",
-                    "u_padding": 3.0
+                    "u_color": "#ffffff",
+                    "u_padding": 3.0,
+                    "mapping": {
+                        "u_color": {
+                            "type": "OptionColor",
+                            "key": "secondary"
+                        },
+                        "u_color_2": {
+                            "type": "OptionColor",
+                            "key": "inactive"
+                        }
+                    }
                 }
             },
-            "layer": "UI"
+            "layer": "Background"
+        },
+        "tape_rewind_button": {
+            "path": "shaders/vfx/triangle.glsl",
+            "parameters": {
+                "uniforms": {
+                    "u_size": 0.75,
+                    "mapping": {
+                        "u_rotation": {
+                            "type": "Mul",
+                            "a": {
+                                "type": "Uniform",
+                                "key": "u_direction"
+                            },
+                            "b": {
+                                "type": "Float",
+                                "value": 0.5
+                            }
+                        },
+                        "u_offset": {
+                            "type": "Vec2",
+                            "x": {
+                                "type": "Mul",
+                                "a": {
+                                    "type": "Float",
+                                    "value": 2.5
+                                },
+                                "b": {
+                                    "type": "Uniform",
+                                    "key": "u_direction"
+                                }
+                            },
+                            "y": {
+                                "type": "Float",
+                                "value": 0.0
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "images": {

@@ -17,12 +17,14 @@ void main() {
 #ifdef FRAGMENT_SHADER
 in vec2 uv;
 
-vec4 stripes() {
-    const float SPACING = 1.0;
+uniform vec4 u_color_2;
+
+vec4 stripes(float offset) {
+    const float SPACING = 1;
     const float COUNT = 4;
     float y = -2.0;
     float sdf = 1.0;
-    float offset = u_head - floor(u_head / SPACING);
+    offset = u_head - floor(u_head / SPACING) + offset;
     for(float i = -COUNT; i <= COUNT; i++) {
         float x = i * SPACING - offset;
         sdf = min(sdf, rectangle_sdf(uv - vec2(x, y), vec2(0.05, 0.5), 0));
@@ -32,17 +34,22 @@ vec4 stripes() {
 
 void main() {
     vec4 color = vec4(0);
-
-    if(u_velocity != 0) {
+    float offset = 0;
+    float vel = u_velocity + offset * 0.2;
+    if(vel != 0) {
+        vec4 bg_color = u_color_2;
         vec2 triangle_uv = uv;
-        triangle_uv.x /= u_velocity;
         float sdf = triangle_sdf(triangle_uv, 1., -0.5);
-        vec4 triangle = u_color;
-        triangle.a = float(sdf < 0.);
-        color = alpha_blend(color, triangle);
+        bg_color.a = float(sdf < 0.);
+        color = alpha_blend(color, bg_color);
+        vec4 main_color = u_color;
+        triangle_uv.x = (triangle_uv.x + .5) / vel - .5;
+        sdf = triangle_sdf(triangle_uv, 1., -0.5);
+        main_color.a = float(sdf < 0.);
+        color = alpha_blend(color, main_color);
     }
 
-    color = alpha_blend(color, stripes());
+    color = alpha_blend(color, stripes(offset * 0.05));
 
     gl_FragColor = color;
 }

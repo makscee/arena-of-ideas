@@ -146,5 +146,15 @@
             "}"
         ],
         "description": "Expression Data"
+    },
+    "Expression Option Color": {
+        "prefix": "option_color_expression",
+        "body": [
+            "{",
+            "    \"type\": \"OptionColor\",",
+            "    \"key\": \"${1:primary}\"",
+            "}"
+        ],
+        "description": "Expression Option Color"
     }
 }

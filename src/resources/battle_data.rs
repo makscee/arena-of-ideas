@@ -10,4 +10,7 @@ pub struct BattleData {
     pub turns: usize,
     pub curse_choice: Vec<Curse>,
     pub applied_curses: HashSet<usize>,
+    pub tape_indicator_entity: Option<legion::Entity>,
+    pub tape_forward_entity: Option<legion::Entity>,
+    pub tape_backward_entity: Option<legion::Entity>,
 }
