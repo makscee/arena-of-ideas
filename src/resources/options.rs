@@ -11,6 +11,7 @@ pub struct Options {
     pub floats: Floats,
     pub uniforms: Uniforms,
     pub parameters: Parameters,
+    pub sounds: HashMap<SoundType, PathBuf>,
 
     pub fov: f32,
     pub rewind_speed: f32,

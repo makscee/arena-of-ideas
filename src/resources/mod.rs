@@ -39,6 +39,7 @@ mod save_data;
 mod shader_programs;
 mod shader_uniforms;
 mod shop_data;
+mod sounds;
 mod status;
 mod status_library;
 mod tape;
@@ -82,6 +83,7 @@ pub use save_data::*;
 pub use shader_programs::*;
 pub use shader_uniforms::*;
 pub use shop_data::*;
+pub use sounds::*;
 pub use status::*;
 pub use status_library::*;
 pub use tape::*;
@@ -99,6 +101,7 @@ pub struct Resources {
 
     pub shader_programs: ShaderPrograms,
     pub image_textures: ImageTextures,
+    pub sounds: Sounds,
 
     pub global_time: Time,
     pub delta_time: Time,
@@ -171,6 +174,7 @@ impl Resources {
             sacrifice_data: default(),
             panels_data: default(),
             gallery_data: default(),
+            sounds: default(),
         }
     }
 
@@ -196,5 +200,6 @@ impl Resources {
         );
         self.fonts = Fonts::new(geng);
         ImageTextures::load(self, &static_path().join("images/_list.json"), watcher);
+        Sounds::load(self, &static_path().join("sounds/_list.json"), watcher);
     }
 }

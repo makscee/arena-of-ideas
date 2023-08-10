@@ -5,6 +5,7 @@ pub struct MainMenuSystem;
 impl MainMenuSystem {
     pub fn enter(from: GameState, resources: &mut Resources) {
         PanelsSystem::close_stats(resources);
+        Sounds::play_sound(SoundType::Click, resources);
         fn new_run_handler(
             event: HandleEvent,
             entity: legion::Entity,

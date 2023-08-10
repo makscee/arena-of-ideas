@@ -1777,5 +1777,8 @@
                 "u_scale": 0.15
             }
         }
+    },
+    "sounds": {
+        "Click": "sounds/click.ogg"
     }
 }

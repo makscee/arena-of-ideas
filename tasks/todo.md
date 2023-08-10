@@ -95,6 +95,12 @@ Build
     Sacrifice fix reward {cm:2023-08-04T17:33:54}
     Main Menu simplify {cm:2023-08-04T17:57:22}
     Attack & Hp names on hover {cm:2023-08-06T16:26:38}
+    Ladder mode explanation alert
+    Sound
+        Strike
+        Buy
+        Click
+        Music
 Socials
     Build on itch.io
     Build post on reddit
