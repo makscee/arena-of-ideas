@@ -54,9 +54,9 @@ vec4 sdf_gradient(float x) {
     vec4 g3 = vec4(u_g_color_3.rgb, u_g_color_3.a * u_g_alphas[2]);
     vec4 g4 = vec4(u_g_color_4.rgb, u_g_color_4.a * u_g_alphas[3]);
     return oob * (float(x < u_g_points[0]) * u_color +
-        float(x > u_g_points[0] && x < u_g_points[1]) * mix(g1, g2, (x - u_g_points[0]) / (u_g_points[1] - u_g_points[0])) +
-        float(x > u_g_points[1] && x < u_g_points[2]) * mix(g2, g3, (x - u_g_points[1]) / (u_g_points[2] - u_g_points[1])) +
-        float(x > u_g_points[2] && x < u_g_points[3]) * mix(g3, g4, (x - u_g_points[2]) / (u_g_points[3] - u_g_points[2])));
+        float(x > u_g_points[0] && x < u_g_points[1]) * mix(g1, g2, (x - u_g_points[0]) / (u_g_points[1] - u_g_points[0] + 0.0000001)) +
+        float(x > u_g_points[1] && x < u_g_points[2]) * mix(g2, g3, (x - u_g_points[1]) / (u_g_points[2] - u_g_points[1] + 0.0000001)) +
+        float(x > u_g_points[2] && x < u_g_points[3]) * mix(g3, g4, (x - u_g_points[2]) / (u_g_points[3] - u_g_points[2] + 0.0000001)));
 }
 
 vec2 get_card_uv(vec2 uv) {
