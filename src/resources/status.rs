@@ -162,10 +162,10 @@ impl Status {
             _ => {}
         }
         for _ in 0..delta.abs() {
-            let (text, color) = if delta > 0 {
-                ("+", resources.options.colors.add)
+            let (text, color, sound) = if delta > 0 {
+                ("+", resources.options.colors.add, SoundType::Buff)
             } else {
-                ("-", resources.options.colors.subtract)
+                ("-", resources.options.colors.subtract, SoundType::Debuff)
             };
 
             if let Some(node) = node.as_mut() {
@@ -178,6 +178,7 @@ impl Status {
                     outline_color,
                     entity,
                     1,
+                    Some(sound),
                     resources,
                 );
             }

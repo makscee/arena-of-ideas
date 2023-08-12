@@ -158,6 +158,7 @@ impl BattleSystem {
         resources.tape_player.clear();
         resources.tape_player.tape = tape.unwrap();
         resources.tape_player.mode = TapePlayMode::Play;
+        Sounds::play_sound(SoundType::StartGame, resources);
     }
 
     pub fn finish_ladder_battle(world: &mut legion::World, resources: &mut Resources) {
@@ -165,7 +166,7 @@ impl BattleSystem {
         resources.battle_data.last_score = Ladder::get_score(world);
         resources.battle_data.total_score += resources.battle_data.last_score;
         let level = Ladder::current_ind(resources) + 1;
-        let (title, text, buttons, color) = if resources.battle_data.last_score > 0 {
+        let (title, text, buttons, color, sound) = if resources.battle_data.last_score > 0 {
             fn input_handler(
                 event: HandleEvent,
                 _: legion::Entity,
@@ -190,6 +191,7 @@ impl BattleSystem {
                     format!("Level {level} complete!"),
                     buttons,
                     resources.options.colors.victory,
+                    SoundType::Victory,
                 )
             } else {
                 (
@@ -197,6 +199,7 @@ impl BattleSystem {
                     format!("All {level} levels complete!\nNew level will be added to ladder."),
                     buttons,
                     resources.options.colors.victory,
+                    SoundType::Victory,
                 )
             }
         } else {
@@ -208,9 +211,11 @@ impl BattleSystem {
                 ),
                 vec![PanelFooterButton::Restart],
                 resources.options.colors.defeat,
+                SoundType::Defeat,
             )
         };
         PanelsSystem::add_text_alert(color, title, &text, vec2(0.0, 0.3), buttons, resources);
+        Sounds::play_sound(sound, resources);
     }
 
     pub fn clear_world(world: &mut legion::World, resources: &mut Resources) {
@@ -437,6 +442,7 @@ impl BattleSystem {
     fn add_strike_vfx(_: &mut legion::World, resources: &mut Resources, node: &mut Node) {
         let position = BATTLEFIELD_POSITION;
         node.add_effect(VfxSystem::vfx_strike(resources, position));
+        node.add_sound(SoundType::HitMelee, 0.0);
     }
 }
 

@@ -127,8 +127,14 @@ impl TapePlayerSystem {
         let ts = resources.tape_player.head;
         let mut tape = Tape::default();
         mem::swap(&mut tape, &mut resources.tape_player.tape);
-        let shaders = tape.get_shaders(ts, entity_shaders, resources);
+        let shaders = tape.get_shaders(
+            ts,
+            resources.tape_player.prev_head,
+            entity_shaders,
+            resources,
+        );
         mem::swap(&mut tape, &mut resources.tape_player.tape);
+        resources.tape_player.prev_head = ts;
         shaders
     }
 

@@ -66,9 +66,23 @@ pub enum Animation {
         entity: legion::Entity,
         shader: ShaderChain,
     },
+    Sfx {
+        sound: SoundType,
+    },
 }
 
 impl Animation {
+    pub fn play_sounds(&self, t: Time, prev_t: Time, resources: &Resources) {
+        match self {
+            Animation::Sfx { sound } => {
+                if t > 0.0 && prev_t < 0.0 {
+                    Sounds::play_sound(*sound, resources);
+                }
+            }
+            _ => {}
+        }
+    }
+
     pub fn update_entities(
         &self,
         t: Time,

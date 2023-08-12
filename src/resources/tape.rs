@@ -40,6 +40,7 @@ impl Tape {
     pub fn get_shaders(
         &mut self,
         ts: Time,
+        prev_ts: Time,
         mut entity_shaders: HashMap<legion::Entity, ShaderChain>,
         resources: &mut Resources,
     ) -> Vec<ShaderChain> {
@@ -56,6 +57,11 @@ impl Tape {
             .retain(|(_, panel)| panel.join_node(&mut node, ts));
         entity_shaders.extend(node.get_entity_shaders());
 
+        for effect in node.all_effects() {
+            let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
+            let prev_t = (prev_ts - effect.delay) / effect.duration.unwrap_or(1.0);
+            effect.animation.play_sounds(t, prev_t, &resources);
+        }
         for effect in node.all_effects() {
             let t = (ts - effect.delay) / effect.duration.unwrap_or(1.0);
             effect.animation.update_entities(t, &mut entity_shaders);
@@ -292,6 +298,15 @@ impl Node {
 
     pub fn add_effect(&mut self, effect: TimedEffect) {
         self.effects.push(effect);
+    }
+
+    pub fn add_sound(&mut self, sound: SoundType, delay: f32) {
+        self.add_effect(TimedEffect {
+            duration: None,
+            delay,
+            animation: Animation::Sfx { sound },
+            order: 0,
+        });
     }
 
     pub fn add_effects(&mut self, effects: Vec<TimedEffect>) {

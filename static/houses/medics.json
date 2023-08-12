@@ -18,7 +18,11 @@
                     }
                 },
                 "after": {
-                    "type": "ShowCurve"
+                    "type": "ShowCurve",
+                    "after": {
+                        "type": "PlaySound",
+                        "sound": "LevelUp"
+                    }
                 }
             },
             "default_vars": {

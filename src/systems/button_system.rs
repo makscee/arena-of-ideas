@@ -45,7 +45,7 @@ impl ButtonSystem {
         _: legion::Entity,
         shader: &mut Shader,
         _: &mut legion::World,
-        _: &mut Resources,
+        resources: &mut Resources,
     ) {
         if shader.is_active() {
             match event {
@@ -55,6 +55,7 @@ impl ButtonSystem {
                 HandleEvent::Press => {
                     shader.insert_float_ref("u_pressed".to_owned(), 1.0);
                 }
+                HandleEvent::Click => Sounds::play_sound(SoundType::Click, resources),
                 _ => {}
             };
         }

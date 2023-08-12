@@ -95,6 +95,7 @@ impl ShopSystem {
             .vars
             .change_int(&VarName::G, delta);
         PanelsSystem::refresh_stats(world, resources);
+        Sounds::play_sound(SoundType::Coin, resources);
         if let Some(reason) = reason {
             let sign = match delta.signum() > 0 {
                 true => "+",
@@ -168,6 +169,7 @@ impl ShopSystem {
     }
 
     pub fn enter(from: GameState, world: &mut legion::World, resources: &mut Resources) {
+        Sounds::play_loop(SoundType::Music, resources);
         if Ladder::need_new_level(resources) {
             let team = PackedTeam::pack(Faction::Team, world, resources);
             Ladder::generate_next_level(&team, world, resources);
@@ -209,6 +211,7 @@ impl ShopSystem {
     }
 
     pub fn leave(world: &mut legion::World, resources: &mut Resources) {
+        Sounds::stop_loop(SoundType::Music, resources);
         resources.tape_player.clear();
         Event::ShopEnd.send(world, resources);
         PanelsSystem::close_enemy_preview(resources);

@@ -1779,6 +1779,17 @@
         }
     },
     "sounds": {
-        "Click": "sounds/click.ogg"
+        "Click": "sounds/click.ogg",
+        "Buff": "sounds/buff.ogg",
+        "Debuff": "sounds/debuff.ogg",
+        "Coin": "sounds/coin.ogg",
+        "HitMelee": "sounds/hit_melee.ogg",
+        "HitRange": "sounds/hit_range.ogg",
+        "LevelUp": "sounds/level_up.ogg",
+        "Victory": "sounds/victory.ogg",
+        "Defeat": "sounds/defeat.ogg",
+        "StartGame": "sounds/start_game.ogg",
+        "Spawn": "sounds/spawn.ogg",
+        "Music": "sounds/music_loop.ogg"
     }
 }

@@ -107,6 +107,9 @@ pub enum Effect {
     ShowCurve {
         color: Option<Rgba<f32>>,
     },
+    PlaySound {
+        sound: SoundType,
+    },
     Aoe {
         factions: Vec<ExpressionFaction>,
         effect: Box<EffectWrapped>,
@@ -276,6 +279,7 @@ impl EffectWrapped {
                         resources.options.colors.subtract,
                         target,
                         1,
+                        None,
                         resources,
                     );
                 }
@@ -359,6 +363,7 @@ impl EffectWrapped {
                         color,
                         target,
                         1,
+                        None,
                         resources,
                     );
                 }
@@ -531,6 +536,7 @@ impl EffectWrapped {
                         AbilityPool::get_house_origin(resources, &ability).get_color(&resources),
                         context.owner().unwrap(),
                         1,
+                        None,
                         resources,
                     );
                 }
@@ -578,6 +584,7 @@ impl EffectWrapped {
                                 color,
                                 entity,
                                 *font,
+                                None,
                                 resources,
                             );
                         }
@@ -611,6 +618,11 @@ impl EffectWrapped {
                             .expect(&format!("Target not found {context}")),
                         color,
                     ));
+                }
+            }
+            Effect::PlaySound { sound } => {
+                if let Some(node) = node.as_mut() {
+                    node.add_sound(*sound, 0.0);
                 }
             }
             Effect::Kill => {
@@ -930,6 +942,7 @@ impl Display for Effect {
                 entity
             ),
             Effect::ShowText { text, .. } => write!(f, "{} {}", self.as_ref(), text),
+            Effect::PlaySound { sound } => write!(f, "{} {}", self.as_ref(), sound),
             Effect::Aoe { factions, .. } => {
                 write!(f, "{} {}", self.as_ref(), factions.iter().join(","))
             }

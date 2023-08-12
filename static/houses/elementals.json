@@ -58,7 +58,11 @@
                             "var": "Charges"
                         },
                         "after": {
-                            "type": "ShowCurve"
+                            "type": "ShowCurve",
+                            "after": {
+                                "type": "PlaySound",
+                                "sound": "HitRange"
+                            }
                         }
                     }
                 }
@@ -93,7 +97,11 @@
                             "var": "Charges"
                         },
                         "after": {
-                            "type": "ShowCurve"
+                            "type": "ShowCurve",
+                            "after": {
+                                "type": "PlaySound",
+                                "sound": "HitRange"
+                            }
                         }
                     }
                 }

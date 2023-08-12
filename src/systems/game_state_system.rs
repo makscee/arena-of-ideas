@@ -22,6 +22,7 @@ pub enum GameState {
 impl System for GameStateSystem {
     fn update(&mut self, world: &mut legion::World, resources: &mut Resources) {
         if resources.input_data.down_keys.contains(&R) {
+            resources.tape_player.head = 0.0;
             Game::restart(world, resources);
         }
         match resources.current_state {

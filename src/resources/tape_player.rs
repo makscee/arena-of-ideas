@@ -3,6 +3,7 @@ use super::*;
 #[derive(Default)]
 pub struct TapePlayer {
     pub head: Time,
+    pub prev_head: Time,
     pub velocity: Time,
     pub need_velocity: Time,
     pub mode: TapePlayMode,

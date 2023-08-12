@@ -39,6 +39,7 @@ mod save_data;
 mod shader_programs;
 mod shader_uniforms;
 mod shop_data;
+mod sound_data;
 mod sounds;
 mod status;
 mod status_library;
@@ -83,6 +84,7 @@ pub use save_data::*;
 pub use shader_programs::*;
 pub use shader_uniforms::*;
 pub use shop_data::*;
+pub use sound_data::*;
 pub use sounds::*;
 pub use status::*;
 pub use status_library::*;
@@ -116,6 +118,7 @@ pub struct Resources {
     pub input_data: InputData,
     pub panels_data: PanelsData,
     pub gallery_data: GalleryData,
+    pub sound_data: SoundData,
 
     pub hero_pool: HeroPool,
     pub enemy_pool: EnemyPool,
@@ -175,6 +178,7 @@ impl Resources {
             panels_data: default(),
             gallery_data: default(),
             sounds: default(),
+            sound_data: default(),
         }
     }
 

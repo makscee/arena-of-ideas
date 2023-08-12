@@ -50,7 +50,11 @@
                             "var": "AttackValue"
                         },
                         "after": {
-                            "type": "ShowCurve"
+                            "type": "ShowCurve",
+                            "after": {
+                                "type": "PlaySound",
+                                "sound": "HitRange"
+                            }
                         }
                     },
                     "else": {

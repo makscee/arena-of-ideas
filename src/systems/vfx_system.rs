@@ -82,6 +82,7 @@ impl VfxSystem {
         outline_color: Rgba<f32>,
         parent: legion::Entity,
         font: usize,
+        sound: Option<SoundType>,
         resources: &Resources,
     ) {
         let delay = TEXT_DELAY_PER * node.key_effects_count(TEXT_KEY) as f32;
@@ -96,6 +97,9 @@ impl VfxSystem {
             0,
         );
         node.add_effect_by_key(TEXT_KEY.to_owned(), effect);
+        if let Some(sound) = sound {
+            node.add_sound(sound, delay);
+        }
     }
 
     fn get_show_text_shader(
