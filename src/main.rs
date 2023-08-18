@@ -17,10 +17,11 @@ use bevy::{
     sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
     utils::HashMap,
 };
+use bevy_asset_loader::prelude::*;
 use bevy_common_assets::ron::RonAssetPlugin;
 use bevy_egui::{
     egui::{CentralPanel, TextEdit},
-    EguiContexts, EguiPlugin,
+    EguiContexts,
 };
 use components::*;
 use itertools::Itertools;
@@ -33,6 +34,7 @@ use serde::*;
 
 fn main() {
     App::new()
+        .add_state::<GameState>()
         .add_plugins((DefaultPlugins
             .set(AssetPlugin {
                 watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
@@ -49,36 +51,26 @@ fn main() {
                 }),
                 ..default()
             }),))
+        .add_loading_state(
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Next),
+        )
+        .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
+            GameState::AssetLoading,
+            "ron/dynamic.assets.ron",
+        )
+        .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
+        .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
         .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
         .add_plugins(Material2dPlugin::<SdfShapeMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
+        .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins((UnitPlugin, RepresentationPlugin))
-        // .add_plugins(EguiPlugin)
         // .add_systems(Update, ui_example_system)
-        .add_systems(Startup, (setup_units, setup))
-        .add_systems(Update, spawn_units.run_if(run_once()))
+        .add_systems(OnEnter(GameState::Next), setup)
         .add_systems(Update, input)
         .init_resource::<UserName>()
         .init_resource::<Password>()
         .run();
-}
-
-fn setup_units(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let unit = UnitHandle(asset_server.load("ron/1.unit.ron"));
-    commands.insert_resource(unit);
-}
-
-fn spawn_units(world: &mut World) {
-    debug!("Spawn units");
-    let units = world
-        .get_resource::<Assets<PackedUnit>>()
-        .unwrap()
-        .iter()
-        .map(|(_, x)| x.clone())
-        .collect_vec();
-    for unit in units {
-        dbg!(unit).unpack(world);
-    }
 }
 
 fn setup(mut commands: Commands) {

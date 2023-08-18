@@ -1,0 +1,23 @@
+(
+    material: Circle(color: ("#CFD8DC")),
+    mapping: (
+        {
+            Radius: Sum(
+                Float(1.0),
+                Mul(
+                    Sin(
+                        Mul(
+                            GlobalTime,
+                            Float(6.0),
+                        ),
+                    ),
+                    Float(0.05),
+                ),
+            ),
+            Position: Vec2(
+                Float(0.0),
+                Sin(GlobalTime),
+            ),
+        },
+    ),
+)

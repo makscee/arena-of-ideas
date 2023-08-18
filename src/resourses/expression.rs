@@ -31,11 +31,29 @@ impl Expression {
                     .get_resource::<Time>()
                     .context("Time resource not found")?
                     .elapsed_seconds();
-                world
-                    .get::<VarState>(owner)
-                    .unwrap()
-                    .get_value(*var, t)?
-                    .get_float()
+                let mut result = None;
+                let mut entity = owner;
+
+                loop {
+                    if let Some(state) = world.get::<VarState>(entity) {
+                        if let Ok(value) = state.get_value(*var, t) {
+                            result = Some(value);
+                            break;
+                        }
+                    }
+                    if result.is_none() {
+                        if let Some(parent) = world.get::<Parent>(entity) {
+                            entity = parent.get();
+                            continue;
+                        }
+                    }
+                    break;
+                }
+                if let Some(result) = result {
+                    result.get_float()
+                } else {
+                    Err(anyhow!("Value not found {var:?}"))
+                }
             }
             _ => Err(anyhow!("Float not supported by {self:?}")),
         }

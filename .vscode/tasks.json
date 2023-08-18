@@ -22,7 +22,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "ronfmt assets/ron/*.ron"
+			"command": "find . -iname '*.ron' -exec ronfmt \"{}\" \\;"
 		},
 		{
 			"label": "Flamegraph Run Debug",

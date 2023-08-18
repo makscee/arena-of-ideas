@@ -5,6 +5,7 @@ pub struct UnitPlugin;
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Update, Self::update_units);
+        app.add_systems(OnEnter(GameState::Next), Self::spawn);
     }
 }
 
@@ -12,6 +13,14 @@ impl UnitPlugin {
     fn update_units(time: Res<Time>, mut query: Query<&mut Transform, With<Unit>>) {
         for mut t in query.iter_mut() {
             t.translation.y = time.elapsed_seconds().sin() * 2.0;
+        }
+    }
+
+    fn spawn(world: &mut World) {
+        for (_, unit) in world.get_resource::<Pools>().unwrap().heroes.clone() {
+            let units = world.get_resource::<Assets<PackedUnit>>().unwrap();
+            let unit = units.get(&unit).unwrap().clone();
+            unit.unpack(world);
         }
     }
 }
@@ -25,7 +34,14 @@ pub struct PackedUnit {
 
 impl PackedUnit {
     pub fn unpack(self, world: &mut World) {
-        let entity = self.representation.unpack(None, world);
+        let entity = world
+            .get_resource::<Assets<Representation>>()
+            .unwrap()
+            .get(&world.get_resource::<Options>().unwrap().unit)
+            .unwrap()
+            .clone()
+            .unpack(None, world);
+        self.representation.unpack(Some(entity), world);
         world.entity_mut(entity).insert(Unit).insert(self.state);
     }
 }

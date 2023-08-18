@@ -107,7 +107,9 @@ Socials {c}
     Build post on tg
     Build devlog on yt
 Bevy transition
-    Units
-    Representation
+    Representation {cm:2023-08-18T16:46:36}
         chaining {cm:2023-08-16T13:52:35}
         uniform animating {cm:2023-08-18T16:26:32}
+    Options {cm:2023-08-18T22:42:16}
+    Unit Rep with name & stats
+    Unit strike animation

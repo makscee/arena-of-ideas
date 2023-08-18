@@ -1,6 +1,7 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Component, Clone)]
+#[derive(Serialize, TypeUuid, TypePath, Deserialize, Debug, Component, Resource, Clone)]
+#[uuid = "cc360991-638e-4066-af03-f4f8abbbc450"]
 #[serde(deny_unknown_fields)]
 pub struct Representation {
     pub material: RepresentationMaterial,

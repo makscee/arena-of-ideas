@@ -1,0 +1,6 @@
+(
+    {
+        "rep.unit": File(path: "ron/unit.rep.ron"),
+        "pool.heroes": Folder(path: "ron/heroes"),
+    },
+)
