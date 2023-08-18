@@ -58,6 +58,7 @@ fn main() {
             GameState::AssetLoading,
             "ron/dynamic.assets.ron",
         )
+        .add_systems(PostUpdate, detect_changes)
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
         .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
@@ -66,7 +67,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins((UnitPlugin, RepresentationPlugin))
         // .add_systems(Update, ui_example_system)
-        .add_systems(OnEnter(GameState::Next), setup)
+        .add_systems(OnEnter(GameState::Next), setup.run_if(run_once()))
         .add_systems(Update, input)
         .init_resource::<UserName>()
         .init_resource::<Password>()
@@ -86,5 +87,21 @@ fn input(input: Res<Input<KeyCode>>, mut time: ResMut<Time>) {
         } else {
             time.pause()
         }
+    }
+}
+
+fn detect_changes(
+    mut unit_events: EventReader<AssetEvent<PackedUnit>>,
+    mut rep_events: EventReader<AssetEvent<Representation>>,
+    mut state: ResMut<NextState<GameState>>,
+) {
+    if unit_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
+    }) || rep_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
+    }) {
+        state.set(GameState::Restart)
     }
 }

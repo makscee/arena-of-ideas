@@ -6,21 +6,21 @@
                 Radius: State(Radius),
                 Position: Vec2(
                     Float(0.0),
-                    Sin(GlobalTime),
+                    Mul(Sin(GlobalTime), Float(0.1)),
                 ),
             },
         ),
         children: [
             (
                 material: Rectangle(
-                    size: (3.5, 0.6),
+                    size: (3.5, 1.6),
                     color: ("#607D8B"),
                 ),
             ),
             (
                 material: Text(
                     color: ("#FF7043"),
-                    size: 0.5,
+                    size: 1.5,
                 ),
                 mapping: (
                     {
@@ -36,25 +36,13 @@
                 [
                     (
                         t: 0,
-                        value: Float(0.3),
+                        value: Float(0.0001),
                     ),
                     (
-                        t: 3.0,
-                        duration: 1.0,
+                        t: 0.0,
+                        duration: 3.0,
                         tween: QuartOut,
-                        value: Float(4.0),
-                    ),
-                    (
-                        t: 5.0,
-                        duration: 0.5,
-                        tween: QuartOut,
-                        value: Float(2.0),
-                    ),
-                    (
-                        t: 6.0,
-                        duration: 1.5,
-                        tween: BackIn,
-                        value: Float(8.0),
+                        value: Float(3.5),
                     ),
                 ],
             ),

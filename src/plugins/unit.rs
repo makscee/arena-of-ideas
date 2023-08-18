@@ -1,3 +1,5 @@
+use bevy::utils::Instant;
+
 use super::*;
 
 pub struct UnitPlugin;
@@ -5,7 +7,8 @@ pub struct UnitPlugin;
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Update, Self::update_units);
-        app.add_systems(OnEnter(GameState::Next), Self::spawn);
+        app.add_systems(OnEnter(GameState::Next), Self::spawn)
+            .add_systems(OnEnter(GameState::Restart), Self::despawn);
     }
 }
 
@@ -17,11 +20,26 @@ impl UnitPlugin {
     }
 
     fn spawn(world: &mut World) {
+        debug!("Spawn");
         for (_, unit) in world.get_resource::<Pools>().unwrap().heroes.clone() {
             let units = world.get_resource::<Assets<PackedUnit>>().unwrap();
             let unit = units.get(&unit).unwrap().clone();
             unit.unpack(world);
         }
+    }
+
+    fn despawn(
+        query: Query<Entity, With<Unit>>,
+        mut commands: Commands,
+        mut state: ResMut<NextState<GameState>>,
+        mut time: ResMut<Time>,
+    ) {
+        for unit in query.iter() {
+            commands.entity(unit).despawn_recursive();
+        }
+        debug!("Despawn");
+        state.set(GameState::Next);
+        *time = Time::new(Instant::now());
     }
 }
 
