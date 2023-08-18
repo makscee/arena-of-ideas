@@ -251,64 +251,6 @@ impl ShaderSystem {
         );
     }
 
-    pub fn flatten_shader_chain(mut shader: ShaderChain) -> Vec<ShaderChain> {
-        if !shader.middle.is_enabled() {
-            return default();
-        }
-        let mut rng: rand_pcg::Pcg64 =
-            rand_seeder::Seeder::from(format!("{:?}", shader.middle.entity)).make_rng();
-        shader
-            .middle
-            .parameters
-            .uniforms
-            .insert_float_ref("u_rand".to_owned(), rng.gen_range(0.0..1.0));
-        let mut before = default();
-        mem::swap(&mut before, shader.before.deref_mut());
-        before.iter_mut().for_each(|x| {
-            x.middle
-                .parameters
-                .uniforms
-                .merge_mut(&shader.middle.parameters.uniforms, false);
-            x.middle
-                .parameters
-                .r#box
-                .consider_parent(&shader.middle.parameters.r#box);
-        });
-        let mut after = default();
-        mem::swap(&mut after, shader.after.deref_mut());
-        after.iter_mut().for_each(|x| {
-            x.middle
-                .parameters
-                .uniforms
-                .merge_mut(&shader.middle.parameters.uniforms, false);
-            x.middle
-                .parameters
-                .r#box
-                .consider_parent(&shader.middle.parameters.r#box);
-        });
-
-        let mut result = [before, vec![shader], after].concat();
-        if result.len() == 1 {
-            return result;
-        }
-        let mut changed = true;
-        while changed {
-            changed = false;
-            result = result
-                .into_iter()
-                .map(|x| {
-                    let vec = Self::flatten_shader_chain(x);
-                    if vec.len() > 1 {
-                        changed = true;
-                    }
-                    vec
-                })
-                .flatten()
-                .collect_vec();
-        }
-        result
-    }
-
     pub fn get_quad(vertices: usize, geng: &Geng) -> ugli::VertexBuffer<draw_2d::Vertex> {
         let vert_count = vertices;
         let mut vertices = vec![draw_2d::Vertex {

@@ -6,7 +6,7 @@ Show stats after status on card
 Parallel hero ratings run with discrepancy test @content
 API for data structs: clear()
 Stats panel working in battle (?) @ui
-Build
+Build {c}
     Card rework @visual {cm:2023-06-20T20:24:25}
     Colors rework {start:2023-06-22T14:01:32} {cm:2023-06-22T19:17:15} {duration:05h15m}
     Statuses pool {start:2023-06-26T13:16:42} {c} {cm:2023-06-26T14:55:03} {duration:01h38m}
@@ -96,13 +96,18 @@ Build
     Main Menu simplify {cm:2023-08-04T17:57:22}
     Attack & Hp names on hover {cm:2023-08-06T16:26:38}
     Ladder mode explanation alert
-    Sound
-        Strike
-        Buy
-        Click
-        Music
-Socials
+    Sound {cm:2023-08-15T15:08:22}
+        Strike {cm:2023-08-15T15:08:24}
+        Buy {cm:2023-08-15T15:08:24}
+        Click {cm:2023-08-15T15:08:24}
+        Music {cm:2023-08-15T15:08:24}
+Socials {c}
     Build on itch.io
     Build post on reddit
     Build post on tg
     Build devlog on yt
+Bevy transition
+    Units
+    Representation
+        chaining {cm:2023-08-16T13:52:35}
+        uniform animating {cm:2023-08-18T16:26:32}
