@@ -1,0 +1,63 @@
+(
+    representation: (
+        material: Circle(color: ("#9C27B0")),
+        mapping: (
+            {
+                Radius: State(Radius),
+                Position: Vec2(
+                    Float(0.0),
+                    Sin(GlobalTime),
+                ),
+            },
+        ),
+        children: [
+            (
+                material: Rectangle(
+                    size: (3.5, 0.6),
+                    color: ("#607D8B"),
+                ),
+            ),
+            (
+                material: Text(
+                    color: ("#FF7043"),
+                    size: 0.5,
+                ),
+                mapping: (
+                    {
+                        Text: Sin(GlobalTime),
+                    },
+                ),
+            ),
+        ],
+    ),
+    state: (
+        {
+            Radius: (
+                [
+                    (
+                        t: 0,
+                        value: Float(0.3),
+                    ),
+                    (
+                        t: 3.0,
+                        duration: 1.0,
+                        tween: QuartOut,
+                        value: Float(4.0),
+                    ),
+                    (
+                        t: 5.0,
+                        duration: 0.5,
+                        tween: QuartOut,
+                        value: Float(2.0),
+                    ),
+                    (
+                        t: 6.0,
+                        duration: 1.5,
+                        tween: BackIn,
+                        value: Float(8.0),
+                    ),
+                ],
+            ),
+        },
+    ),
+)

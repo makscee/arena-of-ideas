@@ -4,17 +4,25 @@
 		{
 			"type": "cargo",
 			"command": "run",
-			"args": [],
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Run Game",
+			"label": "rust: cargo run",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"label": "Format Ron",
+			"type": "shell",
 			"group": {
 				"kind": "build"
 			},
-			"env": {
-				"LOG": "debug"
-			}
+			"command": "ronfmt assets/ron/*.ron"
 		},
 		{
 			"label": "Flamegraph Run Debug",
