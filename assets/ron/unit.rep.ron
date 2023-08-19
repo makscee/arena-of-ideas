@@ -29,11 +29,12 @@
         (
             material: Text (
                 text: State(Name),
-                color: ("#FBC02D"),
+                color: ("#FFF3E0"),
+                size: Float(0.5),
             ),
             mapping: (
                 {
-                    Position: Vec2(0.0, 0.0)
+                    Position: Vec2(0.0, -1.1)
                 }
             )
         )

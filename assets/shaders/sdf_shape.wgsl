@@ -26,6 +26,6 @@ fn sdf(uv: vec2<f32>, size: vec2<f32>) -> f32 {
 @fragment
 fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
     let uv = (in.uv - vec2(0.5)) * material.size * 2.0;
-    let v = f32(sdf(uv, material.size) > -0.3);
+    let v = f32(sdf(uv, material.size) > -0.1);
     return vec4<f32>(material.color.rgb, v + 0.5);
 }

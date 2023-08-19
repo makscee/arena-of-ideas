@@ -1,12 +1,12 @@
 use super::*;
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect)]
 pub struct VarState(HashMap<VarName, History>);
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
 pub struct History(Vec<Change>);
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
 pub struct Change {
     pub t: f32,
     #[serde(default)]
@@ -16,7 +16,7 @@ pub struct Change {
     pub value: VarValue,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
 pub enum Tween {
     #[default]
     Linear,
@@ -32,6 +32,10 @@ pub enum Tween {
 }
 
 impl VarState {
+    pub fn push_back(&mut self, var: VarName, mut change: Change) {
+        change.t += self.duration();
+        self.0.entry(var).or_insert(default()).push(change);
+    }
     pub fn insert(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.0.insert(var, History::new(value));
         self
@@ -58,6 +62,13 @@ impl VarState {
         }
         result.context("Var was not found")
     }
+    pub fn duration(&self) -> f32 {
+        self.0
+            .values()
+            .map(|x| x.duration())
+            .max_by(|x, y| x.total_cmp(y))
+            .unwrap_or_default()
+    }
 }
 
 impl History {
@@ -69,7 +80,9 @@ impl History {
             value,
         }])
     }
-
+    pub fn push(&mut self, change: Change) {
+        self.0.push(change)
+    }
     pub fn find_value(&self, t: f32) -> Result<VarValue> {
         if t < 0.0 {
             return Err(anyhow!("Not born yet"));
@@ -90,6 +103,32 @@ impl History {
             t,
             cur_change.duration,
         )
+    }
+    pub fn duration(&self) -> f32 {
+        self.0.last().map(|x| x.t + x.duration).unwrap_or_default()
+    }
+}
+
+impl Change {
+    pub fn new(value: VarValue) -> Self {
+        Self {
+            t: default(),
+            duration: default(),
+            tween: default(),
+            value,
+        }
+    }
+    pub fn set_tween(mut self, tween: Tween) -> Self {
+        self.tween = tween;
+        self
+    }
+    pub fn set_duration(mut self, duration: f32) -> Self {
+        self.duration = duration;
+        self
+    }
+    pub fn set_t(mut self, t: f32) -> Self {
+        self.t = t;
+        self
     }
 }
 
@@ -116,6 +155,7 @@ impl Tween {
         };
         let v = match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => VarValue::Float(*a + (*b - *a) * t),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
             _ => panic!("Tweening not supported for {a:?} and {b:?}"),
         };
         Ok(v)

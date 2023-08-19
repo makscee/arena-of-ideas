@@ -11,8 +11,8 @@
         children: [
             (
                 material: Text(
-                    color: ("#FF9800"),
-                    text: StringFloat(State(Radius)),
+                    color: ("#263238"),
+                    text: StringVec(State(Position)),
                     size: Mul(State(Radius), Float(0.7)),
                 ),
                 mapping: (

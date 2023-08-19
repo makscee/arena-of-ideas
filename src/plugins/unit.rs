@@ -8,7 +8,8 @@ impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Update, Self::update_units);
         app.add_systems(OnEnter(GameState::Next), Self::spawn)
-            .add_systems(OnEnter(GameState::Restart), Self::despawn);
+            .add_systems(OnEnter(GameState::Restart), Self::despawn)
+            .add_systems(Update, Self::animate_unit);
     }
 }
 
@@ -16,6 +17,34 @@ impl UnitPlugin {
     fn update_units(time: Res<Time>, mut query: Query<&mut Transform, With<Unit>>) {
         for mut t in query.iter_mut() {
             t.translation.y = time.elapsed_seconds().sin() * 2.0;
+        }
+    }
+
+    fn animate_unit(
+        input: Res<Input<KeyCode>>,
+        mut query: Query<&mut VarState, With<Unit>>,
+        time: Res<Time>,
+    ) {
+        if !input.just_pressed(KeyCode::A) {
+            return;
+        }
+        debug!("Animate");
+        for mut state in query.iter_mut() {
+            let t = time.elapsed_seconds() - state.duration();
+            let c1 = Change::new(VarValue::Vec2(vec2(-1.0, 0.0)))
+                .set_duration(1.0)
+                .set_t(t)
+                .set_tween(Tween::QuartInOut);
+            let c2 = Change::new(VarValue::Vec2(vec2(2.0, 0.0)))
+                .set_duration(0.1)
+                .set_t(0.3);
+            let c3 = Change::new(VarValue::Vec2(vec2(0.0, 0.0)))
+                .set_duration(0.5)
+                .set_tween(Tween::QuartOut)
+                .set_t(0.5);
+            state.push_back(VarName::Position, c1);
+            state.push_back(VarName::Position, c2);
+            state.push_back(VarName::Position, c3);
         }
     }
 
@@ -66,7 +95,8 @@ impl PackedUnit {
         self.state
             .insert(VarName::Hp, VarValue::Int(self.hp))
             .insert(VarName::Atk, VarValue::Int(self.atk))
-            .insert(VarName::Name, VarValue::String(self.name));
+            .insert(VarName::Name, VarValue::String(self.name))
+            .insert(VarName::Position, VarValue::Vec2(default()));
         world.entity_mut(entity).insert(Unit).insert(self.state);
     }
 }

@@ -71,6 +71,7 @@ fn main() {
         .add_systems(Update, input)
         .init_resource::<UserName>()
         .init_resource::<Password>()
+        .register_type::<VarState>()
         .run();
 }
 

@@ -2,7 +2,7 @@ use anyhow::anyhow;
 
 use super::*;
 
-#[derive(Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect)]
 pub enum VarName {
     Size,
     Radius,
@@ -15,7 +15,7 @@ pub enum VarName {
     Spawn,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
 pub enum VarValue {
     Float(f32),
     Int(i32),

@@ -12,6 +12,7 @@ pub enum Expression {
 
     StringInt(Box<Expression>),
     StringFloat(Box<Expression>),
+    StringVec(Box<Expression>),
 
     Sin(Box<Expression>),
     GlobalTime,
@@ -71,6 +72,13 @@ impl Expression {
             Expression::Sum(a, b) => Ok(a.get_vec2(owner, world)? + b.get_vec2(owner, world)?),
             Expression::Sub(a, b) => Ok(a.get_vec2(owner, world)? - b.get_vec2(owner, world)?),
             Expression::Mul(a, b) => Ok(a.get_vec2(owner, world)? * b.get_vec2(owner, world)?),
+            Expression::State(var) => {
+                let t = world
+                    .get_resource::<Time>()
+                    .context("Time resource not found")?
+                    .elapsed_seconds();
+                VarState::find_value(owner, *var, t, world)?.get_vec2()
+            }
             _ => Err(anyhow!("Vec2 not supported by {self:?}")),
         }
     }
@@ -92,7 +100,11 @@ impl Expression {
         match self {
             Expression::String(value) => Ok(value.into()),
             Expression::StringInt(value) => Ok(value.get_int(owner, world)?.to_string()),
-            Expression::StringFloat(value) => Ok(format!("{:.2}", value.get_float(owner, world)?)),
+            Expression::StringFloat(value) => Ok(format!("{:.1}", value.get_float(owner, world)?)),
+            Expression::StringVec(value) => {
+                let Vec2 { x, y } = value.get_vec2(owner, world)?;
+                Ok(format!("({x:.1}:{y:.1})"))
+            }
             Expression::State(var) => {
                 let t = world
                     .get_resource::<Time>()
