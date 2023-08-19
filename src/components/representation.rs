@@ -1,3 +1,5 @@
+use bevy::sprite::Mesh2dHandle;
+
 use super::*;
 
 #[derive(Serialize, TypeUuid, TypePath, Deserialize, Debug, Component, Resource, Clone)]
@@ -72,26 +74,19 @@ impl VarMapping {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(tag = "type")]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
-    Rectangle {
+    Shape {
+        shape: Shape,
         #[serde(default = "default_one_vec2")]
-        size: Vec2,
-        #[serde(default)]
-        color: HexColor,
-    },
-    Circle {
-        #[serde(default = "default_one_f32")]
-        radius: f32,
+        size: Expression,
         #[serde(default)]
         color: HexColor,
     },
     Text {
         #[serde(default = "default_one_f32")]
-        size: f32,
-        #[serde(default)]
-        text: String,
+        size: Expression,
+        text: Expression,
         #[serde(default)]
         color: HexColor,
         #[serde(default = "default_font_size")]
@@ -102,81 +97,101 @@ pub enum RepresentationMaterial {
 fn default_font_size() -> f32 {
     32.0
 }
-fn default_one_f32() -> f32 {
-    1.0
+fn default_one_f32() -> Expression {
+    Expression::Float(1.0)
 }
-fn default_one_vec2() -> Vec2 {
-    Vec2::ONE
+fn default_one_vec2() -> Expression {
+    Expression::Vec2(1.0, 1.0)
 }
 
 impl RepresentationMaterial {
-    pub fn get_mesh(&self, size: Vec2) -> Mesh {
+    pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
-            RepresentationMaterial::Rectangle { .. } => Mesh::from(shape::Quad::new(size)),
-            RepresentationMaterial::Circle { .. } => Mesh::from(shape::Circle::new(size.x)),
-            _ => panic!("Can't generate mesh for {self:?}"),
-        }
-    }
-    pub fn get_shape(&self) -> Shape {
-        match self {
-            RepresentationMaterial::Rectangle { .. } => Shape::Rectangle,
-            RepresentationMaterial::Circle { .. } => Shape::Circle,
-            _ => panic!("Can't generate shape for {self:?}"),
-        }
-    }
-    pub fn get_size(&self) -> Vec2 {
-        match self {
-            RepresentationMaterial::Rectangle { size, .. } => *size,
-            RepresentationMaterial::Circle { radius, .. } => vec2(*radius, *radius),
+            RepresentationMaterial::Shape { shape, size, color } => {
+                let mut materials = world.resource_mut::<Assets<SdfShapeMaterial>>();
+                let material = SdfShapeMaterial {
+                    color: color.clone().into(),
+                    shape: *shape,
+                    ..default()
+                };
+                let material = materials.add(material);
+                let mesh = world
+                    .resource_mut::<Assets<Mesh>>()
+                    .add(Mesh::new(default()));
+                world.entity_mut(entity).insert(MaterialMesh2dBundle {
+                    material,
+                    mesh: mesh.into(),
+                    ..default()
+                });
+            }
             RepresentationMaterial::Text {
-                font_size: size, ..
-            } => vec2(*size, *size),
+                size,
+                text,
+                color,
+                font_size,
+            } => {
+                world.entity_mut(entity).insert(Text2dBundle {
+                    text: Text::from_section(
+                        "".to_owned(),
+                        TextStyle {
+                            font_size: *font_size,
+                            color: color.clone().into(),
+                            ..default()
+                        },
+                    ),
+                    ..default()
+                });
+            }
+        }
+    }
+
+    pub fn update(&self, entity: Entity, world: &mut World) {
+        match self {
+            RepresentationMaterial::Shape { shape, size, color } => {
+                let size = size.get_vec2(entity, world).unwrap();
+                let handle = world
+                    .get::<Handle<SdfShapeMaterial>>(entity)
+                    .unwrap()
+                    .clone();
+                let mut materials = world
+                    .get_resource_mut::<Assets<SdfShapeMaterial>>()
+                    .unwrap();
+                if let Some(mat) = materials.get_mut(&handle) {
+                    mat.color = color.clone().into();
+                    if mat.size != size {
+                        mat.size = size;
+                        let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
+                        if let Some(mesh) = world
+                            .get_resource_mut::<Assets<Mesh>>()
+                            .unwrap()
+                            .get_mut(&mesh.0)
+                        {
+                            *mesh = shape.mesh(size);
+                        }
+                    }
+                }
+            }
+            RepresentationMaterial::Text {
+                size,
+                text,
+                color,
+                font_size,
+            } => {
+                world.get_mut::<Text>(entity).unwrap().sections[0].value =
+                    text.get_string(entity, world).unwrap();
+                world.get_mut::<Transform>(entity).unwrap().scale =
+                    vec3(1.0 / *font_size, 1.0 / *font_size, 1.0)
+                        * size.get_float(entity, world).unwrap();
+            }
         }
     }
 }
 
 impl Representation {
     pub fn unpack(mut self, parent: Option<Entity>, world: &mut World) -> Entity {
-        let mut entity = match &self.material {
-            RepresentationMaterial::Rectangle { color, .. }
-            | RepresentationMaterial::Circle { color, .. } => {
-                let mut materials = world.resource_mut::<Assets<SdfShapeMaterial>>();
-                let material = materials.add(SdfShapeMaterial {
-                    color: color.clone().into(),
-                    shape: self.material.get_shape(),
-                    ..default()
-                });
-                let mesh = world
-                    .resource_mut::<Assets<Mesh>>()
-                    .add(self.material.get_mesh(self.material.get_size()))
-                    .into();
-                world.spawn(MaterialMesh2dBundle {
-                    mesh,
-                    transform: Transform::default(),
-                    material,
-                    ..default()
-                })
-            }
-            RepresentationMaterial::Text {
-                text,
-                color,
-                font_size,
-                size,
-            } => world.spawn(Text2dBundle {
-                text: Text::from_section(
-                    text,
-                    TextStyle {
-                        font_size: *font_size,
-                        color: color.clone().into(),
-                        ..default()
-                    },
-                ),
-                transform: Transform::from_scale(
-                    vec3(1.0 / *font_size, 1.0 / *font_size, 1.0) * *size,
-                ),
-                ..default()
-            }),
-        };
+        let entity = world.spawn_empty().id();
+        self.material.unpack(entity, world);
+        let mut entity = world.entity_mut(entity);
         entity.get_mut::<Transform>().unwrap().translation.z += 0.0000001; // children always rendered on top of parents
         if let Some(parent) = parent {
             entity.set_parent(parent);

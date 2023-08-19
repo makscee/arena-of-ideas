@@ -80,13 +80,20 @@ fn setup(mut commands: Commands) {
     commands.spawn(camera);
 }
 
-fn input(input: Res<Input<KeyCode>>, mut time: ResMut<Time>) {
+fn input(
+    input: Res<Input<KeyCode>>,
+    mut time: ResMut<Time>,
+    mut state: ResMut<NextState<GameState>>,
+) {
     if input.just_pressed(KeyCode::Space) {
         if time.is_paused() {
             time.unpause()
         } else {
             time.pause()
         }
+    }
+    if input.just_pressed(KeyCode::R) {
+        state.set(GameState::Restart);
     }
 }
 

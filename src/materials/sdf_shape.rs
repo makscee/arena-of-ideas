@@ -11,11 +11,10 @@ pub struct SdfShapeMaterial {
     pub color: Color,
     #[uniform(0)]
     pub size: Vec2,
-
     pub shape: Shape,
 }
 
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize)]
 pub enum Shape {
     #[default]
     Rectangle,
@@ -25,6 +24,12 @@ pub enum Shape {
 impl Shape {
     pub fn def(&self) -> String {
         self.to_string().to_uppercase()
+    }
+    pub fn mesh(&self, size: Vec2) -> Mesh {
+        match self {
+            Shape::Rectangle => Mesh::from(shape::Quad::new(size)),
+            Shape::Circle => Mesh::from(shape::Circle::new(size.x)),
+        }
     }
 }
 

@@ -5,9 +5,11 @@ pub enum Expression {
     Float(f32),
     Bool(bool),
     String(String),
+    Vec2(f32, f32),
+    Vec2EE(Box<Expression>, Box<Expression>),
+    Vec2E(Box<Expression>),
 
     Sin(Box<Expression>),
-    Vec2(Box<Expression>, Box<Expression>),
     GlobalTime,
 
     Sum(Box<Expression>, Box<Expression>),
@@ -52,7 +54,7 @@ impl Expression {
                 if let Some(result) = result {
                     result.get_float()
                 } else {
-                    Err(anyhow!("Value not found {var:?}"))
+                    Err(anyhow!("State var not found {var:?}"))
                 }
             }
             _ => Err(anyhow!("Float not supported by {self:?}")),
@@ -61,9 +63,14 @@ impl Expression {
 
     pub fn get_vec2(&self, owner: Entity, world: &World) -> Result<Vec2> {
         match self {
-            Expression::Vec2(x, y) => {
+            Expression::Vec2EE(x, y) => {
                 Ok(vec2(x.get_float(owner, world)?, y.get_float(owner, world)?))
             }
+            Expression::Vec2E(x) => {
+                let x = x.get_float(owner, world)?;
+                Ok(vec2(x, x))
+            }
+            Expression::Vec2(x, y) => Ok(vec2(*x, *y)),
             Expression::Sum(a, b) => Ok(a.get_vec2(owner, world)? + b.get_vec2(owner, world)?),
             Expression::Sub(a, b) => Ok(a.get_vec2(owner, world)? - b.get_vec2(owner, world)?),
             Expression::Mul(a, b) => Ok(a.get_vec2(owner, world)? * b.get_vec2(owner, world)?),
@@ -78,10 +85,9 @@ impl Expression {
             }
             _ => {}
         };
-        if let Ok(value) = self.get_float(owner, world) {
-            Ok(value > 0.0)
-        } else {
-            Err(anyhow!("Bool not supported by {self:?}"))
+        match self.get_float(owner, world) {
+            Ok(value) => Ok(value > 0.0),
+            Err(err) => Err(err),
         }
     }
 
@@ -92,10 +98,9 @@ impl Expression {
             }
             _ => {}
         }
-        if let Ok(value) = self.get_float(owner, world) {
-            Ok(format!("{value:.2}"))
-        } else {
-            Err(anyhow!("String not supported by {self:?}"))
+        match self.get_float(owner, world) {
+            Ok(value) => Ok(format!("{value:.2}")),
+            Err(err) => Err(err),
         }
     }
 }
