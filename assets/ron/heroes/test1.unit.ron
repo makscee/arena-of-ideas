@@ -1,16 +1,25 @@
 (
+    hp: 2,
+    atk: 1,
+    name: "Test",
     representation: (
         material: Shape(
             shape: Circle,
-            color: ("#9C27B0"),
+            color: ("#4527A0"),
             size: Vec2E(State(Radius)),
         ),
         children: [
             (
                 material: Text(
-                    text: State(Radius),
-                    size: State(Radius),
+                    color: ("#FF9800"),
+                    text: StringFloat(State(Radius)),
+                    size: Mul(State(Radius), Float(0.7)),
                 ),
+                mapping: (
+                    {
+                        Position: Vec2(0.0, 0.8),
+                    }
+                )
             ),
         ],
     ),
@@ -23,10 +32,10 @@
                         value: Float(0.0001),
                     ),
                     (
-                        t: 1.0,
-                        duration: 2.0,
+                        t: 0.0,
+                        duration: 0.5,
                         tween: QuartOut,
-                        value: Float(1.5),
+                        value: Float(0.7),
                     ),
                 ],
             ),

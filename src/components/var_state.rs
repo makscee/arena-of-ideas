@@ -32,12 +32,44 @@ pub enum Tween {
 }
 
 impl VarState {
+    pub fn insert(&mut self, var: VarName, value: VarValue) -> &mut Self {
+        self.0.insert(var, History::new(value));
+        self
+    }
     pub fn get_value(&self, var: VarName, t: f32) -> Result<VarValue> {
         self.0.get(&var).context("No key in state")?.find_value(t)
+    }
+    pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
+        let mut result = None;
+        loop {
+            if let Some(state) = world.get::<VarState>(entity) {
+                if let Ok(value) = state.get_value(var, t) {
+                    result = Some(value);
+                    break;
+                }
+            }
+            if result.is_none() {
+                if let Some(parent) = world.get::<Parent>(entity) {
+                    entity = parent.get();
+                    continue;
+                }
+            }
+            break;
+        }
+        result.context("Var was not found")
     }
 }
 
 impl History {
+    pub fn new(value: VarValue) -> Self {
+        Self(vec![Change {
+            t: 0.0,
+            duration: 0.0,
+            tween: default(),
+            value,
+        }])
+    }
+
     pub fn find_value(&self, t: f32) -> Result<VarValue> {
         if t < 0.0 {
             return Err(anyhow!("Not born yet"));

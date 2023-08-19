@@ -3,4 +3,39 @@
         shape: Circle,
         color: ("#CFD8DC"),
     ),
+    children: [
+        (
+            material: Text (
+                text: StringInt(State(Hp)),
+                color: ("#FF3D00")
+            ),
+            mapping: (
+                {
+                    Position: Vec2(-0.7, -1.0)
+                }
+            )
+        ),
+        (
+            material: Text (
+                text: StringInt(State(Atk)),
+                color: ("#FBC02D")
+            ),
+            mapping: (
+                {
+                    Position: Vec2(0.7, -1.0)
+                }
+            )
+        ),
+        (
+            material: Text (
+                text: State(Name),
+                color: ("#FBC02D"),
+            ),
+            mapping: (
+                {
+                    Position: Vec2(0.0, 0.0)
+                }
+            )
+        )
+    ]
 )

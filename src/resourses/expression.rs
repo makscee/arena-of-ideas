@@ -3,11 +3,15 @@ use super::*;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Expression {
     Float(f32),
+    Int(i32),
     Bool(bool),
     String(String),
     Vec2(f32, f32),
     Vec2EE(Box<Expression>, Box<Expression>),
     Vec2E(Box<Expression>),
+
+    StringInt(Box<Expression>),
+    StringFloat(Box<Expression>),
 
     Sin(Box<Expression>),
     GlobalTime,
@@ -22,7 +26,8 @@ pub enum Expression {
 impl Expression {
     pub fn get_float(&self, owner: Entity, world: &World) -> Result<f32> {
         match self {
-            Expression::Float(value) => Ok(*value),
+            Expression::Float(x) => Ok(*x),
+            Expression::Int(x) => Ok(*x as f32),
             Expression::Sin(x) => Ok(x.get_float(owner, world)?.sin()),
             Expression::GlobalTime => Ok(world.get_resource::<Time>().unwrap().elapsed_seconds()),
             Expression::Sum(a, b) => Ok(a.get_float(owner, world)? + b.get_float(owner, world)?),
@@ -33,31 +38,23 @@ impl Expression {
                     .get_resource::<Time>()
                     .context("Time resource not found")?
                     .elapsed_seconds();
-                let mut result = None;
-                let mut entity = owner;
-
-                loop {
-                    if let Some(state) = world.get::<VarState>(entity) {
-                        if let Ok(value) = state.get_value(*var, t) {
-                            result = Some(value);
-                            break;
-                        }
-                    }
-                    if result.is_none() {
-                        if let Some(parent) = world.get::<Parent>(entity) {
-                            entity = parent.get();
-                            continue;
-                        }
-                    }
-                    break;
-                }
-                if let Some(result) = result {
-                    result.get_float()
-                } else {
-                    Err(anyhow!("State var not found {var:?}"))
-                }
+                VarState::find_value(owner, *var, t, world)?.get_float()
             }
             _ => Err(anyhow!("Float not supported by {self:?}")),
+        }
+    }
+
+    pub fn get_int(&self, owner: Entity, world: &World) -> Result<i32> {
+        match self {
+            Expression::Int(value) => Ok(*value),
+            Expression::State(var) => {
+                let t = world
+                    .get_resource::<Time>()
+                    .context("Time resource not found")?
+                    .elapsed_seconds();
+                VarState::find_value(owner, *var, t, world)?.get_int()
+            }
+            _ => Err(anyhow!("Int not supported by {self:?}")),
         }
     }
 
@@ -93,14 +90,17 @@ impl Expression {
 
     pub fn get_string(&self, owner: Entity, world: &World) -> Result<String> {
         match self {
-            Expression::String(value) => {
-                return Ok(value.into());
+            Expression::String(value) => Ok(value.into()),
+            Expression::StringInt(value) => Ok(value.get_int(owner, world)?.to_string()),
+            Expression::StringFloat(value) => Ok(format!("{:.2}", value.get_float(owner, world)?)),
+            Expression::State(var) => {
+                let t = world
+                    .get_resource::<Time>()
+                    .context("Time resource not found")?
+                    .elapsed_seconds();
+                VarState::find_value(owner, *var, t, world)?.get_string()
             }
-            _ => {}
-        }
-        match self.get_float(owner, world) {
-            Ok(value) => Ok(format!("{value:.2}")),
-            Err(err) => Err(err),
+            _ => Err(anyhow!("String not supported by {self:?}")),
         }
     }
 }

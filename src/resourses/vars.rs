@@ -18,6 +18,7 @@ pub enum VarName {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum VarValue {
     Float(f32),
+    Int(i32),
     Vec2(Vec2),
     Bool(bool),
     String(String),
@@ -27,7 +28,14 @@ impl VarValue {
     pub fn get_float(&self) -> Result<f32> {
         match self {
             VarValue::Float(value) => Ok(*value),
+            VarValue::Int(value) => Ok(*value as f32),
             _ => Err(anyhow!("Float not supported by {self:?}")),
+        }
+    }
+    pub fn get_int(&self) -> Result<i32> {
+        match self {
+            VarValue::Int(value) => Ok(*value),
+            _ => Err(anyhow!("Int not supported by {self:?}")),
         }
     }
     pub fn get_vec2(&self) -> Result<Vec2> {
