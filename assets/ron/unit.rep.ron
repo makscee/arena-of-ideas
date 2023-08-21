@@ -1,7 +1,7 @@
 (
     material: Shape(
         shape: Circle,
-        color: ("#FFF3E0"),
+        color: ("#B0BEC5"),
     ),
     children: [
         (
@@ -59,7 +59,7 @@
         (
             material: Text(
                 text: State(Name),
-                color: ("#FFF3E0"),
+                color: ("#ECEFF1"),
                 size: Float(0.4),
             ),
             mapping: (

@@ -23,6 +23,7 @@ use bevy_egui::{
     egui::{CentralPanel, TextEdit},
     EguiContexts,
 };
+use bevy_mod_picking::prelude::*;
 use components::*;
 use itertools::Itertools;
 use log::debug;
@@ -35,6 +36,7 @@ use serde::*;
 fn main() {
     App::new()
         .add_state::<GameState>()
+        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .add_plugins((DefaultPlugins
             .set(AssetPlugin {
                 watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
@@ -61,6 +63,7 @@ fn main() {
         .add_systems(PostUpdate, detect_changes)
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
+        .add_plugins(DefaultPickingPlugins)
         .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
         .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
@@ -76,16 +79,9 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    let mut camera = Camera2dBundle {
-        camera_2d: Camera2d {
-            clear_color: bevy::core_pipeline::clear_color::ClearColorConfig::Custom(
-                Color::WHITE * 0.1,
-            ),
-        },
-        ..default()
-    };
+    let mut camera = Camera2dBundle::default();
     camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
-    commands.spawn(camera);
+    commands.spawn((camera, RaycastPickCamera::default()));
 }
 
 fn input(

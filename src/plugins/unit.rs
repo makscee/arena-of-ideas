@@ -90,6 +90,11 @@ impl PackedUnit {
             .unwrap()
             .clone()
             .unpack(None, world);
+        world
+            .entity_mut(entity)
+            .insert(PickableBundle::default())
+            .insert(RaycastPickTarget::default())
+            .insert(On::<Pointer<Over>>::run(hover_unit));
         self.representation.unpack(Some(entity), world);
         self.state
             .insert(VarName::Hp, VarValue::Int(self.hp))
@@ -98,6 +103,10 @@ impl PackedUnit {
             .insert(VarName::Position, VarValue::Vec2(default()));
         world.entity_mut(entity).insert(Unit).insert(self.state);
     }
+}
+
+fn hover_unit(event: Listener<Pointer<Over>>) {
+    debug!("Hover over unit start {:?}", event.target);
 }
 
 #[derive(Resource, Debug)]
