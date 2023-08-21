@@ -3,14 +3,16 @@ use strum_macros::Display;
 
 use super::*;
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone, Default)]
+#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "ec09cb82-5a6b-43cd-ab8a-56d0979f7cc4"]
 #[bind_group_data(CustomMaterialKey)]
-pub struct SdfShapeMaterial {
+pub struct LineShapeMaterial {
     #[uniform(0)]
     pub color: Color,
     #[uniform(0)]
     pub size: Vec2,
+    #[uniform(0)]
+    pub thickness: f32,
     pub shape: Shape,
 }
 
@@ -33,7 +35,7 @@ impl Shape {
     }
 }
 
-impl Material2d for SdfShapeMaterial {
+impl Material2d for LineShapeMaterial {
     fn fragment_shader() -> bevy::render::render_resource::ShaderRef {
         "shaders/sdf_shape.wgsl".into()
     }
@@ -56,10 +58,21 @@ pub struct CustomMaterialKey {
     shape: Shape,
 }
 
-impl From<&SdfShapeMaterial> for CustomMaterialKey {
-    fn from(material: &SdfShapeMaterial) -> Self {
+impl From<&LineShapeMaterial> for CustomMaterialKey {
+    fn from(material: &LineShapeMaterial) -> Self {
         Self {
             shape: material.shape,
+        }
+    }
+}
+
+impl Default for LineShapeMaterial {
+    fn default() -> Self {
+        Self {
+            color: Color::PINK,
+            thickness: 0.03,
+            size: default(),
+            shape: default(),
         }
     }
 }

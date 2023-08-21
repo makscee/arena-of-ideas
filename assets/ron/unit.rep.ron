@@ -1,42 +1,72 @@
 (
     material: Shape(
         shape: Circle,
-        color: ("#CFD8DC"),
+        color: ("#FFF3E0"),
     ),
     children: [
         (
-            material: Text (
-                text: StringInt(State(Hp)),
-                color: ("#FF3D00")
+            material: Shape(
+                shape: Circle,
+                color: ("#FF3D00"),
+                size: Vec2E(Float(0.3)),
             ),
             mapping: (
                 {
-                    Position: Vec2(-0.7, -1.0)
-                }
-            )
+                    Position: Vec2(
+                        0.8,
+                        -1.05,
+                    ),
+                },
+            ),
+            children: [
+                (
+                    material: Text(
+                        text: StringInt(
+                            State(Hp),
+                        ),
+                        size: Float(0.6),
+                        color: ("#FF3D00"),
+                    ),
+                ),
+            ],
         ),
         (
-            material: Text (
-                text: StringInt(State(Atk)),
-                color: ("#FBC02D")
+            material: Shape(
+                shape: Circle,
+                color: ("#FBC02D"),
+                size: Vec2E(Float(0.3)),
             ),
             mapping: (
                 {
-                    Position: Vec2(0.7, -1.0)
-                }
-            )
+                    Position: Vec2(
+                        -0.8,
+                        -1.05,
+                    ),
+                },
+            ),
+            children: [
+                (
+                    material: Text(
+                        text: StringInt(
+                            State(Atk),
+                        ),
+                        size: Float(0.6),
+                        color: ("#FBC02D"),
+                    ),
+                ),
+            ],
         ),
         (
-            material: Text (
+            material: Text(
                 text: State(Name),
                 color: ("#FFF3E0"),
-                size: Float(0.5),
+                size: Float(0.4),
             ),
             mapping: (
                 {
-                    Position: Vec2(0.0, -1.1)
-                }
-            )
-        )
-    ]
+                    Position: Vec2(0.0, -1.1),
+                },
+            ),
+        ),
+    ],
 )

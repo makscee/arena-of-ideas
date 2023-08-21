@@ -108,8 +108,8 @@ impl RepresentationMaterial {
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
             RepresentationMaterial::Shape { shape, size, color } => {
-                let mut materials = world.resource_mut::<Assets<SdfShapeMaterial>>();
-                let material = SdfShapeMaterial {
+                let mut materials = world.resource_mut::<Assets<LineShapeMaterial>>();
+                let material = LineShapeMaterial {
                     color: color.clone().into(),
                     shape: *shape,
                     ..default()
@@ -150,11 +150,11 @@ impl RepresentationMaterial {
             RepresentationMaterial::Shape { shape, size, color } => {
                 let size = size.get_vec2(entity, world).unwrap();
                 let handle = world
-                    .get::<Handle<SdfShapeMaterial>>(entity)
+                    .get::<Handle<LineShapeMaterial>>(entity)
                     .unwrap()
                     .clone();
                 let mut materials = world
-                    .get_resource_mut::<Assets<SdfShapeMaterial>>()
+                    .get_resource_mut::<Assets<LineShapeMaterial>>()
                     .unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
                     mat.color = color.clone().into();

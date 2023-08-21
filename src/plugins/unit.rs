@@ -28,7 +28,6 @@ impl UnitPlugin {
         if !input.just_pressed(KeyCode::A) {
             return;
         }
-        debug!("Animate");
         for mut state in query.iter_mut() {
             let t = time.elapsed_seconds() - state.duration();
             let c1 = Change::new(VarValue::Vec2(vec2(-1.0, 0.0)))

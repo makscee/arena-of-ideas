@@ -62,7 +62,7 @@ fn main() {
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
         .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
-        .add_plugins(Material2dPlugin::<SdfShapeMaterial>::default())
+        .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins((UnitPlugin, RepresentationPlugin))
@@ -76,7 +76,14 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    let mut camera = Camera2dBundle::default();
+    let mut camera = Camera2dBundle {
+        camera_2d: Camera2d {
+            clear_color: bevy::core_pipeline::clear_color::ClearColorConfig::Custom(
+                Color::WHITE * 0.1,
+            ),
+        },
+        ..default()
+    };
     camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
     commands.spawn(camera);
 }

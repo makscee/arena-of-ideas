@@ -12,14 +12,19 @@
             (
                 material: Text(
                     color: ("#263238"),
-                    text: StringVec(State(Position)),
-                    size: Mul(State(Radius), Float(0.7)),
+                    text: StringVec(
+                        State(Position),
+                    ),
+                    size: Mul(
+                        State(Radius),
+                        Float(0.7),
+                    ),
                 ),
                 mapping: (
                     {
                         Position: Vec2(0.0, 0.8),
-                    }
-                )
+                    },
+                ),
             ),
         ],
     ),
