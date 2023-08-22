@@ -11,7 +11,7 @@ pub struct PackedUnit {
 }
 
 impl PackedUnit {
-    pub fn unpack(mut self, world: &mut World) {
+    pub fn unpack(mut self, faction: Faction, slot: Option<usize>, world: &mut World) {
         let entity = Options::get_unit_rep(world).clone().unpack(None, world);
         world
             .entity_mut(entity)
@@ -22,9 +22,17 @@ impl PackedUnit {
         self.state
             .insert(VarName::Hp, VarValue::Int(self.hp))
             .insert(VarName::Atk, VarValue::Int(self.atk))
-            .insert(VarName::Name, VarValue::String(self.name))
-            .insert(VarName::Position, VarValue::Vec2(default()));
-        world.entity_mut(entity).insert(Unit).insert(self.state);
+            .insert(VarName::Name, VarValue::String(self.name.clone()))
+            .insert(VarName::Position, VarValue::Vec2(default()))
+            .insert(
+                VarName::Slot,
+                VarValue::Int(slot.unwrap_or_default() as i32),
+            );
+        world
+            .entity_mut(entity)
+            .insert(Unit { faction })
+            .insert(Name::new(self.name))
+            .insert(self.state);
     }
 }
 

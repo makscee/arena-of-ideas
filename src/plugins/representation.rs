@@ -1,5 +1,3 @@
-use bevy::sprite::Mesh2dHandle;
-
 use super::*;
 
 pub struct RepresentationPlugin;

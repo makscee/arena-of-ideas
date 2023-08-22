@@ -9,13 +9,14 @@ use std::time::Duration;
 use anyhow::{anyhow, Context, Result};
 use bevy::{
     asset::ChangeWatcher,
+    input::common_conditions::input_toggle_active,
     log::LogPlugin,
     math::{vec2, vec3},
     prelude::*,
     reflect::{TypePath, TypeUuid},
     render::{camera::ScalingMode, render_resource::AsBindGroup},
     sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
-    utils::HashMap,
+    utils::*,
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::ron::RonAssetPlugin;
@@ -54,7 +55,7 @@ fn main() {
                 ..default()
             }),))
         .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Next),
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
         )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             GameState::AssetLoading,
@@ -64,14 +65,17 @@ fn main() {
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
         .add_plugins(DefaultPickingPlugins)
-        .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
+        .add_plugins(
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new()
+                .run_if(input_toggle_active(false, KeyCode::Escape)),
+        )
         .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins((UnitPlugin, RepresentationPlugin, BattlePlugin))
         // .add_systems(Update, ui_example_system)
-        .add_systems(OnEnter(GameState::Next), setup.run_if(run_once()))
+        .add_systems(Startup, setup)
         .add_systems(Update, input)
         .init_resource::<UserName>()
         .init_resource::<Password>()

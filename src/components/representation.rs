@@ -17,57 +17,6 @@ pub struct Representation {
 pub struct VarMapping(HashMap<VarName, Expression>);
 
 impl VarMapping {
-    pub fn get_vec2_or_default(
-        &self,
-        var: VarName,
-        default: Vec2,
-        owner: Entity,
-        world: &World,
-    ) -> Vec2 {
-        let value = self.0.get(&var).and_then(|x| x.get_vec2(owner, world).ok());
-        value.unwrap_or(default)
-    }
-    pub fn get_float_or_default(
-        &self,
-        var: VarName,
-        default: f32,
-        owner: Entity,
-        world: &World,
-    ) -> f32 {
-        let value = self
-            .0
-            .get(&var)
-            .and_then(|x| x.get_float(owner, world).ok());
-        value.unwrap_or(default)
-    }
-    pub fn get_string_or_default(
-        &self,
-        var: VarName,
-        default: String,
-        owner: Entity,
-        world: &World,
-    ) -> String {
-        let value = self
-            .0
-            .get(&var)
-            .and_then(|x| x.get_string(owner, world).ok());
-        value.unwrap_or(default)
-    }
-
-    pub fn get_vec2(&self, var: VarName, owner: Entity, world: &World) -> Result<Vec2> {
-        self.0
-            .get(&var)
-            .context("No mapping")
-            .and_then(|x| x.get_vec2(owner, world))
-    }
-
-    pub fn get_float(&self, var: VarName, owner: Entity, world: &World) -> Result<f32> {
-        self.0
-            .get(&var)
-            .context("No mapping")
-            .and_then(|x| x.get_float(owner, world))
-    }
-
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a VarName, &'a Expression)> {
         self.0.iter()
     }
@@ -107,7 +56,7 @@ fn default_one_vec2() -> Expression {
 impl RepresentationMaterial {
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
-            RepresentationMaterial::Shape { shape, size, color } => {
+            RepresentationMaterial::Shape { shape, color, .. } => {
                 let mut materials = world.resource_mut::<Assets<LineShapeMaterial>>();
                 let material = LineShapeMaterial {
                     color: color.clone().into(),
@@ -125,10 +74,7 @@ impl RepresentationMaterial {
                 });
             }
             RepresentationMaterial::Text {
-                size,
-                text,
-                color,
-                font_size,
+                color, font_size, ..
             } => {
                 world.entity_mut(entity).insert(Text2dBundle {
                     text: Text::from_section(
@@ -174,8 +120,8 @@ impl RepresentationMaterial {
             RepresentationMaterial::Text {
                 size,
                 text,
-                color,
                 font_size,
+                ..
             } => {
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
                     text.get_string(entity, world).unwrap();

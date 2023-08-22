@@ -13,6 +13,7 @@ pub enum VarName {
     Name,
     Text,
     Spawn,
+    Slot,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]

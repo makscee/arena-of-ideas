@@ -43,6 +43,13 @@ impl VarState {
     pub fn get_value(&self, var: VarName, t: f32) -> Result<VarValue> {
         self.0.get(&var).context("No key in state")?.find_value(t)
     }
+    pub fn get_value_from_world(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
+        let t = world
+            .get_resource::<Time>()
+            .context("Time not found")?
+            .elapsed_seconds();
+        world.get::<VarState>(entity).unwrap().get_value(var, t)
+    }
     pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
         let mut result = None;
         loop {

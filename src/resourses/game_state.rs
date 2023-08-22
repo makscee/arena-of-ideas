@@ -6,4 +6,5 @@ pub enum GameState {
     AssetLoading,
     Next,
     Restart,
+    Battle,
 }
