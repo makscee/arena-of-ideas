@@ -77,7 +77,7 @@ Build {c}
     Rank up after battle {cm:2023-07-27T17:19:53}
     Occasional sacrifice {cm:2023-07-27T17:19:54}
     Reroll price {cm:2023-07-27T17:19:55}
-    Tape navigation buttons
+    Tape navigation buttons {cm:2023-08-22T16:18:26}
     Game rule hint panels
         ATK & HP
         Buffs
@@ -112,5 +112,14 @@ Bevy transition
         uniform animating {cm:2023-08-18T16:26:32}
     Options {cm:2023-08-18T22:42:16}
     Rep hot reload {cm:2023-08-19T02:49:11}
-    Unit Rep with name & stats
-    Unit strike animation
+    Unit Rep with name & stats {cm:2023-08-22T15:41:20}
+    Unit strike animation {cm:2023-08-22T15:41:26}
+    Simplest Battle
+        Team {cm:2023-08-22T16:50:47}
+        Battle Config {cm:2023-08-22T16:50:46}
+        Factions
+        Slots
+        Action Queue
+        Effects: Damage
+        Animation Assets
+

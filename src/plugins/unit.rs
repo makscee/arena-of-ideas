@@ -14,12 +14,6 @@ impl Plugin for UnitPlugin {
 }
 
 impl UnitPlugin {
-    fn update_units(time: Res<Time>, mut query: Query<&mut Transform, With<Unit>>) {
-        for mut t in query.iter_mut() {
-            t.translation.y = time.elapsed_seconds().sin() * 2.0;
-        }
-    }
-
     fn animate_unit(
         input: Res<Input<KeyCode>>,
         mut query: Query<&mut VarState, With<Unit>>,
@@ -48,12 +42,12 @@ impl UnitPlugin {
     }
 
     fn spawn(world: &mut World) {
-        debug!("Spawn");
         for (_, unit) in world.get_resource::<Pools>().unwrap().heroes.clone() {
             let units = world.get_resource::<Assets<PackedUnit>>().unwrap();
             let unit = units.get(&unit).unwrap().clone();
             unit.unpack(world);
         }
+        dbg!(Options::get_custom_battle(world));
     }
 
     fn despawn(
@@ -65,48 +59,9 @@ impl UnitPlugin {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
-        debug!("Despawn");
         state.set(GameState::Next);
         *time = Time::new(Instant::now());
     }
-}
-
-#[derive(Deserialize, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "028620be-3b01-4e20-b62e-a631f0db4777"]
-pub struct PackedUnit {
-    pub hp: i32,
-    pub atk: i32,
-    pub name: String,
-    pub representation: Representation,
-    pub state: VarState,
-}
-
-impl PackedUnit {
-    pub fn unpack(mut self, world: &mut World) {
-        let entity = world
-            .get_resource::<Assets<Representation>>()
-            .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().unit)
-            .unwrap()
-            .clone()
-            .unpack(None, world);
-        world
-            .entity_mut(entity)
-            .insert(PickableBundle::default())
-            .insert(RaycastPickTarget::default())
-            .insert(On::<Pointer<Over>>::run(hover_unit));
-        self.representation.unpack(Some(entity), world);
-        self.state
-            .insert(VarName::Hp, VarValue::Int(self.hp))
-            .insert(VarName::Atk, VarValue::Int(self.atk))
-            .insert(VarName::Name, VarValue::String(self.name))
-            .insert(VarName::Position, VarValue::Vec2(default()));
-        world.entity_mut(entity).insert(Unit).insert(self.state);
-    }
-}
-
-fn hover_unit(event: Listener<Pointer<Over>>) {
-    debug!("Hover over unit start {:?}", event.target);
 }
 
 #[derive(Resource, Debug)]

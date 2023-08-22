@@ -12,10 +12,7 @@
             ),
             mapping: (
                 {
-                    Position: Vec2(
-                        0.8,
-                        -1.05,
-                    ),
+                    Position: Vec2(0.8, -1.05),
                 },
             ),
             children: [
@@ -38,10 +35,7 @@
             ),
             mapping: (
                 {
-                    Position: Vec2(
-                        -0.8,
-                        -1.05,
-                    ),
+                    Position: Vec2(-0.8, -1.05),
                 },
             ),
             children: [
