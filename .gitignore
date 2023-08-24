@@ -8,3 +8,4 @@ static/levels.json
 ArenaOfIdeas.*
 *.code-workspace
 flamegraph*
+*.bak
