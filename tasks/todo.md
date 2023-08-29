@@ -117,9 +117,10 @@ Bevy transition
     Simplest Battle
         Team {cm:2023-08-22T16:50:47}
         Battle Config {cm:2023-08-22T16:50:46}
-        Factions
-        Slots
-        Action Queue
-        Effects: Damage
+        Factions {cm:2023-08-29T14:50:21}
+        Slots {cm:2023-08-29T14:50:26}
+        Context {cm:2023-08-29T16:05:47}
+        Action Queue {cm:2023-08-29T16:05:48}
+        Effects: Damage {cm:2023-08-29T16:05:51}
         Animation Assets
 

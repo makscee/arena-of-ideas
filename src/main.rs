@@ -6,7 +6,8 @@ mod resourses;
 
 use std::time::Duration;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Context as _;
+use anyhow::{anyhow, Result};
 use bevy::{
     asset::ChangeWatcher,
     input::common_conditions::input_toggle_active,
@@ -27,7 +28,6 @@ use bevy_egui::{
 use bevy_mod_picking::prelude::*;
 use components::*;
 use itertools::Itertools;
-use log::debug;
 use login_menu_system::*;
 use materials::*;
 use plugins::*;
@@ -73,7 +73,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
-        .add_plugins((UnitPlugin, RepresentationPlugin, BattlePlugin))
+        .add_plugins((ActionPlugin, UnitPlugin, RepresentationPlugin, BattlePlugin))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
         .add_systems(Update, input)

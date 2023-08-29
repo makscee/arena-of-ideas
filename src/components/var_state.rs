@@ -43,6 +43,14 @@ impl VarState {
     pub fn get_value(&self, var: VarName, t: f32) -> Result<VarValue> {
         self.0.get(&var).context("No key in state")?.find_value(t)
     }
+    pub fn get_int(&self, var: VarName) -> Result<i32> {
+        self.0
+            .get(&var)
+            .context("Var not found")?
+            .get_last()
+            .context("History is empty")?
+            .get_int()
+    }
     pub fn get_value_from_world(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
         let t = world
             .get_resource::<Time>()
@@ -113,6 +121,9 @@ impl History {
     }
     pub fn duration(&self) -> f32 {
         self.0.last().map(|x| x.t + x.duration).unwrap_or_default()
+    }
+    pub fn get_last(&self) -> Option<VarValue> {
+        self.0.last().and_then(|x| Some(x.value.clone()))
     }
 }
 

@@ -9,7 +9,7 @@ impl Plugin for UnitPlugin {
         // app.add_systems(Update, Self::update_units);
         app.add_systems(OnEnter(GameState::Next), Self::spawn)
             .add_systems(OnEnter(GameState::Restart), Self::despawn)
-            .add_systems(Update, Self::animate_unit);
+            .add_systems(Update, (Self::animate_unit, Self::units_strike));
     }
 }
 
@@ -39,6 +39,24 @@ impl UnitPlugin {
             state.push_back(VarName::Position, c2);
             state.push_back(VarName::Position, c3);
         }
+    }
+
+    fn units_strike(
+        input: Res<Input<KeyCode>>,
+        mut queue: ResMut<ActionQueue>,
+        query: Query<Entity, With<Unit>>,
+    ) {
+        if !input.just_pressed(KeyCode::S) {
+            return;
+        }
+        let units = query.iter().collect_vec();
+        let action = Action {
+            context: Context::from_caster(units[0]).set_target(units[1]),
+            effect: Effect::Damage {
+                value: Some(Expression::Int(1)),
+            },
+        };
+        queue.push(action);
     }
 
     pub fn translate_unit(entity: Entity, position: Vec2, world: &mut World) {
