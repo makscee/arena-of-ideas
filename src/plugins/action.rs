@@ -7,15 +7,29 @@ pub struct ActionPlugin;
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActionQueue>()
-            .add_systems(Update, Self::process_queue);
+            .add_systems(Update, Self::process_checker);
     }
 }
 
 impl ActionPlugin {
-    fn process_queue(world: &mut World) {
+    fn process_queue(world: &mut World) -> bool {
         if let Some(mut queue) = world.get_resource_mut::<ActionQueue>() {
             if let Some(action) = queue.0.pop_front() {
                 action.process(world);
+                return true;
+            }
+        }
+        false
+    }
+
+    fn process_checker(world: &mut World) {
+        Self::process_queue(world);
+    }
+
+    pub fn spin(world: &mut World) {
+        loop {
+            if !Self::process_queue(world) {
+                break;
             }
         }
     }
@@ -29,7 +43,10 @@ pub struct Action {
 
 impl Action {
     pub fn process(self, world: &mut World) {
-        self.effect.process(self.context, world);
+        match self.effect.process(self.context, world) {
+            Ok(_) => {}
+            Err(err) => error!("Effect process error {err}"),
+        }
     }
 }
 

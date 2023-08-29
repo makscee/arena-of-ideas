@@ -20,7 +20,7 @@ impl RepresentationPlugin {
             let mut position = world
                 .get::<VarState>(entity)
                 .and_then(|x| {
-                    x.get_value(VarName::Position, t)
+                    x.get_value_at(VarName::Position, t)
                         .map(|x| x.get_vec2().unwrap())
                         .ok()
                 })

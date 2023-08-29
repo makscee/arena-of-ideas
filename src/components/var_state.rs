@@ -40,29 +40,37 @@ impl VarState {
         self.0.insert(var, History::new(value));
         self
     }
-    pub fn get_value(&self, var: VarName, t: f32) -> Result<VarValue> {
+    pub fn get_value_at(&self, var: VarName, t: f32) -> Result<VarValue> {
         self.0.get(&var).context("No key in state")?.find_value(t)
     }
-    pub fn get_int(&self, var: VarName) -> Result<i32> {
+    pub fn get_value_last(&self, var: VarName) -> Result<VarValue> {
         self.0
             .get(&var)
             .context("Var not found")?
             .get_last()
-            .context("History is empty")?
-            .get_int()
+            .context("History is empty")
+    }
+    pub fn get_int(&self, var: VarName) -> Result<i32> {
+        self.get_value_last(var)?.get_int()
+    }
+    pub fn get_faction(&self, var: VarName) -> Result<Faction> {
+        self.get_value_last(var)?.get_faction()
+    }
+    pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {
+        self.get_value_last(var)?.get_vec2()
     }
     pub fn get_value_from_world(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
         let t = world
             .get_resource::<Time>()
             .context("Time not found")?
             .elapsed_seconds();
-        world.get::<VarState>(entity).unwrap().get_value(var, t)
+        world.get::<VarState>(entity).unwrap().get_value_at(var, t)
     }
     pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
         let mut result = None;
         loop {
             if let Some(state) = world.get::<VarState>(entity) {
-                if let Ok(value) = state.get_value(var, t) {
+                if let Ok(value) = state.get_value_at(var, t) {
                     result = Some(value);
                     break;
                 }

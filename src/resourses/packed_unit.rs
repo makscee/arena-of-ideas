@@ -27,10 +27,11 @@ impl PackedUnit {
             .insert(
                 VarName::Slot,
                 VarValue::Int(slot.unwrap_or_default() as i32),
-            );
+            )
+            .insert(VarName::Faction, VarValue::Faction(faction));
         world
             .entity_mut(entity)
-            .insert(Unit { faction })
+            .insert(Unit)
             .insert(Name::new(self.name))
             .insert(self.state);
     }

@@ -14,6 +14,7 @@ pub enum VarName {
     Text,
     Spawn,
     Slot,
+    Faction,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
@@ -23,6 +24,7 @@ pub enum VarValue {
     Vec2(Vec2),
     Bool(bool),
     String(String),
+    Faction(Faction),
 }
 
 impl VarValue {
@@ -55,6 +57,12 @@ impl VarValue {
         match self {
             VarValue::String(value) => Ok(value.into()),
             _ => Err(anyhow!("String not supported by {self:?}")),
+        }
+    }
+    pub fn get_faction(&self) -> Result<Faction> {
+        match self {
+            VarValue::Faction(value) => Ok(*value),
+            _ => Err(anyhow!("Faction not supported by {self:?}")),
         }
     }
 }
