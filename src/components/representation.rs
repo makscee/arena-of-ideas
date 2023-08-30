@@ -91,7 +91,24 @@ impl RepresentationMaterial {
         }
     }
 
+    fn set_visible(entity: Entity, value: bool, world: &mut World) {
+        if let Some(mut entity) = world.get_entity_mut(entity) {
+            match value {
+                true => entity.insert(Visibility::Inherited),
+                false => entity.insert(Visibility::Hidden),
+            };
+        }
+    }
+
     pub fn update(&self, entity: Entity, world: &mut World) {
+        let t = world.get_resource::<GameTimer>().unwrap().get_t();
+        if let Some(state) = world.get::<VarState>(entity) {
+            let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
+            Self::set_visible(entity, visible, world);
+            if !visible {
+                return;
+            }
+        }
         match self {
             RepresentationMaterial::Shape { shape, size, color } => {
                 let size = size.get_vec2(entity, world).unwrap();

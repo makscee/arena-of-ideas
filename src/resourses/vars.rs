@@ -1,8 +1,9 @@
 use anyhow::anyhow;
+use strum_macros::Display;
 
 use super::*;
 
-#[derive(Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect)]
+#[derive(Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect, Display)]
 pub enum VarName {
     Size,
     Radius,
@@ -15,6 +16,7 @@ pub enum VarName {
     Spawn,
     Slot,
     Faction,
+    Visible,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]

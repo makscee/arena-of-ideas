@@ -15,11 +15,16 @@ impl Effect {
                     let value = value.get_int(owner, world)?;
                     debug!("Damage {value} {target:?}");
 
-                    let mut state = world
+                    let state = world
                         .get_mut::<VarState>(target)
                         .context("Target state not found")?;
                     let new_hp = state.get_int(VarName::Hp)? - value;
-                    state.push_back(VarName::Hp, Change::new(VarValue::Int(new_hp)));
+                    VarState::push_back(
+                        target,
+                        VarName::Hp,
+                        Change::new(VarValue::Int(new_hp)),
+                        world,
+                    );
                 }
             }
         }

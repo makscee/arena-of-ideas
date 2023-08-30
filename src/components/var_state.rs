@@ -32,9 +32,13 @@ pub enum Tween {
 }
 
 impl VarState {
-    pub fn push_back(&mut self, var: VarName, mut change: Change) {
-        change.t += self.duration();
-        self.0.entry(var).or_insert(default()).push(change);
+    pub fn push_back(entity: Entity, var: VarName, mut change: Change, world: &mut World) {
+        let mut timer = world.get_resource_mut::<GameTimer>().unwrap();
+        let end = timer.get_end();
+        change.t += end;
+        timer.update_end(change.total_duration());
+        let mut state = world.get_mut::<VarState>(entity).unwrap();
+        state.0.entry(var).or_insert(default()).push(change);
     }
     pub fn insert(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.0.insert(var, History::new(value));
@@ -59,11 +63,14 @@ impl VarState {
     pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {
         self.get_value_last(var)?.get_vec2()
     }
+    pub fn get_bool(&self, var: VarName) -> Result<bool> {
+        self.get_value_last(var)?.get_bool()
+    }
+    pub fn get_bool_at(&self, var: VarName, t: f32) -> Result<bool> {
+        self.get_value_at(var, t)?.get_bool()
+    }
     pub fn get_value_from_world(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
-        let t = world
-            .get_resource::<Time>()
-            .context("Time not found")?
-            .elapsed_seconds();
+        let t = world.get_resource::<GameTimer>().unwrap().get_t();
         world.get::<VarState>(entity).unwrap().get_value_at(var, t)
     }
     pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
@@ -128,7 +135,10 @@ impl History {
         )
     }
     pub fn duration(&self) -> f32 {
-        self.0.last().map(|x| x.t + x.duration).unwrap_or_default()
+        self.0
+            .last()
+            .map(|x| x.total_duration())
+            .unwrap_or_default()
     }
     pub fn get_last(&self) -> Option<VarValue> {
         self.0.last().and_then(|x| Some(x.value.clone()))
@@ -155,6 +165,9 @@ impl Change {
     pub fn set_t(mut self, t: f32) -> Self {
         self.t = t;
         self
+    }
+    pub fn total_duration(&self) -> f32 {
+        self.t + self.duration
     }
 }
 

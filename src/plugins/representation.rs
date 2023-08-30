@@ -4,7 +4,10 @@ pub struct RepresentationPlugin;
 
 impl Plugin for RepresentationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::injector_system);
+        app.add_systems(
+            Update,
+            Self::injector_system.run_if(in_state(GameState::Battle)),
+        );
     }
 }
 
@@ -15,7 +18,7 @@ impl RepresentationPlugin {
             .iter(world)
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
-        let t = world.resource::<Time>().elapsed_seconds();
+        let t = world.get_resource::<GameTimer>().unwrap().get_t();
         for (entity, rep) in reps {
             let mut position = world
                 .get::<VarState>(entity)
@@ -36,7 +39,6 @@ impl RepresentationPlugin {
             let mut transform = world.get_mut::<Transform>(entity).unwrap();
             transform.translation.x = position.x;
             transform.translation.y = position.y;
-
             rep.material.update(entity, world);
         }
     }

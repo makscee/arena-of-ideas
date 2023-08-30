@@ -61,6 +61,7 @@ fn main() {
             GameState::AssetLoading,
             "ron/dynamic.assets.ron",
         )
+        .add_systems(PreUpdate, update)
         .add_systems(PostUpdate, detect_changes)
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
@@ -79,6 +80,7 @@ fn main() {
         .add_systems(Update, input)
         .init_resource::<UserName>()
         .init_resource::<Password>()
+        .init_resource::<GameTimer>()
         .register_type::<VarState>()
         .run();
 }
@@ -87,6 +89,10 @@ fn setup(mut commands: Commands) {
     let mut camera = Camera2dBundle::default();
     camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
     commands.spawn((camera, RaycastPickCamera::default()));
+}
+
+fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
+    timer.advance(time.delta_seconds());
 }
 
 fn input(
