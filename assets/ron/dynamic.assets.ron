@@ -5,5 +5,6 @@
         "custom.battle": File(
             path: "ron/custom.battle.ron",
         ),
+        "anim": File(path: "ron/all.anim.ron"),
     },
 )

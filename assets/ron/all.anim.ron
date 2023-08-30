@@ -1,0 +1,13 @@
+(
+    {
+        BeforeStrike: Animation(
+            var: Position,
+            change: [
+                (
+                    t: 0.0,
+                    value: Vec2((1.0, 1.0)),
+                ),
+            ],
+        ),
+    },
+)

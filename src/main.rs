@@ -74,6 +74,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
+        .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins((ActionPlugin, UnitPlugin, RepresentationPlugin, BattlePlugin))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)

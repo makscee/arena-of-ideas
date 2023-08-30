@@ -122,9 +122,9 @@ Bevy transition
         Context {cm:2023-08-29T16:05:47}
         Action Queue {cm:2023-08-29T16:05:48}
         Effects: Damage {cm:2023-08-29T16:05:51}
-        Team Battle
+        Team Battle {cm:2023-08-30T18:46:06}
             Battle run {cm:2023-08-30T16:59:42}
-            Death
-            Game Timer
+            Death {cm:2023-08-30T18:46:04}
+            Game Timer {cm:2023-08-30T18:46:05}
         Animation Assets
-
+        Events + Triggers + Statuses
