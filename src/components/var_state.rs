@@ -16,7 +16,7 @@ pub struct Change {
     pub value: VarValue,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, Reflect)]
 pub enum Tween {
     #[default]
     Linear,
@@ -32,11 +32,18 @@ pub enum Tween {
 }
 
 impl VarState {
+    pub fn get(entity: Entity, world: &World) -> &VarState {
+        world.get::<VarState>(entity).unwrap()
+    }
+    pub fn get_mut(entity: Entity, world: &mut World) -> Mut<VarState> {
+        world.get_mut::<VarState>(entity).unwrap()
+    }
+
     pub fn push_back(entity: Entity, var: VarName, mut change: Change, world: &mut World) {
         let mut timer = world.get_resource_mut::<GameTimer>().unwrap();
-        let end = timer.get_end();
+        let end = timer.get_insert_t();
         change.t += end;
-        timer.update_end(change.total_duration());
+        timer.register_insert(change.total_duration());
         let mut state = world.get_mut::<VarState>(entity).unwrap();
         state.0.entry(var).or_insert(default()).push(change);
     }
@@ -68,10 +75,6 @@ impl VarState {
     }
     pub fn get_bool_at(&self, var: VarName, t: f32) -> Result<bool> {
         self.get_value_at(var, t)?.get_bool()
-    }
-    pub fn get_value_from_world(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
-        let t = world.get_resource::<GameTimer>().unwrap().get_t();
-        world.get::<VarState>(entity).unwrap().get_value_at(var, t)
     }
     pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
         let mut result = None;
@@ -120,9 +123,10 @@ impl History {
         if self.0.is_empty() {
             return Err(anyhow!("History is empty"));
         }
-        let i = self.0.partition_point(|x| x.t < t);
+
+        let i = self.0.partition_point(|x| x.t <= t);
         if i == 0 {
-            return Err(anyhow!("First change not reached"));
+            return Err(anyhow!("First change not reached {t}"));
         }
         let cur_change = &self.0[i - 1];
         let prev_change = if i > 1 { &self.0[i - 2] } else { cur_change };
@@ -194,7 +198,14 @@ impl Tween {
         };
         let v = match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => VarValue::Float(*a + (*b - *a) * t),
+            (VarValue::Int(a), VarValue::Int(b)) => {
+                VarValue::Int(((*a + (*b - *a)) as f32 * t) as i32)
+            }
             (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
+            (VarValue::String(a), VarValue::String(b)) => VarValue::String(match t > 0.5 {
+                true => a.into(),
+                false => b.into(),
+            }),
             _ => panic!("Tweening not supported for {a:?} and {b:?}"),
         };
         Ok(v)

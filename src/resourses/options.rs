@@ -12,19 +12,18 @@ pub struct Options {
 
 #[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
 #[uuid = "e96699ce-cabf-461f-86df-913957687d72"]
-pub struct Animations(HashMap<AnimationType, Animation>);
+pub struct Animations(HashMap<AnimationType, Anim>);
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum AnimationType {
     BeforeStrike,
-    Strike,
     AfterStrike,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Animation {
-    pub var: VarName,
-    pub change: Vec<Change>,
+impl Animations {
+    pub fn get(&self, t: AnimationType) -> &Anim {
+        self.0.get(&t).unwrap()
+    }
 }
 
 impl Options {
@@ -40,6 +39,13 @@ impl Options {
             .get_resource::<Assets<BattleState>>()
             .unwrap()
             .get(&world.get_resource::<Options>().unwrap().custom_battle)
+            .unwrap()
+    }
+    pub fn get_animations(world: &World) -> &Animations {
+        world
+            .get_resource::<Assets<Animations>>()
+            .unwrap()
+            .get(&world.get_resource::<Options>().unwrap().animations)
             .unwrap()
     }
 }

@@ -17,6 +17,7 @@ pub enum VarName {
     Slot,
     Faction,
     Visible,
+    Direction,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
@@ -27,6 +28,7 @@ pub enum VarValue {
     Bool(bool),
     String(String),
     Faction(Faction),
+    Entity(Entity),
 }
 
 impl VarValue {
@@ -65,6 +67,40 @@ impl VarValue {
         match self {
             VarValue::Faction(value) => Ok(*value),
             _ => Err(anyhow!("Faction not supported by {self:?}")),
+        }
+    }
+    pub fn get_entity(&self) -> Result<Entity> {
+        match self {
+            VarValue::Entity(value) => Ok(*value),
+            _ => Err(anyhow!("Entity not supported by {self:?}")),
+        }
+    }
+
+    pub fn sum(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a + b)),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a + b)),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + *b)),
+            (VarValue::String(a), VarValue::String(b)) => Ok(VarValue::String(a.to_owned() + b)),
+            _ => Err(anyhow!("{a:?} + {b:?} not supported")),
+        }
+    }
+
+    pub fn sub(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a - b)),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a - b)),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a - *b)),
+            _ => Err(anyhow!("{a:?} - {b:?} not supported")),
+        }
+    }
+
+    pub fn mul(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a * b)),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a * b)),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
+            _ => Err(anyhow!("{a:?} * {b:?} not supported")),
         }
     }
 }

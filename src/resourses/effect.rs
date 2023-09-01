@@ -10,9 +10,8 @@ impl Effect {
         match self {
             Effect::Damage { value } => {
                 if let Some(value) = value {
-                    let owner = context.owner().context("Owner not found")?;
-                    let target = context.target().context("Target not found")?;
-                    let value = value.get_int(owner, world)?;
+                    let target = context.get_target().context("Target not found")?;
+                    let value = value.get_int(&context, world)?;
                     debug!("Damage {value} {target:?}");
 
                     let state = world

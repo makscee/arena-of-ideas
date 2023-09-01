@@ -1,3 +1,4 @@
+mod anim;
 mod battle_state;
 mod context;
 mod effect;
@@ -11,6 +12,7 @@ mod pools;
 mod vars;
 
 use super::*;
+pub use anim::*;
 pub use battle_state::*;
 pub use context::*;
 pub use effect::*;

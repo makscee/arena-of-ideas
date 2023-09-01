@@ -58,28 +58,19 @@ impl BattlePlugin {
     fn before_strike(left: Entity, right: Entity, world: &mut World) {
         debug!("Before strike {left:?} {right:?}");
         let units = vec![(left, -1.0), (right, 1.0)];
-        world.get_resource_mut::<GameTimer>().unwrap().save_end();
+        GameTimer::get_mut(world).start_batch();
         for (caster, dir) in units {
-            let state = world.get_mut::<VarState>(caster).unwrap();
-            let pos =
-                UnitPlugin::get_slot_position(state.get_faction(VarName::Faction).unwrap(), 1);
-            let c1 = Change::new(VarValue::Vec2(pos + vec2(2.0, 0.0) * dir))
-                .set_duration(1.0)
-                .set_tween(Tween::QuartInOut);
-            let c2 = Change::new(VarValue::Vec2(vec2(1.0, 0.0) * dir))
-                .set_duration(0.1)
-                .set_t(0.3);
-            VarState::push_back(caster, VarName::Position, c1, world);
-            VarState::push_back(caster, VarName::Position, c2, world);
-            world
-                .get_resource_mut::<GameTimer>()
-                .unwrap()
-                .return_to_saved_end();
+            GameTimer::get_mut(world).head_to_batch_start();
+            Options::get_animations(world)
+                .get(AnimationType::BeforeStrike)
+                .clone()
+                .apply(
+                    &Context::from_owner(caster).set_var(VarName::Direction, VarValue::Float(dir)),
+                    world,
+                )
+                .unwrap();
         }
-        world
-            .get_resource_mut::<GameTimer>()
-            .unwrap()
-            .return_to_max_end();
+        GameTimer::get_mut(world).end_batch();
     }
 
     fn strike(left: Entity, right: Entity, world: &mut World) {
@@ -87,7 +78,9 @@ impl BattlePlugin {
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
             let action = Action {
-                context: Context::from_caster(caster).set_target(target),
+                context: Context::from_caster(caster)
+                    .set_target(target)
+                    .set_owner(caster),
                 effect: Effect::Damage {
                     value: Some(Expression::Int(1)),
                 },
@@ -103,46 +96,27 @@ impl BattlePlugin {
     fn after_strike(left: Entity, right: Entity, world: &mut World) {
         debug!("After strike {left:?} {right:?}");
         let units = vec![left, right];
-        world.get_resource_mut::<GameTimer>().unwrap().save_end();
+        GameTimer::get_mut(world).start_batch();
         for caster in units {
-            let state = world.get_mut::<VarState>(caster).unwrap();
-            let faction = state.get_faction(VarName::Faction).unwrap();
-            let slot = state.get_int(VarName::Slot).unwrap();
-            let pos = UnitPlugin::get_slot_position(faction, slot as usize);
-            let change = Change::new(VarValue::Vec2(pos))
-                .set_duration(0.5)
-                .set_tween(Tween::QuartOut)
-                .set_t(0.5);
-            VarState::push_back(caster, VarName::Position, change, world);
-            world
-                .get_resource_mut::<GameTimer>()
-                .unwrap()
-                .return_to_saved_end();
+            GameTimer::get_mut(world).head_to_batch_start();
+            Options::get_animations(world)
+                .get(AnimationType::AfterStrike)
+                .clone()
+                .apply(&Context::from_owner(caster), world)
+                .unwrap();
         }
-        world
-            .get_resource_mut::<GameTimer>()
-            .unwrap()
-            .return_to_max_end();
+        GameTimer::get_mut(world).end_batch();
     }
 
     fn translate_to_slots(world: &mut World) {
         let units =
             UnitPlugin::collect_factions(&HashSet::from([Faction::Left, Faction::Right]), world);
-        world.get_resource_mut::<GameTimer>().unwrap().save_end();
+        GameTimer::get_mut(world).start_batch();
         for (unit, faction) in units.into_iter() {
-            let slot = VarState::get_value_from_world(unit, VarName::Slot, world)
-                .unwrap()
-                .get_int()
-                .unwrap() as usize;
+            let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
+            GameTimer::get_mut(world).head_to_batch_start();
             UnitPlugin::translate_unit(unit, UnitPlugin::get_slot_position(faction, slot), world);
-            world
-                .get_resource_mut::<GameTimer>()
-                .unwrap()
-                .return_to_saved_end();
         }
-        world
-            .get_resource_mut::<GameTimer>()
-            .unwrap()
-            .return_to_max_end();
+        GameTimer::get_mut(world).end_batch();
     }
 }

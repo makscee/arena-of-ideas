@@ -24,6 +24,13 @@ impl UnitPlugin {
         )
     }
 
+    pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
+        let state = VarState::get(entity, world);
+        let slot = state.get_int(VarName::Slot)? as usize;
+        let faction = state.get_faction(VarName::Faction)?;
+        Ok(Self::get_slot_position(faction, slot))
+    }
+
     pub fn collect_factions(
         factions: &HashSet<Faction>,
         world: &mut World,
@@ -75,12 +82,14 @@ impl UnitPlugin {
         mut commands: Commands,
         mut state: ResMut<NextState<GameState>>,
         mut time: ResMut<Time>,
+        mut game_timer: ResMut<GameTimer>,
     ) {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
         state.set(GameState::Battle);
         *time = Time::new(Instant::now());
+        game_timer.reset();
     }
 
     pub fn translate_unit(entity: Entity, position: Vec2, world: &mut World) {

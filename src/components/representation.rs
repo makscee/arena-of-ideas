@@ -101,7 +101,7 @@ impl RepresentationMaterial {
     }
 
     pub fn update(&self, entity: Entity, world: &mut World) {
-        let t = world.get_resource::<GameTimer>().unwrap().get_t();
+        let t = GameTimer::get_mut(world).get_t();
         if let Some(state) = world.get::<VarState>(entity) {
             let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
             Self::set_visible(entity, visible, world);
@@ -109,9 +109,10 @@ impl RepresentationMaterial {
                 return;
             }
         }
+        let context = Context::from_owner(entity);
         match self {
             RepresentationMaterial::Shape { shape, size, color } => {
-                let size = size.get_vec2(entity, world).unwrap();
+                let size = size.get_vec2(&context, world).unwrap();
                 let handle = world
                     .get::<Handle<LineShapeMaterial>>(entity)
                     .unwrap()
@@ -141,10 +142,10 @@ impl RepresentationMaterial {
                 ..
             } => {
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
-                    text.get_string(entity, world).unwrap();
+                    text.get_string(&context, world).unwrap();
                 world.get_mut::<Transform>(entity).unwrap().scale =
                     vec3(1.0 / *font_size, 1.0 / *font_size, 1.0)
-                        * size.get_float(entity, world).unwrap();
+                        * size.get_float(&context, world).unwrap();
             }
         }
     }

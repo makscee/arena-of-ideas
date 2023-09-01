@@ -18,7 +18,7 @@ impl RepresentationPlugin {
             .iter(world)
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
-        let t = world.get_resource::<GameTimer>().unwrap().get_t();
+        let t = GameTimer::get_mut(world).get_t();
         for (entity, rep) in reps {
             let mut position = world
                 .get::<VarState>(entity)
@@ -28,10 +28,11 @@ impl RepresentationPlugin {
                         .ok()
                 })
                 .unwrap_or_default();
+            let context = Context::from_owner(entity);
             for (key, value) in rep.mapping.iter() {
                 match key {
                     VarName::Position => {
-                        position = value.get_vec2(entity, world).unwrap();
+                        position = value.get_vec2(&context, world).unwrap();
                     }
                     _ => continue,
                 };
