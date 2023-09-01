@@ -131,6 +131,6 @@ Bevy transition
             Entity {cm:2023-09-01T17:44:33}
             Attach/Detach {cm:2023-09-01T17:44:33}
             Rendering {cm:2023-09-01T17:44:33}
-        Events
-        Triggers
+        Events {cm:2023-09-01T18:58:55}
+        Triggers {cm:2023-09-01T18:58:55}
 

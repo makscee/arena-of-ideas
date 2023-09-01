@@ -77,18 +77,13 @@ impl BattlePlugin {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
-            let action = Action {
-                context: Context::from_caster(caster)
-                    .set_target(target)
-                    .set_owner(caster),
-                effect: Effect::Damage {
-                    value: Some(Expression::Int(1)),
-                },
+            let context = Context::from_caster(caster)
+                .set_target(target)
+                .set_owner(caster);
+            let effect = Effect::Damage {
+                value: Some(Expression::Int(1)),
             };
-            world
-                .get_resource_mut::<ActionQueue>()
-                .unwrap()
-                .push(action);
+            ActionPlugin::queue_effect(effect, context, world);
             ActionPlugin::spin(world);
         }
     }

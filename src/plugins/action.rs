@@ -33,6 +33,14 @@ impl ActionPlugin {
             }
         }
     }
+
+    pub fn queue_effect(effect: Effect, context: Context, world: &mut World) {
+        let action = Action { context, effect };
+        world
+            .get_resource_mut::<ActionQueue>()
+            .unwrap()
+            .push(action);
+    }
 }
 
 #[derive(Debug)]

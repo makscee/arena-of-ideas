@@ -12,6 +12,7 @@ pub enum ContextLayer {
     Target { entity: Entity },
     Owner { entity: Entity },
     Var { var: VarName, value: VarValue },
+    Status { entity: Entity },
 }
 
 impl ContextLayer {
@@ -35,7 +36,7 @@ impl ContextLayer {
     }
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         match self {
-            ContextLayer::Owner { entity } => {
+            ContextLayer::Owner { entity } | ContextLayer::Status { entity } => {
                 VarState::get(*entity, world).get_value_last(var).ok()
             }
             ContextLayer::Var { var: v, value } => match var.eq(v) {
@@ -140,5 +141,10 @@ impl Context {
             }
         }
         result
+    }
+
+    pub fn set_status(mut self, entity: Entity) -> Self {
+        self.layers.push(ContextLayer::Status { entity });
+        self
     }
 }

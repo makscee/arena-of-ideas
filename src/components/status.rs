@@ -1,9 +1,11 @@
+use crate::resourses::event::Event;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct PackedStatus {
     pub name: String,
-    // pub trigger: Trigger,
+    pub trigger: Trigger,
     pub representation: Option<Representation>,
     #[serde(default)]
     pub state: VarState,
@@ -12,13 +14,16 @@ pub struct PackedStatus {
 #[derive(Component)]
 pub struct Status {
     pub name: String,
+    pub trigger: Trigger,
 }
 
 impl PackedStatus {
     pub fn unpack(mut self, entity: Entity, world: &mut World) -> Result<()> {
         let entity = self.representation.unwrap().unpack(Some(entity), world);
         if self.state.get_int(VarName::Charges).is_err() {
-            self.state.insert(VarName::Charges, VarValue::Int(1));
+            self.state
+                .insert(VarName::Charges, VarValue::Int(1))
+                .insert(VarName::Name, VarValue::String(self.name.clone()));
         }
         world
             .get_entity_mut(entity)
@@ -26,6 +31,7 @@ impl PackedStatus {
             .insert((
                 Status {
                     name: self.name.clone(),
+                    trigger: self.trigger,
                 },
                 Name::from(self.name),
                 self.state,
@@ -37,23 +43,44 @@ impl PackedStatus {
 impl Status {
     pub fn change_charges(
         status_name: &str,
-        entity: Entity,
+        unit: Entity,
         delta: i32,
         world: &mut World,
     ) -> Result<()> {
-        let children = world
-            .get_entity(entity)
-            .context("Unit not found")?
-            .get::<Children>()
-            .unwrap()
-            .to_vec();
-        for child in children {
-            if let Some(status) = world.entity_mut(child).get_mut::<Status>() {
+        for entity in Self::collect_all_statuses(unit, world) {
+            if let Some(status) = world.entity_mut(entity).get_mut::<Status>() {
                 if status.name.eq(status_name) {
-                    VarState::change_int(child, VarName::Charges, delta, world)?;
+                    VarState::change_int(entity, VarName::Charges, delta, world)?;
                 }
             }
         }
         Ok(())
+    }
+
+    pub fn collect_all_statuses(entity: Entity, world: &World) -> Vec<Entity> {
+        if let Some(entity) = world.get_entity(entity) {
+            entity
+                .get::<Children>()
+                .unwrap()
+                .to_vec()
+                .into_iter()
+                .filter(|x| world.entity(*x).contains::<Status>())
+                .collect_vec()
+        } else {
+            default()
+        }
+    }
+
+    pub fn get_trigger(status: Entity, world: &World) -> &Trigger {
+        &world.get::<Status>(status).unwrap().trigger
+    }
+
+    pub fn notify(statuses: Vec<Entity>, event: &Event, world: &mut World) {
+        for status in statuses {
+            Self::get_trigger(status, world)
+                .clone()
+                .catch_event(event, status, world)
+                .unwrap();
+        }
     }
 }

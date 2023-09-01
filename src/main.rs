@@ -2,7 +2,7 @@ mod components;
 mod login_menu_system;
 mod materials;
 mod plugins;
-mod resourses;
+pub mod resourses;
 
 use std::time::Duration;
 
