@@ -18,6 +18,7 @@ pub enum VarName {
     Faction,
     Visible,
     Direction,
+    Charges,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]

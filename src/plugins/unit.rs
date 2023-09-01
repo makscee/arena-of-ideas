@@ -7,11 +7,30 @@ pub struct UnitPlugin;
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Next), Self::spawn)
-            .add_systems(OnEnter(GameState::Restart), Self::despawn);
+            .add_systems(OnEnter(GameState::Restart), Self::despawn)
+            .add_systems(Update, Self::test_system);
     }
 }
 
 impl UnitPlugin {
+    fn test_system(world: &mut World) {
+        if !world
+            .get_resource::<Input<KeyCode>>()
+            .unwrap()
+            .just_pressed(KeyCode::T)
+        {
+            return;
+        }
+        let units = world
+            .query_filtered::<Entity, With<Unit>>()
+            .iter(world)
+            .collect_vec();
+        for unit in units {
+            debug!("Change charges of {unit:?}");
+            Status::change_charges("Test", unit, 1, world).unwrap();
+        }
+    }
+
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
         vec2(
             slot as f32

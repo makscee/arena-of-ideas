@@ -196,9 +196,9 @@
                 ),
             ),
             (
-                hp: 5,
-                atk: 1,
-                name: "Test2",
+                hp: 50,
+                atk: 2,
+                name: "Survivor",
                 representation: (
                     material: Shape(
                         shape: Circle,

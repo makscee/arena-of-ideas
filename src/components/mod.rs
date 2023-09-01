@@ -1,8 +1,10 @@
 mod representation;
+mod status;
 mod var_state;
 
 use super::*;
 pub use representation::*;
+pub use status::*;
 pub use var_state::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -6,5 +6,8 @@
             path: "ron/custom.battle.ron",
         ),
         "anim": File(path: "ron/all.anim.ron"),
+        "statuses": File(
+            path: "ron/all.statuses.ron",
+        ),
     },
 )

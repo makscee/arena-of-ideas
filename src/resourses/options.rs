@@ -8,6 +8,18 @@ pub struct Options {
     pub custom_battle: Handle<BattleState>,
     #[asset(key = "anim")]
     pub animations: Handle<Animations>,
+    #[asset(key = "statuses")]
+    pub statuses: Handle<Statuses>,
+}
+
+#[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
+#[uuid = "25375938-08c6-4e57-b470-18dc81eb0823"]
+pub struct Statuses(Vec<PackedStatus>);
+
+impl Statuses {
+    pub fn get(&self, name: &str) -> Option<&PackedStatus> {
+        self.0.iter().find(|x| x.name.eq(name))
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
@@ -46,6 +58,13 @@ impl Options {
             .get_resource::<Assets<Animations>>()
             .unwrap()
             .get(&world.get_resource::<Options>().unwrap().animations)
+            .unwrap()
+    }
+    pub fn get_statuses(world: &World) -> &Statuses {
+        world
+            .get_resource::<Assets<Statuses>>()
+            .unwrap()
+            .get(&world.get_resource::<Options>().unwrap().statuses)
             .unwrap()
     }
 }

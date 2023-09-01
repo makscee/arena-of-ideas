@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default)]
 pub struct VarState(HashMap<VarName, History>);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
@@ -39,12 +39,18 @@ impl VarState {
         world.get_mut::<VarState>(entity).unwrap()
     }
 
+    pub fn change_int(entity: Entity, var: VarName, delta: i32, world: &mut World) -> Result<()> {
+        let value = Self::get(entity, world).get_int(var).unwrap_or_default() + delta;
+        Self::push_back(entity, var, Change::new(VarValue::Int(value)), world);
+        Ok(())
+    }
+
     pub fn push_back(entity: Entity, var: VarName, mut change: Change, world: &mut World) {
         let mut timer = world.get_resource_mut::<GameTimer>().unwrap();
         let end = timer.get_insert_t();
         change.t += end;
         timer.register_insert(change.total_duration());
-        let mut state = world.get_mut::<VarState>(entity).unwrap();
+        let mut state = Self::get_mut(entity, world);
         state.0.entry(var).or_insert(default()).push(change);
     }
     pub fn insert(&mut self, var: VarName, value: VarValue) -> &mut Self {

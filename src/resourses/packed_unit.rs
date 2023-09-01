@@ -34,6 +34,13 @@ impl PackedUnit {
             .insert(Unit)
             .insert(Name::new(self.name))
             .insert(self.state);
+
+        Options::get_statuses(world)
+            .get("Test")
+            .unwrap()
+            .clone()
+            .unpack(entity, world)
+            .unwrap();
     }
 }
 

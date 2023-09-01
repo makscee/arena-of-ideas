@@ -102,9 +102,9 @@ Build {c}
         Click {cm:2023-08-15T15:08:24}
         Music {cm:2023-08-15T15:08:24}
 Socials {c}
-    Build on itch.io
+    Build on itch.io {cm:2023-09-01T16:13:35}
     Build post on reddit
-    Build post on tg
+    Build post on tg {cm:2023-09-01T16:13:36}
     Build devlog on yt
 Bevy transition
     Representation {cm:2023-08-18T16:46:36}
@@ -127,4 +127,10 @@ Bevy transition
             Death {cm:2023-08-30T18:46:04}
             Game Timer {cm:2023-08-30T18:46:05}
         Animation Assets {cm:2023-08-31T01:00:23}
-        Events + Triggers + Statuses
+        Statuses {cm:2023-09-01T17:44:33}
+            Entity {cm:2023-09-01T17:44:33}
+            Attach/Detach {cm:2023-09-01T17:44:33}
+            Rendering {cm:2023-09-01T17:44:33}
+        Events
+        Triggers
+
