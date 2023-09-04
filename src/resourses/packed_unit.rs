@@ -13,9 +13,11 @@ pub struct PackedUnit {
 }
 
 impl PackedUnit {
-    pub fn unpack(mut self, faction: Faction, slot: Option<usize>, world: &mut World) {
+    pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) {
         debug!("Unpack unit {:?}", &self);
-        let entity = Options::get_unit_rep(world).clone().unpack(None, world);
+        let entity = Options::get_unit_rep(world)
+            .clone()
+            .unpack(Some(parent), world);
         world
             .entity_mut(entity)
             .insert(PickableBundle::default())
@@ -35,7 +37,6 @@ impl PackedUnit {
                 VarName::Slot,
                 VarValue::Int(slot.unwrap_or_default() as i32),
             )
-            .insert(VarName::Faction, VarValue::Faction(faction))
             .insert(
                 VarName::Description,
                 VarValue::String(self.description.to_owned()),

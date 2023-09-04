@@ -1,3 +1,5 @@
+use std::mem;
+
 use super::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default)]
@@ -32,11 +34,15 @@ pub enum Tween {
 }
 
 impl VarState {
-    pub fn get(entity: Entity, world: &World) -> &VarState {
-        world.get::<VarState>(entity).unwrap()
+    pub fn new_with(var: VarName, value: VarValue) -> Self {
+        mem::take(Self::default().insert(var, value))
     }
-    pub fn get_mut(entity: Entity, world: &mut World) -> Mut<VarState> {
-        world.get_mut::<VarState>(entity).unwrap()
+
+    pub fn get(entity: Entity, world: &World) -> &Self {
+        world.get::<Self>(entity).unwrap()
+    }
+    pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
+        world.get_mut::<Self>(entity).unwrap()
     }
 
     pub fn change_int(entity: Entity, var: VarName, delta: i32, world: &mut World) -> Result<()> {

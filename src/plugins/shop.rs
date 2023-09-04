@@ -17,6 +17,8 @@ impl ShopPlugin {
     fn enter_state(world: &mut World) {
         if let Some(team) = &world.resource::<ActiveTeam>().team {
             team.clone().unpack(Faction::Team, world);
+        } else {
+            PackedTeam::spawn(Faction::Team, world);
         }
         Self::fill_showcase(world);
     }
@@ -38,8 +40,9 @@ impl ShopPlugin {
             let unit = (*pool.choose(&mut rand::thread_rng()).unwrap()).clone();
             units.push(unit);
         }
+        let team = PackedTeam::spawn(Faction::Shop, world).id();
         for unit in units {
-            unit.unpack(Faction::Shop, None, world);
+            unit.unpack(team, None, world);
         }
         UnitPlugin::fill_slot_gaps(Faction::Shop, world);
         UnitPlugin::translate_to_slots(world);
@@ -70,24 +73,19 @@ impl ShopPlugin {
                 ui.vertical_centered(|ui| {
                     let btn = ui.button("Buy");
                     if btn.clicked() {
-                        VarState::push_back(
-                            unit,
-                            VarName::Faction,
-                            Change::new(VarValue::Faction(Faction::Team)),
-                            world,
-                        );
-                        VarState::push_back(
-                            unit,
-                            VarName::Slot,
-                            Change::new(VarValue::Int(0)),
-                            world,
-                        );
-                        UnitPlugin::fill_slot_gaps(Faction::Team, world);
-                        UnitPlugin::translate_to_slots(world);
+                        Self::buy_unit(unit, world);
                     }
                 })
             });
         }
+    }
+
+    pub fn buy_unit(unit: Entity, world: &mut World) {
+        let team = PackedTeam::entity(Faction::Team, world).unwrap();
+        world.entity_mut(unit).set_parent(team);
+        VarState::push_back(unit, VarName::Slot, Change::new(VarValue::Int(0)), world);
+        UnitPlugin::fill_slot_gaps(Faction::Team, world);
+        UnitPlugin::translate_to_slots(world);
     }
 }
 

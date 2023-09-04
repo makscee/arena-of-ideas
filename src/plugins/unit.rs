@@ -3,6 +3,7 @@ use bevy_egui::{
     egui::{self, Align2, Id, Pos2, Ui},
     EguiContext,
 };
+use strum_macros::Display;
 
 use super::*;
 
@@ -11,7 +12,6 @@ pub struct UnitPlugin;
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredUnit>()
-            .add_systems(OnEnter(GameState::Next), Self::spawn)
             .add_systems(OnEnter(GameState::Restart), Self::despawn)
             .add_systems(Update, Self::test_system)
             .add_systems(Update, Self::ui);
@@ -53,57 +53,43 @@ impl UnitPlugin {
         Ok(Self::get_slot_position(faction, slot))
     }
 
-    pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
-        Self::collect_factions(&HashSet::from([faction]), world)
+    pub fn collect_factions(
+        factions: HashSet<Faction>,
+        world: &mut World,
+    ) -> Vec<(Entity, Faction)> {
+        factions
             .into_iter()
-            .map(|x| x.0)
+            .map(|f| {
+                Self::collect_faction(f, world)
+                    .into_iter()
+                    .map(move |e| (e, f))
+            })
+            .flatten()
             .collect_vec()
     }
 
-    pub fn collect_factions(
-        factions: &HashSet<Faction>,
-        world: &mut World,
-    ) -> Vec<(Entity, Faction)> {
-        world
-            .query_filtered::<(Entity, &VarState), With<Unit>>()
-            .iter(world)
-            .filter_map(|(e, state)| {
-                let faction = state.get_faction(VarName::Faction).unwrap();
-                if factions.contains(&faction) {
-                    Some((e, faction))
-                } else {
-                    None
-                }
-            })
-            .collect_vec()
+    pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
+        if let Some(team) = PackedTeam::entity(faction, world) {
+            if let Some(children) = world.get::<Children>(team) {
+                return children.iter().cloned().collect_vec();
+            }
+        }
+        return default();
     }
 
     pub fn fill_slot_gaps(faction: Faction, world: &mut World) {
-        for (slot, mut s) in world
-            .query_filtered::<&mut VarState, With<Unit>>()
-            .iter_mut(world)
-            .filter(|s| s.get_faction(VarName::Faction).unwrap() == faction)
-            .sorted_by_key(|s| s.get_int(VarName::Slot).unwrap())
-            .enumerate()
-        {
-            s.insert(VarName::Slot, VarValue::Int(slot as i32 + 1));
-        }
-    }
-
-    fn spawn(world: &mut World) {
-        for (i, (_, unit)) in world
-            .get_resource::<Pools>()
+        let team = PackedTeam::entity(faction, world).unwrap();
+        for (slot, unit) in world
+            .get::<Children>(team)
             .unwrap()
-            .heroes
-            .clone()
-            .into_iter()
+            .iter()
+            .sorted_by_key(|x| VarState::get(**x, world).get_int(VarName::Slot).unwrap())
+            .cloned()
             .enumerate()
+            .collect_vec()
         {
-            let units = world.get_resource::<Assets<PackedUnit>>().unwrap();
-            let unit = units.get(&unit).unwrap().clone();
-            unit.unpack(Faction::Left, Some(i + 1), world);
+            VarState::get_mut(unit, world).insert(VarName::Slot, VarValue::Int(slot as i32 + 1));
         }
-        dbg!(Options::get_custom_battle(world));
     }
 
     fn despawn(
@@ -179,7 +165,7 @@ impl UnitPlugin {
 
     pub fn translate_to_slots(world: &mut World) {
         let units = UnitPlugin::collect_factions(
-            &HashSet::from([Faction::Left, Faction::Right, Faction::Team, Faction::Shop]),
+            HashSet::from([Faction::Left, Faction::Right, Faction::Team, Faction::Shop]),
             world,
         );
         GameTimer::get_mut(world).start_batch();
@@ -253,7 +239,18 @@ pub struct UnitRepresentation;
 pub struct Corpse;
 
 #[derive(
-    Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, PartialOrd, Ord,
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Reflect,
+    PartialOrd,
+    Ord,
+    Display,
 )]
 pub enum Faction {
     Left,

@@ -137,4 +137,8 @@ Bevy transition
         Unit description {cm:2023-09-05T01:20:09}
         Showcase {cm:2023-09-05T01:20:09}
         Buying {cm:2023-09-05T01:20:09}
-        Status card
+        Money
+        Stats window
+        Reroll
+        Status in showcase
+        Battle transition
