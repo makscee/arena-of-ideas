@@ -1,4 +1,5 @@
 use super::*;
+use bevy_egui::{egui::Pos2, *};
 
 pub struct ShopPlugin;
 
@@ -6,7 +7,8 @@ impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveTeam>()
             .add_systems(OnEnter(GameState::Shop), Self::enter_state)
-            .add_systems(PostUpdate, Self::input);
+            .add_systems(PostUpdate, Self::input)
+            .add_systems(Update, Self::ui);
     }
 }
 
@@ -24,6 +26,7 @@ impl ShopPlugin {
             }
             UnitPlugin::fill_slot_gaps(Faction::Team, world);
         }
+        UnitPlugin::translate_to_slots(world);
     }
 
     fn leave_state(world: &mut World) {}
@@ -50,6 +53,19 @@ impl ShopPlugin {
             .clone()
             .expect("Tried to unpack emtpy Active Team")
             .unpack(Faction::Team, world);
+        UnitPlugin::translate_to_slots(world);
+    }
+
+    pub fn ui(mut contexts: EguiContexts) {
+        // egui::Window::new("Shop")
+        //     .fixed_rect(egui::Rect::from_center_size(
+        //         Pos2::new(300.0, 10.0),
+        //         egui::vec2(200.0, 50.0),
+        //     ))
+        //     .show(contexts.ctx_mut(), |ui| {
+        //         ui.button("Click").clicked();
+
+        //     });
     }
 }
 

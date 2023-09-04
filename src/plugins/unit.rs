@@ -1,4 +1,8 @@
 use bevy::utils::Instant;
+use bevy_egui::{
+    egui::{self, Align2, Pos2},
+    EguiContext,
+};
 
 use super::*;
 
@@ -6,9 +10,11 @@ pub struct UnitPlugin;
 
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Next), Self::spawn)
+        app.init_resource::<HoveredUnit>()
+            .add_systems(OnEnter(GameState::Next), Self::spawn)
             .add_systems(OnEnter(GameState::Restart), Self::despawn)
-            .add_systems(Update, Self::test_system);
+            .add_systems(Update, Self::test_system)
+            .add_systems(Update, Self::ui);
     }
 }
 
@@ -32,15 +38,11 @@ impl UnitPlugin {
     }
 
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
-        vec2(
-            slot as f32
-                * 3.0
-                * match faction {
-                    Faction::Left | Faction::Team => -1.0,
-                    Faction::Right => 1.0,
-                },
-            0.0,
-        )
+        match faction {
+            Faction::Left => vec2(slot as f32 * -3.0, 0.0),
+            Faction::Right => vec2(slot as f32 * 3.0, 0.0),
+            Faction::Team => vec2(slot as f32 * -3.0 + 7.5, -3.0),
+        }
     }
 
     pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
@@ -166,6 +168,51 @@ impl UnitPlugin {
             world.entity_mut(unit).despawn_recursive()
         }
     }
+
+    pub fn translate_to_slots(world: &mut World) {
+        let units = UnitPlugin::collect_factions(
+            &HashSet::from([Faction::Left, Faction::Right, Faction::Team]),
+            world,
+        );
+        GameTimer::get_mut(world).start_batch();
+        for (unit, faction) in units.into_iter() {
+            let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
+            GameTimer::get_mut(world).head_to_batch_start();
+            UnitPlugin::translate_unit(unit, UnitPlugin::get_slot_position(faction, slot), world);
+        }
+        GameTimer::get_mut(world).end_batch();
+    }
+
+    pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
+        debug!("Hover unit start {:?}", event.target);
+        hovered.0 = Some(event.target);
+    }
+
+    pub fn unhover_unit(event: Listener<Pointer<Out>>, mut hovered: ResMut<HoveredUnit>) {
+        debug!("Hover unit end {:?}", event.target);
+        hovered.0 = None;
+    }
+
+    fn ui(world: &mut World) {
+        if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
+            let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
+            let pos = world.get::<GlobalTransform>(hovered).unwrap().translation();
+            let pos = camera.world_to_viewport(transform, pos).unwrap();
+
+            let context = world
+                .query::<&mut EguiContext>()
+                .single_mut(world)
+                .into_inner()
+                .get_mut();
+            egui::Window::new("Shop")
+                .fixed_pos(Pos2::new(pos.x, pos.y))
+                .min_width(400.0)
+                .pivot(Align2::CENTER_CENTER)
+                .show(context, |ui| {
+                    ui.button("Click").clicked();
+                });
+        }
+    }
 }
 
 #[derive(Resource, Debug)]
@@ -188,3 +235,6 @@ pub enum Faction {
     Right,
     Team,
 }
+
+#[derive(Resource, Default)]
+pub struct HoveredUnit(Option<Entity>);

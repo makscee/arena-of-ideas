@@ -12,7 +12,7 @@ impl BattlePlugin {
     pub fn setup(world: &mut World) {
         let bs = Options::get_custom_battle(world).clone();
         bs.unpack(world);
-        Self::translate_to_slots(world);
+        UnitPlugin::translate_to_slots(world);
         Self::run_battle(world);
     }
 
@@ -52,7 +52,7 @@ impl BattlePlugin {
         Self::after_strike(left, right, world);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::fill_slot_gaps(Faction::Right, world);
-        Self::translate_to_slots(world);
+        UnitPlugin::translate_to_slots(world);
     }
 
     fn before_strike(left: Entity, right: Entity, world: &mut World) {
@@ -99,18 +99,6 @@ impl BattlePlugin {
                 .clone()
                 .apply(&Context::from_owner(caster), world)
                 .unwrap();
-        }
-        GameTimer::get_mut(world).end_batch();
-    }
-
-    fn translate_to_slots(world: &mut World) {
-        let units =
-            UnitPlugin::collect_factions(&HashSet::from([Faction::Left, Faction::Right]), world);
-        GameTimer::get_mut(world).start_batch();
-        for (unit, faction) in units.into_iter() {
-            let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
-            GameTimer::get_mut(world).head_to_batch_start();
-            UnitPlugin::translate_unit(unit, UnitPlugin::get_slot_position(faction, slot), world);
         }
         GameTimer::get_mut(world).end_batch();
     }

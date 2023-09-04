@@ -1,0 +1,30 @@
+(
+    hp: 2,
+    atk: 1,
+    name: "Test 2",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            color: ("#FDD835"),
+            size: Vec2E(State(Radius)),
+        ),
+    ),
+    state: (
+        {
+            Radius: (
+                [
+                    (
+                        t: 0.0,
+                        value: Float(0.0001),
+                    ),
+                    (
+                        t: 0.0,
+                        duration: 0.5,
+                        tween: QuartOut,
+                        value: Float(0.9),
+                    ),
+                ],
+            ),
+        },
+    ),
+)

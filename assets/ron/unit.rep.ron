@@ -54,7 +54,7 @@
             material: Text(
                 text: State(Name),
                 color: ("#ECEFF1"),
-                size: Float(0.4),
+                size: Float(0.25),
             ),
             mapping: (
                 {
