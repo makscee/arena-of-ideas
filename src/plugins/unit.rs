@@ -36,7 +36,7 @@ impl UnitPlugin {
             slot as f32
                 * 3.0
                 * match faction {
-                    Faction::Left => -1.0,
+                    Faction::Left | Faction::Team => -1.0,
                     Faction::Right => 1.0,
                 },
             0.0,
@@ -106,7 +106,7 @@ impl UnitPlugin {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
-        state.set(GameState::Battle);
+        state.set(GameState::Shop);
         *time = Time::new(Instant::now());
         game_timer.reset();
     }
@@ -155,6 +155,17 @@ impl UnitPlugin {
             .unwrap()
             <= 0
     }
+
+    pub fn despawn_all(world: &mut World) {
+        for unit in world
+            .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
+            .iter(world)
+            .collect_vec()
+        {
+            debug!("Despawn {unit:?}");
+            world.entity_mut(unit).despawn_recursive()
+        }
+    }
 }
 
 #[derive(Resource, Debug)]
@@ -162,6 +173,9 @@ pub struct UnitHandle(pub Handle<PackedUnit>);
 
 #[derive(Component)]
 pub struct Unit;
+
+#[derive(Component)]
+pub struct UnitRepresentation;
 
 #[derive(Component)]
 pub struct Corpse;
@@ -172,4 +186,5 @@ pub struct Corpse;
 pub enum Faction {
     Left,
     Right,
+    Team,
 }

@@ -12,13 +12,17 @@ pub struct PackedUnit {
 
 impl PackedUnit {
     pub fn unpack(mut self, faction: Faction, slot: Option<usize>, world: &mut World) {
+        debug!("Unpack unit {:?}", &self);
         let entity = Options::get_unit_rep(world).clone().unpack(None, world);
         world
             .entity_mut(entity)
             .insert(PickableBundle::default())
             .insert(RaycastPickTarget::default())
             .insert(On::<Pointer<Over>>::run(hover_unit));
-        self.representation.unpack(Some(entity), world);
+        {
+            let entity = self.representation.unpack(Some(entity), world);
+            world.entity_mut(entity).insert(UnitRepresentation);
+        }
         self.state
             .insert(VarName::Hp, VarValue::Int(self.hp))
             .insert(VarName::Atk, VarValue::Int(self.atk))
@@ -41,6 +45,27 @@ impl PackedUnit {
             .clone()
             .unpack(entity, world)
             .unwrap();
+    }
+
+    pub fn pack(entity: Entity, world: &World) -> Self {
+        let rep_entity = *world
+            .get::<Children>(entity)
+            .unwrap()
+            .into_iter()
+            .find(|x| world.get::<UnitRepresentation>(**x).is_some())
+            .unwrap();
+        let representation = Representation::pack(rep_entity, world);
+        let state = VarState::get(entity, world).clone();
+        let hp = state.get_int(VarName::Hp).unwrap();
+        let atk = state.get_int(VarName::Atk).unwrap();
+        let name = state.get_string(VarName::Name).unwrap();
+        Self {
+            hp,
+            atk,
+            name,
+            representation,
+            state,
+        }
     }
 }
 

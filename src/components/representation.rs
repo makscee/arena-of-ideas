@@ -168,4 +168,19 @@ impl Representation {
         world.entity_mut(entity).insert(self);
         entity
     }
+    pub fn pack(entity: Entity, world: &World) -> Self {
+        let mut rep = world.get::<Representation>(entity).unwrap().clone();
+        rep.pack_children(entity, world);
+        rep
+    }
+    fn pack_children(&mut self, entity: Entity, world: &World) {
+        if let Some(children) = world.get::<Children>(entity) {
+            for child in children.iter() {
+                if let Some(mut rep) = world.get::<Representation>(entity).cloned() {
+                    rep.pack_children(*child, world);
+                    self.children.push(Box::new(rep));
+                }
+            }
+        }
+    }
 }

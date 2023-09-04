@@ -3,6 +3,7 @@ mod login_menu_system;
 mod materials;
 mod plugins;
 pub mod resourses;
+mod utils;
 
 use std::time::Duration;
 
@@ -33,6 +34,7 @@ use materials::*;
 use plugins::*;
 use resourses::*;
 use serde::*;
+use utils::*;
 
 fn main() {
     App::new()
@@ -55,7 +57,7 @@ fn main() {
                 ..default()
             }),))
         .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Shop),
         )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             GameState::AssetLoading,
@@ -76,7 +78,13 @@ fn main() {
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<Statuses>::new(&["statuses.ron"]))
-        .add_plugins((ActionPlugin, UnitPlugin, RepresentationPlugin, BattlePlugin))
+        .add_plugins((
+            ActionPlugin,
+            UnitPlugin,
+            RepresentationPlugin,
+            ShopPlugin,
+            BattlePlugin,
+        ))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
         .add_systems(Update, input)

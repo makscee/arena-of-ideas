@@ -114,7 +114,7 @@ Bevy transition
     Rep hot reload {cm:2023-08-19T02:49:11}
     Unit Rep with name & stats {cm:2023-08-22T15:41:20}
     Unit strike animation {cm:2023-08-22T15:41:26}
-    Simplest Battle
+    Simplest Battle {cm:2023-09-03T17:40:57}
         Team {cm:2023-08-22T16:50:47}
         Battle Config {cm:2023-08-22T16:50:46}
         Factions {cm:2023-08-29T14:50:21}
@@ -133,4 +133,8 @@ Bevy transition
             Rendering {cm:2023-09-01T17:44:33}
         Events {cm:2023-09-01T18:58:55}
         Triggers {cm:2023-09-01T18:58:55}
-
+    Shop
+        Unit card
+        Status card
+        Showcase
+        Buying

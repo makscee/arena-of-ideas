@@ -7,4 +7,5 @@ pub enum GameState {
     Next,
     Restart,
     Battle,
+    Shop,
 }
