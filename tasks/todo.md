@@ -134,7 +134,7 @@ Bevy transition
         Events {cm:2023-09-01T18:58:55}
         Triggers {cm:2023-09-01T18:58:55}
     Shop
-        Unit card
+        Unit description {cm:2023-09-05T01:20:09}
+        Showcase {cm:2023-09-05T01:20:09}
+        Buying {cm:2023-09-05T01:20:09}
         Status card
-        Showcase
-        Buying

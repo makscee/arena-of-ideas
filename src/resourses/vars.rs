@@ -12,6 +12,7 @@ pub enum VarName {
     Atk,
     Dmg,
     Name,
+    Description,
     Text,
     Spawn,
     Slot,

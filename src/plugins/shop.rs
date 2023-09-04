@@ -1,5 +1,6 @@
 use super::*;
-use bevy_egui::{egui::Pos2, *};
+
+use rand::seq::SliceRandom;
 
 pub struct ShopPlugin;
 
@@ -16,17 +17,8 @@ impl ShopPlugin {
     fn enter_state(world: &mut World) {
         if let Some(team) = &world.resource::<ActiveTeam>().team {
             team.clone().unpack(Faction::Team, world);
-        } else {
-            let mut units = Vec::default();
-            for (_, unit) in Pools::heroes(world).into_iter() {
-                units.push(unit.clone());
-            }
-            for unit in units {
-                unit.unpack(Faction::Team, None, world);
-            }
-            UnitPlugin::fill_slot_gaps(Faction::Team, world);
         }
-        UnitPlugin::translate_to_slots(world);
+        Self::fill_showcase(world);
     }
 
     fn leave_state(world: &mut World) {}
@@ -37,6 +29,20 @@ impl ShopPlugin {
             UnitPlugin::despawn_all(world);
             Self::unpack_active_team(world);
         }
+    }
+
+    fn fill_showcase(world: &mut World) {
+        let mut units = Vec::default();
+        let pool = Pools::heroes(world).into_values().collect_vec();
+        for _ in 0..5 {
+            let unit = (*pool.choose(&mut rand::thread_rng()).unwrap()).clone();
+            units.push(unit);
+        }
+        for unit in units {
+            unit.unpack(Faction::Shop, None, world);
+        }
+        UnitPlugin::fill_slot_gaps(Faction::Shop, world);
+        UnitPlugin::translate_to_slots(world);
     }
 
     pub fn pack_active_team(world: &mut World) {
@@ -56,16 +62,32 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
     }
 
-    pub fn ui(mut contexts: EguiContexts) {
-        // egui::Window::new("Shop")
-        //     .fixed_rect(egui::Rect::from_center_size(
-        //         Pos2::new(300.0, 10.0),
-        //         egui::vec2(200.0, 50.0),
-        //     ))
-        //     .show(contexts.ctx_mut(), |ui| {
-        //         ui.button("Click").clicked();
-
-        //     });
+    pub fn ui(world: &mut World) {
+        let context = egui_context(world);
+        for unit in UnitPlugin::collect_faction(Faction::Shop, world) {
+            let window = UnitPlugin::draw_unit_panel(unit, vec2(0.0, -1.5), world);
+            window.show(&context, |ui| {
+                ui.vertical_centered(|ui| {
+                    let btn = ui.button("Buy");
+                    if btn.clicked() {
+                        VarState::push_back(
+                            unit,
+                            VarName::Faction,
+                            Change::new(VarValue::Faction(Faction::Team)),
+                            world,
+                        );
+                        VarState::push_back(
+                            unit,
+                            VarName::Slot,
+                            Change::new(VarValue::Int(0)),
+                            world,
+                        );
+                        UnitPlugin::fill_slot_gaps(Faction::Team, world);
+                        UnitPlugin::translate_to_slots(world);
+                    }
+                })
+            });
+        }
     }
 }
 

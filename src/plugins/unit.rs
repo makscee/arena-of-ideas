@@ -1,6 +1,6 @@
 use bevy::utils::Instant;
 use bevy_egui::{
-    egui::{self, Align2, Pos2},
+    egui::{self, Align2, Id, Pos2, Ui},
     EguiContext,
 };
 
@@ -42,6 +42,7 @@ impl UnitPlugin {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
             Faction::Right => vec2(slot as f32 * 3.0, 0.0),
             Faction::Team => vec2(slot as f32 * -3.0 + 7.5, -3.0),
+            Faction::Shop => vec2(slot as f32 * -3.0 + 7.5, 3.0),
         }
     }
 
@@ -50,6 +51,13 @@ impl UnitPlugin {
         let slot = state.get_int(VarName::Slot)? as usize;
         let faction = state.get_faction(VarName::Faction)?;
         Ok(Self::get_slot_position(faction, slot))
+    }
+
+    pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
+        Self::collect_factions(&HashSet::from([faction]), world)
+            .into_iter()
+            .map(|x| x.0)
+            .collect_vec()
     }
 
     pub fn collect_factions(
@@ -171,7 +179,7 @@ impl UnitPlugin {
 
     pub fn translate_to_slots(world: &mut World) {
         let units = UnitPlugin::collect_factions(
-            &HashSet::from([Faction::Left, Faction::Right, Faction::Team]),
+            &HashSet::from([Faction::Left, Faction::Right, Faction::Team, Faction::Shop]),
             world,
         );
         GameTimer::get_mut(world).start_batch();
@@ -195,23 +203,40 @@ impl UnitPlugin {
 
     fn ui(world: &mut World) {
         if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
-            let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
-            let pos = world.get::<GlobalTransform>(hovered).unwrap().translation();
-            let pos = camera.world_to_viewport(transform, pos).unwrap();
-
-            let context = world
-                .query::<&mut EguiContext>()
-                .single_mut(world)
-                .into_inner()
-                .get_mut();
-            egui::Window::new("Shop")
-                .fixed_pos(Pos2::new(pos.x, pos.y))
-                .min_width(400.0)
-                .pivot(Align2::CENTER_CENTER)
-                .show(context, |ui| {
-                    ui.button("Click").clicked();
-                });
+            let description = VarState::get(hovered, world)
+                .get_string(VarName::Description)
+                .unwrap_or("No description".to_owned());
+            Self::draw_unit_panel(hovered, vec2(0.0, 1.0), world).show(
+                &egui_context(world),
+                |ui| {
+                    ui.label(description);
+                },
+            );
         }
+    }
+
+    pub fn draw_unit_panel(entity: Entity, side: Vec2, world: &mut World) -> egui::Window<'static> {
+        let pos = Self::unit_screen_pos(entity, side, world);
+        let side_i = side.as_ivec2();
+        let align = match (side_i.x, side_i.y) {
+            (-1, 0) => Align2::RIGHT_CENTER,
+            (1, 0) => Align2::LEFT_CENTER,
+            (0, -1) => Align2::CENTER_TOP,
+            (0, 1) => Align2::CENTER_BOTTOM,
+            _ => panic!(),
+        };
+        egui::Window::new("Hero")
+            .id(Id::new(entity).with(side.x as i32).with(side.y as i32))
+            .fixed_pos(Pos2::new(pos.x, pos.y))
+            .default_width(10.0)
+            .pivot(align)
+    }
+
+    fn unit_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
+        let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
+        let pos = world.get::<GlobalTransform>(entity).unwrap().translation()
+            + vec3(offset.x, offset.y, 0.0);
+        camera.world_to_viewport(transform, pos).unwrap()
     }
 }
 
@@ -234,6 +259,7 @@ pub enum Faction {
     Left,
     Right,
     Team,
+    Shop,
 }
 
 #[derive(Resource, Default)]

@@ -35,7 +35,7 @@ impl GameTimer {
     }
 
     pub fn start_batch(&mut self) {
-        self.batches.push(self.end)
+        self.batches.push(self.end.max(self.play_head))
     }
 
     pub fn end_batch(&mut self) {

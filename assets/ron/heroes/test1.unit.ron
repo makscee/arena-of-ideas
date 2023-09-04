@@ -2,6 +2,7 @@
     hp: 2,
     atk: 1,
     name: "Test",
+    description: "This is a test\ndescription",
     representation: (
         material: Shape(
             shape: Circle,

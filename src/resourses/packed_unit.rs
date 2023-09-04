@@ -6,6 +6,8 @@ pub struct PackedUnit {
     pub hp: i32,
     pub atk: i32,
     pub name: String,
+    #[serde(default)]
+    pub description: String,
     pub representation: Representation,
     pub state: VarState,
 }
@@ -33,7 +35,11 @@ impl PackedUnit {
                 VarName::Slot,
                 VarValue::Int(slot.unwrap_or_default() as i32),
             )
-            .insert(VarName::Faction, VarValue::Faction(faction));
+            .insert(VarName::Faction, VarValue::Faction(faction))
+            .insert(
+                VarName::Description,
+                VarValue::String(self.description.to_owned()),
+            );
         world
             .entity_mut(entity)
             .insert(Unit)
@@ -60,12 +66,14 @@ impl PackedUnit {
         let hp = state.get_int(VarName::Hp).unwrap();
         let atk = state.get_int(VarName::Atk).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
+        let description = state.get_string(VarName::Description).unwrap();
         Self {
             hp,
             atk,
             name,
             representation,
             state,
+            description,
         }
     }
 }
