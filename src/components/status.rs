@@ -5,6 +5,8 @@ use super::*;
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct PackedStatus {
     pub name: String,
+    #[serde(default)]
+    pub description: String,
     pub trigger: Trigger,
     pub representation: Option<Representation>,
     #[serde(default)]
@@ -18,12 +20,16 @@ pub struct Status {
 }
 
 impl PackedStatus {
-    pub fn unpack(mut self, entity: Entity, world: &mut World) -> Result<()> {
-        let entity = self.representation.unwrap().unpack(Some(entity), world);
+    pub fn unpack(mut self, entity: Option<Entity>, world: &mut World) -> Result<Entity> {
+        let entity = self.representation.unwrap().unpack(entity, world);
         if self.state.get_int(VarName::Charges).is_err() {
             self.state
                 .insert(VarName::Charges, VarValue::Int(1))
-                .insert(VarName::Name, VarValue::String(self.name.clone()));
+                .insert(
+                    VarName::Description,
+                    VarValue::String(self.description.to_owned()),
+                )
+                .insert(VarName::Name, VarValue::String(self.name.to_owned()));
         }
         world
             .get_entity_mut(entity)
@@ -36,7 +42,7 @@ impl PackedStatus {
                 Name::from(self.name),
                 self.state,
             ));
-        Ok(())
+        Ok(entity)
     }
 }
 
@@ -46,15 +52,21 @@ impl Status {
         unit: Entity,
         delta: i32,
         world: &mut World,
-    ) -> Result<()> {
+    ) -> Result<Entity> {
         for entity in Self::collect_all_statuses(unit, world) {
             if let Some(status) = world.entity_mut(entity).get_mut::<Status>() {
                 if status.name.eq(status_name) {
                     VarState::change_int(entity, VarName::Charges, delta, world)?;
+                    return Ok(entity);
                 }
             }
         }
-        Ok(())
+        let mut status = Options::get_statuses(world)
+            .get(status_name)
+            .unwrap()
+            .clone();
+        status.state.insert(VarName::Charges, VarValue::Int(delta));
+        status.unpack(Some(unit), world)
     }
 
     pub fn collect_all_statuses(entity: Entity, world: &World) -> Vec<Entity> {

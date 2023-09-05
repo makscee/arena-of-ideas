@@ -1,5 +1,4 @@
 use bevy::utils::Instant;
-use bevy_egui::egui::{self, Align2, Id, Pos2};
 use strum_macros::Display;
 
 use super::*;
@@ -90,7 +89,7 @@ impl UnitPlugin {
     }
 
     fn despawn(
-        query: Query<Entity, Or<(&Unit, &Corpse)>>,
+        query: Query<Entity, Or<(&Unit, &Corpse, &ShopOffer)>>,
         mut commands: Commands,
         mut state: ResMut<NextState<GameState>>,
         mut time: ResMut<Time>,
@@ -186,43 +185,19 @@ impl UnitPlugin {
 
     fn ui(world: &mut World) {
         if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
+            if world.get::<ShopOffer>(hovered).is_some() {
+                return;
+            }
             let description = VarState::get(hovered, world)
                 .get_string(VarName::Description)
                 .unwrap_or("No description".to_owned());
-            Self::draw_unit_panel(hovered, vec2(0.0, 1.0), world).show(
+            draw_entity_panel(hovered, vec2(0.0, 1.0), "hover_desc", world).show(
                 &egui_context(world),
                 |ui| {
                     ui.label(description);
                 },
             );
         }
-    }
-
-    pub fn draw_unit_panel(entity: Entity, side: Vec2, world: &mut World) -> egui::Window<'static> {
-        let pos = Self::unit_screen_pos(entity, side, world);
-        let side_i = side.as_ivec2();
-        let align = match (side_i.x, side_i.y) {
-            (-1, 0) => Align2::RIGHT_CENTER,
-            (1, 0) => Align2::LEFT_CENTER,
-            (0, -1) => Align2::CENTER_TOP,
-            (0, 1) => Align2::CENTER_BOTTOM,
-            _ => panic!(),
-        };
-
-        egui::Window::new("hero")
-            .id(Id::new(entity).with(side.x as i32).with(side.y as i32))
-            .fixed_pos(Pos2::new(pos.x, pos.y))
-            .default_width(10.0)
-            .collapsible(false)
-            .title_bar(false)
-            .resizable(false)
-            .pivot(align)
-    }
-
-    pub fn unit_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
-        let pos = world.get::<GlobalTransform>(entity).unwrap().translation()
-            + vec3(offset.x, offset.y, 0.0);
-        world_to_screen(pos, world)
     }
 }
 

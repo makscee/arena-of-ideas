@@ -4,7 +4,7 @@
     name: "Test 2",
     representation: (
         material: Shape(
-            shape: Circle,
+            shape: Rectangle,
             color: ("#FDD835"),
             size: Vec2E(State(Radius)),
         ),
@@ -21,7 +21,7 @@
                         t: 0.0,
                         duration: 0.5,
                         tween: QuartOut,
-                        value: Float(0.9),
+                        value: Float(1.3),
                     ),
                 ],
             ),

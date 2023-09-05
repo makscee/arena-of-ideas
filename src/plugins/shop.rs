@@ -44,20 +44,49 @@ impl ShopPlugin {
     fn fill_showcase(world: &mut World) {
         let mut units = Vec::default();
         let pool = Pools::heroes(world).into_values().collect_vec();
-        for _ in 0..5 {
+        for _ in 0..3 {
             let unit = (*pool.choose(&mut rand::thread_rng()).unwrap()).clone();
             units.push(unit);
         }
         let team = PackedTeam::spawn(Faction::Shop, world).id();
+        let units_len = units.len();
         for unit in units {
-            unit.unpack(team, None, world);
+            let description = unit.description.to_owned();
+            let unit = unit.unpack(team, None, world);
+            world.entity_mut(unit).insert(ShopOffer {
+                name: "Hero".to_owned(),
+                description,
+                price: Self::UNIT_PRICE,
+                product: OfferProduct::Unit,
+            });
         }
         UnitPlugin::fill_slot_gaps(Faction::Shop, world);
         UnitPlugin::translate_to_slots(world);
+
+        for i in 1..3 {
+            let pos = UnitPlugin::get_slot_position(Faction::Shop, units_len + i as usize);
+            let status = Options::get_statuses(world).get("Test").unwrap().clone();
+            let name = status.name.to_owned();
+            let description = status.description.to_owned();
+            let charges = status.state.get_int(VarName::Charges).unwrap_or(1);
+            let entity = status.unpack(None, world).unwrap();
+            VarState::get_mut(entity, world).insert(VarName::Position, VarValue::Vec2(pos));
+            world.entity_mut(entity).insert(ShopOffer {
+                product: OfferProduct::Status {
+                    name: name.to_owned(),
+                    charges,
+                },
+                name,
+                description,
+                price: 2,
+            });
+        }
     }
 
     fn clear_showcase(world: &mut World) {
-        PackedTeam::despawn(Faction::Shop, world);
+        for entity in Self::all_offers(world) {
+            world.entity_mut(entity).despawn_recursive();
+        }
     }
 
     pub fn pack_active_team(world: &mut World) {
@@ -79,24 +108,8 @@ impl ShopPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        for unit in UnitPlugin::collect_faction(Faction::Shop, world) {
-            let window = UnitPlugin::draw_unit_panel(unit, vec2(0.0, -1.5), world);
-            window.show(&ctx, |ui| {
-                ui.set_enabled(Self::unit_affordable(world));
-                ui.vertical_centered(|ui| {
-                    let btn = Button::new(
-                        RichText::new(format!("-{}g", Self::UNIT_PRICE))
-                            .size(20.0)
-                            .color(hex_color!("#00E5FF"))
-                            .text_style(egui::TextStyle::Button),
-                    )
-                    .min_size(egui::vec2(100.0, 0.0));
-                    ui.label("Buy");
-                    if ui.add(btn).clicked() {
-                        Self::buy_unit(unit, world).unwrap();
-                    }
-                })
-            });
+        for entity in Self::all_offers(world) {
+            ShopOffer::draw_buy_panel(entity, world);
         }
         if let Some(team_state) = PackedTeam::state(Faction::Team, world) {
             let g = team_state.get_int(VarName::G).unwrap_or_default();
@@ -137,10 +150,16 @@ impl ShopPlugin {
     pub fn reroll_affordable(world: &mut World) -> bool {
         Self::get_g(world) >= Self::REROLL_PRICE
     }
+    pub fn can_afford(price: i32, world: &mut World) -> bool {
+        Self::get_g(world) >= price
+    }
 
     pub fn buy_unit(unit: Entity, world: &mut World) -> Result<()> {
         let team = PackedTeam::entity(Faction::Team, world).unwrap();
-        world.entity_mut(unit).set_parent(team);
+        world
+            .entity_mut(unit)
+            .set_parent(team)
+            .remove::<ShopOffer>();
         VarState::push_back(unit, VarName::Slot, Change::new(VarValue::Int(0)), world);
         UnitPlugin::fill_slot_gaps(Faction::Team, world);
         UnitPlugin::translate_to_slots(world);
@@ -168,9 +187,75 @@ impl ShopPlugin {
             world,
         )
     }
+
+    pub fn all_offers(world: &mut World) -> Vec<Entity> {
+        world
+            .query_filtered::<Entity, With<ShopOffer>>()
+            .iter(world)
+            .collect_vec()
+    }
 }
 
 #[derive(Resource, Default)]
 pub struct ActiveTeam {
     pub team: Option<PackedTeam>,
+}
+
+#[derive(Component, Clone, Debug)]
+pub struct ShopOffer {
+    pub name: String,
+    pub description: String,
+    pub price: i32,
+    pub product: OfferProduct,
+}
+
+#[derive(Clone, Debug)]
+pub enum OfferProduct {
+    Unit,
+    Status { name: String, charges: i32 },
+}
+
+impl OfferProduct {
+    pub fn do_buy(&self, entity: Entity, world: &mut World) -> Result<()> {
+        match self {
+            OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
+            OfferProduct::Status { name, charges } => {
+                for unit in UnitPlugin::collect_faction(Faction::Team, world) {
+                    Status::change_charges(name, unit, *charges, world).unwrap();
+                }
+                world.entity_mut(entity).despawn_recursive();
+                Ok(())
+            }
+        }
+    }
+}
+
+impl ShopOffer {
+    pub fn draw_buy_panel(entity: Entity, world: &mut World) {
+        let so = world.get::<ShopOffer>(entity).unwrap().clone();
+        let window = draw_entity_panel(entity, vec2(0.0, -1.5), "buy_panel", world);
+        let ctx = &egui_context(world);
+        window.show(ctx, |ui: &mut egui::Ui| {
+            ui.set_enabled(ShopPlugin::can_afford(so.price, world));
+            ui.vertical_centered(|ui| {
+                let btn = Button::new(
+                    RichText::new(format!("-{}g", so.price))
+                        .size(20.0)
+                        .color(hex_color!("#00E5FF"))
+                        .text_style(egui::TextStyle::Button),
+                )
+                .min_size(egui::vec2(100.0, 0.0));
+                ui.label("Buy");
+                if ui.add(btn).clicked() {
+                    so.product.do_buy(entity, world);
+                }
+            })
+        });
+        if !so.description.is_empty() {
+            let window = draw_entity_panel(entity, vec2(0.0, 1.1), "desc_panel", world);
+            window.show(ctx, |ui| {
+                ui.label(so.description);
+            });
+        }
+    }
 }

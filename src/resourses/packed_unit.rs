@@ -13,7 +13,7 @@ pub struct PackedUnit {
 }
 
 impl PackedUnit {
-    pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) {
+    pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) -> Entity {
         debug!("Unpack unit {:?}", &self);
         let entity = Options::get_unit_rep(world)
             .clone()
@@ -46,13 +46,7 @@ impl PackedUnit {
             .insert(Unit)
             .insert(Name::new(self.name))
             .insert(self.state);
-
-        Options::get_statuses(world)
-            .get("Test")
-            .unwrap()
-            .clone()
-            .unpack(entity, world)
-            .unwrap();
+        entity
     }
 
     pub fn pack(entity: Entity, world: &World) -> Self {
