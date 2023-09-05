@@ -69,7 +69,7 @@ impl VarState {
     pub fn get_value_last(&self, var: VarName) -> Result<VarValue> {
         self.0
             .get(&var)
-            .context("Var not found")?
+            .with_context(|| format!("Var not found {var}"))?
             .get_last()
             .context("History is empty")
     }

@@ -17,8 +17,8 @@ impl Trigger {
         match self {
             Trigger::AfterDamageTaken { effect } => match event {
                 Event::DamageTaken { unit, value } => {
-                    let context = Context::from_owner(*unit)
-                        .set_status(status_entity)
+                    let context = Context::from_owner(*unit, world)
+                        .set_status(status_entity, world)
                         .set_var(VarName::Value, VarValue::Int(*value));
                     ActionPlugin::queue_effect(effect.clone(), context, world);
                 }

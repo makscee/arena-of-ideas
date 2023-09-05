@@ -47,5 +47,6 @@ Bevy transition
         Reroll {cm:2023-09-05T16:03:37}
         Status in showcase {cm:2023-09-05T17:18:44}
         Single status apply
-        Battle transition
-    Status panel
+        Battle transition {cm:2023-09-05T23:33:05}
+    Status panel {cm:2023-09-05T23:33:08}
+    Status save to PackedUnit

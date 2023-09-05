@@ -49,6 +49,27 @@ impl ContextLayer {
 }
 
 impl Context {
+    pub fn empty() -> Self {
+        Self { layers: default() }
+    }
+
+    pub fn add_layer(mut self, layer: ContextLayer, world: &World) -> Self {
+        match &layer {
+            ContextLayer::Owner { entity } => {
+                let entity = *entity;
+                if let Some(parent) = world.get::<Parent>(entity) {
+                    let parent = parent.get();
+                    if world.get::<VarState>(parent).is_some() {
+                        self = self.add_layer(ContextLayer::Owner { entity: parent }, world);
+                    }
+                }
+            }
+            _ => {}
+        }
+        self.layers.push(layer);
+        self
+    }
+
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         let mut result = None;
         for layer in self.layers.iter().rev() {
@@ -65,15 +86,12 @@ impl Context {
         self
     }
 
-    pub fn from_owner(entity: Entity) -> Self {
-        Self {
-            layers: vec![ContextLayer::Owner { entity }],
-        }
+    pub fn from_owner(entity: Entity, world: &World) -> Self {
+        Self::empty().add_layer(ContextLayer::Owner { entity }, world)
     }
 
-    pub fn set_owner(mut self, entity: Entity) -> Self {
-        self.layers.push(ContextLayer::Owner { entity });
-        self
+    pub fn set_owner(mut self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Owner { entity }, world)
     }
 
     pub fn owner(&self) -> Entity {
@@ -91,15 +109,12 @@ impl Context {
         result
     }
 
-    pub fn from_caster(entity: Entity) -> Self {
-        Self {
-            layers: vec![ContextLayer::Caster { entity }],
-        }
+    pub fn from_caster(entity: Entity, world: &World) -> Self {
+        Self::empty().add_layer(ContextLayer::Caster { entity }, world)
     }
 
-    pub fn set_caster(mut self, entity: Entity) -> Self {
-        self.layers.push(ContextLayer::Caster { entity });
-        self
+    pub fn set_caster(mut self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Caster { entity }, world)
     }
 
     pub fn caster(&self) -> Entity {
@@ -117,15 +132,12 @@ impl Context {
         result
     }
 
-    pub fn from_target(entity: Entity) -> Self {
-        Self {
-            layers: vec![ContextLayer::Target { entity }],
-        }
+    pub fn from_target(entity: Entity, world: &World) -> Self {
+        Self::empty().add_layer(ContextLayer::Target { entity }, world)
     }
 
-    pub fn set_target(mut self, entity: Entity) -> Self {
-        self.layers.push(ContextLayer::Target { entity });
-        self
+    pub fn set_target(mut self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Target { entity }, world)
     }
 
     pub fn target(&self) -> Entity {
@@ -143,8 +155,7 @@ impl Context {
         result
     }
 
-    pub fn set_status(mut self, entity: Entity) -> Self {
-        self.layers.push(ContextLayer::Status { entity });
-        self
+    pub fn set_status(mut self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Status { entity }, world)
     }
 }

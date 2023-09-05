@@ -109,7 +109,7 @@ impl RepresentationMaterial {
                 return;
             }
         }
-        let context = Context::from_owner(entity);
+        let context = Context::from_owner(entity, world);
         match self {
             RepresentationMaterial::Shape { shape, size, color } => {
                 let size = size.get_vec2(&context, world).unwrap();

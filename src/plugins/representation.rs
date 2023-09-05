@@ -29,7 +29,7 @@ impl RepresentationPlugin {
                         .ok()
                 })
                 .unwrap_or_default();
-            let context = Context::from_owner(entity);
+            let context = Context::from_owner(entity, world);
             for (key, value) in rep.mapping.iter() {
                 match key {
                     VarName::Position => {

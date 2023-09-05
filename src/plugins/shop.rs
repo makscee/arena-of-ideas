@@ -1,6 +1,6 @@
 use super::*;
 
-use bevy_egui::egui;
+use bevy_egui::egui::{self, Align2};
 use bevy_egui::egui::{pos2, Button, Color32, RichText, Window};
 use rand::seq::SliceRandom;
 
@@ -10,8 +10,9 @@ impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveTeam>()
             .add_systems(OnEnter(GameState::Shop), Self::enter_state)
+            .add_systems(OnExit(GameState::Shop), Self::leave_state)
             .add_systems(PostUpdate, Self::input)
-            .add_systems(Update, Self::ui);
+            .add_systems(Update, Self::ui.run_if(in_state(GameState::Shop)));
     }
 }
 
@@ -28,13 +29,17 @@ impl ShopPlugin {
         Self::fill_showcase(world);
     }
 
-    fn leave_state(world: &mut World) {}
+    fn leave_state(world: &mut World) {
+        Self::pack_active_team(world);
+        UnitPlugin::despawn_all(world);
+        Self::clear_showcase(world);
+    }
 
     fn input(world: &mut World) {
         if just_pressed(KeyCode::P, world) {
             Self::pack_active_team(world);
             UnitPlugin::despawn_all(world);
-            Self::unpack_active_team(world);
+            Self::unpack_active_team(Faction::Team, world);
         }
         if just_pressed(KeyCode::C, world) {
             Self::change_g(10, world).unwrap();
@@ -95,14 +100,14 @@ impl ShopPlugin {
         active_team.team = Some(team);
     }
 
-    pub fn unpack_active_team(world: &mut World) {
+    pub fn unpack_active_team(faction: Faction, world: &mut World) {
         world
             .get_resource::<ActiveTeam>()
             .unwrap()
             .team
             .clone()
             .expect("Tried to unpack emtpy Active Team")
-            .unpack(Faction::Team, world);
+            .unpack(faction, world);
         UnitPlugin::translate_to_slots(world);
     }
 
@@ -141,6 +146,16 @@ impl ShopPlugin {
                         Self::buy_reroll(world).unwrap();
                     }
                 })
+            });
+        Window::new("battle")
+            .anchor(Align2::RIGHT_BOTTOM, egui::vec2(0.0, 0.0))
+            .show(ctx, |ui| {
+                if ui.button("Go").clicked() {
+                    world
+                        .get_resource_mut::<NextState<GameState>>()
+                        .unwrap()
+                        .set(GameState::Battle);
+                }
             });
     }
 

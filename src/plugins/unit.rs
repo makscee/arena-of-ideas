@@ -34,6 +34,13 @@ impl UnitPlugin {
         }
     }
 
+    pub fn find_unit(faction: Faction, slot: usize, world: &mut World) -> Option<Entity> {
+        Self::collect_faction(faction, world).into_iter().find(|e| {
+            VarState::get(*e, world).get_int(VarName::Slot).unwrap() == slot as i32
+                && !Self::is_dead(*e, world)
+        })
+    }
+
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
         match faction {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
@@ -44,9 +51,12 @@ impl UnitPlugin {
     }
 
     pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
-        let state = VarState::get(entity, world);
-        let slot = state.get_int(VarName::Slot)? as usize;
-        let faction = state.get_faction(VarName::Faction)?;
+        let context = Context::from_owner(entity, world);
+        let slot = context.get_var(VarName::Slot, world).unwrap().get_int()? as usize;
+        let faction = context
+            .get_var(VarName::Faction, world)
+            .unwrap()
+            .get_faction()?;
         Ok(Self::get_slot_position(faction, slot))
     }
 
@@ -68,20 +78,22 @@ impl UnitPlugin {
     pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
         if let Some(team) = PackedTeam::entity(faction, world) {
             if let Some(children) = world.get::<Children>(team) {
-                return children.iter().cloned().collect_vec();
+                return children
+                    .iter()
+                    .filter_map(|e| match world.get::<Unit>(*e) {
+                        Some(_) => Some(*e),
+                        None => None,
+                    })
+                    .collect_vec();
             }
         }
         return default();
     }
 
     pub fn fill_slot_gaps(faction: Faction, world: &mut World) {
-        let team = PackedTeam::entity(faction, world).unwrap();
-        for (slot, unit) in world
-            .get::<Children>(team)
-            .unwrap()
-            .iter()
-            .sorted_by_key(|x| VarState::get(**x, world).get_int(VarName::Slot).unwrap())
-            .cloned()
+        for (slot, unit) in Self::collect_faction(faction, world)
+            .into_iter()
+            .sorted_by_key(|x| VarState::get(*x, world).get_int(VarName::Slot).unwrap())
             .enumerate()
             .collect_vec()
         {

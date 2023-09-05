@@ -4,14 +4,16 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Battle), Self::setup);
+        app.add_systems(OnEnter(GameState::Battle), Self::enter);
     }
 }
 
 impl BattlePlugin {
-    pub fn setup(world: &mut World) {
+    pub fn enter(world: &mut World) {
         let bs = Options::get_custom_battle(world).clone();
-        bs.unpack(world);
+        // bs.unpack(world);
+        bs.right.unpack(Faction::Right, world);
+        ShopPlugin::unpack_active_team(Faction::Left, world);
         UnitPlugin::translate_to_slots(world);
         Self::run_battle(world);
     }
@@ -23,26 +25,12 @@ impl BattlePlugin {
     }
 
     pub fn get_strikers(world: &mut World) -> Option<(Entity, Entity)> {
-        let units = world
-            .query_filtered::<(Entity, &VarState), With<Unit>>()
-            .iter(world)
-            .filter(|(_, s)| s.get_int(VarName::Slot).unwrap() == 1)
-            .collect_vec();
-        if units.len() == 2 {
-            let (left, right) = units
-                .iter()
-                .sorted_by(|(_, a), (_, b)| {
-                    a.get_faction(VarName::Faction)
-                        .unwrap()
-                        .cmp(&b.get_faction(VarName::Faction).unwrap())
-                })
-                .map(|(e, _)| *e)
-                .collect_tuple()
-                .unwrap();
-            Some((left, right))
-        } else {
-            None
+        if let Some(left) = UnitPlugin::find_unit(Faction::Left, 1, world) {
+            if let Some(right) = UnitPlugin::find_unit(Faction::Right, 1, world) {
+                return Some((left, right));
+            }
         }
+        None
     }
 
     pub fn run_strike(left: Entity, right: Entity, world: &mut World) {
@@ -65,7 +53,8 @@ impl BattlePlugin {
                 .get(AnimationType::BeforeStrike)
                 .clone()
                 .apply(
-                    &Context::from_owner(caster).set_var(VarName::Direction, VarValue::Float(dir)),
+                    &Context::from_owner(caster, world)
+                        .set_var(VarName::Direction, VarValue::Float(dir)),
                     world,
                 )
                 .unwrap();
@@ -77,9 +66,9 @@ impl BattlePlugin {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
-            let context = Context::from_caster(caster)
-                .set_target(target)
-                .set_owner(caster);
+            let context = Context::from_caster(caster, world)
+                .set_target(target, world)
+                .set_owner(caster, world);
             let effect = Effect::Damage {
                 value: Some(Expression::Int(1)),
             };
@@ -97,7 +86,7 @@ impl BattlePlugin {
             Options::get_animations(world)
                 .get(AnimationType::AfterStrike)
                 .clone()
-                .apply(&Context::from_owner(caster), world)
+                .apply(&Context::from_owner(caster, world), world)
                 .unwrap();
         }
         GameTimer::get_mut(world).end_batch();
