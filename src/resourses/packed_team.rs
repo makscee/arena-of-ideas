@@ -55,6 +55,12 @@ impl PackedTeam {
                 },
             )
     }
+    pub fn state(faction: Faction, world: &mut World) -> Option<&VarState> {
+        Self::entity(faction, world).and_then(|e| Some(VarState::get(e, world)))
+    }
+    pub fn state_mut(faction: Faction, world: &mut World) -> Option<Mut<VarState>> {
+        Self::entity(faction, world).and_then(|e| Some(VarState::get_mut(e, world)))
+    }
 }
 
 #[derive(Component)]

@@ -21,6 +21,7 @@ pub enum VarName {
     Direction,
     Charges,
     Value,
+    G,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]

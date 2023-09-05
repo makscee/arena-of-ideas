@@ -1,5 +1,6 @@
 use super::*;
 
+use bevy_egui::egui::{Color32, RichText, Window};
 use rand::seq::SliceRandom;
 
 pub struct ShopPlugin;
@@ -14,6 +15,8 @@ impl Plugin for ShopPlugin {
 }
 
 impl ShopPlugin {
+    pub const UNIT_PRICE: i32 = 3;
+
     fn enter_state(world: &mut World) {
         if let Some(team) = &world.resource::<ActiveTeam>().team {
             team.clone().unpack(Faction::Team, world);
@@ -30,6 +33,9 @@ impl ShopPlugin {
             Self::pack_active_team(world);
             UnitPlugin::despawn_all(world);
             Self::unpack_active_team(world);
+        }
+        if just_pressed(KeyCode::C, world) {
+            Self::change_g(10, world).unwrap();
         }
     }
 
@@ -66,26 +72,55 @@ impl ShopPlugin {
     }
 
     pub fn ui(world: &mut World) {
-        let context = egui_context(world);
+        let ctx = egui_context(world);
         for unit in UnitPlugin::collect_faction(Faction::Shop, world) {
             let window = UnitPlugin::draw_unit_panel(unit, vec2(0.0, -1.5), world);
-            window.show(&context, |ui| {
+            window.show(&ctx, |ui| {
+                ui.set_enabled(Self::unit_affordable(world));
                 ui.vertical_centered(|ui| {
                     let btn = ui.button("Buy");
                     if btn.clicked() {
-                        Self::buy_unit(unit, world);
+                        Self::buy_unit(unit, world).unwrap();
                     }
                 })
             });
         }
+        if let Some(team_state) = PackedTeam::state(Faction::Team, world) {
+            let g = team_state.get_int(VarName::G).unwrap_or_default();
+            Window::new("Stats").show(&ctx, |ui| {
+                ui.label(RichText::new(format!("G: {g}")).color(Color32::KHAKI));
+            });
+        }
     }
 
-    pub fn buy_unit(unit: Entity, world: &mut World) {
+    pub fn unit_affordable(world: &mut World) -> bool {
+        Self::get_g(world) >= Self::UNIT_PRICE
+    }
+
+    pub fn buy_unit(unit: Entity, world: &mut World) -> Result<()> {
         let team = PackedTeam::entity(Faction::Team, world).unwrap();
         world.entity_mut(unit).set_parent(team);
         VarState::push_back(unit, VarName::Slot, Change::new(VarValue::Int(0)), world);
         UnitPlugin::fill_slot_gaps(Faction::Team, world);
         UnitPlugin::translate_to_slots(world);
+        Self::change_g(-Self::UNIT_PRICE, world)
+    }
+
+    pub fn get_g(world: &mut World) -> i32 {
+        PackedTeam::state(Faction::Team, world)
+            .unwrap()
+            .get_int(VarName::G)
+            .unwrap_or_default()
+    }
+
+    pub fn change_g(delta: i32, world: &mut World) -> Result<()> {
+        debug!("Change g {delta}");
+        VarState::change_int(
+            PackedTeam::entity(Faction::Team, world).unwrap(),
+            VarName::G,
+            delta,
+            world,
+        )
     }
 }
 
