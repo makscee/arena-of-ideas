@@ -12,7 +12,7 @@ pub struct PackedTeam {
 
 impl PackedTeam {
     pub fn unpack(mut self, faction: Faction, world: &mut World) {
-        Self::clear_existing(faction, world);
+        Self::despawn(faction, world);
         self.state
             .insert(VarName::Faction, VarValue::Faction(faction));
         let team = Self::spawn(faction, world).insert(self.state).id();
@@ -28,7 +28,7 @@ impl PackedTeam {
         team
     }
     pub fn spawn(faction: Faction, world: &mut World) -> EntityMut {
-        Self::clear_existing(faction, world);
+        Self::despawn(faction, world);
 
         world.spawn((
             VarState::new_with(VarName::Faction, VarValue::Faction(faction)),
@@ -38,9 +38,8 @@ impl PackedTeam {
             VisibilityBundle::default(),
         ))
     }
-    fn clear_existing(faction: Faction, world: &mut World) {
+    pub fn despawn(faction: Faction, world: &mut World) {
         if let Some(team) = Self::entity(faction, world) {
-            debug!("Team already exists for faction {faction}, clearing.");
             world.entity_mut(team).despawn_recursive();
         }
     }

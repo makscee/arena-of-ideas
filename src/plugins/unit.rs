@@ -1,8 +1,5 @@
 use bevy::utils::Instant;
-use bevy_egui::{
-    egui::{self, Align2, Id, Pos2, Ui},
-    EguiContext,
-};
+use bevy_egui::egui::{self, Align2, Id, Pos2};
 use strum_macros::Display;
 
 use super::*;
@@ -211,18 +208,21 @@ impl UnitPlugin {
             (0, 1) => Align2::CENTER_BOTTOM,
             _ => panic!(),
         };
-        egui::Window::new("Hero")
+
+        egui::Window::new("hero")
             .id(Id::new(entity).with(side.x as i32).with(side.y as i32))
             .fixed_pos(Pos2::new(pos.x, pos.y))
             .default_width(10.0)
+            .collapsible(false)
+            .title_bar(false)
+            .resizable(false)
             .pivot(align)
     }
 
-    fn unit_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
-        let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
+    pub fn unit_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
         let pos = world.get::<GlobalTransform>(entity).unwrap().translation()
             + vec3(offset.x, offset.y, 0.0);
-        camera.world_to_viewport(transform, pos).unwrap()
+        world_to_screen(pos, world)
     }
 }
 

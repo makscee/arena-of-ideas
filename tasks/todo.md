@@ -139,6 +139,6 @@ Bevy transition
         Buying {cm:2023-09-05T01:20:09}
         Money {cm:2023-09-05T15:06:49}
         Stats window {cm:2023-09-05T15:06:50}
-        Reroll
+        Reroll {cm:2023-09-05T16:03:37}
         Status in showcase
         Battle transition

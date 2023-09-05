@@ -1,6 +1,7 @@
 use super::*;
 
-use bevy_egui::egui::{Color32, RichText, Window};
+use bevy_egui::egui;
+use bevy_egui::egui::{pos2, Button, Color32, RichText, Window};
 use rand::seq::SliceRandom;
 
 pub struct ShopPlugin;
@@ -16,6 +17,7 @@ impl Plugin for ShopPlugin {
 
 impl ShopPlugin {
     pub const UNIT_PRICE: i32 = 3;
+    pub const REROLL_PRICE: i32 = 1;
 
     fn enter_state(world: &mut World) {
         if let Some(team) = &world.resource::<ActiveTeam>().team {
@@ -54,6 +56,10 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
     }
 
+    fn clear_showcase(world: &mut World) {
+        PackedTeam::despawn(Faction::Shop, world);
+    }
+
     pub fn pack_active_team(world: &mut World) {
         let team = PackedTeam::pack(Faction::Team, world);
         let mut active_team = world.get_resource_mut::<ActiveTeam>().unwrap();
@@ -72,14 +78,21 @@ impl ShopPlugin {
     }
 
     pub fn ui(world: &mut World) {
-        let ctx = egui_context(world);
+        let ctx = &egui_context(world);
         for unit in UnitPlugin::collect_faction(Faction::Shop, world) {
             let window = UnitPlugin::draw_unit_panel(unit, vec2(0.0, -1.5), world);
             window.show(&ctx, |ui| {
                 ui.set_enabled(Self::unit_affordable(world));
                 ui.vertical_centered(|ui| {
-                    let btn = ui.button("Buy");
-                    if btn.clicked() {
+                    let btn = Button::new(
+                        RichText::new(format!("-{}g", Self::UNIT_PRICE))
+                            .size(20.0)
+                            .color(hex_color!("#00E5FF"))
+                            .text_style(egui::TextStyle::Button),
+                    )
+                    .min_size(egui::vec2(100.0, 0.0));
+                    ui.label("Buy");
+                    if ui.add(btn).clicked() {
                         Self::buy_unit(unit, world).unwrap();
                     }
                 })
@@ -91,10 +104,38 @@ impl ShopPlugin {
                 ui.label(RichText::new(format!("G: {g}")).color(Color32::KHAKI));
             });
         }
+        let pos = UnitPlugin::get_slot_position(Faction::Shop, 0);
+        let pos = vec3(pos.x, pos.y, 0.0);
+        let pos = world_to_screen(pos, world);
+        Window::new("reroll")
+            .fixed_pos(pos2(pos.x, pos.y))
+            .collapsible(false)
+            .title_bar(false)
+            .resizable(false)
+            .default_width(10.0)
+            .show(ctx, |ui| {
+                ui.set_enabled(Self::reroll_affordable(world));
+                ui.vertical_centered(|ui| {
+                    let btn = Button::new(
+                        RichText::new(format!("-{}g", Self::REROLL_PRICE))
+                            .size(20.0)
+                            .color(hex_color!("#00E5FF"))
+                            .text_style(egui::TextStyle::Button),
+                    )
+                    .min_size(egui::vec2(100.0, 0.0));
+                    ui.label("Reroll");
+                    if ui.add(btn).clicked() {
+                        Self::buy_reroll(world).unwrap();
+                    }
+                })
+            });
     }
 
     pub fn unit_affordable(world: &mut World) -> bool {
         Self::get_g(world) >= Self::UNIT_PRICE
+    }
+    pub fn reroll_affordable(world: &mut World) -> bool {
+        Self::get_g(world) >= Self::REROLL_PRICE
     }
 
     pub fn buy_unit(unit: Entity, world: &mut World) -> Result<()> {
@@ -106,10 +147,15 @@ impl ShopPlugin {
         Self::change_g(-Self::UNIT_PRICE, world)
     }
 
+    pub fn buy_reroll(world: &mut World) -> Result<()> {
+        Self::clear_showcase(world);
+        Self::fill_showcase(world);
+        Self::change_g(-Self::REROLL_PRICE, world)
+    }
+
     pub fn get_g(world: &mut World) -> i32 {
         PackedTeam::state(Faction::Team, world)
-            .unwrap()
-            .get_int(VarName::G)
+            .and_then(|s| s.get_int(VarName::G).ok())
             .unwrap_or_default()
     }
 

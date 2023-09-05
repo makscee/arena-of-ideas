@@ -17,3 +17,8 @@ pub fn egui_context(world: &mut World) -> Context {
         .get_mut()
         .clone()
 }
+
+pub fn world_to_screen(pos: Vec3, world: &mut World) -> Vec2 {
+    let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
+    camera.world_to_viewport(transform, pos).unwrap()
+}
